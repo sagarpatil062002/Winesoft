@@ -1,0 +1,457 @@
+/* ---------- Reset & Base Styles ---------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #f5f5f5; /* light gray background */
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* ---------- Containers ---------- */
+.container,
+.login-container,
+.card {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+}
+
+/* ---------- Logos / Images ---------- */
+.logo {
+    width: 50px;
+    margin-bottom: 15px;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3 {
+    color: #800020; /* burgundy accent */
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* ---------- Form Elements ---------- */
+input[type="text"],
+input[type="password"],
+select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+input:focus,
+select:focus {
+    border-color: #800020;
+    outline: none;
+}
+
+.password-container {
+    position: relative;
+}
+
+.password-container .toggle {
+    position: absolute;
+    right: 10px;
+    top: 12px;
+    font-size: 12px;
+    color: #800020;
+    cursor: pointer;
+}
+
+/* ---------- Buttons ---------- */
+button {
+    width: 100%;
+    padding: 12px;
+    background-color: #800020;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #a0002a;
+}
+
+/* ---------- Error Messages ---------- */
+.error {
+    color: red;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+/* ---------- Small / Info Text ---------- */
+.hardware-id,
+.info-text {
+    font-size: 11px;
+    color: #555;
+    margin-top: 10px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+    .container,
+    .login-container,
+    .card {
+        padding: 1.5rem;
+        width: 90%;
+    }
+}
+
+
+/* ---------- Dashboard Layout ---------- */
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #f5f5f5;
+}
+
+/* ---------- Side Navbar ---------- */
+.side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 220px;
+    background-color: #800020;
+    color: #fff;
+    z-index: 100;
+}
+
+.nav-header {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-logo {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+.nav-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.side-nav ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.side-nav ul li {
+    padding: 12px 20px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.side-nav ul li > span {
+    flex: 1;
+}
+
+.side-nav ul li:hover {
+    background-color: #a0002a;
+}
+
+.side-nav ul li .dropdown {
+    display: none;
+    list-style: none;
+    padding-left: 0;
+    background-color: #900030;
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: 12px;
+}
+
+.side-nav ul li .dropdown li {
+    padding-left: 40px;
+}
+
+.side-nav ul li:hover .dropdown {
+    display: block;
+}
+
+/* Icons */
+.icon-menu {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.icon-masters {
+    background-image: url('/winesoft/public/assets/icons/masters.svg');
+}
+
+.icon-items {
+    background-image: url('/winesoft/public/assets/icons/items.svg');
+}
+
+.icon-brand {
+    background-image: url('/winesoft/public/assets/icons/brand.svg');
+}
+
+.icon-transaction {
+    background-image: url('/winesoft/public/assets/icons/transaction.svg');
+}
+
+.icon-registers {
+    background-image: url('/winesoft/public/assets/icons/registers.svg');
+}
+
+.icon-reports {
+    background-image: url('/winesoft/public/assets/icons/reports.svg');
+}
+
+.icon-utilities {
+    background-image: url('/winesoft/public/assets/icons/utilities.svg');
+}
+
+/* Main content */
+.main-content {
+    margin-left: 220px;
+    flex: 1;
+    width: calc(100% - 220px);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Content Area */
+.content-area {
+    flex: 1;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Footer */
+.dashboard-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #555;
+}
+
+/* ---------- Brand Category Page ---------- */
+
+/* ======= Table Styles ======= */
+ /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .mode-selector label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        .mode-selector select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .mode-selector select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.25);
+        }
+
+        /* Table Styling */
+        .table-container {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+        }
+        .styled-table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #858796;
+        }
+        .styled-table thead th {
+            background-color: var(--secondary-color);
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 12px;
+            border-bottom: 2px solid #e3e6f0;
+        }
+        .styled-table tbody td {
+            padding: 12px;
+            border-top: 1px solid #e3e6f0;
+        }
+        .styled-table tbody tr:hover {
+            background-color: rgba(78, 115, 223, 0.05);
+        }
+
+        /* ===== Action Controls ===== */
+.action-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.mode-selector label {
+    margin-bottom: 0;
+    font-weight: 500;
+    color: #5a5c69;
+    white-space: nowrap;
+}
+
+.mode-selector select {
+    border-radius: 6px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+    background-color: white;
+    color: #333;
+    width: 100%;
+}
+
+.mode-selector select:focus {
+    border-color: #800020;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.2);
+}
+
+/* Search Control */
+.search-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-grow: 1;
+    min-width: 300px;
+}
+
+.search-control input {
+    border-radius: 6px;
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    transition: all 0.3s ease;
+    width: 100%;
+    color: #333;
+}
+
+.search-control input:focus {
+    border-color: #800020;
+    box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.2);
+    outline: none;
+}
+
+.search-btn {
+    border-radius: 6px;
+    padding: 8px 20px;
+    background-color: #800020;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.search-btn:hover {
+    background-color: #a0002a;
+}
+
+/* Action Buttons */
+.action-btn {
+    border-radius: 6px;
+    padding: 8px 20px;
+    color: #fff;
+    border: none;
+    transition: 0.3s;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.add-btn {
+    background-color: #1a5276;
+}
+
+.add-btn:hover {
+    background-color: #154360;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .action-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .mode-selector,
+    .search-control {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
