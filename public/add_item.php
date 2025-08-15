@@ -16,6 +16,24 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get mode from URL (default 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
+// Fetch classes and subclasses from database
+$classes = [];
+$subclasses = [];
+
+// Get all classes - using correct column names from tblclass
+$class_result = $conn->query("SELECT DISTINCT `DESC` AS class_name FROM tblclass WHERE LIQ_FLAG = '$mode' ORDER BY `DESC`");
+if ($class_result) {
+    $classes = $class_result->fetch_all(MYSQLI_ASSOC);
+    $class_result->free();
+}
+
+// Get all subclasses - using correct column names from tblsubclass
+$subclass_result = $conn->query("SELECT DISTINCT `DESC` AS subclass_name FROM tblsubclass WHERE LIQ_FLAG = '$mode' ORDER BY `DESC`");
+if ($subclass_result) {
+    $subclasses = $subclass_result->fetch_all(MYSQLI_ASSOC);
+    $subclass_result->free();
+}
+
 // Initialize variables
 $code = $new_code = $details = $details2 = $class = $sub_class = '';
 $pprice = $bprice = 0;
@@ -62,7 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add New Item - WineSoft</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/action-buttons.css">
 </head>
 <body>
 <div class="dashboard-container">
@@ -115,16 +135,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" id="details2" name="details2" class="form-control" value="<?= htmlspecialchars($details2) ?>">
                 </div>
 
-                <!-- Class -->
+                <!-- Class Dropdown -->
                 <div class="col-md-3">
                     <label for="class" class="form-label">Class</label>
-                    <input type="text" id="class" name="class" class="form-control" value="<?= htmlspecialchars($class) ?>">
+                    <select id="class" name="class" class="form-select">
+                        <option value="">-- Select Class --</option>
+                        <?php foreach ($classes as $class_item): ?>
+                            <option value="<?= htmlspecialchars($class_item['class_name']) ?>" 
+                                <?= ($class === $class_item['class_name']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($class_item['class_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
-                <!-- Sub Class -->
+                <!-- Sub Class Dropdown -->
                 <div class="col-md-3">
                     <label for="sub_class" class="form-label">Sub Class</label>
-                    <input type="text" id="sub_class" name="sub_class" class="form-control" value="<?= htmlspecialchars($sub_class) ?>">
+                    <select id="sub_class" name="sub_class" class="form-select">
+                        <option value="">-- Select Sub Class --</option>
+                        <?php foreach ($subclasses as $subclass_item): ?>
+                            <option value="<?= htmlspecialchars($subclass_item['subclass_name']) ?>" 
+                                <?= ($sub_class === $subclass_item['subclass_name']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($subclass_item['subclass_name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <!-- P.Price -->
@@ -155,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </body>
 </html>

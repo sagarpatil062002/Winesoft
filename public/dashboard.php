@@ -17,6 +17,8 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR'])){
     <meta charset="UTF-8">
     <title>Dashboard - WineSoft</title>
     <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/navbar.css">
+
 </head>
 <body>
 

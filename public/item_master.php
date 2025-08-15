@@ -51,6 +51,18 @@ $stmt->close();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/action-buttons.css">
+    <style>
+        .btn-burgundy {
+            background-color: #800020;
+            color: white;
+            border: none;
+        }
+        .btn-burgundy:hover {
+            background-color: #6a001b;
+            color: white;
+        }
+    </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -107,6 +119,7 @@ $stmt->close();
                             <th>Sub Class</th>
                             <th>P. Price</th>
                             <th>B. Price</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,11 +134,18 @@ $stmt->close();
                                     <td><?= htmlspecialchars($item['SUB_CLASS']); ?></td>
                                     <td><?= number_format($item['PPRICE'], 3); ?></td>
                                     <td><?= number_format($item['BPRICE'], 3); ?></td>
+                                    <td>
+                                        <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>" 
+                                           class="btn btn-sm btn-burgundy" 
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center text-muted">No items found.</td>
+                                <td colspan="9" class="text-center text-muted">No items found.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
