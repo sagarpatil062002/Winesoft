@@ -16,9 +16,9 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR'])){
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - WineSoft</title>
-    <link rel="stylesheet" href="css/style.css">
-        <link rel="stylesheet" href="css/navbar.css">
-
+<!-- Add version parameter to force cache refresh -->
+<link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+<link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
 </head>
 <body>
 

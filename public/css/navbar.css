@@ -1,3 +1,5 @@
+/* navbar.css - Updated for Mobile Responsiveness */
+
 /* Base Styles */
 * {
     margin: 0;
@@ -10,9 +12,11 @@
     position: fixed;
     width: 200px;
     height: 100vh;
-    background: #2C3E50; /* Navy Blue */
+    background: #006BBB;
     color: #fff;
     overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.3s ease;
 }
 
 .sidebar-header {
@@ -35,7 +39,7 @@
 .nav-title {
     font-weight: 600;
     font-size: 1.2rem;
-    color: #F39C12; /* Gold */
+    color: #FFC872;
 }
 
 .nav-list {
@@ -51,7 +55,7 @@
     display: flex;
     align-items: center;
     padding: 12px 20px;
-    color: rgba(255, 255, 255, 0.9);
+    color: #FFE3B3;
     text-decoration: none;
     transition: all 0.3s ease;
     gap: 12px;
@@ -59,7 +63,7 @@
 
 .nav-link:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: #F39C12; /* Gold on hover */
+    color: #FFC872;
 }
 
 .nav-icon {
@@ -74,7 +78,7 @@
 /* Dropdown Styles */
 .dropdown {
     display: none;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 107, 187, 0.3);
     padding-left: 20px;
 }
 
@@ -89,16 +93,54 @@
 
 /* Active State */
 .nav-item.active > .nav-link {
-    background: rgba(243, 156, 18, 0.2); /* Gold highlight */
-    color: #F39C12;
+    background: rgba(255, 200, 114, 0.2);
+    color: #FFC872;
     font-weight: 500;
 }
 
-/* Hover Effects */
-.nav-item:hover > .nav-link {
-    background: rgba(255, 255, 255, 0.1);
-}
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 60px;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
 
-.dropdown .nav-link:hover {
-    background: rgba(255, 255, 255, 0.15);
+    .sidebar.active {
+        max-height: 100vh;
+    }
+
+    .sidebar-header {
+        padding: 15px;
+        cursor: pointer;
+    }
+
+    .nav-list {
+        padding: 0;
+    }
+
+    .nav-link {
+        padding: 12px 15px;
+    }
+
+    .dropdown .nav-link {
+        padding: 10px 15px 10px 35px;
+    }
+
+    /* Mobile menu toggle button */
+    .mobile-menu-toggle {
+        display: block;
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 1001;
+        background: #006BBB;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 12px;
+        cursor: pointer;
+    }
 }

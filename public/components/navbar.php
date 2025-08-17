@@ -7,11 +7,28 @@ if(!isset($_SESSION)) session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Winesoft</title>
-    <link rel="stylesheet" href="/winesoft/public/css/navbar.css">
+    <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+    <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
+    <style>
+        /* Add this CSS to ensure only one arrow appears */
+        .dropdown-toggle .dropdown-arrow {
+            margin-left: auto;
+            transition: transform 0.3s ease;
+        }
+        /* Hide any duplicate arrows */
+        .nav-link .material-symbols-rounded:not(.nav-icon):not(.dropdown-arrow) {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <nav class="sidebar">
+    <!-- Mobile Menu Toggle Button -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <span class="material-symbols-rounded">menu</span>
+    </button>
+
+    <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-container">
                 <img src="/winesoft/public/assets/logo.png" alt="Winesoft" class="nav-logo">
@@ -23,6 +40,7 @@ if(!isset($_SESSION)) session_start();
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">layers</span>
                     <span class="nav-label">Masters</span>
+                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
                     <li class="nav-item">
@@ -37,9 +55,9 @@ if(!isset($_SESSION)) session_start();
                             <span class="nav-label">Brand Category</span>
                         </a>
                     </li>
-                        <li class="nav-item">
+                    <li class="nav-item">
                         <a href="item_sequence.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">category</span>
+                            <span class="nav-icon material-symbols-rounded">sort</span>
                             <span class="nav-label">Item Sequence</span>
                         </a>
                     </li>
@@ -69,24 +87,71 @@ if(!isset($_SESSION)) session_start();
                     <span class="nav-label">Utilities</span>
                 </a>
             </li>
+            <li class="nav-item user-profile">
+                <a href="#" class="nav-link">
+                    <span class="nav-icon material-symbols-rounded">account_circle</span>
+                    <span class="nav-label">
+                        <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Guest'; ?>
+                    </span>
+                </a>
+            </li>
         </ul>
     </nav>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+            const dropdownToggle = document.querySelector('.has-dropdown .dropdown-toggle');
             
-            dropdownToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(e) {
+            // Mobile menu toggle
+            mobileMenuToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                sidebar.classList.toggle('active');
+                document.body.classList.toggle('sidebar-active');
+            });
+            
+            // Dropdown functionality
+            if (dropdownToggle) {
+                dropdownToggle.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     const parentItem = this.closest('.has-dropdown');
                     parentItem.classList.toggle('active');
                     
-                    // Rotate arrow icon
+                    // Rotate the single arrow icon
                     const arrow = this.querySelector('.dropdown-arrow');
-                    arrow.style.transform = parentItem.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
+                    if (arrow) {
+                        arrow.style.transform = parentItem.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
+                    }
                 });
+            }
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function() {
+                const dropdown = document.querySelector('.has-dropdown');
+                if (dropdown && dropdown.classList.contains('active')) {
+                    dropdown.classList.remove('active');
+                    const arrow = dropdown.querySelector('.dropdown-arrow');
+                    if (arrow) {
+                        arrow.style.transform = 'rotate(0)';
+                    }
+                }
+                
+                // Also close sidebar when clicking outside on mobile
+                if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                    document.body.classList.remove('sidebar-active');
+                }
             });
+            
+            // Prevent dropdown close when clicking inside it
+            const dropdown = document.querySelector('.dropdown');
+            if (dropdown) {
+                dropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
         });
     </script>
 </body>

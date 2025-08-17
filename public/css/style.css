@@ -1,3 +1,5 @@
+/* style.css - Complete Responsive Stylesheet */
+
 /* ---------- Reset & Base Styles ---------- */
 * {
     box-sizing: border-box;
@@ -5,13 +7,17 @@
     padding: 0;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
-    background-color: #f5f5f5; /* light gray background */
+    background-color: #FFE3B3;
     font-family: 'Arial', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    line-height: 1.6;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ---------- Containers ---------- */
@@ -19,44 +25,66 @@ body {
 .login-container,
 .card {
     background: #ffffff;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    width: 100%;
+    width: 90%;
     max-width: 380px;
     text-align: center;
+    margin: 20px auto;
 }
 
 /* ---------- Logos / Images ---------- */
 .logo {
     width: 50px;
     margin-bottom: 15px;
+    height: auto;
 }
 
-/* ---------- Headings ---------- */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ---------- Typography ---------- */
 h1, h2, h3 {
-    color: #800020; /* burgundy accent */
-    margin-bottom: 20px;
+    color: #006BBB;
+    margin-bottom: 1rem;
     font-weight: 600;
+    line-height: 1.2;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.75rem; }
+h3 { font-size: 1.5rem; }
+
+p {
+    margin-bottom: 1rem;
+    color: #333;
 }
 
 /* ---------- Form Elements ---------- */
 input[type="text"],
 input[type="password"],
-select {
+input[type="email"],
+input[type="number"],
+select,
+textarea {
     width: 100%;
     padding: 12px;
     margin-bottom: 15px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.3s;
+    font-size: 1rem;
+    transition: all 0.3s;
 }
 
 input:focus,
-select:focus {
-    border-color: #800020;
+select:focus,
+textarea:focus {
+    border-color: #006BBB;
     outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 107, 187, 0.2);
 }
 
 .password-container {
@@ -66,392 +94,319 @@ select:focus {
 .password-container .toggle {
     position: absolute;
     right: 10px;
-    top: 12px;
-    font-size: 12px;
-    color: #800020;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: #006BBB;
     cursor: pointer;
+    background: none;
+    border: none;
 }
 
 /* ---------- Buttons ---------- */
-button {
-    width: 100%;
-    padding: 12px;
-    background-color: #800020;
+button, .btn {
+    display: inline-block;
+    padding: 12px 20px;
+    background-color: #006BBB;
     color: #fff;
     border: none;
     border-radius: 6px;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
+    text-align: center;
+    text-decoration: none;
 }
 
-button:hover {
-    background-color: #a0002a;
+button:hover, .btn:hover {
+    background-color: #30A0E0;
+    transform: translateY(-2px);
 }
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #006BBB;
+    color: #006BBB;
+}
+
+.btn-outline:hover {
+    background: #006BBB;
+    color: #fff;
+}
+
+/* ---------- Utility Classes ---------- */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
 
 /* ---------- Error Messages ---------- */
 .error {
-    color: red;
-    font-size: 13px;
-    margin-bottom: 10px;
+    color: #d9534f;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: block;
 }
 
-/* ---------- Small / Info Text ---------- */
-.hardware-id,
-.info-text {
-    font-size: 11px;
-    color: #555;
-    margin-top: 10px;
+.success {
+    color: #5cb85c;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    display: block;
 }
-
-/* ---------- Responsive ---------- */
-@media (max-width: 480px) {
-    .container,
-    .login-container,
-    .card {
-        padding: 1.5rem;
-        width: 90%;
-    }
-}
-
 
 /* ---------- Dashboard Layout ---------- */
 .dashboard-container {
     display: flex;
+    flex-direction: column;
     min-height: 100vh;
     width: 100%;
-    background-color: #f5f5f5;
-}
-
-/* ---------- Side Navbar ---------- */
-.side-nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 220px;
-    background-color: #800020;
-    color: #fff;
-    z-index: 100;
-}
-
-.nav-header {
-    display: flex;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.nav-logo {
-    width: 30px;
-    height: 30px;
-    margin-right: 10px;
-}
-
-.nav-title {
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-.side-nav ul {
-    list-style: none;
-    padding-left: 0;
-}
-
-.side-nav ul li {
-    padding: 12px 20px;
-    cursor: pointer;
+    background-color: #FFE3B3;
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.side-nav ul li > span {
-    flex: 1;
-}
-
-.side-nav ul li:hover {
-    background-color: #a0002a;
-}
-
-.side-nav ul li .dropdown {
-    display: none;
-    list-style: none;
-    padding-left: 0;
-    background-color: #900030;
-    margin-left: -20px;
-    margin-right: -20px;
-    margin-top: 12px;
-}
-
-.side-nav ul li .dropdown li {
-    padding-left: 40px;
-}
-
-.side-nav ul li:hover .dropdown {
-    display: block;
-}
-
-/* Icons */
-.icon-menu {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-}
-
-.icon-masters {
-    background-image: url('/winesoft/public/assets/icons/masters.svg');
-}
-
-.icon-items {
-    background-image: url('/winesoft/public/assets/icons/items.svg');
-}
-
-.icon-brand {
-    background-image: url('/winesoft/public/assets/icons/brand.svg');
-}
-
-.icon-transaction {
-    background-image: url('/winesoft/public/assets/icons/transaction.svg');
-}
-
-.icon-registers {
-    background-image: url('/winesoft/public/assets/icons/registers.svg');
-}
-
-.icon-reports {
-    background-image: url('/winesoft/public/assets/icons/reports.svg');
-}
-
-.icon-utilities {
-    background-image: url('/winesoft/public/assets/icons/utilities.svg');
 }
 
 /* Main content */
 .main-content {
-    margin-left: 220px;
-    flex: 1;
-    width: calc(100% - 220px);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    padding: 1rem;
+    margin-top: 60px;
 }
 
 /* Header */
 .dashboard-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     background: #fff;
-    padding: 15px 20px;
+    padding: 1rem;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.header-title {
+    margin-bottom: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 /* Content Area */
 .content-area {
-    flex: 1;
     background: #fff;
     border-radius: 8px;
-    padding: 20px;
+    padding: 1rem;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow-x: auto;
+    margin-bottom: 1rem;
 }
 
 /* Footer */
 .dashboard-footer {
-    margin-top: 20px;
     text-align: center;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #555;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-/* ---------- Brand Category Page ---------- */
+/* ---------- Table Styles ---------- */
+.table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 
-/* ======= Table Styles ======= */
- /* Mode Selector */
-        .mode-selector {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 10px;
-        }
-        .mode-selector label {
-            font-weight: 600;
-            color: var(--dark-color);
-        }
-        .mode-selector select {
-            padding: 6px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        .mode-selector select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.25);
-        }
+.styled-table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    color: #333;
+}
 
-        /* Table Styling */
-        .table-container {
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
-        }
-        .styled-table {
-            width: 100%;
-            border-collapse: collapse;
-            color: #858796;
-        }
-        .styled-table thead th {
-            background-color: var(--secondary-color);
-            color: var(--primary-color);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 12px;
-            border-bottom: 2px solid #e3e6f0;
-        }
-        .styled-table tbody td {
-            padding: 12px;
-            border-top: 1px solid #e3e6f0;
-        }
-        .styled-table tbody tr:hover {
-            background-color: rgba(78, 115, 223, 0.05);
-        }
+.styled-table thead tr {
+    background-color: #FFC872;
+    color: #006BBB;
+}
 
-        /* ===== Action Controls ===== */
+.styled-table th, 
+.styled-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+}
+
+.styled-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.styled-table tbody tr:hover {
+    background-color: #eef6ff;
+}
+
+/* ---------- Action Controls ---------- */
 .action-controls {
     display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
     background-color: white;
-    padding: 15px;
+    padding: 1rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Mode Selector */
 .mode-selector {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 200px;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.mode-selector label {
-    margin-bottom: 0;
-    font-weight: 500;
-    color: #5a5c69;
-    white-space: nowrap;
-}
-
-.mode-selector select {
-    border-radius: 6px;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    transition: all 0.3s ease;
-    background-color: white;
-    color: #333;
-    width: 100%;
-}
-
-.mode-selector select:focus {
-    border-color: #800020;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.2);
-}
-
-/* Search Control */
 .search-control {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-grow: 1;
-    min-width: 300px;
-}
-
-.search-control input {
-    border-radius: 6px;
-    padding: 8px 15px;
-    border: 1px solid #ddd;
-    transition: all 0.3s ease;
     width: 100%;
-    color: #333;
 }
 
-.search-control input:focus {
-    border-color: #800020;
-    box-shadow: 0 0 0 2px rgba(128, 0, 32, 0.2);
-    outline: none;
-}
-
-.search-btn {
-    border-radius: 6px;
-    padding: 8px 20px;
-    background-color: #800020;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-    transition: 0.3s;
-    white-space: nowrap;
+.action-buttons {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
-.search-btn:hover {
-    background-color: #a0002a;
-}
-
-/* Action Buttons */
-.action-btn {
-    border-radius: 6px;
-    padding: 8px 20px;
-    color: #fff;
+/* ---------- Mobile Menu Toggle ---------- */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 1001;
+    background: #006BBB;
+    color: white;
     border: none;
-    transition: 0.3s;
-    white-space: nowrap;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1.25rem;
 }
 
-.add-btn {
-    background-color: #1a5276;
-}
-
-.add-btn:hover {
-    background-color: #154360;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ---------- Responsive Breakpoints ---------- */
+@media (min-width: 576px) {
+    .container,
+    .login-container,
+    .card {
+        padding: 2rem;
+    }
+    
     .action-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+        flex-direction: row;
+        align-items: center;
     }
     
-    .mode-selector,
-    .search-control {
-        width: 100%;
-        min-width: auto;
-    }
-    
-    .action-btn {
-        width: 100%;
-        justify-content: center;
+    .mode-selector {
+        flex-direction: row;
+        align-items: center;
     }
 }
 
+@media (min-width: 768px) {
+    .dashboard-container {
+        flex-direction: row;
+    }
+    
+    .main-content {
+        margin-left: 200px;
+        margin-top: 0;
+        width: calc(100% - 200px);
+        padding: 1.5rem;
+    }
+    
+    .dashboard-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .header-title {
+        margin-bottom: 0;
+    }
+    
+    .styled-table {
+        min-width: 100%;
+    }
+    
+    .action-buttons {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (min-width: 992px) {
+    .main-content {
+        padding: 2rem;
+    }
+    
+    .dashboard-header,
+    .content-area {
+        padding: 1.5rem;
+    }
+    
+    .action-controls {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: block;
+    }
+    
+    .btn, button {
+        padding: 10px 15px;
+        font-size: 0.875rem;
+    }
+    
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.5rem; }
+    h3 { font-size: 1.25rem; }
+}
+
+/* ---------- Print Styles ---------- */
+@media print {
+    body {
+        background: none;
+    }
+    
+    .sidebar, 
+    .mobile-menu-toggle,
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+    
+    .table-container {
+        overflow-x: visible;
+        box-shadow: none;
+    }
+    
+    .styled-table {
+        min-width: 100%;
+    }
+}

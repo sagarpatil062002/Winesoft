@@ -8,8 +8,9 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liquor Inventory & Billing - Login</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
+<!-- Add version parameter to force cache refresh -->
+<link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+<link rel="stylesheet" href="css/navbar.css?v=<?=time()?>"></head>
 <body>
 
 <div class="login-container">

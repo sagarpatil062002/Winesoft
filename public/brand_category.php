@@ -33,8 +33,9 @@ $stmt->close();
     <meta charset="UTF-8">
     <title>Brand Category - WineSoft</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="css/style.css">
-
+<!-- Add version parameter to force cache refresh -->
+<link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+<link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
 </head>
 <body>
 
