@@ -35,8 +35,8 @@ if ($subclass_result) {
 }
 
 // Initialize variables
-$code = $new_code = $details = $details2 = $class = $sub_class = '';
-$pprice = $bprice = 0;
+$code = $new_code = $details = $details2 = $class = $sub_class = $bar_code = '';
+$pprice = $bprice = $mrp_price = $s_price = $bits_case = $op_stk_g = $op_stk_c1 = $op_stk_c2 = 0;
 $success = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -49,6 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sub_class = trim($_POST['sub_class']);
     $pprice = floatval($_POST['pprice']);
     $bprice = floatval($_POST['bprice']);
+    $mrp_price = floatval($_POST['mrp_price']);
+    $s_price = floatval($_POST['s_price']);
+    $bits_case = intval($_POST['bits_case']);
+    $op_stk_g = floatval($_POST['op_stk_g']);
+    $op_stk_c1 = floatval($_POST['op_stk_c1']);
+    $op_stk_c2 = floatval($_POST['op_stk_c2']);
+    $bar_code = trim($_POST['bar_code']);
     $liq_flag = $_POST['mode'];
 
     // Basic validation
@@ -57,15 +64,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Insert into tblitemmaster
         $stmt = $conn->prepare("INSERT INTO tblitemmaster 
-            (CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, PPRICE, BPRICE, LIQ_FLAG) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssdds", $code, $new_code, $details, $details2, $class, $sub_class, $pprice, $bprice, $liq_flag);
+            (CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, PPRICE, BPRICE, MRP_PRICE, S_PRICE, 
+             BITS_CASE, OP_STK_G, OP_STK_C1, OP_STK_C2, BAR_CODE, LIQ_FLAG) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssddddiiiids", 
+            $code, $new_code, $details, $details2, $class, $sub_class, 
+            $pprice, $bprice, $mrp_price, $s_price, 
+            $bits_case, $op_stk_g, $op_stk_c1, $op_stk_c2, $bar_code, $liq_flag);
 
         if ($stmt->execute()) {
             $success = "Item added successfully!";
             // Reset form
-            $code = $new_code = $details = $details2 = $class = $sub_class = '';
-            $pprice = $bprice = 0;
+            $code = $new_code = $details = $details2 = $class = $sub_class = $bar_code = '';
+            $pprice = $bprice = $mrp_price = $s_price = $bits_case = $op_stk_g = $op_stk_c1 = $op_stk_c2 = 0;
         } else {
             $error = "Error: " . $stmt->error;
         }
@@ -81,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Add New Item - WineSoft</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<!-- Add version parameter to force cache refresh -->
-<link rel="stylesheet" href="css/style.css?v=<?=time()?>">
-<link rel="stylesheet" href="css/navbar.css?v=<?=time()?>"></head>
+    <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+    <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+</head>
 <body>
 <div class="dashboard-container">
     <?php include 'components/navbar.php'; ?>
@@ -109,12 +120,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <option value="C" <?= $mode === 'C' ? 'selected' : '' ?>>Country Liquor</option>
                         <option value="O" <?= $mode === 'O' ? 'selected' : '' ?>>Others</option>
                     </select>
+
+                    
                 </div>
 
                 <!-- Code -->
                 <div class="col-md-3">
                     <label for="code" class="form-label">Item Code *</label>
-                    <input type="text" id="code" name="code" class="form-control" value="<?= htmlspecialchars($code) ?>" required>
+                    <input type="text" id="code" name="code" class="form-control" value="<?= htmlspecialchars($code) ?>" required maxlength="2">
+                    <small class="text-muted">(2 Letters MAX.)</small>
                 </div>
 
                 <!-- New Code -->
@@ -163,27 +177,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </select>
                 </div>
 
-                <!-- P.Price -->
+                <!-- Bits/Case -->
+                <div class="col-md-3">
+                    <label for="bits_case" class="form-label">Bits/Case</label>
+                    <input type="number" id="bits_case" name="bits_case" class="form-control" value="<?= htmlspecialchars($bits_case) ?>">
+                </div>
+
+                <!-- Opening Stock (G) -->
+                <div class="col-md-3">
+                    <label for="op_stk_g" class="form-label">Op. Stk. (G)</label>
+                    <input type="number" step="0.001" id="op_stk_g" name="op_stk_g" class="form-control" value="<?= htmlspecialchars($op_stk_g) ?>">
+                </div>
+
+                <!-- Opening Stock (C1) -->
+                <div class="col-md-3">
+                    <label for="op_stk_c1" class="form-label">Op. Stk. (C1)</label>
+                    <input type="number" step="0.001" id="op_stk_c1" name="op_stk_c1" class="form-control" value="<?= htmlspecialchars($op_stk_c1) ?>">
+                </div>
+
+                <!-- Opening Stock (C2) -->
+                <div class="col-md-3">
+                    <label for="op_stk_c2" class="form-label">Op. Stk. (C2)</label>
+                    <input type="number" step="0.001" id="op_stk_c2" name="op_stk_c2" class="form-control" value="<?= htmlspecialchars($op_stk_c2) ?>">
+                </div>
+
+                <!-- P. Price -->
                 <div class="col-md-3">
                     <label for="pprice" class="form-label">P. Price</label>
                     <input type="number" step="0.001" id="pprice" name="pprice" class="form-control" value="<?= htmlspecialchars($pprice) ?>">
                 </div>
 
-                <!-- B.Price -->
+                <!-- MRP Price -->
                 <div class="col-md-3">
-                    <label for="bprice" class="form-label">B. Price</label>
-                    <input type="number" step="0.001" id="bprice" name="bprice" class="form-control" value="<?= htmlspecialchars($bprice) ?>">
+                    <label for="mrp_price" class="form-label">MRP Price</label>
+                    <input type="number" step="0.001" id="mrp_price" name="mrp_price" class="form-control" value="<?= htmlspecialchars($mrp_price) ?>">
+                </div>
+
+                <!-- S. Price -->
+                <div class="col-md-3">
+                    <label for="s_price" class="form-label">S. Price</label>
+                    <input type="number" step="0.001" id="s_price" name="s_price" class="form-control" value="<?= htmlspecialchars($s_price) ?>">
+                </div>
+
+                <!-- Barcode -->
+                <div class="col-md-3">
+                    <label for="bar_code" class="form-label">Bar Code</label>
+                    <input type="text" id="bar_code" name="bar_code" class="form-control" value="<?= htmlspecialchars($bar_code) ?>">
                 </div>
 
                 <!-- Buttons -->
-                <div class="col-12 mt-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-plus"></i> Add Item
-                    </button>
-                    <a href="item_master.php?mode=<?= $mode ?>" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Item Master
-                    </a>
-                </div>
+                <div class="action-btn mb-3 d-flex gap-2">
+    <button type="submit" class="btn btn-success">
+        <i class="fas fa-plus"></i> Add Item
+    </button>
+    <a href="item_master.php?mode=<?= $mode ?>" class="btn btn-secondary ms-auto">
+        <i class="fas fa-arrow-left"></i> Back to Item Master
+    </a>
+</div>
             </form>
         </div>
 

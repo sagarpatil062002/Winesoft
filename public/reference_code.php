@@ -19,34 +19,19 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch class descriptions from tblclass
-$classDescriptions = [];
-$classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
-$classResult = $conn->query($classQuery);
-while ($row = $classResult->fetch_assoc()) {
-    $classDescriptions[$row['SGROUP']] = $row['DESC'];
-}
-
-// Fetch subclass descriptions from tblsubclass
-$subclassDescriptions = [];
-$subclassQuery = "SELECT ITEM_GROUP, `DESC`, LIQ_FLAG FROM tblsubclass";
-$subclassResult = $conn->query($subclassQuery);
-while ($row = $subclassResult->fetch_assoc()) {
-    $subclassDescriptions[$row['ITEM_GROUP']][$row['LIQ_FLAG']] = $row['DESC'];
-}
-
-// Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+// Fetch reference codes from tblitemmaster
+$query = "SELECT CODE, DETAILS, DETAILS2, REF_CODE 
           FROM tblitemmaster
           WHERE LIQ_FLAG = ?";
 $params = [$mode];
 $types = "s";
 
 if ($search !== '') {
-    $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
+    $query .= " AND (DETAILS LIKE ? OR CODE LIKE ? OR REF_CODE LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
-    $types .= "ss";
+    $params[] = "%$search%";
+    $types .= "sss";
 }
 
 $query .= " ORDER BY DETAILS ASC";
@@ -57,28 +42,17 @@ $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
-
-// Function to get class description
-function getClassDescription($code, $classDescriptions) {
-    return $classDescriptions[$code] ?? $code;
-}
-
-// Function to get subclass description
-function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
-    return $subclassDescriptions[$itemGroup][$liqFlag] ?? $itemGroup;
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Excise Item Master - WineSoft</title>
+  <title>Reference Code Master - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-
 </head>
 <body>
 <div class="dashboard-container">
@@ -88,7 +62,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Excise Item Master</h3>
+      <h3 class="mb-4">Reference Code Master</h3>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -102,10 +76,6 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
              class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
             Country Liquor
           </a>
-          <a href="?mode=O&search=<?= urlencode($search) ?>"
-             class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
-            Others
-          </a>
         </div>
       </div>
 
@@ -114,7 +84,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
         <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
         <div class="input-group">
           <input type="text" name="search" class="form-control"
-                 placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
+                 placeholder="Search by item name, code or ref. code..." value="<?= htmlspecialchars($search); ?>">
           <button type="submit" class="btn btn-primary">
             <i class="fas fa-search"></i> Find
           </button>
@@ -124,44 +94,29 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
         </div>
       </form>
 
-      <!-- Add Item Button -->
-      <div class="action-btn mb-3 d-flex gap-2">
-        <a href="add_item.php" class="btn btn-primary">
-          <i class="fas fa-plus"></i> New
-        </a>
-        <a href="dashboard.php" class="btn btn-secondary ms-auto">
-          <i class="fas fa-sign-out-alt"></i> Exit
-        </a>
-      </div>
 
-      <!-- Items Table -->
+      <!-- Reference Codes Table -->
       <div class="table-container">
         <table class="styled-table table-striped">
           <thead class="table-header">
             <tr>
               <th>Code</th>
-              <th>New Code</th>
-              <th>Item Name</th>
-              <th>Class</th>
-              <th>Sub Class</th>
-              <th>P. Price</th>
-              <th>B. Price</th>
+              <th>Item Description</th>
+              <th>Category</th>
+              <th>Reference Code</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
           <?php if (!empty($items)): ?>
-            <?php foreach ($items as $item): ?>
+            <?php foreach ($items as $index => $item): ?>
               <tr>
-                <td><?= htmlspecialchars($item['CODE']); ?></td>
-                <td><?= htmlspecialchars($item['NEW_CODE']); ?></td>
+                <td><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                <td><?= htmlspecialchars(getClassDescription($item['CLASS'], $classDescriptions)); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-                <td><?= number_format($item['PPRICE'], 3); ?></td>
-                <td><?= number_format($item['BPRICE'], 3); ?></td>
+                <td><?= htmlspecialchars($item['REF_CODE']); ?></td>
                 <td>
-                  <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
+                  <a href="edit_reference_code.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
                      class="btn btn-sm btn-primary" title="Edit">
                     <i class="fas fa-edit"></i> Edit
                   </a>
@@ -170,7 +125,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="9" class="text-center text-muted">No items found.</td>
+              <td colspan="5" class="text-center text-muted">No reference codes found.</td>
             </tr>
           <?php endif; ?>
           </tbody>

@@ -23,7 +23,6 @@ if(!isset($_SESSION)) session_start();
     </style>
 </head>
 <body>
-    <!-- Mobile Menu Toggle Button -->
     <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <span class="material-symbols-rounded">menu</span>
     </button>
@@ -36,33 +35,75 @@ if(!isset($_SESSION)) session_start();
             </div>
         </div>
         <ul class="nav-list">
+            <li class="nav-item">
+                <a href="dashboard.php" class="nav-link">
+                    <span class="nav-icon material-symbols-rounded">dashboard</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+            </li>
             <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
-                    <span class="nav-icon material-symbols-rounded">layers</span>
+                    <span class="nav-icon material-symbols-rounded">database</span>
                     <span class="nav-label">Masters</span>
                     <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
                     <li class="nav-item">
                         <a href="item_master.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">inventory_2</span>
+                            <span class="nav-icon material-symbols-rounded">liquor</span>
                             <span class="nav-label">Item Master</span>
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="barcode_master.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">barcode</span>
+                            <span class="nav-label">Barcode Master</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="brand_category.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">category</span>
+                            <span class="nav-icon material-symbols-rounded">branding_watermark</span>
                             <span class="nav-label">Brand Category</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="item_sequence.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">sort</span>
+                            <span class="nav-icon material-symbols-rounded">format_list_numbered</span>
                             <span class="nav-label">Item Sequence</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="reference_code.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">code</span>
+                            <span class="nav-label">Reference Code</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="item_reorder.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">low_priority</span>
+                            <span class="nav-label">Item Reorder</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="permit_master.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">verified</span>
+                            <span class="nav-label">Permit Master</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="itemwise_price.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">price_check</span>
+                            <span class="nav-label">ItemWise Price</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+    <a href="supplier_master.php" class="nav-link">
+        <span class="nav-icon material-symbols-rounded">local_shipping</span>
+        <span class="nav-label">Supplier Master</span>
+    </a>
+</li>
                 </ul>
-            </li>
+            </li>    
             <li class="nav-item">
                 <a href="#" class="nav-link">
                     <span class="nav-icon material-symbols-rounded">receipt_long</span>
@@ -87,14 +128,7 @@ if(!isset($_SESSION)) session_start();
                     <span class="nav-label">Utilities</span>
                 </a>
             </li>
-            <li class="nav-item user-profile">
-                <a href="#" class="nav-link">
-                    <span class="nav-icon material-symbols-rounded">account_circle</span>
-                    <span class="nav-label">
-                        <?php echo isset($_SESSION['username']) ? htmlspecialchars($_SESSION['username']) : 'Guest'; ?>
-                    </span>
-                </a>
-            </li>
+            
         </ul>
     </nav>
     

@@ -19,24 +19,8 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch class descriptions from tblclass
-$classDescriptions = [];
-$classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
-$classResult = $conn->query($classQuery);
-while ($row = $classResult->fetch_assoc()) {
-    $classDescriptions[$row['SGROUP']] = $row['DESC'];
-}
-
-// Fetch subclass descriptions from tblsubclass
-$subclassDescriptions = [];
-$subclassQuery = "SELECT ITEM_GROUP, `DESC`, LIQ_FLAG FROM tblsubclass";
-$subclassResult = $conn->query($subclassQuery);
-while ($row = $subclassResult->fetch_assoc()) {
-    $subclassDescriptions[$row['ITEM_GROUP']][$row['LIQ_FLAG']] = $row['DESC'];
-}
-
-// Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+// Fetch items from tblitemmaster with reorder levels
+$query = "SELECT CODE, DETAILS, DETAILS2, REORDER, GREORDER 
           FROM tblitemmaster
           WHERE LIQ_FLAG = ?";
 $params = [$mode];
@@ -58,14 +42,23 @@ $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Function to get class description
-function getClassDescription($code, $classDescriptions) {
-    return $classDescriptions[$code] ?? $code;
-}
-
-// Function to get subclass description
-function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
-    return $subclassDescriptions[$itemGroup][$liqFlag] ?? $itemGroup;
+// Handle form submission for updating reorder levels
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
+    $code = $_POST['code'];
+    $reorder = $_POST['reorder'];
+    $greorder = $_POST['greorder'];
+    
+    $update_stmt = $conn->prepare("UPDATE tblitemmaster SET REORDER = ?, GREORDER = ? WHERE CODE = ?");
+    $update_stmt->bind_param("iis", $reorder, $greorder, $code);
+    
+    if ($update_stmt->execute()) {
+        $_SESSION['success_message'] = "Reorder levels updated successfully!";
+        header("Location: item_reorder_level.php?mode=$mode");
+        exit;
+    } else {
+        $error = "Error updating reorder levels: " . $conn->error;
+    }
+    $update_stmt->close();
 }
 ?>
 <!DOCTYPE html>
@@ -73,12 +66,11 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Excise Item Master - WineSoft</title>
+  <title>Item Reorder Level - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-
 </head>
 <body>
 <div class="dashboard-container">
@@ -88,7 +80,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Excise Item Master</h3>
+      <h3 class="mb-4">Item Reorder Level</h3>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -116,53 +108,69 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
           <input type="text" name="search" class="form-control"
                  placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
           <button type="submit" class="btn btn-primary">
-            <i class="fas fa-search"></i> Find
+            <i class="fas fa-search"></i> Search
           </button>
           <?php if ($search !== ''): ?>
-            <a href="?mode=<?= $mode ?>" class="btn btn-secondary">Clear</a>
+            <a href="?mode=<?= $mode ?>" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Clear
+            </a>
           <?php endif; ?>
         </div>
       </form>
 
-      <!-- Add Item Button -->
-      <div class="action-btn mb-3 d-flex gap-2">
-        <a href="add_item.php" class="btn btn-primary">
-          <i class="fas fa-plus"></i> New
-        </a>
-        <a href="dashboard.php" class="btn btn-secondary ms-auto">
-          <i class="fas fa-sign-out-alt"></i> Exit
-        </a>
-      </div>
+      <!-- Success/Error Messages -->
+      <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success mb-3"><?= $_SESSION['success_message'] ?></div>
+        <?php unset($_SESSION['success_message']); ?>
+      <?php endif; ?>
+      
+      <?php if (isset($error)): ?>
+        <div class="alert alert-danger mb-3"><?= htmlspecialchars($error) ?></div>
+      <?php endif; ?>
 
       <!-- Items Table -->
       <div class="table-container">
         <table class="styled-table table-striped">
           <thead class="table-header">
             <tr>
-              <th>Code</th>
-              <th>New Code</th>
-              <th>Item Name</th>
-              <th>Class</th>
-              <th>Sub Class</th>
-              <th>P. Price</th>
-              <th>B. Price</th>
+              <th>#</th>
+              <th>Item Description</th>
+              <th>Category</th>
+              <th>Reorder Level</th>
+              <th>Global Reorder</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
           <?php if (!empty($items)): ?>
-            <?php foreach ($items as $item): ?>
+            <?php foreach ($items as $index => $item): ?>
               <tr>
-                <td><?= htmlspecialchars($item['CODE']); ?></td>
-                <td><?= htmlspecialchars($item['NEW_CODE']); ?></td>
+                <td><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                <td><?= htmlspecialchars(getClassDescription($item['CLASS'], $classDescriptions)); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-                <td><?= number_format($item['PPRICE'], 3); ?></td>
-                <td><?= number_format($item['BPRICE'], 3); ?></td>
                 <td>
-                  <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
-                     class="btn btn-sm btn-primary" title="Edit">
+                  <form method="POST" class="d-flex gap-2 align-items-center">
+                    <input type="hidden" name="code" value="<?= htmlspecialchars($item['CODE']) ?>">
+                    <input type="number" name="reorder" class="form-control form-control-sm" 
+                           value="<?= htmlspecialchars($item['REORDER']) ?>" min="0" style="width: 80px;">
+                    <button type="submit" name="update_reorder" class="btn btn-sm btn-primary">
+                      <i class="fas fa-save"></i> Save
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  <form method="POST" class="d-flex gap-2 align-items-center">
+                    <input type="hidden" name="code" value="<?= htmlspecialchars($item['CODE']) ?>">
+                    <input type="number" name="greorder" class="form-control form-control-sm" 
+                           value="<?= htmlspecialchars($item['GREORDER']) ?>" min="0" style="width: 80px;">
+                    <button type="submit" name="update_reorder" class="btn btn-sm btn-primary">
+                      <i class="fas fa-save"></i> Save
+                    </button>
+                  </form>
+                </td>
+                <td>
+                  <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>" 
+                     class="btn btn-sm btn-primary" title="Edit Item">
                     <i class="fas fa-edit"></i> Edit
                   </a>
                 </td>
@@ -170,7 +178,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="9" class="text-center text-muted">No items found.</td>
+              <td colspan="6" class="text-center text-muted">No items found.</td>
             </tr>
           <?php endif; ?>
           </tbody>

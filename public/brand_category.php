@@ -17,7 +17,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
 // Fetch data
-$stmt = $conn->prepare("SELECT `GROUP`, `CLASS`, `DESC`, `CC` 
+$stmt = $conn->prepare("SELECT `ITEM_GROUP`, `CLASS`, `DESC`, `CC` 
                         FROM tblsubclass 
                         WHERE LIQ_FLAG = ? 
                         ORDER BY SRNO ASC");
@@ -72,7 +72,7 @@ $stmt->close();
                         <?php if (!empty($categories)): ?>
                             <?php foreach ($categories as $cat): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($cat['GROUP']); ?></td>
+                                    <td><?php echo htmlspecialchars($cat['ITEM_GROUP']); ?></td>
                                     <td><?php echo htmlspecialchars($cat['CLASS']); ?></td>
                                     <td><?php echo htmlspecialchars($cat['DESC']); ?></td>
                                     <td><?php echo htmlspecialchars($cat['CC']); ?></td>

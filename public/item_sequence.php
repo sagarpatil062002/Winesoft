@@ -60,54 +60,6 @@ $stmt->close();
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-
-  <style>
-      .btn-primary {
-          background-color: #006BBB;
-          border-color: #006BBB;
-      }
-      .btn-primary:hover {
-          background-color: #30A0E0;
-          border-color: #30A0E0;
-      }
-      .btn-outline-primary {
-          color: #006BBB;
-          border-color: #006BBB;
-      }
-      .btn-outline-primary:hover {
-          background-color: #006BBB;
-          color: #fff;
-      }
-      .mode-active, .sequence-active {
-          background-color: #006BBB !important;
-          color: #fff !important;
-          border-color: #006BBB !important;
-      }
-      .table-header {
-          background-color: #FFC872 !important;
-          color: #006BBB !important;
-      }
-      .save-sequence {
-          background-color: #006BBB;
-          color: #fff;
-          border: none;
-      }
-      .save-sequence:hover {
-          background-color: #30A0E0;
-          color: #fff;
-      }
-      @media (max-width: 768px) {
-          .table-container {
-              overflow-x: auto;
-          }
-          table {
-              font-size: 14px;
-          }
-          .btn, .input-group .form-control {
-              font-size: 14px;
-          }
-      }
-  </style>
 </head>
 <body>
 <div class="dashboard-container">
