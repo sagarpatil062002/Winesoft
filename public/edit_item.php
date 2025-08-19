@@ -58,6 +58,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $item_group = $_POST['item_group'];
     $pprice = $_POST['pprice'];
     $bprice = $_POST['bprice'];
+    $bottles = $_POST['bottles'];
+    $gob = $_POST['gob'];
+    $ob = $_POST['ob'];
+    $ob2 = $_POST['ob2'];
+    $mprice = $_POST['mprice'];
+    $barcode = $_POST['barcode'];
 
     $stmt = $conn->prepare("UPDATE tblitemmaster SET 
                           NEW_CODE = ?, 
@@ -67,9 +73,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           SUB_CLASS = ?, 
                           ITEM_GROUP = ?,
                           PPRICE = ?, 
-                          BPRICE = ? 
+                          BPRICE = ?,
+                          BOTTLES = ?,
+                          GOB = ?,
+                          OB = ?,
+                          OB2 = ?,
+                          MPRICE = ?,
+                          BARCODE = ?
                           WHERE CODE = ?");
-    $stmt->bind_param("ssssssdds", $new_code, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $item_code);
+    $stmt->bind_param("ssssssdddddddds", $new_code, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $bottles, $gob, $ob, $ob2, $mprice, $barcode, $item_code);
     
     if ($stmt->execute()) {
         $_SESSION['success_message'] = "Item updated successfully!";
@@ -172,6 +184,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
 
+            <!-- New Fields: Bits/Case, Op.Stk(G), Op.Stk(C1), Op.Stk(C2), MRP Price, Bar Code -->
+            <div class="row mb-3">
+              <div class="col-md-3 col-6">
+                <label for="bottles" class="form-label">Bits/Case</label>
+                <input type="number" step="0.001" class="form-control" id="bottles" name="bottles" value="<?= htmlspecialchars($item['BOTTLES'] ?? '') ?>">
+              </div>
+              <div class="col-md-3 col-6">
+                <label for="gob" class="form-label">Op.Stk(G)</label>
+                <input type="number" step="0.001" class="form-control" id="gob" name="gob" value="<?= htmlspecialchars($item['GOB'] ?? '') ?>">
+              </div>
+              <div class="col-md-3 col-6">
+                <label for="ob" class="form-label">Op.Stk(C1)</label>
+                <input type="number" step="0.001" class="form-control" id="ob" name="ob" value="<?= htmlspecialchars($item['OB'] ?? '') ?>">
+              </div>
+              <div class="col-md-3 col-6">
+                <label for="ob2" class="form-label">Op.Stk(C2)</label>
+                <input type="number" step="0.001" class="form-control" id="ob2" name="ob2" value="<?= htmlspecialchars($item['OB2'] ?? '') ?>">
+              </div>
+            </div>
+
             <div class="row mb-3">
               <div class="col-md-6 col-12">
                 <label for="pprice" class="form-label">P. Price</label>
@@ -180,6 +212,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="col-md-6 col-12">
                 <label for="bprice" class="form-label">B. Price</label>
                 <input type="number" step="0.001" class="form-control" id="bprice" name="bprice" value="<?= htmlspecialchars($item['BPRICE']) ?>" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6 col-12">
+                <label for="mprice" class="form-label">MRP Price</label>
+                <input type="number" step="0.001" class="form-control" id="mprice" name="mprice" value="<?= htmlspecialchars($item['MPRICE'] ?? '') ?>">
+              </div>
+              <div class="col-md-6 col-12">
+                <label for="barcode" class="form-label">Bar Code</label>
+                <input type="text" class="form-control" id="barcode" name="barcode" value="<?= htmlspecialchars($item['BARCODE'] ?? '') ?>">
               </div>
             </div>
 

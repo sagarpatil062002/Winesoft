@@ -101,6 +101,24 @@ if(!isset($_SESSION)) session_start();
         <span class="nav-icon material-symbols-rounded">local_shipping</span>
         <span class="nav-label">Supplier Master</span>
     </a>
+    <li class="nav-item">
+    <a href="ledger_master.php" class="nav-link">
+        <span class="nav-icon material-symbols-rounded">account_balance</span>
+        <span class="nav-label">Ledger Master</span>
+    </a>
+</li>
+</li>
+<li class="nav-item">
+    <a href="purchase_price.php" class="nav-link">
+        <span class="nav-icon material-symbols-rounded">payments</span>
+        <span class="nav-label">Purchase Price</span>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="opening_balance.php" class="nav-link">
+        <span class="nav-icon material-symbols-rounded">account_balance</span>
+        <span class="nav-label">Opening Balance</span>
+    </a>
 </li>
                 </ul>
             </li>    
