@@ -11,14 +11,14 @@ if(!isset($_SESSION)) session_start();
     <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
     <style>
-        /* Add this CSS to ensure only one arrow appears */
+        /* Ensure only one arrow appears */
         .dropdown-toggle .dropdown-arrow {
             margin-left: auto;
             transition: transform 0.3s ease;
         }
         /* Hide any duplicate arrows */
         .nav-link .material-symbols-rounded:not(.nav-icon):not(.dropdown-arrow) {
-            display: none;
+            display: none !important;
         }
     </style>
 </head>
@@ -41,6 +41,8 @@ if(!isset($_SESSION)) session_start();
                     <span class="nav-label">Dashboard</span>
                 </a>
             </li>
+
+            <!-- Masters Dropdown -->
             <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">database</span>
@@ -48,105 +50,44 @@ if(!isset($_SESSION)) session_start();
                     <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item">
-                        <a href="item_master.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">liquor</span>
-                            <span class="nav-label">Item Master</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="barcode_master.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">barcode</span>
-                            <span class="nav-label">Barcode Master</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="brand_category.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">branding_watermark</span>
-                            <span class="nav-label">Brand Category</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="item_sequence.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">format_list_numbered</span>
-                            <span class="nav-label">Item Sequence</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="reference_code.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">code</span>
-                            <span class="nav-label">Reference Code</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="item_reorder.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">low_priority</span>
-                            <span class="nav-label">Item Reorder</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="permit_master.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">verified</span>
-                            <span class="nav-label">Permit Master</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="itemwise_price.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">price_check</span>
-                            <span class="nav-label">ItemWise Price</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-    <a href="supplier_master.php" class="nav-link">
-        <span class="nav-icon material-symbols-rounded">local_shipping</span>
-        <span class="nav-label">Supplier Master</span>
-    </a>
-    <li class="nav-item">
-    <a href="ledger_master.php" class="nav-link">
-        <span class="nav-icon material-symbols-rounded">account_balance</span>
-        <span class="nav-label">Ledger Master</span>
-    </a>
-</li>
-</li>
-<li class="nav-item">
-    <a href="purchase_price.php" class="nav-link">
-        <span class="nav-icon material-symbols-rounded">payments</span>
-        <span class="nav-label">Purchase Price</span>
-    </a>
-</li>
-<li class="nav-item">
-    <a href="opening_balance.php" class="nav-link">
-        <span class="nav-icon material-symbols-rounded">account_balance</span>
-        <span class="nav-label">Opening Balance</span>
-    </a>
-</li>
+                    <li class="nav-item"><a href="item_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">liquor</span><span class="nav-label">Item Master</span></a></li>
+                    <li class="nav-item"><a href="barcode_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">barcode</span><span class="nav-label">Barcode Master</span></a></li>
+                    <li class="nav-item"><a href="item_sequence.php" class="nav-link"><span class="nav-icon material-symbols-rounded">format_list_numbered</span><span class="nav-label">Item Sequence</span></a></li>
+                    <li class="nav-item"><a href="item_reorder.php" class="nav-link"><span class="nav-icon material-symbols-rounded">low_priority</span><span class="nav-label">Item Reorder</span></a></li>
+                    <li class="nav-item"><a href="reference_code.php" class="nav-link"><span class="nav-icon material-symbols-rounded">code</span><span class="nav-label">Reference Code</span></a></li>
+                    <li class="nav-item"><a href="customer_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt_long</span><span class="nav-label">Customer Price</span></a></li>
+                    <li class="nav-item"><a href="supplier_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_shipping</span><span class="nav-label">Supplier Master</span></a></li>
+                    <li class="nav-item"><a href="ledger_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Ledger Master</span></a></li>
+                    <li class="nav-item"><a href="permit_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">verified</span><span class="nav-label">Permit Master</span></a></li>
+                    <li class="nav-item"><a href="brand_category.php" class="nav-link"><span class="nav-icon material-symbols-rounded">branding_watermark</span><span class="nav-label">Brand Category</span></a></li>
+                    <li class="nav-item"><a href="opening_balance.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Opening Balance</span></a></li>
+                    <li class="nav-item"><a href="itemwise_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_check</span><span class="nav-label">ItemWise Price</span></a></li>
+                    <li class="nav-item"><a href="purchase_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">payments</span><span class="nav-label">Purchase Price</span></a></li>
+                    
                 </ul>
             </li>    
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <span class="nav-icon material-symbols-rounded">receipt_long</span>
-                    <span class="nav-label">Transaction</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <span class="nav-icon material-symbols-rounded">point_of_sale</span>
-                    <span class="nav-label">Registers</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
-                    <span class="nav-icon material-symbols-rounded">summarize</span>
-                    <span class="nav-label">Reports</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="#" class="nav-link">
+
+            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt_long</span><span class="nav-label">Transaction</span></a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
+            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">summarize</span><span class="nav-label">Reports</span></a></li>
+
+            <!-- Utilities Dropdown -->
+            <li class="nav-item has-dropdown">
+                <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">settings</span>
                     <span class="nav-label">Utilities</span>
+                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
+                <ul class="dropdown">
+                    <li class="nav-item has-dropdown">
+                        <a href="brandwise_report.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">analytics</span>
+                            <span class="nav-label">Brandwise Report</span>
+                        </a>
+                        
+                    </li>
+                </ul>
             </li>
-            
         </ul>
     </nav>
     
@@ -154,56 +95,45 @@ if(!isset($_SESSION)) session_start();
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-            const dropdownToggle = document.querySelector('.has-dropdown .dropdown-toggle');
-            
+            const dropdownToggles = document.querySelectorAll('.has-dropdown > .dropdown-toggle');
+
             // Mobile menu toggle
             mobileMenuToggle.addEventListener('click', function(e) {
                 e.stopPropagation();
                 sidebar.classList.toggle('active');
                 document.body.classList.toggle('sidebar-active');
             });
-            
-            // Dropdown functionality
-            if (dropdownToggle) {
-                dropdownToggle.addEventListener('click', function(e) {
+
+            // Loop through all dropdown toggles
+            dropdownToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     const parentItem = this.closest('.has-dropdown');
                     parentItem.classList.toggle('active');
-                    
-                    // Rotate the single arrow icon
+
+                    // Rotate arrow
                     const arrow = this.querySelector('.dropdown-arrow');
                     if (arrow) {
                         arrow.style.transform = parentItem.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0)';
                     }
                 });
-            }
-            
-            // Close dropdown when clicking outside
+            });
+
+            // Close sidebar on outside click (mobile)
             document.addEventListener('click', function() {
-                const dropdown = document.querySelector('.has-dropdown');
-                if (dropdown && dropdown.classList.contains('active')) {
-                    dropdown.classList.remove('active');
-                    const arrow = dropdown.querySelector('.dropdown-arrow');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(0)';
-                    }
-                }
-                
-                // Also close sidebar when clicking outside on mobile
                 if (window.innerWidth <= 768 && sidebar.classList.contains('active')) {
                     sidebar.classList.remove('active');
                     document.body.classList.remove('sidebar-active');
                 }
             });
-            
-            // Prevent dropdown close when clicking inside it
-            const dropdown = document.querySelector('.dropdown');
-            if (dropdown) {
+
+            // Prevent dropdown from closing when clicking inside
+            document.querySelectorAll('.dropdown').forEach(dropdown => {
                 dropdown.addEventListener('click', function(e) {
                     e.stopPropagation();
                 });
-            }
+            });
         });
     </script>
 </body>

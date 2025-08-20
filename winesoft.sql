@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 18, 2025 at 04:29 PM
+-- Generation Time: Aug 20, 2025 at 07:36 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -96,6 +96,74 @@ INSERT INTO `tblcompany` (`CompID`, `COMP_NAME`, `CF_LINE`, `CS_LINE`, `FIN_YEAR
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tblcustomerprices`
+--
+
+CREATE TABLE `tblcustomerprices` (
+  `CustPID` bigint(20) NOT NULL,
+  `LCode` int(11) DEFAULT NULL,
+  `Code` char(4) DEFAULT NULL,
+  `WPrice` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblcustomerprices`
+--
+
+INSERT INTO `tblcustomerprices` (`CustPID`, `LCode`, `Code`, `WPrice`) VALUES
+(450, 159, '10W3', 100.00),
+(451, 161, '8PWD', 1000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldrydays`
+--
+
+CREATE TABLE `tbldrydays` (
+  `id` int(11) NOT NULL,
+  `DDATE` datetime DEFAULT NULL,
+  `DDESC` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbldrydays`
+--
+
+INSERT INTO `tbldrydays` (`id`, `DDATE`, `DDESC`) VALUES
+(1, '2025-01-14 00:00:00', 'Makar Sankranti'),
+(2, '2025-01-26 00:00:00', 'Republic Day'),
+(3, '2025-01-30 00:00:00', 'Shaheed Diwas'),
+(4, '2025-02-19 00:00:00', 'Chhatrapati Shivaji Maharaj Jayanti'),
+(5, '2025-02-23 00:00:00', 'Swami Dayanand Saraswati Jayanti'),
+(6, '2025-02-26 00:00:00', 'Shivratri'),
+(7, '2025-03-14 00:00:00', 'Holi'),
+(8, '2025-03-31 00:00:00', 'Eid ul-Fitr'),
+(9, '2025-04-06 00:00:00', 'Ram Navami'),
+(10, '2025-04-10 00:00:00', 'Mahavir Jayanti'),
+(11, '2025-04-14 00:00:00', 'Ambedkar Jayanti'),
+(12, '2025-04-18 00:00:00', 'Good Friday'),
+(13, '2025-05-01 00:00:00', 'Maharashtra Day'),
+(14, '2025-05-12 00:00:00', 'Buddha Purnima'),
+(15, '2025-06-07 00:00:00', 'Bakrid, Eid-al-Adha'),
+(16, '2025-07-06 00:00:00', 'Ashadi Ekadashi, Muharram'),
+(17, '2025-07-10 00:00:00', 'Guru Purnima'),
+(18, '2025-08-15 00:00:00', 'Independence Day'),
+(19, '2025-08-16 00:00:00', 'Janmashthami'),
+(20, '2025-08-27 00:00:00', 'Ganesh Chaturthi'),
+(21, '2025-09-05 00:00:00', 'Eid-e-Milad'),
+(22, '2025-09-06 00:00:00', 'Anant Chaturdashi'),
+(23, '2025-10-02 00:00:00', 'Gandhi Jayanti and Dussehra'),
+(24, '2025-10-07 00:00:00', 'Maharishi Valmiki Jayanti'),
+(25, '2025-10-08 00:00:00', 'Prohibition Week'),
+(26, '2025-11-01 00:00:00', 'Kartiki Ekadashi'),
+(27, '2025-11-05 00:00:00', 'Guru Nanak Jayanti'),
+(28, '2025-11-24 00:00:00', 'Guru Tegh Bahadur Shaheedi Diwas'),
+(29, '2025-12-25 00:00:00', 'Christmas Day');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tblemployee`
 --
 
@@ -109,6 +177,70 @@ CREATE TABLE `tblemployee` (
   `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
   `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblgheads`
+--
+
+CREATE TABLE `tblgheads` (
+  `GCODE` int(11) NOT NULL,
+  `GHEAD` varchar(30) DEFAULT NULL,
+  `LEVELNO` int(11) DEFAULT NULL,
+  `PARENTID` int(11) DEFAULT NULL,
+  `SERIAL_NO` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblgheads`
+--
+
+INSERT INTO `tblgheads` (`GCODE`, `GHEAD`, `LEVELNO`, `PARENTID`, `SERIAL_NO`) VALUES
+(1, 'Bank Accounts', 3, 7, 1),
+(2, 'Bank OCC A/c', 3, 24, 2),
+(3, 'Bank OD A/c', 3, 24, 3),
+(4, 'Branch / Divisions', NULL, NULL, 5),
+(5, 'Capital Account', 2, 38, 6),
+(6, 'Cash-in-hand', 3, 7, 7),
+(7, 'Current Assets', 2, 37, 8),
+(8, 'Current Liabilities', 2, 38, 9),
+(9, 'Deposits (Asset)', 2, 7, 10),
+(10, 'Direct Expenses', 2, 40, 11),
+(11, 'Direct Incomes', 2, 39, 12),
+(12, 'Duties & Taxes', NULL, NULL, 13),
+(13, 'Expenses (Direct)', NULL, 45, 15),
+(14, 'Expenses (Indirect)', NULL, 45, 16),
+(15, 'Fixed Assets', 2, 0, 17),
+(16, 'Income (Direct)', NULL, 45, 18),
+(17, 'Income (Indirect)', NULL, 45, 19),
+(18, 'Indirect Expenses', 2, 40, 21),
+(19, 'Indirect Incomes', 2, 39, 22),
+(20, 'Investments', 2, 37, 23),
+(21, 'Loans & Advances (Asset)', 2, 37, 25),
+(22, 'Loans (Liability)', 2, NULL, 26),
+(23, 'Misc. Expenses (ASSET)', NULL, NULL, 27),
+(24, 'Provisions', NULL, NULL, 28),
+(25, 'Purchase Accounts', 2, 45, 29),
+(26, 'Reserves & Surplus', 2, 38, 31),
+(27, 'Retained Earnings', NULL, NULL, 32),
+(28, 'Sales Accounts', 2, 45, 34),
+(29, 'Secured Loans', 2, 38, 35),
+(30, 'Stock-in-hand', 2, 7, 37),
+(31, 'Sundry Creditors', 3, 8, 38),
+(32, 'Sundry Debtors', 2, 7, 39),
+(33, 'Suspense A/c', NULL, NULL, 40),
+(34, 'Unsecured Loans', 2, 38, 43),
+(35, 'Assets', 1, 0, 4),
+(36, 'Liabilities', 1, 0, 24),
+(37, 'Incomes', 1, 0, 20),
+(38, 'Expenditure', 1, 0, 14),
+(39, 'Trading Incomes', 1, 0, 42),
+(40, 'Trading Expenditure', 1, 0, 41),
+(41, 'Purchases', 3, 27, 30),
+(42, 'Sales', 3, 30, 33),
+(43, 'Staff Welfare', NULL, 10, 36),
+(44, 'Revenue Accounts', 2, NULL, 44);
 
 -- --------------------------------------------------------
 
@@ -164,8 +296,8 @@ INSERT INTO `tblitemmaster` (`CODE`, `NEW_CODE`, `DETAILS`, `DETAILS2`, `BOTTLES
 ('0BWF', NULL, 'B.P. 150', '150 ML', 60, 'W', 'F', 'A', 0.000, 0.000, NULL, 79, 0.000, NULL, NULL, 150, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('0LB7', NULL, 'LION S BEER ', '650 F', 12, 'B', '7', 'C', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('10W1', NULL, '100 PIPERS', 'QUART', 12, 'W', '1', 'A', 11134.000, 2250.000, NULL, 2500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('10W2', NULL, '100 PIPERS', 'PINT', 24, 'W', '2', 'A', 9900.000, 1125.000, NULL, 1250, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('10W3', NULL, '100 PIPERS', 'NIP', 48, 'W', '3', 'A', 17662.000, 565.000, NULL, 660, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
+('10W2', '', '100 PIPERS', 'PINT', 24, 'W', '2', 'A', 9900.000, 1125.000, NULL, 1250, 0.000, NULL, NULL, 375, '0', 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, 0),
+('10W3', NULL, '100 PIPERS', 'NIP', 48, 'W', '3', 'A', 17662.000, 565.000, NULL, 660, NULL, NULL, NULL, 180, '2432003817039', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('10WI', NULL, '100 PIPERS', '60 ML', 150, 'W', 'I', 'A', 170.000, 1.000, NULL, 1, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('12V4', NULL, 'CONOSUR TOCORNAL MERLOT', 'WINE QUART', 12, 'V', '4', 'D', 0.000, 0.000, NULL, 1560, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('1AW1', NULL, 'GLEN GRANT', 'QUART', 12, 'W', '1', 'A', 0.000, 4830.000, NULL, 4830, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
@@ -365,7 +497,92 @@ INSERT INTO `tblitemmaster` (`CODE`, `NEW_CODE`, `DETAILS`, `DETAILS2`, `BOTTLES
 ('BSB7', NULL, 'BOMBAY STRONG', '650 F', 12, 'B', '7', 'C', 448.000, 40.000, 0.000, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 407, NULL, NULL, NULL),
 ('BSG1', NULL, 'BOMBAY SAPPHIRE', 'QUART', 12, 'G', '1', 'A', 14348.000, 3200.000, NULL, 2450, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
 ('BSG3', NULL, 'BOMBAY SAPPHIRE', 'NIP', 48, 'G', '3', 'A', 0.000, 0.000, NULL, 1250, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BSGI', NULL, 'BOMBAY SAPPHIRE', '60 ML', 120, 'G', 'I', 'A', 15982.000, 172.000, NULL, 0, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL);
+('BSGI', NULL, 'BOMBAY SAPPHIRE', '60 ML', 120, 'G', 'I', 'A', 15982.000, 172.000, NULL, 0, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
+('NPL1', '', 'NAGPUR', 'QUART', NULL, 'L', 'Q', '1', 0.000, 0.000, 0.000, 0, 0.000, NULL, NULL, NULL, '', 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'C', NULL, NULL, NULL, NULL, 0),
+('SSL1', NULL, 'SANTRA', 'QUART', 12, 'L', '9', '1', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'C', NULL, NULL, NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblitemopbal`
+--
+
+CREATE TABLE `tblitemopbal` (
+  `CODE` varchar(4) NOT NULL,
+  `OB` decimal(18,0) DEFAULT NULL,
+  `OB2` decimal(18,0) DEFAULT NULL,
+  `GOB` decimal(18,0) DEFAULT NULL,
+  `SHOP_MODE` char(8) NOT NULL,
+  `OBDate` datetime DEFAULT NULL,
+  `ItemRate` decimal(18,2) DEFAULT NULL,
+  `WPRICE` decimal(18,2) DEFAULT NULL,
+  `PPRICE` decimal(18,2) DEFAULT NULL,
+  `Liq_Flag` char(1) DEFAULT NULL,
+  `PPRICE2` decimal(18,2) DEFAULT NULL,
+  `serial_no` decimal(18,0) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbllheads`
+--
+
+CREATE TABLE `tbllheads` (
+  `LCODE` int(11) NOT NULL,
+  `LHEAD` varchar(30) DEFAULT NULL,
+  `GCODE` int(11) DEFAULT NULL,
+  `OP_BAL` double DEFAULT NULL,
+  `DRCR` varchar(2) DEFAULT NULL,
+  `REF_CODE` varchar(7) DEFAULT NULL,
+  `SERIAL_NO` double DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbllheads`
+--
+
+INSERT INTO `tbllheads` (`LCODE`, `LHEAD`, `GCODE`, `OP_BAL`, `DRCR`, `REF_CODE`, `SERIAL_NO`) VALUES
+(123, 'AMAR TRADERS', 33, NULL, 'Dr', 'AMAR', NULL),
+(124, 'ANKUSH TRADERS', 33, NULL, 'Dr', 'ANKU', NULL),
+(125, 'ASHOK TRADERS', 33, NULL, 'Dr', 'ASHO', NULL),
+(126, 'ASIAN TRADERS', 33, NULL, 'Dr', 'ASIA', NULL),
+(127, 'HARESH TRADERS', 33, NULL, 'Dr', 'HARE', NULL),
+(128, 'ROCKY TRADERS', 33, NULL, 'Dr', 'ROCK', NULL),
+(129, 'ROYAL TRADERS', 33, NULL, 'Dr', 'ROYA', NULL),
+(130, 'SAI TRADERS', 33, NULL, 'Dr', 'SAIT', NULL),
+(131, 'SAMBARAGI TRADERS', 33, NULL, 'Dr', 'SAMB', NULL),
+(132, 'SUBHASH TRADERS', 33, NULL, 'Dr', 'SUBH', NULL),
+(133, 'VIJAY TRADERS SATARA', 33, NULL, 'Dr', 'VIJA', NULL),
+(134, 'VISHAL TRADERS', 33, NULL, 'Dr', 'VISH', NULL),
+(135, 'KASHMIRA TRADER', 33, NULL, 'Dr', 'KASH', NULL),
+(136, 'BHARAT WINES', 33, NULL, 'Dr', 'BHAR', NULL),
+(137, 'SWARA LIQUORS', 33, NULL, 'Dr', 'SWAR', NULL),
+(138, 'TALREJA TRADERS', 33, NULL, 'Dr', 'TALR', NULL),
+(139, 'VICKY AGENCIES', 33, NULL, 'Dr', 'VICK', NULL),
+(140, 'MUKESH AGENCIES', 33, NULL, 'Dr', 'MUKE', NULL),
+(141, 'ABHIJIT WINE INDUSTRIES', 33, NULL, 'Dr', 'ABHI', NULL),
+(142, 'GRAPE P & R INSTITUTE', 33, NULL, 'Dr', 'GRAP', NULL),
+(143, 'MONARCHA WINES', 33, NULL, 'Dr', 'MONA', NULL),
+(144, 'RAM TREDERS', 33, NULL, 'Dr', 'RAMT', NULL),
+(145, 'KHODAY INDIA', 33, NULL, 'Dr', 'KHOD', NULL),
+(146, 'MAXIWELL', 33, NULL, 'Dr', 'MAXI', NULL),
+(147, 'MILLENINUM SPIRITS', 33, NULL, 'Dr', 'MILL', NULL),
+(148, 'EMPIRE SPIRT INDIA ', 33, NULL, 'Dr', 'EM2', NULL),
+(149, 'AMIT TRADERS', 33, NULL, 'Dr', 'AMIT', NULL),
+(150, 'POOJA TRADERS', 33, NULL, 'Dr', 'POJA', NULL),
+(151, 'RAJ  MARKETING ', 33, NULL, 'Dr', 'RAJ', NULL),
+(152, 'H H TRADERS', 33, NULL, 'Dr', 'HH', NULL),
+(153, 'ROHIT ENTERPRISES', 33, NULL, 'Dr', 'ROHI', NULL),
+(154, 'ELKAY SPIRITS', 33, NULL, 'Dr', 'EKY', NULL),
+(155, 'OM SAI LIQUOR', 33, NULL, 'Dr', 'OM', NULL),
+(156, 'POLARIS LIQ PVT LTD', 33, NULL, 'Dr', 'POLA', NULL),
+(157, 'POLARIS LIQ PVT LTD', 33, NULL, 'Dr', 'POLA', NULL),
+(158, 'Sagar Traders', 33, NULL, NULL, NULL, NULL),
+(159, 'Sagar', 32, 0, 'D', 'CUST', 0),
+(160, 'Sarang', 32, 0, 'D', 'CUST', 0),
+(161, 'Sangram', 32, 0, 'D', 'CUST', 0),
+(162, 'A M', 33, 0, 'D', 'CUST', 0);
 
 -- --------------------------------------------------------
 
@@ -570,6 +787,25 @@ INSERT INTO `tblsupplier` (`CODE`, `OUT_LIMIT`, `DETAILS`, `OBDR`, `OBCR`, `LBDR
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tbltempcreditledger`
+--
+
+CREATE TABLE `tbltempcreditledger` (
+  `TmpID` bigint(20) NOT NULL,
+  `CreditorName` varchar(50) DEFAULT NULL,
+  `TransDate` datetime(3) DEFAULT NULL,
+  `Order_No` int(11) DEFAULT NULL,
+  `Item_Desc` varchar(50) DEFAULT NULL,
+  `Details2` varchar(50) DEFAULT NULL,
+  `Rate` decimal(18,2) DEFAULT NULL,
+  `Qty` int(11) DEFAULT NULL,
+  `TotAmt` decimal(18,2) DEFAULT NULL,
+  `PTotAmt` decimal(18,0) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -612,11 +848,30 @@ ALTER TABLE `tblcompany`
   ADD PRIMARY KEY (`CompID`);
 
 --
+-- Indexes for table `tblcustomerprices`
+--
+ALTER TABLE `tblcustomerprices`
+  ADD PRIMARY KEY (`CustPID`),
+  ADD KEY `FK_tblCustomerPrices_tbllheads` (`LCode`);
+
+--
+-- Indexes for table `tbldrydays`
+--
+ALTER TABLE `tbldrydays`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `tblemployee`
 --
 ALTER TABLE `tblemployee`
   ADD PRIMARY KEY (`EmpID`),
   ADD KEY `CompID` (`CompID`);
+
+--
+-- Indexes for table `tblgheads`
+--
+ALTER TABLE `tblgheads`
+  ADD PRIMARY KEY (`GCODE`);
 
 --
 -- Indexes for table `tblitemmaster`
@@ -627,11 +882,30 @@ ALTER TABLE `tblitemmaster`
   ADD KEY `tblitemmaster_ibfk_2` (`ITEM_GROUP`,`LIQ_FLAG`);
 
 --
+-- Indexes for table `tblitemopbal`
+--
+ALTER TABLE `tblitemopbal`
+  ADD PRIMARY KEY (`CODE`,`SHOP_MODE`);
+
+--
+-- Indexes for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  ADD PRIMARY KEY (`LCODE`),
+  ADD KEY `fk_tbllheads_tblgheads` (`GCODE`);
+
+--
 -- Indexes for table `tblsubclass`
 --
 ALTER TABLE `tblsubclass`
   ADD PRIMARY KEY (`ITEM_GROUP`,`LIQ_FLAG`),
   ADD KEY `SRNO` (`SRNO`);
+
+--
+-- Indexes for table `tbltempcreditledger`
+--
+ALTER TABLE `tbltempcreditledger`
+  ADD PRIMARY KEY (`TmpID`);
 
 --
 -- Indexes for table `users`
@@ -657,10 +931,40 @@ ALTER TABLE `tblcompany`
   MODIFY `CompID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `tblcustomerprices`
+--
+ALTER TABLE `tblcustomerprices`
+  MODIFY `CustPID` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=452;
+
+--
+-- AUTO_INCREMENT for table `tbldrydays`
+--
+ALTER TABLE `tbldrydays`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+
+--
 -- AUTO_INCREMENT for table `tblemployee`
 --
 ALTER TABLE `tblemployee`
   MODIFY `EmpID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblgheads`
+--
+ALTER TABLE `tblgheads`
+  MODIFY `GCODE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+
+--
+-- AUTO_INCREMENT for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  MODIFY `LCODE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
+
+--
+-- AUTO_INCREMENT for table `tbltempcreditledger`
+--
+ALTER TABLE `tbltempcreditledger`
+  MODIFY `TmpID` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -679,6 +983,12 @@ ALTER TABLE `tblbranch`
   ADD CONSTRAINT `tblbranch_ibfk_1` FOREIGN KEY (`CompID`) REFERENCES `tblcompany` (`CompID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Constraints for table `tblcustomerprices`
+--
+ALTER TABLE `tblcustomerprices`
+  ADD CONSTRAINT `FK_tblCustomerPrices_tbllheads` FOREIGN KEY (`LCode`) REFERENCES `tbllheads` (`LCODE`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
 -- Constraints for table `tblemployee`
 --
 ALTER TABLE `tblemployee`
@@ -690,6 +1000,18 @@ ALTER TABLE `tblemployee`
 ALTER TABLE `tblitemmaster`
   ADD CONSTRAINT `tblitemmaster_ibfk_1` FOREIGN KEY (`CLASS`) REFERENCES `tblclass` (`SGROUP`),
   ADD CONSTRAINT `tblitemmaster_ibfk_2` FOREIGN KEY (`ITEM_GROUP`,`LIQ_FLAG`) REFERENCES `tblsubclass` (`ITEM_GROUP`, `LIQ_FLAG`);
+
+--
+-- Constraints for table `tblitemopbal`
+--
+ALTER TABLE `tblitemopbal`
+  ADD CONSTRAINT `tblitemopbal_ibfk_1` FOREIGN KEY (`CODE`) REFERENCES `tblitemmaster` (`CODE`);
+
+--
+-- Constraints for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  ADD CONSTRAINT `fk_tbllheads_tblgheads` FOREIGN KEY (`GCODE`) REFERENCES `tblgheads` (`GCODE`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `tblsubclass`
