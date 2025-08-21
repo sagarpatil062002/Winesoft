@@ -66,8 +66,17 @@ if(!isset($_SESSION)) session_start();
                     
                 </ul>
             </li>    
-
-            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt_long</span><span class="nav-label">Transaction</span></a></li>
+<li class="nav-item has-dropdown">
+                <a href="#" class="nav-link dropdown-toggle">
+                    <span class="nav-icon material-symbols-rounded">receipt_long</span>
+                    <span class="nav-label">Transaction</span>
+                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
+                </a>
+                <ul class="dropdown">
+                    <li class="nav-item"><a href="purchases.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
+                
+                </ul>
+            </li>    
             <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
             <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">summarize</span><span class="nav-label">Reports</span></a></li>
 
@@ -86,6 +95,12 @@ if(!isset($_SESSION)) session_start();
                         </a>
                         
                     </li>
+                    <li class="nav-item has-dropdown">
+    <a href="dryday.php" class="nav-link">
+        <span class="nav-icon material-symbols-rounded">event_busy</span>
+        <span class="nav-label">Dry Day</span>
+    </a>
+</li>
                 </ul>
             </li>
         </ul>

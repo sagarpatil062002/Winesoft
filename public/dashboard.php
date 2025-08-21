@@ -17,10 +17,13 @@ include_once "../config/db.php";
 // Initialize stats array with default values
 $stats = [
     'total_items' => 0,
+    'total_customers' => 0,
+    'total_suppliers' => 0,
     'total_permits' => 0,
-    'total_companies' => 0,
-    'total_employees' => 0,
-    'total_branches' => 0
+    'total_dry_days' => 0,
+    'liquor_items' => 0,
+    'beer_items' => 0,
+    'wine_items' => 0
 ];
 
 // Fetch statistics data
@@ -38,6 +41,22 @@ try {
         $result->free();
     }
 
+    // Total Customers (from tbllheads with GCODE 32 - Sundry Debtors)
+    $result = $conn->query("SELECT COUNT(*) as total FROM tbllheads WHERE GCODE = 32");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['total_customers'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Total Suppliers (from tblsupplier)
+    $result = $conn->query("SELECT COUNT(DISTINCT CODE) as total FROM tblsupplier WHERE CODE IS NOT NULL");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['total_suppliers'] = number_format($row['total']);
+        $result->free();
+    }
+
     // Total Permits (active)
     $currentDate = date('Y-m-d');
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tblpermit WHERE P_EXP_DT >= ? AND PRMT_FLAG = 1");
@@ -48,31 +67,39 @@ try {
     $stats['total_permits'] = number_format($row['total']);
     $stmt->close();
 
-    // Total Companies
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblcompany");
+    // Total Dry Days (current year)
+    $currentYear = date('Y');
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tbldrydays WHERE YEAR(DDATE) = ?");
+    $stmt->bind_param("s", $currentYear);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stats['total_dry_days'] = number_format($row['total']);
+    $stmt->close();
+
+    // Liquor Items (LIQ_FLAG = 'F' for Foreign Liquor)
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE LIQ_FLAG = 'F'");
     if($result) {
         $row = $result->fetch_assoc();
-        $stats['total_companies'] = number_format($row['total']);
+        $stats['liquor_items'] = number_format($row['total']);
         $result->free();
     }
 
-    // Total Employees
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tblemployee WHERE CompID = ?");
-    $stmt->bind_param("i", $_SESSION['CompID']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $stats['total_employees'] = number_format($row['total']);
-    $stmt->close();
+    // Beer Items (CLASS = 'B')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'B'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['beer_items'] = number_format($row['total']);
+        $result->free();
+    }
 
-    // Total Branches
-    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tblbranch WHERE CompID = ?");
-    $stmt->bind_param("i", $_SESSION['CompID']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $stats['total_branches'] = number_format($row['total']);
-    $stmt->close();
+    // Wine Items (CLASS = 'V')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'V'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['wine_items'] = number_format($row['total']);
+        $result->free();
+    }
 
 } catch (Exception $e) {
     // Handle error
@@ -88,7 +115,59 @@ try {
     <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
     <style>
         /* Enhanced Card Styles */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
         
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .stat-info h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .stat-info p {
+            margin: 5px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #2D3748;
+        }
+        
+        .alert {
+            padding: 15px;
+            background-color: #fed7d7;
+            color: #c53030;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -120,9 +199,31 @@ try {
                     </div>
                 </div>
                 
+                <!-- Customer Statistics Card -->
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #48BB78;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>Total Customers</h4>
+                        <p><?php echo $stats['total_customers']; ?></p>
+                    </div>
+                </div>
+                
+                <!-- Supplier Statistics Card -->
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #9F7AEA;">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>Total Suppliers</h4>
+                        <p><?php echo $stats['total_suppliers']; ?></p>
+                    </div>
+                </div>
+                
                 <!-- Permit Statistics Card -->
                 <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #38A169;">
+                    <div class="stat-icon" style="background-color: #ED8936;">
                         <i class="fas fa-file-alt"></i>
                     </div>
                     <div class="stat-info">
@@ -131,47 +232,47 @@ try {
                     </div>
                 </div>
                 
-                <!-- Company Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #9F7AEA;">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Total Companies</h4>
-                        <p><?php echo $stats['total_companies']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Employee Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #ED8936;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Total Employees</h4>
-                        <p><?php echo $stats['total_employees']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Branch Statistics Card -->
+                <!-- Dry Days Statistics Card -->
                 <div class="stat-card">
                     <div class="stat-icon" style="background-color: #F56565;">
-                        <i class="fas fa-store"></i>
+                        <i class="fas fa-calendar-times"></i>
                     </div>
                     <div class="stat-info">
-                        <h4>Total Branches</h4>
-                        <p><?php echo $stats['total_branches']; ?></p>
+                        <h4>Dry Days (<?php echo date('Y'); ?>)</h4>
+                        <p><?php echo $stats['total_dry_days']; ?></p>
                     </div>
                 </div>
                 
-                <!-- Placeholder for future stats -->
+                <!-- Liquor Items Card -->
                 <div class="stat-card">
                     <div class="stat-icon" style="background-color: #667EEA;">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-glass-whiskey"></i>
                     </div>
                     <div class="stat-info">
-                        <h4>Revenue</h4>
-                        <p>Coming Soon</p>
+                        <h4>Liquor Items</h4>
+                        <p><?php echo $stats['liquor_items']; ?></p>
+                    </div>
+                </div>
+                
+                <!-- Beer Items Card -->
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #ECC94B;">
+                        <i class="fas fa-beer"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>Beer Items</h4>
+                        <p><?php echo $stats['beer_items']; ?></p>
+                    </div>
+                </div>
+                
+                <!-- Wine Items Card -->
+                <div class="stat-card">
+                    <div class="stat-icon" style="background-color: #ED64A6;">
+                        <i class="fas fa-wine-glass-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h4>Wine Items</h4>
+                        <p><?php echo $stats['wine_items']; ?></p>
                     </div>
                 </div>
             </div>
