@@ -88,6 +88,19 @@ if(!isset($_SESSION)) session_start();
                     <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
+    <li class="nav-item has-dropdown">
+        <a href="register.php" class="nav-link">
+            <span class="nav-icon material-symbols-rounded">app_registration</span>
+            <span class="nav-label">Register</span>
+        </a>
+    </li>
+    <li class="nav-item has-dropdown">
+        <a href="Company_info.php" class="nav-link">
+            <span class="nav-icon material-symbols-rounded">business</span>
+            <span class="nav-label">Company Info</span>
+        </a>
+    </li>
+
                     <li class="nav-item has-dropdown">
                         <a href="brandwise_report.php" class="nav-link">
                             <span class="nav-icon material-symbols-rounded">analytics</span>

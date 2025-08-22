@@ -6,10 +6,11 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
-if (!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR'])) {
-    header("Location: select_company.php");
+if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
+    header("Location: index.php");
     exit;
 }
+
 
 include_once "../config/db.php";
 

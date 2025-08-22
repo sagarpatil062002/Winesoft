@@ -1,6 +1,84 @@
 <?php
-// Start session to track login messages
 session_start();
+require '../config/db.php';
+
+// Initialize variables
+$error = '';
+$companies = [];
+$financial_years = [];
+
+// Get all companies and financial years
+$companyResult = mysqli_query($conn, "SELECT CompID, COMP_NAME FROM tblCompany ORDER BY COMP_NAME");
+while($company = mysqli_fetch_assoc($companyResult)) {
+    $companies[] = $company;
+}
+
+// Get financial years with start and end dates
+$yearResult = mysqli_query($conn, "
+    SELECT DISTINCT c.FIN_YEAR, fy.ID, fy.START_DATE, fy.END_DATE 
+    FROM tblCompany c 
+    JOIN tblfinyear fy ON c.FIN_YEAR = fy.ID 
+    ORDER BY fy.START_DATE DESC
+");
+while($year = mysqli_fetch_assoc($yearResult)) {
+    $financial_years[] = $year;
+}
+
+// Handle form submission
+if(isset($_POST['login'])){
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $password = $_POST['password'];
+    $company_id = intval($_POST['company']);
+    $financial_year_id = intval($_POST['financial_year']);
+    
+    // Validate inputs
+    if(empty($username) || empty($password) || empty($company_id) || empty($financial_year_id)) {
+        $error = "All fields are required";
+    } else {
+        // Check if user exists and has access to the selected company
+        $user_query = "SELECT * FROM users WHERE username='$username' AND company_id=$company_id";
+        $user_result = mysqli_query($conn, $user_query);
+        
+        if(mysqli_num_rows($user_result) == 1){
+            $user = mysqli_fetch_assoc($user_result);
+            
+            // Verify password
+            if(password_verify($password, $user['password'])){
+                // Get the financial year details for the selected ID
+                $year_query = "SELECT ID, START_DATE, END_DATE FROM tblfinyear WHERE ID='$financial_year_id'";
+                $year_result = mysqli_query($conn, $year_query);
+                $year_data = mysqli_fetch_assoc($year_result);
+                
+                // User has access to this company - set session variables
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['CompID'] = $company_id;
+                $_SESSION['FIN_YEAR_ID'] = $year_data['ID'];
+                $_SESSION['FIN_YEAR_START'] = $year_data['START_DATE'];
+                $_SESSION['FIN_YEAR_END'] = $year_data['END_DATE'];
+                
+                // Format financial year for display (e.g., "2023-2024")
+                $start_year = date('Y', strtotime($year_data['START_DATE']));
+                $end_year = date('Y', strtotime($year_data['END_DATE']));
+                $_SESSION['FIN_YEAR_DISPLAY'] = $start_year . '-' . $end_year;
+                
+                // Get company name
+                $comp_query = "SELECT COMP_NAME FROM tblCompany WHERE CompID=$company_id";
+                $comp_result = mysqli_query($conn, $comp_query);
+                $company_data = mysqli_fetch_assoc($comp_result);
+                $_SESSION['COMP_NAME'] = $company_data['COMP_NAME'];
+                
+                // Redirect to dashboard
+                header("Location: dashboard.php");
+                exit;
+            } else {
+                $error = "Invalid password";
+            }
+        } else {
+            $error = "Username not found or user doesn't have access to the selected company";
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,18 +119,17 @@ session_start();
             padding: 20px;
         }
         
-        .login-card {
+        .login-container {
             background: var(--white);
             border-radius: var(--border-radius);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 420px;
+            max-width: 450px;
             padding: 2.5rem;
-            text-align: center;
             transition: transform 0.3s ease;
         }
         
-        .login-card:hover {
+        .login-container:hover {
             transform: translateY(-5px);
         }
         
@@ -60,11 +137,15 @@ session_start();
             width: 100px;
             height: auto;
             margin-bottom: 1.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         
-        .login-card h1 {
+        h1 {
             color: var(--primary-color);
             margin-bottom: 1.5rem;
+            text-align: center;
             font-size: 1.75rem;
         }
         
@@ -75,6 +156,7 @@ session_start();
             border-radius: var(--border-radius);
             margin-bottom: 1rem;
             font-size: 0.9rem;
+            text-align: center;
         }
         
         .login-form {
@@ -95,7 +177,7 @@ session_start();
             font-weight: 500;
         }
         
-        .form-control {
+        .form-control, .form-select {
             width: 100%;
             padding: 0.75rem 1rem;
             border: 1px solid #ddd;
@@ -104,7 +186,7 @@ session_start();
             transition: var(--transition);
         }
         
-        .form-control:focus {
+        .form-control:focus, .form-select:focus {
             border-color: var(--primary-color);
             outline: none;
             box-shadow: 0 0 0 2px rgba(43, 108, 176, 0.2);
@@ -141,32 +223,60 @@ session_start();
             background-color: var(--primary-hover);
         }
         
-        
-        
         @media (max-width: 480px) {
-            .login-card {
+            .login-container {
                 padding: 1.5rem;
             }
             
-            .login-card h1 {
+            h1 {
                 font-size: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
+    <div class="login-container">
         <img src="/winesoft/public/assets/logo.png" alt="Logo" class="logo">
         <h1>Liquor Inventory & Billing</h1>
 
-        <?php if (isset($_SESSION['error'])): ?>
-            <p class="error"><?= $_SESSION['error']; unset($_SESSION['error']); ?></p>
+        <?php if (!empty($error)): ?>
+            <p class="error"><?= $error ?></p>
         <?php endif; ?>
 
-        <form class="login-form" action="../backend/login.php" method="POST">
+        <form class="login-form" method="POST" action="">
+            <div class="form-group">
+                <label for="company">Company</label>
+                <select name="company" id="company" class="form-select" required>
+                    <option value="">-- Select Company --</option>
+                    <?php foreach($companies as $company): ?>
+                        <option value="<?= $company['CompID'] ?>" <?= isset($_POST['company']) && $_POST['company'] == $company['CompID'] ? 'selected' : '' ?>>
+                            <?= $company['COMP_NAME'] ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="financial_year">Financial Year</label>
+                <select name="financial_year" id="financial_year" class="form-select" required>
+                    <option value="">-- Select Financial Year --</option>
+                    <?php foreach($financial_years as $year): ?>
+                        <?php
+                        $start_date = date('d M Y', strtotime($year['START_DATE']));
+                        $end_date = date('d M Y', strtotime($year['END_DATE']));
+                        $display_text = $start_date . ' to ' . $end_date;
+                        ?>
+                        <option value="<?= $year['ID'] ?>" <?= isset($_POST['financial_year']) && $_POST['financial_year'] == $year['ID'] ? 'selected' : '' ?>>
+                            <?= $display_text ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" name="username" id="username" class="form-control" placeholder="Enter your username" required>
+                <input type="text" name="username" id="username" class="form-control" 
+                       placeholder="Enter your username" value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>" required>
             </div>
             
             <div class="form-group">
@@ -179,9 +289,8 @@ session_start();
                 </div>
             </div>
             
-            <button type="submit" class="btn-login">Login</button>
+            <button type="submit" name="login" class="btn-login">Login</button>
         </form>
-
     </div>
 
     <script>

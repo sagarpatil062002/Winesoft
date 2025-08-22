@@ -6,10 +6,11 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
-if (!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR'])) {
-    header("Location: select_company.php");
+if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
+    header("Location: index.php");
     exit;
 }
+
 
 include_once "../config/db.php";
 
@@ -23,13 +24,18 @@ $maxVoc = $vocResult->fetch_assoc();
 $nextVoc = $maxVoc['MAX_VOC'] + 1;
 
 // Fetch items for the selected mode
-$itemsQuery = "SELECT CODE, DETAILS, PPRICE FROM tblitemmaster WHERE LIQ_FLAG = ? ORDER BY DETAILS";
+$itemsQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE FROM tblitemmaster WHERE LIQ_FLAG = ? ORDER BY DETAILS";
 $itemsStmt = $conn->prepare($itemsQuery);
 $itemsStmt->bind_param("s", $mode);
 $itemsStmt->execute();
 $itemsResult = $itemsStmt->get_result();
 $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
 $itemsStmt->close();
+
+// Fetch suppliers
+$suppliersQuery = "SELECT CODE, DETAILS FROM tblsupplier ORDER BY DETAILS";
+$suppliersResult = $conn->query($suppliersQuery);
+$suppliers = $suppliersResult->fetch_all(MYSQLI_ASSOC);
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -97,8 +103,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       margin-bottom: 20px;
     }
     .card-header {
-      background-color: #f8f9fa;
-      border-bottom: 1px solid #dee2e6;
+      background-color: #f0f0f0;
+      border-bottom: 2px solid #ddd;
+      font-weight: bold;
+    }
+    .form-label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .form-control {
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+    }
+    #itemsTable td, #itemsTable th {
+      vertical-align: middle;
+      text-align: center;
+    }
+    #itemsTable td:first-child, #itemsTable th:first-child,
+    #itemsTable td:nth-child(2), #itemsTable th:nth-child(2) {
+      text-align: left;
+    }
+    .alert-info {
+      background-color: #d1ecf1;
+      border-color: #bee5eb;
+      color: #0c5460;
+    }
+    .section-title {
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 5px;
+      margin-bottom: 15px;
+      color: #007bff;
+    }
+    .supplier-container {
+      position: relative;
+    }
+    .supplier-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-top: none;
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .supplier-suggestion {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .supplier-suggestion:hover {
+      background-color: #f0f0f0;
     }
   </style>
 </head>
@@ -127,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Purchase Header Information -->
         <div class="card mb-4">
           <div class="card-header">
-            <h5 class="mb-0">Purchase Information</h5>
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Purchase Information</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -152,8 +209,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
               <div class="col-md-3">
                 <div class="form-group mb-3">
-                  <label class="form-label">Supplier Code</label>
-                  <input type="text" class="form-control" name="subcode" required>
+                  <label class="form-label">T.P. Date</label>
+                  <input type="date" class="form-control" name="tp_date" id="tpDate">
                 </div>
               </div>
             </div>
@@ -171,16 +228,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   <input type="date" class="form-control" name="inv_date">
                 </div>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-6">
                 <div class="form-group mb-3">
-                  <label class="form-label">T.P. Date</label>
-                  <input type="date" class="form-control" name="tp_date" id="tpDate">
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="form-group mb-3">
-                  <label class="form-label">Received From</label>
-                  <input type="text" class="form-control" name="received_from" id="receivedFrom">
+                  <label class="form-label">Supplier</label>
+                  <div class="supplier-container">
+                    <input type="text" class="form-control" name="subcode" id="supplierInput" required placeholder="Type supplier code or name">
+                    <div class="supplier-suggestions" id="supplierSuggestions"></div>
+                  </div>
+                  <small class="form-text text-muted">Or select from list: 
+                    <select class="form-control mt-1" id="supplierSelect">
+                      <option value="">Select Supplier</option>
+                      <?php foreach ($suppliers as $supplier): ?>
+                        <option value="<?= $supplier['CODE'] ?>" data-details="<?= htmlspecialchars($supplier['DETAILS']) ?>">
+                          <?= $supplier['CODE'] ?> - <?= $supplier['DETAILS'] ?>
+                        </option>
+                      <?php endforeach; ?>
+                    </select>
+                  </small>
                 </div>
               </div>
             </div>
@@ -190,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Purchase Items -->
         <div class="card mb-4">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Purchase Items</h5>
+            <h5 class="mb-0"><i class="fas fa-list"></i> Purchase Items</h5>
             <div>
               <button type="button" class="btn btn-sm btn-primary" id="addItem">
                 <i class="fas fa-plus"></i> Add Item
@@ -205,13 +269,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <table class="styled-table" id="itemsTable">
                 <thead>
                   <tr>
+                    <th>Item Code</th>
                     <th>Brand Name</th>
                     <th>Size</th>
                     <th>Cases</th>
                     <th>Bottles</th>
                     <th>Case Rate</th>
                     <th>Amount</th>
-                    <th>Batch No</th>
                     <th>MRP</th>
                     <th>Action</th>
                   </tr>
@@ -223,9 +287,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colspan="5" class="text-end fw-bold">Total Amount:</td>
+                    <td colspan="6" class="text-end fw-bold">Total Amount:</td>
                     <td id="totalAmount">0.00</td>
-                    <td colspan="3"></td>
+                    <td colspan="2"></td>
                   </tr>
                 </tfoot>
               </table>
@@ -236,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Charges and Taxes -->
         <div class="card mb-4">
           <div class="card-header">
-            <h5 class="mb-0">Charges & Taxes</h5>
+            <h5 class="mb-0"><i class="fas fa-calculator"></i> Charges & Taxes</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -341,26 +405,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-3">
+          <input type="text" class="form-control" id="itemSearch" placeholder="Search items...">
+        </div>
         <div class="table-container">
-          <table class="styled-table">
+          <table class="styled-table" id="itemsModalTable">
             <thead>
               <tr>
                 <th>Code</th>
                 <th>Item Name</th>
+                <th>Size</th>
                 <th>Price</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               <?php foreach ($items as $item): ?>
-                <tr>
+                <tr class="item-row-modal">
                   <td><?= $item['CODE'] ?></td>
                   <td><?= $item['DETAILS'] ?></td>
+                  <td><?= $item['DETAILS2'] ?></td>
                   <td><?= number_format($item['PPRICE'], 3) ?></td>
                   <td>
                     <button type="button" class="btn btn-sm btn-primary select-item" 
                             data-code="<?= $item['CODE'] ?>" 
                             data-name="<?= htmlspecialchars($item['DETAILS']) ?>" 
+                            data-size="<?= htmlspecialchars($item['DETAILS2']) ?>"
                             data-price="<?= $item['PPRICE'] ?>">
                       Select
                     </button>
@@ -386,11 +456,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="modal-body">
         <div class="alert alert-info">
           <p>Copy the table data from the SCM retailer management system (including headers) and paste it in the textarea below.</p>
+          <p class="mb-0"><strong>Example format:</strong></p>
+          <pre class="mt-2 bg-light p-2 small">
+SrNo    ItemName                Size    Qly (Cases)  Qly (Bottles) Batch No.      MRP
+1       Desjay Doctor Brandy    180 ML  7.00         0             271            110.00
+          </pre>
         </div>
         <textarea class="form-control" id="scmData" rows="10" placeholder="Paste SCM table data here..."></textarea>
         <div class="mt-3">
           <button type="button" class="btn btn-primary" id="processSCMData">
             <i class="fas fa-cog"></i> Process Data
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times"></i> Cancel
           </button>
         </div>
       </div>
@@ -404,12 +482,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $(document).ready(function() {
   let itemCount = 0;
   
-  // Show item selection modal
+  // -------------------- Item Modal --------------------
   $('#addItem').click(function() {
     $('#itemModal').modal('show');
   });
   
-  // Clear all items
+  $('#itemSearch').on('keyup', function() {
+    const value = $(this).val().toLowerCase();
+    $('.item-row-modal').filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+  
+  // -------------------- Supplier Selection --------------------
+  $('#supplierSelect').change(function() {
+    const selectedOption = $(this).find('option:selected');
+    if (selectedOption.val()) {
+      $('#supplierInput').val(selectedOption.val());
+    }
+  });
+  
+  $('#supplierInput').on('keyup', function() {
+    const query = $(this).val().toLowerCase();
+    if (query.length < 2) {
+      $('#supplierSuggestions').hide().empty();
+      return;
+    }
+    const suggestions = [];
+    <?php foreach ($suppliers as $supplier): ?>
+      if ('<?= $supplier['CODE'] ?>'.toLowerCase().includes(query) || 
+          '<?= $supplier['DETAILS'] ?>'.toLowerCase().includes(query)) {
+        suggestions.push({
+          code: '<?= $supplier['CODE'] ?>',
+          details: '<?= addslashes($supplier['DETAILS']) ?>'
+        });
+      }
+    <?php endforeach; ?>
+    
+    const suggestionsHtml = suggestions.map(s => 
+      `<div class="supplier-suggestion" data-code="${s.code}">${s.code} - ${s.details}</div>`
+    ).join('');
+    
+    $('#supplierSuggestions').html(suggestionsHtml).show();
+  });
+  
+  $(document).on('click', '.supplier-suggestion', function() {
+    const code = $(this).data('code');
+    $('#supplierInput').val(code);
+    $('#supplierSuggestions').hide();
+  });
+  
+  $(document).on('click', function(e) {
+    if (!$(e.target).closest('.supplier-container').length) {
+      $('#supplierSuggestions').hide();
+    }
+  });
+  
+  // -------------------- Clear Items --------------------
   $('#clearItems').click(function() {
     if (confirm('Are you sure you want to clear all items?')) {
       $('.item-row').remove();
@@ -421,12 +550,12 @@ $(document).ready(function() {
     }
   });
   
-  // Show paste modal
+  // -------------------- SCM Paste --------------------
   $('#pasteFromSCM').click(function() {
     $('#pasteModal').modal('show');
+    $('#scmData').val('').focus();
   });
   
-  // Process SCM data
   $('#processSCMData').click(function() {
     const scmData = $('#scmData').val().trim();
     if (!scmData) {
@@ -437,34 +566,21 @@ $(document).ready(function() {
     try {
       const parsedData = parseSCMData(scmData);
       if (parsedData.items.length > 0) {
-        // Remove the "no items" row if it exists
-        if ($('#noItemsRow').length) {
-          $('#noItemsRow').remove();
-        }
+        if ($('#noItemsRow').length) $('#noItemsRow').remove();
+        $('.item-row').remove();
+        itemCount = 0;
         
-        // Add items to the table
         parsedData.items.forEach(item => {
           addItemToTable(item);
         });
         
-        // Update header fields if available
-        if (parsedData.tpNo) {
-          $('#tpNo').val(parsedData.tpNo);
-        }
-        if (parsedData.tpDate) {
-          $('#tpDate').val(parsedData.tpDate);
-        }
-        if (parsedData.receivedDate) {
-          // Convert received date format if needed
-          $('input[name="date"]').val(convertToYMD(parsedData.receivedDate));
-        }
-        if (parsedData.receivedFrom) {
-          $('#receivedFrom').val(parsedData.receivedFrom);
-        }
+        // Map the SCM data to the correct fields
+        if (parsedData.receivedDate) $('input[name="date"]').val(parsedData.receivedDate);
+        if (parsedData.tpNo) $('#tpNo').val(parsedData.tpNo);
+        if (parsedData.tpDate) $('#tpDate').val(parsedData.tpDate);
+        if (parsedData.party) $('#supplierInput').val(parsedData.party);
         
-        // Update totals
         updateTotals();
-        
         $('#pasteModal').modal('hide');
         alert(`Successfully imported ${parsedData.items.length} items.`);
       } else {
@@ -658,18 +774,27 @@ $(document).ready(function() {
     return null;
   }
   
-  // Add item to table
+  
+  // -------------------- Table Helpers --------------------
   function addItemToTable(item) {
+    const cases = parseFloat(item.cases) || 0;
+    const bottles = parseFloat(item.bottles) || 0;
+    const caseRate = parseFloat(item.caseRate) || 0;
+    const mrp = parseFloat(item.mrp) || 0;
+    
+    // Calculate amount: (cases * caseRate) + (bottles * mrp)
+    const amount = (cases * caseRate) + (bottles * mrp);
+    
     const newRow = `
-      <tr class="item-row" data-price="${item.caseRate}">
-        <td>${item.name} <input type="hidden" name="items[${itemCount}][code]" value="${item.code || ''}"></td>
-        <td>${item.size} <input type="hidden" name="items[${itemCount}][size]" value="${item.size}"></td>
-        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="${item.cases}" min="0"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${item.bottles}" min="0"></td>
-        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${item.caseRate}" step="0.01"></td>
-        <td class="amount">${((item.cases * 12 + item.bottles) * item.caseRate / 12).toFixed(2)}</td>
-        <td><input type="text" class="form-control form-control-sm" name="items[${itemCount}][batch_no]" value="${item.batchNo}"></td>
-        <td><input type="number" class="form-control form-control-sm" name="items[${itemCount}][mrp]" value="${item.mrp}" step="0.01"></td>
+      <tr class="item-row">
+        <td><input type="hidden" name="items[${itemCount}][code]" value="${item.code || ''}">${item.code || ''}</td>
+        <td>${item.name}</td>
+        <td>${item.size}</td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="${cases}" min="0" step="1"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${bottles}" min="0" step="1" max="11"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${caseRate}" step="0.001"></td>
+        <td class="amount">${amount.toFixed(2)}</td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${itemCount}][mrp]" value="${mrp}" step="0.01"></td>
         <td><button type="button" class="btn btn-sm btn-danger remove-item"><i class="fas fa-trash"></i></button></td>
       </tr>
     `;
@@ -678,43 +803,35 @@ $(document).ready(function() {
     itemCount++;
   }
   
-  // Handle item selection from modal
-  $('.select-item').click(function() {
+  $(document).on('click', '.select-item', function() {
     const code = $(this).data('code');
     const name = $(this).data('name');
+    const size = $(this).data('size');
     const price = $(this).data('price');
     
-    // Remove the "no items" row if it exists
-    if ($('#noItemsRow').length) {
-      $('#noItemsRow').remove();
-    }
+    if ($('#noItemsRow').length) $('#noItemsRow').remove();
     
-    // Add new row to the table
     const newRow = `
-      <tr class="item-row" data-price="${price}">
-        <td>${name} <input type="hidden" name="items[${itemCount}][code]" value="${code}"></td>
-        <td><input type="text" class="form-control form-control-sm" name="items[${itemCount}][size]" placeholder="Size"></td>
-        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="0" min="0"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="0" min="0"></td>
-        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${price}" step="0.01"></td>
+      <tr class="item-row">
+        <td><input type="hidden" name="items[${itemCount}][code]" value="${code}">${code}</td>
+        <td>${name}</td>
+        <td>${size}</td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="0" min="0" step="1"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="0" min="0" step="1" max="11"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${price}" step="0.001"></td>
         <td class="amount">0.00</td>
-        <td><input type="text" class="form-control form-control-sm" name="items[${itemCount}][batch_no]" placeholder="Batch No"></td>
-        <td><input type="number" class="form-control form-control-sm" name="items[${itemCount}][mrp]" placeholder="MRP" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${itemCount}][mrp]" placeholder="MRP" step="0.01"></td>
         <td><button type="button" class="btn btn-sm btn-danger remove-item"><i class="fas fa-trash"></i></button></td>
       </tr>
     `;
     
     $('#itemsTable tbody').append(newRow);
     itemCount++;
-    
     $('#itemModal').modal('hide');
   });
   
-  // Handle item removal
   $(document).on('click', '.remove-item', function() {
     $(this).closest('tr').remove();
-    
-    // If no items left, add the "no items" row
     if ($('.item-row').length === 0) {
       $('#itemsTable tbody').append('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>');
       $('#totalAmount').text('0.00');
@@ -723,40 +840,27 @@ $(document).ready(function() {
     }
   });
   
-  // Calculate amount when quantity changes
-  $(document).on('input', '.cases, .bottles, .case-rate', function() {
+  $(document).on('input', '.cases, .bottles, .case-rate, .mrp', function() {
     const row = $(this).closest('tr');
     const caseRate = parseFloat(row.find('.case-rate').val()) || 0;
-    const cases = parseInt(row.find('.cases').val()) || 0;
-    const bottles = parseInt(row.find('.bottles').val()) || 0;
+    const cases = parseFloat(row.find('.cases').val()) || 0;
+    const bottles = parseFloat(row.find('.bottles').val()) || 0;
+    const mrp = parseFloat(row.find('.mrp').val()) || 0;
     
-    // Calculate total bottles (assuming 12 bottles per case)
-    const totalBottles = (cases * 12) + bottles;
-    const amount = (totalBottles * caseRate) / 12;
-    
+    // Calculate amount: (cases * caseRate) + (bottles * mrp)
+    const amount = (cases * caseRate) + (bottles * mrp);
     row.find('.amount').text(amount.toFixed(2));
-    
-    // Update totals
     updateTotals();
-  });
-  
-  // Calculate tax amounts when percentages change
-  $(document).on('input', 'input[name="stax_per"], input[name="tcs_per"]', function() {
-    calculateTaxes();
   });
   
   function updateTotals() {
     let total = 0;
-    
     $('.item-row').each(function() {
       const amount = parseFloat($(this).find('.amount').text()) || 0;
       total += amount;
     });
-    
     $('#totalAmount').text(total.toFixed(2));
     $('input[name="basic_amt"]').val(total.toFixed(2));
-    
-    // Recalculate taxes
     calculateTaxes();
   }
   
@@ -764,24 +868,21 @@ $(document).ready(function() {
     const basicAmt = parseFloat($('input[name="basic_amt"]').val()) || 0;
     const staxPer = parseFloat($('input[name="stax_per"]').val()) || 0;
     const tcsPer = parseFloat($('input[name="tcs_per"]').val()) || 0;
+    
     const cashDisc = parseFloat($('input[name="cash_disc"]').val()) || 0;
     const tradeDisc = parseFloat($('input[name="trade_disc"]').val()) || 0;
     const octroi = parseFloat($('input[name="octroi"]').val()) || 0;
     const freight = parseFloat($('input[name="freight"]').val()) || 0;
     const miscCharg = parseFloat($('input[name="misc_charg"]').val()) || 0;
-    
-    // Calculate tax amounts
     const staxAmt = (basicAmt * staxPer) / 100;
     const tcsAmt = (basicAmt * tcsPer) / 100;
-    
     $('input[name="stax_amt"]').val(staxAmt.toFixed(2));
     $('input[name="tcs_amt"]').val(tcsAmt.toFixed(2));
-    
-    // Calculate total amount
     const totalAmt = basicAmt + staxAmt + tcsAmt + octroi + freight + miscCharg - cashDisc - tradeDisc;
     $('input[name="tamt"]').val(totalAmt.toFixed(2));
   }
 });
 </script>
+
 </body>
-</html>  
+</html>

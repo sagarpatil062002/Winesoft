@@ -20,53 +20,91 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch class descriptions from tblclass
-$classDescriptions = [];
-$classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
-$classResult = $conn->query($classQuery);
-while ($row = $classResult->fetch_assoc()) {
-    $classDescriptions[$row['SGROUP']] = $row['DESC'];
-}
-
-// Fetch subclass descriptions from tblsubclass
-$subclassDescriptions = [];
-$subclassQuery = "SELECT ITEM_GROUP, `DESC`, LIQ_FLAG FROM tblsubclass";
-$subclassResult = $conn->query($subclassQuery);
-while ($row = $subclassResult->fetch_assoc()) {
-    $subclassDescriptions[$row['ITEM_GROUP']][$row['LIQ_FLAG']] = $row['DESC'];
-}
-
-// Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
-          FROM tblitemmaster
+// Fetch purchases from tblpurchases
+$query = "SELECT 
+            DATE, 
+            SUBCODE, 
+            VOC_NO, 
+            INV_NO, 
+            INV_DATE, 
+            TAMT, 
+            BILL_NO, 
+            TPNO, 
+            SCHDIS, 
+            CASHDIS, 
+            OCTROI, 
+            CDAYS, 
+            CTYPE, 
+            BALANCE, 
+            DISQTY, 
+            OCT_PER, 
+            DIS_DISC, 
+            BRK_AMT, 
+            BRK_DESC, 
+            IND_NO, 
+            LIQ_FLAG, 
+            STAX_PER, 
+            STAX_AMT, 
+            TCS_PER, 
+            TCS_AMT, 
+            RATEDIFF, 
+            SUR_PER, 
+            SUR_AMT, 
+            EDUC_PER, 
+            EDUC_AMT, 
+            EXPORTED, 
+            MISC_CHARG, 
+            PUR_FLAG, 
+            SHOP_MODE, 
+            COUNTER, 
+            WSTax_Perc, 
+            WSTax_Amt, 
+            MBSTax_Perc, 
+            MBSTax_Amt, 
+            SBSTax_Perc, 
+            SBStax_Amt, 
+            CLSTax_Perc, 
+            CLSTax_Amt 
+          FROM tblpurchases 
           WHERE LIQ_FLAG = ?";
 $params = [$mode];
 $types = "s";
 
 if ($search !== '') {
-    $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
+    $query .= " AND (INV_NO LIKE ? OR TPNO LIKE ? OR BILL_NO LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
-    $types .= "ss";
+    $params[] = "%$search%";
+    $types .= "sss";
 }
 
-$query .= " ORDER BY DETAILS ASC";
+$query .= " ORDER BY DATE DESC, INV_NO DESC";
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
-$items = $result->fetch_all(MYSQLI_ASSOC);
+$purchases = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Function to get class description
-function getClassDescription($code, $classDescriptions) {
-    return $classDescriptions[$code] ?? $code;
+// Fetch supplier names from tblsupplier (not tblsubmaster)
+$supplierNames = [];
+$supplierQuery = "SELECT CODE, DETAILS FROM tblsupplier";
+$supplierResult = $conn->query($supplierQuery);
+while ($row = $supplierResult->fetch_assoc()) {
+    $supplierNames[$row['CODE']] = $row['DETAILS'];
 }
 
-// Function to get subclass description
-function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
-    return $subclassDescriptions[$itemGroup][$liqFlag] ?? $itemGroup;
+// Function to get supplier name
+function getSupplierName($code, $supplierNames) {
+    return $supplierNames[$code] ?? $code;
+}
+
+// Function to format date
+function formatDate($dateString) {
+    if (empty($dateString)) return '';
+    $date = DateTime::createFromFormat('Y-m-d H:i:s.u', $dateString);
+    return $date ? $date->format('d/m/Y') : $dateString;
 }
 ?>
 <!DOCTYPE html>
@@ -74,12 +112,11 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Excise Item Master - WineSoft</title>
+  <title>Purchase Module - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-
 </head>
 <body>
 <div class="dashboard-container">
@@ -89,7 +126,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Excise Item Master</h3>
+      <h3 class="mb-4">Purchase Module</h3>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -103,10 +140,6 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
              class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
             Country Liquor
           </a>
-          <a href="?mode=O&search=<?= urlencode($search) ?>"
-             class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
-            Others
-          </a>
         </div>
       </div>
 
@@ -115,7 +148,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
         <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
         <div class="input-group">
           <input type="text" name="search" class="form-control"
-                 placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
+                 placeholder="Search by Invoice No, T.P. No, or Bill No..." value="<?= htmlspecialchars($search); ?>">
           <button type="submit" class="btn btn-primary">
             <i class="fas fa-search"></i> Find
           </button>
@@ -125,45 +158,49 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
         </div>
       </form>
 
-      <!-- Add Item Button -->
+      <!-- Action Buttons -->
       <div class="action-btn mb-3 d-flex gap-2">
-        <a href="add_item.php" class="btn btn-primary">
-          <i class="fas fa-plus"></i> New
+        <a href="purchases.php" class="btn btn-primary">
+          <i class="fas fa-plus"></i> New Purchase
         </a>
         <a href="dashboard.php" class="btn btn-secondary ms-auto">
           <i class="fas fa-sign-out-alt"></i> Exit
         </a>
       </div>
 
-      <!-- Items Table -->
+      <!-- Purchases Table -->
       <div class="table-container">
         <table class="styled-table table-striped">
           <thead class="table-header">
             <tr>
-              <th>Code</th>
-              <th>New Code</th>
-              <th>Item Name</th>
-              <th>Class</th>
-              <th>Sub Class</th>
-              <th>P. Price</th>
-              <th>B. Price</th>
+              <th>Date</th>
+              <th>T.P. No</th>
+              <th>Inv. No</th>
+              <th>Inv. Date</th>
+              <th>Voc. No</th>
+              <th>Supplier</th>
+              <th>Amount</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-          <?php if (!empty($items)): ?>
-            <?php foreach ($items as $item): ?>
+          <?php if (!empty($purchases)): ?>
+            <?php foreach ($purchases as $purchase): ?>
               <tr>
-                <td><?= htmlspecialchars($item['CODE']); ?></td>
-                <td><?= htmlspecialchars($item['NEW_CODE']); ?></td>
-                <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                <td><?= htmlspecialchars(getClassDescription($item['CLASS'], $classDescriptions)); ?></td>
-                <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-                <td><?= number_format($item['PPRICE'], 3); ?></td>
-                <td><?= number_format($item['BPRICE'], 3); ?></td>
+                <td><?= formatDate($purchase['DATE']); ?></td>
+                <td><?= htmlspecialchars($purchase['TPNO']); ?></td>
+                <td><?= htmlspecialchars($purchase['INV_NO']); ?></td>
+                <td><?= formatDate($purchase['INV_DATE']); ?></td>
+                <td><?= htmlspecialchars($purchase['VOC_NO']); ?></td>
+                <td><?= htmlspecialchars(getSupplierName($purchase['SUBCODE'], $supplierNames)); ?></td>
+                <td><?= number_format($purchase['TAMT'], 2); ?></td>
                 <td>
-                  <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
-                     class="btn btn-sm btn-primary" title="Edit">
+                  <a href="view_purchase.php?vno=<?= urlencode($purchase['VOC_NO']) ?>&mode=<?= $mode ?>"
+                     class="btn btn-sm btn-primary" title="View">
+                    <i class="fas fa-eye"></i> View
+                  </a>
+                  <a href="edit_purchase.php?vno=<?= urlencode($purchase['VOC_NO']) ?>&mode=<?= $mode ?>"
+                     class="btn btn-sm btn-secondary" title="Edit">
                     <i class="fas fa-edit"></i> Edit
                   </a>
                 </td>
@@ -171,7 +208,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="9" class="text-center text-muted">No items found.</td>
+              <td colspan="8" class="text-center text-muted">No purchases found.</td>
             </tr>
           <?php endif; ?>
           </tbody>
