@@ -11,16 +11,21 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
+$companyId = $_SESSION['CompID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
-// Fetch customers from tbllheads
+// Fetch customers from tbllheads for this company only
 $customers = [];
-$customerQuery = "SELECT LCODE, LHEAD FROM tbllheads WHERE REF_CODE = 'CUST' ORDER BY LHEAD";
-$customerResult = $conn->query($customerQuery);
+$customerQuery = "SELECT LCODE, LHEAD FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ? ORDER BY LHEAD";
+$customerStmt = $conn->prepare($customerQuery);
+$customerStmt->bind_param("i", $companyId);
+$customerStmt->execute();
+$customerResult = $customerStmt->get_result();
 while ($row = $customerResult->fetch_assoc()) {
     $customers[$row['LCODE']] = $row['LHEAD'];
 }
+$customerStmt->close();
 
 // Get selected customer
 $selectedCustomer = isset($_GET['customer']) ? intval($_GET['customer']) : 0;
@@ -29,40 +34,52 @@ $customerName = isset($customers[$selectedCustomer]) ? $customers[$selectedCusto
 // Handle new customer creation
 $newCustomerName = isset($_GET['new_customer']) ? trim($_GET['new_customer']) : '';
 if ($newCustomerName !== '' && $selectedCustomer === 0) {
-    // Find a valid GCODE from tblgheads - using GCODE 32 (Sundry Debtors) which exists
-    $validGcode = 32; // Using Sundry Debtors as this exists in tblgheads
+    // Check if customer already exists for this company
+    $checkQuery = "SELECT LCODE FROM tbllheads WHERE LHEAD = ? AND CompID = ? AND REF_CODE = 'CUST'";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("si", $newCustomerName, $companyId);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
     
-    // Create new customer
-    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads";
-    $maxResult = $conn->query($maxCodeQuery);
-    $maxRow = $maxResult->fetch_assoc();
-    $newCode = $maxRow['max_code'] + 1;
-    
-    // Default values for new customer
-    $gcode = $validGcode;
-    $op_bal = 0;
-    $drcr = 'D';
-    $ref_code = 'CUST';
-    $serial_no = 0;
-    
-    $insertQuery = "INSERT INTO tbllheads (LCODE, LHEAD, GCODE, OP_BAL, DRCR, REF_CODE, SERIAL_NO) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?)";
-    $insertStmt = $conn->prepare($insertQuery);
-    $insertStmt->bind_param("isidssi", $newCode, $newCustomerName, $gcode, $op_bal, $drcr, $ref_code, $serial_no);
-    
-    if ($insertStmt->execute()) {
-        $selectedCustomer = $newCode;
-        $customerName = $newCustomerName;
-        $customers[$newCode] = $newCustomerName;
-        
-        // Refresh page to show the new customer as selected
-        header("Location: customer_wise_price.php?customer=" . $newCode);
-        exit;
+    if ($checkResult->num_rows > 0) {
+        $errorMessage = "Customer already exists!";
     } else {
-        $errorMessage = "Error creating customer: " . $insertStmt->error;
-        // You might want to display this error to the user
+        // Find a valid GCODE from tblgheads - using GCODE 32 (Sundry Debtors) which exists
+        $validGcode = 32; // Using Sundry Debtors as this exists in tblgheads
+        
+        // Create new customer
+        $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads";
+        $maxResult = $conn->query($maxCodeQuery);
+        $maxRow = $maxResult->fetch_assoc();
+        $newCode = $maxRow['max_code'] + 1;
+        
+        // Default values for new customer
+        $gcode = $validGcode;
+        $op_bal = 0;
+        $drcr = 'D';
+        $ref_code = 'CUST';
+        $serial_no = 0;
+        
+        $insertQuery = "INSERT INTO tbllheads (LCODE, LHEAD, GCODE, OP_BAL, DRCR, REF_CODE, SERIAL_NO, CompID) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $insertStmt = $conn->prepare($insertQuery);
+        $insertStmt->bind_param("isidssii", $newCode, $newCustomerName, $gcode, $op_bal, $drcr, $ref_code, $serial_no, $companyId);
+        
+        if ($insertStmt->execute()) {
+            $selectedCustomer = $newCode;
+            $customerName = $newCustomerName;
+            $customers[$newCode] = $newCustomerName;
+            
+            // Refresh page to show the new customer as selected
+            header("Location: customer_price.php?customer=" . $newCode);
+            exit;
+        } else {
+            $errorMessage = "Error creating customer: " . $insertStmt->error;
+            // You might want to display this error to the user
+        }
+        $insertStmt->close();
     }
-    $insertStmt->close();
+    $checkStmt->close();
 }
 
 // Mode selection (default Foreign Liquor = 'F')
@@ -126,6 +143,9 @@ if ($selectedCustomer > 0) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_prices']) && $selectedCustomer > 0) {
+    $hasChanges = false;
+    $duplicateEntries = [];
+    
     // Process each item price
     foreach ($_POST['prices'] as $code => $price) {
         $price = floatval(str_replace(',', '', $price));
@@ -153,7 +173,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_prices']) && $se
                 $updateQuery = "UPDATE tblCustomerPrices SET WPrice = ? WHERE LCode = ? AND Code = ?";
                 $updateStmt = $conn->prepare($updateQuery);
                 $updateStmt->bind_param("dis", $price, $selectedCustomer, $code);
-                $updateStmt->execute();
+                if ($updateStmt->execute()) {
+                    $hasChanges = true;
+                }
                 $updateStmt->close();
             }
         } else {
@@ -162,7 +184,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_prices']) && $se
                 $insertQuery = "INSERT INTO tblCustomerPrices (LCode, Code, WPrice) VALUES (?, ?, ?)";
                 $insertStmt = $conn->prepare($insertQuery);
                 $insertStmt->bind_param("isd", $selectedCustomer, $code, $price);
-                $insertStmt->execute();
+                if ($insertStmt->execute()) {
+                    $hasChanges = true;
+                } else {
+                    // Check if it's a duplicate entry error
+                    if ($insertStmt->errno == 1062) {
+                        $duplicateEntries[] = $code;
+                    }
+                }
                 $insertStmt->close();
             }
         }
@@ -170,11 +199,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_prices']) && $se
         $checkStmt->close();
     }
 
+    // Prepare redirect parameters
+    $redirectParams = "customer=" . $selectedCustomer . "&mode=" . $mode . "&search=" . urlencode($search);
+    
+    // Add appropriate message parameter
+    if (!empty($duplicateEntries)) {
+        $redirectParams .= "&error=duplicate";
+    } elseif ($hasChanges) {
+        $redirectParams .= "&success=1";
+    } else {
+        $redirectParams .= "&info=nochanges";
+    }
+    
     // Redirect to refresh the page and prevent form resubmission
-    header("Location: customer_wise_price.php?customer=" . $selectedCustomer . "&mode=" . $mode . "&search=" . urlencode($search) . "&success=1");
+    header("Location: customer_price.php?" . $redirectParams);
     exit;
 }
-
 
 // Function to get class description
 function getClassDescription($code, $classDescriptions) {
@@ -207,6 +247,15 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
     .success-message {
       background-color: #d4edda;
       color: #155724;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .info-message {
+      background-color: #d1ecf1;
+      color: #0c5460;
       padding: 15px;
       border-radius: 5px;
       margin-bottom: 20px;
@@ -266,13 +315,32 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
       <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
         <div class="success-message">
           <i class="fas fa-check-circle"></i> Customer price module successfully updated!
-          <button type="button" class="btn btn-sm btn-success ms-3" onclick="window.location.href='customer_wise_price.php?customer=<?= $selectedCustomer ?>&mode=<?= $mode ?>'">
+          <button type="button" class="btn btn-sm btn-success ms-3" onclick="window.location.href='customer_price.php?customer=<?= $selectedCustomer ?>&mode=<?= $mode ?>'">
+            OK
+          </button>
+        </div>
+      <?php endif; ?>
+
+      <!-- Info Message -->
+      <?php if (isset($_GET['info']) && $_GET['info'] == 'nochanges'): ?>
+        <div class="info-message">
+          <i class="fas fa-info-circle"></i> No changes were made to the prices.
+          <button type="button" class="btn btn-sm btn-info ms-3" onclick="window.location.href='customer_price.php?customer=<?= $selectedCustomer ?>&mode=<?= $mode ?>'">
             OK
           </button>
         </div>
       <?php endif; ?>
 
       <!-- Error Message -->
+      <?php if (isset($_GET['error']) && $_GET['error'] == 'duplicate'): ?>
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i> Some prices were not saved because they already exist in the database.
+          <button type="button" class="btn btn-sm btn-danger ms-3" onclick="window.location.href='customer_price.php?customer=<?= $selectedCustomer ?>&mode=<?= $mode ?>'">
+            OK
+          </button>
+        </div>
+      <?php endif; ?>
+
       <?php if (isset($errorMessage)): ?>
         <div class="error-message">
           <i class="fas fa-exclamation-circle"></i> <?php echo $errorMessage; ?>

@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- New Fields: Bits/Case, Op.Stk(G), Op.Stk(C1), Op.Stk(C2), MRP Price, Bar Code -->
             <div class="row mb-3">
               <div class="col-md-3 col-6">
-                <label for="bottles" class="form-label">Bits/Case</label>
+                <label for="bottles" class="form-label">Btls/Case</label>
                 <input type="number" step="0.001" class="form-control" id="bottles" name="bottles" value="<?= htmlspecialchars($item['BOTTLES'] ?? '') ?>">
               </div>
               <div class="col-md-3 col-6">

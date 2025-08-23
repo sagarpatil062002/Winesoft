@@ -73,7 +73,7 @@ if(!isset($_SESSION)) session_start();
                     <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item"><a href="purchases.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
+                    <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
                 
                 </ul>
             </li>    

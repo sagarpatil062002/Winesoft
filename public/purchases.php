@@ -5,24 +5,32 @@ session_start();
 if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit; }
 if (!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) { header("Location: index.php"); exit; }
 
+$companyId = $_SESSION['CompID'];
+
 include_once "../config/db.php";
 
 // ---- Mode: F (Foreign) / C (Country) ----
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
-// ---- Next Voucher No. ----
-$vocQuery  = "SELECT MAX(VOC_NO) AS MAX_VOC FROM tblPurchases";
-$vocResult = $conn->query($vocQuery);
+// ---- Next Voucher No. (for current company) ----
+$vocQuery  = "SELECT MAX(VOC_NO) AS MAX_VOC FROM tblPurchases WHERE CompID = ?";
+$vocStmt = $conn->prepare($vocQuery);
+$vocStmt->bind_param("i", $companyId);
+$vocStmt->execute();
+$vocResult = $vocStmt->get_result();
 $maxVoc    = $vocResult ? $vocResult->fetch_assoc() : ['MAX_VOC'=>0];
 $nextVoc   = intval($maxVoc['MAX_VOC']) + 1;
+$vocStmt->close();
 
 // ---- Items (for case rate lookup & modal) ----
 $items = [];
 $itemsStmt = $conn->prepare(
-  "SELECT CODE, DETAILS, DETAILS2, PPRICE
-     FROM tblitemmaster
-    WHERE LIQ_FLAG = ?
- ORDER BY DETAILS"
+  "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG,
+          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE
+     FROM tblitemmaster im
+     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
+    WHERE im.LIQ_FLAG = ?
+ ORDER BY im.DETAILS"
 );
 $itemsStmt->bind_param("s", $mode);
 $itemsStmt->execute();
@@ -35,12 +43,87 @@ $suppliers = [];
 $suppliersRes = $conn->query("SELECT CODE, DETAILS FROM tblsupplier ORDER BY DETAILS");
 if ($suppliersRes) $suppliers = $suppliersRes->fetch_all(MYSQLI_ASSOC);
 
-// ---- Save (stub – wire to your exact schema) ----
+// ---- Save purchase ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  // TODO: validate & insert header to tblPurchases + items to detail table.
-  // This file focuses on parsing & mapping the SCM → UI exactly as requested.
-  header("Location: purchase_module.php?mode=".$mode);
-  exit;
+    // Get form data
+    $date = $_POST['date'];
+    $voc_no = $_POST['voc_no'];
+    $tp_no = $_POST['tp_no'] ?? '';
+    $tp_date = $_POST['tp_date'] ?? '';
+    $inv_no = $_POST['inv_no'] ?? '';
+    $inv_date = $_POST['inv_date'] ?? '';
+    $supplier_code = $_POST['supplier_code'] ?? '';
+    $supplier_name = $_POST['supplier_name'] ?? '';
+    
+    // Charges and taxes
+    $cash_disc = $_POST['cash_disc'] ?? 0;
+    $trade_disc = $_POST['trade_disc'] ?? 0;
+    $octroi = $_POST['octroi'] ?? 0;
+    $freight = $_POST['freight'] ?? 0;
+    $stax_per = $_POST['stax_per'] ?? 0;
+    $stax_amt = $_POST['stax_amt'] ?? 0;
+    $tcs_per = $_POST['tcs_per'] ?? 0;
+    $tcs_amt = $_POST['tcs_amt'] ?? 0;
+    $misc_charg = $_POST['misc_charg'] ?? 0;
+    $basic_amt = $_POST['basic_amt'] ?? 0;
+    $tamt = $_POST['tamt'] ?? 0;
+    
+    // Insert purchase header
+    $insertQuery = "INSERT INTO tblpurchases (
+        DATE, SUBCODE, VOC_NO, INV_NO, INV_DATE, TAMT, 
+        TPNO, SCHDIS, CASHDIS, OCTROI, STAX_PER, STAX_AMT, 
+        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $insertStmt = $conn->prepare($insertQuery);
+    $insertStmt->bind_param(
+        "ssissdddddddddddsi", 
+        $date, $supplier_code, $voc_no, $inv_no, $inv_date, $tamt,
+        $tp_no, $trade_disc, $cash_disc, $octroi, $stax_per, $stax_amt,
+        $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
+    );
+    
+    if ($insertStmt->execute()) {
+        $purchase_id = $conn->insert_id;
+        
+        // Insert purchase items
+        if (isset($_POST['items']) && is_array($_POST['items'])) {
+            $detailQuery = "INSERT INTO tblpurchasedetails (
+                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, CaseRate, MRP, Amount, BottlesPerCase
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
+            $detailStmt = $conn->prepare($detailQuery);
+            
+            foreach ($_POST['items'] as $item) {
+                $item_code = $item['code'] ?? '';
+                $item_name = $item['name'] ?? '';
+                $item_size = $item['size'] ?? '';
+                $cases = $item['cases'] ?? 0;
+                $bottles = $item['bottles'] ?? 0;
+                $case_rate = $item['case_rate'] ?? 0;
+                $mrp = $item['mrp'] ?? 0;
+                $bottles_per_case = $item['bottles_per_case'] ?? 12;
+                
+                // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
+                $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
+                
+                $detailStmt->bind_param(
+                    "isssdidddi",
+                    $purchase_id, $item_code, $item_name, $item_size,
+                    $cases, $bottles, $case_rate, $mrp, $amount, $bottles_per_case
+                );
+                $detailStmt->execute();
+            }
+            $detailStmt->close();
+        }
+        
+        header("Location: purchase_module.php?mode=".$mode."&success=1");
+        exit;
+    } else {
+        $errorMessage = "Error saving purchase: " . $insertStmt->error;
+    }
+    
+    $insertStmt->close();
 }
 ?>
 <!DOCTYPE html>
@@ -78,6 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="content-area p-3 p-md-4">
       <h4 class="mb-3">New Purchase - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h4>
 
+      <?php if (isset($errorMessage)): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
+      <?php endif; ?>
+
       <div class="alert alert-info">
         <div class="d-flex align-items-center gap-2 mb-1">
           <i class="fa-solid fa-paste"></i>
@@ -85,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="small-help mb-2">
           Copy the table (including headers) from the SCM retailer screen and paste it.  
-          The parser understands the two-line “SCM Code:” rows automatically.
+          The parser understands the two-line "SCM Code:" rows automatically.
         </div>
         <button id="pasteFromSCM" class="btn btn-primary btn-sm">
           <i class="fa-solid fa-clipboard"></i> Paste SCM Data
@@ -94,6 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <form method="POST" id="purchaseForm">
         <input type="hidden" name="mode" value="<?=htmlspecialchars($mode)?>">
+        <input type="hidden" name="voc_no" value="<?=$nextVoc?>">
 
         <!-- HEADER -->
         <div class="card mb-4">
@@ -103,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="col-md-3">
                 <label class="form-label">Voucher No.</label>
                 <input class="form-control" value="<?=$nextVoc?>" disabled>
-                <input type="hidden" name="voc_no" value="<?=$nextVoc?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Date</label>
@@ -235,7 +322,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input class="form-control mb-2" id="itemSearch" placeholder="Search items...">
       <div class="table-container">
         <table class="styled-table">
-          <thead><tr><th>Code</th><th>Item</th><th>Size</th><th>Price</th><th>Action</th></tr></thead>
+          <thead><tr><th>Code</th><th>Item</th><th>Size</th><th>Price</th><th>Bottles/Case</th><th>Action</th></tr></thead>
           <tbody id="itemsModalTable">
           <?php foreach($items as $it): ?>
             <tr class="item-row-modal">
@@ -243,11 +330,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <td><?=htmlspecialchars($it['DETAILS'])?></td>
               <td><?=htmlspecialchars($it['DETAILS2'])?></td>
               <td><?=number_format((float)$it['PPRICE'],3)?></td>
+              <td><?=htmlspecialchars($it['BOTTLE_PER_CASE'])?></td>
               <td><button type="button" class="btn btn-sm btn-primary select-item"
                   data-code="<?=htmlspecialchars($it['CODE'])?>"
                   data-name="<?=htmlspecialchars($it['DETAILS'])?>"
                   data-size="<?=htmlspecialchars($it['DETAILS2'])?>"
-                  data-price="<?=htmlspecialchars($it['PPRICE'])?>">Select</button></td>
+                  data-price="<?=htmlspecialchars($it['PPRICE'])?>"
+                  data-bottles-per-case="<?=htmlspecialchars($it['BOTTLE_PER_CASE'])?>">Select</button></td>
             </tr>
           <?php endforeach; ?>
           </tbody>
@@ -296,36 +385,106 @@ $(function(){
     if(!mon) return '';
     return `${m[3]}-${mon}-${String(m[1]).padStart(2,'0')}`;
   }
-  function findDbItemPrice(name, size){
-    const n = (name||'').toLowerCase().replace(/\s+/g,' ').trim();
-    const sz = (size||'').toLowerCase();
-    let best = null;
-    for(const it of dbItems){
-      const nm = (it.DETAILS||'').toLowerCase();
-      if(nm && (n.includes(nm) || nm.includes(n))){
-        // soft size check
-        if(!size || (it.DETAILS2||'').toLowerCase().includes(sz) || sz.includes((it.DETAILS2||'').toLowerCase())){
-          best = it;
-          break;
+
+  function findDbItemData(name, size, code) {
+    const n = (name || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const sz = (size || '').toLowerCase();
+    const cd = (code || '').toLowerCase();
+    
+    // 1. Try exact code match first
+    if (cd) {
+        for (const it of dbItems) {
+            if ((it.CODE || '').toLowerCase() === cd) {
+                console.log("Exact code match found:", it.CODE);
+                return it;
+            }
         }
-      }
+        
+        // Try normalized code match (remove SCM prefix)
+        const normalizedCode = cd.replace(/^scm/, '');
+        for (const it of dbItems) {
+            if ((it.CODE || '').toLowerCase() === normalizedCode) {
+                console.log("Normalized code match found:", it.CODE);
+                return it;
+            }
+        }
     }
-    return best ? parseFloat(best.PPRICE||0) : 0;
+    
+    // 2. Try name and size match with scoring
+    let bestMatch = null;
+    let bestScore = 0;
+    
+    for (const it of dbItems) {
+        const dbName = (it.DETAILS || '').toLowerCase();
+        const dbSize = (it.DETAILS2 || '').toLowerCase();
+        let score = 0;
+        
+        // Name similarity (higher weight)
+        if (dbName && n === dbName) score += 5;
+        else if (dbName && n.includes(dbName)) score += 4;
+        else if (dbName && dbName.includes(n)) score += 3;
+        
+        // Size similarity
+        if (dbSize && sz === dbSize) score += 3;
+        else if (dbSize && sz.includes(dbSize)) score += 2;
+        else if (dbSize && dbSize.includes(sz)) score += 1;
+        
+        if (score > bestScore) {
+            bestScore = score;
+            bestMatch = it;
+        }
+    }
+    
+    if (bestMatch) {
+        console.log("Best name/size match found:", bestMatch.CODE, "Score:", bestScore);
+        return bestMatch;
+    }
+    
+    console.log("No match found for:", {name: n, size: sz, code: cd});
+    return null;
+}
+
+  function calculateAmount(cases, individualBottles, caseRate, bottlesPerCase) {
+    // Handle invalid inputs
+    if (bottlesPerCase <= 0) bottlesPerCase = 1;
+    if (caseRate < 0) caseRate = 0;
+    cases = Math.max(0, cases || 0);
+    individualBottles = Math.max(0, individualBottles || 0);
+    
+    // Calculate total amount for full cases
+    const fullCaseAmount = cases * caseRate;
+    
+    // Calculate rate per individual bottle (case rate divided by bottles per case)
+    const bottleRate = caseRate / bottlesPerCase;
+    
+    // Calculate amount for individual bottles
+    const individualBottleAmount = individualBottles * bottleRate;
+    
+    return fullCaseAmount + individualBottleAmount;
   }
+
   function addRow(item){
     if($('#noItemsRow').length) $('#noItemsRow').remove();
-    const amount = (item.cases*item.caseRate) + (item.bottles*item.mrp);
+    
+    // Get item data from database to find bottles per case
+    const dbItem = findDbItemData(item.name, item.size);
+    const bottlesPerCase = dbItem ? parseInt(dbItem.BOTTLE_PER_CASE) || 12 : 12;
+    const caseRate = item.caseRate || 0;
+    
+    const amount = calculateAmount(item.cases, item.bottles, caseRate, bottlesPerCase);
+    
     const r = `
-      <tr class="item-row">
+      <tr class="item-row" data-bottles-per-case="${bottlesPerCase}">
         <td>
           <input type="hidden" name="items[${itemCount}][code]" value="${item.code||''}">
+          <input type="hidden" name="items[${itemCount}][bottles_per_case]" value="${bottlesPerCase}">
           ${item.code||''}
         </td>
         <td>${item.name||''}</td>
         <td>${item.size||''}</td>
         <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${item.bottles||0}" min="0" step="1" max="11"></td>
-        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${(item.caseRate||0).toFixed(3)}" step="0.001"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
         <td><input type="number" class="form-control form-control-sm mrp" name="items[${itemCount}][mrp]" value="${item.mrp||0}" step="0.01"></td>
         <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
@@ -334,6 +493,7 @@ $(function(){
     itemCount++;
     updateTotals();
   }
+
   function updateTotals(){
     let t=0;
     $('.item-row .amount').each(function(){ t += parseFloat($(this).text())||0; });
@@ -341,6 +501,7 @@ $(function(){
     $('input[name="basic_amt"]').val(t.toFixed(2));
     calcTaxes();
   }
+
   function calcTaxes(){
     const basic = parseFloat($('input[name="basic_amt"]').val())||0;
     const staxp = parseFloat($('input[name="stax_per"]').val())||0;
@@ -363,6 +524,7 @@ $(function(){
     const code = $(this).find(':selected').data('code') || '';
     if(name){ $('#supplierInput').val(name); $('#supplierCodeHidden').val(code); }
   });
+
   $('#supplierInput').on('input', function(){
     const q = $(this).val().toLowerCase();
     if(q.length<2){ $('#supplierSuggestions').hide().empty(); return; }
@@ -379,23 +541,27 @@ $(function(){
     const html = list.map(s=>`<div class="supplier-suggestion" data-code="${s.code}" data-name="${s.name}">${s.name} (${s.code})</div>`).join('');
     $('#supplierSuggestions').html(html).show();
   });
+
   $(document).on('click','.supplier-suggestion', function(){
     $('#supplierInput').val($(this).data('name'));
     $('#supplierCodeHidden').val($(this).data('code'));
     $('#supplierSuggestions').hide();
   });
+
   $(document).on('click', function(e){
     if(!$(e.target).closest('.supplier-container').length) $('#supplierSuggestions').hide();
   });
 
   // ------- Add/Clear Manually -------
   $('#addItem').on('click', ()=>$('#itemModal').modal('show'));
+
   $('#itemSearch').on('input', function(){
     const v = this.value.toLowerCase();
     $('.item-row-modal').each(function(){
       $(this).toggle($(this).text().toLowerCase().includes(v));
     });
   });
+
   $(document).on('click','.select-item', function(){
     addRow({
       code: $(this).data('code'),
@@ -407,6 +573,7 @@ $(function(){
     });
     $('#itemModal').modal('hide');
   });
+
   $('#clearItems').on('click', function(){
     if(confirm('Clear all items?')){
       $('.item-row').remove(); itemCount=0;
@@ -423,11 +590,13 @@ $(function(){
     const cases = parseFloat(row.find('.cases').val())||0;
     const bottles = parseFloat(row.find('.bottles').val())||0;
     const rate = parseFloat(row.find('.case-rate').val())||0;
-    const mrp = parseFloat(row.find('.mrp').val())||0;
-    const amt = (cases*rate) + (bottles*mrp);
-    row.find('.amount').text(amt.toFixed(2));
+    const bottlesPerCase = parseInt(row.data('bottles-per-case')) || 12;
+    
+    const amount = calculateAmount(cases, bottles, rate, bottlesPerCase);
+    row.find('.amount').text(amount.toFixed(2));
     updateTotals();
   });
+
   $(document).on('click','.remove-item', function(){
     $(this).closest('tr').remove();
     if($('.item-row').length===0){
@@ -435,6 +604,7 @@ $(function(){
       $('#totalAmount').text('0.00'); $('input[name="basic_amt"]').val('0.00'); $('input[name="tamt"]').val('0.00');
     }else updateTotals();
   });
+
   $('input[name="stax_per"],input[name="tcs_per"],input[name="cash_disc"],input[name="trade_disc"],input[name="octroi"],input[name="freight"],input[name="misc_charg"]').on('input', calcTaxes);
 
   // ------- Paste-from-SCM -------
@@ -467,89 +637,90 @@ $(function(){
     }
   });
 
-  // Core parser – tuned for your SCM export
-function parseSCM(text){
-  const lines = text.split(/\r?\n/).map(l=>l.replace(/\u00A0/g,' ').trim()).filter(l=>l!=='');
-  const out = { tpNo:'', tpDate:'', receivedDate:'', party:'', items:[] };
+  // Core parser – tuned for your SCM paste format
+  function parseSCM(text){
+    const lines = text.split(/\r?\n/).map(l=>l.replace(/\u00A0/g,' ').trim()).filter(l=>l!=='');
+    const out = { tpNo:'', tpDate:'', receivedDate:'', party:'', items:[] };
 
-  // --- Header fields ---
-  for(let i=0;i<lines.length;i++){
-    const L = lines[i];
+    // ---- HEADER extraction ----
+    for(let i=0;i<lines.length;i++){
+      const L = lines[i];
 
-    if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
-      const nxt = (lines[i+1]||'').trim();
-      if(nxt) out.tpNo = nxt;
-    }
-    if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
-      const nxt = (lines[i+1]||'').trim();
-      if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
-    }
-    if(/T\.?P\.?Date:/i.test(L)){
-      const nxt = (lines[i+1]||'').trim();
-      const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
-    }
-    if(/Received\s*Date/i.test(L)){
-      const nxt = (lines[i+1]||'').trim();
-      const d = ymdFromDmyText(nxt);
-      out.receivedDate = d || nxt;
-    }
-    if(/^Party\s*:/i.test(L)){
-      const nxt = (lines[i+1]||'').trim();
-      if(nxt) out.party = nxt;
-    }
-  }
-
-  // --- Table start ---
-  let start = -1;
-  for(let i=0;i<lines.length;i++){
-    if(/Sr.?No/i.test(lines[i]) && /ItemName/i.test(lines[i]) && /Qty/i.test(lines[i])){
-      start = i+1; break;
-    }
-  }
-  if(start === -1) return out;
-
-  // --- Table rows ---
-  for(let i=start;i<lines.length;i++){
-    let L = lines[i];
-
-    // Stop at totals/footer
-    if(/^Total/i.test(L) || /^$/.test(L)) break;
-
-    // First line: SrNo + ItemName
-    const firstLine = L;
-    const srMatch = firstLine.match(/^\d+\s+(.*)$/);
-    if(srMatch){
-      const itemName = srMatch[1].trim();
-
-      // Second line must be SCM Code line
-      const second = (lines[i+1]||'').trim();
-      if(second.startsWith("SCM Code:")){
-        const parts = second.split(/\s+/);
-
-        // Example second line: "SCM Code:SCMKB0018204 650 ML 5.00 0 36 BTOS70-20 Jun-2025 195.00 39.00 8.0 60"
-        const size    = parts[2] + " " + parts[3];
-        const cases   = parseFloat(parts[4])||0;
-        const bottles = parseInt(parts[5])||0;
-        const mrp     = parseFloat(parts[9])||0;
-        const caseRate= findDbItemPrice(itemName, size);
-
-        out.items.push({
-          code: "", // can be looked up from dbItems if needed
-          name: itemName,
-          size: size,
-          cases: cases,
-          bottles: bottles,
-          caseRate: caseRate,
-          mrp: mrp
-        });
-
-        i++; // skip the SCM Code line
+      if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.tpNo = nxt;
+      }
+      if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
+      }
+      if(/T\.?P\.?Date:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
+      }
+      if(/Received\s*Date/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt);
+        out.receivedDate = d || nxt;
+      }
+      if(/^Party\s*:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.party = nxt;
       }
     }
-  }
 
-  return out;
-}
+    // ---- TABLE start ----
+    let start = -1;
+    for(let i=0;i<lines.length;i++){
+      if(/Sr.?No/i.test(lines[i]) && /ItemName/i.test(lines[i]) && /Qty/i.test(lines[i])){
+        start = i+1; break;
+      }
+    }
+    if(start === -1) return out;
+
+    // ---- ITEMS ----
+    for(let i=start;i<lines.length;i++){
+      const first = lines[i];
+
+      // stop at "Total" or footer lines
+      if(/^Total/i.test(first)) break;
+
+      const srMatch = first.match(/^(\d+)\s+(.+)$/);
+      if(srMatch){
+        const itemName = srMatch[2].trim();
+
+        const second = (lines[i+1]||'').trim();
+        if(second.startsWith("SCM Code:")){
+          const parts = second.split(/\s+/);
+          // Example: SCM Code:SCMKB0018204 650 ML 5.00 0 36 BTOS70-20 Jun-2025 195.00 39.00 8.0 60
+
+          const itemCode = parts[1].replace("SCM Code:","").trim();
+          const size     = parts[2] + " " + parts[3];
+          const cases    = parseFloat(parts[4])||0;
+          const bottles  = parseInt(parts[5])||0;
+          const mrp      = parseFloat(parts[9])||0;
+          
+          // Get complete item data including bottles per case
+          const dbItem = findDbItemData(itemName, size);
+          const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
+
+          out.items.push({
+            code: itemCode,
+            name: itemName,
+            size: size,
+            cases: cases,
+            bottles: bottles,
+            caseRate: caseRate,
+            mrp: mrp
+          });
+
+          i++; // skip the SCM Code line
+        }
+      }
+    }
+
+    return out;
+  }
 
 });
 </script>

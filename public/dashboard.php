@@ -202,14 +202,31 @@ try {
                 
                 <!-- Customer Statistics Card -->
                 <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #48BB78;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Total Customers</h4>
-                        <p><?php echo $stats['total_customers']; ?></p>
-                    </div>
-                </div>
+    <div class="stat-icon" style="background-color: #48BB78;">
+        <i class="fas fa-users"></i>
+    </div>
+    <div class="stat-info">
+        <h4>Total Customers</h4>
+        <p>
+            <?php 
+            // Get the current company ID from session
+            $companyId = $_SESSION['CompID'] ?? 0;
+            
+            // Query to count customers for the current company only
+            $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
+            $customerCountStmt = $conn->prepare($customerCountQuery);
+            $customerCountStmt->bind_param("i", $companyId);
+            $customerCountStmt->execute();
+            $customerCountResult = $customerCountStmt->get_result();
+            $customerCount = $customerCountResult->fetch_assoc();
+            
+            echo $customerCount['total_customers'];
+            
+            $customerCountStmt->close();
+            ?>
+        </p>
+    </div>
+</div>
                 
                 <!-- Supplier Statistics Card -->
                 <div class="stat-card">
