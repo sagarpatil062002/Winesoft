@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
                 $detailStmt->bind_param(
-                    "isssdidddi",
+                    "isssdiddii", // Changed to "i" for BottlesPerCase (integer)
                     $purchase_id, $item_code, $item_name, $item_size,
                     $cases, $bottles, $case_rate, $mrp, $amount, $bottles_per_case
                 );
