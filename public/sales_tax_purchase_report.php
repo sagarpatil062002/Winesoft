@@ -12,12 +12,9 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require 'components/financial_year.php'; // Include the financial year module
+FinancialYearModule::redirectIfNotSet();
 
-// Get company ID from session
-$compID = $_SESSION['CompID'];
-
-// Get company name from session or set default
-$companyName = isset($_SESSION['company_name']) ? $_SESSION['company_name'] : "Company Name";
 
 // Get filter parameters
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
@@ -28,7 +25,10 @@ $supplier = isset($_GET['supplier']) ? $_GET['supplier'] : 'all';
 $from_date_display = date('d-M-Y', strtotime($from_date));
 $to_date_display = date('d-M-Y', strtotime($to_date));
 
-// Fetch suppliers from tbllheads for dropdown (filtered by company)
+// Get company ID from session
+$compID = $_SESSION['CompID'];
+
+// Fetch suppliers from tbllheads for dropdown (only for current company)
 $suppliers_query = "SELECT LCODE, LHEAD, REF_CODE FROM tbllheads WHERE GCODE = 33 AND CompID = ? ORDER BY LHEAD";
 $suppliers_stmt = $conn->prepare($suppliers_query);
 $suppliers_stmt->bind_param("i", $compID);
@@ -40,25 +40,13 @@ while ($row = $suppliers_result->fetch_assoc()) {
 }
 $suppliers_stmt->close();
 
-// Build query to fetch purchase data with CompID filter
+// Build query to fetch purchase data grouped by supplier
 $query = "SELECT 
-            p.ID, 
-            p.DATE, 
-            p.SUBCODE, 
-            p.VOC_NO, 
-            p.INV_NO, 
-            p.TPNO, 
-            p.TAMT as net_amt, 
-            p.CASHDIS as cash_disc, 
-            p.SCHDIS as sch_disc, 
-            p.OCTROI as oct, 
-            p.STAX_AMT as sales_tax, 
-            p.TCS_AMT as tc_amt, 
-            p.MISC_CHARG as sarc_amt, 
-            0 as ec_amt, 
-            0 as stp_duty, 
-            p.FREIGHT as frieght,
-            (p.TAMT - p.CASHDIS - p.SCHDIS + p.OCTROI + p.STAX_AMT + p.TCS_AMT + p.MISC_CHARG + p.FREIGHT) as total
+            p.SUBCODE,
+            SUM(p.TAMT) as net_amt,
+            SUM(p.STAX_AMT) as sales_tax,
+            SUM(p.TAMT - p.STAX_AMT) as net_amt_wine,
+            SUM(p.TAMT + p.STAX_AMT) as total_amt
           FROM tblpurchases p
           WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
 
@@ -71,7 +59,7 @@ if ($supplier !== 'all') {
     $types .= "s";
 }
 
-$query .= " ORDER BY p.DATE, p.VOC_NO";
+$query .= " GROUP BY p.SUBCODE ORDER BY p.SUBCODE";
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param($types, ...$params);
@@ -83,30 +71,16 @@ $stmt->close();
 // Calculate totals
 $totals = [
     'net_amt' => 0,
-    'cash_disc' => 0,
-    'sch_disc' => 0,
-    'oct' => 0,
     'sales_tax' => 0,
-    'tc_amt' => 0,
-    'sarc_amt' => 0,
-    'ec_amt' => 0,
-    'stp_duty' => 0,
-    'frieght' => 0,
-    'total' => 0
+    'net_amt_wine' => 0,
+    'total_amt' => 0
 ];
 
 foreach ($purchases as $purchase) {
     $totals['net_amt'] += floatval($purchase['net_amt']);
-    $totals['cash_disc'] += floatval($purchase['cash_disc']);
-    $totals['sch_disc'] += floatval($purchase['sch_disc']);
-    $totals['oct'] += floatval($purchase['oct']);
     $totals['sales_tax'] += floatval($purchase['sales_tax']);
-    $totals['tc_amt'] += floatval($purchase['tc_amt']);
-    $totals['sarc_amt'] += floatval($purchase['sarc_amt']);
-    $totals['ec_amt'] += floatval($purchase['ec_amt']);
-    $totals['stp_duty'] += floatval($purchase['stp_duty']);
-    $totals['frieght'] += floatval($purchase['frieght']);
-    $totals['total'] += floatval($purchase['total']);
+    $totals['net_amt_wine'] += floatval($purchase['net_amt_wine']);
+    $totals['total_amt'] += floatval($purchase['total_amt']);
 }
 ?>
 <!DOCTYPE html>
@@ -114,12 +88,38 @@ foreach ($purchases as $purchase) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Purchase Report - WineSoft</title>
+  <title>Purchase Report - Sales Tax - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+  <style>
+    .report-table th {
+      background-color: #f8f9fa;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .total-row {
+      font-weight: bold;
+      background-color: #e9ecef;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-section {
+        display: block !important;
+      }
+      body {
+        font-size: 12px;
+      }
+      .report-table {
+        font-size: 11px;
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -132,15 +132,26 @@ foreach ($purchases as $purchase) {
       <!-- Filters Section (Not Printable) -->
       <div class="report-filters no-print">
         <form method="GET" class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">From Date</label>
             <input type="date" class="form-control" name="from_date" value="<?= htmlspecialchars($from_date) ?>">
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">To Date</label>
             <input type="date" class="form-control" name="to_date" value="<?= htmlspecialchars($to_date) ?>">
           </div>
-          <div class="col-md-12">
+          <div class="col-md-3">
+            <label class="form-label">Supplier</label>
+            <select class="form-select" name="supplier">
+              <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
+              <?php foreach ($suppliers as $ref_code => $lhead): ?>
+                <option value="<?= htmlspecialchars($ref_code) ?>" <?= $supplier === $ref_code ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($lhead) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-12 mt-4">
             <div class="btn-group">
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-sync-alt"></i> Generate
@@ -160,14 +171,16 @@ foreach ($purchases as $purchase) {
       <div class="print-section">
         <div class="print-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-
-          <h4>Purchase Report</h4>
+          <h4>Purchase Report - Sales Tax</h4>
         </div>
 
         <!-- Report Header -->
         <div class="report-header">
           <div class="report-title">
-            Purchase Report From <?= $from_date_display ?> To <?= $to_date_display ?>
+            Purchase Report - Sales Tax | From <?= $from_date_display ?> To <?= $to_date_display ?>
+            <?php if ($supplier !== 'all'): ?>
+              | Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -176,73 +189,44 @@ foreach ($purchases as $purchase) {
           <table class="styled-table report-table">
             <thead>
               <tr>
-                <th>Date</th>
                 <th>Supplier Name</th>
-                <th>V. No.</th>
-                <th>Bill No.</th>
-                <th>T.P. No.</th>
                 <th>Net Amt.</th>
-                <th>Cash Disc.</th>
-                <th>Sch. Disc.</th>
-                <th>Oct.</th>
                 <th>Sales Tax</th>
-                <th>TC $ Amt.</th>
-                <th>Sarc. Amt.</th>
-                <th>E.C. Amt.</th>
-                <th>Stp. Duty</th>
-                <th>Frieght</th>
-                <th>Total Bill Amt.</th>
+                <th>Net Amt Wine</th>
+                <th>Total Amt.</th>
               </tr>
             </thead>
             <tbody>
               <?php if (!empty($purchases)): ?>
                 <?php foreach ($purchases as $purchase): ?>
                   <tr>
-                    <td><?= date('d-M-Y', strtotime($purchase['DATE'])) ?></td>
                     <td><?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?></td>
-                    <td><?= htmlspecialchars($purchase['VOC_NO']) ?></td>
-                    <td><?= htmlspecialchars($purchase['INV_NO']) ?></td>
-                    <td><?= htmlspecialchars($purchase['TPNO']) ?></td>
                     <td class="text-right"><?= number_format($purchase['net_amt'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['cash_disc'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['sch_disc'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['oct'], 2) ?></td>
                     <td class="text-right"><?= number_format($purchase['sales_tax'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['tc_amt'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['sarc_amt'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['ec_amt'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['stp_duty'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['frieght'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
+                    <td class="text-right"><?= number_format($purchase['net_amt_wine'], 2) ?></td>
+                    <td class="text-right"><?= number_format($purchase['total_amt'], 2) ?></td>
                   </tr>
                 <?php endforeach; ?>
                 <tr class="total-row">
-                  <td colspan="5" class="text-center"><strong>Total</strong></td>
+                  <td class="text-center"><strong>Total</strong></td>
                   <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['cash_disc'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['sch_disc'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['oct'], 2) ?></strong></td>
                   <td class="text-right"><strong><?= number_format($totals['sales_tax'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['tc_amt'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['sarc_amt'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['ec_amt'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['stp_duty'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['frieght'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['total'], 2) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($totals['net_amt_wine'], 2) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($totals['total_amt'], 2) ?></strong></td>
                 </tr>
               <?php else: ?>
                 <tr>
-                  <td colspan="16" class="text-center text-muted">No purchases found for the selected period.</td>
+                  <td colspan="5" class="text-center text-muted">No purchases found for the selected period.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
           </table>
         </div>
-
-        
+      </div>
+    </div>
+      <?php include 'components/footer.php'; ?>
 
   </div>
-      <?php include 'components/footer.php'; ?>
 
 </div>
 

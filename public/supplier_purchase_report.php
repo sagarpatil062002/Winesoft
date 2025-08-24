@@ -13,6 +13,9 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
+// Get company ID from session
+$compID = $_SESSION['CompID'];
+
 // Default values
 $report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'detailed';
 $supplier_type = isset($_GET['supplier_type']) ? $_GET['supplier_type'] : 'particular_supplier_all_brands';
@@ -21,28 +24,35 @@ $brand_code = isset($_GET['brand_code']) ? $_GET['brand_code'] : '';
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d', strtotime('-6 months'));
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
 
-// Fetch suppliers from tbllheads
+// Fetch suppliers from tbllheads (filtered by company)
 $suppliers = [];
 $supplierQuery = "SELECT l.LCODE, l.LHEAD, s.CODE 
                   FROM tbllheads l 
                   LEFT JOIN tblsupplier s ON l.REF_CODE = s.CODE 
-                  WHERE l.GCODE = 33 
+                  WHERE l.GCODE = 33 AND l.CompID = ?
                   ORDER BY l.LHEAD";
-$supplierResult = $conn->query($supplierQuery);
+$supplierStmt = $conn->prepare($supplierQuery);
+$supplierStmt->bind_param("i", $compID);
+$supplierStmt->execute();
+$supplierResult = $supplierStmt->get_result();
 while ($row = $supplierResult->fetch_assoc()) {
     $suppliers[$row['CODE']] = $row['LHEAD'];
 }
+$supplierStmt->close();
 
-// Fetch brands from tblitemmaster - using DETAILS (item name) instead of DETAILS2 (size)
+// Fetch brands from tblitemmaster (no CompID filter as it doesn't exist in this table)
 $brands = [];
 $brandQuery = "SELECT DISTINCT DETAILS 
                FROM tblitemmaster 
                WHERE DETAILS IS NOT NULL AND DETAILS != '' 
                ORDER BY DETAILS";
-$brandResult = $conn->query($brandQuery);
+$brandStmt = $conn->prepare($brandQuery);
+$brandStmt->execute();
+$brandResult = $brandStmt->get_result();
 while ($row = $brandResult->fetch_assoc()) {
     $brands[] = $row['DETAILS'];
 }
+$brandStmt->close();
 
 // Generate report data based on filters
 $report_data = [];
@@ -65,10 +75,10 @@ if (isset($_GET['generate'])) {
               FROM tblpurchases p
               INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
               INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
-              WHERE p.DATE BETWEEN ? AND ?";
+              WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
     
-    $params = [$date_from, $date_to];
-    $types = "ss";
+    $params = [$date_from, $date_to, $compID];
+    $types = "ssi";
     
     if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
         $query .= " AND p.SUBCODE = ?";
@@ -93,10 +103,10 @@ if (isset($_GET['generate'])) {
     // Calculate gross amount
     $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount 
                     FROM tblpurchases p
-                    WHERE p.DATE BETWEEN ? AND ?";
+                    WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
     
-    $gross_params = [$date_from, $date_to];
-    $gross_types = "ss";
+    $gross_params = [$date_from, $date_to, $compID];
+    $gross_types = "ssi";
     
     if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
         $gross_query .= " AND p.SUBCODE = ?";
@@ -123,169 +133,9 @@ if (isset($_GET['generate'])) {
   <title>Supplier Wise Purchase Report - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <style>
-    :root {
-      --primary-color: #8B0000;
-      --secondary-color: #f8f9fa;
-      --accent-color: #ffc107;
-    }
-    
-    body {
-      background-color: #f5f5f5;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .dashboard-container {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .main-content {
-      flex: 1;
-      padding: 20px;
-    }
-    
-    .content-area {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      padding: 25px;
-      margin-top: 20px;
-    }
-    
-    .card.filter-card {
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    }
-    
-    .card.filter-card .card-header {
-      background-color: var(--primary-color);
-      color: white;
-      border-radius: 8px 8px 0 0 !important;
-      padding: 12px 20px;
-      font-weight: 600;
-    }
-    
-    .form-label {
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-    
-    .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    
-    .btn-primary:hover {
-      background-color: #6d0000;
-      border-color: #6d0000;
-    }
-    
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    
-    .report-table th {
-      background-color: var(--primary-color);
-      color: white;
-      padding: 10px;
-      text-align: left;
-      border: 1px solid #dee2e6;
-    }
-    
-    .report-table td {
-      padding: 10px;
-      border: 1px solid #dee2e6;
-    }
-    
-    .brand-row, .brand-header {
-      background-color: #f8f9fa;
-      font-weight: bold;
-    }
-    
-    .brand-row td {
-      background-color: #e9ecef;
-      padding: 8px 10px;
-    }
-    
-    .brand-header td {
-      background-color: #f8f9fa;
-      padding: 8px 10px;
-    }
-    
-    .total-row {
-      font-weight: bold;
-      background-color: #fff3cd;
-    }
-    
-    .text-right {
-      text-align: right;
-    }
-    
-    .text-end {
-      text-align: end;
-    }
-    
-    .company-header {
-      text-align: center;
-      margin-bottom: 25px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid var(--primary-color);
-    }
-    
-    .company-header h1 {
-      color: var(--primary-color);
-      font-size: 28px;
-      margin-bottom: 5px;
-    }
-    
-    .company-header h5 {
-      color: #495057;
-      font-size: 16px;
-    }
-    
-    .action-controls {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-    }
-    
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      .print-section, .print-section * {
-        visibility: visible;
-      }
-      .print-section {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      .no-print {
-        display: none !important;
-      }
-      .company-header {
-        margin-top: 0;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .content-area {
-        padding: 15px;
-      }
-      
-      .action-controls .btn {
-        flex: 1;
-        min-width: 120px;
-      }
-    }
+  <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+  <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
   </style>
 </head>
 <body>

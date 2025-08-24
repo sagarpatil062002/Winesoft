@@ -80,7 +80,18 @@
 
                 </a>
                 <ul class="dropdown">
+                    <li class="nav-item">
+                        <a href="brandwise_report.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">analytics</span>
+                            <span class="nav-label">Brandwise Report</span>
+                            
+                        </a>
+                    </li>
                     <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchase Report</span></a></li>
+                    <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">pallet</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
+                    <li class="nav-item"><a href="purchase_summary_case_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">stack</span><span class="nav-label">Purchase Summary Case Report</span></a></li>
+                    <li class="nav-item"><a href="sales_tax_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calculate</span><span class="nav-label">Sales Tax Purchase Report</span></a></li>
+                
                 </ul>
             </li>
             <!-- Utilities Dropdown -->
@@ -105,13 +116,7 @@
 
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="brandwise_report.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">analytics</span>
-                            <span class="nav-label">Brandwise Report</span>
-                            
-                        </a>
-                    </li>
+                    
                     <li class="nav-item">
                         <a href="dryday.php" class="nav-link">
                             <span class="nav-icon material-symbols-rounded">event_busy</span>

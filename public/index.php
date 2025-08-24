@@ -1,27 +1,53 @@
 <?php
 session_start();
 require '../config/db.php';
+require 'components/financial_year.php'; // Include the financial year module
 
 // Initialize variables
 $error = '';
 $companies = [];
 $financial_years = [];
+$filtered_years = [];
 
-// Get all companies and financial years
-$companyResult = mysqli_query($conn, "SELECT CompID, COMP_NAME FROM tblCompany ORDER BY COMP_NAME");
+// Get all companies
+$companyResult = mysqli_query($conn, "SELECT CompID, COMP_NAME, FIN_YEAR FROM tblCompany ORDER BY COMP_NAME");
 while($company = mysqli_fetch_assoc($companyResult)) {
     $companies[] = $company;
 }
 
-// Get financial years with start and end dates
+// Get all financial years with start and end dates
 $yearResult = mysqli_query($conn, "
-    SELECT DISTINCT c.FIN_YEAR, fy.ID, fy.START_DATE, fy.END_DATE 
-    FROM tblCompany c 
-    JOIN tblfinyear fy ON c.FIN_YEAR = fy.ID 
-    ORDER BY fy.START_DATE DESC
+    SELECT ID, START_DATE, END_DATE 
+    FROM tblfinyear 
+    ORDER BY START_DATE DESC
 ");
 while($year = mysqli_fetch_assoc($yearResult)) {
-    $financial_years[] = $year;
+    $financial_years[$year['ID']] = $year;
+}
+
+// If a company is selected, filter financial years
+if(isset($_POST['company']) && !empty($_POST['company'])) {
+    $selected_company_id = intval($_POST['company']);
+    
+    // Find the company's financial year
+    foreach($companies as $company) {
+        if($company['CompID'] == $selected_company_id) {
+            $company_fin_year = $company['FIN_YEAR'];
+            break;
+        }
+    }
+    
+    // Add only the company's financial year to filtered_years
+    if(isset($company_fin_year) && isset($financial_years[$company_fin_year])) {
+        $filtered_years[] = array(
+            'ID' => $company_fin_year,
+            'START_DATE' => $financial_years[$company_fin_year]['START_DATE'],
+            'END_DATE' => $financial_years[$company_fin_year]['END_DATE']
+        );
+    }
+} else {
+    // If no company selected, show all financial years
+    $filtered_years = array_values($financial_years);
 }
 
 // Handle form submission
@@ -68,6 +94,8 @@ if(isset($_POST['login'])){
                 $company_data = mysqli_fetch_assoc($comp_result);
                 $_SESSION['COMP_NAME'] = $company_data['COMP_NAME'];
                 
+                // Initialize financial year module in session
+                $finYearModule = FinancialYearModule::getInstance();                
                 // Redirect to dashboard
                 header("Location: dashboard.php");
                 exit;
@@ -246,7 +274,7 @@ if(isset($_POST['login'])){
         <form class="login-form" method="POST" action="">
             <div class="form-group">
                 <label for="company">Company</label>
-                <select name="company" id="company" class="form-select" required>
+                <select name="company" id="company" class="form-select" required onchange="this.form.submit()">
                     <option value="">-- Select Company --</option>
                     <?php foreach($companies as $company): ?>
                         <option value="<?= $company['CompID'] ?>" <?= isset($_POST['company']) && $_POST['company'] == $company['CompID'] ? 'selected' : '' ?>>
@@ -260,7 +288,7 @@ if(isset($_POST['login'])){
                 <label for="financial_year">Financial Year</label>
                 <select name="financial_year" id="financial_year" class="form-select" required>
                     <option value="">-- Select Financial Year --</option>
-                    <?php foreach($financial_years as $year): ?>
+                    <?php foreach($filtered_years as $year): ?>
                         <?php
                         $start_date = date('d M Y', strtotime($year['START_DATE']));
                         $end_date = date('d M Y', strtotime($year['END_DATE']));
