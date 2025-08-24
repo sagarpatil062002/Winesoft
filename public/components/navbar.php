@@ -1,6 +1,3 @@
-<?php
-if(!isset($_SESSION)) session_start();
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -47,7 +44,6 @@ if(!isset($_SESSION)) session_start();
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">database</span>
                     <span class="nav-label">Masters</span>
-                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
                 </a>
                 <ul class="dropdown">
                     <li class="nav-item"><a href="item_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">liquor</span><span class="nav-label">Item Master</span></a></li>
@@ -66,54 +62,62 @@ if(!isset($_SESSION)) session_start();
                     
                 </ul>
             </li>    
-<li class="nav-item has-dropdown">
+            <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">receipt_long</span>
                     <span class="nav-label">Transaction</span>
-                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
+
                 </a>
                 <ul class="dropdown">
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
-                
                 </ul>
             </li>    
             <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
-            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">summarize</span><span class="nav-label">Reports</span></a></li>
+            <li class="nav-item has-dropdown">
+                <a href="#" class="nav-link dropdown-toggle">
+                    <span class="nav-icon material-symbols-rounded">summarize</span>
+                    <span class="nav-label">Reports</span>
 
+                </a>
+                <ul class="dropdown">
+                    <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchase Report</span></a></li>
+                </ul>
+            </li>
             <!-- Utilities Dropdown -->
             <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">settings</span>
                     <span class="nav-label">Utilities</span>
-                    <span class="dropdown-arrow material-symbols-rounded">expand_more</span>
+
                 </a>
                 <ul class="dropdown">
-    <li class="nav-item has-dropdown">
-        <a href="register.php" class="nav-link">
-            <span class="nav-icon material-symbols-rounded">app_registration</span>
-            <span class="nav-label">Register</span>
-        </a>
-    </li>
-    <li class="nav-item has-dropdown">
-        <a href="Company_info.php" class="nav-link">
-            <span class="nav-icon material-symbols-rounded">business</span>
-            <span class="nav-label">Company Info</span>
-        </a>
-    </li>
+                    <li class="nav-item">
+                        <a href="register.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">app_registration</span>
+                            <span class="nav-label">Register</span>
 
-                    <li class="nav-item has-dropdown">
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="Company_info.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">business</span>
+                            <span class="nav-label">Company Info</span>
+
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="brandwise_report.php" class="nav-link">
                             <span class="nav-icon material-symbols-rounded">analytics</span>
                             <span class="nav-label">Brandwise Report</span>
+                            
                         </a>
-                        
                     </li>
-                    <li class="nav-item has-dropdown">
-    <a href="dryday.php" class="nav-link">
-        <span class="nav-icon material-symbols-rounded">event_busy</span>
-        <span class="nav-label">Dry Day</span>
-    </a>
-</li>
+                    <li class="nav-item">
+                        <a href="dryday.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">event_busy</span>
+                            <span class="nav-label">Dry Day</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
         </ul>

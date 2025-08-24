@@ -26,7 +26,6 @@ $stats = [
     'wine_items' => 0
 ];
 
-
 // Fetch statistics data
 try {
     // Check database connection
@@ -107,201 +106,201 @@ try {
     $error = "Database error: " . $e->getMessage();
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard - WineSoft</title>
-    <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
-    <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-    <style>
-        /* Enhanced Card Styles */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 15px;
-            color: white;
-            font-size: 24px;
-        }
-        
-        .stat-info h4 {
-            margin: 0;
-            font-size: 14px;
-            color: #718096;
-        }
-        
-        .stat-info p {
-            margin: 5px 0 0;
-            font-size: 24px;
-            font-weight: bold;
-            color: #2D3748;
-        }
-        
-        .alert {
-            padding: 15px;
-            background-color: #fed7d7;
-            color: #c53030;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - WineSoft</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+  <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <style>
+    /* Enhanced Card Styles */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .stat-info h4 {
+        margin: 0;
+        font-size: 14px;
+        color: #718096;
+    }
+    
+    .stat-info p {
+        margin: 5px 0 0;
+        font-size: 24px;
+        font-weight: bold;
+        color: #2D3748;
+    }
+    
+    .alert {
+        padding: 15px;
+        background-color: #fed7d7;
+        color: #c53030;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
-
 <div class="dashboard-container">
-    <!-- Side Navbar -->
-    <?php include 'components/navbar.php'; ?>
+  <?php include 'components/navbar.php'; ?>
 
-    <!-- Main Content Area -->
-    <div class="main-content">
-        <?php include 'components/header.php'; ?>
+  <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
-        <div class="content-area">
-            <h3>Dashboard Overview</h3>
-            
-            <?php if(isset($error)): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
-            <?php endif; ?>
-            
-            <div class="stats-grid">
-                <!-- Item Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #4299E1;">
-                        <i class="fas fa-wine-bottle"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Total Items</h4>
-                        <p><?php echo $stats['total_items']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Customer Statistics Card -->
-                <div class="stat-card">
-    <div class="stat-icon" style="background-color: #48BB78;">
-        <i class="fas fa-users"></i>
-    </div>
-    <div class="stat-info">
-        <h4>Total Customers</h4>
-        <p>
-            <?php 
-            // Get the current company ID from session
-            $companyId = $_SESSION['CompID'] ?? 0;
-            
-            // Query to count customers for the current company only
-            $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
-            $customerCountStmt = $conn->prepare($customerCountQuery);
-            $customerCountStmt->bind_param("i", $companyId);
-            $customerCountStmt->execute();
-            $customerCountResult = $customerCountStmt->get_result();
-            $customerCount = $customerCountResult->fetch_assoc();
-            
-            echo $customerCount['total_customers'];
-            
-            $customerCountStmt->close();
-            ?>
-        </p>
-    </div>
-</div>
-                
-                <!-- Supplier Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #9F7AEA;">
-                        <i class="fas fa-truck"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Total Suppliers</h4>
-                        <p><?php echo $stats['total_suppliers']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Permit Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #ED8936;">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Active Permits</h4>
-                        <p><?php echo $stats['total_permits']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Dry Days Statistics Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #F56565;">
-                        <i class="fas fa-calendar-times"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Dry Days (<?php echo date('Y'); ?>)</h4>
-                        <p><?php echo $stats['total_dry_days']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Liquor Items Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #667EEA;">
-                        <i class="fas fa-glass-whiskey"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Liquor Items</h4>
-                        <p><?php echo $stats['liquor_items']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Beer Items Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #ECC94B;">
-                        <i class="fas fa-beer"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Beer Items</h4>
-                        <p><?php echo $stats['beer_items']; ?></p>
-                    </div>
-                </div>
-                
-                <!-- Wine Items Card -->
-                <div class="stat-card">
-                    <div class="stat-icon" style="background-color: #ED64A6;">
-                        <i class="fas fa-wine-glass-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h4>Wine Items</h4>
-                        <p><?php echo $stats['wine_items']; ?></p>
-                    </div>
-                </div>
-            </div>
+    <div class="content-area">
+      <h3 class="mb-4">Dashboard Overview</h3>
+      
+      <?php if(isset($error)): ?>
+        <div class="alert alert-danger"><?php echo $error; ?></div>
+      <?php endif; ?>
+      
+      <div class="stats-grid">
+        <!-- Item Statistics Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #4299E1;">
+            <i class="fas fa-wine-bottle"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Total Items</h4>
+            <p><?php echo $stats['total_items']; ?></p>
+          </div>
         </div>
-
-        <?php include 'components/footer.php'; ?>
+        
+        <!-- Customer Statistics Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #48BB78;">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Total Customers</h4>
+            <p>
+              <?php 
+              // Get the current company ID from session
+              $companyId = $_SESSION['CompID'] ?? 0;
+              
+              // Query to count customers for the current company only
+              $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
+              $customerCountStmt = $conn->prepare($customerCountQuery);
+              $customerCountStmt->bind_param("i", $companyId);
+              $customerCountStmt->execute();
+              $customerCountResult = $customerCountStmt->get_result();
+              $customerCount = $customerCountResult->fetch_assoc();
+              
+              echo $customerCount['total_customers'];
+              
+              $customerCountStmt->close();
+              ?>
+            </p>
+          </div>
+        </div>
+        
+        <!-- Supplier Statistics Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #9F7AEA;">
+            <i class="fas fa-truck"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Total Suppliers</h4>
+            <p><?php echo $stats['total_suppliers']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Permit Statistics Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #ED8936;">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Active Permits</h4>
+            <p><?php echo $stats['total_permits']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Dry Days Statistics Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #F56565;">
+            <i class="fas fa-calendar-times"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Dry Days (<?php echo date('Y'); ?>)</h4>
+            <p><?php echo $stats['total_dry_days']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Liquor Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #667EEA;">
+            <i class="fas fa-glass-whiskey"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Liquor Items</h4>
+            <p><?php echo $stats['liquor_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Beer Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #ECC94B;">
+            <i class="fas fa-beer"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Beer Items</h4>
+            <p><?php echo $stats['beer_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Wine Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #ED64A6;">
+            <i class="fas fa-wine-glass-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Wine Items</h4>
+            <p><?php echo $stats['wine_items']; ?></p>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <?php include 'components/footer.php'; ?>
+  </div>
 </div>
 
-<!-- Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

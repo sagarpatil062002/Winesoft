@@ -64,31 +64,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier_code = $_POST['supplier_code'] ?? '';
     $supplier_name = $_POST['supplier_name'] ?? '';
     
-    // Charges and taxes - convert to float to prevent type errors
-    $cash_disc = floatval($_POST['cash_disc'] ?? 0);
-    $trade_disc = floatval($_POST['trade_disc'] ?? 0);
-    $octroi = floatval($_POST['octroi'] ?? 0);
-    $freight = floatval($_POST['freight'] ?? 0);
-    $stax_per = floatval($_POST['stax_per'] ?? 0);
-    $stax_amt = floatval($_POST['stax_amt'] ?? 0);
-    $tcs_per = floatval($_POST['tcs_per'] ?? 0);
-    $tcs_amt = floatval($_POST['tcs_amt'] ?? 0);
-    $misc_charg = floatval($_POST['misc_charg'] ?? 0);
-    $basic_amt = floatval($_POST['basic_amt'] ?? 0);
-    $tamt = floatval($_POST['tamt'] ?? 0);
+    // Charges and taxes
+    $cash_disc = $_POST['cash_disc'] ?? 0;
+    $trade_disc = $_POST['trade_disc'] ?? 0;
+    $octroi = $_POST['octroi'] ?? 0;
+    $freight = $_POST['freight'] ?? 0;
+    $stax_per = $_POST['stax_per'] ?? 0;
+    $stax_amt = $_POST['stax_amt'] ?? 0;
+    $tcs_per = $_POST['tcs_per'] ?? 0;
+    $tcs_amt = $_POST['tcs_amt'] ?? 0;
+    $misc_charg = $_POST['misc_charg'] ?? 0;
+    $basic_amt = $_POST['basic_amt'] ?? 0;
+    $tamt = $_POST['tamt'] ?? 0;
     
     // Insert purchase header with FREIGHT column
     $insertQuery = "INSERT INTO tblpurchases (
         DATE, SUBCODE, VOC_NO, INV_NO, INV_DATE, TAMT, 
-        TPNO,TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
+        TPNO, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
         TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID
-    ) VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $insertStmt = $conn->prepare($insertQuery);
     $insertStmt->bind_param(
         "ssissdddddddddddsi", // 18 type specifiers for 18 variables
         $date, $supplier_code, $voc_no, $inv_no, $inv_date, $tamt,
-        $tp_no,$tp_date, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
+        $tp_no, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
         $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
     );
     
@@ -107,17 +107,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_code = $item['code'] ?? '';
                 $item_name = $item['name'] ?? '';
                 $item_size = $item['size'] ?? '';
-                $cases = floatval($item['cases'] ?? 0);
-                $bottles = intval($item['bottles'] ?? 0);
-                $case_rate = floatval($item['case_rate'] ?? 0);
-                $mrp = floatval($item['mrp'] ?? 0);
-                $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+                $cases = $item['cases'] ?? 0;
+                $bottles = $item['bottles'] ?? 0;
+                $case_rate = $item['case_rate'] ?? 0;
+                $mrp = $item['mrp'] ?? 0;
+                $bottles_per_case = $item['bottles_per_case'] ?? 12;
                 
                 // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
                 $detailStmt->bind_param(
-                    "isssdiddii",
+                    "isssdiddii", // Changed to "i" for BottlesPerCase (integer)
                     $purchase_id, $item_code, $item_name, $item_size,
                     $cases, $bottles, $case_rate, $mrp, $amount, $bottles_per_case
                 );
@@ -379,6 +379,8 @@ SCM Code:SCMPL0011486</pre>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(function(){
   let itemCount = 0;
@@ -540,26 +542,29 @@ $(function(){
     
     const amount = calculateAmount(item.cases, item.bottles, caseRate, bottlesPerCase);
     
+    // Use a unique index for each row
+    const currentIndex = itemCount;
+    
     const r = `
       <tr class="item-row" data-bottles-per-case="${bottlesPerCase}">
         <td>
-          <input type="hidden" name="items[${itemCount}][code]" value="${itemCode}">
-          <input type="hidden" name="items[${itemCount}][name]" value="${itemName}">
-          <input type="hidden" name="items[${itemCount}][size]" value="${itemSize}">
-          <input type="hidden" name="items[${itemCount}][bottles_per_case]" value="${bottlesPerCase}">
+          <input type="hidden" name="items[${currentIndex}][code]" value="${itemCode}">
+          <input type="hidden" name="items[${currentIndex}][name]" value="${itemName}">
+          <input type="hidden" name="items[${currentIndex}][size]" value="${itemSize}">
+          <input type="hidden" name="items[${currentIndex}][bottles_per_case]" value="${bottlesPerCase}">
           ${itemCode}
         </td>
         <td>${itemName}</td>
         <td>${itemSize}</td>
-        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
-        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
-        <td><input type="number" class="form-control form-control-sm mrp" name="items[${itemCount}][mrp]" value="${item.mrp||0}" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp||0}" step="0.01"></td>
         <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
     $('#itemsTable tbody').append(r);
-    itemCount++;
+    itemCount++; // Increment after adding the row
     updateTotals();
   }
 
@@ -695,118 +700,88 @@ $(function(){
   });
 
   // Core parser – tuned for your SCM paste format
-  // Enhanced SCM parsing function
-function parseSCM(text){
+  function parseSCM(text){
     const lines = text.split(/\r?\n/).map(l=>l.replace(/\u00A0/g,' ').trim()).filter(l=>l!=='');
     const out = { tpNo:'', tpDate:'', receivedDate:'', party:'', items:[] };
 
     // ---- HEADER extraction ----
     for(let i=0;i<lines.length;i++){
-        const L = lines[i];
+      const L = lines[i];
 
-        if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt) out.tpNo = nxt;
-        }
-        if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
-        }
-        if(/T\.?P\.?Date:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
-        }
-        if(/Received\s*Date/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            const d = ymdFromDmyText(nxt);
-            out.receivedDate = d || nxt;
-        }
-        if(/^Party\s*:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt) out.party = nxt;
-        }
+      if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.tpNo = nxt;
+      }
+      if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
+      }
+      if(/T\.?P\.?Date:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
+      }
+      if(/Received\s*Date/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt);
+        out.receivedDate = d || nxt;
+      }
+      if(/^Party\s*:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.party = nxt;
+      }
     }
 
     // ---- TABLE start ----
     let start = -1;
     for(let i=0;i<lines.length;i++){
-        if(/Sr.?No/i.test(lines[i]) && /ItemName/i.test(lines[i]) && /Qty/i.test(lines[i])){
-            start = i+1; break;
-        }
+      if(/Sr.?No/i.test(lines[i]) && /ItemName/i.test(lines[i]) && /Qty/i.test(lines[i])){
+        start = i+1; break;
+      }
     }
     if(start === -1) return out;
 
     // ---- ITEMS ----
     for(let i=start;i<lines.length;i++){
-        const first = lines[i];
+      const first = lines[i];
 
-        // stop at "Total" or footer lines
-        if(/^Total/i.test(first)) break;
+      // stop at "Total" or footer lines
+      if(/^Total/i.test(first)) break;
 
-        const srMatch = first.match(/^(\d+)\s+(.+)$/);
-        if(srMatch){
-            const itemName = srMatch[2].trim();
+      const srMatch = first.match(/^(\d+)\s+(.+)$/);
+      if(srMatch){
+        const itemName = srMatch[2].trim();
 
-            const second = (lines[i+1]||'').trim();
-            if(second.startsWith("SCM Code:")){
-                // Parse the SCM Code line with improved regex
-                const scmMatch = second.match(/SCM Code:\s*(\S+)\s+([\d\.]+\s*[A-Za-z]+\s*\(?[A-Za-z]*\)?)\s+([\d\.]+)\s+([\d]+)\s+([\d]+)\s+([A-Za-z0-9\-]+\s+[A-Za-z]+\-[\d]+)\s+([A-Za-z]+\-[\d]+)\s+([\d\.]+)/);
-                
-                if(scmMatch && scmMatch.length >= 9){
-                    const itemCode = scmMatch[1];
-                    const size = scmMatch[2];
-                    const cases = parseFloat(scmMatch[3]) || 0;
-                    const bottles = parseInt(scmMatch[4]) || 0;
-                    const mrp = parseFloat(scmMatch[8]) || 0;
-                    
-                    // Clean the item code and find in database
-                    const cleanCode = cleanItemCode(itemCode);
-                    const dbItem = findDbItemData(itemName, size, cleanCode);
-                    const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
+        const second = (lines[i+1]||'').trim();
+        if(second.startsWith("SCM Code:")){
+          const parts = second.split(/\s+/);
+          // Example: SCM Code:SCMKB0018204 650 ML 5.00 0 36 BTOS70-20 Jun-2025 195.00 39.00 8.0 60
 
-                    out.items.push({
-                        code: dbItem ? dbItem.CODE : cleanCode,
-                        name: dbItem ? dbItem.DETAILS : itemName,
-                        size: dbItem ? dbItem.DETAILS2 : size,
-                        cases: cases,
-                        bottles: bottles,
-                        caseRate: caseRate,
-                        mrp: mrp,
-                        cleanCode: cleanCode,
-                        dbItem: dbItem
-                    });
-                } else {
-                    // Fallback parsing for different format
-                    const parts = second.split(/\s+/);
-                    if(parts.length >= 9){
-                        const itemCode = parts[1].replace("SCM Code:","").trim();
-                        const size = parts[2] + " " + parts[3];
-                        const cases = parseFloat(parts[4]) || 0;
-                        const bottles = parseInt(parts[5]) || 0;
-                        const mrp = parseFloat(parts[parts.length-1]) || 0;
-                        
-                        // Clean the item code and find in database
-                        const cleanCode = cleanItemCode(itemCode);
-                        const dbItem = findDbItemData(itemName, size, cleanCode);
-                        const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
+          const itemCode = parts[1].replace("SCM Code:","").trim();
+          const size     = parts[2] + " " + parts[3];
+          const cases    = parseFloat(parts[4])||0;
+          const bottles  = parseInt(parts[5])||0;
+          const mrp      = parseFloat(parts[9])||0;
+          
+          // Clean the item code and find in database
+          const cleanCode = cleanItemCode(itemCode);
+          const dbItem = findDbItemData(itemName, size, cleanCode);
+          const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
 
-                        out.items.push({
-                            code: dbItem ? dbItem.CODE : cleanCode,
-                            name: dbItem ? dbItem.DETAILS : itemName,
-                            size: dbItem ? dbItem.DETAILS2 : size,
-                            cases: cases,
-                            bottles: bottles,
-                            caseRate: caseRate,
-                            mrp: mrp,
-                            cleanCode: cleanCode,
-                            dbItem: dbItem
-                        });
-                    }
-                }
+          out.items.push({
+            code: dbItem ? dbItem.CODE : cleanCode,
+            name: dbItem ? dbItem.DETAILS : itemName,
+            size: dbItem ? dbItem.DETAILS2 : size,
+            cases: cases,
+            bottles: bottles,
+            caseRate: caseRate,
+            mrp: mrp,
+            cleanCode: cleanCode,
+            dbItem: dbItem
+          });
 
-                i++; // skip the SCM Code line
-            }
+          i++; // skip the SCM Code line
         }
+      }
     }
 
     // SUPPLIER MATCHING
@@ -827,13 +802,20 @@ function parseSCM(text){
     if(out.tpDate){ $('#tpDate').val(out.tpDate); }
 
     // Fill items
-    $('.item-row').remove(); itemCount=0;
+    $('.item-row').remove(); 
+    itemCount = 0; // Reset counter
     if($('#noItemsRow').length) $('#noItemsRow').remove();
-    if(out.items.length===0){ $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>'); }
-    out.items.forEach(it=>addRow(it));
+    if(out.items.length === 0){ 
+        $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>'); 
+    }
+    
+    // Add each item individually
+    out.items.forEach(it => {
+        addRow(it);
+    });
 
     return out;
-}
+  }
 });
 </script>
 </body>
