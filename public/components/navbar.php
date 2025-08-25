@@ -70,6 +70,7 @@
                 </a>
                 <ul class="dropdown">
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
+                    <li class="nav-item"><a href="customer_sales_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
                 </ul>
             </li>    
             <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
@@ -91,7 +92,10 @@
                     <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">pallet</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
                     <li class="nav-item"><a href="purchase_summary_case_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">stack</span><span class="nav-label">Purchase Summary Case Report</span></a></li>
                     <li class="nav-item"><a href="sales_tax_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calculate</span><span class="nav-label">Sales Tax Purchase Report</span></a></li>
-                
+                    <li class="nav-item"><a href="other_tax_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_change</span><span class="nav-label">Other Tax Report</span></a></li>
+                    <li class="nav-item"><a href="total_sales_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">bar_chart</span><span class="nav-label">Total Sales Report</span></a></li>
+                    <li class="nav-item"><a href="billwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">show_chart</span><span class="nav-label">Billwise Sales Report</span></a></li>
+
                 </ul>
             </li>
             <!-- Utilities Dropdown -->

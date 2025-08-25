@@ -21,9 +21,14 @@ $stats = [
     'total_suppliers' => 0,
     'total_permits' => 0,
     'total_dry_days' => 0,
-    'liquor_items' => 0,
+    'whisky_items' => 0,
+    'wine_items' => 0,
+    'gin_items' => 0,
     'beer_items' => 0,
-    'wine_items' => 0
+    'brandy_items' => 0,
+    'vodka_items' => 0,
+    'rum_items' => 0,
+    'other_items' => 0
 ];
 
 // Fetch statistics data
@@ -77,11 +82,27 @@ try {
     $stats['total_dry_days'] = number_format($row['total']);
     $stmt->close();
 
-    // Liquor Items (LIQ_FLAG = 'F' for Foreign Liquor)
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE LIQ_FLAG = 'F'");
+    // Whisky Items (CLASS = 'W')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'W'");
     if($result) {
         $row = $result->fetch_assoc();
-        $stats['liquor_items'] = number_format($row['total']);
+        $stats['whisky_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Wine Items (CLASS = 'V')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'V'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['wine_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Gin Items (CLASS = 'G')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'G'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['gin_items'] = number_format($row['total']);
         $result->free();
     }
 
@@ -93,11 +114,35 @@ try {
         $result->free();
     }
 
-    // Wine Items (CLASS = 'V')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'V'");
+    // Brandy Items (CLASS = 'D')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'D'");
     if($result) {
         $row = $result->fetch_assoc();
-        $stats['wine_items'] = number_format($row['total']);
+        $stats['brandy_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Vodka Items (CLASS = 'K')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'K'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['vodka_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Rum Items (CLASS = 'R')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'R'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['rum_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Other Items (CLASS = 'O')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'O'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['other_items'] = number_format($row['total']);
         $result->free();
     }
 
@@ -239,16 +284,6 @@ try {
           </div>
         </div>
         
-        <!-- Permit Statistics Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #ED8936;">
-            <i class="fas fa-file-alt"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Active Permits</h4>
-            <p><?php echo $stats['total_permits']; ?></p>
-          </div>
-        </div>
         
         <!-- Dry Days Statistics Card -->
         <div class="stat-card">
@@ -261,20 +296,42 @@ try {
           </div>
         </div>
         
-        <!-- Liquor Items Card -->
+        <!-- Whisky Items Card -->
         <div class="stat-card">
-          <div class="stat-icon" style="background-color: #667EEA;">
+          <div class="stat-icon" style="background-color: #8B4513;">
             <i class="fas fa-glass-whiskey"></i>
           </div>
           <div class="stat-info">
-            <h4>Liquor Items</h4>
-            <p><?php echo $stats['liquor_items']; ?></p>
+            <h4>Whisky Items</h4>
+            <p><?php echo $stats['whisky_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Wine Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #8B0000;">
+            <i class="fas fa-wine-glass-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Wine Items</h4>
+            <p><?php echo $stats['wine_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Gin Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #87CEEB;">
+            <i class="fas fa-cocktail"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Gin Items</h4>
+            <p><?php echo $stats['gin_items']; ?></p>
           </div>
         </div>
         
         <!-- Beer Items Card -->
         <div class="stat-card">
-          <div class="stat-icon" style="background-color: #ECC94B;">
+          <div class="stat-icon" style="background-color: #FFD700;">
             <i class="fas fa-beer"></i>
           </div>
           <div class="stat-info">
@@ -283,14 +340,48 @@ try {
           </div>
         </div>
         
-        <!-- Wine Items Card -->
+        <!-- Brandy Items Card -->
         <div class="stat-card">
-          <div class="stat-icon" style="background-color: #ED64A6;">
-            <i class="fas fa-wine-glass-alt"></i>
+          <div class="stat-icon" style="background-color: #D2691E;">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bottle-wine-icon lucide-bottle-wine"><path d="M10 3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a6 6 0 0 0 1.2 3.6l.6.8A6 6 0 0 1 17 13v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-8a6 6 0 0 1 1.2-3.6l.6-.8A6 6 0 0 0 10 5z"/><path d="M17 13h-4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h4"/></svg>          </div>
+          <div class="stat-info">
+            <h4>Brandy Items</h4>
+            <p><?php echo $stats['brandy_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Vodka Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #0ebcbcff;">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-martini">
+  <path d="M8 22h8"/>
+  <path d="M12 11v11"/>
+  <path d="m19 3-7 8-7-8Z"/>
+</svg>          </div>
+          <div class="stat-info">
+            <h4>Vodka Items</h4>
+            <p><?php echo $stats['vodka_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Rum Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #8B4513;">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wine-icon lucide-wine"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>          </div>
+          <div class="stat-info">
+            <h4>Rum Items</h4>
+            <p><?php echo $stats['rum_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Other Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #A9A9A9;">
+            <i class="fas fa-box"></i>
           </div>
           <div class="stat-info">
-            <h4>Wine Items</h4>
-            <p><?php echo $stats['wine_items']; ?></p>
+            <h4>Other Items</h4>
+            <p><?php echo $stats['other_items']; ?></p>
           </div>
         </div>
       </div>

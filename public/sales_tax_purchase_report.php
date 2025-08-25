@@ -12,8 +12,6 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
-require 'components/financial_year.php'; // Include the financial year module
-FinancialYearModule::redirectIfNotSet();
 
 
 // Get filter parameters
@@ -94,32 +92,7 @@ foreach ($purchases as $purchase) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-  <style>
-    .report-table th {
-      background-color: #f8f9fa;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .total-row {
-      font-weight: bold;
-      background-color: #e9ecef;
-    }
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      .print-section {
-        display: block !important;
-      }
-      body {
-        font-size: 12px;
-      }
-      .report-table {
-        font-size: 11px;
-      }
-    }
-  </style>
+
 </head>
 <body>
 <div class="dashboard-container">
