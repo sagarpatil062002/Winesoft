@@ -20,7 +20,7 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
           FROM tblitemmaster
           WHERE LIQ_FLAG = ?";
 $params = [$mode];
@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_prices'])) {
               <?php foreach ($items as $item): ?>
                 <tr>
                   <td><?= htmlspecialchars($item['CODE']); ?></td>
-                  <td><?= htmlspecialchars($item['NEW_CODE']); ?></td>
+                  <td><?= htmlspecialchars($item['Print_Name']); ?></td>
                   <td><?= htmlspecialchars($item['DETAILS']); ?></td>
                   <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
                   <td>

@@ -51,7 +51,7 @@ if ($item_code) {
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $new_code = $_POST['new_code'];
+    $Print_Name = $_POST['Print_Name'];
     $details = $_POST['details'];
     $details2 = $_POST['details2'];
     $class = $_POST['class'];
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $barcode = $_POST['barcode'];
 
     $stmt = $conn->prepare("UPDATE tblitemmaster SET 
-                          NEW_CODE = ?, 
+                          Print_Name = ?, 
                           DETAILS = ?, 
                           DETAILS2 = ?, 
                           CLASS = ?, 
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           MPRICE = ?,
                           BARCODE = ?
                           WHERE CODE = ?");
-    $stmt->bind_param("ssssssdddddddds", $new_code, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $bottles, $gob, $ob, $ob2, $mprice, $barcode, $item_code);
+    $stmt->bind_param("ssssssdddddddds", $Print_Name, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $bottles, $gob, $ob, $ob2, $mprice, $barcode, $item_code);
     
     if ($stmt->execute()) {
         $_SESSION['success_message'] = "Item updated successfully!";
@@ -140,8 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" class="form-control" id="code" value="<?= htmlspecialchars($item['CODE']) ?>" readonly>
               </div>
               <div class="col-md-4 col-12">
-                <label for="new_code" class="form-label">New Code</label>
-                <input type="text" class="form-control" id="new_code" name="new_code" value="<?= htmlspecialchars($item['NEW_CODE']) ?>">
+                <label for="Print_Name" class="form-label">New Code</label>
+                <input type="text" class="form-control" id="Print_Name" name="Print_Name" value="<?= htmlspecialchars($item['Print_Name']) ?>">
               </div>
               <div class="col-md-4 col-12">
                 <label for="item_group" class="form-label">Item Group</label>

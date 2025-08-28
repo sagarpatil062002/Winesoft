@@ -105,7 +105,7 @@ while ($row = $subclassResult->fetch_assoc()) {
 }
 
 // Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
           FROM tblitemmaster
           WHERE LIQ_FLAG = ?";
 $params = [$mode];

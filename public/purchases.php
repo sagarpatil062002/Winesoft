@@ -64,31 +64,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier_code = $_POST['supplier_code'] ?? '';
     $supplier_name = $_POST['supplier_name'] ?? '';
     
-    // Charges and taxes - convert to float to prevent type errors
-    $cash_disc = floatval($_POST['cash_disc'] ?? 0);
-    $trade_disc = floatval($_POST['trade_disc'] ?? 0);
-    $octroi = floatval($_POST['octroi'] ?? 0);
-    $freight = floatval($_POST['freight'] ?? 0);
-    $stax_per = floatval($_POST['stax_per'] ?? 0);
-    $stax_amt = floatval($_POST['stax_amt'] ?? 0);
-    $tcs_per = floatval($_POST['tcs_per'] ?? 0);
-    $tcs_amt = floatval($_POST['tcs_amt'] ?? 0);
-    $misc_charg = floatval($_POST['misc_charg'] ?? 0);
-    $basic_amt = floatval($_POST['basic_amt'] ?? 0);
-    $tamt = floatval($_POST['tamt'] ?? 0);
+    // Charges and taxes
+    $cash_disc = $_POST['cash_disc'] ?? 0;
+    $trade_disc = $_POST['trade_disc'] ?? 0;
+    $octroi = $_POST['octroi'] ?? 0;
+    $freight = $_POST['freight'] ?? 0;
+    $stax_per = $_POST['stax_per'] ?? 0;
+    $stax_amt = $_POST['stax_amt'] ?? 0;
+    $tcs_per = $_POST['tcs_per'] ?? 0;
+    $tcs_amt = $_POST['tcs_amt'] ?? 0;
+    $misc_charg = $_POST['misc_charg'] ?? 0;
+    $basic_amt = $_POST['basic_amt'] ?? 0;
+    $tamt = $_POST['tamt'] ?? 0;
     
     // Insert purchase header with FREIGHT column
     $insertQuery = "INSERT INTO tblpurchases (
         DATE, SUBCODE, VOC_NO, INV_NO, INV_DATE, TAMT, 
-        TPNO,TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
+        TPNO, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
         TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID
-    ) VALUES (?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $insertStmt = $conn->prepare($insertQuery);
     $insertStmt->bind_param(
         "ssissdddddddddddsi", // 18 type specifiers for 18 variables
         $date, $supplier_code, $voc_no, $inv_no, $inv_date, $tamt,
-        $tp_no,$tp_date, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
+        $tp_no, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
         $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
     );
     
@@ -98,8 +98,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert purchase items
         if (isset($_POST['items']) && is_array($_POST['items'])) {
             $detailQuery = "INSERT INTO tblpurchasedetails (
-                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, CaseRate, MRP, Amount, BottlesPerCase
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, CaseRate, MRP, Amount, BottlesPerCase,
+                BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $detailStmt = $conn->prepare($detailQuery);
             
@@ -107,19 +108,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_code = $item['code'] ?? '';
                 $item_name = $item['name'] ?? '';
                 $item_size = $item['size'] ?? '';
-                $cases = floatval($item['cases'] ?? 0);
-                $bottles = intval($item['bottles'] ?? 0);
-                $case_rate = floatval($item['case_rate'] ?? 0);
-                $mrp = floatval($item['mrp'] ?? 0);
-                $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+                $cases = $item['cases'] ?? 0;
+                $bottles = $item['bottles'] ?? 0;
+                $case_rate = $item['case_rate'] ?? 0;
+                $mrp = $item['mrp'] ?? 0;
+                $bottles_per_case = $item['bottles_per_case'] ?? 12;
+                $batch_no = $item['batch_no'] ?? '';
+                $auto_batch = $item['auto_batch'] ?? '';
+                $mfg_month = $item['mfg_month'] ?? '';
+                $bl = $item['bl'] ?? 0;
+                $vv = $item['vv'] ?? 0;
+                $tot_bott = $item['tot_bott'] ?? 0;
                 
                 // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
                 $detailStmt->bind_param(
-                    "isssdiddii",
+                    "isssdiddiisssddd", // Updated parameter types
                     $purchase_id, $item_code, $item_name, $item_size,
-                    $cases, $bottles, $case_rate, $mrp, $amount, $bottles_per_case
+                    $cases, $bottles, $case_rate, $mrp, $amount, $bottles_per_case,
+                    $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
                 );
                 $detailStmt->execute();
             }
@@ -145,20 +153,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-<style>
-  .table-container{overflow-x:auto;max-height:420px}
-  table.styled-table{width:100%;border-collapse:collapse}
-  .styled-table th,.styled-table td{border:1px solid #e5e7eb;padding:8px 10px}
-  .styled-table thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
-  #itemsTable td,#itemsTable th{text-align:center;vertical-align:middle}
-  #itemsTable td:first-child,#itemsTable th:first-child,
-  #itemsTable td:nth-child(2),#itemsTable th:nth-child(2){text-align:left}
-  .supplier-container{position:relative}
-  .supplier-suggestions{position:absolute;left:0;right:0;top:100%;
-    background:#fff;border:1px solid #d1d5db;max-height:220px;overflow:auto;display:none;z-index:10}
-  .supplier-suggestion{padding:8px 10px;cursor:pointer}
-  .supplier-suggestion:hover{background:#f3f4f6}
-  .small-help{font-size:.84rem;color:#6b7280}
+<style>.table-container {
+    overflow-x: auto;
+    max-height: 420px;
+    margin: 20px 0;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    table-layout: fixed;
+}
+
+.styled-table th, 
+.styled-table td {
+    border: 1px solid #e5e7eb;
+    padding: 6px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.styled-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 1;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.styled-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Fixed column widths to match SCM layout */
+.col-code { width: 120px; }
+.col-name { width: 180px; }
+.col-size { width: 100px; }
+.col-cases { width: 80px; }
+.col-bottles { width: 70px; }
+.col-rate { width: 100px; }
+.col-amount { width: 100px; }
+.col-mrp { width: 100px; }
+.col-batch { width: 90px; }
+.col-auto-batch { width: 180px; }
+.col-mfg { width: 100px; }
+.col-bl { width: 60px; }
+.col-vv { width: 90px; }
+.col-totbott { width: 80px; }
+.col-action { width: 60px; }
+
+/* Text alignment */
+#itemsTable td:first-child,
+#itemsTable th:first-child {
+    text-align: left;
+}
+
+#itemsTable td:nth-child(2),
+#itemsTable th:nth-child(2) {
+    text-align: left;
+}
+
+#itemsTable td, 
+#itemsTable th {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Input field styling */
+input.form-control-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Total amount styling */
+.total-amount {
+    font-weight: bold;
+    padding: 10px;
+    text-align: right;
+    background-color: #f1f1f1;
+    border-top: 2px solid #dee2e6;
+}
 </style>
 </head>
 <body>
@@ -260,25 +343,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <table class="styled-table" id="itemsTable">
                 <thead>
                   <tr>
-                    <th>Item Code</th>
-                    <th>Brand Name</th>
-                    <th>Size</th>
-                    <th>Cases</th>
-                    <th>Bottles</th>
-                    <th>Case Rate</th>
-                    <th>Amount</th>
-                    <th>MRP</th>
-                    <th>Action</th>
+                    <th class="col-code">Item Code</th>
+                    <th class="col-name">Brand Name</th>
+                    <th class="col-size">Size</th>
+                    <th class="col-cases">Cases</th>
+                    <th class="col-bottles">Bottles</th>
+                    <th class="col-rate">Case Rate</th>
+                    <th class="col-amount">Amount</th>
+                    <th class="col-mrp">MRP</th>
+                    <th class="col-batch">Batch No</th>
+                    <th class="col-auto-batch">Auto Batch</th>
+                    <th class="col-mfg">Mfg. Month</th>
+                    <th class="col-bl">B.L.</th>
+                    <th class="col-vv">V/v (%)</th>
+                    <th class="col-totbott">Tot. Bott.</th>
+                    <th class="col-action">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>
+                  <tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>
                 </tbody>
                 <tfoot>
                   <tr>
                     <td colspan="6" class="text-end fw-semibold">Total Amount:</td>
                     <td id="totalAmount">0.00</td>
-                    <td colspan="2"></td>
+                    <td colspan="8"></td>
                   </tr>
                 </tfoot>
               </table>
@@ -364,9 +453,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="modal-body">
       <div class="alert alert-info">
         <div><strong>How to paste:</strong> copy the table section (with headers) + the header area from SCM and paste below.</div>
-        <pre class="bg-light p-2 mt-2 small mb-0">SrNo  ItemName     Size   Qty (Cases)  Qty (Bottles)  Batch No.  MRP
-1     Deejay Doctor Brandy  180 ML  7.00  0  271  110.00
-SCM Code:SCMPL0011486</pre>
+        <pre class="bg-light p-2 mt-2 small mb-0">STNO  ItemName     Size   Qty (Cases)  Qty (Bottles)  Batch No  Auto Batch  Mfg. Month  MRP  B.L.  V/v (%)  Tot. Bott.
+1     Deejay Doctor Brandy  180 ML  7.00  0  271  BT944-220225/920  Mar-2025  110.00  82.08  25.0  456
+SCM Code:SCMPL001186</pre>
       </div>
       <textarea class="form-control" id="scmData" rows="12" placeholder="Paste here..."></textarea>
       <div class="mt-3 d-flex gap-2">
@@ -540,26 +629,42 @@ $(function(){
     
     const amount = calculateAmount(item.cases, item.bottles, caseRate, bottlesPerCase);
     
+    // Use a unique index for each row
+    const currentIndex = itemCount;
+    
     const r = `
       <tr class="item-row" data-bottles-per-case="${bottlesPerCase}">
         <td>
-          <input type="hidden" name="items[${itemCount}][code]" value="${itemCode}">
-          <input type="hidden" name="items[${itemCount}][name]" value="${itemName}">
-          <input type="hidden" name="items[${itemCount}][size]" value="${itemSize}">
-          <input type="hidden" name="items[${itemCount}][bottles_per_case]" value="${bottlesPerCase}">
+          <input type="hidden" name="items[${currentIndex}][code]" value="${itemCode}">
+          <input type="hidden" name="items[${currentIndex}][name]" value="${itemName}">
+          <input type="hidden" name="items[${currentIndex}][size]" value="${itemSize}">
+          <input type="hidden" name="items[${currentIndex}][bottles_per_case]" value="${bottlesPerCase}">
+          <!-- Add hidden fields for the new columns -->
+          <input type="hidden" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}">
+          <input type="hidden" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}">
+          <input type="hidden" name="items[${currentIndex}][mfg_month]" value="${item.mfgMonth || ''}">
+          <input type="hidden" name="items[${currentIndex}][bl]" value="${item.bl || 0}">
+          <input type="hidden" name="items[${currentIndex}][vv]" value="${item.vv || 0}">
+          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${item.totBott || 0}">
           ${itemCode}
         </td>
         <td>${itemName}</td>
         <td>${itemSize}</td>
-        <td><input type="number" class="form-control form-control-sm cases" name="items[${itemCount}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${itemCount}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
-        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${itemCount}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
-        <td><input type="number" class="form-control form-control-sm mrp" name="items[${itemCount}][mrp]" value="${item.mrp||0}" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp||0}" step="0.01"></td>
+        <td>${item.batchNo || ''}</td>
+        <td>${item.autoBatch || ''}</td>
+        <td>${item.mfgMonth || ''}</td>
+        <td>${item.bl || 0}</td>
+        <td>${item.vv || 0}</td>
+        <td>${item.totBott || 0}</td>
         <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
     $('#itemsTable tbody').append(r);
-    itemCount++;
+    itemCount++; // Increment after adding the row
     updateTotals();
   }
 
@@ -646,7 +751,7 @@ $(function(){
   $('#clearItems').on('click', function(){
     if(confirm('Clear all items?')){
       $('.item-row').remove(); itemCount=0;
-      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>');
+      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>');
       $('#totalAmount').text('0.00');
       $('input[name="basic_amt"]').val('0.00');
       $('input[name="tamt"]').val('0.00');
@@ -669,7 +774,7 @@ $(function(){
   $(document).on('click','.remove-item', function(){
     $(this).closest('tr').remove();
     if($('.item-row').length===0){
-      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>');
+      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>');
       $('#totalAmount').text('0.00'); $('input[name="basic_amt"]').val('0.00'); $('input[name="tamt"]').val('0.00');
     }else updateTotals();
   });
@@ -694,119 +799,122 @@ $(function(){
     }
   });
 
-  // Core parser – tuned for your SCM paste format
-  // Enhanced SCM parsing function
-function parseSCM(text){
+  // Enhanced parser for various SCM formats
+  function parseSCM(text){
     const lines = text.split(/\r?\n/).map(l=>l.replace(/\u00A0/g,' ').trim()).filter(l=>l!=='');
     const out = { tpNo:'', tpDate:'', receivedDate:'', party:'', items:[] };
 
     // ---- HEADER extraction ----
     for(let i=0;i<lines.length;i++){
-        const L = lines[i];
+      const L = lines[i];
 
-        if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt) out.tpNo = nxt;
-        }
-        if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
-        }
-        if(/T\.?P\.?Date:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
-        }
-        if(/Received\s*Date/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            const d = ymdFromDmyText(nxt);
-            out.receivedDate = d || nxt;
-        }
-        if(/^Party\s*:/i.test(L)){
-            const nxt = (lines[i+1]||'').trim();
-            if(nxt) out.party = nxt;
-        }
+      if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.tpNo = nxt;
+      }
+      if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
+      }
+      if(/T\.?P\.?Date:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
+      }
+      if(/Received\s*Date/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        const d = ymdFromDmyText(nxt);
+        out.receivedDate = d || nxt;
+      }
+      if(/^Party\s*:/i.test(L)){
+        const nxt = (lines[i+1]||'').trim();
+        if(nxt) out.party = nxt;
+      }
     }
 
     // ---- TABLE start ----
     let start = -1;
     for(let i=0;i<lines.length;i++){
-        if(/Sr.?No/i.test(lines[i]) && /ItemName/i.test(lines[i]) && /Qty/i.test(lines[i])){
-            start = i+1; break;
-        }
+      if(/STNO|Sr.?No|Sr\./i.test(lines[i]) && /ItemName|Item Name/i.test(lines[i]) && /Qty/i.test(lines[i])){
+        start = i+1; break;
+      }
     }
     if(start === -1) return out;
 
     // ---- ITEMS ----
     for(let i=start;i<lines.length;i++){
-        const first = lines[i];
+      const first = lines[i];
 
-        // stop at "Total" or footer lines
-        if(/^Total/i.test(first)) break;
+      // stop at "Total" or footer lines
+      if(/^Total/i.test(first)) break;
 
-        const srMatch = first.match(/^(\d+)\s+(.+)$/);
-        if(srMatch){
-            const itemName = srMatch[2].trim();
+      // Check if this line starts with a number (item row)
+      const srMatch = first.match(/^(\d+)\s+(.+)$/);
+      if(srMatch){
+        const itemName = srMatch[2].trim();
 
-            const second = (lines[i+1]||'').trim();
-            if(second.startsWith("SCM Code:")){
-                // Parse the SCM Code line with improved regex
-                const scmMatch = second.match(/SCM Code:\s*(\S+)\s+([\d\.]+\s*[A-Za-z]+\s*\(?[A-Za-z]*\)?)\s+([\d\.]+)\s+([\d]+)\s+([\d]+)\s+([A-Za-z0-9\-]+\s+[A-Za-z]+\-[\d]+)\s+([A-Za-z]+\-[\d]+)\s+([\d\.]+)/);
-                
-                if(scmMatch && scmMatch.length >= 9){
-                    const itemCode = scmMatch[1];
-                    const size = scmMatch[2];
-                    const cases = parseFloat(scmMatch[3]) || 0;
-                    const bottles = parseInt(scmMatch[4]) || 0;
-                    const mrp = parseFloat(scmMatch[8]) || 0;
-                    
-                    // Clean the item code and find in database
-                    const cleanCode = cleanItemCode(itemCode);
-                    const dbItem = findDbItemData(itemName, size, cleanCode);
-                    const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
+        // Look for SCM code line
+        const second = (lines[i+1]||'').trim();
+        if(second.startsWith("SCM Code:") || second.startsWith("SCM Code :")){
+          const parts = second.split(/\s+/);
+          
+          // Different parsing patterns for different SCM formats
+          let itemCode, size, cases, bottles, batchNo, autoBatch, mfgMonth, mrp, bl, vv, totBott;
+          
+          // Pattern 1: SCM Code:SCMPL001186 180 ML 9.00 24 920 BT944-220225/920 Mar-2025 110.00 82.08 25.0 456
+          if(parts.length >= 13){
+            itemCode = parts[1].replace("SCM Code:","").replace("SCM","").trim();
+            size = parts[2] + " " + parts[3];
+            cases = parseFloat(parts[4])||0;
+            bottles = parseInt(parts[5])||0;
+            batchNo = parts[6] || '';
+            autoBatch = parts[7] || '';
+            mfgMonth = parts[8] || '';
+            mrp = parseFloat(parts[9])||0;
+            bl = parseFloat(parts[10])||0;
+            vv = parseFloat(parts[11])||0;
+            totBott = parseInt(parts[12])||0;
+          } 
+          // Pattern 2: Different spacing format
+          else if(parts.length >= 10){
+            itemCode = parts[1].replace("SCM Code:","").replace("SCM","").trim();
+            size = parts[2] || '';
+            cases = parseFloat(parts[3])||0;
+            bottles = parseInt(parts[4])||0;
+            batchNo = parts[5] || '';
+            autoBatch = parts[6] || '';
+            mfgMonth = parts[7] || '';
+            mrp = parseFloat(parts[8])||0;
+            bl = parseFloat(parts[9])||0;
+            vv = parseFloat(parts[10])||0;
+            if(parts.length > 10) totBott = parseInt(parts[11])||0;
+          }
+          
+          // Clean the item code and find in database
+          const cleanCode = cleanItemCode(itemCode);
+          const dbItem = findDbItemData(itemName, size, cleanCode);
+          const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
 
-                    out.items.push({
-                        code: dbItem ? dbItem.CODE : cleanCode,
-                        name: dbItem ? dbItem.DETAILS : itemName,
-                        size: dbItem ? dbItem.DETAILS2 : size,
-                        cases: cases,
-                        bottles: bottles,
-                        caseRate: caseRate,
-                        mrp: mrp,
-                        cleanCode: cleanCode,
-                        dbItem: dbItem
-                    });
-                } else {
-                    // Fallback parsing for different format
-                    const parts = second.split(/\s+/);
-                    if(parts.length >= 9){
-                        const itemCode = parts[1].replace("SCM Code:","").trim();
-                        const size = parts[2] + " " + parts[3];
-                        const cases = parseFloat(parts[4]) || 0;
-                        const bottles = parseInt(parts[5]) || 0;
-                        const mrp = parseFloat(parts[parts.length-1]) || 0;
-                        
-                        // Clean the item code and find in database
-                        const cleanCode = cleanItemCode(itemCode);
-                        const dbItem = findDbItemData(itemName, size, cleanCode);
-                        const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
+          out.items.push({
+            code: dbItem ? dbItem.CODE : cleanCode,
+            name: dbItem ? dbItem.DETAILS : itemName,
+            size: dbItem ? dbItem.DETAILS2 : size,
+            cases: cases,
+            bottles: bottles,
+            batchNo: batchNo,
+            autoBatch: autoBatch,
+            mfgMonth: mfgMonth,
+            caseRate: caseRate,
+            mrp: mrp,
+            bl: bl,
+            vv: vv,
+            totBott: totBott,
+            cleanCode: cleanCode,
+            dbItem: dbItem
+          });
 
-                        out.items.push({
-                            code: dbItem ? dbItem.CODE : cleanCode,
-                            name: dbItem ? dbItem.DETAILS : itemName,
-                            size: dbItem ? dbItem.DETAILS2 : size,
-                            cases: cases,
-                            bottles: bottles,
-                            caseRate: caseRate,
-                            mrp: mrp,
-                            cleanCode: cleanCode,
-                            dbItem: dbItem
-                        });
-                    }
-                }
-
-                i++; // skip the SCM Code line
-            }
+          i++; // skip the SCM Code line
         }
+      }
     }
 
     // SUPPLIER MATCHING
@@ -827,13 +935,20 @@ function parseSCM(text){
     if(out.tpDate){ $('#tpDate').val(out.tpDate); }
 
     // Fill items
-    $('.item-row').remove(); itemCount=0;
+    $('.item-row').remove(); 
+    itemCount = 0; // Reset counter
     if($('#noItemsRow').length) $('#noItemsRow').remove();
-    if(out.items.length===0){ $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="9" class="text-center text-muted">No items added</td></tr>'); }
-    out.items.forEach(it=>addRow(it));
+    if(out.items.length === 0){ 
+        $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>'); 
+    }
+    
+    // Add each item individually
+    out.items.forEach(it => {
+        addRow(it);
+    });
 
     return out;
-}
+  }
 });
 </script>
 </body>

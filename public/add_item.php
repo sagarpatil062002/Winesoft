@@ -47,7 +47,7 @@ if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP 
 }
 
 // Initialize variables
-$code = $new_code = $details = $details2 = $class = $sub_class = $BARCODE = '';
+$code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
 $pprice = $bprice = $mprice = $vprice = $GOB = $OB = $OB2 = 0;
 $success = $error = '';
 
@@ -55,7 +55,7 @@ $success = $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Collect POST data safely
     $code = trim($_POST['code'] ?? '');
-    $new_code = trim($_POST['new_code'] ?? '');
+    $Print_Name = trim($_POST['Print_Name'] ?? '');
     $details = trim($_POST['details'] ?? '');
     $class = trim($_POST['class'] ?? '');
     $sub_class = trim($_POST['sub_class'] ?? '');
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Insert into tblitemmaster - Fixed: Added ITEM_GROUP column
         $sql = "INSERT INTO tblitemmaster 
-            (CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, VPRICE, 
+            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, VPRICE, 
              GOB, OB, OB2, BARCODE, LIQ_FLAG) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Correct bind types: 9 strings, 5 doubles, 1 string
             $stmt->bind_param(
                 "sssssssdddddddss",
-                $code, $new_code, $details, $details2, $class, $sub_class, $item_group,
+                $code, $Print_Name, $details, $details2, $class, $sub_class, $item_group,
                 $pprice, $bprice, $mprice, $vprice,
                 $GOB, $OB, $OB2,
                 $BARCODE, $liq_flag
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $success = "Item added successfully!";
                 // Reset form
-                $code = $new_code = $details = $details2 = $class = $sub_class = $BARCODE = '';
+                $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
                 $pprice = $bprice = $mprice = $vprice = $GOB = $OB = $OB2 = 0;
             } else {
                 $error = "Error: " . $stmt->error;
@@ -193,9 +193,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- New Code -->
                 <div class="col-md-3">
-                    <label for="new_code" class="form-label">New Code</label>
-                    <input type="text" id="new_code" name="new_code" class="form-control"
-                           value="<?= htmlspecialchars($new_code) ?>">
+                    <label for="Print_Name" class="form-label">New Code</label>
+                    <input type="text" id="Print_Name" name="Print_Name" class="form-control"
+                           value="<?= htmlspecialchars($Print_Name) ?>">
                 </div>
 
                 <!-- Item Name -->
@@ -271,21 +271,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- P. Price -->
                 <div class="col-md-3">
-                    <label for="pprice" class="form-label">P. Price</label>
+                    <label for="pprice" class="form-label">Purchase Price</label>
                     <input type="number" step="0.001" id="pprice" name="pprice" class="form-control"
                            value="<?= htmlspecialchars($pprice) ?>">
                 </div>
 
                 <!-- B. Price -->
                 <div class="col-md-3">
-                    <label for="bprice" class="form-label">B. Price</label>
+                    <label for="bprice" class="form-label">Base  Price</label>
                     <input type="number" step="0.001" id="bprice" name="bprice" class="form-control"
                            value="<?= htmlspecialchars($bprice) ?>">
                 </div>
 
                 <!-- M. Price -->
                 <div class="col-md-3">
-                    <label for="mprice" class="form-label">M. Price</label>
+                    <label for="mprice" class="form-label">MRP  Price</label>
                     <input type="number" step="0.001" id="mprice" name="mprice" class="form-control"
                            value="<?= htmlspecialchars($mprice) ?>">
                 </div>

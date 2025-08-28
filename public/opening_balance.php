@@ -21,7 +21,7 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Fetch items from tblitemmaster
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, OB, OB2
+$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, OB, OB2
           FROM tblitemmaster
           WHERE LIQ_FLAG = ?";
 $params = [$mode];

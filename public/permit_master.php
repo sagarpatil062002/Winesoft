@@ -17,7 +17,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Fetch permits from tblpermit
-$query = "SELECT CODE, DETAILS, P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS 
+$query = "SELECT ID, CODE, DETAILS, P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, PERMIT_TYPE 
           FROM tblpermit
           WHERE PRMT_FLAG = 1"; // Only active permits
 
@@ -62,6 +62,16 @@ $stmt->close();
     <div class="content-area">
       <h3 class="mb-4">Permit Master Module</h3>
 
+      <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success"><?= $_SESSION['success_message'] ?></div>
+        <?php unset($_SESSION['success_message']); ?>
+      <?php endif; ?>
+
+      <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="alert alert-danger"><?= $_SESSION['error_message'] ?></div>
+        <?php unset($_SESSION['error_message']); ?>
+      <?php endif; ?>
+
       <!-- Search -->
       <form method="GET" class="search-control mb-3">
         <div class="input-group">
@@ -94,6 +104,7 @@ $stmt->close();
               <th>Ex.</th>
               <th>Permit Name</th>
               <th>Permit No.</th>
+              <th>Type</th>
               <th>Iss. Date</th>
               <th>Exp. Date</th>
               <th>Place</th>
@@ -102,44 +113,42 @@ $stmt->close();
           </thead>
           <tbody>
           <?php if (!empty($permits)): ?>
-            <?php foreach ($permits as $index => $permit): ?>
+            <?php foreach ($permits as $index => $permit): 
+              $permitType = isset($permit['PERMIT_TYPE']) ? $permit['PERMIT_TYPE'] : 'ONE_YEAR';
+              $expDate = ($permitType === 'LIFETIME') ? 'Lifetime' : date('d/m/Y', strtotime($permit['P_EXP_DT']));
+            ?>
               <tr>
                 <td><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($permit['DETAILS']); ?></td>
                 <td><?= htmlspecialchars($permit['P_NO']); ?></td>
+                <td><?= $permitType === 'LIFETIME' ? 'Lifetime' : 'One Year' ?></td>
                 <td><?= date('d/m/Y', strtotime($permit['P_ISSDT'])); ?></td>
-                <td><?= date('d/m/Y', strtotime($permit['P_EXP_DT'])); ?></td>
+                <td><?= $expDate ?></td>
                 <td><?= htmlspecialchars($permit['PLACE_ISS']); ?></td>
-                <td class="d-flex gap-1">
-                  <td class="d-flex gap-2">
-    
-    <a href="edit_permit.php?code=<?= urlencode($permit['CODE']) ?>" class="btn btn-sm btn-warning" title="Edit">
-        <i class="fas fa-edit me-1"></i> Edit
-    </a>
-    <a href="delete_permit.php?code=<?= urlencode($permit['CODE']) ?>" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this permit?')">
-        <i class="fas fa-trash me-1"></i> Delete
-    </a>
-</td>
-                  </a>
+                <td>
+                  <div class="d-flex gap-2">
+                    <a href="edit_permit.php?id=<?= $permit['ID'] ?>" class="btn btn-sm btn-warning" title="Edit">
+                      <i class="fas fa-edit me-1"></i> Edit
+                    </a>
+                    <a href="delete_permit.php?id=<?= $permit['ID'] ?>" class="btn btn-sm btn-danger" title="Delete" onclick="return confirm('Are you sure you want to delete this permit?')">
+                      <i class="fas fa-trash me-1"></i> Delete
+                    </a>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="7" class="text-center text-muted">No permits found.</td>
+              <td colspan="8" class="text-center text-muted">No permits found.</td>
             </tr>
           <?php endif; ?>
           </tbody>
         </table>
       </div>
-
-      
     </div>
-
   </div>
-
 </div>
-      <?php include 'components/footer.php'; ?>
+<?php include 'components/footer.php'; ?>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

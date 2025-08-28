@@ -13,9 +13,6 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
-// Get company ID from session
-$compID = $_SESSION['CompID'];
-
 // Default values
 $report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'detailed';
 $supplier_type = isset($_GET['supplier_type']) ? $_GET['supplier_type'] : 'particular_supplier_all_brands';
@@ -24,35 +21,28 @@ $brand_code = isset($_GET['brand_code']) ? $_GET['brand_code'] : '';
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d', strtotime('-6 months'));
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
 
-// Fetch suppliers from tbllheads (filtered by company)
+// Fetch suppliers from tbllheads
 $suppliers = [];
 $supplierQuery = "SELECT l.LCODE, l.LHEAD, s.CODE 
                   FROM tbllheads l 
                   LEFT JOIN tblsupplier s ON l.REF_CODE = s.CODE 
-                  WHERE l.GCODE = 33 AND l.CompID = ?
+                  WHERE l.GCODE = 33 
                   ORDER BY l.LHEAD";
-$supplierStmt = $conn->prepare($supplierQuery);
-$supplierStmt->bind_param("i", $compID);
-$supplierStmt->execute();
-$supplierResult = $supplierStmt->get_result();
+$supplierResult = $conn->query($supplierQuery);
 while ($row = $supplierResult->fetch_assoc()) {
     $suppliers[$row['CODE']] = $row['LHEAD'];
 }
-$supplierStmt->close();
 
-// Fetch brands from tblitemmaster (no CompID filter as it doesn't exist in this table)
+// Fetch brands from tblitemmaster - using DETAILS (item name) instead of DETAILS2 (size)
 $brands = [];
 $brandQuery = "SELECT DISTINCT DETAILS 
                FROM tblitemmaster 
                WHERE DETAILS IS NOT NULL AND DETAILS != '' 
                ORDER BY DETAILS";
-$brandStmt = $conn->prepare($brandQuery);
-$brandStmt->execute();
-$brandResult = $brandStmt->get_result();
+$brandResult = $conn->query($brandQuery);
 while ($row = $brandResult->fetch_assoc()) {
     $brands[] = $row['DETAILS'];
 }
-$brandStmt->close();
 
 // Generate report data based on filters
 $report_data = [];
@@ -75,10 +65,10 @@ if (isset($_GET['generate'])) {
               FROM tblpurchases p
               INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
               INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
-              WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+              WHERE p.DATE BETWEEN ? AND ?";
     
-    $params = [$date_from, $date_to, $compID];
-    $types = "ssi";
+    $params = [$date_from, $date_to];
+    $types = "ss";
     
     if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
         $query .= " AND p.SUBCODE = ?";
@@ -103,10 +93,10 @@ if (isset($_GET['generate'])) {
     // Calculate gross amount
     $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount 
                     FROM tblpurchases p
-                    WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+                    WHERE p.DATE BETWEEN ? AND ?";
     
-    $gross_params = [$date_from, $date_to, $compID];
-    $gross_types = "ssi";
+    $gross_params = [$date_from, $date_to];
+    $gross_types = "ss";
     
     if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
         $gross_query .= " AND p.SUBCODE = ?";
@@ -133,10 +123,9 @@ if (isset($_GET['generate'])) {
   <title>Supplier Wise Purchase Report - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
+   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-  </style>
 </head>
 <body>
 <div class="dashboard-container">

@@ -27,7 +27,7 @@ $company = $companyResult->fetch_assoc();
 $companyName = $company['COMP_NAME'] ?? 'DIAMOND WINE SHOP';
 
 // Fetch items from tblitemmaster for brandwise listing
-$query = "SELECT CODE, NEW_CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, LIQ_FLAG
+$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, LIQ_FLAG
           FROM tblitemmaster
           ORDER BY " . ($sequence === 'U' ? "DETAILS ASC" : "CODE ASC");
 

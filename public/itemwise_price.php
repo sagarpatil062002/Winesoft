@@ -169,7 +169,7 @@ $stmt->close();
                 <th>Item Description</th>
                 <th>Category</th>
                 <th>B. Rate</th>
-                <th>W. Rate</th>
+                <th>P.Price</th>
               </tr>
             </thead>
             <tbody>
