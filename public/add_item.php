@@ -48,7 +48,7 @@ if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP 
 
 // Initialize variables
 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-$pprice = $bprice = $mprice = $vprice = $GOB = $OB = $OB2 = 0;
+$pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
 $success = $error = '';
 
 // Handle submit
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pprice = floatval($_POST['pprice'] ?? 0);
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
-    $vprice = floatval($_POST['vprice'] ?? 0);
+    $RPRICE = floatval($_POST['RPRICE'] ?? 0);
     $GOB = floatval($_POST['GOB'] ?? 0);
     $OB = floatval($_POST['OB'] ?? 0);
     $OB2 = floatval($_POST['OB2'] ?? 0);
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Insert into tblitemmaster - Fixed: Added ITEM_GROUP column
         $sql = "INSERT INTO tblitemmaster 
-            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, VPRICE, 
+            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, 
              GOB, OB, OB2, BARCODE, LIQ_FLAG) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param(
                 "sssssssdddddddss",
                 $code, $Print_Name, $details, $details2, $class, $sub_class, $item_group,
-                $pprice, $bprice, $mprice, $vprice,
+                $pprice, $bprice, $mprice, $RPRICE,
                 $GOB, $OB, $OB2,
                 $BARCODE, $liq_flag
             );
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = "Item added successfully!";
                 // Reset form
                 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-                $pprice = $bprice = $mprice = $vprice = $GOB = $OB = $OB2 = 0;
+                $pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
             } else {
                 $error = "Error: " . $stmt->error;
             }
@@ -292,9 +292,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- V. Price -->
                 <div class="col-md-3">
-                    <label for="vprice" class="form-label">V. Price</label>
-                    <input type="number" step="0.001" id="vprice" name="vprice" class="form-control"
-                           value="<?= htmlspecialchars($vprice) ?>">
+                    <label for="RPRICE" class="form-label">RETAIL Price</label>
+                    <input type="number" step="0.001" id="RPRICE" name="RPRICE" class="form-control"
+                           value="<?= htmlspecialchars($RPRICE) ?>">
                 </div>
 
                 <!-- Buttons -->

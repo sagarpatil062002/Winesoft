@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 20, 2025 at 07:36 PM
+-- Generation Time: Aug 30, 2025 at 05:19 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -21,20 +21,98 @@ SET time_zone = "+00:00";
 -- Database: `winesoft`
 --
 
--- --------------------------------------------------------
-
+DELIMITER $$
 --
--- Table structure for table `tblbranch`
+-- Procedures
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `AddCompanyStockColumns` (IN `comp_id` INT)   BEGIN
+    SET @col1 = CONCAT('OPENING_STOCK', comp_id);
+    SET @col2 = CONCAT('CURRENT_STOCK', comp_id);
+    
+    SET @sql1 = CONCAT('ALTER TABLE tblitem_stock ADD COLUMN ', @col1, ' DECIMAL(10,3) DEFAULT 0.000');
+    SET @sql2 = CONCAT('ALTER TABLE tblitem_stock ADD COLUMN ', @col2, ' DECIMAL(10,3) DEFAULT 0.000');
+    
+    PREPARE stmt1 FROM @sql1;
+    EXECUTE stmt1;
+    DEALLOCATE PREPARE stmt1;
+    
+    PREPARE stmt2 FROM @sql2;
+    EXECUTE stmt2;
+    DEALLOCATE PREPARE stmt2;
+END$$
 
-CREATE TABLE `tblbranch` (
-  `BranchID` int(11) NOT NULL,
-  `CompID` int(11) NOT NULL,
-  `BranchName` varchar(50) NOT NULL,
-  `BranchAddress` varchar(100) DEFAULT NULL,
-  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
-  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `CreateCompanyDailyStockTable` (IN `comp_id` INT)   BEGIN
+    SET @table_name = CONCAT('tbldailystock_', comp_id);
+    
+    SET @sql = CONCAT('CREATE TABLE IF NOT EXISTS ', @table_name, ' (
+        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+        `STK_DATE` date NOT NULL,
+        `FIN_YEAR` year(4) NOT NULL,
+        `ITEM_CODE` varchar(20) NOT NULL,
+        `LIQ_FLAG` char(1) NOT NULL DEFAULT \"F\",
+        `OPENING_QTY` decimal(10,3) DEFAULT 0.000,
+        `PURCHASE_QTY` decimal(10,3) DEFAULT 0.000,
+        `SALES_QTY` decimal(10,3) DEFAULT 0.000,
+        `ADJUSTMENT_QTY` decimal(10,3) DEFAULT 0.000,
+        `CLOSING_QTY` decimal(10,3) DEFAULT 0.000,
+        `STOCK_TYPE` varchar(10) DEFAULT \"REGULAR\",
+        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+        PRIMARY KEY (`DailyStockID`),
+        UNIQUE KEY `unique_daily_stock_', comp_id, '` (`STK_DATE`,`ITEM_CODE`,`FIN_YEAR`),
+        KEY `ITEM_CODE_', comp_id, '` (`ITEM_CODE`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci');
+    
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt;
+    DEALLOCATE PREPARE stmt;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `GetYesterdayClosingForOpening` (IN `comp_id` INT, IN `item_code` VARCHAR(20), IN `stk_date` DATE, IN `fin_year` YEAR, IN `liq_flag` CHAR(1))   BEGIN
+    SET @table_name = CONCAT('tbldailystock_', comp_id);
+    SET @yesterday = DATE_SUB(stk_date, INTERVAL 1 DAY);
+    
+    SET @sql = CONCAT('SELECT CLOSING_QTY FROM ', @table_name, ' 
+                      WHERE STK_DATE = ? AND ITEM_CODE = ? AND FIN_YEAR = ? AND LIQ_FLAG = ? 
+                      ORDER BY STK_DATE DESC LIMIT 1');
+    
+    PREPARE stmt FROM @sql;
+    EXECUTE stmt USING @yesterday, item_code, fin_year, liq_flag;
+    DEALLOCATE PREPARE stmt;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `UpdateDailyStock` (IN `comp_id` INT, IN `stk_date` DATE, IN `fin_year` YEAR, IN `item_code` VARCHAR(20), IN `liq_flag` CHAR(1), IN `opening_qty` DECIMAL(10,3), IN `closing_qty` DECIMAL(10,3))   BEGIN
+    SET @table_name = CONCAT('tbldailystock_', comp_id);
+    
+    -- Check if record exists
+    SET @check_sql = CONCAT('SELECT COUNT(*) as count FROM ', @table_name, ' 
+                           WHERE STK_DATE = ? AND ITEM_CODE = ? AND FIN_YEAR = ? AND LIQ_FLAG = ?');
+    
+    PREPARE check_stmt FROM @check_sql;
+    EXECUTE check_stmt USING stk_date, item_code, fin_year, liq_flag;
+    DEALLOCATE PREPARE check_stmt;
+    
+    IF @count > 0 THEN
+        -- Update existing record
+        SET @update_sql = CONCAT('UPDATE ', @table_name, ' 
+                                SET OPENING_QTY = ?, CLOSING_QTY = ?, LAST_UPDATED = CURRENT_TIMESTAMP 
+                                WHERE STK_DATE = ? AND ITEM_CODE = ? AND FIN_YEAR = ? AND LIQ_FLAG = ?');
+        
+        PREPARE update_stmt FROM @update_sql;
+        EXECUTE update_stmt USING opening_qty, closing_qty, stk_date, item_code, fin_year, liq_flag;
+        DEALLOCATE PREPARE update_stmt;
+    ELSE
+        -- Insert new record
+        SET @insert_sql = CONCAT('INSERT INTO ', @table_name, ' 
+                                (STK_DATE, FIN_YEAR, ITEM_CODE, LIQ_FLAG, OPENING_QTY, CLOSING_QTY) 
+                                VALUES (?, ?, ?, ?, ?, ?)');
+        
+        PREPARE insert_stmt FROM @insert_sql;
+        EXECUTE insert_stmt USING stk_date, fin_year, item_code, liq_flag, opening_qty, closing_qty;
+        DEALLOCATE PREPARE insert_stmt;
+    END IF;
+END$$
+
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -53,21 +131,6 @@ CREATE TABLE `tblclass` (
 -- Dumping data for table `tblclass`
 --
 
-INSERT INTO `tblclass` (`SRNO`, `SGROUP`, `DESC`, `LIQ_FLAG`) VALUES
-(1, 'W', 'WHISKY', 'F'),
-(2, 'V', 'WINES', 'F'),
-(3, 'G', 'GIN', 'F'),
-(4, 'B', 'BEER (STRONG & MILD)', 'F'),
-(5, 'D', 'BRANDY', 'F'),
-(6, 'K', 'VODKA', 'F'),
-(7, 'R', 'RUM', 'F'),
-(8, 'O', 'OTHERS/GENERAL', 'F'),
-(9, 'L', 'LIQUORS', 'C'),
-(10, 'O', 'OTHERS/GENERAL', 'C'),
-(11, 'O', 'COLD DRINKS', 'O'),
-(12, 'O', 'SODA', 'O'),
-(13, 'O', 'EXTRA CLASS', 'O');
-
 -- --------------------------------------------------------
 
 --
@@ -79,7 +142,7 @@ CREATE TABLE `tblcompany` (
   `COMP_NAME` varchar(50) NOT NULL,
   `CF_LINE` varchar(15) DEFAULT NULL,
   `CS_LINE` varchar(35) DEFAULT NULL,
-  `FIN_YEAR` varchar(15) NOT NULL,
+  `FIN_YEAR` int(15) NOT NULL,
   `COMP_ADDR` varchar(100) DEFAULT NULL,
   `COMP_FLNO` varchar(12) DEFAULT NULL,
   `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -90,8 +153,6 @@ CREATE TABLE `tblcompany` (
 -- Dumping data for table `tblcompany`
 --
 
-INSERT INTO `tblcompany` (`CompID`, `COMP_NAME`, `CF_LINE`, `CS_LINE`, `FIN_YEAR`, `COMP_ADDR`, `COMP_FLNO`, `CREATED_AT`, `UPDATED_AT`) VALUES
-(1, 'Diamond Wine Shopee', NULL, NULL, '2024-25', 'Your Address Here', NULL, '2025-08-14 05:53:04', '2025-08-14 05:53:04');
 
 -- --------------------------------------------------------
 
@@ -102,7 +163,7 @@ INSERT INTO `tblcompany` (`CompID`, `COMP_NAME`, `CF_LINE`, `CS_LINE`, `FIN_YEAR
 CREATE TABLE `tblcustomerprices` (
   `CustPID` bigint(20) NOT NULL,
   `LCode` int(11) DEFAULT NULL,
-  `Code` char(4) DEFAULT NULL,
+  `Code` varchar(20) DEFAULT NULL,
   `WPrice` decimal(18,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -110,9 +171,106 @@ CREATE TABLE `tblcustomerprices` (
 -- Dumping data for table `tblcustomerprices`
 --
 
-INSERT INTO `tblcustomerprices` (`CustPID`, `LCode`, `Code`, `WPrice`) VALUES
-(450, 159, '10W3', 100.00),
-(451, 161, '8PWD', 1000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblcustomersales`
+--
+
+CREATE TABLE `tblcustomersales` (
+  `SaleID` bigint(20) NOT NULL,
+  `BillNo` int(11) NOT NULL,
+  `BillDate` date NOT NULL,
+  `LCode` int(11) NOT NULL,
+  `ItemCode` varchar(20) NOT NULL,
+  `ItemName` varchar(255) NOT NULL,
+  `ItemSize` varchar(50) DEFAULT NULL,
+  `Rate` decimal(18,3) NOT NULL DEFAULT 0.000,
+  `Quantity` int(11) NOT NULL DEFAULT 1,
+  `Amount` decimal(18,3) NOT NULL DEFAULT 0.000,
+  `CreatedDate` datetime DEFAULT current_timestamp(),
+  `CompID` int(11) DEFAULT NULL,
+  `UserID` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblcustomersales`
+--
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_1`
+--
+
+CREATE TABLE `tbldailystock_1` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `FIN_YEAR` year(4) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `OPENING_QTY` decimal(10,3) DEFAULT 0.000,
+  `PURCHASE_QTY` decimal(10,3) DEFAULT 0.000,
+  `SALES_QTY` decimal(10,3) DEFAULT 0.000,
+  `ADJUSTMENT_QTY` decimal(10,3) DEFAULT 0.000,
+  `CLOSING_QTY` decimal(10,3) DEFAULT 0.000,
+  `STOCK_TYPE` varchar(10) DEFAULT 'REGULAR',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbldailystock_1`
+--
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_2`
+--
+
+CREATE TABLE `tbldailystock_2` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `FIN_YEAR` year(4) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `OPENING_QTY` decimal(10,3) DEFAULT 0.000,
+  `PURCHASE_QTY` decimal(10,3) DEFAULT 0.000,
+  `SALES_QTY` decimal(10,3) DEFAULT 0.000,
+  `ADJUSTMENT_QTY` decimal(10,3) DEFAULT 0.000,
+  `CLOSING_QTY` decimal(10,3) DEFAULT 0.000,
+  `STOCK_TYPE` varchar(10) DEFAULT 'REGULAR',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tbldailystock_2`
+--
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_base`
+--
+
+CREATE TABLE `tbldailystock_base` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `FIN_YEAR` year(4) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `OPENING_QTY` decimal(10,3) DEFAULT 0.000,
+  `PURCHASE_QTY` decimal(10,3) DEFAULT 0.000,
+  `SALES_QTY` decimal(10,3) DEFAULT 0.000,
+  `ADJUSTMENT_QTY` decimal(10,3) DEFAULT 0.000,
+  `CLOSING_QTY` decimal(10,3) DEFAULT 0.000,
+  `STOCK_TYPE` varchar(10) DEFAULT 'REGULAR',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -130,53 +288,24 @@ CREATE TABLE `tbldrydays` (
 -- Dumping data for table `tbldrydays`
 --
 
-INSERT INTO `tbldrydays` (`id`, `DDATE`, `DDESC`) VALUES
-(1, '2025-01-14 00:00:00', 'Makar Sankranti'),
-(2, '2025-01-26 00:00:00', 'Republic Day'),
-(3, '2025-01-30 00:00:00', 'Shaheed Diwas'),
-(4, '2025-02-19 00:00:00', 'Chhatrapati Shivaji Maharaj Jayanti'),
-(5, '2025-02-23 00:00:00', 'Swami Dayanand Saraswati Jayanti'),
-(6, '2025-02-26 00:00:00', 'Shivratri'),
-(7, '2025-03-14 00:00:00', 'Holi'),
-(8, '2025-03-31 00:00:00', 'Eid ul-Fitr'),
-(9, '2025-04-06 00:00:00', 'Ram Navami'),
-(10, '2025-04-10 00:00:00', 'Mahavir Jayanti'),
-(11, '2025-04-14 00:00:00', 'Ambedkar Jayanti'),
-(12, '2025-04-18 00:00:00', 'Good Friday'),
-(13, '2025-05-01 00:00:00', 'Maharashtra Day'),
-(14, '2025-05-12 00:00:00', 'Buddha Purnima'),
-(15, '2025-06-07 00:00:00', 'Bakrid, Eid-al-Adha'),
-(16, '2025-07-06 00:00:00', 'Ashadi Ekadashi, Muharram'),
-(17, '2025-07-10 00:00:00', 'Guru Purnima'),
-(18, '2025-08-15 00:00:00', 'Independence Day'),
-(19, '2025-08-16 00:00:00', 'Janmashthami'),
-(20, '2025-08-27 00:00:00', 'Ganesh Chaturthi'),
-(21, '2025-09-05 00:00:00', 'Eid-e-Milad'),
-(22, '2025-09-06 00:00:00', 'Anant Chaturdashi'),
-(23, '2025-10-02 00:00:00', 'Gandhi Jayanti and Dussehra'),
-(24, '2025-10-07 00:00:00', 'Maharishi Valmiki Jayanti'),
-(25, '2025-10-08 00:00:00', 'Prohibition Week'),
-(26, '2025-11-01 00:00:00', 'Kartiki Ekadashi'),
-(27, '2025-11-05 00:00:00', 'Guru Nanak Jayanti'),
-(28, '2025-11-24 00:00:00', 'Guru Tegh Bahadur Shaheedi Diwas'),
-(29, '2025-12-25 00:00:00', 'Christmas Day');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tblemployee`
+-- Table structure for table `tblfinyear`
 --
 
-CREATE TABLE `tblemployee` (
-  `EmpID` int(11) NOT NULL,
-  `CompID` int(11) NOT NULL,
-  `EmpName` varchar(50) NOT NULL,
-  `Designation` varchar(50) DEFAULT NULL,
-  `MailID` varchar(50) DEFAULT NULL,
-  `MobileNo` varchar(15) DEFAULT NULL,
-  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
-  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+CREATE TABLE `tblfinyear` (
+  `ID` int(11) NOT NULL,
+  `START_DATE` datetime DEFAULT NULL,
+  `END_DATE` datetime DEFAULT NULL,
+  `ACTIVE` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblfinyear`
+--
+
 
 -- --------------------------------------------------------
 
@@ -196,51 +325,6 @@ CREATE TABLE `tblgheads` (
 -- Dumping data for table `tblgheads`
 --
 
-INSERT INTO `tblgheads` (`GCODE`, `GHEAD`, `LEVELNO`, `PARENTID`, `SERIAL_NO`) VALUES
-(1, 'Bank Accounts', 3, 7, 1),
-(2, 'Bank OCC A/c', 3, 24, 2),
-(3, 'Bank OD A/c', 3, 24, 3),
-(4, 'Branch / Divisions', NULL, NULL, 5),
-(5, 'Capital Account', 2, 38, 6),
-(6, 'Cash-in-hand', 3, 7, 7),
-(7, 'Current Assets', 2, 37, 8),
-(8, 'Current Liabilities', 2, 38, 9),
-(9, 'Deposits (Asset)', 2, 7, 10),
-(10, 'Direct Expenses', 2, 40, 11),
-(11, 'Direct Incomes', 2, 39, 12),
-(12, 'Duties & Taxes', NULL, NULL, 13),
-(13, 'Expenses (Direct)', NULL, 45, 15),
-(14, 'Expenses (Indirect)', NULL, 45, 16),
-(15, 'Fixed Assets', 2, 0, 17),
-(16, 'Income (Direct)', NULL, 45, 18),
-(17, 'Income (Indirect)', NULL, 45, 19),
-(18, 'Indirect Expenses', 2, 40, 21),
-(19, 'Indirect Incomes', 2, 39, 22),
-(20, 'Investments', 2, 37, 23),
-(21, 'Loans & Advances (Asset)', 2, 37, 25),
-(22, 'Loans (Liability)', 2, NULL, 26),
-(23, 'Misc. Expenses (ASSET)', NULL, NULL, 27),
-(24, 'Provisions', NULL, NULL, 28),
-(25, 'Purchase Accounts', 2, 45, 29),
-(26, 'Reserves & Surplus', 2, 38, 31),
-(27, 'Retained Earnings', NULL, NULL, 32),
-(28, 'Sales Accounts', 2, 45, 34),
-(29, 'Secured Loans', 2, 38, 35),
-(30, 'Stock-in-hand', 2, 7, 37),
-(31, 'Sundry Creditors', 3, 8, 38),
-(32, 'Sundry Debtors', 2, 7, 39),
-(33, 'Suspense A/c', NULL, NULL, 40),
-(34, 'Unsecured Loans', 2, 38, 43),
-(35, 'Assets', 1, 0, 4),
-(36, 'Liabilities', 1, 0, 24),
-(37, 'Incomes', 1, 0, 20),
-(38, 'Expenditure', 1, 0, 14),
-(39, 'Trading Incomes', 1, 0, 42),
-(40, 'Trading Expenditure', 1, 0, 41),
-(41, 'Purchases', 3, 27, 30),
-(42, 'Sales', 3, 30, 33),
-(43, 'Staff Welfare', NULL, 10, 36),
-(44, 'Revenue Accounts', 2, NULL, 44);
 
 -- --------------------------------------------------------
 
@@ -249,18 +333,18 @@ INSERT INTO `tblgheads` (`GCODE`, `GHEAD`, `LEVELNO`, `PARENTID`, `SERIAL_NO`) V
 --
 
 CREATE TABLE `tblitemmaster` (
-  `CODE` varchar(4) NOT NULL,
-  `Print_Name` varchar(2) DEFAULT NULL,
+  `CODE` varchar(20) NOT NULL,
+  `Print_Name` varchar(10) DEFAULT NULL,
   `DETAILS` varchar(30) DEFAULT NULL,
-  `DETAILS2` varchar(20) DEFAULT NULL,
+  `DETAILS2` varchar(30) DEFAULT NULL,
   `BOTTLES` decimal(18,0) DEFAULT NULL,
   `CLASS` varchar(1) DEFAULT NULL,
   `SUB_CLASS` varchar(1) DEFAULT NULL,
   `ITEM_GROUP` varchar(1) DEFAULT NULL,
-  `PPRICE` decimal(18,3) DEFAULT NULL,
-  `BPRICE` decimal(18,3) DEFAULT NULL,
-  `VPRICE` decimal(18,3) DEFAULT NULL,
-  `MPRICE` decimal(18,0) DEFAULT NULL,
+  `PPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Purchase Price',
+  `BPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Base Price',
+  `RPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Retail Price',
+  `MPRICE` decimal(18,0) DEFAULT NULL COMMENT 'MRP PRICE',
   `OB` decimal(18,3) DEFAULT NULL,
   `TRCPT` decimal(18,3) DEFAULT NULL,
   `TISSU` decimal(18,3) DEFAULT NULL,
@@ -285,242 +369,28 @@ CREATE TABLE `tblitemmaster` (
 -- Dumping data for table `tblitemmaster`
 --
 
-INSERT INTO `tblitemmaster` (`CODE`, `Print_Name`, `DETAILS`, `DETAILS2`, `BOTTLES`, `CLASS`, `SUB_CLASS`, `ITEM_GROUP`, `PPRICE`, `BPRICE`, `VPRICE`, `MPRICE`, `OB`, `TRCPT`, `TISSU`, `CC`, `BARCODE`, `GOB`, `GTRCPT`, `GTISSU`, `REORDER`, `GREORDER`, `PM_IMFL`, `PM_BEER`, `LIQ_FLAG`, `SELECTED`, `SERIAL_NO`, `SEQ_NO`, `REF_CODE`, `OB2`) VALUES
-('01R1', NULL, 'NIRWANA RUM', 'QUART', 12, 'R', '1', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('01R3', NULL, 'NIRWANA RUM', 'NIP', 50, 'R', '3', 'A', 100.000, 3.000, NULL, 130, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('01RD', NULL, 'NIRWANA RUM', '1 LTR', 9, 'R', 'D', 'A', 100.000, 660.000, NULL, 660, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('01RR', NULL, 'NIRWANA RUM', '90 ML', 96, 'R', 'R', 'A', 100.000, 70.000, NULL, 70, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('07W3', NULL, 'INDICA', 'NIP', 48, 'W', '3', 'A', 98.000, 98.000, NULL, 98, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('07WD', NULL, 'INDICA', '1 LTR', 9, 'W', 'D', 'A', 384.000, 510.000, NULL, 530, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('07WR', NULL, 'INDICA', '90 ML', 96, 'W', 'R', 'A', 55.000, 55.000, NULL, 50, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('0BWF', NULL, 'B.P. 150', '150 ML', 60, 'W', 'F', 'A', 0.000, 0.000, NULL, 79, 0.000, NULL, NULL, 150, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('0LB7', NULL, 'LION S BEER ', '650 F', 12, 'B', '7', 'C', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('10W1', NULL, '100 PIPERS', 'QUART', 12, 'W', '1', 'A', 11134.000, 2250.000, NULL, 2500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('10W2', '', '100 PIPERS', 'PINT', 24, 'W', '2', 'A', 9900.000, 1125.000, NULL, 1250, 0.000, NULL, NULL, 375, '0', 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, 0),
-('10W3', NULL, '100 PIPERS', 'NIP', 48, 'W', '3', 'A', 17662.000, 565.000, NULL, 660, NULL, NULL, NULL, 180, '2432003817039', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('10WI', NULL, '100 PIPERS', '60 ML', 150, 'W', 'I', 'A', 170.000, 1.000, NULL, 1, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('12V4', NULL, 'CONOSUR TOCORNAL MERLOT', 'WINE QUART', 12, 'V', '4', 'D', 0.000, 0.000, NULL, 1560, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('1AW1', NULL, 'GLEN GRANT', 'QUART', 12, 'W', '1', 'A', 0.000, 4830.000, NULL, 4830, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('1RW1', NULL, 'RAINBOW', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 800, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('1RW3', NULL, 'RAINBOW', 'NIP', 48, 'W', '3', 'A', 100.000, 3.000, NULL, 200, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('1RWR', NULL, 'RAINBOW', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 105, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('1SG1', NULL, 'SIGRAM GIN', 'QUART', 12, 'G', '1', 'A', 0.000, 750.000, NULL, 750, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('21W1', NULL, 'OAKSMITH GOLD', 'QUART', 12, 'W', '1', 'A', 3175.000, 3175.000, NULL, 1375, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('21W2', NULL, 'OAKSMITH GOLD', 'PINT', 24, 'W', '2', 'A', 680.000, 680.000, NULL, 680, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('21W3', NULL, 'OAKSMITH GOLD', 'NIP', 48, 'W', '3', 'A', 340.000, 340.000, NULL, 340, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('21WD', NULL, 'OAKSMITH GOLD', '1 LTR', 9, 'W', 'D', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('21WR', NULL, 'OAKSMITH GOLD', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('22B7', NULL, 'COPTER 7', '650 F', 12, 'B', '7', 'C', 0.000, 0.000, NULL, 190, NULL, NULL, NULL, 650, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('22BL', NULL, 'COPTER 7', '500 F', 24, 'B', 'L', 'C', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('22BM', NULL, 'COPTER 7', '330 F', 24, 'B', 'M', 'C', 0.000, 0.000, NULL, 130, NULL, NULL, NULL, 330, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('2DG1', NULL, 'BULL DOG GIN', 'QUART', 12, 'G', '1', 'A', 0.000, 2520.000, NULL, 2520, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('2DGD', NULL, 'BULL DOG GIN', '1 LTR', 9, 'G', 'D', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('2VW1', NULL, 'DEWARS 12 YO', 'QUART', 12, 'W', '1', 'A', 0.000, 3750.000, NULL, 3750, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('3AW1', NULL, 'JOHNEIEE WALKER DB', 'QUART', 12, 'W', '1', 'A', 0.000, 5200.000, NULL, 5200, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('3SW1', NULL, 'DEWARS 15YO', 'QUART', 12, 'W', '1', 'A', 0.000, 4800.000, NULL, 4800, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('44K1', NULL, 'KETEL ONE', 'QUART', 12, 'K', '1', 'A', 0.000, 3500.000, NULL, 3500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('44K3', NULL, 'KETEL ONE', 'NIP', 48, 'K', '3', 'A', 0.000, 860.000, NULL, 860, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('45W1', NULL, 'OAKSMITH INTER', 'QUART', 12, 'W', '1', 'A', 840.000, 840.000, NULL, 1375, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('45W2', NULL, 'OAKSMITH INTER', 'PINT', 24, 'W', '2', 'A', 420.000, 420.000, NULL, 420, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('45W3', NULL, 'OAKSMITH INTER', 'NIP', 48, 'W', '3', 'A', 210.000, 210.000, NULL, 210, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('45WD', NULL, 'OAKSMITH INTER', '1 LTR', 9, 'W', 'D', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('45WR', NULL, 'OAKSMITH INTER', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('5GW1', NULL, 'LEGACY BLE WHY', 'QUART', 12, 'W', '1', 'A', 1450.000, 1450.000, NULL, 1450, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('5GW3', NULL, 'LEGACY BLE WHY', 'NIP', 48, 'W', '3', 'A', 350.000, 350.000, NULL, 350, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('5KR1', NULL, 'BACARDI ANJEO', 'QUART', 12, 'R', '1', 'A', 3300.000, 3300.000, NULL, 3300, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('6ABL', NULL, 'TUB WHITE ', '500 F', 24, 'B', 'L', 'C', 0.000, 170.000, NULL, 170, NULL, NULL, NULL, 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('6BW3', NULL, '6 BULLET WHY', 'NIP', 48, 'W', '3', 'A', 140.000, 140.000, NULL, 140, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('6BWR', NULL, '6 BULLET WHY', '90 ML', 96, 'W', 'R', 'A', 75.000, 75.000, NULL, 75, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('6DKD', NULL, 'HOLLAND ', '1 LTR', 9, 'K', 'D', 'A', 0.000, 535.000, NULL, 535, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('6RW3', NULL, 'ROCKDOVE PRE WHY', 'NIP', 48, 'W', '3', 'A', 310.000, 310.000, NULL, 310, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('7BW1', NULL, 'STERLING RES', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 1350, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('7BW2', NULL, 'STERLING RES', 'PINT', 24, 'W', '2', 'A', 0.000, 0.000, NULL, 6070, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('7BW3', NULL, 'STERLING RES', 'NIP', 48, 'W', '3', 'A', 0.000, 0.000, NULL, 335, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('7BWR', NULL, 'STERLING RES', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 175, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('7RK3', NULL, 'RED BLISS VOD', 'NIP', 48, 'K', '3', 'A', 180.000, 180.000, NULL, 180, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8LV5', NULL, 'RCMB CRFDWINE', 'WINE PINT', 24, 'V', '5', 'D', 0.000, 110.000, NULL, 110, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8MW3', NULL, '8PM PET W', 'NIP', 48, 'W', '3', 'A', 1000.000, 100.000, NULL, 115, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8PW1', NULL, '20:00:00', 'QUART', 12, 'W', '1', 'A', 2233.000, 460.000, NULL, 500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8PW2', NULL, '20:00:00', 'PINT', 24, 'W', '2', 'A', 2232.000, 230.000, NULL, 230, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8PW3', NULL, '20:00:00', 'NIP', 48, 'W', '3', 'A', 2233.000, 110.000, NULL, 115, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8PWD', NULL, '20:00:00', '1 LTR', 9, 'W', 'D', 'A', 2058.000, 575.000, NULL, 620, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8PWR', NULL, '20:00:00', '90 ML', 100, 'W', 'R', 'A', 2232.000, 60.000, NULL, 64, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8SW1', NULL, 'ROYAL CHAL AMERICIAN', 'QUART', 12, 'W', '1', 'A', 0.000, 1170.000, NULL, 1170, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('8SW3', NULL, 'ROYAL CHAL AMERICIAN', 'NIP', 48, 'W', '3', 'A', 0.000, 280.000, NULL, 280, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A0K1', NULL, 'AMERICAN VOD', 'QUART', 12, 'K', '1', 'A', 100.000, 12.000, NULL, 9, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A0K2', NULL, 'AMERICAN VOD', 'PINT', 24, 'K', '2', 'A', 100.000, 6.000, NULL, 4, 0.000, NULL, NULL, 375, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A0K3', NULL, 'AMERICAN VOD', 'NIP', 48, 'K', '3', 'A', 100.000, 3.000, NULL, 2, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A0KR', NULL, 'AMERICAN VOD', '90 ML', 96, 'K', 'R', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 90, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A1G3', NULL, 'AMERICAN DUET', 'NIP', 48, 'G', '3', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A2K1', NULL, 'A2O', 'QUART', 12, 'K', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4W1', NULL, 'STERLING RES7', 'QUART', 12, 'W', '1', 'A', 0.000, 720.000, NULL, 720, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4W2', NULL, 'STERLING RES7', 'PINT', 24, 'W', '2', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4W3', NULL, 'STERLING RES7', 'NIP', 48, 'W', '3', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4WD', NULL, 'STERLING RES7', '1 LTR', 9, 'W', 'D', 'A', 0.000, 930.000, NULL, 930, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4WO', NULL, 'STERLING RES7', '2000 ML', 4, 'W', 'O', 'A', 0.000, 1800.000, NULL, 1800, NULL, NULL, NULL, 2000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A4WR', NULL, 'STERLING RES7', '90 ML', 96, 'W', 'R', 'A', 0.000, 95.000, NULL, 95, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A7KD', NULL, 'A M VODKA', '1 LTR', 9, 'K', 'D', 'A', 4200.000, 420.000, NULL, 469, 0.000, NULL, NULL, 1000, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A9K3', NULL, 'ALCAZER ', 'NIP', 48, 'K', '3', 'A', 0.000, 0.000, NULL, 110, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('A9KD', NULL, 'ALCAZER ', '1 LTR', 9, 'K', 'D', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 1000, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AAK1', NULL, 'ARTIC VOD FL', 'QUART', 12, 'K', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AAK3', NULL, 'ARTIC VOD FL', 'NIP', 48, 'K', '3', 'A', 0.000, 0.000, NULL, 329, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AAV5', NULL, 'ARKA FL', 'WINE PINT', 96, 'V', '5', 'D', 0.000, 0.000, NULL, 1050, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ABB7', NULL, 'AMBERRO STRONG', '650 F', 12, 'B', '7', 'C', 456.000, 38.000, 24.000, 29, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 477, NULL, NULL, NULL),
-('ADW1', NULL, 'ST.ANDREWS WHY', 'QUART', 6, 'W', '1', 'A', 8657.000, 1840.000, 0.000, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 335, NULL, NULL, NULL),
-('ADWE', NULL, 'ST.ANDREWS WHY', 'HALF LTR', 6, 'W', 'E', 'A', 8657.000, 1840.000, 0.000, 0, 0.000, NULL, NULL, 500, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 231, NULL, NULL, NULL),
-('AGK1', NULL, 'TEQUILA CAMINO ', 'QUART', 12, 'K', '1', 'A', 12566.000, 1500.000, NULL, 3161, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AGKD', NULL, 'TEQUILA CAMINO ', '1 LTR', 12, 'K', 'D', 'A', 14743.000, 1600.000, NULL, 0, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AKK1', NULL, 'ARTIC VOD', 'QUART', 12, 'K', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AKK3', NULL, 'ARTIC VOD', 'NIP', 48, 'K', '3', 'A', 0.000, 0.000, NULL, 85, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALW1', NULL, 'ANTIQUITY B', 'QUART', 12, 'W', '1', 'A', 6703.000, 1200.000, NULL, 1400, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALW2', NULL, 'ANTIQUITY B', 'PINT', 24, 'W', '2', 'A', 6703.000, 600.000, NULL, 730, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALW3', NULL, 'ANTIQUITY B', 'NIP', 48, 'W', '3', 'A', 6686.000, 350.000, NULL, 365, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALWD', NULL, 'ANTIQUITY B', '1 LTR', 9, 'W', 'D', 'A', 6396.000, 1520.000, NULL, 1880, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALWI', NULL, 'ANTIQUITY B', '60 ML', 150, 'W', 'I', 'A', 6964.000, 65.000, NULL, 58, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALWO', NULL, 'ANTIQUITY B', '2000 ML', 4, 'W', 'O', 'A', 2.000, 2675.000, NULL, 3450, NULL, NULL, NULL, 2000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ALWR', NULL, 'ANTIQUITY B', '90 ML', 96, 'W', 'R', 'A', 1250.000, 155.000, NULL, 180, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AMW1', NULL, 'AMALGAM MALT', 'QUART', 12, 'W', '1', 'A', 0.000, 4500.000, NULL, 4500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AMW3', NULL, 'AMALGAM MALT', 'NIP', 48, 'W', '3', 'A', 1715.000, 40.000, NULL, 43, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AOG3', NULL, 'AMERICAN ORAN', 'NIP', 48, 'G', '3', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AOGR', NULL, 'AMERICAN ORAN', '90 ML', 96, 'G', 'R', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 90, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AQV5', NULL, 'AEKA FL', 'WINE PINT', 96, 'V', '5', 'D', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ARB7', NULL, 'AMSTEL', '650 F', 12, 'B', '7', 'C', 0.000, 0.000, NULL, 200, NULL, NULL, NULL, 650, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ARBL', NULL, 'AMSTEL', '500 F', 24, 'B', 'L', 'C', 0.000, 0.000, NULL, 140, NULL, NULL, NULL, 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ARBM', NULL, 'AMSTEL', '330 F', 24, 'B', 'M', 'C', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 330, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ASB8', NULL, 'KNOCK OUT BEER', '650 M', 12, 'B', '8', 'B', 105.000, 10.000, NULL, 9, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ATW1', NULL, 'ANTIQUITY', 'QUART', 12, 'W', '1', 'A', 5915.000, 625.000, NULL, 576, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ATW2', NULL, 'ANTIQUITY', 'PINT', 24, 'W', '2', 'A', 6000.000, 315.000, NULL, 288, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ATW3', NULL, 'ANTIQUITY', 'NIP', 48, 'W', '3', 'A', 6000.000, 170.000, NULL, 225, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('ATWI', NULL, 'ANTIQUITY', '60 ML', 150, 'W', 'I', 'A', 6138.000, 60.000, NULL, 0, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AVK1', NULL, 'ABSOLUT VDK', 'QUART', 12, 'K', '1', 'A', 12611.000, 2800.000, NULL, 2250, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AVK3', NULL, 'ABSOLUT VDK', 'NIP', 48, 'K', '3', 'A', 0.000, 594.000, NULL, 650, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AVKI', NULL, 'ABSOLUT VDK', '60 ML', 120, 'K', 'I', 'A', 11823.000, 115.000, NULL, 250, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AWW1', NULL, 'AFTER D WHY', 'QUART', 12, 'W', '1', 'A', 4460.000, 520.000, NULL, 416, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('AWW3', NULL, 'AFTER D WHY', 'NIP', 48, 'W', '3', 'A', 4460.000, 130.000, NULL, 140, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B&V5', NULL, 'B& CO', 'WINE PINT', 96, 'V', '5', 'D', 0.000, 0.000, NULL, 130, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B0W1', NULL, 'BLACK POWER WHI', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B0W2', NULL, 'BLACK POWER WHI', 'PINT', 24, 'W', '2', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 375, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B0W3', NULL, 'BLACK POWER WHI', 'NIP', 48, 'W', '3', 'A', 3443.000, 99.000, NULL, 99, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B0WD', NULL, 'BLACK POWER WHI', '1 LTR', 9, 'W', 'D', 'A', 3443.000, 550.000, NULL, 440, 0.000, NULL, NULL, 1000, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B0WR', NULL, 'BLACK POWER WHI', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 90, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B1W1', NULL, 'BALLANTINES FINEST', 'QUART', 12, 'W', '1', 'A', 12808.000, 2800.000, NULL, 2100, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B1W2', NULL, 'BALLANTINES FINEST', 'PINT', 24, 'W', '2', 'A', 0.000, 0.000, NULL, 1100, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B1W3', NULL, 'BALLANTINES FINEST', 'NIP', 48, 'W', '3', 'A', 0.000, 775.000, NULL, 600, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B1WI', NULL, 'BALLANTINES FINEST', '60 ML', 192, 'W', 'I', 'A', 17655.000, 120.000, NULL, 0, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B1WR', NULL, 'BALLANTINES FINEST', '90 ML', 96, 'W', 'R', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B2B7', NULL, 'BUDWASR  STRONG', '650 F', 12, 'B', '7', 'C', 1750.000, 230.000, NULL, 230, NULL, NULL, NULL, 650, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B2BL', NULL, 'BUDWASR  STRONG', '500 F', 24, 'B', 'L', 'C', 1600.000, 185.000, NULL, 195, NULL, NULL, NULL, 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B2BM', NULL, 'BUDWASR  STRONG', '330 F', 24, 'B', 'M', 'C', 155.000, 155.000, NULL, 155, NULL, NULL, NULL, 330, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B3V4', NULL, 'BLUSH ZINFANDEL', 'WINE QUART', 12, 'V', '4', 'D', 1.000, 680.000, NULL, 680, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B3V5', NULL, 'BLUSH ZINFANDEL', 'WINE PINT', 24, 'V', '5', 'D', 1.000, 350.000, NULL, 350, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B5V4', NULL, 'BRUT METHO ROSE', 'WINE QUART', 12, 'V', '4', 'D', 1.000, 510.000, NULL, 510, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B5V5', NULL, 'BRUT METHO ROSE', 'WINE PINT', 24, 'V', '5', 'D', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B6K1', NULL, 'BEKNTIENS', 'QUART', 12, 'K', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B7R1', NULL, 'G BELL RUM', 'QUART', 12, 'R', '1', 'A', 2700.000, 270.000, NULL, 270, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B7W1', NULL, 'GILMORE 18 SELECT', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 2200, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B8W1', NULL, 'BLACK DOG 18 YRS', 'QUART', 12, 'W', '1', 'A', 0.000, 2100.000, NULL, 2100, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B8W2', NULL, 'BLACK DOG 18 YRS', 'PINT', 24, 'W', '2', 'A', 0.000, 1050.000, NULL, 1050, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B8W3', NULL, 'BLACK DOG 18 YRS', 'NIP', 48, 'W', '3', 'A', 0.000, 525.000, NULL, 525, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B8WI', NULL, 'BLACK DOG 18 YRS', '60 ML', 150, 'W', 'I', 'A', 0.000, 195.000, NULL, 195, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B9W1', NULL, 'BINNIES W', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('B9W3', NULL, 'BINNIES W', 'NIP', 48, 'W', '3', 'A', 100.000, 3.000, NULL, 82, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BABK', NULL, 'BAVARIA', '500 M', 24, 'B', 'K', 'B', 2829.000, 151.000, 0.000, 0, 0.000, NULL, NULL, 500, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 439, NULL, NULL, NULL),
-('BAR1', NULL, 'BACARDI RUM', 'QUART', 12, 'R', '1', 'A', 5047.000, 620.000, NULL, 620, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAR2', NULL, 'BACARDI RUM', 'PINT', 24, 'R', '2', 'A', 5047.000, 300.000, NULL, 300, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAR3', NULL, 'BACARDI RUM', 'NIP', 48, 'R', '3', 'A', 5287.000, 155.000, NULL, 155, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BARD', NULL, 'BACARDI RUM', '1 LTR', 12, 'R', 'D', 'A', 14143.000, 1150.000, NULL, 1150, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BARI', NULL, 'BACARDI RUM', '60 ML', 150, 'R', 'I', 'A', 6008.000, 85.000, NULL, 85, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAW1', NULL, 'BLACK LABEL', 'QUART', 12, 'W', '1', 'A', 26838.000, 2900.000, NULL, 3750, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAW2', NULL, 'BLACK LABEL', 'PINT', 24, 'W', '2', 'A', 0.000, 2750.000, NULL, 2750, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAW3', NULL, 'BLACK LABEL', 'NIP', 48, 'W', '3', 'A', 28576.000, 785.000, NULL, 1700, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BAWI', NULL, 'BLACK LABEL', '60 ML', 192, 'W', 'I', 'A', 35529.000, 240.000, NULL, 500, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BBG1', NULL, 'B.B. GIN', 'QUART', 12, 'G', '1', 'A', 560.000, 560.000, NULL, 560, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BBG3', NULL, 'B.B. GIN', 'NIP', 48, 'G', '3', 'A', 720.000, 84.000, NULL, 140, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BBGR', NULL, 'B.B. GIN', '90 ML', 100, 'G', 'R', 'A', 450.000, 40.000, NULL, 40, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BCB9', NULL, 'BACARDI BREEZER', '325 M', 24, 'B', '9', 'B', 128.000, 135.000, NULL, 135, NULL, NULL, NULL, 325, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BCBN', NULL, 'BACARDI BREEZER', '330 M', 24, 'B', 'N', 'B', 1042.000, 130.000, NULL, 130, NULL, NULL, NULL, 330, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BDG1', NULL, 'B.R DUET', 'QUART', 12, 'G', '1', 'A', 2315.000, 600.000, NULL, 600, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BDG2', NULL, 'B.R DUET', 'PINT', 24, 'G', '2', 'A', 2143.000, 248.000, NULL, 248, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BDG3', NULL, 'B.R DUET', 'NIP', 48, 'G', '3', 'A', 2298.000, 140.000, NULL, 140, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BDGR', NULL, 'B.R DUET', '90 ML', 96, 'G', 'R', 'A', 2400.000, 35.000, NULL, 26, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BEB7', NULL, 'BECKS', '650 F', 12, 'B', '7', 'C', 180.000, 175.000, NULL, 175, NULL, NULL, NULL, 650, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BEBL', NULL, 'BECKS', '500 F', 24, 'B', 'L', 'C', 0.000, 130.000, NULL, 140, NULL, NULL, NULL, 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BEBN', NULL, 'BECKS', '330 M', 24, 'B', 'N', 'B', 2054.000, 90.000, NULL, 0, NULL, NULL, NULL, 330, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BEG1', NULL, 'BEFEATER', 'QUART', 12, 'G', '1', 'A', 9884.000, 1060.000, 0.000, 3000, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 348, NULL, NULL, NULL),
-('BEK1', NULL, 'BELVEDER VODKA', 'QUART', 12, 'K', '1', 'A', 29055.000, 3125.000, 0.000, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 344, NULL, NULL, NULL),
-('BFR1', NULL, 'BACARDI FLAVOUR', 'QUART', 12, 'R', '1', 'A', 0.000, 680.000, NULL, 620, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BFR2', NULL, 'BACARDI FLAVOUR', 'PINT', 24, 'R', '2', 'A', 0.000, 340.000, NULL, 340, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BFR3', NULL, 'BACARDI FLAVOUR', 'NIP', 48, 'R', '3', 'A', 0.000, 170.000, NULL, 170, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BFRI', NULL, 'BACARDI FLAVOUR', '60 ML', 150, 'R', 'I', 'A', 0.000, 60.000, NULL, 60, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BFRR', NULL, 'BACARDI FLAVOUR', '90 ML', 96, 'R', 'R', 'A', 0.000, 85.000, NULL, 85, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BGG1', NULL, 'B.R GIN', 'QUART', 12, 'G', '1', 'A', 2272.000, 560.000, NULL, 560, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BGG2', NULL, 'B.R GIN', 'PINT', 24, 'G', '2', 'A', 2246.000, 280.000, NULL, 280, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BGG3', NULL, 'B.R GIN', 'NIP', 48, 'G', '3', 'A', 2229.000, 140.000, NULL, 150, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BGGR', NULL, 'B.R GIN', '90 ML', 96, 'G', 'R', 'A', 2400.000, 35.000, NULL, 75, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BHW1', NULL, 'SUNTORY TOKI', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 6300, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BIR1', NULL, 'BACARDI BLACK', 'QUART', 12, 'R', '1', 'A', 0.000, 600.000, NULL, 600, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BIR2', NULL, 'BACARDI BLACK', 'PINT', 24, 'R', '2', 'A', 0.000, 300.000, NULL, 300, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BIR3', NULL, 'BACARDI BLACK', 'NIP', 48, 'R', '3', 'A', 0.000, 165.000, NULL, 165, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BIRR', NULL, 'BACARDI BLACK', '90 ML', 96, 'R', 'R', 'A', 0.000, 85.000, NULL, 85, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKW1', NULL, 'BLACK DOG', 'QUART', 12, 'W', '1', 'A', 16286.000, 2700.000, NULL, 2500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKW2', NULL, 'BLACK DOG', 'PINT', 24, 'W', '2', 'A', 16286.000, 1350.000, NULL, 1550, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKW3', NULL, 'BLACK DOG', 'NIP', 48, 'W', '3', 'A', 14786.000, 675.000, NULL, 740, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKWD', NULL, 'BLACK DOG', '1 LTR', 9, 'W', 'D', 'A', 0.000, 0.000, NULL, 3700, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKWI', NULL, 'BLACK DOG', '60 ML', 150, 'W', 'I', 'A', 19531.000, 245.000, NULL, 255, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BKWO', NULL, 'BLACK DOG', '2000 ML', 4, 'W', 'O', 'A', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 2000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLW1', NULL, 'BLENDERS PRIDE', 'QUART', 12, 'W', '1', 'A', 5357.000, 1250.000, NULL, 1350, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLW2', NULL, 'BLENDERS PRIDE', 'PINT', 24, 'W', '2', 'A', 5485.000, 620.000, NULL, 640, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLW3', NULL, 'BLENDERS PRIDE', 'NIP', 48, 'W', '3', 'A', 5485.000, 310.000, NULL, 335, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLWD', NULL, 'BLENDERS PRIDE', '1 LTR', 9, 'W', 'D', 'A', 1450.000, 1415.000, NULL, 1770, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLWI', NULL, 'BLENDERS PRIDE', '60 ML', 150, 'W', 'I', 'A', 850.000, 85.000, NULL, 85, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLWO', NULL, 'BLENDERS PRIDE', '2000 ML', 6, 'W', 'O', 'A', 2650.000, 2800.000, NULL, 3500, NULL, NULL, NULL, 2000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BLWR', NULL, 'BLENDERS PRIDE', '90 ML', 96, 'W', 'R', 'A', 1150.000, 145.000, NULL, 165, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BMB8', NULL, 'BOMBAY MILD', '650 M', 12, 'B', '8', 'B', 0.000, 0.000, NULL, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BMW1', NULL, 'BOWMORE 12 YO', 'QUART', 12, 'W', '1', 'A', 0.000, 0.000, NULL, 7500, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BNW1', NULL, 'BRIHANS NO.1', 'QUART', 12, 'W', '1', 'A', 1500.000, 150.000, NULL, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BNW3', NULL, 'BRIHANS NO.1', 'NIP', 48, 'W', '3', 'A', 1550.000, 50.000, NULL, 73, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BOB7', NULL, 'BARONS STRONG', '650 F', 12, 'B', '7', 'C', 585.000, 54.000, 0.000, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 409, NULL, NULL, NULL),
-('BOBM', NULL, 'BARONS STRONG', '330 F', 24, 'B', 'M', 'C', 679.000, 30.000, 0.000, 0, 0.000, NULL, NULL, 330, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 467, NULL, NULL, NULL),
-('BOV4', NULL, 'BOHEMIA', 'WINE QUART', 12, 'V', '4', 'D', 8484.000, 780.000, 0.000, 0, 0.000, NULL, NULL, 750, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 400, NULL, NULL, NULL),
-('BPW1', NULL, 'B.P', 'QUART', 12, 'W', '1', 'A', 2229.000, 520.000, NULL, 540, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BPW2', NULL, 'B.P', 'PINT', 24, 'W', '2', 'A', 2229.000, 260.000, NULL, 260, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BPW3', NULL, 'B.P', 'NIP', 48, 'W', '3', 'A', 2229.000, 130.000, NULL, 135, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BPWD', NULL, 'B.P', '1 LTR', 9, 'W', 'D', 'A', 2154.000, 660.000, NULL, 660, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BPWR', NULL, 'B.P', '90 ML', 96, 'W', 'R', 'A', 2331.000, 70.000, NULL, 70, NULL, NULL, NULL, 90, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BQW1', NULL, 'BLACK DOG CEN', 'QUART', 12, 'W', '1', 'A', 11846.000, 1180.000, NULL, 2400, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BQW2', NULL, 'BLACK DOG CEN', 'PINT', 24, 'W', '2', 'A', 11863.000, 590.000, NULL, 1250, NULL, NULL, NULL, 375, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BQW3', NULL, 'BLACK DOG CEN', 'NIP', 48, 'W', '3', 'A', 11829.000, 300.000, NULL, 600, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BQWD', NULL, 'BLACK DOG CEN', '1 LTR', 9, 'W', 'D', 'A', 0.000, 3100.000, NULL, 3100, NULL, NULL, NULL, 1000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BQWI', NULL, 'BLACK DOG CEN', '60 ML', 150, 'W', 'I', 'A', 12857.000, 103.000, NULL, 215, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BRG3', NULL, 'BRITISH GIN', 'NIP', 48, 'G', '3', 'A', 1400.000, 40.000, NULL, NULL, 0.000, NULL, NULL, 180, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 310, NULL, NULL, NULL),
-('BRV5', NULL, 'BOSCAS REISLING WINE', 'WINE PINT', 24, 'V', '5', 'D', 0.000, 55.000, 0.000, 0, 0.000, NULL, NULL, 375, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 512, NULL, NULL, NULL),
-('BSB7', NULL, 'BOMBAY STRONG', '650 F', 12, 'B', '7', 'C', 448.000, 40.000, 0.000, 0, 0.000, NULL, NULL, 650, NULL, 0.000, NULL, NULL, 0, NULL, NULL, NULL, 'F', NULL, 407, NULL, NULL, NULL),
-('BSG1', NULL, 'BOMBAY SAPPHIRE', 'QUART', 12, 'G', '1', 'A', 14348.000, 3200.000, NULL, 2450, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BSG3', NULL, 'BOMBAY SAPPHIRE', 'NIP', 48, 'G', '3', 'A', 0.000, 0.000, NULL, 1250, NULL, NULL, NULL, 180, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('BSGI', NULL, 'BOMBAY SAPPHIRE', '60 ML', 120, 'G', 'I', 'A', 15982.000, 172.000, NULL, 0, NULL, NULL, NULL, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', NULL, NULL, NULL, NULL, NULL),
-('NPL1', '', 'NAGPUR', 'QUART', NULL, 'L', 'Q', '1', 0.000, 0.000, 0.000, 0, 0.000, NULL, NULL, NULL, '', 0.000, NULL, NULL, NULL, NULL, NULL, NULL, 'C', NULL, NULL, NULL, NULL, 0),
-('SSL1', NULL, 'SANTRA', 'QUART', 12, 'L', '9', '1', 0.000, 0.000, NULL, 0, NULL, NULL, NULL, 750, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'C', NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tblitemopbal`
+-- Table structure for table `tblitem_stock`
 --
 
-CREATE TABLE `tblitemopbal` (
-  `CODE` varchar(4) NOT NULL,
-  `OB` decimal(18,0) DEFAULT NULL,
-  `OB2` decimal(18,0) DEFAULT NULL,
-  `GOB` decimal(18,0) DEFAULT NULL,
-  `SHOP_MODE` char(8) NOT NULL,
-  `OBDate` datetime DEFAULT NULL,
-  `ItemRate` decimal(18,2) DEFAULT NULL,
-  `WPRICE` decimal(18,2) DEFAULT NULL,
-  `PPRICE` decimal(18,2) DEFAULT NULL,
-  `Liq_Flag` char(1) DEFAULT NULL,
-  `PPRICE2` decimal(18,2) DEFAULT NULL,
-  `serial_no` decimal(18,0) DEFAULT NULL
+CREATE TABLE `tblitem_stock` (
+  `StockID` int(11) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `FIN_YEAR` year(4) NOT NULL,
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `OPENING_STOCK1` decimal(10,3) DEFAULT 0.000,
+  `CURRENT_STOCK1` decimal(10,3) DEFAULT 0.000,
+  `OPENING_STOCK2` decimal(10,3) DEFAULT 0.000,
+  `CURRENT_STOCK2` decimal(10,3) DEFAULT 0.000
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblitem_stock`
+--
+
 
 -- --------------------------------------------------------
 
@@ -535,54 +405,14 @@ CREATE TABLE `tbllheads` (
   `OP_BAL` double DEFAULT NULL,
   `DRCR` varchar(2) DEFAULT NULL,
   `REF_CODE` varchar(7) DEFAULT NULL,
-  `SERIAL_NO` double DEFAULT NULL
+  `SERIAL_NO` double DEFAULT NULL,
+  `CompID` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tbllheads`
 --
 
-INSERT INTO `tbllheads` (`LCODE`, `LHEAD`, `GCODE`, `OP_BAL`, `DRCR`, `REF_CODE`, `SERIAL_NO`) VALUES
-(123, 'AMAR TRADERS', 33, NULL, 'Dr', 'AMAR', NULL),
-(124, 'ANKUSH TRADERS', 33, NULL, 'Dr', 'ANKU', NULL),
-(125, 'ASHOK TRADERS', 33, NULL, 'Dr', 'ASHO', NULL),
-(126, 'ASIAN TRADERS', 33, NULL, 'Dr', 'ASIA', NULL),
-(127, 'HARESH TRADERS', 33, NULL, 'Dr', 'HARE', NULL),
-(128, 'ROCKY TRADERS', 33, NULL, 'Dr', 'ROCK', NULL),
-(129, 'ROYAL TRADERS', 33, NULL, 'Dr', 'ROYA', NULL),
-(130, 'SAI TRADERS', 33, NULL, 'Dr', 'SAIT', NULL),
-(131, 'SAMBARAGI TRADERS', 33, NULL, 'Dr', 'SAMB', NULL),
-(132, 'SUBHASH TRADERS', 33, NULL, 'Dr', 'SUBH', NULL),
-(133, 'VIJAY TRADERS SATARA', 33, NULL, 'Dr', 'VIJA', NULL),
-(134, 'VISHAL TRADERS', 33, NULL, 'Dr', 'VISH', NULL),
-(135, 'KASHMIRA TRADER', 33, NULL, 'Dr', 'KASH', NULL),
-(136, 'BHARAT WINES', 33, NULL, 'Dr', 'BHAR', NULL),
-(137, 'SWARA LIQUORS', 33, NULL, 'Dr', 'SWAR', NULL),
-(138, 'TALREJA TRADERS', 33, NULL, 'Dr', 'TALR', NULL),
-(139, 'VICKY AGENCIES', 33, NULL, 'Dr', 'VICK', NULL),
-(140, 'MUKESH AGENCIES', 33, NULL, 'Dr', 'MUKE', NULL),
-(141, 'ABHIJIT WINE INDUSTRIES', 33, NULL, 'Dr', 'ABHI', NULL),
-(142, 'GRAPE P & R INSTITUTE', 33, NULL, 'Dr', 'GRAP', NULL),
-(143, 'MONARCHA WINES', 33, NULL, 'Dr', 'MONA', NULL),
-(144, 'RAM TREDERS', 33, NULL, 'Dr', 'RAMT', NULL),
-(145, 'KHODAY INDIA', 33, NULL, 'Dr', 'KHOD', NULL),
-(146, 'MAXIWELL', 33, NULL, 'Dr', 'MAXI', NULL),
-(147, 'MILLENINUM SPIRITS', 33, NULL, 'Dr', 'MILL', NULL),
-(148, 'EMPIRE SPIRT INDIA ', 33, NULL, 'Dr', 'EM2', NULL),
-(149, 'AMIT TRADERS', 33, NULL, 'Dr', 'AMIT', NULL),
-(150, 'POOJA TRADERS', 33, NULL, 'Dr', 'POJA', NULL),
-(151, 'RAJ  MARKETING ', 33, NULL, 'Dr', 'RAJ', NULL),
-(152, 'H H TRADERS', 33, NULL, 'Dr', 'HH', NULL),
-(153, 'ROHIT ENTERPRISES', 33, NULL, 'Dr', 'ROHI', NULL),
-(154, 'ELKAY SPIRITS', 33, NULL, 'Dr', 'EKY', NULL),
-(155, 'OM SAI LIQUOR', 33, NULL, 'Dr', 'OM', NULL),
-(156, 'POLARIS LIQ PVT LTD', 33, NULL, 'Dr', 'POLA', NULL),
-(157, 'POLARIS LIQ PVT LTD', 33, NULL, 'Dr', 'POLA', NULL),
-(158, 'Sagar Traders', 33, NULL, NULL, NULL, NULL),
-(159, 'Sagar', 32, 0, 'D', 'CUST', 0),
-(160, 'Sarang', 32, 0, 'D', 'CUST', 0),
-(161, 'Sangram', 32, 0, 'D', 'CUST', 0),
-(162, 'A M', 33, 0, 'D', 'CUST', 0);
 
 -- --------------------------------------------------------
 
@@ -619,30 +449,113 @@ CREATE TABLE `tblpermit` (
   `P_STAT` varchar(1) DEFAULT NULL,
   `BTYPE` varchar(1) DEFAULT NULL,
   `LIQ_FLAG` varchar(1) DEFAULT NULL,
-  `PRMT_FLAG` tinyint(1) NOT NULL
+  `PRMT_FLAG` tinyint(1) NOT NULL,
+  `PERMIT_TYPE` enum('ONE_YEAR','LIFETIME') DEFAULT 'ONE_YEAR',
+  `ID` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblpurchasedetails`
+--
+
+CREATE TABLE `tblpurchasedetails` (
+  `DetailID` int(11) NOT NULL,
+  `PurchaseID` int(11) NOT NULL,
+  `ItemCode` varchar(20) NOT NULL,
+  `ItemName` varchar(255) NOT NULL,
+  `Size` varchar(50) DEFAULT NULL,
+  `Cases` decimal(10,2) DEFAULT 0.00,
+  `Bottles` int(11) DEFAULT 0,
+  `CaseRate` decimal(12,3) DEFAULT 0.000,
+  `MRP` decimal(10,2) DEFAULT 0.00,
+  `Amount` decimal(12,2) DEFAULT 0.00,
+  `BottlesPerCase` int(11) DEFAULT 12,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `BatchNo` varchar(50) DEFAULT NULL,
+  `AutoBatch` varchar(50) DEFAULT NULL,
+  `MfgMonth` varchar(20) DEFAULT NULL,
+  `BL` decimal(10,2) DEFAULT 0.00,
+  `VV` decimal(5,2) DEFAULT 0.00,
+  `TotBott` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `tblpermit`
+-- Dumping data for table `tblpurchasedetails`
 --
 
-INSERT INTO `tblpermit` (`BILL_NO`, `CODE`, `DETAILS`, `P_NO`, `P_ISSDT`, `P_EXP_DT`, `PLACE_ISS`, `G1`, `G2`, `G3`, `G4`, `G5`, `G6`, `G7`, `G8`, `G9`, `GA`, `GB`, `GC`, `GD`, `GE`, `GF`, `GG`, `GH`, `GI`, `P_STAT`, `BTYPE`, `LIQ_FLAG`, `PRMT_FLAG`) VALUES
-(NULL, '1151', 'J GONSALVES', '720111', '2019-08-12 00:00:00.000', '2025-09-10 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1152', 'R K GUPTA', '970892', '2008-11-30 00:00:00.000', '2026-01-25 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1153', 'VASANT K PATIL', '703273', '2008-01-30 00:00:00.000', '2026-01-25 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1154', 'KANAL RAKESH JAIN', '717770', '2008-10-29 00:00:00.000', '2026-10-25 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1155', 'PATIL BHALCHANDRA DHARMAN', '939024', '2008-01-11 00:00:00.000', '2026-01-05 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1156', 'REGAL J REBETRO', '938694', '2017-04-17 00:00:00.000', '2026-04-15 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1157', 'NAIK C R', '727191', '2008-12-22 00:00:00.000', '2026-12-25 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1158', 'RAHESH HARIYA', '711065', '2008-01-30 00:00:00.000', '2026-01-25 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1159', 'A A MORARI', '84477', '2019-08-12 00:00:00.000', '2025-09-10 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1160', 'A B GAWATE', '11054', '2008-11-30 00:00:00.000', '2026-01-25 00:00:00.000', 'Sangli', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1161', 'A B KALBHOR', '13302', '2008-01-30 00:00:00.000', '2026-01-25 00:00:00.000', 'Sangli', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1162', 'A B MANE', '11058', '2008-10-29 00:00:00.000', '2026-10-25 00:00:00.000', 'Sangli', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1163', 'A B MHADIK', '139469', '2008-01-11 00:00:00.000', '2026-01-05 00:00:00.000', 'Sangli', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1164', 'A B RAI', '720003', '2017-04-17 00:00:00.000', '2026-04-15 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1165', 'A B THADANI', '25478', '2008-12-22 00:00:00.000', '2026-12-25 00:00:00.000', 'Sangli', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1),
-(NULL, '1166', 'A C SHAH', '944288', '2017-04-17 00:00:00.000', '2026-04-15 00:00:00.000', 'SANGLI', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblpurchases`
+--
+
+CREATE TABLE `tblpurchases` (
+  `ID` int(11) NOT NULL,
+  `DATE` date NOT NULL,
+  `SUBCODE` varchar(20) NOT NULL,
+  `VOC_NO` int(11) NOT NULL,
+  `INV_NO` varchar(50) DEFAULT NULL,
+  `INV_DATE` date DEFAULT NULL,
+  `TAMT` decimal(12,2) DEFAULT 0.00,
+  `TPNO` varchar(50) DEFAULT NULL,
+  `TP_DATE` date DEFAULT NULL,
+  `SCHDIS` decimal(10,2) DEFAULT 0.00,
+  `CASHDIS` decimal(10,2) DEFAULT 0.00,
+  `OCTROI` decimal(10,2) DEFAULT 0.00,
+  `FREIGHT` decimal(10,2) DEFAULT 0.00,
+  `STAX_PER` decimal(5,2) DEFAULT 0.00,
+  `STAX_AMT` decimal(10,2) DEFAULT 0.00,
+  `TCS_PER` decimal(5,2) DEFAULT 0.00,
+  `TCS_AMT` decimal(10,2) DEFAULT 0.00,
+  `MISC_CHARG` decimal(10,2) DEFAULT 0.00,
+  `PUR_FLAG` char(1) DEFAULT 'F',
+  `CompID` int(11) NOT NULL,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `tblpurchases`
+--
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsaledetails`
+--
+
+CREATE TABLE `tblsaledetails` (
+  `BILL_NO` varchar(20) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `QTY` decimal(10,3) NOT NULL,
+  `RATE` decimal(10,3) NOT NULL,
+  `AMOUNT` decimal(12,2) DEFAULT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `COMP_ID` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsaleheader`
+--
+
+CREATE TABLE `tblsaleheader` (
+  `BILL_NO` varchar(20) NOT NULL,
+  `BILL_DATE` date NOT NULL,
+  `CUST_CODE` varchar(20) DEFAULT NULL,
+  `TOTAL_AMOUNT` decimal(12,2) DEFAULT 0.00,
+  `DISCOUNT` decimal(10,2) DEFAULT 0.00,
+  `NET_AMOUNT` decimal(12,2) DEFAULT 0.00,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `COMP_ID` int(11) NOT NULL,
+  `CREATED_BY` int(11) DEFAULT NULL,
+  `CREATED_DATE` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -651,7 +564,7 @@ INSERT INTO `tblpermit` (`BILL_NO`, `CODE`, `DETAILS`, `P_NO`, `P_ISSDT`, `P_EXP
 --
 
 CREATE TABLE `tblsubclass` (
-  `ITEM_GROUP` varchar(1) NOT NULL,
+  `ITEM_GROUP` varchar(3) NOT NULL,
   `CLASS` varchar(1) DEFAULT NULL,
   `OB` decimal(18,3) DEFAULT NULL,
   `RCPT` decimal(18,3) DEFAULT NULL,
@@ -661,53 +574,14 @@ CREATE TABLE `tblsubclass` (
   `SRNO` decimal(18,0) DEFAULT NULL,
   `CC` decimal(18,0) DEFAULT NULL,
   `C_SPACE` decimal(18,0) DEFAULT NULL,
-  `LIQ_FLAG` varchar(1) NOT NULL
+  `LIQ_FLAG` varchar(1) NOT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tblsubclass`
 --
 
-INSERT INTO `tblsubclass` (`ITEM_GROUP`, `CLASS`, `OB`, `RCPT`, `SALE`, `CLBAL`, `DESC`, `SRNO`, `CC`, `C_SPACE`, `LIQ_FLAG`) VALUES
-('1', 'A', 0.000, 0.000, 0.000, 0.000, 'QUART', 1, 750, 7, 'C'),
-('1', 'A', 0.000, 0.000, 0.000, 0.000, 'QUART', 1, 750, 8, 'F'),
-('2', 'A', 0.000, 0.000, 0.000, 0.000, 'PINT', 2, 375, 7, 'C'),
-('2', 'A', 0.000, 0.000, 0.000, 0.000, 'PINT', 2, 375, 8, 'F'),
-('3', 'A', 0.000, 0.000, 0.000, 0.000, 'NIP', 3, 180, 7, 'C'),
-('3', 'A', 0.000, 0.000, 0.000, 0.000, 'NIP', 3, 180, 8, 'F'),
-('4', 'A', 0.000, 0.000, 0.000, 0.000, '100 ML', 4, 100, 7, 'C'),
-('4', 'D', 0.000, 0.000, 0.000, 0.000, 'WINE QUART', 4, 750, 8, 'F'),
-('5', 'A', 0.000, 0.000, 0.000, 0.000, '90 ML', 5, 90, 7, 'C'),
-('5', 'D', 0.000, 0.000, 0.000, 0.000, 'WINE PINT', 5, 375, 8, 'F'),
-('6', 'D', 0.000, 0.000, 0.000, 0.000, 'WINE NIP', 6, 180, 8, 'F'),
-('7', 'C', 0.000, 0.000, 113.000, 0.000, '650 F', 7, 650, 8, 'F'),
-('8', 'B', 0.000, 0.000, 0.000, 0.000, '650 M', 8, 650, 8, 'F'),
-('9', 'B', 0.000, 0.000, 0.000, 0.000, '325 M', 9, 325, 8, 'F'),
-('A', 'E', 0.000, 0.000, 0.000, 0.000, '50UP QUART', 10, 750, 8, 'F'),
-('B', 'E', 0.000, 0.000, 0.000, 0.000, '50UP PINT', 11, 375, 8, 'F'),
-('C', 'E', 0.000, 0.000, 0.000, 0.000, '50UP NIP', 12, 180, 8, 'F'),
-('D', 'A', 0.000, 0.000, 0.000, 0.000, '1 LTR', 13, 1000, 8, 'F'),
-('E', 'A', 0.000, 0.000, 0.000, 0.000, 'HALF LTR', 13, 500, 8, 'F'),
-('F', 'A', 0.000, 0.000, 0.000, 0.000, '150 ML', 13, 150, 8, 'F'),
-('G', 'A', 0.000, 0.000, 0.000, 0.000, '35UP - PINT', 13, 375, 8, 'F'),
-('H', 'A', 0.000, 0.000, 0.000, 0.000, '35UP - NIP', 13, 180, 8, 'F'),
-('I', 'A', 0.000, 0.000, 0.000, 0.000, '60 ML', 13, 60, 8, 'F'),
-('J', 'E', 0.000, 0.000, 0.000, 0.000, '50UP 90ML', 12, 90, 8, 'F'),
-('K', 'B', 0.000, 0.000, 0.000, 0.000, '500 M', 4, 500, 8, 'F'),
-('L', 'C', 0.000, 0.000, 0.000, 0.000, '500 F', 7, 500, 8, 'F'),
-('M', 'C', 0.000, 0.000, 131.000, 0.000, '330 F', 7, 330, 8, 'F'),
-('N', 'B', 0.000, 0.000, 0.000, 0.000, '330 M', 4, 330, 8, 'F'),
-('O', 'A', 0.000, 0.000, 0.000, 0.000, '2000 ML', 1, 2000, 8, 'F'),
-('P', 'D', 0.000, 0.000, 0.000, 0.000, 'WINE 1 LTR', 2, 1000, 8, 'F'),
-('Q', 'A', NULL, NULL, NULL, NULL, '4.5 LTRS', 1, 4500, 8, 'F'),
-('R', 'A', 0.000, 0.000, 0.000, 0.000, '90 ML', 1, 90, 8, 'F'),
-('S', 'C', 0.000, 0.000, 0.000, 0.000, '275 F', 7, 325, 8, 'F'),
-('T', 'D', 0.000, 0.000, 0.000, 0.000, 'WINE 3 LTRS', 2, 3000, 8, 'F'),
-('U', 'O', NULL, NULL, NULL, NULL, '2 Ltrs', 12, 2000, 8, 'O'),
-('V', 'O', NULL, NULL, NULL, NULL, '1.5 Ltrs', 12, 1000, 8, 'O'),
-('W', 'O', NULL, NULL, NULL, NULL, '1 Ltr', 12, 1000, 8, 'O'),
-('X', 'O', NULL, NULL, NULL, NULL, '500 ML', 12, 500, 8, 'O'),
-('Y', 'O', NULL, NULL, NULL, NULL, '300 ML', 12, 300, 8, 'O');
 
 -- --------------------------------------------------------
 
@@ -747,62 +621,6 @@ CREATE TABLE `tblsupplier` (
 -- Dumping data for table `tblsupplier`
 --
 
-INSERT INTO `tblsupplier` (`CODE`, `OUT_LIMIT`, `DETAILS`, `OBDR`, `OBCR`, `LBDR`, `LBCR`, `LEVEL`, `ADDR1`, `ADDR2`, `PINCODE`, `LIQ_FLAG`, `SALES_TAX`, `OCT_PERC`, `CD_PERC`, `STAX_PERC`, `TCS_PERC`, `SURC_PERC`, `EC_PERC`, `MISC_CHARG`, `MODE`, `WSTax_Perc`, `MBSTax_Perc`, `SBSTax_Perc`, `CLSTax_Perc`) VALUES
-('AMAR', NULL, 'AMAR TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ANKU', NULL, 'ANKUSH TRADERS', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ASHO', NULL, 'ASHOK TRADERS', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'C', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ASIA', NULL, 'ASIAN TRADERS', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('HARE', NULL, 'HARESH TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ROCK', NULL, 'ROCKY TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ROYA', NULL, 'ROYAL TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('SAIT', NULL, 'SAI TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('SAMB', NULL, 'SAMBARAGI TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('SUBH', NULL, 'SUBHASH TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('VIJA', NULL, 'VIJAY TRADERS SATARA', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('VISH', NULL, 'VISHAL TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('KASH', NULL, 'KASHMIRA TRADER', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('BHAR', NULL, 'BHARAT WINES', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('SWAR', NULL, 'SWARA LIQUORS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'C', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('TALR', NULL, 'TALREJA TRADERS', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'C', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('VICK', NULL, 'VICKY AGENCIES', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('MUKE', NULL, 'MUKESH AGENCIES', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'C', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ABHI', NULL, 'ABHIJIT WINE INDUSTRIES', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('GRAP', NULL, 'GRAPE P & R INSTITUTE', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('MONA', NULL, 'MONARCHA WINES', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('RAMT', NULL, 'RAM TREDERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('KHOD', NULL, 'KHODAY INDIA', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('MAXI', NULL, 'MAXIWELL', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('MILL', NULL, 'MILLENINUM SPIRITS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('EM2', NULL, 'EMPIRE SPIRT INDIA', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('AMIT', NULL, 'AMIT TRADERS', NULL, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('POJA', NULL, 'POOJA TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('RAJ', NULL, 'RAJ  MARKETING', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'C', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('HH', NULL, 'H H TRADERS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('ROHI', NULL, 'ROHIT ENTERPRISES', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('EKY', NULL, 'ELKAY SPIRITS', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, 0.00, 1.00, 0.00, 0.00, 10.00, 'Trader', 0.00, 0.00, 0.00, 0.00),
-('OM', NULL, 'OM SAI LIQUOR', 0.00, 0.00, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, NULL, 0.00, NULL, NULL, 0.00, 'Trader', NULL, NULL, NULL, NULL),
-('POLA', NULL, 'POLARIS LIQ PVT LTD', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Trader', NULL, NULL, NULL, NULL),
-('POLA', NULL, 'POLARIS LIQ PVT LTD', 0.00, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'F', '', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Trader', NULL, NULL, NULL, NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tbltempcreditledger`
---
-
-CREATE TABLE `tbltempcreditledger` (
-  `TmpID` bigint(20) NOT NULL,
-  `CreditorName` varchar(50) DEFAULT NULL,
-  `TransDate` datetime(3) DEFAULT NULL,
-  `Order_No` int(11) DEFAULT NULL,
-  `Item_Desc` varchar(50) DEFAULT NULL,
-  `Details2` varchar(50) DEFAULT NULL,
-  `Rate` decimal(18,2) DEFAULT NULL,
-  `Qty` int(11) DEFAULT NULL,
-  `TotAmt` decimal(18,2) DEFAULT NULL,
-  `PTotAmt` decimal(18,0) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 -- --------------------------------------------------------
 
 --
@@ -813,26 +631,19 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `company_id` int(11) DEFAULT NULL,
+  `is_admin` tinyint(1) DEFAULT 0,
+  `created_by` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `password`, `created_at`) VALUES
-(1, 'admin', '$2y$10$dv93.kofbM7g16SeXfaJ/.6KGtkVOWvv6g4lLaB9UkTdz1xtauxeS', '2025-08-14 05:28:10');
-
 --
 -- Indexes for dumped tables
 --
-
---
--- Indexes for table `tblbranch`
---
-ALTER TABLE `tblbranch`
-  ADD PRIMARY KEY (`BranchID`),
-  ADD KEY `CompID` (`CompID`);
 
 --
 -- Indexes for table `tblclass`
@@ -845,7 +656,8 @@ ALTER TABLE `tblclass`
 -- Indexes for table `tblcompany`
 --
 ALTER TABLE `tblcompany`
-  ADD PRIMARY KEY (`CompID`);
+  ADD PRIMARY KEY (`CompID`),
+  ADD KEY `FK_tblCompany_tblFinYear` (`FIN_YEAR`);
 
 --
 -- Indexes for table `tblcustomerprices`
@@ -855,17 +667,50 @@ ALTER TABLE `tblcustomerprices`
   ADD KEY `FK_tblCustomerPrices_tbllheads` (`LCode`);
 
 --
+-- Indexes for table `tblcustomersales`
+--
+ALTER TABLE `tblcustomersales`
+  ADD PRIMARY KEY (`SaleID`),
+  ADD KEY `FK_tblcustomersales_tbllheads` (`LCode`),
+  ADD KEY `FK_tblcustomersales_tblitemmaster` (`ItemCode`),
+  ADD KEY `FK_tblcustomersales_tblcompany` (`CompID`),
+  ADD KEY `fk_tblcustomersales_userid` (`UserID`);
+
+--
+-- Indexes for table `tbldailystock_1`
+--
+ALTER TABLE `tbldailystock_1`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock_1` (`STK_DATE`,`ITEM_CODE`,`FIN_YEAR`),
+  ADD KEY `ITEM_CODE_1` (`ITEM_CODE`);
+
+--
+-- Indexes for table `tbldailystock_2`
+--
+ALTER TABLE `tbldailystock_2`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock_2` (`STK_DATE`,`ITEM_CODE`,`FIN_YEAR`),
+  ADD KEY `ITEM_CODE_2` (`ITEM_CODE`);
+
+--
+-- Indexes for table `tbldailystock_base`
+--
+ALTER TABLE `tbldailystock_base`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`,`FIN_YEAR`),
+  ADD KEY `ITEM_CODE` (`ITEM_CODE`);
+
+--
 -- Indexes for table `tbldrydays`
 --
 ALTER TABLE `tbldrydays`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `tblemployee`
+-- Indexes for table `tblfinyear`
 --
-ALTER TABLE `tblemployee`
-  ADD PRIMARY KEY (`EmpID`),
-  ADD KEY `CompID` (`CompID`);
+ALTER TABLE `tblfinyear`
+  ADD PRIMARY KEY (`ID`);
 
 --
 -- Indexes for table `tblgheads`
@@ -882,59 +727,110 @@ ALTER TABLE `tblitemmaster`
   ADD KEY `tblitemmaster_ibfk_2` (`ITEM_GROUP`,`LIQ_FLAG`);
 
 --
--- Indexes for table `tblitemopbal`
+-- Indexes for table `tblitem_stock`
 --
-ALTER TABLE `tblitemopbal`
-  ADD PRIMARY KEY (`CODE`,`SHOP_MODE`);
+ALTER TABLE `tblitem_stock`
+  ADD PRIMARY KEY (`StockID`),
+  ADD UNIQUE KEY `unique_stock` (`ITEM_CODE`,`FIN_YEAR`),
+  ADD KEY `ITEM_CODE` (`ITEM_CODE`);
 
 --
 -- Indexes for table `tbllheads`
 --
 ALTER TABLE `tbllheads`
   ADD PRIMARY KEY (`LCODE`),
-  ADD KEY `fk_tbllheads_tblgheads` (`GCODE`);
+  ADD KEY `fk_tbllheads_tblgheads` (`GCODE`),
+  ADD KEY `FK_tbllheads_tblcompany` (`CompID`);
+
+--
+-- Indexes for table `tblpermit`
+--
+ALTER TABLE `tblpermit`
+  ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  ADD PRIMARY KEY (`DetailID`),
+  ADD KEY `PurchaseID` (`PurchaseID`);
+
+--
+-- Indexes for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  ADD PRIMARY KEY (`ID`),
+  ADD UNIQUE KEY `unique_voc` (`CompID`,`VOC_NO`);
+
+--
+-- Indexes for table `tblsaledetails`
+--
+ALTER TABLE `tblsaledetails`
+  ADD PRIMARY KEY (`BILL_NO`,`ITEM_CODE`,`LIQ_FLAG`,`COMP_ID`),
+  ADD KEY `BILL_NO` (`BILL_NO`,`LIQ_FLAG`,`COMP_ID`),
+  ADD KEY `ITEM_CODE` (`ITEM_CODE`),
+  ADD KEY `COMP_ID` (`COMP_ID`);
+
+--
+-- Indexes for table `tblsaleheader`
+--
+ALTER TABLE `tblsaleheader`
+  ADD PRIMARY KEY (`BILL_NO`,`LIQ_FLAG`,`COMP_ID`),
+  ADD KEY `COMP_ID` (`COMP_ID`);
 
 --
 -- Indexes for table `tblsubclass`
 --
 ALTER TABLE `tblsubclass`
-  ADD PRIMARY KEY (`ITEM_GROUP`,`LIQ_FLAG`),
-  ADD KEY `SRNO` (`SRNO`);
-
---
--- Indexes for table `tbltempcreditledger`
---
-ALTER TABLE `tbltempcreditledger`
-  ADD PRIMARY KEY (`TmpID`);
+  ADD PRIMARY KEY (`ITEM_GROUP`,`LIQ_FLAG`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`);
+  ADD UNIQUE KEY `username` (`username`),
+  ADD KEY `company_id` (`company_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT for table `tblbranch`
---
-ALTER TABLE `tblbranch`
-  MODIFY `BranchID` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `tblcompany`
 --
 ALTER TABLE `tblcompany`
-  MODIFY `CompID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `CompID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblcustomerprices`
 --
 ALTER TABLE `tblcustomerprices`
-  MODIFY `CustPID` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=452;
+  MODIFY `CustPID` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=466;
+
+--
+-- AUTO_INCREMENT for table `tblcustomersales`
+--
+ALTER TABLE `tblcustomersales`
+  MODIFY `SaleID` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_1`
+--
+ALTER TABLE `tbldailystock_1`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1409;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_2`
+--
+ALTER TABLE `tbldailystock_2`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1409;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_base`
+--
+ALTER TABLE `tbldailystock_base`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tbldrydays`
@@ -943,10 +839,10 @@ ALTER TABLE `tbldrydays`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
--- AUTO_INCREMENT for table `tblemployee`
+-- AUTO_INCREMENT for table `tblfinyear`
 --
-ALTER TABLE `tblemployee`
-  MODIFY `EmpID` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `tblfinyear`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `tblgheads`
@@ -955,32 +851,50 @@ ALTER TABLE `tblgheads`
   MODIFY `GCODE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
+-- AUTO_INCREMENT for table `tblitem_stock`
+--
+ALTER TABLE `tblitem_stock`
+  MODIFY `StockID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1409;
+
+--
 -- AUTO_INCREMENT for table `tbllheads`
 --
 ALTER TABLE `tbllheads`
-  MODIFY `LCODE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=163;
+  MODIFY `LCODE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
 
 --
--- AUTO_INCREMENT for table `tbltempcreditledger`
+-- AUTO_INCREMENT for table `tblpermit`
 --
-ALTER TABLE `tbltempcreditledger`
-  MODIFY `TmpID` bigint(20) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `tblpermit`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+
+--
+-- AUTO_INCREMENT for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  MODIFY `DetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- AUTO_INCREMENT for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `tblbranch`
+-- Constraints for table `tblcompany`
 --
-ALTER TABLE `tblbranch`
-  ADD CONSTRAINT `tblbranch_ibfk_1` FOREIGN KEY (`CompID`) REFERENCES `tblcompany` (`CompID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `tblcompany`
+  ADD CONSTRAINT `FK_tblCompany_tblFinYear` FOREIGN KEY (`FIN_YEAR`) REFERENCES `tblfinyear` (`ID`);
 
 --
 -- Constraints for table `tblcustomerprices`
@@ -989,10 +903,12 @@ ALTER TABLE `tblcustomerprices`
   ADD CONSTRAINT `FK_tblCustomerPrices_tbllheads` FOREIGN KEY (`LCode`) REFERENCES `tbllheads` (`LCODE`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `tblemployee`
+-- Constraints for table `tblcustomersales`
 --
-ALTER TABLE `tblemployee`
-  ADD CONSTRAINT `tblemployee_ibfk_1` FOREIGN KEY (`CompID`) REFERENCES `tblcompany` (`CompID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `tblcustomersales`
+  ADD CONSTRAINT `FK_tblcustomersales_tblcompany` FOREIGN KEY (`CompID`) REFERENCES `tblcompany` (`CompID`),
+  ADD CONSTRAINT `FK_tblcustomersales_tbllheads` FOREIGN KEY (`LCode`) REFERENCES `tbllheads` (`LCODE`),
+  ADD CONSTRAINT `fk_tblcustomersales_userid` FOREIGN KEY (`UserID`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `tblitemmaster`
@@ -1002,22 +918,37 @@ ALTER TABLE `tblitemmaster`
   ADD CONSTRAINT `tblitemmaster_ibfk_2` FOREIGN KEY (`ITEM_GROUP`,`LIQ_FLAG`) REFERENCES `tblsubclass` (`ITEM_GROUP`, `LIQ_FLAG`);
 
 --
--- Constraints for table `tblitemopbal`
---
-ALTER TABLE `tblitemopbal`
-  ADD CONSTRAINT `tblitemopbal_ibfk_1` FOREIGN KEY (`CODE`) REFERENCES `tblitemmaster` (`CODE`);
-
---
 -- Constraints for table `tbllheads`
 --
 ALTER TABLE `tbllheads`
+  ADD CONSTRAINT `FK_tbllheads_tblcompany` FOREIGN KEY (`CompID`) REFERENCES `tblcompany` (`CompID`),
   ADD CONSTRAINT `fk_tbllheads_tblgheads` FOREIGN KEY (`GCODE`) REFERENCES `tblgheads` (`GCODE`) ON UPDATE CASCADE;
 
 --
--- Constraints for table `tblsubclass`
+-- Constraints for table `tblpurchasedetails`
 --
-ALTER TABLE `tblsubclass`
-  ADD CONSTRAINT `tblsubclass_ibfk_1` FOREIGN KEY (`SRNO`) REFERENCES `tblclass` (`SRNO`);
+ALTER TABLE `tblpurchasedetails`
+  ADD CONSTRAINT `tblpurchasedetails_ibfk_1` FOREIGN KEY (`PurchaseID`) REFERENCES `tblpurchases` (`ID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `tblsaledetails`
+--
+ALTER TABLE `tblsaledetails`
+  ADD CONSTRAINT `tblsaledetails_ibfk_1` FOREIGN KEY (`BILL_NO`,`LIQ_FLAG`,`COMP_ID`) REFERENCES `tblsaleheader` (`BILL_NO`, `LIQ_FLAG`, `COMP_ID`),
+  ADD CONSTRAINT `tblsaledetails_ibfk_2` FOREIGN KEY (`ITEM_CODE`) REFERENCES `tblitemmaster` (`CODE`),
+  ADD CONSTRAINT `tblsaledetails_ibfk_3` FOREIGN KEY (`COMP_ID`) REFERENCES `tblcompany` (`CompID`);
+
+--
+-- Constraints for table `tblsaleheader`
+--
+ALTER TABLE `tblsaleheader`
+  ADD CONSTRAINT `tblsaleheader_ibfk_1` FOREIGN KEY (`COMP_ID`) REFERENCES `tblcompany` (`CompID`);
+
+--
+-- Constraints for table `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `users_ibfk_1` FOREIGN KEY (`company_id`) REFERENCES `tblcompany` (`CompID`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
