@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_sales'])) {
         $success_message = "Sales updated successfully! Bill No: $bill_no";
         
         // Refresh the page to show updated stock values
-        header("Location: sale_for_date_range.php?mode=$mode&sequence_type=$sequence_type&sale_date=" . urlencode($sale_date) . "&success=" . urlencode($success_message));
+        header("Location: retail_sale.php?mode=$mode&sequence_type=$sequence_type&sale_date=" . urlencode($sale_date) . "&success=" . urlencode($success_message));
         exit;
     } catch (Exception $e) {
         // Rollback transaction on error

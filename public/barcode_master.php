@@ -13,6 +13,8 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 
 include_once "../config/db.php";
+require_once 'license_functions.php';
+
 
 // Get parameters
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';

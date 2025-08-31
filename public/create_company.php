@@ -201,6 +201,17 @@
                     die("Connection failed: " . $conn->connect_error);
                 }
                 
+                // First, let's check if the License_Type column exists in tblcompany
+                $check_column = $conn->query("SHOW COLUMNS FROM tblcompany LIKE 'License_Type'");
+                if ($check_column->num_rows == 0) {
+                    // Add the License_Type column if it doesn't exist
+                    $alter_table = $conn->query("ALTER TABLE tblcompany ADD License_Type VARCHAR(20) NULL AFTER COMP_FLNO");
+                    
+                    if ($alter_table === FALSE) {
+                        echo '<div class="alert alert-error">Error adding License_Type column: ' . $conn->error . '</div>';
+                    }
+                }
+                
                 // Process form submission
                 if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $company_name = trim($_POST['company_name']);
@@ -209,6 +220,7 @@
                     $fin_year = intval($_POST['fin_year']);
                     $comp_addr = trim($_POST['comp_addr']);
                     $comp_flno = trim($_POST['comp_flno']);
+$license_type_id = isset($_POST['license_type']) ? intval($_POST['license_type']) : 0;
                     
                     $admin_username = trim($_POST['admin_username']);
                     $admin_password = $_POST['admin_password'];
@@ -250,9 +262,8 @@
                         
                         try {
                             // Insert company
-                            $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, COMP_FLNO) VALUES (?, ?, ?, ?, ?, ?)");
-                            $insert_company->bind_param("sssiss", $company_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno);
-                            
+                            $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, COMP_FLNO, license_type_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$insert_company->bind_param("sssissi", $company_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno, $license_type_id);
                             if ($insert_company->execute()) {
                                 $company_id = $insert_company->insert_id;
                                 
@@ -301,6 +312,16 @@
                         $fin_years[$row['ID']] = date('Y', strtotime($row['START_DATE'])) . '-' . date('Y', strtotime($row['END_DATE']));
                     }
                 }
+                
+                // Fetch license types for dropdown
+                $license_types = [];
+                $license_result = $conn->query("SELECT id, license_code FROM license_types ORDER BY license_code");
+                
+                if ($license_result->num_rows > 0) {
+                    while ($row = $license_result->fetch_assoc()) {
+                        $license_types[$row['id']] = $row['license_code'];
+                    }
+                }
                 ?>
                 
                 <form method="POST" action="">
@@ -345,6 +366,15 @@
                             <div class="form-group">
                                 <label for="comp_flno">FL No.</label>
                                 <input type="text" id="comp_flno" name="comp_flno" maxlength="12">
+                            </div>
+                            <div class="form-group">
+                                <label for="license_type">License Type</label>
+                                <select id="license_type" name="license_type">
+    <option value="">Select License Type</option>
+    <?php foreach ($license_types as $id => $license_code): ?>
+        <option value="<?php echo $id; ?>"><?php echo $license_code; ?></option>
+    <?php endforeach; ?>
+</select>
                             </div>
                         </div>
                     </div>

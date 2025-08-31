@@ -12,6 +12,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -98,12 +110,34 @@ function getValidItemGroup($subclass, $liqFlag, $conn) {
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
-    // Fetch items from tblitemmaster
-    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, LIQ_FLAG
-              FROM tblitemmaster
-              WHERE LIQ_FLAG = ?";
-    $params = [$mode];
-    $types = "s";
+    // Get company's license type and available classes
+    $company_id = $_SESSION['CompID'];
+    $license_type = getCompanyLicenseType($company_id, $conn);
+    $available_classes = getClassesByLicenseType($license_type, $conn);
+    
+    // Extract class SGROUP values for filtering
+    $allowed_classes = [];
+    foreach ($available_classes as $class) {
+        $allowed_classes[] = $class['SGROUP'];
+    }
+    
+    // Fetch items from tblitemmaster - FILTERED BY LICENSE TYPE
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, LIQ_FLAG
+                  FROM tblitemmaster
+                  WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+        
+        $params = array_merge([$mode], $allowed_classes);
+        $types = str_repeat('s', count($params));
+    } else {
+        // If no classes allowed, show empty result
+        $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, LIQ_FLAG
+                  FROM tblitemmaster
+                  WHERE 1 = 0"; // Always false condition
+        $params = [];
+        $types = "";
+    }
     
     if ($search !== '') {
         $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
@@ -115,7 +149,9 @@ if (isset($_GET['export'])) {
     $query .= " ORDER BY DETAILS ASC";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param($types, ...$params);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
     $stmt->execute();
     $result = $stmt->get_result();
     $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -187,6 +223,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     $errors = 0;
                     $errorDetails = [];
                     
+                    // Get company's license type and available classes for validation
+                    $company_id = $_SESSION['CompID'];
+                    $license_type = getCompanyLicenseType($company_id, $conn);
+                    $available_classes = getClassesByLicenseType($license_type, $conn);
+                    
+                    // Extract class SGROUP values for filtering
+                    $allowed_classes = [];
+                    foreach ($available_classes as $class) {
+                        $allowed_classes[] = $class['SGROUP'];
+                    }
+                    
                     while (($data = fgetcsv($handle)) !== FALSE) {
                         if (count($data) >= 7) { // At least 7 required columns
                             $code = $conn->real_escape_string(trim($data[$codeCol]));
@@ -197,6 +244,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             $pprice = floatval(trim($data[$ppriceCol]));
                             $bprice = floatval(trim($data[$bpriceCol]));
                             $liqFlag = isset($data[$liqFlagCol]) ? $conn->real_escape_string(trim($data[$liqFlagCol])) : $mode;
+                            
+                            // Check if class is allowed for this company's license
+                            if (!in_array($class, $allowed_classes)) {
+                                $errors++;
+                                $errorDetails[] = "Class '$class' not allowed for your license type '$license_type' for item $code";
+                                continue; // Skip this row
+                            }
                             
                             // Validate LIQ_FLAG exists in tblsubclass
                             $checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
@@ -277,12 +331,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
     }
 }
 
-// Fetch items from tblitemmaster for display
-$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
-          FROM tblitemmaster
-          WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch items from tblitemmaster for display - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+              FROM tblitemmaster
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+              FROM tblitemmaster
+              WHERE 1 = 0"; // Always false condition
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
@@ -294,7 +359,9 @@ if ($search !== '') {
 $query .= " ORDER BY DETAILS ASC";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -352,6 +419,24 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
 
     <div class="content-area">
       <h3 class="mb-4">Excise Item Master</h3>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -503,6 +588,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
               <li>Subclass must match exactly with subclass master descriptions</li>
               <li>Existing items with matching Code and LIQFLAG will be updated</li>
               <li>ITEM_GROUP will be determined by matching Subclass with database descriptions</li>
+              <li>Only classes allowed for your license type (<?= htmlspecialchars($license_type) ?>) will be imported</li>
             </ul>
           </div>
         </div>
@@ -522,7 +608,6 @@ function downloadTemplate() {
     // Create a simple CSV template for download
     const headers = ['Code', 'ItemName', 'PrintName', 'Class', 'Subclass', 'PPrice', 'BPrice', 'LIQFLAG'];
     const exampleRow = ['ITEM001', 'Sample Item', 'Sample Print Name', 'W', '180ML', '100.000', '90.000', '<?= $mode ?>'];
-    const validLiqFlags = ['F', 'C', 'O'];
     
     let csvContent = headers.join(',') + '\n';
     csvContent += exampleRow.join(',') + '\n';

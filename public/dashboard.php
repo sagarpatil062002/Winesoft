@@ -13,6 +13,8 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 // Database connection
 include_once "../config/db.php";
+require_once 'license_functions.php';
+
 
 // Initialize stats array with default values
 $stats = [

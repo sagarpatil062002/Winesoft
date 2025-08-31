@@ -71,6 +71,8 @@
                 <ul class="dropdown">
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
                     <li class="nav-item"><a href="customer_sales_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
+                    <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
+
                 </ul>
             </li>    
             <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
