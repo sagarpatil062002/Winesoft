@@ -72,6 +72,8 @@
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
                     <li class="nav-item"><a href="customer_sales_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
                     <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
+                    <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_activity</span><span class="nav-label">Voucher Entry</span></a></li>
+                    <li class="nav-item"><a href="view_breakage.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakages</span></a></li>
 
                 </ul>
             </li>    
@@ -97,6 +99,8 @@
                     <li class="nav-item"><a href="other_tax_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_change</span><span class="nav-label">Other Tax Report</span></a></li>
                     <li class="nav-item"><a href="total_sales_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">bar_chart</span><span class="nav-label">Total Sales Report</span></a></li>
                     <li class="nav-item"><a href="billwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">show_chart</span><span class="nav-label">Billwise Sales Report</span></a></li>
+                    <li class="nav-item"><a href="userwise_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">grouped_bar_chart</span><span class="nav-label">Userwise Sales Report</span></a></li>
+                    <li class="nav-item"><a href="billwise_detailed_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Billwise Detailed Report</span></a></li>
 
                 </ul>
             </li>

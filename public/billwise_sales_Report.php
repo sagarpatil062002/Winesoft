@@ -20,11 +20,19 @@ $compID = $_SESSION['CompID'];
 $report_date = isset($_GET['report_date']) ? $_GET['report_date'] : date('Y-m-d');
 
 // Fetch company name
-$companyName = "DIAMOND WINE SHOP"; // Default, can be fetched from database
+$companyName = "DIAMOND WINE SHOP"; // Default
+$companyQuery = "SELECT COMP_NAME FROM tblcompany WHERE CompID = ?";
+$companyStmt = $conn->prepare($companyQuery);
+$companyStmt->bind_param("i", $compID);
+$companyStmt->execute();
+$companyResult = $companyStmt->get_result();
+if ($row = $companyResult->fetch_assoc()) {
+    $companyName = $row['COMP_NAME'];
+}
+$companyStmt->close();
 
 // Generate report data based on filters
 $report_data = [];
-$user_totals = [];
 $overall_total = 0;
 $prev_balance = 0;
 $credit_sales = 0;
@@ -34,14 +42,15 @@ $discount = 0;
 $total_cash = 0;
 
 if (isset($_GET['generate'])) {
-    // Build the query to get sales data - Fixed the column name issue
-    $query = "SELECT 
+    // Build the query to get customer sales data
+    $customer_sales_query = "SELECT 
                 cs.BillNo,
                 cs.BillDate,
                 cs.LCode,
                 l.LHEAD as CustomerName,
                 cs.ItemCode,
                 cs.ItemName,
+                cs.ItemSize,
                 cs.Rate,
                 cs.Quantity,
                 cs.Amount,
@@ -53,18 +62,19 @@ if (isset($_GET['generate'])) {
               WHERE cs.BillDate = ? AND cs.CompID = ?
               ORDER BY cs.BillNo, cs.CreatedDate";
     
-    $stmt = $conn->prepare($query);
+    $stmt = $conn->prepare($customer_sales_query);
     $stmt->bind_param("si", $report_date, $compID);
     $stmt->execute();
     $result = $stmt->get_result();
     
-    // Organize data by bill and user
+    // Organize customer sales data by bill and user
     while ($row = $result->fetch_assoc()) {
         $bill_no = $row['BillNo'];
         $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
         
         if (!isset($report_data[$bill_no])) {
             $report_data[$bill_no] = [
+                'type' => 'customer',
                 'customer' => $row['CustomerName'],
                 'user' => $user_name,
                 'items' => [],
@@ -75,20 +85,65 @@ if (isset($_GET['generate'])) {
         $report_data[$bill_no]['items'][] = $row;
         $report_data[$bill_no]['total'] += $row['Amount'];
         
-        // Track user totals
-        if (!isset($user_totals[$user_name])) {
-            $user_totals[$user_name] = 0;
+        $overall_total += $row['Amount'];
+    }
+    
+    $stmt->close();
+    
+    // Get retail sales data with actual item details
+    $retail_sales_query = "SELECT 
+                sh.BILL_NO as BillNo,
+                sh.BILL_DATE as BillDate,
+                'RETAIL SALE' as CustomerName,
+                sd.ITEM_CODE as ItemCode,
+                COALESCE(im.DETAILS, 'Unknown Item') as ItemName,
+                COALESCE(im.DETAILS2, '') as ItemSize,
+                sd.RATE as Rate,
+                sd.QTY as Quantity,
+                sd.AMOUNT as Amount,
+                sh.CREATED_DATE as CreatedDate,
+                u.username as UserName
+            FROM tblsaleheader sh
+            INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
+            LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
+            LEFT JOIN users u ON sh.CREATED_BY = u.id
+            WHERE sh.BILL_DATE = ? AND sh.COMP_ID = ?
+            ORDER BY sh.BILL_NO, sh.CREATED_DATE";
+    
+    $stmt = $conn->prepare($retail_sales_query);
+    $stmt->bind_param("si", $report_date, $compID);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    // Organize retail sales data by bill and user
+    while ($row = $result->fetch_assoc()) {
+        $bill_no = $row['BillNo'];
+        $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
+        
+        if (!isset($report_data[$bill_no])) {
+            $report_data[$bill_no] = [
+                'type' => 'retail',
+                'customer' => $row['CustomerName'],
+                'user' => $user_name,
+                'items' => [],
+                'total' => 0
+            ];
         }
-        $user_totals[$user_name] += $row['Amount'];
+        
+        $report_data[$bill_no]['items'][] = $row;
+        $report_data[$bill_no]['total'] += $row['Amount'];
         
         $overall_total += $row['Amount'];
     }
     
+    $stmt->close();
+    
+    // Sort bills by bill number
+    ksort($report_data);
+    
     // For demo purposes, setting some values - these would normally come from database
     $credit_sales = $overall_total;
     $total_cash = 0; // Assuming no cash received yet
-    
-    $stmt->close();
 }
 ?>
 <!DOCTYPE html>
@@ -102,72 +157,7 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-  <style>
-    .company-header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .company-header h1 {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .company-header h5 {
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    .report-table th, .report-table td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    .report-table th {
-      background-color: #f8f9fa;
-      font-weight: bold;
-    }
-    .bill-header {
-      background-color: #e9ecef;
-      font-weight: bold;
-    }
-    .total-row {
-      font-weight: bold;
-      background-color: #f8f9fa;
-    }
-    .summary-table {
-      width: 50%;
-      margin-left: auto;
-      margin-bottom: 20px;
-    }
-    .summary-table td {
-      padding: 5px;
-      border: none;
-    }
-    .summary-label {
-      text-align: right;
-      padding-right: 10px !important;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 12px;
-    }
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      .print-section {
-        display: block !important;
-      }
-      body {
-        font-size: 12px;
-      }
-    }
-  </style>
+  
 </head>
 <body>
 <div class="dashboard-container">
@@ -211,19 +201,25 @@ if (isset($_GET['generate'])) {
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-            <h5>Bill Wise Sales Report [Separate] For <?= date('d-M-Y', strtotime($report_date)) ?></h5>
+            <h5>Bill Wise Sales Report For <?= date('d-M-Y', strtotime($report_date)) ?></h5>
           </div>
           
           <div class="table-container">
             <?php foreach ($report_data as $bill_no => $bill_data): ?>
             <table class="report-table">
               <thead>
-                <tr class="bill-header">
-                  <td colspan="5">Bill No: <?= $bill_no ?> | Customer: <?= htmlspecialchars($bill_data['customer']) ?> | User: <?= htmlspecialchars($bill_data['user']) ?></td>
+                <tr class="bill-header <?= $bill_data['type'] ?>">
+                  <td colspan="<?= $bill_data['type'] == 'customer' ? '6' : '6' ?>">
+                    Bill No: <?= $bill_no ?> | 
+                    Type: <?= $bill_data['type'] == 'customer' ? 'CUSTOMER SALE' : 'RETAIL SALE' ?> | 
+                    Customer: <?= htmlspecialchars($bill_data['customer']) ?> | 
+                    User: <?= htmlspecialchars($bill_data['user']) ?>
+                  </td>
                 </tr>
                 <tr>
                   <th>Item Code</th>
                   <th>Item Name</th>
+                  <th>Size</th>
                   <th>Rate</th>
                   <th>Qty</th>
                   <th>Amount</th>
@@ -231,40 +227,34 @@ if (isset($_GET['generate'])) {
               </thead>
               <tbody>
                 <?php foreach ($bill_data['items'] as $item): ?>
-                <tr>
+                <tr class="<?= $bill_data['type'] == 'retail' ? 'retail-item' : '' ?>">
                   <td><?= htmlspecialchars($item['ItemCode']) ?></td>
                   <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                  <td><?= htmlspecialchars($item['ItemSize']) ?></td>
                   <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
                   <td class="text-right"><?= $item['Quantity'] ?></td>
                   <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
                 </tr>
                 <?php endforeach; ?>
                 <tr class="total-row">
-                  <td colspan="4" class="text-end">Bill Total:</td>
+                  <td colspan="5" class="text-end">Bill Total:</td>
                   <td class="text-right"><?= number_format($bill_data['total'], 2) ?></td>
                 </tr>
               </tbody>
             </table>
             <?php endforeach; ?>
             
-            <!-- User totals -->
+            <!-- Grand Total -->
             <table class="report-table">
               <thead>
                 <tr>
-                  <th>User ID</th>
-                  <th>Tot. Amt.</th>
+                  <th colspan="2">Summary</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($user_totals as $user => $total): ?>
-                <tr>
-                  <td><?= htmlspecialchars($user) ?></td>
-                  <td class="text-right"><?= number_format($total, 2) ?></td>
-                </tr>
-                <?php endforeach; ?>
                 <tr class="total-row">
-                  <td></td>
-                  <td class="text-right"><?= number_format($overall_total, 2) ?></td>
+                  <td><strong>Grand Total</strong></td>
+                  <td class="text-right"><strong><?= number_format($overall_total, 2) ?></strong></td>
                 </tr>
               </tbody>
             </table>
@@ -298,7 +288,7 @@ if (isset($_GET['generate'])) {
             </table>
           </div>
           
-               </div>
+        </div>
       <?php elseif (isset($_GET['generate'])): ?>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i> No sales records found for the selected date.

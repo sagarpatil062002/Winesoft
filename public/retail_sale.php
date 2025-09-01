@@ -126,7 +126,7 @@ if (isset($_GET['delete_bill'])) {
         $deleteHeaderStmt->close();
         
         // Redirect to avoid resubmission
-        header("Location: sales_management.php?" . http_build_query($_GET));
+        header("Location: retail_sale.php?" . http_build_query($_GET));
         exit;
         
     } catch (Exception $e) {
@@ -327,7 +327,7 @@ if (isset($_GET['preview_bill'])) {
         exit;
     } else {
         $_SESSION['error'] = "Bill not found!";
-        header("Location: sales_management.php");
+        header("Location: retail_sale.php");
         exit;
     }
 }
@@ -342,17 +342,7 @@ if (isset($_GET['preview_bill'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-  <style>
-    .table-container{overflow-x:auto;max-height:520px}
-    table.styled-table{width:100%;border-collapse:collapse}
-    .styled-table th,.styled-table td{border:1px solid #2f5bb1ff;padding:8px 10px}
-    .styled-table thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
-    .action-buttons{display:flex;gap:5px}
-    .view-selector .btn {border-radius: 0;}
-    .view-selector .btn:first-child {border-top-left-radius: 6px; border-bottom-left-radius: 6px;}
-    .view-selector .btn:last-child {border-top-right-radius: 6px; border-bottom-right-radius: 6px;}
-    .view-active {background-color: #0d6efd; }
-  </style>
+ 
 </head>
 <body>
 <div class="dashboard-container">
@@ -497,6 +487,12 @@ if (isset($_GET['preview_bill'])) {
                       <td><?= $liquorType ?></td>
                       <td>
                         <div class="action-buttons">
+                          <!-- Edit Button -->
+                          <a href="edit_sale.php?bill_no=<?= $sale['BILL_NO'] ?>" 
+                             class="btn btn-sm btn-warning" title="Edit Bill">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                          </a>
+                          
                           <!-- Print Button - Directly opens print dialog -->
                           <a href="retail_sale.php?preview_bill=<?= $sale['BILL_NO'] ?>&print=true" 
                              class="btn btn-sm btn-primary" title="Print Bill" target="_blank">
@@ -568,7 +564,7 @@ function confirmDelete(billNo) {
   const params = new URLSearchParams(window.location.search);
   params.set('delete_bill', billNo);
   
-  $('#deleteConfirm').attr('href', 'sales_management.php?' + params.toString());
+  $('#deleteConfirm').attr('href', 'retail_sale.php?' + params.toString());
   $('#deleteModal').modal('show');
 }
 
