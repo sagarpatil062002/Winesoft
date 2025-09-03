@@ -145,6 +145,192 @@ if (isset($_SESSION['error'])) {
     $error_message = $_SESSION['error'];
     unset($_SESSION['error']);
 }
+
+// Handle bill preview request
+if (isset($_GET['preview_bill'])) {
+    $bill_no = $_GET['preview_bill'];
+    $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
+    
+    // Fetch bill details
+    $billQuery = "SELECT 
+                    sh.BILL_NO, 
+                    sh.BILL_DATE, 
+                    sh.TOTAL_AMOUNT,
+                    sh.DISCOUNT,
+                    sh.NET_AMOUNT,
+                    sh.LIQ_FLAG,
+                    sd.ITEM_CODE,
+                    im.DETAILS as ITEM_NAME,
+                    sd.QTY,
+                    sd.RATE,
+                    sd.AMOUNT
+                  FROM tblsaleheader sh
+                  JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
+                  JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
+                  WHERE sh.BILL_NO = ? AND sh.COMP_ID = ?
+                  ORDER BY im.DETAILS";
+    
+    $billStmt = $conn->prepare($billQuery);
+    $billStmt->bind_param("si", $bill_no, $compID);
+    $billStmt->execute();
+    $billResult = $billStmt->get_result();
+    
+    if ($billResult->num_rows > 0) {
+        $billItems = $billResult->fetch_all(MYSQLI_ASSOC);
+        
+        // Get header info from first row
+        $firstRow = $billItems[0];
+        $billDate = $firstRow['BILL_DATE'];
+        $totalAmount = $firstRow['TOTAL_AMOUNT'];
+        $discount = $firstRow['DISCOUNT'];
+        $netAmount = $firstRow['NET_AMOUNT'];
+        $liquorFlag = $firstRow['LIQ_FLAG'];
+        
+        // Determine liquor type
+        $liquorType = "Foreign Liquor";
+        if ($liquorFlag === 'C') {
+            $liquorType = "Country Liquor";
+        } elseif ($liquorFlag === 'O') {
+            $liquorType = "Others";
+        }
+        
+        // Generate bill preview HTML
+        echo '<!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Bill Preview - WineSoft</title>
+          <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+          <style>
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              .bill-preview, .bill-preview * {
+                visibility: visible;
+              }
+              .bill-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+            .bill-preview {
+              width: 80mm;
+              margin: 0 auto;
+              padding: 5px;
+              font-family: monospace;
+              font-size: 12px;
+            }
+            .text-center {
+              text-align: center;
+            }
+            .text-right {
+              text-align: right;
+            }
+            .bill-header {
+              border-bottom: 1px dashed #000;
+              padding-bottom: 5px;
+              margin-bottom: 5px;
+            }
+            .bill-footer {
+              border-top: 1px dashed #000;
+              padding-top: 5px;
+              margin-top: 5px;
+            }
+            .bill-table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .bill-table th, .bill-table td {
+              padding: 2px 0;
+            }
+            .bill-table .text-right {
+              text-align: right;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="bill-preview">
+            <div class="bill-header text-center">
+              <h1>WineSoft</h1>
+              <p style="margin: 2px 0; font-size: 10px;">Liquor Store Management System</p>
+              <p style="margin: 2px 0; font-size: 10px;">' . $liquorType . '</p>
+            </div>
+            
+            <div style="margin: 5px 0;">
+              <p style="margin: 2px 0;"><strong>Bill No:</strong> ' . $bill_no . '</p>
+              <p style="margin: 2px 0;"><strong>Date:</strong> ' . date('d/m/Y', strtotime($billDate)) . '</p>
+            </div>
+            
+            <table class="bill-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Rate</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>';
+        
+        foreach ($billItems as $item) {
+            echo '<tr>
+                    <td>' . substr($item['ITEM_NAME'], 0, 15) . '</td>
+                    <td class="text-right">' . $item['QTY'] . '</td>
+                    <td class="text-right">' . number_format($item['RATE'], 2) . '</td>
+                    <td class="text-right">' . number_format($item['AMOUNT'], 2) . '</td>
+                  </tr>';
+        }
+        
+        echo '</tbody>
+            </table>
+            
+            <div class="bill-footer">
+              <table class="bill-table">
+                <tr>
+                  <td>Sub Total:</td>
+                  <td class="text-right">₹' . number_format($totalAmount, 2) . '</td>
+                </tr>
+                <tr>
+                  <td>Discount:</td>
+                  <td class="text-right">₹' . number_format($discount, 2) . '</td>
+                </tr>
+                <tr>
+                  <td><strong>Net Amount:</strong></td>
+                  <td class="text-right"><strong>₹' . number_format($netAmount, 2) . '</strong></td>
+                </tr>
+              </table>
+              
+              <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
+            </div>
+            
+            <div class="no-print text-center" style="margin-top: 15px;">
+              <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+              <a href="sales_management.php" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back to Sales</a>
+            </div>
+          </div>
+          
+          <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                ' . ($auto_print ? 'window.print();' : '') . '
+            });
+          </script>
+        </body>
+        </html>';
+        exit;
+    } else {
+        $_SESSION['error'] = "Bill not found!";
+        header("Location: retail_sale.php");
+        exit;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -306,6 +492,13 @@ if (isset($_SESSION['error'])) {
                              class="btn btn-sm btn-warning" title="Edit Bill">
                             <i class="fa-solid fa-pen-to-square"></i>
                           </a>
+                          
+                          <!-- Print Button - Directly opens print dialog -->
+                          <a href="retail_sale.php?preview_bill=<?= $sale['BILL_NO'] ?>&print=true" 
+                             class="btn btn-sm btn-primary" title="Print Bill" target="_blank">
+                            <i class="fa-solid fa-print"></i>
+                          </a>
+                          
                           
                           <!-- Delete Button -->
                           <button class="btn btn-sm btn-danger" 

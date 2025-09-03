@@ -28,6 +28,7 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
+$daily_stock_table = "tbldailystock_" . $comp_id;
 $opening_stock_column = "Opening_Stock" . $comp_id;
 $current_stock_column = "Current_Stock" . $comp_id;
 
@@ -122,6 +123,45 @@ function getNextBillNumber($conn) {
     $row = $result->fetch_assoc();
     $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
     return $next_bill;
+}
+
+// Function to update daily stock table
+function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
+    // Extract day number from date (e.g., 2025-09-03 -> day 03)
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $sales_column = "DAY_{$day_num}_SALES";
+    $month_year = date('Y-m', strtotime($sale_date));
+    
+    // Check if record exists for this month and item
+    $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
+                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $month_year, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Update existing record
+        $update_query = "UPDATE $daily_stock_table 
+                         SET $sales_column = $sales_column + ?, 
+                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("dss", $qty, $month_year, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Create new record
+        $insert_query = "INSERT INTO $daily_stock_table 
+                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $sales_column) 
+                         VALUES (?, ?, 'F', ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssd", $month_year, $item_code, $qty);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    }
 }
 
 // Handle form submission for sales update
@@ -225,6 +265,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $insert_stock_stmt->execute();
                             $insert_stock_stmt->close();
                         }
+                        
+                        // Update daily stock table
+                        updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
                         
                         $total_amount += $amount;
                     }
