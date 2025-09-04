@@ -74,6 +74,7 @@
                     <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
                     <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_activity</span><span class="nav-label">Voucher Entry</span></a></li>
                     <li class="nav-item"><a href="view_breakage.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakages</span></a></li>
+                    <li class="nav-item"><a href="balance_carried_forward.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Balance Carried Forward</span></a></li>
 
                 </ul>
             </li>    
@@ -101,6 +102,8 @@
                     <li class="nav-item"><a href="billwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">show_chart</span><span class="nav-label">Billwise Sales Report</span></a></li>
                     <li class="nav-item"><a href="userwise_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">grouped_bar_chart</span><span class="nav-label">Userwise Sales Report</span></a></li>
                     <li class="nav-item"><a href="billwise_detailed_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Billwise Detailed Report</span></a></li>
+                    <li class="nav-item"><a href="groupwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Groupwise Sales Report</span></a></li>
+                    <li class="nav-item"><a href="credit_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Sales Report</span></a></li>
 
                 </ul>
             </li>

@@ -193,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* Fixed column widths to match SCM layout */
-.col-code { width: 120px; }
+.col-code { width: 150px; }
 .col-name { width: 180px; }
 .col-size { width: 100px; }
 .col-cases { width: 80px; }

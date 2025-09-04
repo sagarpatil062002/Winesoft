@@ -125,11 +125,16 @@ function getNextBillNumber($conn) {
     return $next_bill;
 }
 
-// Function to update daily stock table
+// Function to update daily stock table with closing calculation
+// Function to update daily stock table with closing calculation - FIXED VERSION
 function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
     // Extract day number from date (e.g., 2025-09-03 -> day 03)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
     $sales_column = "DAY_{$day_num}_SALES";
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    $opening_column = "DAY_{$day_num}_OPEN";
+    $purchase_column = "DAY_{$day_num}_PURCHASE";
+    
     $month_year = date('Y-m', strtotime($sale_date));
     
     // Check if record exists for this month and item
@@ -143,27 +148,49 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     $check_stmt->close();
     
     if ($exists) {
-        // Update existing record
+        // First get current values to calculate closing properly
+        $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                         FROM $daily_stock_table 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $select_stmt = $conn->prepare($select_query);
+        $select_stmt->bind_param("ss", $month_year, $item_code);
+        $select_stmt->execute();
+        $select_result = $select_stmt->get_result();
+        $current_values = $select_result->fetch_assoc();
+        $select_stmt->close();
+        
+        $opening = $current_values[$opening_column] ?? 0;
+        $purchase = $current_values[$purchase_column] ?? 0;
+        $current_sales = $current_values[$sales_column] ?? 0;
+        
+        // Calculate new sales and closing
+        $new_sales = $current_sales + $qty;
+        $new_closing = $opening + $purchase - $new_sales;
+        
+        // Update existing record with correct closing calculation
         $update_query = "UPDATE $daily_stock_table 
-                         SET $sales_column = $sales_column + ?, 
+                         SET $sales_column = ?, 
+                             $closing_column = ?,
                              LAST_UPDATED = CURRENT_TIMESTAMP 
                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("dss", $qty, $month_year, $item_code);
+        $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
+        // For new records, opening and purchase are typically 0 unless specified otherwise
+        $closing = 0 - $qty; // Since opening and purchase are 0
+        
         // Create new record
         $insert_query = "INSERT INTO $daily_stock_table 
-                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $sales_column) 
-                         VALUES (?, ?, 'F', ?)";
+                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
+                         VALUES (?, ?, 'F', 0, 0, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssd", $month_year, $item_code, $qty);
+        $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
         $insert_stmt->execute();
         $insert_stmt->close();
     }
 }
-
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_sales'])) {
@@ -183,93 +210,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $total_amount = 0;
             $distribution_details = []; // Store distribution details for display
             
-            // Process each item sale
-            foreach ($_POST['sale_qty'] as $item_code => $total_qty) {
-                $total_qty = intval($total_qty); // Convert to integer
+            // Process only items with quantities to avoid max_input_vars issue
+            // We'll manually check each item code instead of using $_POST['sale_qty'] directly
+            $processed_items = 0;
+            
+            foreach ($items as $item) {
+                $item_code = $item['CODE'];
                 
-                if ($total_qty > 0) {
-                    // Get item details
-                    $item_query = "SELECT DETAILS, RPRICE FROM tblitemmaster WHERE CODE = ?";
-                    $item_stmt = $conn->prepare($item_query);
-                    $item_stmt->bind_param("s", $item_code);
-                    $item_stmt->execute();
-                    $item_result = $item_stmt->get_result();
-                    $item_data = $item_result->fetch_assoc();
-                    $item_stmt->close();
+                // Check if this item has a quantity in the POST data
+                if (isset($_POST['sale_qty'][$item_code])) {
+                    $total_qty = intval($_POST['sale_qty'][$item_code]); // Convert to integer
                     
-                    $rate = $item_data['RPRICE'];
-                    $item_name = $item_data['DETAILS'];
-                    
-                    // Generate distribution
-                    $daily_sales = distributeSales($total_qty, $days_count);
-                    
-                    // Store distribution details
-                    $distribution_details[$item_code] = [
-                        'name' => $item_name,
-                        'total_qty' => $total_qty,
-                        'rate' => $rate,
-                        'daily_sales' => $daily_sales,
-                        'dates' => $date_array
-                    ];
-                    
-                    // Create sales for each day
-                    foreach ($daily_sales as $index => $qty) {
-                        if ($qty <= 0) continue;
+                    if ($total_qty > 0) {
+                        $processed_items++;
                         
-                        $sale_date = $date_array[$index];
-                        $amount = $qty * $rate;
-                        
-                        // Generate bill number starting from 1
-                        $bill_no = "BL" . $next_bill;
-                        $next_bill++;
-                        
-                        // Insert sale header
-                        $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                         VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                        $header_stmt = $conn->prepare($header_query);
-                        $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $amount, $amount, $mode, $comp_id, $user_id);
-                        $header_stmt->execute();
-                        $header_stmt->close();
-                        
-                        // Insert sale details
-                        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                         VALUES (?, ?, ?, ?, ?, ?, ?)";
-                        $detail_stmt = $conn->prepare($detail_query);
-                        $detail_stmt->bind_param("ssddssi", $bill_no, $item_code, $qty, $rate, $amount, $mode, $comp_id);
-                        $detail_stmt->execute();
-                        $detail_stmt->close();
-                        
-                        // Update stock - check if record exists first
-                        $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
-                        $check_stmt = $conn->prepare($check_stock_query);
-                        $check_stmt->bind_param("s", $item_code);
-                        $check_stmt->execute();
-                        $check_result = $check_stmt->get_result();
-                        $stock_exists = $check_result->fetch_assoc()['count'] > 0;
-                        $check_stmt->close();
-                        
-                        if ($stock_exists) {
-                            // Update existing stock
-                            $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
-                            $stock_stmt = $conn->prepare($stock_query);
-                            $stock_stmt->bind_param("ds", $qty, $item_code);
-                            $stock_stmt->execute();
-                            $stock_stmt->close();
-                        } else {
-                            // Insert new stock record
-                            $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
-                                                   VALUES (?, ?, ?, ?)";
-                            $insert_stock_stmt = $conn->prepare($insert_stock_query);
-                            $current_stock = -$qty; // Negative since we're deducting
-                            $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
-                            $insert_stock_stmt->execute();
-                            $insert_stock_stmt->close();
+                        // Limit processing to prevent max_input_vars issues
+                        if ($processed_items > 1000) {
+                            throw new Exception("Too many items with quantities. Maximum allowed is 1000 items.");
                         }
                         
-                        // Update daily stock table
-                        updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
+                        $rate = $item['RPRICE'];
+                        $item_name = $item['DETAILS'];
                         
-                        $total_amount += $amount;
+                        // Generate distribution
+                        $daily_sales = distributeSales($total_qty, $days_count);
+                        
+                        // Store distribution details
+                        $distribution_details[$item_code] = [
+                            'name' => $item_name,
+                            'total_qty' => $total_qty,
+                            'rate' => $rate,
+                            'daily_sales' => $daily_sales,
+                            'dates' => $date_array
+                        ];
+                        
+                        // Create sales for each day
+                        foreach ($daily_sales as $index => $qty) {
+                            if ($qty <= 0) continue;
+                            
+                            $sale_date = $date_array[$index];
+                            $amount = $qty * $rate;
+                            
+                            // Generate bill number starting from 1
+                            $bill_no = "BL" . $next_bill;
+                            $next_bill++;
+                            
+                            // Insert sale header
+                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                            $header_stmt = $conn->prepare($header_query);
+                            $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $amount, $amount, $mode, $comp_id, $user_id);
+                            $header_stmt->execute();
+                            $header_stmt->close();
+                            
+                            // Insert sale details
+                            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                             VALUES (?, ?, ?, ?, ?, ?, ?)";
+                            $detail_stmt = $conn->prepare($detail_query);
+                            $detail_stmt->bind_param("ssddssi", $bill_no, $item_code, $qty, $rate, $amount, $mode, $comp_id);
+                            $detail_stmt->execute();
+                            $detail_stmt->close();
+                            
+                            // Update stock - check if record exists first
+                            $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+                            $check_stmt = $conn->prepare($check_stock_query);
+                            $check_stmt->bind_param("s", $item_code);
+                            $check_stmt->execute();
+                            $check_result = $check_stmt->get_result();
+                            $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+                            $check_stmt->close();
+                            
+                            if ($stock_exists) {
+                                // Update existing stock
+                                $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+                                $stock_stmt = $conn->prepare($stock_query);
+                                $stock_stmt->bind_param("ds", $qty, $item_code);
+                                $stock_stmt->execute();
+                                $stock_stmt->close();
+                            } else {
+                                // Insert new stock record
+                                $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                                                       VALUES (?, ?, ?, ?)";
+                                $insert_stock_stmt = $conn->prepare($insert_stock_query);
+                                $current_stock = -$qty; // Negative since we're deducting
+                                $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
+                                $insert_stock_stmt->execute();
+                                $insert_stock_stmt->close();
+                            }
+                            
+                            // Update daily stock table with closing calculation
+                            updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
+                            
+                            $total_amount += $amount;
+                        }
                     }
                 }
             }
