@@ -69,6 +69,7 @@
 
                 </a>
                 <ul class="dropdown">
+                    <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Closing Stock</span></a></li>
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
                     <li class="nav-item"><a href="customer_sales_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
                     <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
@@ -78,8 +79,17 @@
 
                 </ul>
             </li>    
-            <li class="nav-item"><a href="#" class="nav-link"><span class="nav-icon material-symbols-rounded">point_of_sale</span><span class="nav-label">Registers</span></a></li>
-            <li class="nav-item has-dropdown">
+<li class="nav-item has-dropdown">
+    <a href="#" class="nav-link dropdown-toggle">
+        <span class="nav-icon material-symbols-rounded">point_of_sale</span>
+        <span class="nav-label">Registers</span>
+    </a>
+    <ul class="dropdown">
+        <li class="nav-item"><a href="cash_memo.php" class="nav-link"><span class="nav-icon material-symbols-rounded">flash_on</span><span class="nav-label">Cash Memo</span></a></li>
+        <li class="nav-item"><a href="cash_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock_open</span><span class="nav-label">Cash Summary</span></a></li>
+        <li class="nav-item"><a href="FLR_Datewise.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">FLR Datewise</span></a></li>
+    </ul>
+</li>            <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
                     <span class="nav-icon material-symbols-rounded">summarize</span>
                     <span class="nav-label">Reports</span>
@@ -104,6 +114,7 @@
                     <li class="nav-item"><a href="billwise_detailed_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Billwise Detailed Report</span></a></li>
                     <li class="nav-item"><a href="groupwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Groupwise Sales Report</span></a></li>
                     <li class="nav-item"><a href="credit_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Sales Report</span></a></li>
+                    <li class="nav-item"><a href="itemwise_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Itemwise Stock Report</span></a></li>
 
                 </ul>
             </li>

@@ -28,17 +28,13 @@ $supplier = isset($_GET['supplier']) ? $_GET['supplier'] : 'all';
 $from_date_display = date('d-M-Y', strtotime($from_date));
 $to_date_display = date('d-M-Y', strtotime($to_date));
 
-// Fetch suppliers from tbllheads for dropdown (filtered by company)
-$suppliers_query = "SELECT LCODE, LHEAD, REF_CODE FROM tbllheads WHERE GCODE = 33 AND CompID = ? ORDER BY LHEAD";
-$suppliers_stmt = $conn->prepare($suppliers_query);
-$suppliers_stmt->bind_param("i", $compID);
-$suppliers_stmt->execute();
-$suppliers_result = $suppliers_stmt->get_result();
+// Fetch suppliers from tblsupplier for dropdown (filtered by company if needed)
+$suppliers_query = "SELECT CODE, DETAILS FROM tblsupplier ORDER BY DETAILS";
+$suppliers_result = $conn->query($suppliers_query);
 $suppliers = [];
 while ($row = $suppliers_result->fetch_assoc()) {
-    $suppliers[$row['REF_CODE']] = $row['LHEAD'];
+    $suppliers[$row['CODE']] = $row['DETAILS'];
 }
-$suppliers_stmt->close();
 
 // Build query to fetch purchase data with CompID filter
 $query = "SELECT 
@@ -132,16 +128,28 @@ foreach ($purchases as $purchase) {
       <!-- Filters Section (Not Printable) -->
       <div class="report-filters no-print">
         <form method="GET" class="row g-3">
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">From Date</label>
             <input type="date" class="form-control" name="from_date" value="<?= htmlspecialchars($from_date) ?>">
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label class="form-label">To Date</label>
             <input type="date" class="form-control" name="to_date" value="<?= htmlspecialchars($to_date) ?>">
           </div>
-          <div class="col-md-12">
-            <div class="btn-group">
+          <div class="col-md-3">
+            <label class="form-label">Supplier</label>
+            <select class="form-select" name="supplier">
+              <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
+              <?php foreach ($suppliers as $code => $name): ?>
+                <option value="<?= htmlspecialchars($code) ?>" <?= $supplier === $code ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($name) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">&nbsp;</label>
+            <div class="btn-group d-flex">
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-sync-alt"></i> Generate
               </button>
@@ -159,8 +167,7 @@ foreach ($purchases as $purchase) {
       <!-- Printable Report Section -->
       <div class="print-section">
         <div class="print-header">
-            <h1><?= htmlspecialchars($companyName) ?></h1>
-
+          <h1><?= htmlspecialchars($companyName) ?></h1>
           <h4>Purchase Report</h4>
         </div>
 
@@ -168,6 +175,9 @@ foreach ($purchases as $purchase) {
         <div class="report-header">
           <div class="report-title">
             Purchase Report From <?= $from_date_display ?> To <?= $to_date_display ?>
+            <?php if ($supplier !== 'all'): ?>
+              - <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -238,12 +248,11 @@ foreach ($purchases as $purchase) {
             </tbody>
           </table>
         </div>
-
-        
-
+      </div>
+    </div>
   </div>
-      <?php include 'components/footer.php'; ?>
-
+  
+  <?php include 'components/footer.php'; ?>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

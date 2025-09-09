@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 03, 2025 at 06:28 PM
+-- Generation Time: Sep 09, 2025 at 06:58 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,6 +32,19 @@ CREATE TABLE `license_types` (
   `license_code` varchar(20) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblbalcrdf`
+--
+
+CREATE TABLE `tblbalcrdf` (
+  `ID` int(11) NOT NULL,
+  `BCDATE` datetime NOT NULL,
+  `BCAMOUNT` decimal(15,2) NOT NULL,
+  `CompID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -393,6 +406,140 @@ CREATE TABLE `tbldailystock_2` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `tbldailystock_3`
+--
+
+CREATE TABLE `tbldailystock_3` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_CLOSING` decimal(10,3) DEFAULT 0.000
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `tbldailystock_base`
 --
 
@@ -524,10 +671,12 @@ CREATE TABLE `tblitem_stock` (
   `ITEM_CODE` varchar(20) NOT NULL,
   `FIN_YEAR` year(4) NOT NULL,
   `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `OPENING_STOCK1` decimal(10,3) DEFAULT 0.000,
-  `CURRENT_STOCK1` decimal(10,3) DEFAULT 0.000,
+  `OPENING_STOCK1` int(10) DEFAULT 0,
+  `CURRENT_STOCK1` int(10) DEFAULT 0,
   `OPENING_STOCK2` decimal(10,3) DEFAULT 0.000,
-  `CURRENT_STOCK2` decimal(10,3) DEFAULT 0.000
+  `CURRENT_STOCK2` decimal(10,3) DEFAULT 0.000,
+  `OPENING_STOCK3` decimal(10,3) DEFAULT 0.000,
+  `CURRENT_STOCK3` decimal(10,3) DEFAULT 0.000
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -601,6 +750,8 @@ CREATE TABLE `tblpurchasedetails` (
   `Size` varchar(50) DEFAULT NULL,
   `Cases` decimal(10,2) DEFAULT 0.00,
   `Bottles` int(11) DEFAULT 0,
+  `FreeCases` decimal(10,2) DEFAULT 0.00,
+  `FreeBottles` int(11) DEFAULT 0,
   `CaseRate` decimal(12,3) DEFAULT 0.000,
   `MRP` decimal(10,2) DEFAULT 0.00,
   `Amount` decimal(12,2) DEFAULT 0.00,
@@ -771,16 +922,34 @@ CREATE TABLE `users` (
 --
 
 --
+-- Indexes for table `tblbalcrdf`
+--
+ALTER TABLE `tblbalcrdf`
+  ADD PRIMARY KEY (`ID`);
+
+--
 -- Indexes for table `tblbreakages`
 --
 ALTER TABLE `tblbreakages`
   ADD PRIMARY KEY (`BRK_No`);
 
 --
+-- Indexes for table `tblclass`
+--
+ALTER TABLE `tblclass`
+  ADD PRIMARY KEY (`SRNO`);
+
+--
 -- Indexes for table `tblcompany`
 --
 ALTER TABLE `tblcompany`
   ADD PRIMARY KEY (`CompID`);
+
+--
+-- Indexes for table `tblcustomersales`
+--
+ALTER TABLE `tblcustomersales`
+  ADD PRIMARY KEY (`SaleID`);
 
 --
 -- Indexes for table `tbldailystock_1`
@@ -799,6 +968,26 @@ ALTER TABLE `tbldailystock_2`
   ADD KEY `ITEM_CODE_2` (`ITEM_CODE`);
 
 --
+-- Indexes for table `tbldailystock_3`
+--
+ALTER TABLE `tbldailystock_3`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock_3` (`STK_MONTH`,`ITEM_CODE`),
+  ADD KEY `ITEM_CODE_3` (`ITEM_CODE`);
+
+--
+-- Indexes for table `tblexpenses`
+--
+ALTER TABLE `tblexpenses`
+  ADD PRIMARY KEY (`VNO`);
+
+--
+-- Indexes for table `tblgheads`
+--
+ALTER TABLE `tblgheads`
+  ADD PRIMARY KEY (`GCODE`);
+
+--
 -- Indexes for table `tblitemmaster`
 --
 ALTER TABLE `tblitemmaster`
@@ -811,6 +1000,25 @@ ALTER TABLE `tblitemmaster`
 --
 ALTER TABLE `tblitem_stock`
   ADD PRIMARY KEY (`StockID`);
+
+--
+-- Indexes for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  ADD PRIMARY KEY (`LCODE`);
+
+--
+-- Indexes for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  ADD PRIMARY KEY (`DetailID`),
+  ADD KEY `fk_purchasedetails_purchaseid` (`PurchaseID`);
+
+--
+-- Indexes for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  ADD PRIMARY KEY (`ID`);
 
 --
 -- Indexes for table `tblsaledetails`
@@ -838,6 +1046,12 @@ ALTER TABLE `tbl_cash_memo_prints`
 --
 
 --
+-- AUTO_INCREMENT for table `tblbalcrdf`
+--
+ALTER TABLE `tblbalcrdf`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `tblbreakages`
 --
 ALTER TABLE `tblbreakages`
@@ -856,16 +1070,44 @@ ALTER TABLE `tbldailystock_2`
   MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `tbldailystock_3`
+--
+ALTER TABLE `tbldailystock_3`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `tblitem_stock`
 --
 ALTER TABLE `tblitem_stock`
   MODIFY `StockID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  MODIFY `DetailID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `tbl_cash_memo_prints`
 --
 ALTER TABLE `tbl_cash_memo_prints`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  ADD CONSTRAINT `fk_purchasedetails_purchaseid` FOREIGN KEY (`PurchaseID`) REFERENCES `tblpurchases` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

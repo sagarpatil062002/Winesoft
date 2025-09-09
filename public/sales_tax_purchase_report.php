@@ -13,7 +13,6 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
-
 // Get filter parameters
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -26,15 +25,14 @@ $to_date_display = date('d-M-Y', strtotime($to_date));
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Fetch suppliers from tbllheads for dropdown (only for current company)
-$suppliers_query = "SELECT LCODE, LHEAD, REF_CODE FROM tbllheads WHERE GCODE = 33 AND CompID = ? ORDER BY LHEAD";
+// Fetch suppliers from tblsupplier for dropdown
+$suppliers_query = "SELECT CODE, DETAILS FROM tblsupplier ORDER BY DETAILS";
 $suppliers_stmt = $conn->prepare($suppliers_query);
-$suppliers_stmt->bind_param("i", $compID);
 $suppliers_stmt->execute();
 $suppliers_result = $suppliers_stmt->get_result();
 $suppliers = [];
 while ($row = $suppliers_result->fetch_assoc()) {
-    $suppliers[$row['REF_CODE']] = $row['LHEAD'];
+    $suppliers[$row['CODE']] = $row['DETAILS'];
 }
 $suppliers_stmt->close();
 
@@ -80,6 +78,16 @@ foreach ($purchases as $purchase) {
     $totals['net_amt_wine'] += floatval($purchase['net_amt_wine']);
     $totals['total_amt'] += floatval($purchase['total_amt']);
 }
+
+// Get company name
+$company_query = "SELECT COMP_NAME FROM tblcompany WHERE CompID = ?";
+$company_stmt = $conn->prepare($company_query);
+$company_stmt->bind_param("i", $compID);
+$company_stmt->execute();
+$company_result = $company_stmt->get_result();
+$company_row = $company_result->fetch_assoc();
+$companyName = $company_row['COMP_NAME'] ?? 'Company';
+$company_stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -117,9 +125,9 @@ foreach ($purchases as $purchase) {
             <label class="form-label">Supplier</label>
             <select class="form-select" name="supplier">
               <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
-              <?php foreach ($suppliers as $ref_code => $lhead): ?>
-                <option value="<?= htmlspecialchars($ref_code) ?>" <?= $supplier === $ref_code ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($lhead) ?>
+              <?php foreach ($suppliers as $code => $details): ?>
+                <option value="<?= htmlspecialchars($code) ?>" <?= $supplier === $code ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($details) ?>
                 </option>
               <?php endforeach; ?>
             </select>

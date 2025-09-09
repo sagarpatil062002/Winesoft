@@ -47,226 +47,188 @@ if (!$columns_exist) {
     $conn->query($add_col2_query);
 }
 
-// Check if partitioned daily stock table exists, if not create it
+// Check if company daily stock table exists, if not create it with dynamic day columns
 $check_table_query = "SELECT COUNT(*) as count FROM information_schema.tables 
                      WHERE table_schema = DATABASE() 
-                     AND table_name = 'tbldailystock_monthly'";
+                     AND table_name = 'tbldailystock_$comp_id'";
 $check_table_result = $conn->query($check_table_query);
 $table_exists = $check_table_result->fetch_assoc()['count'] > 0;
 
 if (!$table_exists) {
-    // Create partitioned daily stock table without the generated column
-    $create_table_query = "CREATE TABLE `tbldailystock_monthly` (
-      `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
-      `STK_DATE` date NOT NULL,
-      `FIN_YEAR` year(4) NOT NULL,
-      `ITEM_CODE` varchar(20) NOT NULL,
-      `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
-      `OPENING_QTY` decimal(10,3) DEFAULT 0.000,
-      `PURCHASE_QTY` decimal(10,3) DEFAULT 0.000,
-      `SALES_QTY` decimal(10,3) DEFAULT 0.000,
-      `ADJUSTMENT_QTY` decimal(10,3) DEFAULT 0.000,
-      `CLOSING_QTY` decimal(10,3) DEFAULT 0.000,
-      `STOCK_TYPE` varchar(10) DEFAULT 'REGULAR',
-      `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp(),
-      `COMP_ID` int(11) NOT NULL,
-      PRIMARY KEY (`DailyStockID`, `STK_DATE`),
-      UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`,`FIN_YEAR`, `COMP_ID`),
-      KEY `ITEM_CODE` (`ITEM_CODE`),
-      KEY `STK_DATE` (`STK_DATE`),
-      KEY `FIN_YEAR` (`FIN_YEAR`),
-      KEY `LIQ_FLAG` (`LIQ_FLAG`),
-      KEY `COMP_ID` (`COMP_ID`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    PARTITION BY RANGE COLUMNS(STK_DATE) (
-        PARTITION p202501 VALUES LESS THAN ('2025-02-01'),
-        PARTITION p202502 VALUES LESS THAN ('2025-03-01'),
-        PARTITION p202503 VALUES LESS THAN ('2025-04-01'),
-        PARTITION p202504 VALUES LESS THAN ('2025-05-01'),
-        PARTITION p202505 VALUES LESS THAN ('2025-06-01'),
-        PARTITION p202506 VALUES LESS THAN ('2025-07-01'),
-        PARTITION p202507 VALUES LESS THAN ('2025-08-01'),
-        PARTITION p202508 VALUES LESS THAN ('2025-09-01'),
-        PARTITION p202509 VALUES LESS THAN ('2025-10-01'),
-        PARTITION p202510 VALUES LESS THAN ('2025-11-01'),
-        PARTITION p202511 VALUES LESS THAN ('2025-12-01'),
-        PARTITION p202512 VALUES LESS THAN ('2026-01-01'),
-        PARTITION pfuture VALUES LESS THAN (MAXVALUE)
-    )";
+    // Create company-specific daily stock table with dynamic day columns
+    $create_table_query = "CREATE TABLE tbldailystock_$comp_id (
+        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+        `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+        `ITEM_CODE` varchar(20) NOT NULL,
+        `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+        PRIMARY KEY (`DailyStockID`),
+        UNIQUE KEY `unique_daily_stock_$comp_id` (`STK_MONTH`,`ITEM_CODE`),
+        KEY `ITEM_CODE_$comp_id` (`ITEM_CODE`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
     
     $conn->query($create_table_query);
     
-    // Create archive table
-    $create_archive_query = "CREATE TABLE IF NOT EXISTS `tbldailystock_archive` LIKE `tbldailystock_monthly`";
-    $conn->query($create_archive_query);
-    $remove_partitioning = "ALTER TABLE `tbldailystock_archive` REMOVE PARTITIONING";
-    $conn->query($remove_partitioning);
-    
-    // Add MONTH_YEAR column to both tables (not generated)
-    $add_month_year = "ALTER TABLE `tbldailystock_monthly` ADD COLUMN `MONTH_YEAR` CHAR(7)";
-    $conn->query($add_month_year);
-    
-    $add_month_year_archive = "ALTER TABLE `tbldailystock_archive` ADD COLUMN `MONTH_YEAR` CHAR(7)";
-    $conn->query($add_month_year_archive);
-    
-    // Create stored procedures
-    createStoredProcedures($conn);
+    // Add day columns for the current month
+    $current_month = date('Y-m');
+    addDayColumnsForMonth($conn, $comp_id, $current_month);
 }
 
-// Function to create stored procedures
-function createStoredProcedures($conn) {
-    // Procedure for updating daily stock
-    $procedure1 = "CREATE PROCEDURE `UpdateDailyStock`(
-        IN p_STK_DATE DATE,
-        IN p_ITEM_CODE VARCHAR(20),
-        IN p_LIQ_FLAG CHAR(1),
-        IN p_OPENING_QTY DECIMAL(10,3),
-        IN p_PURCHASE_QTY DECIMAL(10,3),
-        IN p_SALES_QTY DECIMAL(10,3),
-        IN p_ADJUSTMENT_QTY DECIMAL(10,3),
-        IN p_STOCK_TYPE VARCHAR(10),
-        IN p_COMP_ID INT(11)
-    )
-    BEGIN
-        DECLARE v_CLOSING_QTY DECIMAL(10,3);
-        DECLARE v_FIN_YEAR YEAR(4);
-        DECLARE v_MONTH_YEAR CHAR(7);
-        
-        -- Calculate financial year (assuming April to March)
-        SET v_FIN_YEAR = IF(MONTH(p_STK_DATE) >= 4, YEAR(p_STK_DATE), YEAR(p_STK_DATE) - 1);
-        
-        -- Calculate month_year manually
-        SET v_MONTH_YEAR = DATE_FORMAT(p_STK_DATE, '%Y-%m');
-        
-        -- Calculate closing quantity
-        SET v_CLOSING_QTY = p_OPENING_QTY + p_PURCHASE_QTY - p_SALES_QTY + p_ADJUSTMENT_QTY;
-        
-        -- Insert or update the record
-        INSERT INTO `tbldailystock_monthly` (
-            `STK_DATE`, `FIN_YEAR`, `ITEM_CODE`, `LIQ_FLAG`, 
-            `OPENING_QTY`, `PURCHASE_QTY`, `SALES_QTY`, `ADJUSTMENT_QTY`, 
-            `CLOSING_QTY`, `STOCK_TYPE`, `COMP_ID`, `MONTH_YEAR`
-        )
-        VALUES (
-            p_STK_DATE, v_FIN_YEAR, p_ITEM_CODE, p_LIQ_FLAG,
-            p_OPENING_QTY, p_PURCHASE_QTY, p_SALES_QTY, p_ADJUSTMENT_QTY,
-            v_CLOSING_QTY, p_STOCK_TYPE, p_COMP_ID, v_MONTH_YEAR
-        )
-        ON DUPLICATE KEY UPDATE
-            `OPENING_QTY` = p_OPENING_QTY,
-            `PURCHASE_QTY` = p_PURCHASE_QTY,
-            `SALES_QTY` = p_SALES_QTY,
-            `ADJUSTMENT_QTY` = p_ADJUSTMENT_QTY,
-            `CLOSING_QTY` = v_CLOSING_QTY,
-            `STOCK_TYPE` = p_STOCK_TYPE,
-            `MONTH_YEAR` = v_MONTH_YEAR,
-            `LAST_UPDATED` = CURRENT_TIMESTAMP;
-    END";
+// Function to add day columns for a specific month
+function addDayColumnsForMonth($conn, $comp_id, $month) {
+    $year_month = explode('-', $month);
+    $year = $year_month[0];
+    $month_num = $year_month[1];
+    $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
     
-    // Procedure for monthly maintenance
-    $procedure2 = "CREATE PROCEDURE `MonthlyStockMaintenance`(IN p_month VARCHAR(7))
-    BEGIN
-        -- Archive data for the specified month
-        INSERT INTO `tbldailystock_archive`
-        SELECT * FROM `tbldailystock_monthly` 
-        WHERE `MONTH_YEAR` = p_month;
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
         
-        -- Remove archived data from main table
-        DELETE FROM `tbldailystock_monthly` 
-        WHERE `MONTH_YEAR` = p_month;
+        // Check if column exists
+        $check_col_query = "SELECT COUNT(*) as count FROM information_schema.columns 
+                           WHERE table_name = 'tbldailystock_$comp_id' 
+                           AND column_name = 'DAY_{$day_padded}_OPEN'";
+        $check_result = $conn->query($check_col_query);
+        $col_exists = $check_result->fetch_assoc()['count'] > 0;
         
-        -- Add new partition for next year if needed
-        SET @next_year = DATE_FORMAT(DATE_ADD(CONCAT(p_month, '-01'), INTERVAL 1 YEAR), '%Y-%m');
-        
-        SET @sql = CONCAT(
-            'ALTER TABLE `tbldailystock_monthly` ADD PARTITION (',
-            'PARTITION p', REPLACE(@next_year, '-', ''), 
-            ' VALUES LESS THAN (''', DATE_FORMAT(DATE_ADD(CONCAT(@next_year, '-01'), INTERVAL 1 MONTH), '%Y-%m-01'), ''')',
-            ')'
-        );
-        
-        PREPARE stmt FROM @sql;
-        EXECUTE stmt;
-        DEALLOCATE PREPARE stmt;
-    END";
-    
-    // Execute the procedures creation
-    $conn->query("DROP PROCEDURE IF EXISTS UpdateDailyStock");
-    $conn->query($procedure1);
-    
-    $conn->query("DROP PROCEDURE IF EXISTS MonthlyStockMaintenance");
-    $conn->query($procedure2);
-    
-    // Create event for monthly maintenance
-    $create_event_query = "CREATE EVENT IF NOT EXISTS `MonthlyStockArchiveEvent`
-        ON SCHEDULE EVERY 1 MONTH
-        STARTS TIMESTAMP(DATE_FORMAT(NOW(), '%Y-%m-01 02:00:00'))
-        DO
-        BEGIN
-            DECLARE prev_month VARCHAR(7);
-            SET prev_month = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m');
+        if (!$col_exists) {
+            // Add opening, purchase, sales, and closing columns for this day
+            $add_open_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_OPEN DECIMAL(10,3) DEFAULT 0.000";
+            $add_purchase_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_PURCHASE DECIMAL(10,3) DEFAULT 0.000";
+            $add_sales_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_SALES DECIMAL(10,3) DEFAULT 0.000";
+            $add_closing_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_CLOSING DECIMAL(10,3) DEFAULT 0.000";
             
-            CALL MonthlyStockMaintenance(prev_month);
-        END";
-    $conn->query($create_event_query);
+            $conn->query($add_open_col);
+            $conn->query($add_purchase_col);
+            $conn->query($add_sales_col);
+            $conn->query($add_closing_col);
+        }
+    }
+}
+
+// Function to archive previous month's data
+function archiveMonthlyData($conn, $comp_id, $month) {
+    $archive_table = "tbldailystock_archive_$comp_id";
+    
+    // Check if archive table exists
+    $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                           WHERE table_schema = DATABASE() 
+                           AND table_name = '$archive_table'";
+    $check_result = $conn->query($check_archive_query);
+    $archive_exists = $check_result->fetch_assoc()['count'] > 0;
+    
+    if (!$archive_exists) {
+        // Create archive table
+        $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
+        $conn->query($create_archive_query);
+    }
+    
+    // Copy data to archive
+    $copy_data_query = "INSERT INTO $archive_table SELECT * FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
+    $copy_stmt = $conn->prepare($copy_data_query);
+    $copy_stmt->bind_param("s", $month);
+    $copy_stmt->execute();
+    $copy_stmt->close();
+    
+    // Delete archived data from main table
+    $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
+    $delete_stmt = $conn->prepare($delete_query);
+    $delete_stmt->bind_param("s", $month);
+    $delete_stmt->execute();
+    $delete_stmt->close();
+}
+
+// Check if we need to switch to a new month
+$current_month = date('Y-m');
+$check_current_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
+$check_month_stmt = $conn->prepare($check_current_month_query);
+$check_month_stmt->bind_param("s", $current_month);
+$check_month_stmt->execute();
+$month_result = $check_month_stmt->get_result();
+$current_month_exists = $month_result->fetch_assoc()['count'] > 0;
+$check_month_stmt->close();
+
+if (!$current_month_exists) {
+    // Check if we have previous month data to archive
+    $previous_month = date('Y-m', strtotime('-1 month'));
+    $check_prev_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
+    $check_prev_stmt = $conn->prepare($check_prev_month_query);
+    $check_prev_stmt->bind_param("s", $previous_month);
+    $check_prev_stmt->execute();
+    $prev_result = $check_prev_stmt->get_result();
+    $prev_month_exists = $prev_result->fetch_assoc()['count'] > 0;
+    $check_prev_stmt->close();
+    
+    if ($prev_month_exists) {
+        // Archive previous month's data
+        archiveMonthlyData($conn, $comp_id, $previous_month);
+    }
+    
+    // Add day columns for the new month
+    addDayColumnsForMonth($conn, $comp_id, $current_month);
 }
 
 // Function to get yesterday's closing stock for today's opening
-function getYesterdayClosingStock($conn, $comp_id, $item_code, $fin_year, $mode) {
-    $yesterday = date('Y-m-d', strtotime('-1 day'));
+function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
+    $yesterday = date('d', strtotime('-1 day'));
+    $yesterday_padded = str_pad($yesterday, 2, '0', STR_PAD_LEFT);
+    $current_month = date('Y-m');
     
-    $query = "SELECT CLOSING_QTY FROM tbldailystock_monthly 
-              WHERE STK_DATE = ? AND ITEM_CODE = ? AND FIN_YEAR = ? AND LIQ_FLAG = ? AND COMP_ID = ?
-              ORDER BY STK_DATE DESC LIMIT 1";
+    $query = "SELECT DAY_{$yesterday_padded}_CLOSING as closing_qty FROM tbldailystock_$comp_id 
+              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssisi", $yesterday, $item_code, $fin_year, $mode, $comp_id);
+    $stmt->bind_param("sss", $current_month, $item_code, $mode);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        return $row['CLOSING_QTY'];
+        return $row['closing_qty'];
     }
     
     return 0; // Return 0 if no record found for yesterday
 }
 
-// Function to update daily stock using stored procedure
-function updateDailyStock($conn, $comp_id, $item_code, $fin_year, $mode, $opening_stock, $closing_stock) {
-    $today = date('Y-m-d');
+// Function to update daily stock
+function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $closing_stock, $purchase_qty = 0, $sales_qty = 0) {
+    $today = date('d');
+    $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
+    $current_month = date('Y-m');
     
-    // Calculate purchase, sales, and adjustment quantities
-    $purchase_qty = 0;
-    $sales_qty = 0;
-    $adjustment_qty = 0;
+    // Check if record exists for this month
+    $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("sss", $current_month, $item_code, $mode);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
     
-    // If we have a previous record, calculate the differences
-    $prev_query = "SELECT CLOSING_QTY FROM tbldailystock_monthly 
-                  WHERE STK_DATE = ? AND ITEM_CODE = ? AND COMP_ID = ? 
-                  ORDER BY STK_DATE DESC LIMIT 1";
-    $prev_stmt = $conn->prepare($prev_query);
-    $prev_date = date('Y-m-d', strtotime('-1 day'));
-    $prev_stmt->bind_param("ssi", $prev_date, $item_code, $comp_id);
-    $prev_stmt->execute();
-    $prev_result = $prev_stmt->get_result();
-    
-    if ($prev_result->num_rows > 0) {
-        $prev_row = $prev_result->fetch_assoc();
-        $prev_closing = $prev_row['CLOSING_QTY'];
-        
-        // The change in stock is the difference between today's opening and yesterday's closing
-        $adjustment_qty = $opening_stock - $prev_closing;
+    if ($exists) {
+        // Update existing record
+        $update_query = "UPDATE tbldailystock_$comp_id 
+                        SET DAY_{$today_padded}_OPEN = ?, 
+                            DAY_{$today_padded}_PURCHASE = DAY_{$today_padded}_PURCHASE + ?,
+                            DAY_{$today_padded}_SALES = DAY_{$today_padded}_SALES + ?,
+                            DAY_{$today_padded}_CLOSING = ?,
+                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddddsss", $opening_stock, $purchase_qty, $sales_qty, $closing_stock, $current_month, $item_code, $mode);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Insert new record
+        $insert_query = "INSERT INTO tbldailystock_$comp_id 
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_PURCHASE, DAY_{$today_padded}_SALES, DAY_{$today_padded}_CLOSING) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("sssdddd", $current_month, $item_code, $mode, $opening_stock, $purchase_qty, $sales_qty, $closing_stock);
+        $insert_stmt->execute();
+        $insert_stmt->close();
     }
-    
-    // Call the stored procedure
-    $call_procedure = "CALL UpdateDailyStock(?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($call_procedure);
-    $stock_type = 'REGULAR';
-    $stmt->bind_param("sssddddsi", $today, $item_code, $mode, $opening_stock, $purchase_qty, 
-                     $sales_qty, $adjustment_qty, $stock_type, $comp_id);
-    $stmt->execute();
-    $stmt->close();
 }
 
 // Handle CSV import
@@ -319,10 +281,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 }
                 
                 // Update daily stock - get yesterday's closing for today's opening
-                $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $fin_year, $mode);
+                $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $mode);
                 $today_opening = ($yesterday_closing > 0) ? $yesterday_closing : $balance;
                 
-                updateDailyStock($conn, $comp_id, $code, $fin_year, $mode, $today_opening, $balance);
+                updateDailyStock($conn, $comp_id, $code, $mode, $today_opening, $balance);
                 
                 $imported_count++;
             } else {
@@ -446,10 +408,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             }
             
             // Update daily stock - get yesterday's closing for today's opening
-            $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $fin_year, $mode);
+            $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $mode);
             $today_opening = ($yesterday_closing > 0) ? $yesterday_closing : $balance;
             
-            updateDailyStock($conn, $comp_id, $code, $fin_year, $mode, $today_opening, $balance);
+            updateDailyStock($conn, $comp_id, $code, $mode, $today_opening, $balance);
         }
     }
     
@@ -514,13 +476,6 @@ if (isset($_SESSION['import_message'])) {
       font-size: 0.9rem;
       color: #6c757d;
     }
-    .system-info {
-      background-color: #d1ecf1;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      font-size: 0.9rem;
-    }
   </style>
 </head>
 <body>
@@ -533,17 +488,11 @@ if (isset($_SESSION['import_message'])) {
     <div class="content-area">
       <h3 class="mb-4">Opening Balance Management</h3>
       
-      <!-- System Info -->
-      <div class="system-info">
-        <strong><i class="fas fa-info-circle"></i> System Information:</strong> 
-        Daily stock records are now automatically managed with monthly partitioning. 
-        Data is archived at the end of each month for historical reporting while maintaining optimal performance.
-      </div>
-      
       <!-- Company and Financial Year Info -->
       <div class="company-info mb-3">
         <strong>Financial Year:</strong> <?= htmlspecialchars($fin_year) ?> | 
-        <strong>Current Company:</strong> <?= htmlspecialchars($current_company['Comp_Name']) ?>
+        <strong>Current Company:</strong> <?= htmlspecialchars($current_company['Comp_Name']) ?> |
+        <strong>Current Month:</strong> <?= date('F Y') ?>
       </div>
 
       <!-- Import from CSV Section -->
@@ -624,9 +573,6 @@ if (isset($_SESSION['import_message'])) {
           <button type="submit" name="update_balances" class="btn btn-success">
             <i class="fas fa-save"></i> Save Opening Balances
           </button>
-          <a href="stock_reports.php" class="btn btn-info">
-            <i class="fas fa-chart-bar"></i> View Stock Reports
-          </a>
           <a href="dashboard.php" class="btn btn-secondary ms-auto">
             <i class="fas fa-sign-out-alt"></i> Exit
           </a>

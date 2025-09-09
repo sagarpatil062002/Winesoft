@@ -22,9 +22,9 @@ $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Date range selection (default to current month)
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
+// Date range selection (default to current day only)
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
@@ -125,8 +125,7 @@ function getNextBillNumber($conn) {
     return $next_bill;
 }
 
-// Function to update daily stock table with closing calculation
-// Function to update daily stock table with closing calculation - FIXED VERSION
+// Function to update daily stock table with proper opening/closing calculations
 function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
     // Extract day number from date (e.g., 2025-09-03 -> day 03)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
@@ -148,7 +147,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     $check_stmt->close();
     
     if ($exists) {
-        // First get current values to calculate closing properly
+        // Get current values to calculate closing properly
         $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
                          FROM $daily_stock_table 
                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
@@ -177,6 +176,29 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
         $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
         $update_stmt->execute();
         $update_stmt->close();
+        
+        // Update next day's opening stock if it exists
+        $next_day = intval($day_num) + 1;
+        if ($next_day <= 31) {
+            $next_day_num = sprintf('%02d', $next_day);
+            $next_opening_column = "DAY_{$next_day_num}_OPEN";
+            
+            // Check if next day exists in the table
+            $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
+            $next_day_result = $conn->query($check_next_day_query);
+            
+            if ($next_day_result->num_rows > 0) {
+                // Update next day's opening to match current day's closing
+                $update_next_query = "UPDATE $daily_stock_table 
+                                     SET $next_opening_column = ?,
+                                         LAST_UPDATED = CURRENT_TIMESTAMP 
+                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_next_stmt = $conn->prepare($update_next_query);
+                $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
+                $update_next_stmt->execute();
+                $update_next_stmt->close();
+            }
+        }
     } else {
         // For new records, opening and purchase are typically 0 unless specified otherwise
         $closing = 0 - $qty; // Since opening and purchase are 0
@@ -191,6 +213,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
         $insert_stmt->close();
     }
 }
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_sales'])) {
@@ -333,6 +356,40 @@ $quantities = [];
 foreach ($items as $item) {
     $quantities[$item['CODE']] = 0;
 }
+
+// Get subclass data for sale module view
+$subclass_query = "SELECT ITEM_GROUP, CC, `DESC`, BOTTLE_PER_CASE FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY CC, ITEM_GROUP";
+$subclass_stmt = $conn->prepare($subclass_query);
+$subclass_stmt->bind_param("s", $mode);
+$subclass_stmt->execute();
+$subclass_result = $subclass_stmt->get_result();
+$subclasses = $subclass_result->fetch_all(MYSQLI_ASSOC);
+$subclass_stmt->close();
+
+// Group subclasses by CC
+$subclass_groups = [];
+foreach ($subclasses as $subclass) {
+    $cc = $subclass['CC'];
+    if (!isset($subclass_groups[$cc])) {
+        $subclass_groups[$cc] = [];
+    }
+    $subclass_groups[$cc][] = $subclass;
+}
+
+// Get class data for categorization
+$class_query = "SELECT SGROUP, `DESC` FROM tblclass WHERE LIQ_FLAG = ?";
+$class_stmt = $conn->prepare($class_query);
+$class_stmt->bind_param("s", $mode);
+$class_stmt->execute();
+$class_result = $class_stmt->get_result();
+$classes = [];
+while ($row = $class_result->fetch_assoc()) {
+    $classes[$row['SGROUP']] = $row['DESC'];
+}
+$class_stmt->close();
+
+// Define all possible sizes for the sale module view
+$all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -345,80 +402,6 @@ foreach ($items as $item) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <style>
-    .qty-input {
-      width: 80px;
-      text-align: center;
-    }
-    .stock-info {
-      font-size: 0.9rem;
-      color: #6c757d;
-    }
-    .mode-active, .sequence-active {
-      background-color: #0d6efd;
-      color: white !important;
-    }
-    .table-container {
-      overflow-x: auto;
-    }
-    .styled-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .styled-table th {
-      position: sticky;
-      top: 0;
-      background-color: #f8f9fa;
-      z-index: 10;
-    }
-    .date-range-container {
-      background-color: #f8f9fa;
-      border-radius: 6px;
-      padding: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .distribution-cell {
-      width: 40px;
-      text-align: center;
-      font-weight: bold;
-      padding: 3px;
-    }
-    .distribution-row {
-      background-color: #fff3cd;
-    }
-    .distribution-total {
-      font-weight: bold;
-      background-color: #e9ecef;
-    }
-    .date-header {
-      text-align: center;
-      padding: 5px;
-      font-size: 0.7rem;
-      width: 40px;
-    }
-    .btn-action {
-      min-width: 120px;
-    }
-    .distribution-table {
-      font-size: 0.85rem;
-    }
-    .distribution-table th {
-      white-space: nowrap;
-    }
-    .distribution-section {
-      margin-top: 20px;
-      border-top: 2px solid #dee2e6;
-      padding-top: 15px;
-    }
-    .distribution-preview {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    .distribution-summary {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-    }
     .ajax-loader {
       display: none;
       text-align: center;
@@ -437,24 +420,20 @@ foreach ($items as $item) {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    .date-distribution-header {
-      text-align: center;
-      font-weight: bold;
-      background-color: #f8f9fa;
+   
+    .sale-module-modal .modal-dialog {
+      max-width: 95%;
     }
-    .date-distribution-cell {
+    .sale-module-table th, .sale-module-table td {
       text-align: center;
-      padding: 3px;
+      padding: 0.3rem;
+      font-size: 0.75rem;
+    }
+    .sale-module-table th {
+      font-size: 0.7rem;
+    }
+    .sale-module-table td {
       font-size: 0.8rem;
-      width: 40px;
-    }
-    .distribution-total-cell {
-      text-align: center;
-      font-weight: bold;
-      background-color: #e9ecef;
-    }
-    .hidden-columns {
-      display: none;
     }
   </style>
 </head>
@@ -573,6 +552,11 @@ foreach ($items as $item) {
             </div>
           </form>
         </div>
+        <div class="col-md-6 text-end">
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#saleModuleModal">
+            <i class="fas fa-table"></i> Sale Module View
+          </button>
+        </div>
       </div>
 
       <!-- Sales Form -->
@@ -583,7 +567,7 @@ foreach ($items as $item) {
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3">
           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" style="display: none;">
-            <i class="fas fa-random"></i> Shuffle Distribution
+            <i class="fas fa-random"></i> Shuffle All
           </button>
           <button type="submit" name="update_sales" class="btn btn-success btn-action" style="display: none;">
             <i class="fas fa-save"></i> Save Distribution
@@ -597,7 +581,7 @@ foreach ($items as $item) {
         <div class="alert alert-info mt-3">
           <i class="fas fa-info-circle"></i> 
           Total sales quantities will be uniformly distributed across the selected date range as whole numbers.
-          <br><strong>Distribution:</strong> Enter quantities to see the distribution across dates. Click "Shuffle Distribution" to regenerate.
+          <br><strong>Distribution:</strong> Enter quantities to see the distribution across dates. Click "Shuffle All" to regenerate all distributions.
         </div>
 
         <!-- Items Table with Integrated Distribution Preview -->
@@ -611,8 +595,11 @@ foreach ($items as $item) {
                 <th>Rate (₹)</th>
                 <th>Current Stock</th>
                 <th>Total Sale Qty</th>
+                <th class="closing-balance-header">Closing Balance</th>
+                <th class="action-column">Action</th>
                 
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
+                
                 <th class="hidden-columns">Amount (₹)</th>
               </tr>
             </thead>
@@ -622,6 +609,13 @@ foreach ($items as $item) {
                 $item_code = $item['CODE'];
                 $item_qty = isset($quantities[$item_code]) ? $quantities[$item_code] : 0;
                 $item_total = $item_qty * $item['RPRICE'];
+                $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+                
+                // Extract size from item details
+                $size = 0;
+                if (preg_match('/(\d+)\s*ML/i', $item['DETAILS'], $matches)) {
+                  $size = $matches[1];
+                }
               ?>
                 <tr>
                   <td><?= htmlspecialchars($item_code); ?></td>
@@ -636,8 +630,22 @@ foreach ($items as $item) {
                            class="form-control qty-input" min="0" max="<?= floor($item['CURRENT_STOCK']); ?>" 
                            step="1" value="<?= $item_qty ?>" 
                            data-rate="<?= $item['RPRICE'] ?>"
-                           data-code="<?= htmlspecialchars($item_code); ?>">
+                           data-code="<?= htmlspecialchars($item_code); ?>"
+                           data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                           data-size="<?= $size ?>">
                   </td>
+                  <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
+                    <?= number_format($closing_balance, 3) ?>
+                  </td>
+                  <td class="action-column">
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
+                            data-code="<?= htmlspecialchars($item_code); ?>" style="display: none;">
+                      <i class="fas fa-random"></i> Shuffle
+                    </button>
+                  </td>
+                  
+                  <!-- Date distribution cells will be inserted here by JavaScript -->
+                  
                   <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
                     <?= number_format($item_qty * $item['RPRICE'], 2) ?>
                   </td>
@@ -645,14 +653,14 @@ foreach ($items as $item) {
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="7" class="text-center text-muted">No items found.</td>
+                <td colspan="9" class="text-center text-muted">No items found.</td>
               </tr>
             <?php endif; ?>
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="5" class="text-end"><strong>Total Amount:</strong></td>
-                <td><strong id="totalAmount">0.00</strong></td>
+                <td colspan="7" class="text-end"><strong>Total Amount:</strong></td>
+                <td class="action-column"><strong id="totalAmount">0.00</strong></td>
                 <td class="hidden-columns"></td>
               </tr>
             </tfoot>
@@ -671,6 +679,54 @@ foreach ($items as $item) {
   </div>
 </div>
 
+<!-- Sale Module View Modal -->
+<div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-bordered sale-module-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <?php foreach ($all_sizes as $size): ?>
+                  <th><?= $size ?> ML</th>
+                <?php endforeach; ?>
+              </tr>
+            </thead>
+            <tbody>
+              <?php 
+              // Define categories with their IDs
+              $categories = [
+                'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL' => 'SPRITS',
+                'WINES' => 'WINE',
+                'FERMENTED BEER' => 'FERMENTED BEER',
+                'MILD BEER' => 'MILD BEER'
+              ];
+              
+              foreach ($categories as $category_id => $category_name): 
+              ?>
+                <tr>
+                  <td><?= $category_name ?></td>
+                  <?php foreach ($all_sizes as $size): ?>
+                    <td id="module_<?= $category_id ?>_<?= $size ?>">0</td>
+                  <?php endforeach; ?>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -680,12 +736,12 @@ const daysCount = <?= $days_count ?>;
 
 // Function to distribute sales uniformly (client-side version)
 function distributeSales(total_qty, days_count) {
-    if (total_qty <= 0 || days_count <= 0) return Array(days_count).fill(0);
+    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
     
     const base_qty = Math.floor(total_qty / days_count);
     const remainder = total_qty % days_count;
     
-    let daily_sales = Array(days_count).fill(base_qty);
+    const daily_sales = new Array(days_count).fill(base_qty);
     
     // Distribute remainder evenly across days
     for (let i = 0; i < remainder; i++) {
@@ -701,169 +757,210 @@ function distributeSales(total_qty, days_count) {
     return daily_sales;
 }
 
-// Create date headers for the distribution columns
-function createDateHeaders() {
-    const table = document.getElementById('itemsTable');
-    const headerRow = table.querySelector('thead tr');
+// Function to update the distribution preview for a specific item
+function updateDistributionPreview(itemCode, totalQty) {
+    const dailySales = distributeSales(totalQty, daysCount);
+    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
+    const itemRow = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
     
-    // Remove existing date headers if any
-    const existingDateHeaders = headerRow.querySelectorAll('.date-distribution-header, .date-total-header');
-    existingDateHeaders.forEach(header => header.remove());
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
     
-    // Add date headers
-    dateArray.forEach(date => {
-        const th = document.createElement('th');
-        th.className = 'date-distribution-header';
-        th.textContent = formatDateShort(date);
-        headerRow.insertBefore(th, headerRow.lastElementChild);
+    // Add date distribution cells after the action column
+    let totalDistributed = 0;
+    dailySales.forEach((qty, index) => {
+        totalDistributed += qty;
+        // Insert distribution cells after the action column
+        $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
     });
     
-    // Add total header
-    const totalTh = document.createElement('th');
-    totalTh.className = 'date-total-header';
-    totalTh.textContent = 'Total';
-    headerRow.insertBefore(totalTh, headerRow.lastElementChild);
-}
-
-// Format date to short format (dd MMM)
-function formatDateShort(dateStr) {
-    const date = new Date(dateStr);
-    return date.getDate() + ' ' + date.toLocaleString('default', { month: 'short' });
-}
-
-// Update distribution for a specific item
-function updateItemDistribution(itemCode, totalQty) {
-    const table = document.getElementById('itemsTable');
-    const rows = table.querySelectorAll('tbody tr');
+    // Update closing balance
+    const currentStock = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('stock'));
+    const closingBalance = currentStock - totalDistributed;
+    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
     
-    for (let row of rows) {
-        const codeInput = row.querySelector('input[data-code]');
-        if (codeInput && codeInput.dataset.code === itemCode) {
-            // Remove existing distribution cells
-            const existingCells = row.querySelectorAll('.date-distribution-cell, .distribution-total-cell');
-            existingCells.forEach(cell => cell.remove());
-            
-            // Add new distribution cells if quantity > 0
-            if (totalQty > 0) {
-                const rate = parseFloat(codeInput.dataset.rate);
-                const dailySales = distributeSales(totalQty, daysCount);
-                
-                // Add daily distribution cells
-                dailySales.forEach(qty => {
-                    const td = document.createElement('td');
-                    td.className = 'date-distribution-cell';
-                    td.textContent = qty > 0 ? qty : '';
-                    row.insertBefore(td, row.lastElementChild);
-                });
-                
-                // Add total cell
-                const totalTd = document.createElement('td');
-                totalTd.className = 'distribution-total-cell';
-                totalTd.textContent = totalQty;
-                row.insertBefore(totalTd, row.lastElementChild);
-                
-                // Highlight the row
-                row.classList.add('distribution-row');
-            } else {
-                // Remove highlight if no quantity
-                row.classList.remove('distribution-row');
-            }
-            
-            break;
-        }
+    // Update amount
+    const amount = totalDistributed * rate;
+    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    
+    // Show date columns if they're hidden
+    $('.date-header, .date-distribution-cell').show();
+    
+    return dailySales;
+}
+
+// Function to categorize item based on its category and size
+function categorizeItem(itemCategory, itemName, itemSize) {
+    const category = (itemCategory || '').toUpperCase();
+    const name = (itemName || '').toUpperCase();
+    
+    // Check for wine first
+    if (category.includes('WINE') || name.includes('WINE')) {
+        return 'WINES';
+    }
+    // Check for mild beer
+    else if ((category.includes('BEER') || name.includes('BEER')) && 
+             (category.includes('MILD') || name.includes('MILD'))) {
+        return 'MILD BEER';
+    }
+    // Check for regular beer
+    else if (category.includes('BEER') || name.includes('BEER')) {
+        return 'FERMENTED BEER';
+    }
+    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
+    else {
+        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
     }
 }
 
-// Check if any items have distribution
-function hasDistribution() {
-    const inputs = document.querySelectorAll('.qty-input');
-    for (let input of inputs) {
-        if (parseInt(input.value) > 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Update the table based on distribution status
-function updateTableUI() {
-    const hasDist = hasDistribution();
+// Function to update sale module view
+function updateSaleModuleView() {
+    // Reset all values to 0
+    $('.sale-module-table td').not(':first-child').text('0');
     
-    // Show/hide action buttons
-    document.getElementById('shuffleBtn').style.display = hasDist ? 'block' : 'none';
-    document.querySelector('button[name="update_sales"]').style.display = hasDist ? 'block' : 'none';
-    
-    // Show/hide date headers if needed
-    if (hasDist) {
-        createDateHeaders();
-    } else {
-        // Remove date headers if no distribution
-        const headerRow = document.querySelector('#itemsTable thead tr');
-        const existingDateHeaders = headerRow.querySelectorAll('.date-distribution-header, .date-total-header');
-        existingDateHeaders.forEach(header => header.remove());
-        
-        // Remove distribution cells from all rows
-        const rows = document.querySelectorAll('#itemsTable tbody tr');
-        rows.forEach(row => {
-            const existingCells = row.querySelectorAll('.date-distribution-cell, .distribution-total-cell');
-            existingCells.forEach(cell => cell.remove());
-            row.classList.remove('distribution-row');
-        });
-    }
-}
-
-// Calculate amount for each item
-function calculateAmount(input) {
-    const qty = parseInt(input.value) || 0;
-    const rate = parseFloat(input.dataset.rate);
-    const amount = qty * rate;
-    const itemCode = input.dataset.code;
-    
-    document.getElementById(`amount_${itemCode}`).textContent = amount.toFixed(2);
-    calculateTotal();
-    
-    // Update distribution for this item
-    updateItemDistribution(itemCode, qty);
-    
-    // Update UI based on distribution status
-    updateTableUI();
-}
-
-// Calculate total amount
-function calculateTotal() {
-    let total = 0;
-    document.querySelectorAll('.amount-cell').forEach(cell => {
-        total += parseFloat(cell.textContent) || 0;
-    });
-    
-    document.getElementById('totalAmount').textContent = total.toFixed(2);
-}
-
-// Shuffle all distributions
-function shuffleAllDistributions() {
-    const inputs = document.querySelectorAll('.qty-input');
-    inputs.forEach(input => {
-        const qty = parseInt(input.value) || 0;
+    // Calculate quantities for each category and size
+    $('input[name^="sale_qty"]').each(function() {
+        const qty = parseInt($(this).val()) || 0;
         if (qty > 0) {
-            updateItemDistribution(input.dataset.code, qty);
+            const itemCode = $(this).data('code');
+            const itemRow = $(this).closest('tr');
+            const itemName = itemRow.find('td:eq(1)').text();
+            const itemCategory = itemRow.find('td:eq(2)').text();
+            const size = $(this).data('size');
+            
+            // Determine the category type
+            const categoryType = categorizeItem(itemCategory, itemName, size);
+            
+            // Update the corresponding cell using the ID pattern
+            if (size > 0) {
+                const cellId = `module_${categoryType}_${size}`;
+                const targetCell = $(`#${cellId}`);
+                if (targetCell.length) {
+                    const currentValue = parseInt(targetCell.text()) || 0;
+                    targetCell.text(currentValue + qty);
+                }
+            }
         }
     });
 }
+// Function to calculate total amount
+function calculateTotalAmount() {
+    let total = 0;
+    $('.amount-cell').each(function() {
+        total += parseFloat($(this).text()) || 0;
+    });
+    $('#totalAmount').text(total.toFixed(2));
+}
 
-// Initialize calculations on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners to all quantity inputs
-    document.querySelectorAll('.qty-input').forEach(input => {
-        input.addEventListener('input', () => {
-            calculateAmount(input);
-        });
+// Function to initialize date headers and closing balance column
+function initializeTableHeaders() {
+    // Remove existing date headers if any
+    $('.date-header').remove();
+    
+    // Add date headers after the action column header
+    dateArray.forEach(date => {
+        const dateObj = new Date(date);
+        const day = dateObj.getDate();
+        const month = dateObj.toLocaleString('default', { month: 'short' });
+        
+        // Insert date headers after the action column header
+        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+    });
+}
+
+// Document ready
+$(document).ready(function() {
+    // Initialize table headers and columns
+    initializeTableHeaders();
+    
+    // Show action buttons
+    $('#shuffleBtn, .btn-shuffle-item, .btn-shuffle').show();
+    $('button[name="update_sales"]').show();
+    
+    // Quantity input change event
+    $(document).on('change', 'input[name^="sale_qty"]', function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+        
+        if (totalQty > 0) {
+            updateDistributionPreview(itemCode, totalQty);
+        } else {
+            // Remove distribution cells if quantity is 0
+            $(`input[name="sale_qty[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
+            
+            // Reset closing balance and amount
+            const currentStock = parseFloat($(this).data('stock'));
+            $(`#closing_${itemCode}`).text(currentStock.toFixed(3));
+            $(`#amount_${itemCode}`).text('0.00');
+            
+            // Hide date columns if no items have quantity
+            if ($('input[name^="sale_qty"]').filter(function() { 
+                return parseInt($(this).val()) > 0; 
+            }).length === 0) {
+                $('.date-header, .date-distribution-cell').hide();
+            }
+        }
+        
+        // Update total amount
+        calculateTotalAmount();
+        
+        // Update sale module view
+        updateSaleModuleView();
     });
     
-    // Calculate initial total
-    calculateTotal();
+    // Shuffle all button click event
+    $('#shuffleBtn').click(function() {
+        $('input[name^="sale_qty"]').each(function() {
+            const itemCode = $(this).data('code');
+            const totalQty = parseInt($(this).val()) || 0;
+            
+            if (totalQty > 0) {
+                updateDistributionPreview(itemCode, totalQty);
+            }
+        });
+        
+        // Update total amount
+        calculateTotalAmount();
+    });
     
-    // Set up shuffle button
-    document.getElementById('shuffleBtn').addEventListener('click', shuffleAllDistributions);
+    // Individual shuffle button click event
+    $(document).on('click', '.btn-shuffle-item', function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0;
+        
+        if (totalQty > 0) {
+            updateDistributionPreview(itemCode, totalQty);
+            
+            // Update total amount
+            calculateTotalAmount();
+        }
+    });
+    
+    // Sale module modal show event
+    $('#saleModuleModal').on('show.bs.modal', function() {
+        updateSaleModuleView();
+    });
+    
+    // Form submit event
+    $('#salesForm').on('submit', function() {
+        // Show loader
+        $('#ajaxLoader').show();
+        
+        // Validate that at least one item has quantity
+        let hasQuantity = false;
+        $('input[name^="sale_qty"]').each(function() {
+            if (parseInt($(this).val()) > 0) {
+                hasQuantity = true;
+                return false; // Break the loop
+            }
+        });
+        
+        if (!hasQuantity) {
+            alert('Please enter quantities for at least one item.');
+            $('#ajaxLoader').hide();
+            return false;
+        }
+    });
 });
 </script>
 </body>

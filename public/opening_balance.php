@@ -39,9 +39,9 @@ $check_result = $conn->query($check_columns_query);
 $columns_exist = $check_result->fetch_assoc()['count'] == 2;
 
 if (!$columns_exist) {
-    // Add company-specific columns
-    $add_col1_query = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK$comp_id DECIMAL(10,3) DEFAULT 0.000";
-    $add_col2_query = "ALTER TABLE tblitem_stock ADD COLUMN CURRENT_STOCK$comp_id DECIMAL(10,3) DEFAULT 0.000";
+    // Add company-specific columns as INT instead of DECIMAL
+    $add_col1_query = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK$comp_id INT DEFAULT 0";
+    $add_col2_query = "ALTER TABLE tblitem_stock ADD COLUMN CURRENT_STOCK$comp_id INT DEFAULT 0";
     
     $conn->query($add_col1_query);
     $conn->query($add_col2_query);
@@ -92,11 +92,11 @@ function addDayColumnsForMonth($conn, $comp_id, $month) {
         $col_exists = $check_result->fetch_assoc()['count'] > 0;
         
         if (!$col_exists) {
-            // Add opening, purchase, sales, and closing columns for this day
-            $add_open_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_OPEN DECIMAL(10,3) DEFAULT 0.000";
-            $add_purchase_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_PURCHASE DECIMAL(10,3) DEFAULT 0.000";
-            $add_sales_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_SALES DECIMAL(10,3) DEFAULT 0.000";
-            $add_closing_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_CLOSING DECIMAL(10,3) DEFAULT 0.000";
+            // Add opening, purchase, sales, and closing columns for this day as INT
+            $add_open_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_OPEN INT DEFAULT 0";
+            $add_purchase_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_PURCHASE INT DEFAULT 0";
+            $add_sales_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_SALES INT DEFAULT 0";
+            $add_closing_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_CLOSING INT DEFAULT 0";
             
             $conn->query($add_open_col);
             $conn->query($add_purchase_col);
@@ -184,7 +184,7 @@ function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
     
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
-        return $row['closing_qty'];
+        return (int)$row['closing_qty'];
     }
     
     return 0; // Return 0 if no record found for yesterday
@@ -195,6 +195,12 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
     $today = date('d');
     $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     $current_month = date('Y-m');
+    
+    // Convert to integers
+    $opening_stock = (int)$opening_stock;
+    $closing_stock = (int)$closing_stock;
+    $purchase_qty = (int)$purchase_qty;
+    $sales_qty = (int)$sales_qty;
     
     // Check if record exists for this month
     $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
@@ -216,7 +222,7 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
                             LAST_UPDATED = CURRENT_TIMESTAMP 
                         WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("ddddsss", $opening_stock, $purchase_qty, $sales_qty, $closing_stock, $current_month, $item_code, $mode);
+        $update_stmt->bind_param("iiiiiss", $opening_stock, $purchase_qty, $sales_qty, $closing_stock, $current_month, $item_code, $mode);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
@@ -225,7 +231,7 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_PURCHASE, DAY_{$today_padded}_SALES, DAY_{$today_padded}_CLOSING) 
                         VALUES (?, ?, ?, ?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sssdddd", $current_month, $item_code, $mode, $opening_stock, $purchase_qty, $sales_qty, $closing_stock);
+        $insert_stmt->bind_param("sssiiii", $current_month, $item_code, $mode, $opening_stock, $purchase_qty, $sales_qty, $closing_stock);
         $insert_stmt->execute();
         $insert_stmt->close();
     }
@@ -247,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             $code = trim($data[0]);
             $details = trim($data[1]);
             $details2 = trim($data[2]);
-            $balance = floatval(trim($data[3]));
+            $balance = intval(trim($data[3])); // Convert to integer
             
             // Validate item code exists and matches details
             $check_item_stmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitemmaster WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ?");
@@ -269,13 +275,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 if ($exists) {
                     // Update existing record - only the columns for this company
                     $updateStmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = ?");
-                    $updateStmt->bind_param("dds", $balance, $balance, $code);
+                    $updateStmt->bind_param("iis", $balance, $balance, $code);
                     $updateStmt->execute();
                     $updateStmt->close();
                 } else {
                     // Insert new record - only set columns for this company
                     $insertStmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
-                    $insertStmt->bind_param("sidd", $code, $fin_year, $balance, $balance);
+                    $insertStmt->bind_param("siii", $code, $fin_year, $balance, $balance);
                     $insertStmt->execute();
                     $insertStmt->close();
                 }
@@ -383,7 +389,7 @@ $stmt->close();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
     if (isset($_POST['opening_stock'])) {
         foreach ($_POST['opening_stock'] as $code => $balance) {
-            $balance = floatval($balance);
+            $balance = intval($balance); // Convert to integer
             
             // Check if record exists
             $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?");
@@ -396,13 +402,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             if ($exists) {
                 // Update existing record - only the columns for this company
                 $updateStmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = ?");
-                $updateStmt->bind_param("dds", $balance, $balance, $code);
+                $updateStmt->bind_param("iis", $balance, $balance, $code);
                 $updateStmt->execute();
                 $updateStmt->close();
             } else {
                 // Insert new record - only set columns for this company
                 $insertStmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
-                $insertStmt->bind_param("sidd", $code, $fin_year, $balance, $balance);
+                $insertStmt->bind_param("siii", $code, $fin_year, $balance, $balance);
                 $insertStmt->execute();
                 $insertStmt->close();
             }

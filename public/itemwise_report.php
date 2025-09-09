@@ -16,9 +16,8 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Default values
-$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d');
-$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
+// Default values - changed to single date
+$date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 $liquor_mode = isset($_GET['liquor_mode']) ? $_GET['liquor_mode'] : 'all';
 $brand = isset($_GET['brand']) ? $_GET['brand'] : 'all';
 
@@ -58,11 +57,10 @@ if (isset($_GET['generate'])) {
     if ($tableCheckResult->num_rows === 0) {
         $error = "Daily stock table for this company does not exist.";
     } else {
-        // Get the day numbers for the date range
-        $startDate = new DateTime($date_from);
-        $endDate = new DateTime($date_to);
-        $dateInterval = $startDate->diff($endDate);
-        $daysDifference = $dateInterval->days + 1; // Inclusive of both dates
+        // Get the day number for the selected date
+        $selectedDate = new DateTime($date);
+        $day = $selectedDate->format('d');
+        $dayField = 'DAY_' . str_pad($day, 2, '0', STR_PAD_LEFT);
         
         // Build query to get item details
         $itemQuery = "SELECT 
@@ -101,7 +99,7 @@ if (isset($_GET['generate'])) {
         $itemResult = $itemStmt->get_result();
         
         // Get the month for the daily stock table (format: YYYY-MM)
-        $month = $startDate->format('Y-m');
+        $month = $selectedDate->format('Y-m');
         
         while ($item = $itemResult->fetch_assoc()) {
             $itemCode = $item['ITEM_CODE'];
@@ -115,37 +113,11 @@ if (isset($_GET['generate'])) {
             $stockResult = $stockStmt->get_result();
             
             if ($stockRow = $stockResult->fetch_assoc()) {
-                // Calculate opening, receipts, issues, and closing stock for the date range
-                $openingStock = 0;
-                $receipts = 0;
-                $issues = 0;
-                $closingStock = 0;
-                
-                // Reset start date for each item
-                $currentDate = new DateTime($date_from);
-                
-                // For each day in the range, accumulate the values
-                for ($i = 1; $i <= $daysDifference; $i++) {
-                    $day = $currentDate->format('d');
-                    $dayField = 'DAY_' . str_pad($day, 2, '0', STR_PAD_LEFT);
-                    
-                    if ($i === 1) {
-                        // First day - get opening stock
-                        $openingStock = (float)$stockRow[$dayField . '_OPEN'];
-                    }
-                    
-                    // Add purchases (receipts) and sales (issues)
-                    $receipts += (float)$stockRow[$dayField . '_PURCHASE'];
-                    $issues += (float)$stockRow[$dayField . '_SALES'];
-                    
-                    // Last day - get closing stock
-                    if ($i === $daysDifference) {
-                        $closingStock = (float)$stockRow[$dayField . '_CLOSING'];
-                    }
-                    
-                    // Move to next day
-                    $currentDate->modify('+1 day');
-                }
+                // Get opening, receipts, issues, and closing stock for the selected date
+                $openingStock = (float)$stockRow[$dayField . '_OPEN'];
+                $receipts = (float)$stockRow[$dayField . '_PURCHASE'];
+                $issues = (float)$stockRow[$dayField . '_SALES'];
+                $closingStock = (float)$stockRow[$dayField . '_CLOSING'];
                 
                 // Add to report data
                 $report_data[] = [
@@ -199,12 +171,8 @@ if (isset($_GET['generate'])) {
           <form method="GET" class="report-filters">
             <div class="row mb-3">
               <div class="col-md-3">
-                <label class="form-label">Date From:</label>
-                <input type="date" name="date_from" class="form-control" value="<?= htmlspecialchars($date_from) ?>">
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Date To:</label>
-                <input type="date" name="date_to" class="form-control" value="<?= htmlspecialchars($date_to) ?>">
+                <label class="form-label">Date:</label>
+                <input type="date" name="date" class="form-control" value="<?= htmlspecialchars($date) ?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Liquor Mode:</label>
@@ -247,7 +215,7 @@ if (isset($_GET['generate'])) {
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-            <h5>Item Wise Stock Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
+            <h5>Item Wise Stock Report For <?= date('d-M-Y', strtotime($date)) ?></h5>
             <?php if ($liquor_mode !== 'all'): ?>
               <h6>Mode: <?= $liquor_mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h6>
             <?php endif; ?>

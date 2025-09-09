@@ -230,40 +230,13 @@ foreach ($dates as $date) {
     $daily_data[$date] = $daily_totals;
 }
 
-// Calculate grand totals for the entire period
-$grand_totals = [
-    'Fermented Beer' => [
-        'purchase' => array_fill_keys($size_columns_fb, 0),
-        'sales' => array_fill_keys($size_columns_fb, 0),
-        'closing' => array_fill_keys($size_columns_fb, 0)
-    ],
-    'Mild Beer' => [
-        'purchase' => array_fill_keys($size_columns_mb, 0),
-        'sales' => array_fill_keys($size_columns_mb, 0),
-        'closing' => array_fill_keys($size_columns_mb, 0)
-    ],
-    'Spirits' => [
-        'purchase' => array_fill_keys($size_columns_s, 0),
-        'sales' => array_fill_keys($size_columns_s, 0),
-        'closing' => array_fill_keys($size_columns_s, 0)
-    ],
-    'Wines' => [
-        'purchase' => array_fill_keys($size_columns_w, 0),
-        'sales' => array_fill_keys($size_columns_w, 0),
-        'closing' => array_fill_keys($size_columns_w, 0)
-    ]
+// Get the closing balance for the "to date" (last date in the range)
+$to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
+    'Fermented Beer' => ['closing' => array_fill_keys($size_columns_fb, 0)],
+    'Mild Beer' => ['closing' => array_fill_keys($size_columns_mb, 0)],
+    'Spirits' => ['closing' => array_fill_keys($size_columns_s, 0)],
+    'Wines' => ['closing' => array_fill_keys($size_columns_w, 0)]
 ];
-
-// Calculate grand totals by summing all daily data
-foreach ($daily_data as $date => $daily_totals) {
-    foreach ($daily_totals as $liquor_type => $data) {
-        foreach ($data as $field => $sizes) {
-            foreach ($sizes as $size => $value) {
-                $grand_totals[$liquor_type][$field][$size] += $value;
-            }
-        }
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -397,18 +370,6 @@ foreach ($daily_data as $date => $daily_totals) {
         </div>
       </div>
 
-      <!-- Debug Info -->
-      <div class="card mb-4 no-print">
-        <div class="card-header">Debug Information</div>
-        <div class="card-body">
-          <pre><?php 
-          echo "From: $from_date To: $to_date\n";
-          echo "Table: $dailyStockTable\n";
-          echo "Total items in master: " . count($items) . "\n";
-          echo "Dates to process: " . count($dates) . "\n";
-          ?></pre>
-        </div>
-      </div>
 
       <!-- Report Results -->
       <div class="print-section">
@@ -507,7 +468,7 @@ foreach ($daily_data as $date => $daily_totals) {
               </tr>
             </thead>
             <tbody>
-              <!-- Balance of the Month row -->
+              <!-- Balance of the Month row - Show only the closing balance for the "to date" -->
               <tr>
                 <td>Balance of the Month</td>
                 <td></td>
@@ -522,25 +483,25 @@ foreach ($daily_data as $date => $daily_totals) {
                   <td>0</td>
                 <?php endfor; ?>
                 
-                <!-- Closing Balance Section -->
+                <!-- Closing Balance Section - Show only the closing balance for the "to date" -->
                 <!-- Fermented Beer Closing -->
                 <?php foreach ($size_columns_fb as $size): ?>
-                  <td><?= $grand_totals['Fermented Beer']['closing'][$size] ?></td>
+                  <td><?= $to_date_closing['Fermented Beer']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Mild Beer Closing -->
                 <?php foreach ($size_columns_mb as $size): ?>
-                  <td><?= $grand_totals['Mild Beer']['closing'][$size] ?></td>
+                  <td><?= $to_date_closing['Mild Beer']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Spirits Closing -->
                 <?php foreach ($size_columns_s as $size): ?>
-                  <td><?= $grand_totals['Spirits']['closing'][$size] ?></td>
+                  <td><?= $to_date_closing['Spirits']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Wines Closing -->
                 <?php foreach ($size_columns_w as $size): ?>
-                  <td><?= $grand_totals['Wines']['closing'][$size] ?></td>
+                  <td><?= $to_date_closing['Wines']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <td></td>

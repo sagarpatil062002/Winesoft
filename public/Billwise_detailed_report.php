@@ -148,79 +148,7 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-  <style>
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      .print-section, .print-section * {
-        visibility: visible;
-      }
-      .print-section {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-    .company-header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .company-header h1 {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .company-header h5 {
-      font-size: 16px;
-      margin-bottom: 5px;
-    }
-    .company-header h6 {
-      font-size: 14px;
-      margin-bottom: 10px;
-    }
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .report-table th, .report-table td {
-      border: 1px solid #000;
-      padding: 5px;
-      text-align: left;
-    }
-    .report-table th {
-      background-color: #f0f0f0;
-      font-weight: bold;
-    }
-    .report-table .text-right {
-      text-align: right;
-    }
-    .report-table .text-center {
-      text-align: center;
-    }
-    .bill-header {
-      background-color: #e0e0e0;
-      font-weight: bold;
-    }
-    .total-row {
-      font-weight: bold;
-      background-color: #f0f0f0;
-    }
-    .footer-info {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 12px;
-    }
-    .filter-card {
-      background-color: #f8f9fa;
-    }
-  </style>
+ 
 </head>
 <body>
 <div class="dashboard-container">
@@ -339,10 +267,6 @@ if (isset($_GET['generate'])) {
             </table>
           </div>
           
-          <div class="footer-info">
-            <p>S. S. SoftTech, Pune. (020-30224741, 9371251623, 9657860662)</p>
-            <p>Printed on: <?= date('d-M-Y h:i A') ?></p>
-          </div>
         </div>
       <?php elseif (isset($_GET['generate'])): ?>
         <div class="alert alert-info">

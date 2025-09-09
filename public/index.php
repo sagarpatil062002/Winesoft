@@ -95,7 +95,33 @@ if(isset($_POST['login'])){
                 $_SESSION['COMP_NAME'] = $company_data['COMP_NAME'];
                 
                 // Initialize financial year module in session
-                $finYearModule = FinancialYearModule::getInstance();                
+                $finYearModule = FinancialYearModule::getInstance();
+                
+                // ✅ AUTO STOCK UPDATE LOGIC - CALLED AFTER SUCCESSFUL LOGIN
+                try {
+                    // First, ensure the stored procedure exists
+                    $check_procedure = "SHOW PROCEDURE STATUS WHERE Db = DATABASE() AND Name = 'AutoUpdateDailyStock'";
+                    $procedure_result = mysqli_query($conn, $check_procedure);
+                    
+                    if(mysqli_num_rows($procedure_result) > 0) {
+                        // Call the stored procedure to update stock for this company
+                        $update_query = "CALL AutoUpdateDailyStock($company_id)";
+                        mysqli_query($conn, $update_query);
+                        
+                        // Log the update
+                        $log_message = "Daily stock updated automatically for company ID: $company_id";
+                        $log_query = "INSERT INTO system_logs (log_message, log_type, created_at, company_id) 
+                                     VALUES ('$log_message', 'STOCK_UPDATE', NOW(), $company_id)";
+                        mysqli_query($conn, $log_query);
+                    } else {
+                        // Fallback: Manual update if procedure doesn't exist
+                        manualStockUpdate($conn, $company_id);
+                    }
+                } catch (Exception $e) {
+                    // Log error but don't prevent login
+                    error_log("Stock update error: " . $e->getMessage());
+                }
+                
                 // Redirect to dashboard
                 header("Location: dashboard.php");
                 exit;
@@ -106,6 +132,67 @@ if(isset($_POST['login'])){
             $error = "Username not found or user doesn't have access to the selected company";
         }
     }
+}
+// Manual stock update function (fallback if stored procedure doesn't exist)
+function manualStockUpdate($conn, $company_id) {
+    $current_date = date('Y-m-d');
+    $today_day = str_pad(date('d'), 2, '0', STR_PAD_LEFT);
+    $current_month = date('Y-m');
+    
+    // Check if today is the first day of the month
+    if (date('d') == 1) {
+        $prev_month = date('Y-m', strtotime('-1 day'));
+        $last_day_prev_month = date('t', strtotime($prev_month));
+        $yesterday_day = str_pad($last_day_prev_month, 2, '0', STR_PAD_LEFT);
+        
+        // Update opening stock
+        $update_open_query = "
+            UPDATE tbldailystock_$company_id AS today 
+            INNER JOIN tbldailystock_$company_id AS yesterday 
+            ON today.ITEM_CODE = yesterday.ITEM_CODE 
+            SET today.DAY_{$today_day}_OPEN = yesterday.DAY_{$yesterday_day}_CLOSING 
+            WHERE today.STK_MONTH = '$current_month' 
+            AND yesterday.STK_MONTH = '$prev_month'
+        ";
+        
+        // Update closing stock
+        $update_closing_query = "
+            UPDATE tbldailystock_$company_id AS today 
+            INNER JOIN tbldailystock_$company_id AS yesterday 
+            ON today.ITEM_CODE = yesterday.ITEM_CODE 
+            SET today.DAY_{$today_day}_CLOSING = yesterday.DAY_{$yesterday_day}_CLOSING 
+            WHERE today.STK_MONTH = '$current_month' 
+            AND yesterday.STK_MONTH = '$prev_month'
+        ";
+    } else {
+        $yesterday_day = str_pad(date('d') - 1, 2, '0', STR_PAD_LEFT);
+        
+        // Update opening stock
+        $update_open_query = "
+            UPDATE tbldailystock_$company_id 
+            SET DAY_{$today_day}_OPEN = DAY_{$yesterday_day}_CLOSING 
+            WHERE STK_MONTH = '$current_month'
+        ";
+        
+        // Update closing stock
+        $update_closing_query = "
+            UPDATE tbldailystock_$company_id 
+            SET DAY_{$today_day}_CLOSING = DAY_{$yesterday_day}_CLOSING 
+            WHERE STK_MONTH = '$current_month'
+        ";
+    }
+    
+    // Execute both queries
+    mysqli_query($conn, $update_open_query);
+    mysqli_query($conn, $update_closing_query);
+    
+    // Update timestamp
+    $timestamp_query = "
+        UPDATE tbldailystock_$company_id 
+        SET LAST_UPDATED = NOW() 
+        WHERE STK_MONTH = '$current_month'
+    ";
+    mysqli_query($conn, $timestamp_query);
 }
 ?>
 <!DOCTYPE html>

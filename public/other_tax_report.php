@@ -28,15 +28,14 @@ $to_date_display = date('d-M-Y', strtotime($to_date));
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Fetch suppliers from tbllheads for dropdown (only for current company)
-$suppliers_query = "SELECT LCODE, LHEAD, REF_CODE FROM tbllheads WHERE GCODE = 33 AND CompID = ? ORDER BY LHEAD";
+// Fetch suppliers from tblsupplier for dropdown
+$suppliers_query = "SELECT CODE, DETAILS FROM tblsupplier ORDER BY DETAILS";
 $suppliers_stmt = $conn->prepare($suppliers_query);
-$suppliers_stmt->bind_param("i", $compID);
 $suppliers_stmt->execute();
 $suppliers_result = $suppliers_stmt->get_result();
 $suppliers = [];
 while ($row = $suppliers_result->fetch_assoc()) {
-    $suppliers[$row['REF_CODE']] = $row['LHEAD'];
+    $suppliers[$row['CODE']] = $row['DETAILS'];
 }
 $suppliers_stmt->close();
 
@@ -192,9 +191,9 @@ $company_stmt->close();
             <label class="form-label">Supplier</label>
             <select class="form-select" name="supplier">
               <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
-              <?php foreach ($suppliers as $ref_code => $lhead): ?>
-                <option value="<?= htmlspecialchars($ref_code) ?>" <?= $supplier === $ref_code ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($lhead) ?>
+              <?php foreach ($suppliers as $code => $details): ?>
+                <option value="<?= htmlspecialchars($code) ?>" <?= $supplier === $code ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($details) ?>
                 </option>
               <?php endforeach; ?>
             </select>

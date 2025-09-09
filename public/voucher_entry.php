@@ -13,95 +13,103 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php";
 
-// Initialize variables
-$voucher_no = "";
-$voucher_date = date('Y-m-d');
-$mode = "C";
-$amount = 0.00;
-$parti = "";
-$narr = "";
-$cheq_no = "";
-$cheq_dt = "";
-$edit_mode = false;
-$voucher_id = null;
+// Handle edit/view actions
+$action = isset($_GET['action']) ? $_GET['action'] : 'new';
+$voucher_id = isset($_GET['id']) ? $_GET['id'] : 0;
 
-// Check if we're editing an existing voucher
-if (isset($_GET['action']) && ($_GET['action'] === 'edit' || $_GET['action'] === 'view') && isset($_GET['id'])) {
-    $voucher_id = intval($_GET['id']);
-    $query = "SELECT VNO, VDATE, PARTI, AMOUNT, DRCR, MODE, NARR, CHEQ_NO, CHEQ_DT 
-              FROM tblExpenses 
-              WHERE VNO = ? AND COMP_ID = ?";
+// If editing/viewing, fetch voucher data
+$voucher_data = null;
+if (($action === 'edit' || $action === 'view') && $voucher_id > 0) {
+    $query = "SELECT * FROM tblExpenses WHERE VNO = ? AND COMP_ID = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ii", $voucher_id, $_SESSION['CompID']);
     $stmt->execute();
     $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $voucher = $result->fetch_assoc();
-        $voucher_no = $voucher['VNO'];
-        $voucher_date = $voucher['VDATE'];
-        $mode = $voucher['MODE'];
-        $amount = $voucher['AMOUNT'];
-        $parti = $voucher['PARTI'];
-        $narr = $voucher['NARR'];
-        $cheq_no = $voucher['CHEQ_NO'];
-        $cheq_dt = $voucher['CHEQ_DT'];
-        $edit_mode = ($_GET['action'] === 'edit');
-    } else {
-        header("Location: voucher_view.php");
-        exit;
-    }
+    $voucher_data = $result->fetch_assoc();
     $stmt->close();
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $voucher_no = $_POST['voucher_no'] ?? '';
-    $voucher_date = $_POST['voucher_date'] ?? date('Y-m-d');
-    $mode = $_POST['mode'] ?? 'C';
-    $amount = $_POST['amount'] ?? 0.00;
-    $parti = $_POST['parti'] ?? '';
-    $narr = $_POST['narr'] ?? '';
-    $cheq_no = $_POST['cheq_no'] ?? '';
-    $cheq_dt = $_POST['cheq_dt'] ?? '';
-    
-    if ($edit_mode && $voucher_id) {
-        // Update existing voucher
-        $query = "UPDATE tblExpenses 
-                  SET VDATE = ?, PARTI = ?, AMOUNT = ?, MODE = ?, NARR = ?, CHEQ_NO = ?, CHEQ_DT = ?
-                  WHERE VNO = ? AND COMP_ID = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssdssssii", $voucher_date, $parti, $amount, $mode, $narr, $cheq_no, $cheq_dt, $voucher_id, $_SESSION['CompID']);
-    } else {
-        // Insert new voucher
-        $query = "INSERT INTO tblExpenses (VDATE, PARTI, AMOUNT, DRCR, MODE, NARR, CHEQ_NO, CHEQ_DT, COMP_ID) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        $drcr = 'D';
-        $stmt->bind_param("ssdsssssi", $voucher_date, $parti, $amount, $drcr, $mode, $narr, $cheq_no, $cheq_dt, $_SESSION['CompID']);
-    }
-    
-    if ($stmt->execute()) {
-        if (!$edit_mode) {
-            $voucher_id = $conn->insert_id;
-        }
-        $success_message = "Voucher " . ($edit_mode ? "updated" : "saved") . " successfully!";
-    } else {
-        $error_message = "Error saving voucher: " . $conn->error;
-    }
-    $stmt->close();
+// Fetch ledger data from database using tbllheads table
+$ledgerData = [];
+$query = "SELECT DISTINCT p.SUBCODE, l.LHEAD as LEDGER_NAME 
+          FROM tblpurchases p 
+          JOIN tbllheads l ON p.SUBCODE = l.REF_CODE 
+          WHERE p.CompID = ?
+          UNION 
+          SELECT DISTINCT s.CUST_CODE, l.LHEAD as LEDGER_NAME 
+          FROM tblsaleheader s 
+          JOIN tbllheads l ON s.CUST_CODE = l.REF_CODE 
+          WHERE s.COMP_ID = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("ii", $_SESSION['CompID'], $_SESSION['CompID']);
+$stmt->execute();
+$result = $stmt->get_result();
+while ($row = $result->fetch_assoc()) {
+    $ledgerData[] = $row;
 }
+$stmt->close();
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?= $edit_mode ? 'Edit' : 'Create' ?> Voucher Entry - WineSoft</title>
+  <title><?= ucfirst($action) ?> Voucher Entry - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <style>
+    .particulars-input {
+        position: relative;
+    }
+    .suggestions-box {
+        position: absolute;
+        background: white;
+        border: 1px solid #ccc;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    .suggestion-item {
+        padding: 8px;
+        cursor: pointer;
+    }
+    .suggestion-item:hover, .suggestion-item.selected {
+        background-color: #f0f0f0;
+    }
+    .purchase-details {
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .purchase-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    .purchase-table th, .purchase-table td {
+        border: 1px solid #ddd;
+        padding: 5px;
+        text-align: center;
+    }
+    .purchase-table th {
+        background-color: #f2f2f2;
+    }
+    .status-bar {
+        background-color: #333;
+        color: white;
+        padding: 5px 10px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+    }
+    .bank-fields {
+        display: none;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -111,100 +119,187 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4"><?= $edit_mode ? 'Edit' : 'Create' ?> Voucher Entry</h3>
+      <h3 class="mb-4"><?= ucfirst($action) ?> Voucher Entry</h3>
 
-      <!-- Success/Error Messages -->
-      <?php if (isset($success_message)): ?>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?= $success_message ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      <div class="status-bar mb-3">
+        <div>ADMIN</div>
+        <div>CAPS</div>
+        <div>NUM</div>
+        <div id="current-time"><?= date('h:i A') ?></div>
+        <div id="current-date"><?= date('d-M-Y') ?></div>
       </div>
-      <?php endif; ?>
-      
-      <?php if (isset($error_message)): ?>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <?= $error_message ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      <?php endif; ?>
 
-      <!-- Voucher Entry Form -->
-      <form method="POST" class="voucher-form">
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0">Voucher Details</h5>
-          </div>
-          <div class="card-body">
-            <div class="row mb-3">
-              <div class="col-md-3">
-                <label class="form-label">Voucher No</label>
-                <input type="text" class="form-control" name="voucher_no" value="<?= $voucher_no ?>" <?= $edit_mode ? 'readonly' : '' ?> required>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Voucher Date</label>
-                <input type="date" class="form-control" name="voucher_date" value="<?= $voucher_date ?>" required>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Mode</label>
-                <select class="form-select" name="mode" id="voucher-mode" required>
-                  <option value="C" <?= $mode === 'C' ? 'selected' : '' ?>>Cash</option>
-                  <option value="B" <?= $mode === 'B' ? 'selected' : '' ?>>Bank</option>
-                </select>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Amount (₹)</label>
-                <input type="number" class="form-control" name="amount" value="<?= $amount ?>" step="0.01" required>
+      <!-- Voucher Type Selection -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-3">
+              <label class="form-label">Voucher Type:</label>
+              <div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="type-cash" name="voucher_type" value="C" <?= (!$voucher_data || $voucher_data['MODE'] == 'C') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="type-cash">Cash</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="type-bank" name="voucher_type" value="B" <?= ($voucher_data && $voucher_data['MODE'] == 'B') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="type-bank">Bank</label>
+                </div>
               </div>
             </div>
-
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Particulars</label>
-                <input type="text" class="form-control" name="parti" value="<?= $parti ?>" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Narration</label>
-                <textarea class="form-control" name="narr" rows="1"><?= $narr ?></textarea>
-              </div>
+            <div class="col-md-3">
+              <label class="form-label">Voucher Date:</label>
+              <input type="date" class="form-control form-control-sm" id="voucher-date" value="<?= $voucher_data ? $voucher_data['VDATE'] : date('Y-m-d') ?>">
             </div>
-
-            <!-- Bank-related fields -->
-            <div class="row mb-3 bank-fields" style="display: <?= $mode === 'B' ? 'flex' : 'none' ?>;">
-              <div class="col-md-6">
-                <label class="form-label">Cheque No</label>
-                <input type="text" class="form-control" name="cheq_no" value="<?= $cheq_no ?>">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Cheque Date</label>
-                <input type="date" class="form-control" name="cheq_dt" value="<?= $cheq_dt ?>">
+            <div class="col-md-3">
+              <label class="form-label">Voucher No:</label>
+              <input type="text" class="form-control form-control-sm" value="<?= $voucher_data ? $voucher_data['VNO'] : 'Auto Generated' ?>" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Mode:</label>
+              <div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="mode-payment" name="mode" value="Payment" <?= (!$voucher_data || $voucher_data['DRCR'] == 'D') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="mode-payment">Payment</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="mode-receipts" name="mode" value="Receipts" <?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? 'checked' : '' ?>>
+                  <label class="form-check-label" for="mode-receipts">Receipts</label>
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Action Buttons -->
-        <div class="action-btn mb-3 d-flex gap-2">
-          <?php if (!$edit_mode || (isset($_GET['action']) && $_GET['action'] === 'edit')): ?>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save"></i> <?= $edit_mode ? 'Update' : 'Save' ?>
-          </button>
-          <?php endif; ?>
-          
-          <a href="voucher_view.php" class="btn btn-info">
-            <i class="fas fa-list"></i> View All
-          </a>
-          
-          <?php if (isset($_GET['action']) && $_GET['action'] === 'view'): ?>
-          <a href="voucher_entry.php?action=edit&id=<?= $voucher_id ?>" class="btn btn-warning">
-            <i class="fas fa-edit"></i> Edit
-          </a>
-          <?php endif; ?>
-          
-          <a href="dashboard.php" class="btn btn-secondary ms-auto">
-            <i class="fas fa-sign-out-alt"></i> Exit
-          </a>
+      <!-- Bank Details (Only shown for Bank vouchers) -->
+      <div class="card mb-3 bank-fields" id="bank-details">
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Bank Name:</label>
+              <select class="form-control form-control-sm" id="bank-name">
+                <option value="">-- Select Bank --</option>
+                <option value="1" <?= ($voucher_data && $voucher_data['BANK_ID'] == 1) ? 'selected' : '' ?>>STATE BANK OF INDIA</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Doc. No.:</label>
+              <input type="text" class="form-control form-control-sm" id="doc-no" value="<?= $voucher_data ? $voucher_data['DOC_NO'] : '' ?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Cheq. No.:</label>
+              <input type="text" class="form-control form-control-sm" id="cheq-no" value="<?= $voucher_data ? $voucher_data['CHEQ_NO'] : '' ?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Doc. Date:</label>
+              <input type="date" class="form-control form-control-sm" id="doc-date" value="<?= $voucher_data ? $voucher_data['DOC_DATE'] : date('Y-m-d') ?>">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-3">
+              <label class="form-label">Cheq. Date:</label>
+              <input type="date" class="form-control form-control-sm" id="cheq-date" value="<?= $voucher_data ? $voucher_data['CHEQ_DT'] : date('Y-m-d') ?>">
+            </div>
+          </div>
         </div>
-      </form>
+      </div>
+
+      <!-- Voucher Table -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th width="5%">#</th>
+                <th width="55%">Particulars</th>
+                <th width="20%">Debit</th>
+                <th width="20%">Credit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td class="particulars-input">
+                  <input type="text" class="form-control form-control-sm" id="particulars-input" placeholder="Enter particulars" value="<?= $voucher_data ? $voucher_data['PARTI'] : '' ?>">
+                  <div class="suggestions-box" id="suggestions"></div>
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>">
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Purchase Details (Initially Hidden) -->
+          <div class="purchase-details" id="purchase-details" style="display: none;">
+            <h6>Pending Invoices</h6>
+            <table class="purchase-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Voc. No.</th>
+                  <th>Doc. No.</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Select</th>
+                </tr>
+              </thead>
+              <tbody id="purchase-details-body">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amount Section -->
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <label class="form-label">Pending Amt:</label>
+              <input type="text" class="form-control form-control-sm" id="pending-amt" value="0.00" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Total Amount:</label>
+              <input type="text" class="form-control form-control-sm" id="total-amount" value="<?= $voucher_data ? $voucher_data['AMOUNT'] : '0.00' ?>" readonly>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Narration:</label>
+              <input type="text" class="form-control form-control-sm" id="narr" value="<?= $voucher_data ? $voucher_data['NARR'] : '' ?>">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-btn mb-3 d-flex gap-2">
+        <button class="btn btn-primary" id="save-btn">
+          <i class="fas fa-save"></i> Save
+        </button>
+        <button class="btn btn-secondary" id="new-btn">
+          <i class="fas fa-file"></i> New
+        </button>
+        <button class="btn btn-info" id="print-btn">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <?php if ($action === 'edit'): ?>
+        <button class="btn btn-warning" id="modify-btn">
+          <i class="fas fa-edit"></i> Modify
+        </button>
+        <button class="btn btn-danger" id="delete-btn">
+          <i class="fas fa-trash"></i> Delete
+        </button>
+        <?php endif; ?>
+        <a href="voucher_view.php" class="btn btn-secondary ms-auto">
+          <i class="fas fa-sign-out-alt"></i> Exit
+        </a>
+      </div>
     </div>
 
     <?php include 'components/footer.php'; ?>
@@ -214,31 +309,343 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Show/hide bank-related fields based on mode selection
-$(document).ready(function() {
-    $('#voucher-mode').change(function() {
-        if ($(this).val() === 'B') {
-            $('.bank-fields').show();
-        } else {
-            $('.bank-fields').hide();
-        }
-    });
+  $(document).ready(function() {
+    // Convert PHP ledger data to JavaScript
+    const ledgerData = <?= json_encode($ledgerData) ?>;
     
-    // Auto-generate voucher number if creating new voucher
-    <?php if (!$edit_mode && empty($voucher_no)): ?>
-    function generateVoucherNumber() {
-        const date = new Date();
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        
-        return `VCH-${year}${month}${day}-${random}`;
+    // Variables for keyboard navigation
+    let currentSuggestionIndex = -1;
+    let filteredSuggestions = [];
+
+    // Toggle bank fields based on voucher type
+    function toggleBankFields() {
+      if ($('#type-bank').is(':checked')) {
+        $('#bank-details').show();
+      } else {
+        $('#bank-details').hide();
+      }
     }
     
-    $('input[name="voucher_no"]').val(generateVoucherNumber());
-    <?php endif; ?>
-});
+    // Initial toggle
+    toggleBankFields();
+    
+    // Bind change event
+    $('input[name="voucher_type"]').change(function() {
+      toggleBankFields();
+    });
+
+    // Update current time and date
+    function updateDateTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      $('#current-time').text(timeStr);
+      $('#current-date').text(dateStr);
+    }
+    
+    updateDateTime();
+    setInterval(updateDateTime, 60000); // Update every minute
+
+    // Particulars input suggestions with keyboard navigation
+    $('#particulars-input').on('input', function() {
+      const query = $(this).val().toLowerCase();
+      const suggestions = $('#suggestions');
+      
+      if (query.length < 2) {
+        suggestions.hide();
+        return;
+      }
+      
+      filteredSuggestions = ledgerData.filter(item => 
+        item.LEDGER_NAME.toLowerCase().includes(query) || 
+        item.SUBCODE.toLowerCase().includes(query)
+      );
+      
+      if (filteredSuggestions.length > 0) {
+        suggestions.empty();
+        filteredSuggestions.forEach((item, index) => {
+          suggestions.append(`<div class="suggestion-item" data-index="${index}" data-code="${item.SUBCODE}">${item.LEDGER_NAME} (${item.SUBCODE})</div>`);
+        });
+        suggestions.show();
+        currentSuggestionIndex = -1;
+      } else {
+        suggestions.hide();
+      }
+    });
+
+    // Keyboard navigation for suggestions
+    $('#particulars-input').on('keydown', function(e) {
+      const suggestions = $('#suggestions');
+      const suggestionItems = $('.suggestion-item');
+      
+      if (suggestionItems.length === 0 || !suggestions.is(':visible')) {
+        return;
+      }
+      
+      switch(e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (currentSuggestionIndex < suggestionItems.length - 1) {
+            currentSuggestionIndex++;
+            updateSuggestionSelection();
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (currentSuggestionIndex > 0) {
+            currentSuggestionIndex--;
+            updateSuggestionSelection();
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (currentSuggestionIndex >= 0) {
+            selectSuggestion(currentSuggestionIndex);
+          }
+          break;
+        case 'Escape':
+          suggestions.hide();
+          currentSuggestionIndex = -1;
+          break;
+      }
+    });
+
+    function updateSuggestionSelection() {
+      $('.suggestion-item').removeClass('selected');
+      if (currentSuggestionIndex >= 0) {
+        $(`.suggestion-item[data-index="${currentSuggestionIndex}"]`).addClass('selected');
+        // Scroll to selected item
+        const selectedItem = $(`.suggestion-item[data-index="${currentSuggestionIndex}"]`)[0];
+        if (selectedItem) {
+          selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+    }
+
+    function selectSuggestion(index) {
+      const selected = filteredSuggestions[index];
+      if (selected) {
+        $('#particulars-input').val(selected.LEDGER_NAME);
+        $('#suggestions').hide();
+        currentSuggestionIndex = -1;
+        
+        // Fetch pending invoices for this ledger
+        fetchPendingInvoices(selected.SUBCODE);
+      }
+    }
+
+    // Handle suggestion selection with mouse
+    $(document).on('click', '.suggestion-item', function() {
+      const index = $(this).data('index');
+      selectSuggestion(index);
+    });
+
+    // Hide suggestions when clicking elsewhere
+    $(document).on('click', function(e) {
+      if (!$(e.target).closest('.particulars-input').length) {
+        $('#suggestions').hide();
+        currentSuggestionIndex = -1;
+      }
+    });
+
+    // Fetch pending invoices from server
+    function fetchPendingInvoices(ledgerCode) {
+      $.ajax({
+        url: 'fetch_pending_invoices.php',
+        type: 'POST',
+        data: { 
+          ledger_code: ledgerCode,
+          comp_id: <?= $_SESSION['CompID'] ?>
+        },
+        dataType: 'json',
+        success: function(response) {
+          if (response.success) {
+            displayPendingInvoices(response.data);
+            $('#purchase-details').show();
+            $('#pending-amt').val(response.total_pending.toFixed(2));
+          } else {
+            alert('Error fetching pending invoices: ' + response.message);
+          }
+        },
+        error: function() {
+          alert('Error connecting to server');
+        }
+      });
+    }
+
+    // Display pending invoices
+    function displayPendingInvoices(invoices) {
+      const tbody = $('#purchase-details-body');
+      tbody.empty();
+      
+      if (invoices.length === 0) {
+        tbody.append('<tr><td colspan="8" class="text-center">No pending invoices found</td></tr>');
+        return;
+      }
+      
+      invoices.forEach(invoice => {
+        tbody.append(`
+          <tr>
+            <td>${invoice.type}</td>
+            <td>${invoice.voc_no}</td>
+            <td>${invoice.doc_no}</td>
+            <td>${invoice.date}</td>
+            <td>${invoice.amount.toFixed(2)}</td>
+            <td>${invoice.paid.toFixed(2)}</td>
+            <td>${invoice.balance.toFixed(2)}</td>
+            <td><input type="checkbox" class="select-invoice" data-amount="${invoice.balance}" data-id="${invoice.id}" data-type="${invoice.type}"></td>
+          </tr>
+        `);
+      });
+    }
+
+    // Handle amount input
+    $('.debit-input, .credit-input').on('input', function() {
+      // Ensure only one field has value
+      if ($(this).hasClass('debit-input') && $(this).val() !== '') {
+        $('.credit-input').val('');
+      } else if ($(this).hasClass('credit-input') && $(this).val() !== '') {
+        $('.debit-input').val('');
+      }
+      
+      // Update total amount
+      const debitAmount = parseFloat($('.debit-input').val()) || 0;
+      const creditAmount = parseFloat($('.credit-input').val()) || 0;
+      const totalAmount = debitAmount + creditAmount;
+      
+      $('#total-amount').val(totalAmount.toFixed(2));
+    });
+
+    // Auto-fill amount when invoice is selected
+    $(document).on('change', '.select-invoice', function() {
+      const amount = parseFloat($(this).data('amount')) || 0;
+      const isPayment = $('#mode-payment').is(':checked');
+      
+      if ($(this).is(':checked')) {
+        if (isPayment) {
+          $('.credit-input').val(amount.toFixed(2));
+          $('.debit-input').val('');
+        } else {
+          $('.debit-input').val(amount.toFixed(2));
+          $('.credit-input').val('');
+        }
+        
+        // Update total amount
+        $('#total-amount').val(amount.toFixed(2));
+      }
+    });
+
+    // Save button handler
+    $('#save-btn').on('click', function() {
+      const particulars = $('#particulars-input').val();
+      const amount = parseFloat($('#total-amount').val()) || 0;
+      const isDebit = $('.debit-input').val() !== '';
+      const voucherType = $('input[name="voucher_type"]:checked').val();
+      const mode = $('input[name="mode"]:checked').val();
+      const narration = $('#narr').val();
+      const voucherDate = $('#voucher-date').val();
+      
+      // Bank fields
+      const bankName = $('#bank-name').val();
+      const docNo = $('#doc-no').val();
+      const cheqNo = $('#cheq-no').val();
+      const docDate = $('#doc-date').val();
+      const cheqDate = $('#cheq-date').val();
+      
+      if (!particulars) {
+        alert('Please select a particulars entry');
+        return;
+      }
+      
+      if (amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      // Get selected invoices
+      const selectedInvoices = [];
+      $('.select-invoice:checked').each(function() {
+        selectedInvoices.push({
+          id: $(this).data('id'),
+          type: $(this).data('type'),
+          amount: $(this).data('amount')
+        });
+      });
+      
+      // Submit data to server
+      $.ajax({
+        url: 'save_voucher.php',
+        type: 'POST',
+        data: {
+          action: '<?= $action ?>',
+          voucher_id: <?= $voucher_id ?>,
+          particulars: particulars,
+          amount: amount,
+          is_debit: isDebit,
+          voucher_type: voucherType,
+          mode: mode,
+          narration: narration,
+          voucher_date: voucherDate,
+          bank_name: bankName,
+          doc_no: docNo,
+          cheq_no: cheqNo,
+          doc_date: docDate,
+          cheq_date: cheqDate,
+          selected_invoices: selectedInvoices,
+          comp_id: <?= $_SESSION['CompID'] ?>,
+          fin_year_id: <?= $_SESSION['FIN_YEAR_ID'] ?>
+        },
+        success: function(response) {
+          const result = JSON.parse(response);
+          if (result.success) {
+            alert('Voucher saved successfully!');
+            window.location.href = 'voucher_view.php';
+          } else {
+            alert('Error saving voucher: ' + result.message);
+          }
+        },
+        error: function() {
+          alert('Error connecting to server');
+        }
+      });
+    });
+
+    // New button handler
+    $('#new-btn').on('click', function() {
+      window.location.href = 'voucher_entry.php';
+    });
+
+    // Print button handler
+    $('#print-btn').on('click', function() {
+      window.print();
+    });
+
+    // Delete button handler
+    $('#delete-btn').on('click', function() {
+      if (confirm('Are you sure you want to delete this voucher?')) {
+        $.ajax({
+          url: 'delete_voucher.php',
+          type: 'POST',
+          data: {
+            voucher_id: <?= $voucher_id ?>,
+            comp_id: <?= $_SESSION['CompID'] ?>
+          },
+          success: function(response) {
+            const result = JSON.parse(response);
+            if (result.success) {
+              alert('Voucher deleted successfully!');
+              window.location.href = 'voucher_view.php';
+            } else {
+              alert('Error deleting voucher: ' + result.message);
+            }
+          },
+          error: function() {
+            alert('Error connecting to server');
+          }
+        });
+      }
+    });
+  });
 </script>
 </body>
 </html>
