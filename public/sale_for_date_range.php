@@ -214,6 +214,17 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     }
 }
 
+// Function to save to pending sales table
+function saveToPendingSales($conn, $comp_id, $user_id, $fin_year_id, $mode, $item_code, $quantity, $rate, $sale_date) {
+    $query = "INSERT INTO tblpending_sales (comp_id, fin_year_id, user_id, mode, item_code, quantity, rate, sale_date) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("iiissdds", $comp_id, $fin_year_id, $user_id, $mode, $item_code, $quantity, $rate, $sale_date);
+    $result = $stmt->execute();
+    $stmt->close();
+    return $result;
+}
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_sales'])) {
@@ -222,9 +233,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comp_id = $_SESSION['CompID'];
         $user_id = $_SESSION['user_id'];
         $fin_year_id = $_SESSION['FIN_YEAR_ID'];
+        $generate_bills = isset($_POST['generate_bills']) ? $_POST['generate_bills'] : 'no';
         
-        // Get next bill number
-        $next_bill = getNextBillNumber($conn);
+        // Get the sales data from JSON
+        $sales_data = isset($_POST['sales_data']) ? json_decode($_POST['sales_data'], true) : [];
         
         // Start transaction
         $conn->begin_transaction();
@@ -233,45 +245,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $total_amount = 0;
             $distribution_details = []; // Store distribution details for display
             
-            // Process only items with quantities to avoid max_input_vars issue
-            // We'll manually check each item code instead of using $_POST['sale_qty'] directly
+            // Process sales data
             $processed_items = 0;
             
-            foreach ($items as $item) {
-                $item_code = $item['CODE'];
+            foreach ($sales_data as $item_code => $item_data) {
+                $total_qty = intval($item_data['total_qty']);
                 
-                // Check if this item has a quantity in the POST data
-                if (isset($_POST['sale_qty'][$item_code])) {
-                    $total_qty = intval($_POST['sale_qty'][$item_code]); // Convert to integer
+                if ($total_qty > 0) {
+                    $processed_items++;
                     
-                    if ($total_qty > 0) {
-                        $processed_items++;
-                        
-                        // Limit processing to prevent max_input_vars issues
-                        if ($processed_items > 1000) {
-                            throw new Exception("Too many items with quantities. Maximum allowed is 1000 items.");
+                    // Limit processing to prevent max_input_vars issues
+                    if ($processed_items > 1000) {
+                        throw new Exception("Too many items with quantities. Maximum allowed is 1000 items.");
+                    }
+                    
+                    // Get item details
+                    $item_details = null;
+                    foreach ($items as $item) {
+                        if ($item['CODE'] == $item_code) {
+                            $item_details = $item;
+                            break;
                         }
+                    }
+                    
+                    if (!$item_details) continue;
+                    
+                    $rate = $item_details['RPRICE'];
+                    $item_name = $item_details['DETAILS'];
+                    
+                    // Get daily sales from the data
+                    $daily_sales = $item_data['daily_sales'];
+                    
+                    // Store distribution details
+                    $distribution_details[$item_code] = [
+                        'name' => $item_name,
+                        'total_qty' => $total_qty,
+                        'rate' => $rate,
+                        'daily_sales' => $daily_sales,
+                        'dates' => $date_array
+                    ];
+                    
+                    // Create sales for each day
+                    foreach ($daily_sales as $index => $qty) {
+                        if ($qty <= 0) continue;
                         
-                        $rate = $item['RPRICE'];
-                        $item_name = $item['DETAILS'];
+                        $sale_date = $date_array[$index];
                         
-                        // Generate distribution
-                        $daily_sales = distributeSales($total_qty, $days_count);
-                        
-                        // Store distribution details
-                        $distribution_details[$item_code] = [
-                            'name' => $item_name,
-                            'total_qty' => $total_qty,
-                            'rate' => $rate,
-                            'daily_sales' => $daily_sales,
-                            'dates' => $date_array
-                        ];
-                        
-                        // Create sales for each day
-                        foreach ($daily_sales as $index => $qty) {
-                            if ($qty <= 0) continue;
-                            
-                            $sale_date = $date_array[$index];
+                        if ($generate_bills === 'yes') {
+                            // Generate bills immediately
+                            $next_bill = getNextBillNumber($conn);
                             $amount = $qty * $rate;
                             
                             // Generate bill number starting from 1
@@ -325,6 +347,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
                             
                             $total_amount += $amount;
+                        } else {
+                            // Save to pending sales table for later processing
+                            saveToPendingSales($conn, $comp_id, $user_id, $fin_year_id, $mode, $item_code, $qty, $rate, $sale_date);
                         }
                     }
                 }
@@ -333,7 +358,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Commit transaction
             $conn->commit();
             
-            $success_message = "Sales distributed successfully across the date range! Total Amount: ₹" . number_format($total_amount, 2);
+            if ($generate_bills === 'yes') {
+                $success_message = "Sales distributed successfully and bills generated! Total Amount: ₹" . number_format($total_amount, 2);
+            } else {
+                $success_message = "Sales distribution saved to pending sales! You can generate bills later from the Post Daily Sales page.";
+            }
             
             // Redirect to retail_sale.php
             header("Location: retail_sale.php?success=" . urlencode($success_message));
@@ -434,6 +463,53 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
     }
     .sale-module-table td {
       font-size: 0.8rem;
+    }
+    
+    /* Remove spinner arrows from number inputs */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    
+    /* Highlight current row */
+    .highlight-row {
+      background-color: #f8f9fa !important;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    
+    /* Confirmation modal styles */
+    .confirmation-modal .modal-dialog {
+      max-width: 500px;
+    }
+    .confirmation-options {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .confirmation-option {
+      text-align: center;
+      padding: 20px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .confirmation-option:hover {
+      border-color: #0d6efd;
+      background-color: #f8f9fa;
+    }
+    .confirmation-option.selected {
+      border-color: #0d6efd;
+      background-color: #e9ecef;
+    }
+    .confirmation-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
     }
   </style>
 </head>
@@ -556,6 +632,9 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#saleModuleModal">
             <i class="fas fa-table"></i> Sale Module View
           </button>
+          <a href="post_daily_sales.php" class="btn btn-warning">
+            <i class="fas fa-tasks"></i> Post Daily Sales
+          </a>
         </div>
       </div>
 
@@ -563,13 +642,15 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
       <form method="POST" id="salesForm">
         <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
+        <input type="hidden" name="generate_bills" id="generateBills" value="no">
+        <input type="hidden" name="sales_data" id="salesData" value="">
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3">
           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" style="display: none;">
             <i class="fas fa-random"></i> Shuffle All
           </button>
-          <button type="submit" name="update_sales" class="btn btn-success btn-action" style="display: none;">
+          <button type="button" id="saveDistributionBtn" class="btn btn-success btn-action" style="display: none;">
             <i class="fas fa-save"></i> Save Distribution
           </button>
           
@@ -727,12 +808,58 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
     </div>
   </div>
 </div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade confirmation-modal" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmationModalLabel">Generate Sale Bills</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-center">Do you want to generate sale bills now or save for later posting?</p>
+        
+        <div class="confirmation-options">
+          <div class="confirmation-option" data-value="yes">
+            <div class="confirmation-icon text-success">
+              <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <h5>Generate Bills Now</h5>
+            <p class="text-muted">Create sale bills immediately with bulk restrictions applied</p>
+          </div>
+          
+          <div class="confirmation-option" data-value="no">
+            <div class="confirmation-icon text-warning">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <h5>Save for Later</h5>
+            <p class="text-muted">Save distribution to process later with Post Daily Sales</p>
+          </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-info-circle"></i> 
+          <strong>Bulk restrictions:</strong> Sales will be processed according to your bulk liter restrictions when generating bills.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmSubmit">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Global variables
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
+
+// Store sales data for submission
+let salesData = {};
 
 // Function to distribute sales uniformly (client-side version)
 function distributeSales(total_qty, days_count) {
@@ -782,6 +909,15 @@ function updateDistributionPreview(itemCode, totalQty) {
     // Update amount
     const amount = totalDistributed * rate;
     $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    
+    // Store in salesData for submission
+    salesData[itemCode] = {
+        total_qty: totalQty,
+        daily_sales: dailySales
+    };
+    
+    // Update the hidden field with JSON data
+    $('#salesData').val(JSON.stringify(salesData));
     
     // Show date columns if they're hidden
     $('.date-header, .date-distribution-cell').show();
@@ -843,6 +979,7 @@ function updateSaleModuleView() {
         }
     });
 }
+
 // Function to calculate total amount
 function calculateTotalAmount() {
     let total = 0;
@@ -868,14 +1005,57 @@ function initializeTableHeaders() {
     });
 }
 
+// Function to handle row navigation with arrow keys
+function setupRowNavigation() {
+    const qtyInputs = $('input.qty-input');
+    let currentRowIndex = -1;
+    
+    // Highlight row when input is focused
+    $(document).on('focus', 'input.qty-input', function() {
+        // Remove highlight from all rows
+        $('tr').removeClass('highlight-row');
+        
+        // Add highlight to current row
+        $(this).closest('tr').addClass('highlight-row');
+        
+        // Update current row index
+        currentRowIndex = qtyInputs.index(this);
+    });
+    
+    // Handle arrow key navigation
+    $(document).on('keydown', 'input.qty-input', function(e) {
+        // Only handle arrow keys
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        
+        e.preventDefault(); // Prevent default scrolling behavior
+        
+        // Calculate new row index
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+            newIndex = currentRowIndex - 1;
+        } else { // ArrowDown
+            newIndex = currentRowIndex + 1;
+        }
+        
+        // Check if new index is valid
+        if (newIndex >= 0 && newIndex < qtyInputs.length) {
+            // Focus the input in the new row
+            $(qtyInputs[newIndex]).focus().select();
+        }
+    });
+}
+
 // Document ready
 $(document).ready(function() {
     // Initialize table headers and columns
     initializeTableHeaders();
     
+    // Set up row navigation with arrow keys
+    setupRowNavigation();
+    
     // Show action buttons
     $('#shuffleBtn, .btn-shuffle-item, .btn-shuffle').show();
-    $('button[name="update_sales"]').show();
+    $('#saveDistributionBtn').show();
     
     // Quantity input change event
     $(document).on('change', 'input[name^="sale_qty"]', function() {
@@ -892,6 +1072,10 @@ $(document).ready(function() {
             const currentStock = parseFloat($(this).data('stock'));
             $(`#closing_${itemCode}`).text(currentStock.toFixed(3));
             $(`#amount_${itemCode}`).text('0.00');
+            
+            // Remove from salesData
+            delete salesData[itemCode];
+            $('#salesData').val(JSON.stringify(salesData));
             
             // Hide date columns if no items have quantity
             if ($('input[name^="sale_qty"]').filter(function() { 
@@ -941,11 +1125,8 @@ $(document).ready(function() {
         updateSaleModuleView();
     });
     
-    // Form submit event
-    $('#salesForm').on('submit', function() {
-        // Show loader
-        $('#ajaxLoader').show();
-        
+    // Save distribution button click event
+    $('#saveDistributionBtn').click(function() {
         // Validate that at least one item has quantity
         let hasQuantity = false;
         $('input[name^="sale_qty"]').each(function() {
@@ -957,11 +1138,43 @@ $(document).ready(function() {
         
         if (!hasQuantity) {
             alert('Please enter quantities for at least one item.');
-            $('#ajaxLoader').hide();
             return false;
         }
+        
+        // Show confirmation modal
+        $('#confirmationModal').modal('show');
+    });
+    
+    // Confirmation option selection
+    $('.confirmation-option').click(function() {
+        $('.confirmation-option').removeClass('selected');
+        $(this).addClass('selected');
+        $('#generateBills').val($(this).data('value'));
+    });
+    
+    // Confirm submit button
+    $('#confirmSubmit').click(function() {
+        if (!$('.confirmation-option.selected').length) {
+            alert('Please select an option.');
+            return;
+        }
+        
+        // Hide confirmation modal
+        $('#confirmationModal').modal('hide');
+        
+        // Show loader
+        $('#ajaxLoader').show();
+        
+        // Submit the form
+        $('#salesForm').submit();
+    });
+    
+    // Form submit event
+    $('#salesForm').on('submit', function() {
+        // Validation is already handled by the confirmation modal
+        return true;
     });
 });
-</script>
+</script> 
 </body>
 </html>
