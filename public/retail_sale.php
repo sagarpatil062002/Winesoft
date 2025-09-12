@@ -169,8 +169,8 @@ if (isset($_SESSION['error'])) {
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4>Create New Sale:</h4>
         <div class="btn-group">
-          <a href="sale_for_date.php" class="btn btn-primary">
-            <i class="fa-solid fa-calendar-day me-1"></i> Sale for Date
+          <a href="closing_stock_for_date_range.php" class="btn btn-primary">
+            <i class="fa-solid fa-calendar-day me-1"></i> Closing Stock for Date Range
           </a>
           <a href="sale_for_date_range.php" class="btn btn-primary">
             <i class="fa-solid fa-calendar-week me-1"></i> Sale for Date Range

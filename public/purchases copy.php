@@ -468,6 +468,8 @@ SCM Code:SCMPL001186</pre>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(function(){
   let itemCount = 0;
@@ -540,15 +542,17 @@ $(function(){
     return bestMatch;
   }
 
+  // Improved database item matching function
   function findDbItemData(name, size, code) {
-    const n = (name || '').toLowerCase().replace(/\s+/g, ' ').trim();
-    const sz = (size || '').toLowerCase();
-    const cd = (code || '').toLowerCase();
+    // Clean inputs
+    const cleanName = (name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+    const cleanSize = (size || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
+    const cleanCode = (code || '').toLowerCase().replace(/^scm/, '').trim();
     
     // 1. Try exact code match first (with cleaned code)
-    if (cd) {
+    if (cleanCode) {
         for (const it of dbItems) {
-            if ((it.CODE || '').toLowerCase() === cd) {
+            if ((it.CODE || '').toLowerCase() === cleanCode) {
                 console.log("Exact code match found:", it.CODE);
                 return it;
             }
@@ -556,7 +560,8 @@ $(function(){
         
         // 2. Try SCM code match (SCM + code)
         for (const it of dbItems) {
-            if ((it.SCM_CODE || '').toLowerCase() === cd) {
+            const scmCode = (it.SCM_CODE || '').toLowerCase().replace(/^scm/, '');
+            if (scmCode === cleanCode) {
                 console.log("SCM code match found:", it.CODE);
                 return it;
             }
@@ -568,19 +573,19 @@ $(function(){
     let bestScore = 0;
     
     for (const it of dbItems) {
-        const dbName = (it.DETAILS || '').toLowerCase();
-        const dbSize = (it.DETAILS2 || '').toLowerCase();
+        const dbName = (it.DETAILS || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+        const dbSize = (it.DETAILS2 || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
         let score = 0;
         
         // Name similarity (higher weight)
-        if (dbName && n === dbName) score += 5;
-        else if (dbName && n.includes(dbName)) score += 4;
-        else if (dbName && dbName.includes(n)) score += 3;
+        if (dbName && cleanName === dbName) score += 40;
+        else if (dbName && cleanName.includes(dbName)) score += 30;
+        else if (dbName && dbName.includes(cleanName)) score += 20;
         
         // Size similarity
-        if (dbSize && sz === dbSize) score += 3;
-        else if (dbSize && sz.includes(dbSize)) score += 2;
-        else if (dbSize && dbSize.includes(sz)) score += 1;
+        if (dbSize && cleanSize === dbSize) score += 30;
+        else if (dbSize && cleanSize.includes(dbSize)) score += 20;
+        else if (dbSize && dbSize.includes(cleanSize)) score += 10;
         
         if (score > bestScore) {
             bestScore = score;
@@ -593,7 +598,7 @@ $(function(){
         return bestMatch;
     }
     
-    console.log("No match found for:", {name: n, size: sz, code: cd});
+    console.log("No match found for:", {name: cleanName, size: cleanSize, code: cleanCode});
     return null;
   }
 
@@ -799,155 +804,140 @@ $(function(){
     }
   });
 
-  // Enhanced parser for various SCM formats
-  function parseSCM(text){
-    const lines = text.split(/\r?\n/).map(l=>l.replace(/\u00A0/g,' ').trim()).filter(l=>l!=='');
-    const out = { tpNo:'', tpDate:'', receivedDate:'', party:'', items:[] };
-
-    // ---- HEADER extraction ----
-    for(let i=0;i<lines.length;i++){
-      const L = lines[i];
-
-      if(/Auto\s*T\.\s*P\.\s*No:/i.test(L)){
-        const nxt = (lines[i+1]||'').trim();
-        if(nxt) out.tpNo = nxt;
-      }
-      if(/T\.\s*P\.\s*No\(Manual\):/i.test(L)){
-        const nxt = (lines[i+1]||'').trim();
-        if(nxt && !/T\.?P\.?Date/i.test(nxt)) out.tpNo = nxt;
-      }
-      if(/T\.?P\.?Date:/i.test(L)){
-        const nxt = (lines[i+1]||'').trim();
-        const d = ymdFromDmyText(nxt); if(d) out.tpDate = d;
-      }
-      if(/Received\s*Date/i.test(L)){
-        const nxt = (lines[i+1]||'').trim();
-        const d = ymdFromDmyText(nxt);
-        out.receivedDate = d || nxt;
-      }
-      if(/^Party\s*:/i.test(L)){
-        const nxt = (lines[i+1]||'').trim();
-        if(nxt) out.party = nxt;
-      }
+  // Enhanced parser for SCM code lines
+  function parseSCMItemLine(scmLine) {
+    // Pattern to match SCM code lines with variable spacing
+    const pattern = /SCM Code:(\S+)\s+([\w\s\(\)\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\w\-]+)\s+([\w\-\/]+)\s+([\w\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)/i;
+    const match = scmLine.match(pattern);
+    
+    if (match) {
+        return {
+            itemCode: match[1].replace("SCM", ""),
+            size: match[2].trim(),
+            cases: parseFloat(match[3]),
+            bottles: parseInt(match[4]),
+            batchNo: match[5],
+            autoBatch: match[6],
+            mfgMonth: match[7],
+            mrp: parseFloat(match[8]),
+            bl: parseFloat(match[9]),
+            vv: parseFloat(match[10]),
+            totBott: parseInt(match[11])
+        };
     }
-
-    // ---- TABLE start ----
-    let start = -1;
-    for(let i=0;i<lines.length;i++){
-      if(/STNO|Sr.?No|Sr\./i.test(lines[i]) && /ItemName|Item Name/i.test(lines[i]) && /Qty/i.test(lines[i])){
-        start = i+1; break;
-      }
+    
+    // Fallback parsing for lines that don't match the pattern
+    const parts = scmLine.split(/\s+/);
+    if (parts.length < 11) {
+        console.warn("Not enough parts in SCM line:", scmLine);
+        return null;
     }
-    if(start === -1) return out;
+    
+    // Find where the size field ends (before the first numeric value)
+    let sizeEndIndex = 2; // Start after "SCM Code:XXXXX"
+    while (sizeEndIndex < parts.length && isNaN(parseFloat(parts[sizeEndIndex]))) {
+        sizeEndIndex++;
+    }
+    
+    const sizeParts = parts.slice(2, sizeEndIndex);
+    const size = sizeParts.join(' ');
+    const numericParts = parts.slice(sizeEndIndex);
+    
+    // Ensure we have enough numeric parts
+    if (numericParts.length < 9) {
+        console.warn("Not enough numeric parts in SCM line:", scmLine);
+        return null;
+    }
+    
+    return {
+        itemCode: parts[1].replace("SCM", ""),
+        size: size,
+        cases: parseFloat(numericParts[0]) || 0,
+        bottles: parseInt(numericParts[1]) || 0,
+        batchNo: numericParts[2] || '',
+        autoBatch: numericParts[3] || '',
+        mfgMonth: numericParts[4] || '',
+        mrp: parseFloat(numericParts[5]) || 0,
+        bl: parseFloat(numericParts[6]) || 0,
+        vv: parseFloat(numericParts[7]) || 0,
+        totBott: parseInt(numericParts[8]) || 0
+    };
+  }
 
-    // ---- ITEMS ----
-    for(let i=start;i<lines.length;i++){
-      const first = lines[i];
-
-      // stop at "Total" or footer lines
-      if(/^Total/i.test(first)) break;
-
-      // Check if this line starts with a number (item row)
-      const srMatch = first.match(/^(\d+)\s+(.+)$/);
-      if(srMatch){
-        const itemName = srMatch[2].trim();
-
-        // Look for SCM code line
-        const second = (lines[i+1]||'').trim();
-        if(second.startsWith("SCM Code:") || second.startsWith("SCM Code :")){
-          const parts = second.split(/\s+/);
-          
-          // Different parsing patterns for different SCM formats
-          let itemCode, size, cases, bottles, batchNo, autoBatch, mfgMonth, mrp, bl, vv, totBott;
-          
-          // Pattern 1: SCM Code:SCMPL001186 180 ML 9.00 24 920 BT944-220225/920 Mar-2025 110.00 82.08 25.0 456
-          if(parts.length >= 13){
-            itemCode = parts[1].replace("SCM Code:","").replace("SCM","").trim();
-            size = parts[2] + " " + parts[3];
-            cases = parseFloat(parts[4])||0;
-            bottles = parseInt(parts[5])||0;
-            batchNo = parts[6] || '';
-            autoBatch = parts[7] || '';
-            mfgMonth = parts[8] || '';
-            mrp = parseFloat(parts[9])||0;
-            bl = parseFloat(parts[10])||0;
-            vv = parseFloat(parts[11])||0;
-            totBott = parseInt(parts[12])||0;
-          } 
-          // Pattern 2: Different spacing format
-          else if(parts.length >= 10){
-            itemCode = parts[1].replace("SCM Code:","").replace("SCM","").trim();
-            size = parts[2] || '';
-            cases = parseFloat(parts[3])||0;
-            bottles = parseInt(parts[4])||0;
-            batchNo = parts[5] || '';
-            autoBatch = parts[6] || '';
-            mfgMonth = parts[7] || '';
-            mrp = parseFloat(parts[8])||0;
-            bl = parseFloat(parts[9])||0;
-            vv = parseFloat(parts[10])||0;
-            if(parts.length > 10) totBott = parseInt(parts[11])||0;
-          }
-          
-          // Clean the item code and find in database
-          const cleanCode = cleanItemCode(itemCode);
-          const dbItem = findDbItemData(itemName, size, cleanCode);
-          const caseRate = dbItem ? parseFloat(dbItem.PPRICE)||0 : 0;
-
-          out.items.push({
-            code: dbItem ? dbItem.CODE : cleanCode,
-            name: dbItem ? dbItem.DETAILS : itemName,
-            size: dbItem ? dbItem.DETAILS2 : size,
-            cases: cases,
-            bottles: bottles,
-            batchNo: batchNo,
-            autoBatch: autoBatch,
-            mfgMonth: mfgMonth,
-            caseRate: caseRate,
-            mrp: mrp,
-            bl: bl,
-            vv: vv,
-            totBott: totBott,
-            cleanCode: cleanCode,
-            dbItem: dbItem
-          });
-
-          i++; // skip the SCM Code line
+  // Main SCM parsing function
+  function parseSCM(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    const items = [];
+    let supplierName = '';
+    let supplierCode = '';
+    let orderDate = '';
+    let orderNo = '';
+    
+    for (const line of lines) {
+        // Extract supplier information
+        if (line.startsWith('Supplier:')) {
+            supplierName = line.replace('Supplier:', '').trim();
+            // Try to find the best supplier match
+            const supplierMatch = findBestSupplierMatch(supplierName);
+            if (supplierMatch) {
+                supplierCode = supplierMatch.CODE;
+                $('#supplierInput').val(supplierMatch.DETAILS);
+                $('#supplierCodeHidden').val(supplierMatch.CODE);
+            }
         }
-      }
-    }
-
-    // SUPPLIER MATCHING
-    if(out.party){
-        const bestSupplier = findBestSupplierMatch(out.party);
-        if(bestSupplier){
-            $('#supplierInput').val(bestSupplier.DETAILS);
-            $('#supplierCodeHidden').val(bestSupplier.CODE);
-        } else {
-            $('#supplierInput').val(out.party);
-            $('#supplierCodeHidden').val('');
+        // Extract order date
+        else if (line.startsWith('Date:')) {
+            orderDate = line.replace('Date:', '').trim();
+            if (orderDate) {
+                const ymdDate = ymdFromDmyText(orderDate);
+                if (ymdDate) {
+                    $('input[name="ord_dt"]').val(ymdDate);
+                }
+            }
+        }
+        // Extract order number
+        else if (line.startsWith('Order No:')) {
+            orderNo = line.replace('Order No:', '').trim();
+            if (orderNo) {
+                $('input[name="ord_no"]').val(orderNo);
+            }
+        }
+        // Parse item lines
+        else if (line.startsWith('SCM Code:')) {
+            const item = parseSCMItemLine(line);
+            if (item) {
+                // Clean the item code
+                item.cleanCode = cleanItemCode(item.itemCode);
+                
+                // Find matching database item
+                item.dbItem = findDbItemData(item.size, item.size, item.cleanCode);
+                
+                // Add to items list
+                items.push(item);
+            }
         }
     }
     
-    // Fill header bits
-    if(out.receivedDate){ $('input[name="date"]').val(out.receivedDate); }
-    if(out.tpNo){ $('#tpNo').val(out.tpNo); }
-    if(out.tpDate){ $('#tpDate').val(out.tpDate); }
-
-    // Fill items
-    $('.item-row').remove(); 
-    itemCount = 0; // Reset counter
-    if($('#noItemsRow').length) $('#noItemsRow').remove();
-    if(out.items.length === 0){ 
-        $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>'); 
+    // Add all parsed items to the table
+    for (const item of items) {
+        addRow(item);
     }
     
-    // Add each item individually
-    out.items.forEach(it => {
-        addRow(it);
-    });
+    return {
+        supplierName,
+        supplierCode,
+        orderDate,
+        orderNo,
+        items
+    };
+  }
 
-    return out;
+  // Initialize
+  if($('.item-row').length===0){
+    $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="15" class="text-center text-muted">No items added</td></tr>');
+  }else{
+    itemCount = $('.item-row').length;
+    updateTotals();
   }
 });
 </script>
