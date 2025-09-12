@@ -925,6 +925,55 @@ function setupRowNavigation() {
     });
 }
 
+// Function to save to pending sales
+function saveToPendingSales() {
+    // Show loader
+    $('#ajaxLoader').show();
+    
+    // Collect all the data
+    const formData = new FormData();
+    formData.append('save_pending', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    
+    // Add each item's quantity
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const qty = $(this).val();
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+        }
+    });
+    
+    // Send AJAX request
+    $.ajax({
+        url: 'save_pending_sales.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#ajaxLoader').hide();
+            try {
+                const result = JSON.parse(response);
+                if (result.success) {
+                    alert('Sales data saved successfully! You can generate bills later from the "Post Daily Sales" page.');
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (e) {
+                alert('Error processing response: ' + response);
+            }
+        },
+        error: function() {
+            $('#ajaxLoader').hide();
+            alert('Error saving data. Please try again.');
+        }
+    });
+}
+
 // Document ready
 $(document).ready(function() {
     // Initialize table headers and columns
@@ -1002,9 +1051,8 @@ $(document).ready(function() {
     });
     
     // Form submit event
-    $('#salesForm').on('submit', function() {
-        // Show loader
-        $('#ajaxLoader').show();
+    $('#salesForm').on('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
         
         // Validate that at least one item has quantity
         let hasQuantity = false;
@@ -1017,12 +1065,23 @@ $(document).ready(function() {
         
         if (!hasQuantity) {
             alert('Please enter quantities for at least one item.');
-            $('#ajaxLoader').hide();
             return false;
+        }
+        
+        // Show confirmation dialog
+        if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
+            // User clicked OK - generate bills immediately
+            // Show loader before submitting
+            $('#ajaxLoader').show();
+            setTimeout(() => {
+                this.submit();
+            }, 100);
+        } else {
+            // User clicked Cancel - save to pending sales
+            saveToPendingSales();
         }
     });
 });
 </script> 
 </body>
 </html>
-
