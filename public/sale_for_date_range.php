@@ -585,8 +585,8 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" style="display: none;">
             <i class="fas fa-random"></i> Shuffle All
           </button>
-          <button type="submit" name="update_sales" class="btn btn-success btn-action" style="display: none;">
-            <i class="fas fa-save"></i> Save Distribution
+          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" style="display: none;">
+            <i class="fas fa-save"></i> Generate Bills
           </button>
           
           <a href="dashboard.php" class="btn btn-secondary ms-auto">
@@ -974,6 +974,55 @@ function saveToPendingSales() {
     });
 }
 
+// Function to generate bills immediately
+function generateBills() {
+    // Show loader
+    $('#ajaxLoader').show();
+    
+    // Collect all the data
+    const formData = new FormData();
+    formData.append('generate_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    
+    // Add each item's quantity
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const qty = $(this).val();
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+        }
+    });
+    
+    // Send AJAX request
+    $.ajax({
+        url: 'generate_bills.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#ajaxLoader').hide();
+            try {
+                const result = JSON.parse(response);
+                if (result.success) {
+                    alert('Bills generated successfully! Total Amount: ₹' + result.total_amount);
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (e) {
+                alert('Error processing response: ' + response);
+            }
+        },
+        error: function() {
+            $('#ajaxLoader').hide();
+            alert('Error generating bills. Please try again.');
+        }
+    });
+}
+
 // Document ready
 $(document).ready(function() {
     // Initialize table headers and columns
@@ -984,7 +1033,7 @@ $(document).ready(function() {
     
     // Show action buttons
     $('#shuffleBtn, .btn-shuffle-item, .btn-shuffle').show();
-    $('button[name="update_sales"]').show();
+    $('#generateBillsBtn').show();
     
     // Quantity input change event
     $(document).on('change', 'input[name^="sale_qty"]', function() {
@@ -1050,10 +1099,8 @@ $(document).ready(function() {
         updateSaleModuleView();
     });
     
-    // Form submit event
-    $('#salesForm').on('submit', function(e) {
-        e.preventDefault(); // Prevent default form submission
-        
+    // Generate bills button click event
+    $('#generateBillsBtn').click(function() {
         // Validate that at least one item has quantity
         let hasQuantity = false;
         $('input[name^="sale_qty"]').each(function() {
@@ -1071,11 +1118,7 @@ $(document).ready(function() {
         // Show confirmation dialog
         if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
             // User clicked OK - generate bills immediately
-            // Show loader before submitting
-            $('#ajaxLoader').show();
-            setTimeout(() => {
-                this.submit();
-            }, 100);
+            generateBills();
         } else {
             // User clicked Cancel - save to pending sales
             saveToPendingSales();

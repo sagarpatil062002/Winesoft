@@ -17,10 +17,10 @@ $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID'];
 $user_id = $_SESSION['user_id'];
 
-// Get pending sales dates
-$pending_dates_query = "SELECT DISTINCT sale_date FROM tbl_pending_sales 
+// Get pending sales dates - CORRECTED: using start_date instead of sale_date
+$pending_dates_query = "SELECT DISTINCT start_date as sale_date FROM tbl_pending_sales 
                         WHERE comp_id = ? AND status = 'pending' 
-                        ORDER BY sale_date";
+                        ORDER BY start_date";
 $pending_stmt = $conn->prepare($pending_dates_query);
 $pending_stmt->bind_param("i", $comp_id);
 $pending_stmt->execute();
@@ -45,11 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
             
             // Process each selected date
             foreach ($selected_dates as $sale_date) {
-                // Get all pending sales for this date
+                // Get all pending sales for this date - CORRECTED: using start_date
                 $pending_sales_query = "SELECT ps.*, im.RPRICE as rate, im.LIQ_FLAG as mode 
                                        FROM tbl_pending_sales ps
                                        JOIN tblitemmaster im ON ps.item_code = im.CODE
-                                       WHERE ps.comp_id = ? AND ps.sale_date = ? AND ps.status = 'pending'";
+                                       WHERE ps.comp_id = ? AND ps.start_date = ? AND ps.status = 'pending'";
                 $pending_sales_stmt = $conn->prepare($pending_sales_query);
                 $pending_sales_stmt->bind_param("is", $comp_id, $sale_date);
                 $pending_sales_stmt->execute();
@@ -107,9 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                     }
                 }
                 
-                // Mark all pending sales for this date as processed
+                // Mark all pending sales for this date as processed - CORRECTED: using start_date
                 $update_query = "UPDATE tbl_pending_sales SET status = 'processed', processed_at = NOW() 
-                                WHERE comp_id = ? AND sale_date = ? AND status = 'pending'";
+                                WHERE comp_id = ? AND start_date = ? AND status = 'pending'";
                 $update_stmt = $conn->prepare($update_query);
                 $update_stmt->bind_param("is", $comp_id, $sale_date);
                 $update_stmt->execute();
@@ -320,7 +320,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Post Daily Sales - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome@6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
 </head>
@@ -405,12 +405,12 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
                 <tbody>
                   <?php 
                   foreach ($pending_dates as $date): 
-                    // Get summary for each date
+                    // Get summary for each date - CORRECTED: using start_date
                     $summary_query = "SELECT COUNT(*) as item_count, SUM(quantity) as total_qty, 
                                      SUM(quantity * im.RPRICE) as total_amount 
                                      FROM tbl_pending_sales ps
                                      JOIN tblitemmaster im ON ps.item_code = im.CODE
-                                     WHERE ps.comp_id = ? AND ps.sale_date = ? AND ps.status = 'pending'";
+                                     WHERE ps.comp_id = ? AND ps.start_date = ? AND ps.status = 'pending'";
                     $summary_stmt = $conn->prepare($summary_query);
                     $summary_stmt->bind_param("is", $comp_id, $date);
                     $summary_stmt->execute();

@@ -570,7 +570,7 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
               <input type="text" name="search" class="form-control"
                      placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
               <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
-              <?php if ($search !== ''): ?>
+                <?php if ($search !== ''): ?>
                 <a href="?mode=<?= $mode ?>&sequence_type=<?= $sequence_type ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-secondary">Clear</a>
               <?php endif; ?>
             </div>
@@ -593,8 +593,8 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action">
             <i class="fas fa-random"></i> Shuffle All
           </button>
-          <button type="submit" name="update_sales" class="btn btn-success btn-action">
-            <i class="fas fa-save"></i> Save Distribution
+          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
+            <i class="fas fa-save"></i> Generate Bills
           </button>
           
           <a href="dashboard.php" class="btn btn-secondary ms-auto">
@@ -743,6 +743,14 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
                 </tr>
               <?php endforeach; ?>
             </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total</strong></td>
+                <?php foreach ($all_sizes as $size): ?>
+                  <td id="module_total_<?= $size ?>">0</td>
+                <?php endforeach; ?>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -758,263 +766,406 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
 // Global variables
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
-let isProcessing = false;
-let isEditMode = false;
 
-// Function to distribute sales uniformly
-function distributeSales(totalQty, daysCount) {
-  if (totalQty <= 0 || daysCount <= 0) return Array(daysCount).fill(0);
-  
-  const baseQty = Math.floor(totalQty / daysCount);
-  const remainder = totalQty % daysCount;
-  
-  let dailySales = Array(daysCount).fill(baseQty);
-  
-  // Distribute remainder evenly across days
-  for (let i = 0; i < remainder; i++) {
-    dailySales[i]++;
-  }
-  
-  // Shuffle the distribution to make it look more natural
-  for (let i = dailySales.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
-  }
-  
-  return dailySales;
-}
-
-// Function to calculate and display distribution for an item
-function calculateDistribution(itemCode, closingQty) {
-  const currentStock = parseFloat(document.querySelector(`input[data-code="${itemCode}"]`).dataset.stock);
-  const rate = parseFloat(document.querySelector(`input[data-code="${itemCode}"]`).dataset.rate);
-  const saleQty = currentStock - closingQty;
-  
-  // Update sale quantity display
-  document.getElementById(`sale_qty_${itemCode}`).textContent = saleQty.toFixed(3);
-  
-  // Update amount
-  const amount = saleQty * rate;
-  document.getElementById(`amount_${itemCode}`).textContent = amount.toFixed(2);
-  
-  // Calculate distribution
-  const dailySales = distributeSales(saleQty, daysCount);
-  
-  // Update distribution cells
-  for (let i = 0; i < daysCount; i++) {
-    const cell = document.querySelector(`.dist-cell-${itemCode}-${i}`);
-    if (cell) {
-      cell.textContent = dailySales[i];
-    }
-  }
-  
-  // Update total amount
-  updateTotalAmount();
-  
-  return dailySales;
-}
-
-// Function to update total amount
-function updateTotalAmount() {
-  let total = 0;
-  document.querySelectorAll('.amount-cell').forEach(cell => {
-    total += parseFloat(cell.textContent) || 0;
-  });
-  document.getElementById('totalAmount').textContent = total.toFixed(2);
-}
-
-// Function to create distribution columns in table
-function createDistributionColumns() {
-  if (daysCount <= 0) return;
-  
-  const headerRow = document.querySelector('#itemsTable thead tr');
-  const tbodyRows = document.querySelectorAll('#itemsTable tbody tr');
-  
-  // Clear existing distribution columns
-  document.querySelectorAll('.dist-header, .dist-cell').forEach(el => el.remove());
-  
-  // Add headers for each date
-  dateArray.forEach((date, index) => {
-    const dateObj = new Date(date);
-    const th = document.createElement('th');
-    th.className = 'dist-header';
-    th.textContent = dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-    headerRow.insertBefore(th, headerRow.querySelector('.action-column'));
-  });
-  
-  // Add distribution cells for each item row
-  tbodyRows.forEach(row => {
-    const itemCode = row.querySelector('input.closing-input').dataset.code;
+// Function to distribute sales uniformly (client-side version)
+function distributeSales(total_qty, days_count) {
+    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
     
-    for (let i = 0; i < daysCount; i++) {
-      const td = document.createElement('td');
-      td.className = `dist-cell dist-cell-${itemCode}-${i}`;
-      td.textContent = '0';
-      row.insertBefore(td, row.querySelector('.action-column'));
+    const base_qty = Math.floor(total_qty / days_count);
+    const remainder = total_qty % days_count;
+    
+    const daily_sales = new Array(days_count).fill(base_qty);
+    
+    // Distribute remainder evenly across days
+    for (let i = 0; i < remainder; i++) {
+        daily_sales[i]++;
     }
-  });
+    
+    // Shuffle the distribution to make it look more natural
+    for (let i = daily_sales.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [daily_sales[i], daily_sales[j]] = [daily_sales[j], daily_sales[i]];
+    }
+    
+    return daily_sales;
 }
 
-// Function to toggle edit mode
-function toggleEditMode(enable) {
-  isEditMode = enable;
-  const table = document.getElementById('itemsTable');
-  
-  if (enable) {
-    table.classList.add('edit-mode');
-  } else {
-    table.classList.remove('edit-mode');
-  }
+// Function to update the distribution preview for a specific item
+function updateDistributionPreview(itemCode, closingQty) {
+    const currentStock = parseFloat($(`input[data-code="${itemCode}"]`).data('stock'));
+    const saleQty = currentStock - closingQty;
+    const rate = parseFloat($(`input[data-code="${itemCode}"]`).data('rate'));
+    const itemRow = $(`input[data-code="${itemCode}"]`).closest('tr');
+    
+    // Update sale quantity display
+    $(`#sale_qty_${itemCode}`).text(saleQty.toFixed(3));
+    
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
+    
+    if (saleQty > 0) {
+        const dailySales = distributeSales(saleQty, daysCount);
+        
+        // Add date distribution cells after the action column
+        let totalDistributed = 0;
+        dailySales.forEach((qty, index) => {
+            totalDistributed += qty;
+            // Insert distribution cells after the action column
+            $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
+        });
+        
+        // Show date columns if they're hidden
+        $('.date-header, .date-distribution-cell').show();
+    } else {
+        // Hide date columns if no items have quantity
+        if ($('.closing-input').filter(function() { 
+            const code = $(this).data('code');
+            const currentStock = parseFloat($(this).data('stock'));
+            const closingQty = parseFloat($(this).val());
+            return (currentStock - closingQty) > 0; 
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+    }
+    
+    // Update amount
+    const amount = saleQty * rate;
+    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    
+    return saleQty;
+}
+
+// Function to categorize item based on its category and size
+function categorizeItem(itemCategory, itemName, itemSize) {
+    const category = (itemCategory || '').toUpperCase();
+    const name = (itemName || '').toUpperCase();
+    
+    // Check for wine first
+    if (category.includes('WINE') || name.includes('WINE')) {
+        return 'WINES';
+    }
+    // Check for mild beer
+    else if ((category.includes('BEER') || name.includes('BEER')) && 
+             (category.includes('MILD') || name.includes('MILD'))) {
+        return 'MILD BEER';
+    }
+    // Check for regular beer
+    else if (category.includes('BEER') || name.includes('BEER')) {
+        return 'FERMENTED BEER';
+    }
+    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
+    else {
+        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
+    }
 }
 
 // Function to update sale module view
 function updateSaleModuleView() {
-  // Reset all module view cells
-  <?php 
-  foreach ($categories as $category_id => $category_name): 
-    foreach ($all_sizes as $size): 
-  ?>
-    document.getElementById('module_<?= $category_id ?>_<?= $size ?>').textContent = '0';
-  <?php 
-    endforeach; 
-  endforeach; 
-  ?>
-  
-  // Calculate totals for each category and size
-  document.querySelectorAll('input.closing-input').forEach(input => {
-    const itemCode = input.dataset.code;
-    const currentStock = parseFloat(input.dataset.stock);
-    const closingQty = parseFloat(input.value);
-    const size = parseInt(input.dataset.size);
-    const itemName = input.closest('tr').querySelector('td:nth-child(2)').textContent;
+    // Reset all values to 0
+    $('.sale-module-table td').not(':first-child').text('0');
     
-    // Skip if no size or invalid input
-    if (!size || isNaN(closingQty)) return;
+    // Calculate quantities for each category and size
+    $('.closing-input').each(function() {
+        const closingQty = parseFloat($(this).val()) || 0;
+        const itemCode = $(this).data('code');
+        const itemRow = $(this).closest('tr');
+        const itemName = itemRow.find('td:eq(1)').text();
+        const itemCategory = itemRow.find('td:eq(2)').text();
+        const size = $(this).data('size');
+        const currentStock = parseFloat($(this).data('stock'));
+        
+        const saleQty = currentStock - closingQty;
+        
+        if (saleQty > 0) {
+            // Determine the category type
+            const categoryType = categorizeItem(itemCategory, itemName, size);
+            
+            // Update the corresponding cell using the ID pattern
+            if (size > 0) {
+                const cellId = `module_${categoryType}_${size}`;
+                const targetCell = $(`#${cellId}`);
+                if (targetCell.length) {
+                    const currentValue = parseInt(targetCell.text()) || 0;
+                    targetCell.text(currentValue + saleQty);
+                }
+            }
+        }
+    });
     
-    // Calculate sale quantity
-    const saleQty = currentStock - closingQty;
-    if (saleQty <= 0) return;
-    
-    // Determine category based on item details
-    let category = '';
-    if (itemName.includes('WHISKY') || itemName.includes('GIN') || itemName.includes('BRANDY') || 
-        itemName.includes('VODKA') || itemName.includes('RUM') || itemName.includes('LIQUOR') || 
-        itemName.includes('GENERAL') || itemName.includes('OTHERS')) {
-      category = 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    } else if (itemName.includes('WINE')) {
-      category = 'WINES';
-    } else if (itemName.includes('FERMENTED')) {
-      category = 'FERMENTED BEER';
-    } else if (itemName.includes('MILD') || itemName.includes('BEER')) {
-      category = 'MILD BEER';
-    }
-    
-    // Update the corresponding cell
-    if (category && <?= json_encode($all_sizes) ?>.includes(size)) {
-      const cell = document.getElementById(`module_${category}_${size}`);
-      if (cell) {
-        const currentValue = parseInt(cell.textContent) || 0;
-        cell.textContent = currentValue + Math.round(saleQty);
-      }
-    }
-  });
+    // Calculate totals
+    <?php foreach ($all_sizes as $size): ?>
+        let total_<?= $size ?> = 0;
+        <?php foreach ($categories as $category_id => $category_name): ?>
+            total_<?= $size ?> += parseInt($('#module_<?= $category_id ?>_<?= $size ?>').text()) || 0;
+        <?php endforeach; ?>
+        $('#module_total_<?= $size ?>').text(total_<?= $size ?>);
+    <?php endforeach; ?>
 }
 
-// Initialize when document is ready
-document.addEventListener('DOMContentLoaded', function() {
-  // Create distribution columns (hidden initially)
-  createDistributionColumns();
-  
-  // Calculate initial distributions
-  document.querySelectorAll('input.closing-input').forEach(input => {
-    const itemCode = input.dataset.code;
-    const closingQty = parseFloat(input.value);
-    calculateDistribution(itemCode, closingQty);
-  });
-  
-  // Update sale module view
-  updateSaleModuleView();
-  
-  // Add event listeners for closing quantity changes
-  document.querySelectorAll('input.closing-input').forEach(input => {
-    input.addEventListener('input', function() {
-      const itemCode = this.dataset.code;
-      let closingQty = parseFloat(this.value);
-      const currentStock = parseFloat(this.dataset.stock);
-      
-      // Validate input
-      if (closingQty > currentStock) {
-        this.value = currentStock;
-        closingQty = currentStock;
-      }
-      
-      // Enable edit mode if any input changes
-      if (!isEditMode) {
-        toggleEditMode(true);
-      }
-      
-      // Calculate and display new distribution
-      calculateDistribution(itemCode, closingQty);
-      
-      // Update sale module view
-      updateSaleModuleView();
+// Function to calculate total amount
+function calculateTotalAmount() {
+    let total = 0;
+    $('.amount-cell').each(function() {
+        total += parseFloat($(this).text()) || 0;
+    });
+    $('#totalAmount').text(total.toFixed(2));
+}
+
+// Function to initialize date headers and closing balance column
+function initializeTableHeaders() {
+    // Remove existing date headers if any
+    $('.date-header').remove();
+    
+    // Add date headers after the action column header
+    dateArray.forEach(date => {
+        const dateObj = new Date(date);
+        const day = dateObj.getDate();
+        const month = dateObj.toLocaleString('default', { month: 'short' });
+        
+        // Insert date headers after the action column header
+        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+    });
+}
+
+// Function to handle row navigation with arrow keys
+function setupRowNavigation() {
+    const closingInputs = $('input.closing-input');
+    let currentRowIndex = -1;
+    
+    // Highlight row when input is focused
+    $(document).on('focus', 'input.closing-input', function() {
+        // Remove highlight from all rows
+        $('tr').removeClass('highlight-row');
+        
+        // Add highlight to current row
+        $(this).closest('tr').addClass('highlight-row');
+        
+        // Update current row index
+        currentRowIndex = closingInputs.index(this);
     });
     
-    // Enable edit mode on focus
-    input.addEventListener('focus', function() {
-      if (!isEditMode) {
-        toggleEditMode(true);
-      }
+    // Handle arrow key navigation
+    $(document).on('keydown', 'input.closing-input', function(e) {
+        // Only handle arrow keys
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        
+        e.preventDefault(); // Prevent default scrolling behavior
+        
+        // Calculate new row index
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+            newIndex = currentRowIndex - 1;
+        } else { // ArrowDown
+            newIndex = currentRowIndex + 1;
+        }
+        
+        // Check if new index is valid
+        if (newIndex >= 0 && newIndex < closingInputs.length) {
+            // Focus the input in the new row
+            $(closingInputs[newIndex]).focus().select();
+        }
     });
-  });
-  
-  // Add event listener for shuffle all button
-  document.getElementById('shuffleBtn').addEventListener('click', function() {
-    document.querySelectorAll('input.closing-input').forEach(input => {
-      const itemCode = input.dataset.code;
-      const closingQty = parseFloat(input.value);
-      calculateDistribution(itemCode, closingQty);
+}
+
+// Function to save to pending sales
+function saveToPendingSales() {
+    // Show loader
+    $('#ajaxLoader').show();
+    
+    // Collect all the data
+    const formData = new FormData();
+    formData.append('save_pending', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    
+    // Add each item's closing quantity
+    $('input[name^="closing_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const closingQty = $(this).val();
+        formData.append(`items[${itemCode}]`, closingQty);
     });
     
-    // Update sale module view
-    updateSaleModuleView();
-  });
-  
-  // Add event listeners for individual shuffle buttons
-  document.querySelectorAll('.btn-shuffle-item').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const itemCode = this.dataset.code;
-      const input = document.querySelector(`input[data-code="${itemCode}"]`);
-      const closingQty = parseFloat(input.value);
-      
-      calculateDistribution(itemCode, closingQty);
-      
-      // Update sale module view
-      updateSaleModuleView();
+    // Send AJAX request
+    $.ajax({
+        url: 'save_pending_closing_sales.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#ajaxLoader').hide();
+            try {
+                const result = JSON.parse(response);
+                if (result.success) {
+                    alert('Closing stock data saved successfully! You can generate bills later from the "Post Daily Sales" page.');
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (e) {
+                alert('Error processing response: ' + response);
+            }
+        },
+        error: function() {
+            $('#ajaxLoader').hide();
+            alert('Error saving data. Please try again.');
+        }
     });
-  });
-  
-  // Add form submission handler
-  document.getElementById('salesForm').addEventListener('submit', function(e) {
-    // Validate that at least one item has a sale quantity
-    let hasSales = false;
-    document.querySelectorAll('.sale-qty-cell').forEach(cell => {
-      const saleQty = parseFloat(cell.textContent);
-      if (saleQty > 0) {
-        hasSales = true;
-      }
+}
+
+// Function to generate bills immediately
+function generateBills() {
+    // Show loader
+    $('#ajaxLoader').show();
+    
+    // Collect all the data
+    const formData = new FormData();
+    formData.append('generate_closing_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    
+    // Add each item's closing quantity
+    $('input[name^="closing_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const closingQty = $(this).val();
+        formData.append(`items[${itemCode}]`, closingQty);
     });
     
-    if (!hasSales) {
-      e.preventDefault();
-      alert('No sales quantities to save. Please adjust closing stock values to create sales.');
-      return;
-    }
+    // Send AJAX request
+    $.ajax({
+        url: 'generate_closing_bills.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#ajaxLoader').hide();
+            try {
+                const result = JSON.parse(response);
+                if (result.success) {
+                    alert('Bills generated successfully! Total Amount: ₹' + result.total_amount);
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (e) {
+                alert('Error processing response: ' + response);
+            }
+        },
+        error: function() {
+            $('#ajaxLoader').hide();
+            alert('Error generating bills. Please try again.');
+        }
+    });
+}
+
+// Document ready
+$(document).ready(function() {
+    // Initialize table headers and columns
+    initializeTableHeaders();
     
-    // Show loading indicator
-    document.getElementById('ajaxLoader').style.display = 'block';
-  });
+    // Set up row navigation with arrow keys
+    setupRowNavigation();
+    
+    // Closing input change event
+    $(document).on('change', 'input[name^="closing_qty"]', function() {
+        const itemCode = $(this).data('code');
+        const closingQty = parseFloat($(this).val()) || 0;
+        const currentStock = parseFloat($(this).data('stock'));
+        
+        // Validate input
+        if (closingQty > currentStock) {
+            $(this).val(currentStock);
+            closingQty = currentStock;
+        }
+        
+        if (closingQty >= 0) {
+            updateDistributionPreview(itemCode, closingQty);
+        } else {
+            // Remove distribution cells if quantity is invalid
+            $(`input[data-code="${itemCode}"]`).closest('tr').find('.date-distribution-cell').remove();
+            
+            // Reset amount
+            $(`#amount_${itemCode}`).text('0.00');
+            
+            // Hide date columns if no items have quantity
+            if ($('input[name^="closing_qty"]').filter(function() { 
+                const code = $(this).data('code');
+                const currentStock = parseFloat($(this).data('stock'));
+                const closingQty = parseFloat($(this).val());
+                return (currentStock - closingQty) > 0; 
+            }).length === 0) {
+                $('.date-header, .date-distribution-cell').hide();
+            }
+        }
+        
+        // Update total amount
+        calculateTotalAmount();
+        
+        // Update sale module view
+        updateSaleModuleView();
+    });
+    
+    // Shuffle all button click event
+    $('#shuffleBtn').click(function() {
+        $('input[name^="closing_qty"]').each(function() {
+            const itemCode = $(this).data('code');
+            const closingQty = parseFloat($(this).val()) || 0;
+            
+            updateDistributionPreview(itemCode, closingQty);
+        });
+        
+        // Update total amount
+        calculateTotalAmount();
+    });
+    
+    // Individual shuffle button click event
+    $(document).on('click', '.btn-shuffle-item', function() {
+        const itemCode = $(this).data('code');
+        const closingQty = parseFloat($(`input[data-code="${itemCode}"]`).val()) || 0;
+        
+        updateDistributionPreview(itemCode, closingQty);
+        
+        // Update total amount
+        calculateTotalAmount();
+    });
+    
+    // Sale module modal show event
+    $('#saleModuleModal').on('show.bs.modal', function() {
+        updateSaleModuleView();
+    });
+    
+    // Generate bills button click event
+    $('#generateBillsBtn').click(function() {
+        // Validate that at least one item has sale quantity
+        let hasSales = false;
+        $('input[name^="closing_qty"]').each(function() {
+            const currentStock = parseFloat($(this).data('stock'));
+            const closingQty = parseFloat($(this).val());
+            if (currentStock - closingQty > 0) {
+                hasSales = true;
+                return false; // Break the loop
+            }
+        });
+        
+        if (!hasSales) {
+            alert('No sales quantities to generate. Please adjust closing stock values to create sales.');
+            return false;
+        }
+        
+        // Show confirmation dialog
+        if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
+            // User clicked OK - generate bills immediately
+            generateBills();
+        } else {
+            // User clicked Cancel - save to pending sales
+            saveToPendingSales();
+        }
+    });
 });
 </script>
 </body>
 </html>
+              
