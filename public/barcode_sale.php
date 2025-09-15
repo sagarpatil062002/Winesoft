@@ -63,10 +63,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_code = $_POST['item_code'];
         $quantity = intval($_POST['quantity']);
         
-        // Fetch item details
-        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE FROM tblitemmaster WHERE CODE = ?";
+        // Fetch item details - search by BARCODE first, then by CODE
+        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
+                      FROM tblitemmaster 
+                      WHERE BARCODE = ? OR CODE = ? 
+                      LIMIT 1";
         $item_stmt = $conn->prepare($item_query);
-        $item_stmt->bind_param("s", $item_code);
+        $item_stmt->bind_param("ss", $item_code, $item_code);
         $item_stmt->execute();
         $item_result = $item_stmt->get_result();
         
@@ -113,6 +116,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: barcode_sale.php");
                 exit;
             }
+        } else {
+            // Item not found - store error message
+            $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found!";
         }
         $item_stmt->close();
         
@@ -742,6 +748,15 @@ document.addEventListener('DOMContentLoaded', function() {
         itemCodeInput.value = barcode;
         quantityInput.value = 1;
         addItemForm.submit();
+        
+        // Clear the input after submission
+        barcodeInput.value = '';
+        
+        // Reset status after a delay
+        setTimeout(() => {
+          statusIndicator.className = 'status-indicator status-ready';
+          statusText.textContent = 'Ready to scan';
+        }, 1000);
       }, 500);
     }
   }
