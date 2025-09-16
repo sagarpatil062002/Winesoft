@@ -223,6 +223,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_id = $_SESSION['user_id'];
         $fin_year_id = $_SESSION['FIN_YEAR_ID'];
         
+        // Get company limits
+        $company_query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+        $company_stmt = $conn->prepare($company_query);
+        $company_stmt->bind_param("i", $comp_id);
+        $company_stmt->execute();
+        $company_result = $company_stmt->get_result();
+        $company_limits = $company_result->fetch_assoc();
+        $company_stmt->close();
+        
+        // Determine the limit based on liquor mode
+        $limit = 0;
+        if ($mode === 'F') {
+            $limit = $company_limits['IMFLLimit'] ?? 1000.00; // Default to 1000ml if not set
+        } elseif ($mode === 'C') {
+            $limit = $company_limits['CLLimit'] ?? 0.00; // Default to 0 if not set
+        } else {
+            $limit = $company_limits['BEERLimit'] ?? 4000.00; // Default to 4000ml if not set
+        }
+        
         // Get next bill number
         $next_bill = getNextBillNumber($conn);
         
@@ -234,7 +253,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $distribution_details = []; // Store distribution details for display
             
             // Process only items with quantities to avoid max_input_vars issue
-            // We'll manually check each item code instead of using $_POST['sale_qty'] directly
             $processed_items = 0;
             
             foreach ($items as $item) {
@@ -255,77 +273,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $rate = $item['RPRICE'];
                         $item_name = $item['DETAILS'];
                         
-                        // Generate distribution
-                        $daily_sales = distributeSales($total_qty, $days_count);
+                        // Extract size from item details
+                        $size = 0;
+                        if (preg_match('/(\d+)\s*ML/i', $item['DETAILS'], $matches)) {
+                            $size = $matches[1];
+                        }
                         
                         // Store distribution details
                         $distribution_details[$item_code] = [
                             'name' => $item_name,
                             'total_qty' => $total_qty,
                             'rate' => $rate,
-                            'daily_sales' => $daily_sales,
+                            'size' => $size,
                             'dates' => $date_array
                         ];
+                    }
+                }
+            }
+            
+            // Process each day in the date range
+            foreach ($date_array as $sale_date) {
+                $daily_items = [];
+                
+                // For each item, get the daily sales quantity
+                foreach ($distribution_details as $item_code => $details) {
+                    // Generate distribution for this item
+                    $daily_sales = distributeSales($details['total_qty'], $days_count);
+                    
+                    // Get the quantity for this specific date
+                    $date_index = array_search($sale_date, $date_array);
+                    $qty = $daily_sales[$date_index] ?? 0;
+                    
+                    if ($qty > 0) {
+                        $daily_items[] = [
+                            'code' => $item_code,
+                            'name' => $details['name'],
+                            'qty' => $qty,
+                            'rate' => $details['rate'],
+                            'size' => $details['size'],
+                            'amount' => $qty * $details['rate']
+                        ];
+                    }
+                }
+                
+                // Group items into bills based on size limits
+                $bills = [];
+                $current_bill = [
+                    'items' => [],
+                    'total_volume' => 0,
+                    'total_amount' => 0
+                ];
+                
+                foreach ($daily_items as $item) {
+                    $item_volume = $item['qty'] * $item['size'];
+                    
+                    // If adding this item would exceed the limit, start a new bill
+                    if ($current_bill['total_volume'] + $item_volume > $limit && !empty($current_bill['items'])) {
+                        $bills[] = $current_bill;
+                        $current_bill = [
+                            'items' => [],
+                            'total_volume' => 0,
+                            'total_amount' => 0
+                        ];
+                    }
+                    
+                    // Add item to current bill
+                    $current_bill['items'][] = $item;
+                    $current_bill['total_volume'] += $item_volume;
+                    $current_bill['total_amount'] += $item['amount'];
+                }
+                
+                // Add the last bill if it has items
+                if (!empty($current_bill['items'])) {
+                    $bills[] = $current_bill;
+                }
+                
+                // Create bills for this day
+                foreach ($bills as $bill) {
+                    // Generate bill number
+                    $bill_no = "BL" . $next_bill;
+                    $next_bill++;
+                    
+                    // Insert sale header
+                    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                    $header_stmt = $conn->prepare($header_query);
+                    $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $bill['total_amount'], $bill['total_amount'], $mode, $comp_id, $user_id);
+                    $header_stmt->execute();
+                    $header_stmt->close();
+                    
+                    // Insert sale details for each item in the bill
+                    foreach ($bill['items'] as $item) {
+                        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                         VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $detail_stmt = $conn->prepare($detail_query);
+                        $detail_stmt->bind_param("ssddssi", $bill_no, $item['code'], $item['qty'], $item['rate'], $item['amount'], $mode, $comp_id);
+                        $detail_stmt->execute();
+                        $detail_stmt->close();
                         
-                        // Create sales for each day
-                        foreach ($daily_sales as $index => $qty) {
-                            if ($qty <= 0) continue;
-                            
-                            $sale_date = $date_array[$index];
-                            $amount = $qty * $rate;
-                            
-                            // Generate bill number starting from 1
-                            $bill_no = "BL" . $next_bill;
-                            $next_bill++;
-                            
-                            // Insert sale header
-                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                            $header_stmt = $conn->prepare($header_query);
-                            $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $amount, $amount, $mode, $comp_id, $user_id);
-                            $header_stmt->execute();
-                            $header_stmt->close();
-                            
-                            // Insert sale details
-                            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?)";
-                            $detail_stmt = $conn->prepare($detail_query);
-                            $detail_stmt->bind_param("ssddssi", $bill_no, $item_code, $qty, $rate, $amount, $mode, $comp_id);
-                            $detail_stmt->execute();
-                            $detail_stmt->close();
-                            
-                            // Update stock - check if record exists first
-                            $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
-                            $check_stmt = $conn->prepare($check_stock_query);
-                            $check_stmt->bind_param("s", $item_code);
-                            $check_stmt->execute();
-                            $check_result = $check_stmt->get_result();
-                            $stock_exists = $check_result->fetch_assoc()['count'] > 0;
-                            $check_stmt->close();
-                            
-                            if ($stock_exists) {
-                                // Update existing stock
-                                $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
-                                $stock_stmt = $conn->prepare($stock_query);
-                                $stock_stmt->bind_param("ds", $qty, $item_code);
-                                $stock_stmt->execute();
-                                $stock_stmt->close();
-                            } else {
-                                // Insert new stock record
-                                $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
-                                                       VALUES (?, ?, ?, ?)";
-                                $insert_stock_stmt = $conn->prepare($insert_stock_query);
-                                $current_stock = -$qty; // Negative since we're deducting
-                                $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
-                                $insert_stock_stmt->execute();
-                                $insert_stock_stmt->close();
-                            }
-                            
-                            // Update daily stock table with closing calculation
-                            updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
-                            
-                            $total_amount += $amount;
+                        // Update stock - check if record exists first
+                        $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+                        $check_stmt = $conn->prepare($check_stock_query);
+                        $check_stmt->bind_param("s", $item['code']);
+                        $check_stmt->execute();
+                        $check_result = $check_stmt->get_result();
+                        $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+                        $check_stmt->close();
+                        
+                        if ($stock_exists) {
+                            // Update existing stock
+                            $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+                            $stock_stmt = $conn->prepare($stock_query);
+                            $stock_stmt->bind_param("ds", $item['qty'], $item['code']);
+                            $stock_stmt->execute();
+                            $stock_stmt->close();
+                        } else {
+                            // Insert new stock record
+                            $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                                                   VALUES (?, ?, ?, ?)";
+                            $insert_stock_stmt = $conn->prepare($insert_stock_query);
+                            $current_stock = -$item['qty']; // Negative since we're deducting
+                            $insert_stock_stmt->bind_param("ssdd", $item['code'], $fin_year_id, $current_stock, $current_stock);
+                            $insert_stock_stmt->execute();
+                            $insert_stock_stmt->close();
                         }
+                        
+                        // Update daily stock table with closing calculation
+                        updateDailyStock($conn, $daily_stock_table, $item['code'], $sale_date, $item['qty'], $comp_id);
+                        
+                        $total_amount += $item['amount'];
                     }
                 }
             }
@@ -345,7 +421,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
-
 // Check for success message in URL
 if (isset($_GET['success'])) {
     $success_message = $_GET['success'];

@@ -11,9 +11,6 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
-$comp_id = $_SESSION['CompID'];
-$fin_year = $_SESSION['FIN_YEAR_ID'];
-
 include_once "../config/db.php"; // MySQLi connection in $conn
 require_once 'license_functions.php';
 
@@ -33,344 +30,6 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-
-// Check if company columns exist in tblitem_stock, if not create them
-$check_columns_query = "SELECT COUNT(*) as count FROM information_schema.columns 
-                       WHERE table_name = 'tblitem_stock' 
-                       AND column_name IN ('OPENING_STOCK$comp_id', 'CURRENT_STOCK$comp_id')";
-$check_result = $conn->query($check_columns_query);
-$columns_exist = $check_result->fetch_assoc()['count'] == 2;
-
-if (!$columns_exist) {
-    // Add company-specific columns as INT instead of DECIMAL
-    $add_col1_query = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK$comp_id INT DEFAULT 0";
-    $add_col2_query = "ALTER TABLE tblitem_stock ADD COLUMN CURRENT_STOCK$comp_id INT DEFAULT 0";
-    
-    $conn->query($add_col1_query);
-    $conn->query($add_col2_query);
-}
-
-// Check if company daily stock table exists, if not create it with dynamic day columns
-$check_table_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                     WHERE table_schema = DATABASE() 
-                     AND table_name = 'tbldailystock_$comp_id'";
-$check_table_result = $conn->query($check_table_query);
-$table_exists = $check_table_result->fetch_assoc()['count'] > 0;
-
-if (!$table_exists) {
-    // Create company-specific daily stock table with dynamic day columns
-    $create_table_query = "CREATE TABLE tbldailystock_$comp_id (
-        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
-        `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
-        `ITEM_CODE` varchar(20) NOT NULL,
-        `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
-        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-        PRIMARY KEY (`DailyStockID`),
-        UNIQUE KEY `unique_daily_stock_$comp_id` (`STK_MONTH`,`ITEM_CODE`),
-        KEY `ITEM_CODE_$comp_id` (`ITEM_CODE`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    
-    $conn->query($create_table_query);
-    
-    // Add day columns for the current month
-    $current_month = date('Y-m');
-    addDayColumnsForMonth($conn, $comp_id, $current_month);
-}
-
-// Function to add day columns for a specific month
-function addDayColumnsForMonth($conn, $comp_id, $month) {
-    $year_month = explode('-', $month);
-    $year = $year_month[0];
-    $month_num = $year_month[1];
-    $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
-    
-    for ($day = 1; $day <= $days_in_month; $day++) {
-        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
-        
-        // Check if column exists
-        $check_col_query = "SELECT COUNT(*) as count FROM information_schema.columns 
-                           WHERE table_name = 'tbldailystock_$comp_id' 
-                           AND column_name = 'DAY_{$day_padded}_OPEN'";
-        $check_result = $conn->query($check_col_query);
-        $col_exists = $check_result->fetch_assoc()['count'] > 0;
-        
-        if (!$col_exists) {
-            // Add opening, purchase, sales, and closing columns for this day as INT
-            $add_open_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_OPEN INT DEFAULT 0";
-            $add_purchase_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_PURCHASE INT DEFAULT 0";
-            $add_sales_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_SALES INT DEFAULT 0";
-            $add_closing_col = "ALTER TABLE tbldailystock_$comp_id ADD COLUMN DAY_{$day_padded}_CLOSING INT DEFAULT 0";
-            
-            $conn->query($add_open_col);
-            $conn->query($add_purchase_col);
-            $conn->query($add_sales_col);
-            $conn->query($add_closing_col);
-        }
-    }
-}
-
-// Function to archive previous month's data
-function archiveMonthlyData($conn, $comp_id, $month) {
-    // Replace hyphens with underscores for table name compatibility
-    $safe_month = str_replace('-', '_', $month);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
-    
-    // Check if archive table exists
-    $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                           WHERE table_schema = DATABASE() 
-                           AND table_name = '$archive_table'";
-    $check_result = $conn->query($check_archive_query);
-    $archive_exists = $check_result->fetch_assoc()['count'] > 0;
-    
-    if (!$archive_exists) {
-        // Create archive table with the same structure
-        $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
-        if (!$conn->query($create_archive_query)) {
-            error_log("Error creating archive table: " . $conn->error);
-            return false;
-        }
-    }
-    
-    // Copy data to archive
-    $copy_data_query = "INSERT INTO $archive_table SELECT * FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $copy_stmt = $conn->prepare($copy_data_query);
-    $copy_stmt->bind_param("s", $month);
-    if (!$copy_stmt->execute()) {
-        error_log("Error copying data to archive: " . $copy_stmt->error);
-        $copy_stmt->close();
-        return false;
-    }
-    $copy_stmt->close();
-    
-    // Delete archived data from main table
-    $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $delete_stmt = $conn->prepare($delete_query);
-    $delete_stmt->bind_param("s", $month);
-    if (!$delete_stmt->execute()) {
-        error_log("Error deleting archived data: " . $delete_stmt->error);
-        $delete_stmt->close();
-        return false;
-    }
-    $delete_stmt->close();
-    
-    return true;
-}
-
-// Function to get yesterday's closing stock for today's opening
-function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
-    $yesterday = date('d', strtotime('-1 day'));
-    $yesterday_padded = str_pad($yesterday, 2, '0', STR_PAD_LEFT);
-    $current_month = date('Y-m');
-    
-    $query = "SELECT DAY_{$yesterday_padded}_CLOSING as closing_qty FROM tbldailystock_$comp_id 
-              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("sss", $current_month, $item_code, $mode);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        return (int)$row['closing_qty'];
-    }
-    
-    return 0; // Return 0 if no record found for yesterday
-}
-
-// Function to create missing archive tables
-function createMissingArchiveTables($conn, $comp_id, $months) {
-    foreach ($months as $month) {
-        // Replace hyphens with underscores for table name compatibility
-        $safe_month = str_replace('-', '_', $month);
-        $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
-        
-        // Check if archive table already exists
-        $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                               WHERE table_schema = DATABASE() 
-                               AND table_name = '$archive_table'";
-        $check_result = $conn->query($check_archive_query);
-        $archive_exists = $check_result->fetch_assoc()['count'] > 0;
-        
-        if (!$archive_exists) {
-            // Create archive table with the same structure as the main table
-            $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
-            if ($conn->query($create_archive_query)) {
-                error_log("Created archive table: $archive_table");
-                
-                // Optionally copy existing data if available
-                $copy_data_query = "INSERT INTO $archive_table 
-                                   SELECT * FROM tbldailystock_$comp_id 
-                                   WHERE STK_MONTH = '$month'";
-                if ($conn->query($copy_data_query)) {
-                    $affected_rows = $conn->affected_rows;
-                    error_log("Copied $affected_rows records to $archive_table");
-                }
-            } else {
-                error_log("Error creating archive table: " . $conn->error);
-            }
-        } else {
-            error_log("Archive table $archive_table already exists");
-        }
-    }
-}
-
-// Only create missing archive tables if we're in development or specifically requested
-// Remove or comment this out in production after running once
-$development_mode = true; // Set to false in production
-if ($development_mode && $comp_id == 1) {
-    // Months from April to August (2024 financial year)
-    $missing_months = ['2024-04', '2024-05', '2024-06', '2024-07', '2024-08'];
-    
-    // Call the function to create missing archive tables
-    createMissingArchiveTables($conn, $comp_id, $missing_months);
-}
-
-// Check if we need to switch to a new month
-$current_month = date('Y-m');
-$check_current_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-$check_month_stmt = $conn->prepare($check_current_month_query);
-$check_month_stmt->bind_param("s", $current_month);
-$check_month_stmt->execute();
-$month_result = $check_month_stmt->get_result();
-$current_month_exists = $month_result->fetch_assoc()['count'] > 0;
-$check_month_stmt->close();
-
-if (!$current_month_exists) {
-    // Check if we have previous month data to archive
-    $previous_month = date('Y-m', strtotime('-1 month'));
-    $check_prev_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $check_prev_stmt = $conn->prepare($check_prev_month_query);
-    $check_prev_stmt->bind_param("s", $previous_month);
-    $check_prev_stmt->execute();
-    $prev_result = $check_prev_stmt->get_result();
-    $prev_month_exists = $prev_result->fetch_assoc()['count'] > 0;
-    $check_prev_stmt->close();
-    
-    if ($prev_month_exists) {
-        // Archive previous month's data
-        archiveMonthlyData($conn, $comp_id, $previous_month);
-    }
-    
-    // Add day columns for the new month
-    addDayColumnsForMonth($conn, $comp_id, $current_month);
-}
-
-// Function to update daily stock
-function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $closing_stock, $purchase_qty = 0, $sales_qty = 0) {
-    $today = date('d');
-    $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
-    $current_month = date('Y-m');
-    
-    // Convert to integers
-    $opening_stock = (int)$opening_stock;
-    $closing_stock = (int)$closing_stock;
-    $purchase_qty = (int)$purchase_qty;
-    $sales_qty = (int)$sales_qty;
-    
-    // Check if record exists for this month
-    $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
-                   WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("sss", $current_month, $item_code, $mode);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    $exists = $check_result->fetch_assoc()['count'] > 0;
-    $check_stmt->close();
-    
-    if ($exists) {
-        // Update existing record
-        $update_query = "UPDATE tbldailystock_$comp_id 
-                        SET DAY_{$today_padded}_OPEN = ?, 
-                            DAY_{$today_padded}_PURCHASE = DAY_{$today_padded}_PURCHASE + ?,
-                            DAY_{$today_padded}_SALES = DAY_{$today_padded}_SALES + ?,
-                            DAY_{$today_padded}_CLOSING = ?,
-                            LAST_UPDATED = CURRENT_TIMESTAMP 
-                        WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iiiiiss", $opening_stock, $purchase_qty, $sales_qty, $closing_stock, $current_month, $item_code, $mode);
-        $update_stmt->execute();
-        $update_stmt->close();
-    } else {
-        // Insert new record
-        $insert_query = "INSERT INTO tbldailystock_$comp_id 
-                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_PURCHASE, DAY_{$today_padded}_SALES, DAY_{$today_padded}_CLOSING) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sssiiii", $current_month, $item_code, $mode, $opening_stock, $purchase_qty, $sales_qty, $closing_stock);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-    }
-}
-
-// Function to update item stock information
-function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
-    // Update tblitem_stock
-    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_stock_query);
-    $check_stmt->bind_param("s", $item_code);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
-    $check_stmt->close();
-    
-    $opening_col = "OPENING_STOCK$comp_id";
-    $current_col = "CURRENT_STOCK$comp_id";
-    
-    if ($stock_exists) {
-        // Update existing stock record
-        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
-        $update_stmt->execute();
-        $update_stmt->close();
-    } else {
-        // Insert new stock record
-        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-    }
-    
-    // Update daily stock for today
-    $today = date('d');
-    $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
-    $current_month = date('Y-m');
-    
-    // Check if daily stock record exists
-    $check_daily_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
-                         WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-    $check_daily_stmt = $conn->prepare($check_daily_query);
-    $check_daily_stmt->bind_param("sss", $current_month, $item_code, $mode);
-    $check_daily_stmt->execute();
-    $daily_result = $check_daily_stmt->get_result();
-    $daily_exists = $daily_result->fetch_assoc()['count'] > 0;
-    $check_daily_stmt->close();
-    
-    if ($daily_exists) {
-        // Update existing daily record
-        $update_daily_query = "UPDATE tbldailystock_$comp_id 
-                              SET DAY_{$today_padded}_OPEN = ?, 
-                                  DAY_{$today_padded}_CLOSING = ?,
-                                  LAST_UPDATED = CURRENT_TIMESTAMP 
-                              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-        $update_daily_stmt = $conn->prepare($update_daily_query);
-        $update_daily_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $mode);
-        $update_daily_stmt->execute();
-        $update_daily_stmt->close();
-    } else {
-        // Insert new daily record
-        $insert_daily_query = "INSERT INTO tbldailystock_$comp_id 
-                              (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
-                              VALUES (?, ?, ?, ?, ?)";
-        $insert_daily_stmt = $conn->prepare($insert_daily_query);
-        $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $mode, $opening_balance, $opening_balance);
-        $insert_daily_stmt->execute();
-        $insert_daily_stmt->close();
-    }
-}
-
 
 // Fetch class descriptions from tblclass
 $classDescriptions = [];
@@ -501,7 +160,6 @@ function detectClassFromItemName($itemName) {
 }
 
 // Handle export requests
-// Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
@@ -561,26 +219,10 @@ if (isset($_GET['export'])) {
         $output = fopen('php://output', 'w');
         
         // Add CSV headers with user-friendly names
-        fputcsv($output, array('Code', 'ItemName', 'PrintName', 'Class', 'Subclass', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG', 'OpeningBalance'));
+        fputcsv($output, array('Code', 'ItemName', 'PrintName', 'Class', 'Subclass', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG'));
         
         // Add data rows with user-friendly mapping
         foreach ($items as $item) {
-            // Get opening balance from tblitem_stock - REMOVED LIQ_FLAG CONDITION
-            $opening_balance = 0;
-            $stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
-                           FROM tblitem_stock 
-                           WHERE ITEM_CODE = ?";
-            $stock_stmt = $conn->prepare($stock_query);
-            $stock_stmt->bind_param("s", $item['CODE']);
-            $stock_stmt->execute();
-            $stock_result = $stock_stmt->get_result();
-            
-            if ($stock_result->num_rows > 0) {
-                $stock_row = $stock_result->fetch_assoc();
-                $opening_balance = $stock_row['opening'];
-            }
-            $stock_stmt->close();
-            
             $exportRow = [
                 'Code' => $item['CODE'],
                 'ItemName' => $item['DETAILS'],
@@ -591,8 +233,7 @@ if (isset($_GET['export'])) {
                 'BPrice' => $item['BPRICE'],
                 'MPrice' => $item['MPRICE'],
                 'RPrice' => $item['RPRICE'],
-                'LIQFLAG' => $item['LIQ_FLAG'],
-                'OpeningBalance' => $opening_balance
+                'LIQFLAG' => $item['LIQ_FLAG']
             ];
             fputcsv($output, $exportRow);
         }
@@ -601,6 +242,7 @@ if (isset($_GET['export'])) {
         exit();
     }
 }
+
 // Handle import if form submitted
 $importMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && isset($_POST['import_type'])) {
@@ -631,7 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     $mpriceCol = isset($headerMap['MPrice']) ? $headerMap['MPrice'] : (isset($headerMap['MPRICE']) ? $headerMap['MPRICE'] : 6);
                     $rpriceCol = isset($headerMap['RPrice']) ? $headerMap['RPrice'] : (isset($headerMap['RPRICE']) ? $headerMap['RPRICE'] : 7);
                     $liqFlagCol = isset($headerMap['LIQFLAG']) ? $headerMap['LIQFLAG'] : (isset($headerMap['LIQ_FLAG']) ? $headerMap['LIQ_FLAG'] : 8);
-                    $openingBalanceCol = isset($headerMap['OpeningBalance']) ? $headerMap['OpeningBalance'] : (isset($headerMap['OPENING_BALANCE']) ? $headerMap['OPENING_BALANCE'] : 9);
                     
                     $imported = 0;
                     $updated = 0;
@@ -650,7 +291,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     }
                     
                     while (($data = fgetcsv($handle)) !== FALSE) {
-                        if (count($data) >= 9) { // At least 9 required columns now
+                        if (count($data) >= 8) { // At least 8 required columns now
                             $code = $conn->real_escape_string(trim($data[$codeCol]));
                             $itemName = $conn->real_escape_string(trim($data[$itemNameCol]));
                             $printName = $conn->real_escape_string(trim($data[$printNameCol]));
@@ -660,7 +301,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             $mprice = floatval(trim($data[$mpriceCol]));
                             $rprice = floatval(trim($data[$rpriceCol]));
                             $liqFlag = isset($data[$liqFlagCol]) ? $conn->real_escape_string(trim($data[$liqFlagCol])) : $mode;
-                            $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
                             
                             // Detect class from item name
                             $class = detectClassFromItemName($itemName);
@@ -710,9 +350,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 
                                 if ($conn->query($updateQuery)) {
                                     $updated++;
-                                    
-                                    // Update stock information
-                                    updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
                                 } else {
                                     $errors++;
                                     $errorDetails[] = "Error updating $code: " . $conn->error;
@@ -725,9 +362,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 
                                 if ($conn->query($insertQuery)) {
                                     $imported++;
-                                    
-                                    // Add stock information
-                                    updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
                                 } else {
                                     $errors++;
                                     $errorDetails[] = "Error inserting $code: " . $conn->error;
@@ -837,43 +471,6 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
         margin-top: 10px;
     }
   </style>
-<script>
-function downloadTemplate() {
-    // Create a CSV template with headers and example rows
-    const headers = ['Code', 'ItemName', 'PrintName', 'Subclass', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG', 'OpeningBalance'];
-    
-    // Example rows with proper formatting
-    const exampleRows = [
-        ['ITEM001', 'Sample Whisky Item', 'Sample Print', '180ML', '100.000', '90.000', '120.000', '110.000', '<?= $mode ?>', '100'],
-        ['ITEM002', '8 PM Special Whisky', '8 PM', '180ML', '120.000', '100.000', '150.000', '130.000', 'F', '50'],
-        ['ITEM003', 'ABSOLUT INDIA VODKA', 'Absolut', '750ML', '800.000', '700.000', '1200.000', '1000.000', 'F', '25'],
-        ['ITEM004', 'Kingfisher Strong Beer', 'Kingfisher', '650ML', '80.000', '70.000', '120.000', '100.000', 'F', '200']
-    ];
-    
-    // Create CSV content
-    let csvContent = headers.join(',') + '\r\n';
-    exampleRows.forEach(row => {
-        csvContent += row.join(',') + '\r\n';
-    });
-    
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'item_import_template.csv');
-    link.style.visibility = 'hidden';
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Clean up
-    setTimeout(() => {
-        URL.revokeObjectURL(url);
-    }, 100);
-}</script>
 </head>
 <body>
 <div class="dashboard-container">
@@ -937,10 +534,9 @@ function downloadTemplate() {
       <div class="import-template">
         <p><strong>Import file requirements:</strong></p>
         <ul>
-          <li>File must contain these columns in order: <strong>Code, ItemName, PrintName, Subclass, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance</strong></li>
+          <li>File must contain these columns in order: <strong>Code, ItemName, PrintName, Subclass, PPrice, BPrice, MPrice, RPrice, LIQFLAG</strong></li>
           <li>Class will be automatically detected from ItemName (e.g., "Whisky" → W, "Vodka" → K)</li>
           <li>Only CSV files are supported for import</li>
-          <li>OpeningBalance should be a whole number (integer)</li>
         </ul>
         <p><strong>Naming suggestions for automatic class detection:</strong></p>
         <ul>
@@ -1008,30 +604,12 @@ function downloadTemplate() {
               <th>B. Price</th>
               <th>MRP Price</th>
               <th>Retail Price</th>
-              <th>Opening Stock</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
           <?php if (!empty($items)): ?>
             <?php foreach ($items as $item): ?>
-              <?php
-              // Get opening balance from tblitem_stock
-$opening_balance = 0;
-$stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
-               FROM tblitem_stock 
-               WHERE ITEM_CODE = ?";
-$stock_stmt = $conn->prepare($stock_query);
-$stock_stmt->bind_param("s", $item['CODE']);
-$stock_stmt->execute();
-$stock_result = $stock_stmt->get_result();
-
-if ($stock_result->num_rows > 0) {
-    $stock_row = $stock_result->fetch_assoc();
-    $opening_balance = $stock_row['opening'];
-}
-$stock_stmt->close();
-              ?>
               <tr>
                 <td><?= htmlspecialchars($item['CODE']); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
@@ -1042,7 +620,6 @@ $stock_stmt->close();
                 <td><?= number_format($item['BPRICE'], 3); ?></td>
                 <td><?= number_format($item['MPRICE'], 3); ?></td>
                 <td><?= number_format($item['RPRICE'], 3); ?></td>
-                <td><?= $opening_balance; ?></td>
                 <td>
                   <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
                      class="btn btn-sm btn-primary" title="Edit">
@@ -1053,7 +630,7 @@ $stock_stmt->close();
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="11" class="text-center text-muted">No items found.</td>
+              <td colspan="10" class="text-center text-muted">No items found.</td>
             </tr>
           <?php endif; ?>
           </tbody>
@@ -1090,7 +667,6 @@ $stock_stmt->close();
               <li>ITEM_GROUP will be determined by matching Subclass with database descriptions</li>
               <li>Class will be automatically detected from ItemName</li>
               <li>Only classes allowed for your license type (<?= htmlspecialchars($license_type) ?>) will be imported</li>
-              <li>OpeningBalance should be a whole number (integer)</li>
             </ul>
           </div>
         </div>
@@ -1105,5 +681,31 @@ $stock_stmt->close();
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function downloadTemplate() {
+    // Create a simple CSV template for download with new columns
+    const headers = ['Code', 'ItemName', 'PrintName', 'Subclass', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG'];
+    const exampleRow = ['ITEM001', 'Sample Whisky Item', 'Sample Print', '180ML', '100.000', '90.000', '120.000', '110.000', '<?= $mode ?>'];
+    
+    let csvContent = headers.join(',') + '\n';
+    csvContent += exampleRow.join(',') + '\n';
+    
+    // Add some examples with class detection hints
+    csvContent += 'ITEM002,8 PM Special Whisky,8 PM,180ML,120.000,100.000,150.000,130.000,F\n';
+    csvContent += 'ITEM003,ABSOLUT INDIA VODKA,Absolut,750ML,800.000,700.000,1200.000,1000.000,F\n';
+    csvContent += 'ITEM004,Kingfisher Strong Beer,Kingfisher,650ML,80.000,70.000,120.000,100.000,F\n';
+    
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'item_import_template.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
 </body>
 </html>

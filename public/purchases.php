@@ -78,18 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $basic_amt = $_POST['basic_amt'] ?? 0;
     $tamt = $_POST['tamt'] ?? 0;
     
-    // Insert purchase header with AUTO_TPNO and FREIGHT columns
+    // Insert purchase header with AUTO_TPNO, TP_DATE and FREIGHT columns
     $insertQuery = "INSERT INTO tblpurchases (
         DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, 
-        TPNO, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
+        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
         TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
     $insertStmt = $conn->prepare($insertQuery);
     $insertStmt->bind_param(
-        "ssssissdddddddddddsi", // 19 type specifiers for 19 variables
+        "sssisssdddddddddddsi",
         $date, $supplier_code, $auto_tp_no, $voc_no, $inv_no, $inv_date, $tamt,
-        $tp_no, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
+        $tp_no, $tp_date, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
         $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
     );
     
@@ -99,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert purchase items
         if (isset($_POST['items']) && is_array($_POST['items'])) {
             $detailQuery = "INSERT INTO tblpurchasedetails (
-                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, CaseRate, MRP, Amount, BottlesPerCase,
-                BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+                CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $detailStmt = $conn->prepare($detailQuery);
@@ -111,8 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_size = $item['size'] ?? '';
                 $cases = $item['cases'] ?? 0;
                 $bottles = $item['bottles'] ?? 0;
-                $free_cases = $item['free_cases'] ?? 0; // NEW FIELD
-                $free_bottles = $item['free_bottles'] ?? 0; // NEW FIELD
+                $free_cases = $item['free_cases'] ?? 0;
+                $free_bottles = $item['free_bottles'] ?? 0;
                 $case_rate = $item['case_rate'] ?? 0;
                 $mrp = $item['mrp'] ?? 0;
                 $bottles_per_case = $item['bottles_per_case'] ?? 12;
@@ -127,12 +127,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
                 $detailStmt->bind_param(
-                    "isssddddiddiisssddd", // Updated parameter types
+                    "isssdddddddisssddi",
                     $purchase_id, $item_code, $item_name, $item_size,
                     $cases, $bottles, $free_cases, $free_bottles, $case_rate, $mrp, $amount, $bottles_per_case,
                     $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
                 );
                 $detailStmt->execute();
+                
+                // Update stock after inserting each item
+                updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $date, $companyId, $conn);
             }
             $detailStmt->close();
         }
@@ -145,7 +148,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $insertStmt->close();
 }
+
+// Function to update stock after purchase
+function updateStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bottlesPerCase, $purchaseDate, $companyId, $conn) {
+    // Calculate total bottles purchased (including free items)
+    $totalBottles = (($cases + $freeCases) * $bottlesPerCase) + $bottles + $freeBottles;
+    
+    // Get day of month from purchase date
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    
+    // Update tblitem_stock
+    $stockColumn = "CURRENT_STOCK" . $companyId;
+    $updateItemStockQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
+                             VALUES (?, YEAR(?), ?) 
+                             ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + ?";
+    
+    $itemStmt = $conn->prepare($updateItemStockQuery);
+    $itemStmt->bind_param("ssii", $itemCode, $purchaseDate, $totalBottles, $totalBottles);
+    $itemStmt->execute();
+    $itemStmt->close();
+    
+    // Update daily stock table
+    $dailyStockTable = "tbldailystock_" . $companyId;
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    
+    // Check if daily stock record exists for this month and item
+    $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $checkStmt = $conn->prepare($checkDailyStockQuery);
+    $checkStmt->bind_param("ss", $monthYear, $itemCode);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
+    $row = $result->fetch_assoc();
+    $checkStmt->close();
+    
+    if ($row['count'] > 0) {
+        // Update existing record
+        $updateDailyStockQuery = "UPDATE $dailyStockTable 
+                                 SET $purchaseColumn = $purchaseColumn + ? 
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $dailyStmt = $conn->prepare($updateDailyStockQuery);
+        $dailyStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+    } else {
+        // Insert new record
+        $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
+                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn) 
+                                 VALUES (?, ?, 'F', ?)";
+        $dailyStmt = $conn->prepare($updateDailyStockQuery);
+        $dailyStmt->bind_param("ssi", $monthYear, $itemCode, $totalBottles);
+    }
+    
+    $dailyStmt->execute();
+    $dailyStmt->close();
+    
+    // Also update the closing stock for the day
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    $updateClosingQuery = "UPDATE $dailyStockTable 
+                          SET $closingColumn = $closingColumn + ? 
+                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $closingStmt = $conn->prepare($updateClosingQuery);
+    $closingStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+    $closingStmt->execute();
+    $closingStmt->close();
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -514,44 +582,49 @@ $(function(){
   }
 
   // Function to find best supplier match
-  function findBestSupplierMatch(parsedName) {
+  // Function to find best supplier match (handles cases like "SAMBARAGI TRADERS-26" vs "SAMBARAGI TRADERS")
+function findBestSupplierMatch(parsedName) {
     if (!parsedName) return null;
     
-    const parsedClean = parsedName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const parsedClean = parsedName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
     let bestMatch = null;
     let bestScore = 0;
     
     suppliers.forEach(supplier => {
-        const supplierName = (supplier.DETAILS || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const supplierName = (supplier.DETAILS || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
         const supplierCode = (supplier.CODE || '').toLowerCase();
+        
+        // Remove numeric suffixes for better matching (e.g., "sambaragitraders26" → "sambaragitraders")
+        const parsedBase = parsedClean.replace(/\d+$/, '');
+        const supplierBase = supplierName.replace(/\d+$/, '');
         
         // Score based on string similarity
         let score = 0;
         
-        // Exact match
+        // 1. Exact match (highest priority)
         if (supplierName === parsedClean) {
             score = 100;
         }
-        // Contains match (high score)
+        // 2. Base name match (e.g., "sambaragitraders" matches "sambaragitraders26")
+        else if (supplierBase === parsedBase && supplierBase.length > 0) {
+            score = 95;
+        }
+        // 3. Contains match
         else if (supplierName.includes(parsedClean) || parsedClean.includes(supplierName)) {
             score = 80;
         }
-        // Partial match with common prefix
-        else if (supplierName.startsWith(parsedClean.substring(0, 5)) || 
-                 parsedClean.startsWith(supplierName.substring(0, 5))) {
-            score = 60;
-        }
-        // Code match (if supplier code is in the name)
-        else if (parsedClean.includes(supplierCode) || supplierCode.includes(parsedClean)) {
+        // 4. Base name contains match
+        else if (supplierBase.includes(parsedBase) || parsedBase.includes(supplierBase)) {
             score = 70;
         }
-        
-        // Remove numbers from the end for better matching
-        const parsedWithoutNumbers = parsedClean.replace(/\d+$/, '');
-        const supplierWithoutNumbers = supplierName.replace(/\d+$/, '');
-        
-        if (parsedWithoutNumbers === supplierWithoutNumbers) {
-            score = Math.max(score, 90);
+        // 5. Code match
+        else if (parsedClean.includes(supplierCode) || supplierCode.includes(parsedClean)) {
+            score = 60;
+        }
+        // 6. Partial match with common prefix
+        else if (supplierName.startsWith(parsedClean.substring(0, 5)) || 
+                 parsedClean.startsWith(supplierName.substring(0, 5))) {
+            score = 50;
         }
         
         if (score > bestScore) {
@@ -560,20 +633,23 @@ $(function(){
         }
     });
     
+    console.log("Supplier match:", parsedName, "→", bestMatch ? bestMatch.DETAILS : "No match", "Score:", bestScore);
     return bestMatch;
-  }
-
+}
   // Improved database item matching function
-  function findDbItemData(name, size, code) {
+function findDbItemData(name, size, code) {
     // Clean inputs
     const cleanName = (name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
     const cleanSize = (size || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
     const cleanCode = (code || '').toLowerCase().replace(/^scm/, '').trim();
     
+    console.log("Looking for item:", {name: cleanName, size: cleanSize, code: cleanCode});
+    
     // 1. Try exact code match first (with cleaned code)
     if (cleanCode) {
         for (const it of dbItems) {
-            if ((it.CODE || '').toLowerCase() === cleanCode) {
+            const dbCode = (it.CODE || '').toLowerCase().trim();
+            if (dbCode === cleanCode) {
                 console.log("Exact code match found:", it.CODE);
                 return it;
             }
@@ -581,7 +657,7 @@ $(function(){
         
         // 2. Try SCM code match (SCM + code)
         for (const it of dbItems) {
-            const scmCode = (it.SCM_CODE || '').toLowerCase().replace(/^scm/, '');
+            const scmCode = (it.SCM_CODE || '').toLowerCase().replace(/^scm/, '').trim();
             if (scmCode === cleanCode) {
                 console.log("SCM code match found:", it.CODE);
                 return it;
@@ -608,6 +684,13 @@ $(function(){
         else if (dbSize && cleanSize.includes(dbSize)) score += 20;
         else if (dbSize && dbSize.includes(cleanSize)) score += 10;
         
+        // If we have a code, check if it's similar to the database code
+        if (cleanCode) {
+            const dbCode = (it.CODE || '').toLowerCase().trim();
+            if (dbCode === cleanCode) score += 50;
+            else if (dbCode.includes(cleanCode) || cleanCode.includes(dbCode)) score += 25;
+        }
+        
         if (score > bestScore) {
             bestScore = score;
             bestMatch = it;
@@ -615,14 +698,13 @@ $(function(){
     }
     
     if (bestMatch) {
-        console.log("Best name/size match found:", bestMatch.CODE, "Score:", bestScore);
+        console.log("Best match found:", bestMatch.CODE, "Score:", bestScore);
         return bestMatch;
     }
     
     console.log("No match found for:", {name: cleanName, size: cleanSize, code: cleanCode});
     return null;
-  }
-
+}
   function calculateAmount(cases, individualBottles, caseRate, bottlesPerCase) {
     // Handle invalid inputs
     if (bottlesPerCase <= 0) bottlesPerCase = 1;
@@ -917,15 +999,16 @@ function calculateColumnTotals() {
   });
 
   // Enhanced parser for SCM code lines
-  function parseSCMItemLine(scmLine) {
+function parseSCMItemLine(scmLine) {
     // Pattern to match SCM code lines with variable spacing
-    const pattern = /SCM Code:(\S+)\s+([\w\s\(\)\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\w\-]+)\s+([\w\-\/]+)\s+([\w\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)/i;
+    const pattern = /SCM Code:(\S+)\s+([\w\s\(\)\-\.']+)\s+([\d\.]+)\s+([\d\.]+)\s+([\w\-]+)\s+([\w\-\/]+)\s+([\w\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)/i;
     const match = scmLine.match(pattern);
     
     if (match) {
         return {
             itemCode: match[1].replace("SCM", ""),
-            size: match[2].trim(),
+            name: match[2].trim(), // Extract the item name
+            size: match[2].trim(), // This will be refined below
             cases: parseFloat(match[3]),
             bottles: parseInt(match[4]),
             batchNo: match[5],
@@ -935,7 +1018,7 @@ function calculateColumnTotals() {
             bl: parseFloat(match[9]),
             vv: parseFloat(match[10]),
             totBott: parseInt(match[11]),
-            freeCases: 0, // Default values for new fields
+            freeCases: 0,
             freeBottles: 0
         };
     }
@@ -965,6 +1048,7 @@ function calculateColumnTotals() {
     
     return {
         itemCode: parts[1].replace("SCM", ""),
+        name: "", // We'll need to extract this from the previous line
         size: size,
         cases: parseFloat(numericParts[0]) || 0,
         bottles: parseInt(numericParts[1]) || 0,
@@ -975,11 +1059,10 @@ function calculateColumnTotals() {
         bl: parseFloat(numericParts[6]) || 0,
         vv: parseFloat(numericParts[7]) || 0,
         totBott: parseInt(numericParts[8]) || 0,
-        freeCases: 0, // Default values for new fields
+        freeCases: 0,
         freeBottles: 0
     };
-  }
-
+}
   // Main SCM parsing function
   function parseSCM(text) {
     const lines = text.split(/\r?\n/).map(l => l.replace(/\u00A0/g, ' ').trim()).filter(l => l !== '');
@@ -1084,6 +1167,48 @@ function calculateColumnTotals() {
     
     return out;
   }
+
+  // Arrow navigation between input fields
+$(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-rate, .mrp', function(e) {
+    const $current = $(this);
+    const $row = $current.closest('tr');
+    const $allInputs = $row.find('input[type="number"]');
+    const currentIndex = $allInputs.index($current);
+    
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        
+        // Find the next/previous row
+        let $targetRow;
+        if (e.key === 'ArrowUp') {
+            $targetRow = $row.prev('.item-row');
+        } else {
+            $targetRow = $row.next('.item-row');
+        }
+        
+        if ($targetRow.length) {
+            // Get the same input field in the next/previous row
+            const $targetInputs = $targetRow.find('input[type="number"]');
+            if ($targetInputs.length > currentIndex) {
+                $targetInputs.eq(currentIndex).focus().select();
+            }
+        }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        // Navigate within the same row
+        e.preventDefault();
+        
+        let $targetInput;
+        if (e.key === 'ArrowLeft' && currentIndex > 0) {
+            $targetInput = $allInputs.eq(currentIndex - 1);
+        } else if (e.key === 'ArrowRight' && currentIndex < $allInputs.length - 1) {
+            $targetInput = $allInputs.eq(currentIndex + 1);
+        }
+        
+        if ($targetInput) {
+            $targetInput.focus().select();
+        }
+    }
+});
 
   // Initialize
   if($('.item-row').length===0){

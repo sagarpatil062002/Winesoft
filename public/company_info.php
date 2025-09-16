@@ -50,6 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fin_year = intval($_POST['fin_year']);
     $comp_addr = trim($_POST['comp_addr']);
     $comp_flno = trim($_POST['comp_flno']);
+    $imfl_limit = isset($_POST['imfl_limit']) ? floatval($_POST['imfl_limit']) : 0;
+    $beer_limit = isset($_POST['beer_limit']) ? floatval($_POST['beer_limit']) : 0;
+    $cl_limit = isset($_POST['cl_limit']) ? floatval($_POST['cl_limit']) : 0;
     
     // Validate required fields
     if (empty($comp_name) || empty($fin_year)) {
@@ -63,11 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         FIN_YEAR = ?, 
                         COMP_ADDR = ?, 
                         COMP_FLNO = ?,
+                        IMFLLimit = ?,
+                        BEERLimit = ?,
+                        CLLimit = ?,
                         UPDATED_AT = CURRENT_TIMESTAMP
                         WHERE CompID = ?";
         
         $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("sssisss", $comp_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno, $comp_id);
+        // Corrected the parameter types - 10 parameters, so 10 characters in type string
+        $stmt->bind_param("sssisdddis", $comp_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno, $imfl_limit, $beer_limit, $cl_limit, $comp_id);
         
         if ($stmt->execute()) {
             $success_msg = "Company information updated successfully.";
@@ -96,14 +103,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <style>
+    .dashboard-container {
+      display: flex;
+      min-height: 100vh;
+      background-color: #f8f9fa;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .content-area {
+      flex: 1;
+      padding: 20px;
+      background-color: white;
+      margin: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .card {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 8px;
+    }
+    .card-header {
+      background-color: #4e73df;
+      color: white;
+      border-radius: 8px 8px 0 0 !important;
+    }
+    .btn-primary {
+      background-color: #4e73df;
+      border-color: #4e73df;
+    }
+    .btn-primary:hover {
+      background-color: #2e59d9;
+      border-color: #2e59d9;
+    }
+    .form-label {
+      font-weight: 500;
+    }
+    .alert {
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
-  <?php include 'components/navbar.php'; ?>
-
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
-
     <div class="content-area">
       <h3 class="mb-4">Company Information</h3>
 
@@ -124,14 +172,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="col-md-6">
                 <label for="comp_name" class="form-label">Company Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="comp_name" name="comp_name" 
-                       value="<?= htmlspecialchars($company['COMP_NAME'] ?? '') ?>" required>
+                       value="<?= htmlspecialchars($company['COMP_NAME'] ?? 'Diamond Wine Shop') ?>" required>
               </div>
               <div class="col-md-6">
                 <label for="fin_year" class="form-label">Financial Year <span class="text-danger">*</span></label>
                 <select class="form-select" id="fin_year" name="fin_year" required>
                   <option value="">Select Financial Year</option>
                   <?php foreach ($fin_years as $id => $year): ?>
-                    <option value="<?= $id ?>" <?= ($company['FIN_YEAR'] ?? '') == $id ? 'selected' : '' ?>>
+                    <option value="<?= $id ?>" <?= ($company['FIN_YEAR'] ?? 1) == $id ? 'selected' : '' ?>>
                       <?= htmlspecialchars($year) ?>
                     </option>
                   <?php endforeach; ?>
@@ -154,13 +202,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-3">
               <label for="comp_addr" class="form-label">Company Address</label>
-              <textarea class="form-control" id="comp_addr" name="comp_addr" rows="3"><?= htmlspecialchars($company['COMP_ADDR'] ?? '') ?></textarea>
+              <textarea class="form-control" id="comp_addr" name="comp_addr" rows="3"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Vishrambag Sangli') ?></textarea>
             </div>
 
             <div class="mb-3">
               <label for="comp_flno" class="form-label">FL Number</label>
               <input type="text" class="form-control" id="comp_flno" name="comp_flno" 
-                     value="<?= htmlspecialchars($company['COMP_FLNO'] ?? '') ?>">
+                     value="<?= htmlspecialchars($company['COMP_FLNO'] ?? 'FL-II 3') ?>">
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="imfl_limit" class="form-label">IMFL Limit</label>
+                <input type="number" step="0.01" class="form-control" id="imfl_limit" name="imfl_limit" 
+                       value="<?= htmlspecialchars($company['IMFLLimit'] ?? '5000.00') ?>">
+              </div>
+              <div class="col-md-4">
+                <label for="beer_limit" class="form-label">BEER Limit</label>
+                <input type="number" step="0.01" class="form-control" id="beer_limit" name="beer_limit" 
+                       value="<?= htmlspecialchars($company['BEERLimit'] ?? '3000.00') ?>">
+              </div>
+              <div class="col-md-4">
+                <label for="cl_limit" class="form-label">CL Limit</label>
+                <input type="number" step="0.01" class="form-control" id="cl_limit" name="cl_limit" 
+                       value="<?= htmlspecialchars($company['CLLimit'] ?? '2000.00') ?>">
+              </div>
             </div>
 
             <div class="d-flex gap-2">
@@ -168,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-save"></i> Update Information
               </button>
               <a href="dashboard.php" class="btn btn-secondary">
-                <i class="fas fa-sign-out-alt"></i> Back to Dashboard
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
               </a>
             </div>
           </div>
@@ -183,11 +249,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-body">
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">Company Name:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_NAME'] ?? 'Not set') ?></div>
+            <div class="col-md-9"><?= htmlspecialchars($company['COMP_NAME'] ?? 'Diamond Wine Shop') ?></div>
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">Financial Year:</div>
-            <div class="col-md-9"><?= htmlspecialchars($fin_years[$company['FIN_YEAR']] ?? 'Not set') ?></div>
+            <div class="col-md-9"><?= htmlspecialchars($fin_years[$company['FIN_YEAR']] ?? '2024-2025') ?></div>
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">CF Line:</div>
@@ -199,11 +265,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">Address:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Not set') ?></div>
+            <div class="col-md-9"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Vishrambag Sangli') ?></div>
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">FL Number:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_FLNO'] ?? 'Not set') ?></div>
+            <div class="col-md-9"><?= htmlspecialchars($company['COMP_FLNO'] ?? 'FL-II 3') ?></div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">IMFL Limit:</div>
+            <div class="col-md-9"><?= htmlspecialchars($company['IMFLLimit'] ?? '5000.00') ?></div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">BEER Limit:</div>
+            <div class="col-md-9"><?= htmlspecialchars($company['BEERLimit'] ?? '3000.00') ?></div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">CL Limit:</div>
+            <div class="col-md-9"><?= htmlspecialchars($company['CLLimit'] ?? '2000.00') ?></div>
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">Last Updated:</div>
@@ -212,8 +290,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       </div>
     </div>
-
-    <?php include 'components/footer.php'; ?>
   </div>
 </div>
 
