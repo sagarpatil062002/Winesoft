@@ -255,6 +255,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Process only items with quantities to avoid max_input_vars issue
             $processed_items = 0;
             
+            // First, collect all items with quantities
+            $items_with_qty = [];
             foreach ($items as $item) {
                 $item_code = $item['CODE'];
                 
@@ -279,73 +281,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $size = $matches[1];
                         }
                         
+                        // Generate distribution
+                        $daily_sales = distributeSales($total_qty, $days_count);
+                        
                         // Store distribution details
                         $distribution_details[$item_code] = [
                             'name' => $item_name,
                             'total_qty' => $total_qty,
                             'rate' => $rate,
                             'size' => $size,
+                            'daily_sales' => $daily_sales,
                             'dates' => $date_array
+                        ];
+                        
+                        $items_with_qty[$item_code] = [
+                            'name' => $item_name,
+                            'rate' => $rate,
+                            'size' => $size,
+                            'daily_sales' => $daily_sales
                         ];
                     }
                 }
             }
             
             // Process each day in the date range
-            foreach ($date_array as $sale_date) {
+            foreach ($date_array as $date_index => $sale_date) {
                 $daily_items = [];
                 
-                // For each item, get the daily sales quantity
-                foreach ($distribution_details as $item_code => $details) {
-                    // Generate distribution for this item
-                    $daily_sales = distributeSales($details['total_qty'], $days_count);
-                    
-                    // Get the quantity for this specific date
-                    $date_index = array_search($sale_date, $date_array);
-                    $qty = $daily_sales[$date_index] ?? 0;
+                // For each item, get the daily sales quantity for this date
+                foreach ($items_with_qty as $item_code => $item_details) {
+                    $qty = $item_details['daily_sales'][$date_index] ?? 0;
                     
                     if ($qty > 0) {
                         $daily_items[] = [
                             'code' => $item_code,
-                            'name' => $details['name'],
+                            'name' => $item_details['name'],
                             'qty' => $qty,
-                            'rate' => $details['rate'],
-                            'size' => $details['size'],
-                            'amount' => $qty * $details['rate']
+                            'rate' => $item_details['rate'],
+                            'size' => $item_details['size'],
+                            'amount' => $qty * $item_details['rate'],
+                            'volume' => $qty * $item_details['size']
                         ];
                     }
                 }
                 
-                // Group items into bills based on size limits
+                // If no items for this day, skip
+                if (empty($daily_items)) {
+                    continue;
+                }
+                
+                // DEBUG: Log the daily items
+                error_log("Date: $sale_date, Items: " . count($daily_items));
+                foreach ($daily_items as $item) {
+                    error_log("Item: {$item['code']}, Qty: {$item['qty']}, Size: {$item['size']}, Volume: {$item['volume']}");
+                }
+                
+                // Group items into bills based on volume limits using bin packing algorithm
                 $bills = [];
-                $current_bill = [
-                    'items' => [],
-                    'total_volume' => 0,
-                    'total_amount' => 0
-                ];
                 
                 foreach ($daily_items as $item) {
-                    $item_volume = $item['qty'] * $item['size'];
+                    $placed = false;
                     
-                    // If adding this item would exceed the limit, start a new bill
-                    if ($current_bill['total_volume'] + $item_volume > $limit && !empty($current_bill['items'])) {
-                        $bills[] = $current_bill;
-                        $current_bill = [
-                            'items' => [],
-                            'total_volume' => 0,
-                            'total_amount' => 0
-                        ];
+                    // Try to place item in existing bill
+                    foreach ($bills as &$bill) {
+                        if ($bill['total_volume'] + $item['volume'] <= $limit) {
+                            $bill['items'][] = $item;
+                            $bill['total_volume'] += $item['volume'];
+                            $bill['total_amount'] += $item['amount'];
+                            $placed = true;
+                            break;
+                        }
                     }
                     
-                    // Add item to current bill
-                    $current_bill['items'][] = $item;
-                    $current_bill['total_volume'] += $item_volume;
-                    $current_bill['total_amount'] += $item['amount'];
+                    // If couldn't place in existing bill, create a new one
+                    if (!$placed) {
+                        $bills[] = [
+                            'items' => [$item],
+                            'total_volume' => $item['volume'],
+                            'total_amount' => $item['amount']
+                        ];
+                    }
                 }
                 
-                // Add the last bill if it has items
-                if (!empty($current_bill['items'])) {
-                    $bills[] = $current_bill;
+                // DEBUG: Log the bills created
+                error_log("Bills created: " . count($bills));
+                foreach ($bills as $index => $bill) {
+                    error_log("Bill $index: Volume: {$bill['total_volume']}, Amount: {$bill['total_amount']}, Items: " . count($bill['items']));
                 }
                 
                 // Create bills for this day
@@ -420,10 +441,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = "Error updating sales: " . $e->getMessage();
         }
     }
-}
-// Check for success message in URL
-if (isset($_GET['success'])) {
-    $success_message = $_GET['success'];
 }
 
 // Initialize quantities array

@@ -179,9 +179,14 @@ function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
 }
 
 // Function to create missing archive tables
-function createMissingArchiveTables($conn, $comp_id, $months) {
-    foreach ($months as $month) {
-        // Replace hyphens with underscores for table name compatibility
+function createMissingArchiveTables($conn, $comp_id, $fin_year, $months) {
+    // Extract the starting year from financial year (e.g., "2025-26" -> "2025")
+    $fin_year_parts = explode('-', $fin_year);
+    $start_year = $fin_year_parts[0];
+    
+    foreach ($months as $month_num) {
+        $month_padded = str_pad($month_num, 2, '0', STR_PAD_LEFT);
+        $month = $start_year . '-' . $month_padded;
         $safe_month = str_replace('-', '_', $month);
         $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
         
@@ -216,14 +221,13 @@ function createMissingArchiveTables($conn, $comp_id, $months) {
 }
 
 // Only create missing archive tables if we're in development or specifically requested
-// Remove or comment this out in production after running once
-$development_mode = true; // Set to false in production
+$development_mode = true; // Set to false in production after running once
 if ($development_mode && $comp_id == 1) {
-    // Months from April to August (2024 financial year)
-    $missing_months = ['2024-04', '2024-05', '2024-06', '2024-07', '2024-08'];
+    // Months from April to August (financial year starts in April)
+    $missing_months = [4, 5, 6, 7, 8]; // Month numbers only
     
-    // Call the function to create missing archive tables
-    createMissingArchiveTables($conn, $comp_id, $missing_months);
+    // Call the function to create missing archive tables using the actual financial year
+    createMissingArchiveTables($conn, $comp_id, $fin_year, $missing_months);
 }
 
 // Check if we need to switch to a new month
@@ -370,7 +374,6 @@ function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
         $insert_daily_stmt->close();
     }
 }
-
 
 // Fetch class descriptions from tblclass
 $classDescriptions = [];
