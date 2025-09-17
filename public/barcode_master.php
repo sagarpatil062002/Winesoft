@@ -21,7 +21,7 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Fetch items
-$query = "SELECT CODE, DETAILS, CLASS, BPRICE, BARCODE FROM tblitemmaster WHERE LIQ_FLAG = ?";
+$query = "SELECT CODE, DETAILS, DETAILS2, CLASS, BPRICE, BARCODE FROM tblitemmaster WHERE LIQ_FLAG = ?";
 $params = [$mode];
 $types = "s";
 
@@ -105,7 +105,7 @@ $stmt->close();
                         <tr>
                             <th>#</th>
                             <th>Item Name</th>
-                            <th>Category</th>
+                            <th>Size</th>
                             <th>S. Rate</th>
                             <th class="barcode-col">Bar Code</th>
                             <th class="action-col no-print">Actions</th>
@@ -117,7 +117,7 @@ $stmt->close();
                             <tr>
                                 <td><?= $index + 1 ?></td>
                                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                                <td><?= htmlspecialchars($item['CLASS']); ?></td>
+                                <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
                                 <td><?= number_format($item['BPRICE'], 2); ?></td>
                                 <td><?= htmlspecialchars($item['BARCODE']); ?></td>
                                 <td class="no-print">

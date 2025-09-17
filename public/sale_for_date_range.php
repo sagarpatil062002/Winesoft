@@ -214,6 +214,162 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     }
 }
 
+// Function to get item volume from tblsubclass
+function getItemVolume($conn, $item_code) {
+    // Extract subclass code from item code (assuming format like SCMPL0019028 where SC001 is the subclass)
+    $subclass_code = substr($item_code, 4, 4); // Get the 4 characters after "SCMP"
+    
+    $query = "SELECT CC FROM tblsubclass WHERE ITEM_GROUP = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $subclass_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['CC'];
+    }
+    
+    // Default to 0 if not found
+    return 0;
+}
+
+// Function to get item class from tblitemmaster
+function getItemClass($conn, $item_code) {
+    $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $item_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['DETAILS2'];
+    }
+    
+    // Default to empty if not found
+    return '';
+}
+
+// Function to get company limits
+function getCompanyLimits($conn, $comp_id) {
+    $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        return $result->fetch_assoc();
+    }
+    
+    // Default limits if not found
+    return ['IMFLLimit' => 1000, 'BEERLimit' => 4000, 'CLLimit' => 0];
+}
+
+// Function to determine liquor type based on class
+function getLiquorType($class) {
+    // IMFL classes: W, V, G, D, K, R, O (Foreign)
+    $imfl_classes = ['W', 'V', 'G', 'D', 'K', 'R', 'O'];
+    
+    // Beer classes: B, M
+    $beer_classes = ['B', 'M'];
+    
+    // CL classes: L, O (Country)
+    $cl_classes = ['L', 'O'];
+    
+    if (in_array($class, $imfl_classes)) {
+        return 'IMFL';
+    } elseif (in_array($class, $beer_classes)) {
+        return 'BEER';
+    } elseif (in_array($class, $cl_classes)) {
+        return 'CL';
+    }
+    
+    return 'OTHER';
+}
+
+// Function to split items into bills based on volume limits
+function splitItemsIntoBills($items_with_qty, $conn, $comp_id) {
+    $bills = [];
+    $company_limits = getCompanyLimits($conn, $comp_id);
+    
+    // Group items by liquor type
+    $items_by_type = [
+        'IMFL' => [],
+        'BEER' => [],
+        'CL' => [],
+        'OTHER' => []
+    ];
+    
+    foreach ($items_with_qty as $item_code => $qty) {
+        if ($qty <= 0) continue;
+        
+        $class = getItemClass($conn, $item_code);
+        $liquor_type = getLiquorType($class);
+        $volume = getItemVolume($conn, $item_code);
+        
+        $items_by_type[$liquor_type][] = [
+            'code' => $item_code,
+            'qty' => $qty,
+            'volume' => $volume,
+            'total_volume' => $volume * $qty
+        ];
+    }
+    
+    // Process each liquor type separately
+    foreach ($items_by_type as $type => $items) {
+        if (empty($items)) continue;
+        
+        $limit = 0;
+        switch ($type) {
+            case 'IMFL':
+                $limit = $company_limits['IMFLLimit'];
+                break;
+            case 'BEER':
+                $limit = $company_limits['BEERLimit'];
+                break;
+            case 'CL':
+                $limit = $company_limits['CLLimit'];
+                break;
+            default:
+                $limit = PHP_INT_MAX; // No limit for other types
+        }
+        
+        // If no limit or limit is 0, put all items in one bill
+        if ($limit <= 0) {
+            $bills[] = $items;
+            continue;
+        }
+        
+        // Split items into bills based on volume limit
+        $current_bill = [];
+        $current_volume = 0;
+        
+        foreach ($items as $item) {
+            $item_volume = $item['total_volume'];
+            
+            // If adding this item would exceed the limit, start a new bill
+            if ($current_volume + $item_volume > $limit && !empty($current_bill)) {
+                $bills[] = $current_bill;
+                $current_bill = [];
+                $current_volume = 0;
+            }
+            
+            // Add item to current bill
+            $current_bill[] = $item;
+            $current_volume += $item_volume;
+        }
+        
+        // Add the last bill if it has items
+        if (!empty($current_bill)) {
+            $bills[] = $current_bill;
+        }
+    }
+    
+    return $bills;
+}
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_sales'])) {
@@ -222,25 +378,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comp_id = $_SESSION['CompID'];
         $user_id = $_SESSION['user_id'];
         $fin_year_id = $_SESSION['FIN_YEAR_ID'];
-        
-        // Get company limits
-        $company_query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
-        $company_stmt = $conn->prepare($company_query);
-        $company_stmt->bind_param("i", $comp_id);
-        $company_stmt->execute();
-        $company_result = $company_stmt->get_result();
-        $company_limits = $company_result->fetch_assoc();
-        $company_stmt->close();
-        
-        // Determine the limit based on liquor mode
-        $limit = 0;
-        if ($mode === 'F') {
-            $limit = $company_limits['IMFLLimit'] ?? 1000.00; // Default to 1000ml if not set
-        } elseif ($mode === 'C') {
-            $limit = $company_limits['CLLimit'] ?? 0.00; // Default to 0 if not set
-        } else {
-            $limit = $company_limits['BEERLimit'] ?? 4000.00; // Default to 4000ml if not set
-        }
         
         // Get next bill number
         $next_bill = getNextBillNumber($conn);
@@ -252,10 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $total_amount = 0;
             $distribution_details = []; // Store distribution details for display
             
-            // Process only items with quantities to avoid max_input_vars issue
-            $processed_items = 0;
-            
-            // First, collect all items with quantities
+            // Collect items with quantities
             $items_with_qty = [];
             foreach ($items as $item) {
                 $item_code = $item['CODE'];
@@ -265,137 +399,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $total_qty = intval($_POST['sale_qty'][$item_code]); // Convert to integer
                     
                     if ($total_qty > 0) {
-                        $processed_items++;
-                        
-                        // Limit processing to prevent max_input_vars issues
-                        if ($processed_items > 1000) {
-                            throw new Exception("Too many items with quantities. Maximum allowed is 1000 items.");
-                        }
-                        
-                        $rate = $item['RPRICE'];
-                        $item_name = $item['DETAILS'];
-                        
-                        // Extract size from item details
-                        $size = 0;
-                        if (preg_match('/(\d+)\s*ML/i', $item['DETAILS'], $matches)) {
-                            $size = $matches[1];
-                        }
-                        
-                        // Generate distribution
-                        $daily_sales = distributeSales($total_qty, $days_count);
-                        
-                        // Store distribution details
-                        $distribution_details[$item_code] = [
-                            'name' => $item_name,
-                            'total_qty' => $total_qty,
-                            'rate' => $rate,
-                            'size' => $size,
-                            'daily_sales' => $daily_sales,
-                            'dates' => $date_array
-                        ];
-                        
-                        $items_with_qty[$item_code] = [
-                            'name' => $item_name,
-                            'rate' => $rate,
-                            'size' => $size,
-                            'daily_sales' => $daily_sales
-                        ];
+                        $items_with_qty[$item_code] = $total_qty;
                     }
                 }
             }
             
-            // Process each day in the date range
-            foreach ($date_array as $date_index => $sale_date) {
-                $daily_items = [];
-                
-                // For each item, get the daily sales quantity for this date
-                foreach ($items_with_qty as $item_code => $item_details) {
-                    $qty = $item_details['daily_sales'][$date_index] ?? 0;
+            // Split items into bills based on volume limits
+            $bills = splitItemsIntoBills($items_with_qty, $conn, $comp_id);
+            
+            // Process each bill
+            foreach ($bills as $bill_items) {
+                // Process each item in the bill
+                foreach ($bill_items as $item) {
+                    $item_code = $item['code'];
+                    $total_qty = $item['qty'];
+                    $rate = 0;
+                    $item_name = '';
                     
-                    if ($qty > 0) {
-                        $daily_items[] = [
-                            'code' => $item_code,
-                            'name' => $item_details['name'],
-                            'qty' => $qty,
-                            'rate' => $item_details['rate'],
-                            'size' => $item_details['size'],
-                            'amount' => $qty * $item_details['rate'],
-                            'volume' => $qty * $item_details['size']
-                        ];
-                    }
-                }
-                
-                // If no items for this day, skip
-                if (empty($daily_items)) {
-                    continue;
-                }
-                
-                // DEBUG: Log the daily items
-                error_log("Date: $sale_date, Items: " . count($daily_items));
-                foreach ($daily_items as $item) {
-                    error_log("Item: {$item['code']}, Qty: {$item['qty']}, Size: {$item['size']}, Volume: {$item['volume']}");
-                }
-                
-                // Group items into bills based on volume limits using bin packing algorithm
-                $bills = [];
-                
-                foreach ($daily_items as $item) {
-                    $placed = false;
-                    
-                    // Try to place item in existing bill
-                    foreach ($bills as &$bill) {
-                        if ($bill['total_volume'] + $item['volume'] <= $limit) {
-                            $bill['items'][] = $item;
-                            $bill['total_volume'] += $item['volume'];
-                            $bill['total_amount'] += $item['amount'];
-                            $placed = true;
+                    // Find item details
+                    foreach ($items as $item_detail) {
+                        if ($item_detail['CODE'] === $item_code) {
+                            $rate = $item_detail['RPRICE'];
+                            $item_name = $item_detail['DETAILS'];
                             break;
                         }
                     }
                     
-                    // If couldn't place in existing bill, create a new one
-                    if (!$placed) {
-                        $bills[] = [
-                            'items' => [$item],
-                            'total_volume' => $item['volume'],
-                            'total_amount' => $item['amount']
-                        ];
-                    }
-                }
-                
-                // DEBUG: Log the bills created
-                error_log("Bills created: " . count($bills));
-                foreach ($bills as $index => $bill) {
-                    error_log("Bill $index: Volume: {$bill['total_volume']}, Amount: {$bill['total_amount']}, Items: " . count($bill['items']));
-                }
-                
-                // Create bills for this day
-                foreach ($bills as $bill) {
-                    // Generate bill number
-                    $bill_no = "BL" . $next_bill;
-                    $next_bill++;
+                    // Generate distribution
+                    $daily_sales = distributeSales($total_qty, $days_count);
                     
-                    // Insert sale header
-                    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                    $header_stmt = $conn->prepare($header_query);
-                    $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $bill['total_amount'], $bill['total_amount'], $mode, $comp_id, $user_id);
-                    $header_stmt->execute();
-                    $header_stmt->close();
+                    // Store distribution details
+                    $distribution_details[$item_code] = [
+                        'name' => $item_name,
+                        'total_qty' => $total_qty,
+                        'rate' => $rate,
+                        'daily_sales' => $daily_sales,
+                        'dates' => $date_array
+                    ];
                     
-                    // Insert sale details for each item in the bill
-                    foreach ($bill['items'] as $item) {
+                    // Create sales for each day
+                    foreach ($daily_sales as $index => $qty) {
+                        if ($qty <= 0) continue;
+                        
+                        $sale_date = $date_array[$index];
+                        $amount = $qty * $rate;
+                        
+                        // Generate bill number starting from 1
+                        $bill_no = "BL" . $next_bill;
+                        $next_bill++;
+                        
+                        // Insert sale header
+                        $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                         VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                        $header_stmt = $conn->prepare($header_query);
+                        $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $amount, $amount, $mode, $comp_id, $user_id);
+                        $header_stmt->execute();
+                        $header_stmt->close();
+                        
+                        // Insert sale details
                         $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                          VALUES (?, ?, ?, ?, ?, ?, ?)";
                         $detail_stmt = $conn->prepare($detail_query);
-                        $detail_stmt->bind_param("ssddssi", $bill_no, $item['code'], $item['qty'], $item['rate'], $item['amount'], $mode, $comp_id);
+                        $detail_stmt->bind_param("ssddssi", $bill_no, $item_code, $qty, $rate, $amount, $mode, $comp_id);
                         $detail_stmt->execute();
                         $detail_stmt->close();
                         
                         // Update stock - check if record exists first
                         $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
                         $check_stmt = $conn->prepare($check_stock_query);
-                        $check_stmt->bind_param("s", $item['code']);
+                        $check_stmt->bind_param("s", $item_code);
                         $check_stmt->execute();
                         $check_result = $check_stmt->get_result();
                         $stock_exists = $check_result->fetch_assoc()['count'] > 0;
@@ -405,7 +477,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // Update existing stock
                             $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
                             $stock_stmt = $conn->prepare($stock_query);
-                            $stock_stmt->bind_param("ds", $item['qty'], $item['code']);
+                            $stock_stmt->bind_param("ds", $qty, $item_code);
                             $stock_stmt->execute();
                             $stock_stmt->close();
                         } else {
@@ -413,16 +485,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
                                                    VALUES (?, ?, ?, ?)";
                             $insert_stock_stmt = $conn->prepare($insert_stock_query);
-                            $current_stock = -$item['qty']; // Negative since we're deducting
-                            $insert_stock_stmt->bind_param("ssdd", $item['code'], $fin_year_id, $current_stock, $current_stock);
+                            $current_stock = -$qty; // Negative since we're deducting
+                            $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
                             $insert_stock_stmt->execute();
                             $insert_stock_stmt->close();
                         }
                         
                         // Update daily stock table with closing calculation
-                        updateDailyStock($conn, $daily_stock_table, $item['code'], $sale_date, $item['qty'], $comp_id);
+                        updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
                         
-                        $total_amount += $item['amount'];
+                        $total_amount += $amount;
                     }
                 }
             }
@@ -441,6 +513,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = "Error updating sales: " . $e->getMessage();
         }
     }
+}
+
+// Check for success message in URL
+if (isset($_GET['success'])) {
+    $success_message = $_GET['success'];
 }
 
 // Initialize quantities array
@@ -690,6 +767,7 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
           <i class="fas fa-info-circle"></i> 
           Total sales quantities will be uniformly distributed across the selected date range as whole numbers.
           <br><strong>Distribution:</strong> Enter quantities to see the distribution across dates. Click "Shuffle All" to regenerate all distributions.
+          <br><strong>Bill Splitting:</strong> Bills will be automatically split based on volume limits (IMFL: 1000ml, Beer: 4000ml).
         </div>
 
         <!-- Items Table with Integrated Distribution Preview -->
@@ -724,499 +802,356 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
                 if (preg_match('/(\d+)\s*ML/i', $item['DETAILS'], $matches)) {
                   $size = $matches[1];
                 }
+                
+                // Get class description
+                $class_desc = isset($classes[$item['DETAILS2']]) ? $classes[$item['DETAILS2']] : $item['DETAILS2'];
               ?>
-                <tr>
-                  <td><?= htmlspecialchars($item_code); ?></td>
-                  <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                  <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-                  <td><?= number_format($item['RPRICE'], 2); ?></td>
-                  <td>
-                    <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
-                  </td>
-                  <td>
-                    <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
-                           class="form-control qty-input" min="0" max="<?= floor($item['CURRENT_STOCK']); ?>" 
-                           step="1" value="<?= $item_qty ?>" 
-                           data-rate="<?= $item['RPRICE'] ?>"
-                           data-code="<?= htmlspecialchars($item_code); ?>"
-                           data-stock="<?= $item['CURRENT_STOCK'] ?>"
-                           data-size="<?= $size ?>">
-                  </td>
-                  <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
-                    <?= number_format($closing_balance, 3) ?>
-                  </td>
-                  <td class="action-column">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                            data-code="<?= htmlspecialchars($item_code); ?>" style="display: none;">
-                      <i class="fas fa-random"></i> Shuffle
-                    </button>
-                  </td>
-                  
-                  <!-- Date distribution cells will be inserted here by JavaScript -->
-                  
-                  <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
-                    <?= number_format($item_qty * $item['RPRICE'], 2) ?>
-                  </td>
-                </tr>
+              <tr class="item-row" data-code="<?= $item_code ?>" data-size="<?= $size ?>">
+                <td><?= $item_code ?></td>
+                <td><?= $item['DETAILS'] ?></td>
+                <td><?= $class_desc ?></td>
+                <td><?= number_format($item['RPRICE'], 2) ?></td>
+                <td><?= number_format($item['CURRENT_STOCK'], 3) ?></td>
+                <td>
+                  <input type="number" name="sale_qty[<?= $item_code ?>]" 
+                         class="form-control sale-qty-input" min="0" step="1" 
+                         value="<?= $item_qty ?>" 
+                         data-rate="<?= $item['RPRICE'] ?>"
+                         data-stock="<?= $item['CURRENT_STOCK'] ?>">
+                </td>
+                <td class="closing-balance"><?= number_format($closing_balance, 3) ?></td>
+                <td class="action-column">
+                  <button type="button" class="btn btn-sm btn-outline-primary shuffle-btn" 
+                          data-code="<?= $item_code ?>">
+                    <i class="fas fa-random"></i>
+                  </button>
+                </td>
+                
+                <!-- Date Distribution Cells (will be populated by JavaScript) -->
+                
+                <td class="item-total hidden-columns"><?= number_format($item_total, 2) ?></td>
+              </tr>
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="9" class="text-center text-muted">No items found.</td>
+                <td colspan="9" class="text-center">No items found.</td>
               </tr>
             <?php endif; ?>
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="7" class="text-end"><strong>Total Amount:</strong></td>
-                <td class="action-column"><strong id="totalAmount">0.00</strong></td>
-                <td class="hidden-columns"></td>
+                <td colspan="5" class="text-end fw-bold">Total:</td>
+                <td id="total-qty">0</td>
+                <td colspan="2"></td>
+                <td id="total-amount" class="hidden-columns">₹0.00</td>
               </tr>
             </tfoot>
           </table>
         </div>
         
-        <!-- Ajax Loader -->
-        <div id="ajaxLoader" class="ajax-loader">
-          <div class="loader"></div>
-          <p>Calculating distribution...</p>
+        <!-- Submit Button -->
+        <div class="mt-4">
+          <button type="submit" name="update_sales" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i> Update Sales
+          </button>
         </div>
       </form>
-    </div>
-
-    <?php include 'components/footer.php'; ?>
-  </div>
-</div>
-
-<!-- Sale Module View Modal -->
-<div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-bordered sale-module-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <?php foreach ($all_sizes as $size): ?>
-                  <th><?= $size ?> ML</th>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <?php 
-              // Define categories with their IDs
-              $categories = [
-                'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL' => 'SPRITS',
-                'WINES' => 'WINE',
-                'FERMENTED BEER' => 'FERMENTED BEER',
-                'MILD BEER' => 'MILD BEER'
-              ];
-              
-              foreach ($categories as $category_id => $category_name): 
-              ?>
-                <tr>
-                  <td><?= $category_name ?></td>
-                  <?php foreach ($all_sizes as $size): ?>
-                    <td id="module_<?= $category_id ?>_<?= $size ?>">0</td>
-                  <?php endforeach; ?>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+      
+      <!-- Sale Module Modal -->
+      <div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="table-responsive">
+                <table class="table table-bordered sale-module-table">
+                  <thead>
+                    <tr>
+                      <th rowspan="2">Item Code</th>
+                      <th rowspan="2">Item Name</th>
+                      <th rowspan="2">Rate (₹)</th>
+                      <th rowspan="2">Current Stock</th>
+                      <?php foreach ($all_sizes as $size): ?>
+                        <th colspan="2"><?= $size ?> ML</th>
+                      <?php endforeach; ?>
+                    </tr>
+                    <tr>
+                      <?php foreach ($all_sizes as $size): ?>
+                        <th>Qty</th>
+                        <th>Amount</th>
+                      <?php endforeach; ?>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($subclass_groups as $cc => $subclasses): ?>
+                      <?php foreach ($subclasses as $subclass): ?>
+                        <tr>
+                          <td><?= $subclass['ITEM_GROUP'] ?></td>
+                          <td><?= $subclass['DESC'] ?></td>
+                          <td></td>
+                          <td></td>
+                          <?php foreach ($all_sizes as $size): ?>
+                            <td>
+                              <input type="number" class="form-control form-control-sm" 
+                                     name="sale_module_qty[<?= $subclass['ITEM_GROUP'] ?>][<?= $size ?>]" 
+                                     min="0" step="1" value="0">
+                            </td>
+                            <td class="sale-module-amount"></td>
+                          <?php endforeach; ?>
+                        </tr>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="applySaleModule">Apply to Main Table</button>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
     </div>
   </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Global variables
-const dateArray = <?= json_encode($date_array) ?>;
-const daysCount = <?= $days_count ?>;
-
-// Function to distribute sales uniformly (client-side version)
-function distributeSales(total_qty, days_count) {
-    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
+document.addEventListener('DOMContentLoaded', function() {
+  const dateArray = <?= json_encode($date_array) ?>;
+  const daysCount = <?= $days_count ?>;
+  const table = document.getElementById('itemsTable');
+  const tbody = table.querySelector('tbody');
+  const totalQtyEl = document.getElementById('total-qty');
+  const totalAmountEl = document.getElementById('total-amount');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const generateBillsBtn = document.getElementById('generateBillsBtn');
+  const salesForm = document.getElementById('salesForm');
+  
+  // Create date headers
+  const headerRow = table.querySelector('thead tr');
+  const dateHeaders = [];
+  
+  // Insert date headers before the Amount column
+  const amountHeader = headerRow.querySelector('.hidden-columns');
+  
+  dateArray.forEach((date, index) => {
+    const dateObj = new Date(date);
+    const day = dateObj.getDate();
+    const month = dateObj.toLocaleString('default', { month: 'short' });
     
-    const base_qty = Math.floor(total_qty / days_count);
-    const remainder = total_qty % days_count;
+    const th = document.createElement('th');
+    th.textContent = `${day} ${month}`;
+    th.className = 'date-header';
+    th.setAttribute('data-date', date);
     
-    const daily_sales = new Array(days_count).fill(base_qty);
+    headerRow.insertBefore(th, amountHeader);
+    dateHeaders.push(th);
+  });
+  
+  // Create distribution cells for each item row
+  const itemRows = tbody.querySelectorAll('.item-row');
+  
+  itemRows.forEach(row => {
+    const itemCode = row.dataset.code;
+    const amountCell = row.querySelector('.item-total');
     
-    // Distribute remainder evenly across days
-    for (let i = 0; i < remainder; i++) {
-        daily_sales[i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    for (let i = daily_sales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [daily_sales[i], daily_sales[j]] = [daily_sales[j], daily_sales[i]];
-    }
-    
-    return daily_sales;
-}
-
-// Function to update the distribution preview for a specific item
-function updateDistributionPreview(itemCode, totalQty) {
-    const dailySales = distributeSales(totalQty, daysCount);
-    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
-    const itemRow = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-    
-    // Add date distribution cells after the action column
-    let totalDistributed = 0;
-    dailySales.forEach((qty, index) => {
-        totalDistributed += qty;
-        // Insert distribution cells after the action column
-        $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
+    dateArray.forEach((date, index) => {
+      const td = document.createElement('td');
+      td.className = 'daily-qty';
+      td.setAttribute('data-date', date);
+      td.setAttribute('data-index', index);
+      td.innerHTML = '0';
+      
+      row.insertBefore(td, amountCell);
     });
+  });
+  
+  // Function to distribute sales
+  function distributeSales(totalQty, daysCount) {
+    if (totalQty <= 0 || daysCount <= 0) return Array(daysCount).fill(0);
     
-    // Update closing balance
-    const currentStock = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('stock'));
-    const closingBalance = currentStock - totalDistributed;
-    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
+    const baseQty = Math.floor(totalQty / daysCount);
+    const remainder = totalQty % daysCount;
     
-    // Update amount
-    const amount = totalDistributed * rate;
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    const dailySales = Array(daysCount).fill(baseQty);
     
-    // Show date columns if they're hidden
-    $('.date-header, .date-distribution-cell').show();
+    // Distribute remainder
+    for (let i = 0; i < remainder; i++) {
+      dailySales[i]++;
+    }
+    
+    // Shuffle the distribution
+    for (let i = dailySales.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
+    }
     
     return dailySales;
-}
-
-// Function to categorize item based on its category and size
-function categorizeItem(itemCategory, itemName, itemSize) {
-    const category = (itemCategory || '').toUpperCase();
-    const name = (itemName || '').toUpperCase();
+  }
+  
+  // Update distribution for a specific item
+  function updateItemDistribution(itemCode, totalQty) {
+    const row = document.querySelector(`.item-row[data-code="${itemCode}"]`);
+    if (!row) return;
     
-    // Check for wine first
-    if (category.includes('WINE') || name.includes('WINE')) {
-        return 'WINES';
+    const dailyCells = row.querySelectorAll('.daily-qty');
+    const rate = parseFloat(row.querySelector('.sale-qty-input').dataset.rate);
+    const dailySales = distributeSales(totalQty, daysCount);
+    
+    dailyCells.forEach((cell, index) => {
+      cell.textContent = dailySales[index];
+    });
+    
+    // Update item total
+    const itemTotal = row.querySelector('.item-total');
+    itemTotal.textContent = '₹' + (totalQty * rate).toFixed(2);
+    
+    // Update closing balance
+    const currentStock = parseFloat(row.querySelector('.sale-qty-input').dataset.stock);
+    const closingBalance = currentStock - totalQty;
+    row.querySelector('.closing-balance').textContent = closingBalance.toFixed(3);
+  }
+  
+  // Update all totals
+  function updateTotals() {
+    let totalQty = 0;
+    let totalAmount = 0;
+    
+    itemRows.forEach(row => {
+      const qtyInput = row.querySelector('.sale-qty-input');
+      const rate = parseFloat(qtyInput.dataset.rate);
+      const qty = parseInt(qtyInput.value) || 0;
+      
+      totalQty += qty;
+      totalAmount += qty * rate;
+    });
+    
+    totalQtyEl.textContent = totalQty;
+    totalAmountEl.textContent = '₹' + totalAmount.toFixed(2);
+    
+    // Show/hide action buttons based on whether there are quantities
+    if (totalQty > 0) {
+      shuffleBtn.style.display = 'inline-block';
+      generateBillsBtn.style.display = 'inline-block';
+    } else {
+      shuffleBtn.style.display = 'none';
+      generateBillsBtn.style.display = 'none';
     }
-    // Check for mild beer
-    else if ((category.includes('BEER') || name.includes('BEER')) && 
-             (category.includes('MILD') || name.includes('MILD'))) {
-        return 'MILD BEER';
+  }
+  
+  // Event listener for quantity inputs
+  tbody.addEventListener('input', function(e) {
+    if (e.target.classList.contains('sale-qty-input')) {
+      const itemCode = e.target.closest('.item-row').dataset.code;
+      const totalQty = parseInt(e.target.value) || 0;
+      
+      // Validate against current stock
+      const currentStock = parseFloat(e.target.dataset.stock);
+      if (totalQty > currentStock) {
+        alert(`Quantity cannot exceed current stock of ${currentStock}`);
+        e.target.value = Math.min(totalQty, currentStock);
+        return;
+      }
+      
+      updateItemDistribution(itemCode, totalQty);
+      updateTotals();
     }
-    // Check for regular beer
-    else if (category.includes('BEER') || name.includes('BEER')) {
-        return 'FERMENTED BEER';
+  });
+  
+  // Event listener for individual shuffle buttons
+  tbody.addEventListener('click', function(e) {
+    if (e.target.closest('.shuffle-btn')) {
+      const btn = e.target.closest('.shuffle-btn');
+      const itemCode = btn.dataset.code;
+      const row = btn.closest('.item-row');
+      const qtyInput = row.querySelector('.sale-qty-input');
+      const totalQty = parseInt(qtyInput.value) || 0;
+      
+      if (totalQty > 0) {
+        updateItemDistribution(itemCode, totalQty);
+        updateTotals();
+      }
     }
-    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
-    else {
-        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    }
-}
-
-// Function to update sale module view
-function updateSaleModuleView() {
-    // Reset all values to 0
-    $('.sale-module-table td').not(':first-child').text('0');
+  });
+  
+  // Shuffle all button
+  shuffleBtn.addEventListener('click', function() {
+    itemRows.forEach(row => {
+      const qtyInput = row.querySelector('.sale-qty-input');
+      const totalQty = parseInt(qtyInput.value) || 0;
+      
+      if (totalQty > 0) {
+        const itemCode = row.dataset.code;
+        updateItemDistribution(itemCode, totalQty);
+      }
+    });
+  });
+  
+  // Generate bills button
+  generateBillsBtn.addEventListener('click', function() {
+    // This is just a visual indicator, the actual bill generation happens on form submit
+    alert('Bills will be generated and split based on volume limits when you click "Update Sales".');
+  });
+  
+  // Apply sale module to main table
+  document.getElementById('applySaleModule').addEventListener('click', function() {
+    const saleModuleInputs = document.querySelectorAll('#saleModuleModal input[name^="sale_module_qty"]');
     
-    // Calculate quantities for each category and size
-    $('input[name^="sale_qty"]').each(function() {
-        const qty = parseInt($(this).val()) || 0;
-        if (qty > 0) {
-            const itemCode = $(this).data('code');
-            const itemRow = $(this).closest('tr');
-            const itemName = itemRow.find('td:eq(1)').text();
-            const itemCategory = itemRow.find('td:eq(2)').text();
-            const size = $(this).data('size');
+    saleModuleInputs.forEach(input => {
+      const nameParts = input.name.match(/sale_module_qty\[([^\]]+)\]\[(\d+)\]/);
+      if (!nameParts) return;
+      
+      const itemGroup = nameParts[1];
+      const size = parseInt(nameParts[2]);
+      const qty = parseInt(input.value) || 0;
+      
+      if (qty > 0) {
+        // Find matching rows in the main table
+        const matchingRows = document.querySelectorAll(`.item-row[data-size="${size}"]`);
+        
+        matchingRows.forEach(row => {
+          const itemCode = row.dataset.code;
+          if (itemCode.includes(itemGroup)) {
+            const qtyInput = row.querySelector('.sale-qty-input');
+            const currentQty = parseInt(qtyInput.value) || 0;
+            qtyInput.value = currentQty + qty;
             
-            // Determine the category type
-            const categoryType = categorizeItem(itemCategory, itemName, size);
-            
-            // Update the corresponding cell using the ID pattern
-            if (size > 0) {
-                const cellId = `module_${categoryType}_${size}`;
-                const targetCell = $(`#${cellId}`);
-                if (targetCell.length) {
-                    const currentValue = parseInt(targetCell.text()) || 0;
-                    targetCell.text(currentValue + qty);
-                }
-            }
-        }
-    });
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
-    $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
-    });
-    $('#totalAmount').text(total.toFixed(2));
-}
-
-// Function to initialize date headers and closing balance column
-function initializeTableHeaders() {
-    // Remove existing date headers if any
-    $('.date-header').remove();
-    
-    // Add date headers after the action column header
-    dateArray.forEach(date => {
-        const dateObj = new Date(date);
-        const day = dateObj.getDate();
-        const month = dateObj.toLocaleString('default', { month: 'short' });
-        
-        // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
-    });
-}
-
-// Function to handle row navigation with arrow keys
-function setupRowNavigation() {
-    const qtyInputs = $('input.qty-input');
-    let currentRowIndex = -1;
-    
-    // Highlight row when input is focused
-    $(document).on('focus', 'input.qty-input', function() {
-        // Remove highlight from all rows
-        $('tr').removeClass('highlight-row');
-        
-        // Add highlight to current row
-        $(this).closest('tr').addClass('highlight-row');
-        
-        // Update current row index
-        currentRowIndex = qtyInputs.index(this);
-    });
-    
-    // Handle arrow key navigation
-    $(document).on('keydown', 'input.qty-input', function(e) {
-        // Only handle arrow keys
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        
-        e.preventDefault(); // Prevent default scrolling behavior
-        
-        // Calculate new row index
-        let newIndex;
-        if (e.key === 'ArrowUp') {
-            newIndex = currentRowIndex - 1;
-        } else { // ArrowDown
-            newIndex = currentRowIndex + 1;
-        }
-        
-        // Check if new index is valid
-        if (newIndex >= 0 && newIndex < qtyInputs.length) {
-            // Focus the input in the new row
-            $(qtyInputs[newIndex]).focus().select();
-        }
-    });
-}
-
-// Function to save to pending sales
-function saveToPendingSales() {
-    // Show loader
-    $('#ajaxLoader').show();
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity
-    $('input[name^="sale_qty"]').each(function() {
-        const itemCode = $(this).data('code');
-        const qty = $(this).val();
-        if (qty > 0) {
-            formData.append(`items[${itemCode}]`, qty);
-        }
-    });
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    alert('Sales data saved successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (e) {
-                alert('Error processing response: ' + response);
-            }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            alert('Error saving data. Please try again.');
-        }
-    });
-}
-
-// Function to generate bills immediately
-function generateBills() {
-    // Show loader
-    $('#ajaxLoader').show();
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('generate_bills', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity
-    $('input[name^="sale_qty"]').each(function() {
-        const itemCode = $(this).data('code');
-        const qty = $(this).val();
-        if (qty > 0) {
-            formData.append(`items[${itemCode}]`, qty);
-        }
-    });
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'generate_bills.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    alert('Bills generated successfully! Total Amount: ₹' + result.total_amount);
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (e) {
-                alert('Error processing response: ' + response);
-            }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            alert('Error generating bills. Please try again.');
-        }
-    });
-}
-
-// Document ready
-$(document).ready(function() {
-    // Initialize table headers and columns
-    initializeTableHeaders();
-    
-    // Set up row navigation with arrow keys
-    setupRowNavigation();
-    
-    // Show action buttons
-    $('#shuffleBtn, .btn-shuffle-item, .btn-shuffle').show();
-    $('#generateBillsBtn').show();
-    
-    // Quantity input change event
-    $(document).on('change', 'input[name^="sale_qty"]', function() {
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(this).val()) || 0;
-        
-        if (totalQty > 0) {
-            updateDistributionPreview(itemCode, totalQty);
-        } else {
-            // Remove distribution cells if quantity is 0
-            $(`input[name="sale_qty[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
-            
-            // Reset closing balance and amount
-            const currentStock = parseFloat($(this).data('stock'));
-            $(`#closing_${itemCode}`).text(currentStock.toFixed(3));
-            $(`#amount_${itemCode}`).text('0.00');
-            
-            // Hide date columns if no items have quantity
-            if ($('input[name^="sale_qty"]').filter(function() { 
-                return parseInt($(this).val()) > 0; 
-            }).length === 0) {
-                $('.date-header, .date-distribution-cell').hide();
-            }
-        }
-        
-        // Update total amount
-        calculateTotalAmount();
-        
-        // Update sale module view
-        updateSaleModuleView();
-    });
-    
-    // Shuffle all button click event
-    $('#shuffleBtn').click(function() {
-        $('input[name^="sale_qty"]').each(function() {
-            const itemCode = $(this).data('code');
-            const totalQty = parseInt($(this).val()) || 0;
-            
-            if (totalQty > 0) {
-                updateDistributionPreview(itemCode, totalQty);
-            }
+            // Trigger update
+            const event = new Event('input', { bubbles: true });
+            qtyInput.dispatchEvent(event);
+          }
         });
-        
-        // Update total amount
-        calculateTotalAmount();
+      }
     });
     
-    // Individual shuffle button click event
-    $(document).on('click', '.btn-shuffle-item', function() {
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0;
-        
-        if (totalQty > 0) {
-            updateDistributionPreview(itemCode, totalQty);
-            
-            // Update total amount
-            calculateTotalAmount();
-        }
-    });
-    
-    // Sale module modal show event
-    $('#saleModuleModal').on('show.bs.modal', function() {
-        updateSaleModuleView();
-    });
-    
-    // Generate bills button click event
-    $('#generateBillsBtn').click(function() {
-        // Validate that at least one item has quantity
-        let hasQuantity = false;
-        $('input[name^="sale_qty"]').each(function() {
-            if (parseInt($(this).val()) > 0) {
-                hasQuantity = true;
-                return false; // Break the loop
-            }
-        });
-        
-        if (!hasQuantity) {
-            alert('Please enter quantities for at least one item.');
-            return false;
-        }
-        
-        // Show confirmation dialog
-        if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
-            // User clicked OK - generate bills immediately
-            generateBills();
-        } else {
-            // User clicked Cancel - save to pending sales
-            saveToPendingSales();
-        }
-    });
+    // Close the modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('saleModuleModal'));
+    modal.hide();
+  });
+  
+  // Initialize totals
+  updateTotals();
+  
+  // Highlight row on hover
+  tbody.addEventListener('mouseover', function(e) {
+    const row = e.target.closest('.item-row');
+    if (row) {
+      row.classList.add('highlight-row');
+    }
+  });
+  
+  tbody.addEventListener('mouseout', function(e) {
+    const row = e.target.closest('.item-row');
+    if (row) {
+      row.classList.remove('highlight-row');
+    }
+  });
 });
-</script> 
+</script>
 </body>
 </html>

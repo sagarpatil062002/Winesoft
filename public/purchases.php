@@ -27,6 +27,61 @@ function cleanItemCode($code) {
     return preg_replace('/^SCM/i', '', trim($code));
 }
 
+// Function to check if a month is archived
+function isMonthArchived($conn, $comp_id, $month) {
+    $safe_month = str_replace('-', '_', $month);
+    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+    
+    // Check if archive table exists
+    $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                           WHERE table_schema = DATABASE() 
+                           AND table_name = '$archive_table'";
+    $check_result = $conn->query($check_archive_query);
+    return $check_result->fetch_assoc()['count'] > 0;
+}
+
+// Function to update archived month stock
+function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    $safe_month = str_replace('-', '_', $monthYear);
+    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+    
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    // Check if record exists in archive table
+    $check_query = "SELECT COUNT(*) as count FROM $archive_table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Update existing record
+        $update_query = "UPDATE $archive_table 
+                        SET $purchaseColumn = $purchaseColumn + ?, 
+                            $closingColumn = $closingColumn + ? 
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iiss", $totalBottles, $totalBottles, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Insert new record
+        $insert_query = "INSERT INTO $archive_table 
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn, $closingColumn) 
+                        VALUES (?, ?, 'F', ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    }
+}
+
 // ---- Items (for case rate lookup & modal) ----
 $items = [];
 $itemsStmt = $conn->prepare(
@@ -158,59 +213,68 @@ function updateStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bot
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    // Update tblitem_stock
-    $stockColumn = "CURRENT_STOCK" . $companyId;
-    $updateItemStockQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
-                             VALUES (?, YEAR(?), ?) 
-                             ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + ?";
+    // Check if this month is archived
+    $isArchived = isMonthArchived($conn, $companyId, $monthYear);
     
-    $itemStmt = $conn->prepare($updateItemStockQuery);
-    $itemStmt->bind_param("ssii", $itemCode, $purchaseDate, $totalBottles, $totalBottles);
-    $itemStmt->execute();
-    $itemStmt->close();
-    
-    // Update daily stock table
-    $dailyStockTable = "tbldailystock_" . $companyId;
-    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    
-    // Check if daily stock record exists for this month and item
-    $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $checkStmt = $conn->prepare($checkDailyStockQuery);
-    $checkStmt->bind_param("ss", $monthYear, $itemCode);
-    $checkStmt->execute();
-    $result = $checkStmt->get_result();
-    $row = $result->fetch_assoc();
-    $checkStmt->close();
-    
-    if ($row['count'] > 0) {
-        // Update existing record
-        $updateDailyStockQuery = "UPDATE $dailyStockTable 
-                                 SET $purchaseColumn = $purchaseColumn + ? 
-                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+    if ($isArchived) {
+        // Update archived month data
+        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     } else {
-        // Insert new record
-        $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
-                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn) 
-                                 VALUES (?, ?, 'F', ?)";
-        $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("ssi", $monthYear, $itemCode, $totalBottles);
+        // Update current month data (original logic)
+        // Update tblitem_stock
+        $stockColumn = "CURRENT_STOCK" . $companyId;
+        $updateItemStockQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
+                                 VALUES (?, YEAR(?), ?) 
+                                 ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + ?";
+        
+        $itemStmt = $conn->prepare($updateItemStockQuery);
+        $itemStmt->bind_param("ssii", $itemCode, $purchaseDate, $totalBottles, $totalBottles);
+        $itemStmt->execute();
+        $itemStmt->close();
+        
+        // Update daily stock table
+        $dailyStockTable = "tbldailystock_" . $companyId;
+        $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        
+        // Check if daily stock record exists for this month and item
+        $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
+                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $checkStmt = $conn->prepare($checkDailyStockQuery);
+        $checkStmt->bind_param("ss", $monthYear, $itemCode);
+        $checkStmt->execute();
+        $result = $checkStmt->get_result();
+        $row = $result->fetch_assoc();
+        $checkStmt->close();
+        
+        if ($row['count'] > 0) {
+            // Update existing record
+            $updateDailyStockQuery = "UPDATE $dailyStockTable 
+                                     SET $purchaseColumn = $purchaseColumn + ? 
+                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $dailyStmt = $conn->prepare($updateDailyStockQuery);
+            $dailyStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        } else {
+            // Insert new record
+            $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
+                                     (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn) 
+                                     VALUES (?, ?, 'F', ?)";
+            $dailyStmt = $conn->prepare($updateDailyStockQuery);
+            $dailyStmt->bind_param("ssi", $monthYear, $itemCode, $totalBottles);
+        }
+        
+        $dailyStmt->execute();
+        $dailyStmt->close();
+        
+        // Also update the closing stock for the day
+        $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        $updateClosingQuery = "UPDATE $dailyStockTable 
+                              SET $closingColumn = $closingColumn + ? 
+                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $closingStmt = $conn->prepare($updateClosingQuery);
+        $closingStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $closingStmt->execute();
+        $closingStmt->close();
     }
-    
-    $dailyStmt->execute();
-    $dailyStmt->close();
-    
-    // Also update the closing stock for the day
-    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    $updateClosingQuery = "UPDATE $dailyStockTable 
-                          SET $closingColumn = $closingColumn + ? 
-                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $closingStmt = $conn->prepare($updateClosingQuery);
-    $closingStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
-    $closingStmt->execute();
-    $closingStmt->close();
 }
 ?>
 
@@ -594,7 +658,7 @@ function findBestSupplierMatch(parsedName) {
         const supplierName = (supplier.DETAILS || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
         const supplierCode = (supplier.CODE || '').toLowerCase();
         
-        // Remove numeric suffixes for better matching (e.g., "sambaragitraders26" → "sambaragitraders")
+        // Remove numeric suffixes for better matching (e.e., "sambaragitraders26" → "sambaragitraders")
         const parsedBase = parsedClean.replace(/\d+$/, '');
         const supplierBase = supplierName.replace(/\d+$/, '');
         
@@ -827,7 +891,7 @@ function calculateColumnTotals() {
         <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
         <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
         <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free_cases]" value="${item.freeCases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free_bottles]" value="${item.freeBottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free_bottles]" value="${item.freeBottles||0}" min="0, step="1" max="${bottlesPerCase - 1}"></td>
         <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
         <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp||0}" step="0.01"></td>
