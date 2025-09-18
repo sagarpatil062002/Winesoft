@@ -48,7 +48,7 @@ if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP 
 
 // Initialize variables
 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-$pprice = $bprice = $mprice = $RPRICE = 0;
+$pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
 $success = $error = '';
 
 // Handle submit
@@ -65,6 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
     $RPRICE = floatval($_POST['RPRICE'] ?? 0);
+    $GOB = floatval($_POST['GOB'] ?? 0);
+    $OB = floatval($_POST['OB'] ?? 0);
+    $OB2 = floatval($_POST['OB2'] ?? 0);
     $liq_flag = $mode; // use current mode
     
     // Get ITEM_GROUP from selected subclass
@@ -88,17 +91,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Insert into tblitemmaster - Fixed: Added ITEM_GROUP column
         $sql = "INSERT INTO tblitemmaster 
             (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, 
-             BARCODE, LIQ_FLAG) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+             GOB, OB, OB2, BARCODE, LIQ_FLAG) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             $error = "Prepare failed: " . $conn->error;
         } else {
-            // Correct bind types: 9 strings, 4 doubles, 1 string
+            // Correct bind types: 9 strings, 5 doubles, 1 string
             $stmt->bind_param(
-                "sssssssdddds",
+                "sssssssdddddddss",
                 $code, $Print_Name, $details, $details2, $class, $sub_class, $item_group,
                 $pprice, $bprice, $mprice, $RPRICE,
+                $GOB, $OB, $OB2,
                 $BARCODE, $liq_flag
             );
 
@@ -106,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = "Item added successfully!";
                 // Reset form
                 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-                $pprice = $bprice = $mprice = $RPRICE = 0;
+                $pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
             } else {
                 $error = "Error: " . $stmt->error;
             }
@@ -242,6 +246,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="BARCODE" class="form-label">Barcode</label>
                     <input type="text" id="BARCODE" name="BARCODE" class="form-control"
                            value="<?= htmlspecialchars($BARCODE) ?>">
+                </div>
+
+                <!-- Opening Stock (G) -->
+                <div class="col-md-3">
+                    <label for="GOB" class="form-label">Op. Stk. (G)</label>
+                    <input type="number" step="0.001" id="GOB" name="GOB" class="form-control"
+                           value="<?= htmlspecialchars($GOB) ?>">
+                </div>
+
+                <!-- Opening Stock (C1) -->
+                <div class="col-md-3">
+                    <label for="OB" class="form-label">Op. Stk. (C1)</label>
+                    <input type="number" step="0.001" id="OB" name="OB" class="form-control"
+                           value="<?= htmlspecialchars($OB) ?>">
+                </div>
+
+                <!-- Opening Stock (C2) -->
+                <div class="col-md-3">
+                    <label for="OB2" class="form-label">Op. Stk. (C2)</label>
+                    <input type="number" step="0.001" id="OB2" name="OB2" class="form-control"
+                           value="<?= htmlspecialchars($OB2) ?>">
                 </div>
 
                 <!-- P. Price -->

@@ -308,7 +308,7 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
 }
 
 // Function to update item stock information
-function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
+function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
     // Update tblitem_stock
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_stock_query);
@@ -346,7 +346,7 @@ function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
     $check_daily_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
                          WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
     $check_daily_stmt = $conn->prepare($check_daily_query);
-    $check_daily_stmt->bind_param("sss", $current_month, $item_code, $mode);
+    $check_daily_stmt->bind_param("sss", $current_month, $item_code, $liqFlag);
     $check_daily_stmt->execute();
     $daily_result = $check_daily_stmt->get_result();
     $daily_exists = $daily_result->fetch_assoc()['count'] > 0;
@@ -360,7 +360,7 @@ function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
                                   LAST_UPDATED = CURRENT_TIMESTAMP 
                               WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
         $update_daily_stmt = $conn->prepare($update_daily_query);
-        $update_daily_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $mode);
+        $update_daily_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $liqFlag);
         $update_daily_stmt->execute();
         $update_daily_stmt->close();
     } else {
@@ -369,12 +369,11 @@ function updateItemStock($conn, $comp_id, $item_code, $opening_balance) {
                               (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
                               VALUES (?, ?, ?, ?, ?)";
         $insert_daily_stmt = $conn->prepare($insert_daily_query);
-        $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $mode, $opening_balance, $opening_balance);
+        $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $liqFlag, $opening_balance, $opening_balance);
         $insert_daily_stmt->execute();
         $insert_daily_stmt->close();
     }
 }
-
 // Fetch class descriptions from tblclass
 $classDescriptions = [];
 $classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
@@ -662,8 +661,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             $bprice = floatval(trim($data[$bpriceCol]));
                             $mprice = floatval(trim($data[$mpriceCol]));
                             $rprice = floatval(trim($data[$rpriceCol]));
-                            $liqFlag = isset($data[$liqFlagCol]) ? $conn->real_escape_string(trim($data[$liqFlagCol])) : $mode;
-                            $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
+                            $liqFlag = '';
+if (isset($data[$liqFlagCol]) && !empty(trim($data[$liqFlagCol]))) {
+    $liqFlag = $conn->real_escape_string(trim($data[$liqFlagCol]));
+} else {
+    $liqFlag = $mode; // Use the current mode as default
+}
+
+// Additional validation to ensure LIQ_FLAG is not empty
+if (empty($liqFlag)) {
+    $errors++;
+    $errorDetails[] = "LIQ_FLAG cannot be empty for item $code";
+    continue; // Skip this row
+} $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
                             
                             // Detect class from item name
                             $class = detectClassFromItemName($itemName);
@@ -676,15 +686,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             }
                             
                             // Validate LIQ_FLAG exists in tblsubclass
-                            $checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
-                            $liqFlagResult = $conn->query($checkLiqFlagQuery);
-                            $liqFlagExists = $liqFlagResult->fetch_assoc()['count'] > 0;
-                            
-                            if (!$liqFlagExists) {
-                                $errors++;
-                                $errorDetails[] = "LIQ_FLAG '$liqFlag' does not exist in tblsubclass for item $code";
-                                continue; // Skip this row
-                            }
+$checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
+$liqFlagResult = $conn->query($checkLiqFlagQuery);
+$liqFlagExists = $liqFlagResult->fetch_assoc()['count'] > 0;
+
+if (!$liqFlagExists) {
+    $errors++;
+    $errorDetails[] = "LIQ_FLAG '$liqFlag' does not exist in tblsubclass for item $code";
+    continue; // Skip this row
+}
                             
                             // Get valid ITEM_GROUP based on Subclass description and LIQ_FLAG
                             $itemGroupField = getValidItemGroup($subclass, $liqFlag, $conn);

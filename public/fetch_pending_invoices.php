@@ -2,78 +2,51 @@
 session_start();
 include_once "../config/db.php";
 
-header('Content-Type: application/json');
+$response = ['success' => false, 'message' => 'Unknown error', 'data' => []];
 
-if (!isset($_SESSION['user_id']) || !isset($_POST['ledger_code']) || !isset($_POST['comp_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid request']);
+if (!isset($_SESSION['CompID']) || !isset($_POST['ledger_code'])) {
+    $response['message'] = 'Invalid request';
+    echo json_encode($response);
     exit;
 }
 
 $ledgerCode = $_POST['ledger_code'];
-$compId = $_POST['comp_id'];
+$compID = $_SESSION['CompID'];
 
 try {
-    // Fetch pending purchase invoices
-    $purchaseQuery = "SELECT 
-                        p.ID as id,
-                        'Purchase' as type,
-                        p.VOC_NO as voc_no,
-                        p.INV_NO as doc_no,
-                        p.DATE as date,
-                        p.TAMT as amount,
-                        COALESCE(SUM(e.AMOUNT), 0) as paid,
-                        (p.TAMT - COALESCE(SUM(e.AMOUNT), 0)) as balance
-                      FROM tblpurchases p
-                      LEFT JOIN tblExpenses e ON p.SUBCODE = e.PARTI AND p.CompID = e.COMP_ID
-                      WHERE p.SUBCODE = ? AND p.CompID = ?
-                      GROUP BY p.ID
-                      HAVING balance > 0";
+    // Fetch pending purchase invoices for this ledger
+    $query = "SELECT p.ID, p.VOC_NO, p.INV_NO, p.DATE, p.TAMT, 
+                     COALESCE(SUM(e.AMOUNT), 0) as paid_amount,
+                     (p.TAMT - COALESCE(SUM(e.AMOUNT), 0)) as balance
+              FROM tblpurchases p
+              LEFT JOIN tblexpenses e ON p.ID = e.REF_SAC AND e.COMP_ID = p.CompID
+              WHERE p.SUBCODE = ? AND p.CompID = ? AND p.PUR_FLAG = 'F'
+              GROUP BY p.ID
+              HAVING balance > 0
+              ORDER BY p.DATE";
     
-    $stmt = $conn->prepare($purchaseQuery);
-    $stmt->bind_param("si", $ledgerCode, $compId);
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("si", $ledgerCode, $compID);
     $stmt->execute();
-    $purchaseResult = $stmt->get_result();
-    $purchaseInvoices = $purchaseResult->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
+    $result = $stmt->get_result();
     
-    // Fetch pending sale invoices
-    $saleQuery = "SELECT 
-                    s.BILL_NO as id,
-                    'Sale' as type,
-                    s.BILL_NO as voc_no,
-                    s.BILL_NO as doc_no,
-                    s.BILL_DATE as date,
-                    s.NET_AMOUNT as amount,
-                    COALESCE(SUM(e.AMOUNT), 0) as paid,
-                    (s.NET_AMOUNT - COALESCE(SUM(e.AMOUNT), 0)) as balance
-                  FROM tblsaleheader s
-                  LEFT JOIN tblExpenses e ON s.CUST_CODE = e.PARTI AND s.COMP_ID = e.COMP_ID
-                  WHERE s.CUST_CODE = ? AND s.COMP_ID = ?
-                  GROUP BY s.BILL_NO
-                  HAVING balance > 0";
-    
-    $stmt = $conn->prepare($saleQuery);
-    $stmt->bind_param("si", $ledgerCode, $compId);
-    $stmt->execute();
-    $saleResult = $stmt->get_result();
-    $saleInvoices = $saleResult->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-    
-    // Combine results
-    $invoices = array_merge($purchaseInvoices, $saleInvoices);
-    
-    // Calculate total pending amount
+    $invoices = [];
     $totalPending = 0;
-    foreach ($invoices as $invoice) {
-        $totalPending += $invoice['balance'];
+    
+    while ($row = $result->fetch_assoc()) {
+        $invoices[] = $row;
+        $totalPending += $row['balance'];
     }
     
-    echo json_encode([
-        'success' => true,
-        'data' => $invoices,
-        'total_pending' => $totalPending
-    ]);
+    $stmt->close();
+    
+    $response['success'] = true;
+    $response['message'] = 'Data fetched successfully';
+    $response['data'] = $invoices;
+    $response['total_pending'] = $totalPending;
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    $response['message'] = 'Database error: ' . $e->getMessage();
 }
+
+echo json_encode($response);

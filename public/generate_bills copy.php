@@ -155,23 +155,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
         }
         
-        // Function to get category limits from tblcompany - FIXED VERSION
-        function getCategoryLimits($conn) {
-            // First check if the table has the COMP_ID column
-            $check_column_query = "SHOW COLUMNS FROM tblcompany LIKE 'COMP_ID'";
-            $column_result = $conn->query($check_column_query);
-            
-            if ($column_result->num_rows > 0) {
-                // Table has COMP_ID column, use it in query
-                $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE COMP_ID = ?";
-                $stmt = $conn->prepare($query);
-                $stmt->bind_param("i", $GLOBALS['comp_id']);
-            } else {
-                // Table doesn't have COMP_ID column, get first record
-                $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany LIMIT 1";
-                $stmt = $conn->prepare($query);
-            }
-            
+        // Function to get category limits from tblcompany
+        function getCategoryLimits($conn, $comp_id) {
+            $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("i", $comp_id);
             $stmt->execute();
             $result = $stmt->get_result();
             $limits = $result->fetch_assoc();
@@ -186,14 +174,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         
         // Function to determine item category based on class and subclass
         function getItemCategory($conn, $item_code, $mode) {
-            // Get item details from tblitemmaster
-            $query = "SELECT im.DETAILS2, sc.CC, c.SGROUP 
-                      FROM tblitemmaster im 
-                      LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
-                      LEFT JOIN tblclass c ON sc.CC = c.SGROUP AND c.LIQ_FLAG = ?
-                      WHERE im.CODE = ?";
+            // Get item details directly from tblitemmaster
+            $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("sss", $mode, $mode, $item_code);
+            $stmt->bind_param("s", $item_code);
             $stmt->execute();
             $result = $stmt->get_result();
             $item_data = $result->fetch_assoc();
@@ -201,26 +185,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             
             if (!$item_data) return 'OTHER';
             
-            $sgroup = $item_data['SGROUP'] ?? '';
-            $cc = $item_data['CC'] ?? '';
+            $details2 = strtoupper($item_data['DETAILS2'] ?? '');
             
-            // IMFL categories: W, V, G, D, K, R, O (for F mode)
-            $imfl_categories = ['W', 'V', 'G', 'D', 'K', 'R', 'O'];
-            
-            // Beer categories
-            $beer_categories = ['B', 'M'];
-            
-            // CL categories: L, O (for C mode)
-            $cl_categories = ['L', 'O'];
-            
+            // Categorize based on DETAILS2 content
             if ($mode === 'F') {
-                if (in_array($sgroup, $imfl_categories)) {
+                if (strpos($details2, 'WHISKY') !== false || 
+                    strpos($details2, 'GIN') !== false ||
+                    strpos($details2, 'BRANDY') !== false ||
+                    strpos($details2, 'VODKA') !== false ||
+                    strpos($details2, 'RUM') !== false ||
+                    strpos($details2, 'LIQUOR') !== false) {
                     return 'IMFL';
-                } elseif (in_array($sgroup, $beer_categories)) {
+                } elseif (strpos($details2, 'BEER') !== false) {
                     return 'BEER';
                 }
             } elseif ($mode === 'C') {
-                if (in_array($sgroup, $cl_categories)) {
+                if (strpos($details2, 'COUNTRY') !== false || 
+                    strpos($details2, 'CL') !== false) {
                     return 'CL';
                 }
             }
@@ -228,12 +209,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             return 'OTHER';
         }
         
-        // Function to get item size from details
-        function getItemSize($item_details) {
-            if (preg_match('/(\d+)\s*ML/i', $item_details, $matches)) {
-                return (int)$matches[1];
+        // Function to get item size from CC in tblsubclass
+        function getItemSize($conn, $item_code, $mode) {
+            // First try to get size from CC in tblsubclass
+            $query = "SELECT sc.CC 
+                      FROM tblitemmaster im 
+                      LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
+                      WHERE im.CODE = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("ss", $mode, $item_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $item_data = $result->fetch_assoc();
+            $stmt->close();
+            
+            if ($item_data && $item_data['CC'] > 0) {
+                return (float)$item_data['CC'];
             }
-            return 0;
+            
+            // If not found in subclass, try to extract from item name
+            $query = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $item_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $item_data = $result->fetch_assoc();
+            $stmt->close();
+            
+            if ($item_data) {
+                // Try to extract size from item name (e.g., "Item Name 750ML")
+                if (preg_match('/(\d+)\s*ML/i', $item_data['DETAILS'], $matches)) {
+                    return (float)$matches[1];
+                }
+            }
+            
+            // Default size if not found
+            return 750; // Common liquor bottle size
         }
         
         // Function to update item stock
@@ -268,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         
         // Function to generate bills with volume limits - FIXED VERSION
         function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
-            $category_limits = getCategoryLimits($conn);
+            $category_limits = getCategoryLimits($conn, $comp_id);
             $bills = [];
             
             // Get the starting bill number once
@@ -288,7 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
                     $qty = $daily_sales_data[$item_code][$date_index] ?? 0;
                     if ($qty > 0) {
                         $category = getItemCategory($conn, $item_code, $mode);
-                        $size = getItemSize($item_data['name']);
+                        $size = getItemSize($conn, $item_code, $mode);
                         $volume = $qty * $size;
                         
                         if (!isset($category_items[$category])) {
@@ -316,30 +327,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
                             $daily_bills[] = createBill($items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
                         }
                     } else {
-                        // Split items into bills based on volume limit
-                        $current_bill_volume = 0;
+                        // Sort items by volume descending (First-Fit Decreasing algorithm)
+                        usort($items, function($a, $b) {
+                            return $b['volume'] <=> $a['volume'];
+                        });
+                        
+                        // Create bills by grouping items without exceeding the limit
+                        $bills_for_category = [];
                         $current_bill_items = [];
+                        $current_bill_volume = 0;
                         
                         foreach ($items as $item) {
-                            if ($current_bill_volume + $item['volume'] <= $limit) {
-                                // Add to current bill
-                                $current_bill_volume += $item['volume'];
-                                $current_bill_items[] = $item;
-                            } else {
-                                if (!empty($current_bill_items)) {
-                                    // Save current bill and start new one
-                                    $daily_bills[] = createBill($current_bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
-                                }
-                                
-                                // Start new bill with current item
-                                $current_bill_volume = $item['volume'];
-                                $current_bill_items = [$item];
+                            // If adding this item would exceed the limit, finalize current bill
+                            if ($current_bill_volume + $item['volume'] > $limit && !empty($current_bill_items)) {
+                                $bills_for_category[] = $current_bill_items;
+                                $current_bill_items = [];
+                                $current_bill_volume = 0;
                             }
+                            
+                            // Add item to current bill
+                            $current_bill_items[] = $item;
+                            $current_bill_volume += $item['volume'];
                         }
                         
                         // Add the last bill if it has items
                         if (!empty($current_bill_items)) {
-                            $daily_bills[] = createBill($current_bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
+                            $bills_for_category[] = $current_bill_items;
+                        }
+                        
+                        // Create actual bills from the grouped items
+                        foreach ($bills_for_category as $bill_items) {
+                            $daily_bills[] = createBill($bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
                         }
                     }
                 }

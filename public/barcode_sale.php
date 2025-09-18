@@ -25,57 +25,8 @@ if ($customerResult) {
     echo "Error fetching customers: " . $conn->error;
 }
 
-// Set walk-in customer as default
-if (!isset($_SESSION['selected_customer'])) {
-    $_SESSION['selected_customer'] = '';
-}
-$selectedCustomer = $_SESSION['selected_customer'];
-
-// Process customer selection
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['customer_id'])) {
-        $_SESSION['selected_customer'] = $_POST['customer_id'];
-        $selectedCustomer = $_POST['customer_id'];
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    // Handle creating new customer
-    if (isset($_POST['create_customer'])) {
-        $customerName = trim($_POST['new_customer_name']);
-        if (!empty($customerName)) {
-            // Find the next available LCODE
-            $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
-            $maxResult = $conn->query($maxCodeQuery);
-            $maxCode = $maxResult->fetch_assoc()['max_code'];
-            $newCode = $maxCode + 1;
-            
-            // Insert new customer
-            $insertQuery = "INSERT INTO tbllheads (LCODE, LHEAD, GCODE) VALUES (?, ?, 32)";
-            $stmt = $conn->prepare($insertQuery);
-            $stmt->bind_param("is", $newCode, $customerName);
-            
-            if ($stmt->execute()) {
-                $_SESSION['selected_customer'] = $newCode;
-                $selectedCustomer = $newCode;
-                $_SESSION['success_message'] = "Customer created successfully!";
-                
-                // Refresh customers list
-                $customerResult = $conn->query($customerQuery);
-                $customers = [];
-                while ($row = $customerResult->fetch_assoc()) {
-                    $customers[$row['LCODE']] = $row['LHEAD'];
-                }
-            } else {
-                $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
-            }
-            
-            $stmt->close();
-            header("Location: barcode_sale.php");
-            exit;
-        }
-    }
-}
+// Get selected customer from session if available
+$selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
 
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -121,8 +72,15 @@ if (!isset($_SESSION['sale_items'])) {
     $_SESSION['current_focus_index'] = -1; // Track currently focused item
 }
 
-// Handle adding item to sale
+// Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Store customer ID in session to preserve selection
+    if (isset($_POST['customer_id'])) {
+        $_SESSION['selected_customer'] = $_POST['customer_id'];
+        $selectedCustomer = $_POST['customer_id'];
+    }
+    
+    // Handle adding item to sale
     if (isset($_POST['add_item'])) {
         $item_code = $_POST['item_code'];
         $quantity = intval($_POST['quantity']);
@@ -254,39 +212,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: barcode_sale.php");
         exit;
     }
+}
+
+// Function to generate a unique bill number
+function generateBillNumber($conn, $comp_id) {
+    // Try to get the maximum bill number
+    $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
+                   FROM tblsaleheader 
+                   WHERE COMP_ID = ?";
+    $bill_stmt = $conn->prepare($bill_query);
+    $bill_stmt->bind_param("i", $comp_id);
+    $bill_stmt->execute();
+    $bill_result = $bill_stmt->get_result();
     
-    // Handle bill preview
-    if (isset($_POST['preview_bill'])) {
-        if (empty($_SESSION['sale_items'])) {
-            $_SESSION['error_message'] = "No items to generate bill preview!";
-            header("Location: barcode_sale.php");
-            exit;
-        }
-        
-        // Store bill data in session for preview
-        $total_amount = 0;
-        foreach ($_SESSION['sale_items'] as $item) {
-            $total_amount += $item['price'] * $item['quantity'];
-        }
-        
-        $taxRate = 0.08; // 8% tax
-        $taxAmount = $total_amount * $taxRate;
-        $finalAmount = $total_amount + $taxAmount;
-        
-        $_SESSION['bill_preview_data'] = [
-            'customer_id' => $selectedCustomer,
-            'customer_name' => $selectedCustomer ? $customers[$selectedCustomer] : 'Walk-in Customer',
-            'items' => $_SESSION['sale_items'],
-            'total_amount' => $total_amount,
-            'tax_rate' => $taxRate,
-            'tax_amount' => $taxAmount,
-            'final_amount' => $finalAmount,
-            'bill_date' => date('Y-m-d H:i:s')
-        ];
-        
-        header("Location: barcode_sale.php?preview=1");
-        exit;
+    $next_bill = 1;
+    if ($bill_result->num_rows > 0) {
+        $bill_row = $bill_result->fetch_assoc();
+        $next_bill = ($bill_row['max_bill'] ? $bill_row['max_bill'] + 1 : 1);
     }
+    $bill_stmt->close();
+    
+    // Format the bill number with leading zeros
+return "BL" . $next_bill;
 }
 
 // Function to process the sale
@@ -301,21 +248,8 @@ function processSale() {
         $conn->begin_transaction();
         
         try {
-            // Get next bill number with proper locking to prevent race condition
-            $conn->query("LOCK TABLES tblsaleheader WRITE");
-            
-            // Fixed bill number query to get the maximum bill number for the current company
-            $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
-                           FROM tblsaleheader 
-                           WHERE COMP_ID = ?";
-            $bill_stmt = $conn->prepare($bill_query);
-            $bill_stmt->bind_param("i", $comp_id);
-            $bill_stmt->execute();
-            $bill_result = $bill_stmt->get_result();
-            $bill_row = $bill_result->fetch_assoc();
-            $next_bill = ($bill_row['max_bill'] ? $bill_row['max_bill'] + 1 : 1);
-            $bill_no = "BL" . $next_bill; // Changed to remove leading zeros
-            $bill_stmt->close();
+            // Generate a unique bill number
+            $bill_no = generateBillNumber($conn, $comp_id);
             
             $sale_date = date('Y-m-d H:i:s');
             $total_amount = 0;
@@ -325,17 +259,25 @@ function processSale() {
                 $total_amount += $item['price'] * $item['quantity'];
             }
             
-            // Insert sale header with CUSTOMER_ID field - FIXED: Removed extra parameter
-            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY, CUSTOMER_ID) 
-                             VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)";
+            // Insert sale header
+            $customer_id = !empty($selectedCustomer) ? $selectedCustomer : NULL;
+            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, CUSTOMER_ID, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)";
             $header_stmt = $conn->prepare($header_query);
-            $customer_id_value = $selectedCustomer ? $selectedCustomer : NULL;
-            $header_stmt->bind_param("ssddssis", $bill_no, $sale_date, $total_amount, $total_amount, $mode, $comp_id, $user_id, $customer_id_value);
+            $header_stmt->bind_param("sssddssi", $bill_no, $sale_date, $customer_id, $total_amount, $total_amount, $mode, $comp_id, $user_id);
             $header_stmt->execute();
-            $header_stmt->close();
             
-            // Unlock tables before other operations
-            $conn->query("UNLOCK TABLES");
+            if ($header_stmt->errno === 1062) {
+                // Duplicate entry error - retry with a new bill number
+                $header_stmt->close();
+                $bill_no = generateBillNumber($conn, $comp_id);
+                
+                $header_stmt = $conn->prepare($header_query);
+                $header_stmt->bind_param("sssddssi", $bill_no, $sale_date, $customer_id, $total_amount, $total_amount, $mode, $comp_id, $user_id);
+                $header_stmt->execute();
+            }
+            
+            $header_stmt->close();
             
             // Insert sale details and update stock
             foreach ($_SESSION['sale_items'] as $item) {
@@ -421,38 +363,34 @@ function processSale() {
             // Commit transaction
             $conn->commit();
             
-            $success_message = "Sale completed successfully! Bill No: $bill_no, Total Amount: ₹" . number_format($total_amount, 2);
-            
-            // Store bill data in session for preview
-            $taxRate = 0.08; // 8% tax
-            $taxAmount = $total_amount * $taxRate;
-            $finalAmount = $total_amount + $taxAmount;
+            // Store bill data in session for the view page
+            $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';
             
             $_SESSION['last_bill_data'] = [
                 'bill_no' => $bill_no,
                 'customer_id' => $selectedCustomer,
-                'customer_name' => $selectedCustomer ? $customers[$selectedCustomer] : 'Walk-in Customer',
+                'customer_name' => $customer_name,
                 'bill_date' => $sale_date,
                 'items' => $_SESSION['sale_items'],
                 'total_amount' => $total_amount,
-                'tax_rate' => $taxRate,
-                'tax_amount' => $taxAmount,
-                'final_amount' => $finalAmount
+                'tax_rate' => 0.08, // 8% tax
+                'tax_amount' => $total_amount * 0.08,
+                'final_amount' => $total_amount * 1.08
             ];
+            
+            $success_message = "Sale completed successfully! Bill No: $bill_no, Total Amount: ₹" . number_format($total_amount, 2);
             
             // Store messages in session to display after redirect
             $_SESSION['success_message'] = $success_message;
             
-            // Clear sale items after successful processing
-            $_SESSION['sale_items'] = [];
-            $_SESSION['sale_count'] = 0;
-            $_SESSION['current_focus_index'] = -1;
-            // Don't clear selected customer for next sale
-            // $_SESSION['selected_customer'] = ''; // Commented out to preserve customer selection
+            // Clear cart and selected customer
+            unset($_SESSION['sale_items']);
+            unset($_SESSION['sale_count']);
+            unset($_SESSION['current_focus_index']);
+            unset($_SESSION['selected_customer']);
             
         } catch (Exception $e) {
             // Rollback transaction on error
-            $conn->query("UNLOCK TABLES");
             $conn->rollback();
             $error_message = "Error processing sale: " . $e->getMessage();
             $_SESSION['error_message'] = $error_message;
@@ -493,9 +431,6 @@ if (!empty($_SESSION['sale_items'])) {
     }
     unset($item); // Break the reference
 }
-
-// Check if we need to show bill preview
-$showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSION['bill_preview_data']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -571,7 +506,13 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
       color: #6c757d;
       font-style: italic;
     }
-    
+    .sale-table {
+      margin-top: 20px;
+    }
+    .sale-table th {
+      background-color: #343a40;
+      color: white;
+    }
     .sale-info {
       background-color: #f8f9fa;
       padding: 10px;
@@ -623,12 +564,6 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
       color: #6c757d;
       margin-top: 5px;
     }
-    .customer-info {
-      background-color: #e9ecef;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-    }
     .bill-preview {
       width: 80mm;
       margin: 0 auto;
@@ -636,11 +571,16 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
       font-family: monospace;
       font-size: 12px;
     }
+    .text-center {
+      text-align: center;
+    }
+    .text-right {
+      text-align: right;
+    }
     .bill-header {
       border-bottom: 1px dashed #000;
       padding-bottom: 5px;
       margin-bottom: 5px;
-      text-align: center;
     }
     .bill-footer {
       border-top: 1px dashed #000;
@@ -656,6 +596,23 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
     }
     .bill-table .text-right {
       text-align: right;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .bill-preview, .bill-preview * {
+        visibility: visible;
+      }
+      .bill-preview {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .no-print {
+        display: none !important;
+      }
     }
   </style>
 </head>
@@ -684,81 +641,114 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
       </div>
       <?php endif; ?>
 
-      <!-- Bill Preview -->
-      <?php if ($showPreview): ?>
-        <div class="card mb-4">
-          <div class="card-header fw-semibold">
-            <i class="fas fa-receipt me-2"></i>Bill Preview
-            <button class="btn btn-sm btn-outline-secondary float-end" onclick="window.print()">
-              <i class="fas fa-print"></i> Print
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="bill-preview">
-              <div class="bill-header">
-                <h4>WineSoft</h4>
-                <p>POS Receipt</p>
-              </div>
-              
-              <div style="margin: 5px 0;">
-                <p style="margin: 2px 0;"><strong>Date:</strong> <?= date('d/m/Y H:i', strtotime($_SESSION['bill_preview_data']['bill_date'])) ?></p>
-                <p style="margin: 2px 0;"><strong>Customer:</strong> <?= $_SESSION['bill_preview_data']['customer_name'] ?></p>
-              </div>
-              
-              <table class="bill-table">
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th class="text-right">Qty</th>
-                    <th class="text-right">Rate</th>
-                    <th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($_SESSION['bill_preview_data']['items'] as $item): ?>
+      <!-- Bill Preview Modal -->
+      <?php if (isset($_SESSION['last_bill_data'])): 
+        $bill_data = $_SESSION['last_bill_data'];
+        $companyName = "WineSoft"; // Replace with actual company name if available
+      ?>
+      <div class="modal fade show" id="billPreviewModal" tabindex="-1" aria-labelledby="billPreviewModalLabel" aria-modal="true" style="display: block;">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="billPreviewModalLabel">Bill Preview</h5>
+              <button type="button" class="btn-close" onclick="window.location.href='barcode_sale.php'"></button>
+            </div>
+            <div class="modal-body">
+              <div class="bill-preview">
+                <div class="bill-header text-center">
+                  <h1><?= htmlspecialchars($companyName) ?></h1>
+                </div>
+                
+                <div style="margin: 5px 0;">
+                  <p style="margin: 2px 0;"><strong>Bill No:</strong> <?= $bill_data['bill_no'] ?></p>
+                  <p style="margin: 2px 0;"><strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['bill_date'])) ?></p>
+                  <p style="margin: 2px 0;"><strong>Customer:</strong> <?= $bill_data['customer_name'] ?> <?= !empty($bill_data['customer_id']) ? '(' . $bill_data['customer_id'] . ')' : '' ?></p>
+                </div>
+                
+                <table class="bill-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th class="text-right">Qty</th>
+                      <th class="text-right">Rate</th>
+                      <th class="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($bill_data['items'] as $item): ?>
                     <tr>
                       <td><?= substr($item['name'], 0, 15) ?></td>
                       <td class="text-right"><?= $item['quantity'] ?></td>
                       <td class="text-right"><?= number_format($item['price'], 2) ?></td>
                       <td class="text-right"><?= number_format($item['price'] * $item['quantity'], 2) ?></td>
                     </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-              
-              <div class="bill-footer">
-                <table class="bill-table">
-                  <tr>
-                    <td>Sub Total:</td>
-                    <td class="text-right">₹<?= number_format($_SESSION['bill_preview_data']['total_amount'], 2) ?></td>
-                  </tr>
-                  <tr>
-                    <td>Tax (<?= ($_SESSION['bill_preview_data']['tax_rate'] * 100) ?>%):</td>
-                    <td class="text-right">₹<?= number_format($_SESSION['bill_preview_data']['tax_amount'], 2) ?></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Total Due:</strong></td>
-                    <td class="text-right"><strong>₹<?= number_format($_SESSION['bill_preview_data']['final_amount'], 2) ?></strong></td>
-                  </tr>
+                    <?php endforeach; ?>
+                  </tbody>
                 </table>
                 
-                <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
+                <div class="bill-footer">
+                  <table class="bill-table">
+                    <tr>
+                      <td>Sub Total:</td>
+                      <td class="text-right">₹<?= number_format($bill_data['total_amount'], 2) ?></td>
+                    </tr>
+                    <tr>
+                      <td>Tax (<?= ($bill_data['tax_rate'] * 100) ?>%):</td>
+                      <td class="text-right">₹<?= number_format($bill_data['tax_amount'], 2) ?></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Total Due:</strong></td>
+                      <td class="text-right"><strong>₹<?= number_format($bill_data['final_amount'], 2) ?></strong></td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
+                  <p style="margin: 2px 0; text-align: center; font-size: 10px;">GST #: 103340329010001</p>
+                </div>
+                
+                <div class="no-print text-center" style="margin-top: 15px;">
+                  <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+                  <button class="btn btn-secondary btn-sm" onclick="window.location.href='barcode_sale.php'"><i class="fas fa-plus"></i> New Sale</button>
+                </div>
               </div>
-            </div>
-            
-            <div class="text-center mt-3">
-              <a href="barcode_sale.php" class="btn btn-secondary me-2">
-                <i class="fas fa-arrow-left"></i> Back to POS
-              </a>
-              <form method="POST" class="d-inline">
-                <button type="submit" name="process_sale" class="btn btn-success">
-                  <i class="fas fa-check"></i> Confirm Sale
-                </button>
-              </form>
             </div>
           </div>
         </div>
-      <?php else: ?>
+      </div>
+      <div class="modal-backdrop fade show"></div>
+      <?php 
+        // Clear the bill data after displaying
+        unset($_SESSION['last_bill_data']);
+      endif; ?>
+
+      <!-- Customer Selection -->
+      <form method="POST" class="mb-3">
+        <div class="card">
+          <div class="card-header fw-semibold"><i class="fa-solid fa-user me-2"></i>Customer Information (Optional)</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group">
+                  <label for="customer_id" class="form-label">Select Customer</label>
+                  <select class="form-select" id="customer_id" name="customer_id">
+                    <option value="">-- Walk-in Customer --</option>
+                    <?php foreach ($customers as $code => $name): ?>
+                      <option value="<?= $code ?>" <?= ($selectedCustomer == $code) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($name) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="fas fa-save"></i> Save Customer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>
@@ -777,42 +767,6 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
         <?php endif; ?>
       </div>
       <?php endif; ?>
-
-      <!-- Customer Selection -->
-      <div class="customer-info mb-4">
-        <h5><i class="fas fa-user me-2"></i>Customer Information (Optional)</h5>
-        <form method="POST" class="row g-3">
-          <div class="col-md-5">
-            <label for="customer_id" class="form-label">Select Customer</label>
-            <select class="form-select" id="customer_id" name="customer_id">
-              <option value="">-- Walk-in Customer --</option>
-              <?php foreach ($customers as $code => $name): ?>
-                <option value="<?= $code ?>" <?= ($selectedCustomer == $code) ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($name) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-md-5">
-            <label for="new_customer_name" class="form-label">Or Create New Customer</label>
-            <input type="text" class="form-control" id="new_customer_name" name="new_customer_name" 
-                   placeholder="Enter new customer name">
-          </div>
-          <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" name="create_customer" class="btn btn-outline-primary me-2">
-              <i class="fas fa-plus"></i> Create
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-check"></i> Select
-            </button>
-          </div>
-        </form>
-        <?php if ($selectedCustomer): ?>
-          <div class="mt-3">
-            <strong>Selected Customer:</strong> <?= $customers[$selectedCustomer] ?> (ID: <?= $selectedCustomer ?>)
-          </div>
-        <?php endif; ?>
-      </div>
 
       <!-- Barcode Scanner -->
       <div class="barcode-scanner mb-4">
@@ -876,8 +830,8 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
         <h4 class="mb-3">Current Sale Items</h4>
         
         <?php if (!empty($_SESSION['sale_items'])): ?>
-          <div class="table-container">
-            <table class="styled-table">
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered">
               <thead>
                 <tr>
                   <th>Code</th>
@@ -948,15 +902,10 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
             <i class="fas fa-info-circle"></i> Use Arrow Up/Down keys to navigate between items, +/- to adjust quantities
           </div>
 
-          <div class="d-flex justify-content-end mt-3 gap-2">
+          <div class="d-flex justify-content-end mt-3">
             <form method="POST" class="me-2">
               <button type="submit" name="clear_sale" class="btn btn-danger">
                 <i class="fas fa-trash me-1"></i> Clear Sale
-              </button>
-            </form>
-            <form method="POST">
-              <button type="submit" name="preview_bill" class="btn btn-info">
-                <i class="fas fa-eye me-1"></i> Preview Bill
               </button>
             </form>
             <form method="POST">
@@ -969,8 +918,6 @@ $showPreview = isset($_GET['preview']) && $_GET['preview'] == 1 && isset($_SESSI
           <div class="alert alert-info">No items in the current sale. Scan or search for items to add.</div>
         <?php endif; ?>
       </div>
-      
-      <?php endif; // End of bill preview check ?>
     </div>
   </div>
 </div>

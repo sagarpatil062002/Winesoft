@@ -230,7 +230,7 @@ foreach ($allItems as $item) {
     <div class="content-area p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4>Edit Sale Bill #<?= $bill_no ?></h4>
-        <a href="retail_sale.php.php" class="btn btn-secondary">
+        <a href="retail_sale.php" class="btn btn-secondary">
           <i class="fa-solid fa-arrow-left me-1"></i> Back to Sales
         </a>
       </div>

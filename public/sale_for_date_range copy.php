@@ -116,13 +116,35 @@ function distributeSales($total_qty, $days_count) {
     return $daily_sales;
 }
 
-// Get next bill number
+// Get next bill number - fixed to avoid duplicate key error
 function getNextBillNumber($conn) {
     $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
     $result = $conn->query($query);
     $row = $result->fetch_assoc();
-    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-    return $next_bill;
+    $max_bill = $row['max_bill'] ?: 0;
+    
+    // Also check for any higher bill numbers that might not follow the BL prefix pattern
+    $query2 = "SELECT BILL_NO FROM tblsaleheader ORDER BY CREATED_DATE DESC LIMIT 1";
+    $result2 = $conn->query($query2);
+    if ($result2 && $result2->num_rows > 0) {
+        $row2 = $result2->fetch_assoc();
+        $last_bill = $row2['BILL_NO'];
+        
+        // If it's a numeric value without BL prefix, use it if higher
+        if (is_numeric($last_bill) && intval($last_bill) > $max_bill) {
+            $max_bill = intval($last_bill);
+        }
+        
+        // If it has BL prefix but with a different format
+        if (preg_match('/BL(\d+)/i', $last_bill, $matches)) {
+            $bill_num = intval($matches[1]);
+            if ($bill_num > $max_bill) {
+                $max_bill = $bill_num;
+            }
+        }
+    }
+    
+    return $max_bill + 1;
 }
 
 // Function to update daily stock table with proper opening/closing calculations
@@ -214,6 +236,141 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     }
 }
 
+// Function to determine liquor type and volume
+function getLiquorTypeAndVolume($conn, $item_code) {
+    // Get item details with class and subclass info
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, c.SGROUP, c.LIQ_FLAG, sc.CC 
+              FROM tblitemmaster im
+              LEFT JOIN tblclass c ON im.DETAILS2 = c.DESC OR im.DETAILS2 = c.SGROUP
+              LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP
+              WHERE im.CODE = ?";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $item_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $item = $result->fetch_assoc();
+    $stmt->close();
+    
+    if (!$item) {
+        return ['type' => 'UNKNOWN', 'volume' => 0];
+    }
+    
+    // Determine liquor type based on class and LIQ_FLAG
+    $sgroup = $item['SGROUP'] ?? '';
+    $liq_flag = $item['LIQ_FLAG'] ?? '';
+    $volume = $item['CC'] ?? 0;
+    
+    // IMFL types (Foreign Liquor) - Whisky, Wine, Gin, Brandy, Vodka, Rum
+    $imfl_types = ['W', 'V', 'G', 'D', 'K', 'R'];
+    if (in_array($sgroup, $imfl_types) && $liq_flag === 'F') {
+        return ['type' => 'IMFL', 'volume' => $volume];
+    }
+    
+    // Beer types (including Mild Beer)
+    $beer_types = ['B', 'M'];
+    if (in_array($sgroup, $beer_types) && $liq_flag === 'F') {
+        return ['type' => 'BEER', 'volume' => $volume];
+    }
+    
+    // Country Liquor types
+    $cl_types = ['L'];
+    if (in_array($sgroup, $cl_types) && $liq_flag === 'C') {
+        return ['type' => 'CL', 'volume' => $volume];
+    }
+    
+    // Others (General category)
+    if ($sgroup === 'O' && $liq_flag === 'F') {
+        return ['type' => 'IMFL', 'volume' => $volume]; // Treat OTHERS/GENERAL as IMFL
+    }
+    
+    if ($sgroup === 'O' && $liq_flag === 'C') {
+        return ['type' => 'CL', 'volume' => $volume]; // Treat OTHERS/GENERAL as CL
+    }
+    
+    // Non-alcoholic (Soda, Cold Drinks, etc.)
+    return ['type' => 'OTHER', 'volume' => $volume];
+}
+
+// Function to split items into bills based on volume limits
+function splitItemsIntoBills($items, $conn, $IMFL_LIMIT, $BEER_LIMIT, $CL_LIMIT) {
+    $bills = [];
+    
+    // Group items by liquor type first
+    $groupedItems = [
+        'IMFL' => [],
+        'BEER' => [],
+        'CL' => [],
+        'OTHER' => []
+    ];
+    
+    foreach ($items as $item_code => $qty) {
+        if ($qty <= 0) continue;
+        
+        $item_info = getLiquorTypeAndVolume($conn, $item_code);
+        $liquor_type = $item_info['type'];
+        
+        if (isset($groupedItems[$liquor_type])) {
+            $groupedItems[$liquor_type][$item_code] = $qty;
+        } else {
+            $groupedItems['OTHER'][$item_code] = $qty;
+        }
+    }
+    
+    // Process each liquor type separately
+    foreach ($groupedItems as $liquor_type => $type_items) {
+        if (empty($type_items)) continue;
+        
+        $current_bill = ['items' => []];
+        $current_volume = 0;
+        $limit = 0;
+        
+        // Set the appropriate limit for this liquor type
+        switch ($liquor_type) {
+            case 'IMFL':
+                $limit = $IMFL_LIMIT;
+                break;
+            case 'BEER':
+                $limit = $BEER_LIMIT;
+                break;
+            case 'CL':
+                $limit = $CL_LIMIT;
+                break;
+            default:
+                $limit = PHP_INT_MAX; // No limit for OTHER items
+                break;
+        }
+        
+        foreach ($type_items as $item_code => $qty) {
+            $item_info = getLiquorTypeAndVolume($conn, $item_code);
+            $item_volume = $item_info['volume'] * $qty;
+            
+            // Check if item fits in current bill
+            if ($current_volume + $item_volume <= $limit) {
+                $current_bill['items'][$item_code] = $qty;
+                $current_volume += $item_volume;
+            } else {
+                // Start a new bill
+                if (!empty($current_bill['items'])) {
+                    $bills[] = $current_bill;
+                }
+                
+                $current_bill = ['items' => [$item_code => $qty]];
+                $current_volume = $item_volume;
+                
+                // If a single item exceeds the limit, it will be in its own bill
+            }
+        }
+        
+        // Add the last bill for this liquor type
+        if (!empty($current_bill['items'])) {
+            $bills[] = $current_bill;
+        }
+    }
+    
+    return $bills;
+}
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_sales'])) {
@@ -222,6 +379,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comp_id = $_SESSION['CompID'];
         $user_id = $_SESSION['user_id'];
         $fin_year_id = $_SESSION['FIN_YEAR_ID'];
+        
+        // Get company limits
+        $company_query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+        $company_stmt = $conn->prepare($company_query);
+        $company_stmt->bind_param("i", $comp_id);
+        $company_stmt->execute();
+        $company_result = $company_stmt->get_result();
+        $company = $company_result->fetch_assoc();
+        $company_stmt->close();
+        
+        $IMFL_LIMIT = $company['IMFLLimit'] ?: 1000; // Default 1000ml if not set
+        $BEER_LIMIT = $company['BEERLimit'] ?: 4000; // Default 4000ml if not set
+        $CL_LIMIT = $company['CLLimit'] ?: 0; // Default 0ml if not set
         
         // Get next bill number
         $next_bill = getNextBillNumber($conn);
@@ -234,15 +404,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $distribution_details = []; // Store distribution details for display
             
             // Process only items with quantities to avoid max_input_vars issue
-            // We'll manually check each item code instead of using $_POST['sale_qty'] directly
+            $items_to_process = [];
+            foreach ($_POST['sale_qty'] as $item_code => $qty) {
+                if (intval($qty) > 0) {
+                    $items_to_process[$item_code] = intval($qty);
+                }
+            }
+            
+            // Split items into bills based on volume limits
+            $bills = splitItemsIntoBills($items_to_process, $conn, $IMFL_LIMIT, $BEER_LIMIT, $CL_LIMIT);
+            
             $processed_items = 0;
             
-            foreach ($items as $item) {
-                $item_code = $item['CODE'];
+            foreach ($bills as $bill) {
+                $bill_total = 0;
+                $bill_items = [];
                 
-                // Check if this item has a quantity in the POST data
-                if (isset($_POST['sale_qty'][$item_code])) {
-                    $total_qty = intval($_POST['sale_qty'][$item_code]); // Convert to integer
+                // First pass: Calculate bill total and collect items
+                foreach ($bill['items'] as $item_code => $total_qty) {
+                    $total_qty = intval($total_qty);
                     
                     if ($total_qty > 0) {
                         $processed_items++;
@@ -252,10 +432,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             throw new Exception("Too many items with quantities. Maximum allowed is 1000 items.");
                         }
                         
+                        // Get item details
+                        $item_query = "SELECT RPRICE, DETAILS, LIQ_FLAG FROM tblitemmaster WHERE CODE = ?";
+                        $item_stmt = $conn->prepare($item_query);
+                        $item_stmt->bind_param("s", $item_code);
+                        $item_stmt->execute();
+                        $item_result = $item_stmt->get_result();
+                        $item = $item_result->fetch_assoc();
+                        $item_stmt->close();
+                        
+                        if (!$item) {
+                            continue; // Skip if item not found
+                        }
+                        
                         $rate = $item['RPRICE'];
                         $item_name = $item['DETAILS'];
+                        $item_mode = $item['LIQ_FLAG'];
+                        $amount = $total_qty * $rate;
+                        $bill_total += $amount;
                         
-                        // Generate distribution
+                        $bill_items[] = [
+                            'code' => $item_code,
+                            'name' => $item_name,
+                            'qty' => $total_qty,
+                            'rate' => $rate,
+                            'amount' => $amount,
+                            'mode' => $item_mode
+                        ];
+                        
+                        // Generate distribution for display
                         $daily_sales = distributeSales($total_qty, $days_count);
                         
                         // Store distribution details
@@ -266,66 +471,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'daily_sales' => $daily_sales,
                             'dates' => $date_array
                         ];
+                    }
+                }
+                
+                // Generate bill number for this bill
+                $bill_no = "BL" . $next_bill;
+                $next_bill++;
+                
+                // Use the first date in the range for the bill date
+                $bill_date = $date_array[0];
+                
+                // Insert sale header (one header per bill)
+                $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                 VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                $header_stmt = $conn->prepare($header_query);
+                $header_mode = !empty($bill_items) ? $bill_items[0]['mode'] : $mode;
+                $header_stmt->bind_param("ssddssi", $bill_no, $bill_date, $bill_total, $bill_total, $header_mode, $comp_id, $user_id);
+                $header_stmt->execute();
+                $header_stmt->close();
+                
+                // Insert sale details for each item in this bill
+                foreach ($bill_items as $item) {
+                    // Generate distribution for this item
+                    $daily_sales = distributeSales($item['qty'], $days_count);
+                    
+                    // Create sales for each day
+                    foreach ($daily_sales as $index => $qty) {
+                        if ($qty <= 0) continue;
                         
-                        // Create sales for each day
-                        foreach ($daily_sales as $index => $qty) {
-                            if ($qty <= 0) continue;
-                            
-                            $sale_date = $date_array[$index];
-                            $amount = $qty * $rate;
-                            
-                            // Generate bill number starting from 1
-                            $bill_no = "BL" . $next_bill;
-                            $next_bill++;
-                            
-                            // Insert sale header
-                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                            $header_stmt = $conn->prepare($header_query);
-                            $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $amount, $amount, $mode, $comp_id, $user_id);
-                            $header_stmt->execute();
-                            $header_stmt->close();
-                            
-                            // Insert sale details
-                            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?)";
-                            $detail_stmt = $conn->prepare($detail_query);
-                            $detail_stmt->bind_param("ssddssi", $bill_no, $item_code, $qty, $rate, $amount, $mode, $comp_id);
-                            $detail_stmt->execute();
-                            $detail_stmt->close();
-                            
-                            // Update stock - check if record exists first
-                            $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
-                            $check_stmt = $conn->prepare($check_stock_query);
-                            $check_stmt->bind_param("s", $item_code);
-                            $check_stmt->execute();
-                            $check_result = $check_stmt->get_result();
-                            $stock_exists = $check_result->fetch_assoc()['count'] > 0;
-                            $check_stmt->close();
-                            
-                            if ($stock_exists) {
-                                // Update existing stock
-                                $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
-                                $stock_stmt = $conn->prepare($stock_query);
-                                $stock_stmt->bind_param("ds", $qty, $item_code);
-                                $stock_stmt->execute();
-                                $stock_stmt->close();
-                            } else {
-                                // Insert new stock record
-                                $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
-                                                       VALUES (?, ?, ?, ?)";
-                                $insert_stock_stmt = $conn->prepare($insert_stock_query);
-                                $current_stock = -$qty; // Negative since we're deducting
-                                $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
-                                $insert_stock_stmt->execute();
-                                $insert_stock_stmt->close();
-                            }
-                            
-                            // Update daily stock table with closing calculation
-                            updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id);
-                            
-                            $total_amount += $amount;
+                        $sale_date = $date_array[$index];
+                        $amount = $qty * $item['rate'];
+                        
+                        // Insert sale details
+                        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                         VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $detail_stmt = $conn->prepare($detail_query);
+                        $detail_stmt->bind_param("ssddssi", $bill_no, $item['code'], $qty, $item['rate'], $amount, $item['mode'], $comp_id);
+                        $detail_stmt->execute();
+                        $detail_stmt->close();
+                        
+                        // Update stock - check if record exists first
+                        $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+                        $check_stmt = $conn->prepare($check_stock_query);
+                        $check_stmt->bind_param("s", $item['code']);
+                        $check_stmt->execute();
+                        $check_result = $check_stmt->get_result();
+                        $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+                        $check_stmt->close();
+                        
+                        if ($stock_exists) {
+                            // Update existing stock
+                            $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+                            $stock_stmt = $conn->prepare($stock_query);
+                            $stock_stmt->bind_param("ds", $qty, $item['code']);
+                            $stock_stmt->execute();
+                            $stock_stmt->close();
+                        } else {
+                            // Insert new stock record
+                            $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                                                   VALUES (?, ?, ?, ?)";
+                            $insert_stock_stmt = $conn->prepare($insert_stock_query);
+                            $current_stock = -$qty; // Negative since we're deducting
+                            $insert_stock_stmt->bind_param("ssdd", $item['code'], $fin_year_id, $current_stock, $current_stock);
+                            $insert_stock_stmt->execute();
+                            $insert_stock_stmt->close();
                         }
+                        
+                        // Update daily stock table with closing calculation
+                        updateDailyStock($conn, $daily_stock_table, $item['code'], $sale_date, $qty, $comp_id);
+                        
+                        $total_amount += $amount;
                     }
                 }
             }
@@ -333,7 +548,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Commit transaction
             $conn->commit();
             
-            $success_message = "Sales distributed successfully across the date range! Total Amount: ₹" . number_format($total_amount, 2);
+            $success_message = "Sales distributed successfully across the date range! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
             
             // Redirect to retail_sale.php
             header("Location: retail_sale.php?success=" . urlencode($success_message));
@@ -387,6 +602,19 @@ while ($row = $class_result->fetch_assoc()) {
     $classes[$row['SGROUP']] = $row['DESC'];
 }
 $class_stmt->close();
+
+// Get company limits for JavaScript
+$company_query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+$company_stmt = $conn->prepare($company_query);
+$company_stmt->bind_param("i", $comp_id);
+$company_stmt->execute();
+$company_result = $company_stmt->get_result();
+$company = $company_result->fetch_assoc();
+$company_stmt->close();
+
+$IMFL_LIMIT = $company['IMFLLimit'] ?: 1000;
+$BEER_LIMIT = $company['BEERLimit'] ?: 4000;
+$CL_LIMIT = $company['CLLimit'] ?: 0;
 
 // Define all possible sizes for the sale module view
 $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
@@ -749,6 +977,9 @@ $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 150
 // Global variables
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
+const IMFL_LIMIT = <?= $IMFL_LIMIT ?>;
+const BEER_LIMIT = <?= $BEER_LIMIT ?>;
+const CL_LIMIT = <?= $CL_LIMIT ?>;
 
 // Function to distribute sales uniformly (client-side version)
 function distributeSales(total_qty, days_count) {
@@ -827,6 +1058,39 @@ function categorizeItem(itemCategory, itemName, itemSize) {
     else {
         return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
     }
+}
+
+// Function to determine liquor type based on category and size
+function getLiquorType(itemCategory, itemName, itemSize) {
+    const category = (itemCategory || '').toUpperCase();
+    const name = (itemName || '').toUpperCase();
+    
+    // IMFL types (Foreign Liquor)
+    if (category.includes('WHISKY') || category.includes('WINE') || 
+        category.includes('GIN') || category.includes('BRANDY') ||
+        category.includes('VODKA') || category.includes('RUM') ||
+        name.includes('WHISKY') || name.includes('WINE') || 
+        name.includes('GIN') || name.includes('BRANDY') ||
+        name.includes('VODKA') || name.includes('RUM')) {
+        return 'IMFL';
+    }
+    
+    // Beer types
+    else if (category.includes('BEER') || name.includes('BEER')) {
+        if (category.includes('MILD') || name.includes('MILD')) {
+            return 'BEER';
+        } else {
+            return 'BEER';
+        }
+    }
+    
+    // Country Liquor types
+    else if (category.includes('LIQUOR') || name.includes('LIQUOR')) {
+        return 'CL';
+    }
+    
+    // Others
+    return 'OTHER';
 }
 
 // Function to update sale module view
@@ -925,6 +1189,76 @@ function setupRowNavigation() {
     });
 }
 
+// Function to check volume limits and show warning
+function checkVolumeLimits() {
+    let imflVolume = 0;
+    let beerVolume = 0;
+    let clVolume = 0;
+    let otherVolume = 0;
+    
+    $('input[name^="sale_qty"]').each(function() {
+        const qty = parseInt($(this).val()) || 0;
+        if (qty > 0) {
+            const itemCode = $(this).data('code');
+            const size = $(this).data('size');
+            const itemRow = $(this).closest('tr');
+            const itemName = itemRow.find('td:eq(1)').text();
+            const itemCategory = itemRow.find('td:eq(2)').text();
+            
+            // Determine liquor type based on category
+            const liquorType = getLiquorType(itemCategory, itemName, size);
+            const itemVolume = size * qty;
+            
+            switch (liquorType) {
+                case 'IMFL':
+                    imflVolume += itemVolume;
+                    break;
+                case 'BEER':
+                    beerVolume += itemVolume;
+                    break;
+                case 'CL':
+                    clVolume += itemVolume;
+                    break;
+                default:
+                    otherVolume += itemVolume;
+                    break;
+            }
+        }
+    });
+    
+    // Show warnings if limits are exceeded
+    let warningMessage = '';
+    let billCount = 1; // At least one bill
+    
+    if (imflVolume > IMFL_LIMIT) {
+        const imflBills = Math.ceil(imflVolume / IMFL_LIMIT);
+        billCount = Math.max(billCount, imflBills);
+        warningMessage += `IMFL volume (${imflVolume}ml) exceeds limit (${IMFL_LIMIT}ml). Will be split into ${imflBills} bill(s).\n`;
+    }
+    
+    if (beerVolume > BEER_LIMIT) {
+        const beerBills = Math.ceil(beerVolume / BEER_LIMIT);
+        billCount = Math.max(billCount, beerBills);
+        warningMessage += `Beer volume (${beerVolume}ml) exceeds limit (${BEER_LIMIT}ml). Will be split into ${beerBills} bill(s).\n`;
+    }
+    
+    if (clVolume > CL_LIMIT) {
+        const clBills = Math.ceil(clVolume / CL_LIMIT);
+        billCount = Math.max(billCount, clBills);
+        warningMessage += `Country Liquor volume (${clVolume}ml) exceeds limit (${CL_LIMIT}ml). Will be split into ${clBills} bill(s).\n`;
+    }
+    
+    if (warningMessage) {
+        return {
+            warning: 'Volume Limit Warning:\n' + warningMessage + 
+                     `\nThe system will automatically split items into ${billCount} bill(s).`,
+            billCount: billCount
+        };
+    }
+    
+    return { warning: '', billCount: 1 };
+}
+
 // Function to save to pending sales
 function saveToPendingSales() {
     // Show loader
@@ -1007,7 +1341,8 @@ function generateBills() {
             try {
                 const result = JSON.parse(response);
                 if (result.success) {
-                    alert('Bills generated successfully! Total Amount: ₹' + result.total_amount);
+                    alert('Bills generated successfully! Total Amount: ₹' + result.total_amount + 
+                          '. Generated ' + result.bill_count + ' bill(s).');
                     window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
                 } else {
                     alert('Error: ' + result.message);
@@ -1113,6 +1448,15 @@ $(document).ready(function() {
         if (!hasQuantity) {
             alert('Please enter quantities for at least one item.');
             return false;
+        }
+        
+        // Check volume limits and show warning
+        const volumeCheck = checkVolumeLimits();
+        
+        if (volumeCheck.warning) {
+            if (!confirm(volumeCheck.warning + '\n\nDo you want to continue with bill generation?')) {
+                return false;
+            }
         }
         
         // Show confirmation dialog
