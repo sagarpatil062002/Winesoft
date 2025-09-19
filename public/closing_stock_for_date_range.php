@@ -13,6 +13,10 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
+// Include volume limit utilities
+include_once "volume_limit_utils.php";
+
+
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
@@ -97,33 +101,9 @@ foreach ($date_range as $date) {
 $days_count = count($date_array);
 
 // Function to distribute sales uniformly
-function distributeSales($total_qty, $days_count) {
-    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
-    
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
-    
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($daily_sales);
-    
-    return $daily_sales;
-}
 
-// Get next bill number
-function getNextBillNumber($conn) {
-    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-    $result = $conn->query($query);
-    $row = $result->fetch_assoc();
-    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-    return $next_bill;
-}
+
+
 
 // Function to update daily stock table with proper opening/closing calculations
 function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {

@@ -1,30 +1,84 @@
 <?php
 session_start();
 
+// Logging function
+function logMessage($message, $level = 'INFO') {
+    $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
+    
+    // Create logs directory if it doesn't exist
+    $logDir = dirname($logFile);
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    
+    file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+}
+
+// Function to log array data in a readable format
+function logArray($data, $title = 'Array data') {
+    ob_start();
+    print_r($data);
+    $output = ob_get_clean();
+    logMessage("$title:\n$output");
+}
+
+// Function to log POST data (sanitized)
+function logPostData() {
+    $postData = $_POST;
+    // Remove sensitive data if needed
+    unset($postData['password'], $postData['credit_card'], $postData['auth_token']);
+    logArray($postData, 'POST data');
+}
+
+// Function to log GET data
+function logGetData() {
+    logArray($_GET, 'GET data');
+}
+
+// Function to log session data
+function logSessionData() {
+    logArray($_SESSION, 'Session data');
+}
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
+    logMessage('User not logged in, redirecting to index.php', 'WARNING');
     header("Location: index.php");
     exit;
 }
 if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
+    logMessage('Company or financial year not set, redirecting to index.php', 'WARNING');
     header("Location: index.php");
     exit;
 }
 
+logMessage("Sales page accessed by user ID: {$_SESSION['user_id']}, Company ID: {$_SESSION['CompID']}");
+logSessionData();
+
 include_once "../config/db.php"; // MySQLi connection in $conn
+logMessage("Database connection established");
+
+// Include volume limit utilities
+include_once "volume_limit_utils.php";
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
+logMessage("Mode selected: $mode");
 
 // Sequence type selection (default user_defined)
 $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_defined';
+logMessage("Sequence type selected: $sequence_type");
 
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+logMessage("Search keyword: '$search'");
 
 // Date range selection (default to current day only)
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+logMessage("Date range: $start_date to $end_date");
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
@@ -32,18 +86,25 @@ $daily_stock_table = "tbldailystock_" . $comp_id;
 $opening_stock_column = "Opening_Stock" . $comp_id;
 $current_stock_column = "Current_Stock" . $comp_id;
 
+logMessage("Company ID: $comp_id, Stock table: $daily_stock_table");
+
 // Check if the stock columns exist, if not create them
 $check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
 $column_result = $conn->query($check_column_query);
 
 if ($column_result->num_rows == 0) {
-    // Columns don't exist, create them
+    logMessage("Creating stock columns: $opening_stock_column, $current_stock_column");
     $alter_query = "ALTER TABLE tblitem_stock 
                     ADD COLUMN $opening_stock_column DECIMAL(10,3) DEFAULT 0.000,
                     ADD COLUMN $current_stock_column DECIMAL(10,3) DEFAULT 0.000";
     if (!$conn->query($alter_query)) {
+        $error = "Error creating stock columns: " . $conn->error;
+        logMessage($error, 'ERROR');
         die("Error creating stock columns: " . $conn->error);
     }
+    logMessage("Stock columns created successfully");
+} else {
+    logMessage("Stock columns already exist");
 }
 
 // Build query based on sequence type
@@ -55,6 +116,8 @@ if ($sequence_type === 'system_defined') {
     // User defined (default)
     $order_clause = "ORDER BY im.DETAILS ASC";
 }
+
+logMessage("Order clause: $order_clause");
 
 // Fetch items from tblitemmaster with their current stock
 $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, 
@@ -75,12 +138,16 @@ if ($search !== '') {
 
 $query .= " " . $order_clause;
 
+logMessage("Executing query: $query");
+logArray($params, "Query parameters");
+
 $stmt = $conn->prepare($query);
 $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
+logMessage("Fetched " . count($items) . " items");
 
 // Create date range array
 $begin = new DateTime($start_date);
@@ -96,120 +163,147 @@ foreach ($date_range as $date) {
 }
 $days_count = count($date_array);
 
-// Function to get category limits from tblcompany
-function getCategoryLimits($conn, $comp_id) {
-    $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $limits = $result->fetch_assoc();
-    $stmt->close();
+logMessage("Date range spans $days_count days: " . implode(', ', $date_array));
+
+// Function to update item stock
+function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
+    logMessage("Updating stock for item $item_code, quantity: $qty");
     
-    return [
-        'IMFL' => $limits['IMFLLimit'] ?? 1000, // Default 1000ml if not set
-        'BEER' => $limits['BEERLimit'] ?? 0,
-        'CL' => $limits['CLLimit'] ?? 0
-    ];
+    // Check if record exists first
+    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock_query);
+    $check_stmt->bind_param("s", $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($stock_exists) {
+        logMessage("Updating existing stock record for $item_code");
+        $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+        $stock_stmt = $conn->prepare($stock_query);
+        $stock_stmt->bind_param("ds", $qty, $item_code);
+        $stock_stmt->execute();
+        $stock_stmt->close();
+    } else {
+        logMessage("Creating new stock record for $item_code");
+        $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                               VALUES (?, ?, ?, ?)";
+        $insert_stock_stmt = $conn->prepare($insert_stock_query);
+        $current_stock = -$qty; // Negative since we're deducting
+        $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
+        $insert_stock_stmt->execute();
+        $insert_stock_stmt->close();
+    }
+    
+    logMessage("Stock updated successfully for item $item_code");
 }
 
-// Function to determine item category based on class and subclass
-function getItemCategory($conn, $item_code, $mode) {
-    // Get item details directly from tblitemmaster
-    $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $item_code);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item_data = $result->fetch_assoc();
-    $stmt->close();
+// Function to update daily stock table with proper opening/closing calculations
+function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
+    logMessage("Updating daily stock for item $item_code, quantity: $qty, date: $sale_date");
     
-    if (!$item_data) return 'OTHER';
+    // Extract day number from date (e.g., 2025-09-03 -> day 03)
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $sales_column = "DAY_{$day_num}_SALES";
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    $opening_column = "DAY_{$day_num}_OPEN";
+    $purchase_column = "DAY_{$day_num}_PURCHASE";
     
-    $details2 = strtoupper($item_data['DETAILS2'] ?? '');
+    $month_year = date('Y-m', strtotime($sale_date));
     
-    // Categorize based on DETAILS2 content
-    if ($mode === 'F') {
-        if (strpos($details2, 'WHISKY') !== false || 
-            strpos($details2, 'GIN') !== false ||
-            strpos($details2, 'BRANDY') !== false ||
-            strpos($details2, 'VODKA') !== false ||
-            strpos($details2, 'RUM') !== false ||
-            strpos($details2, 'LIQUOR') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'BEER') !== false) {
-            return 'BEER';
+    // Check if record exists for this month and item
+    $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
+                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $month_year, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        logMessage("Updating existing daily stock record for $item_code");
+        // Get current values to calculate closing properly
+        $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                         FROM $daily_stock_table 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $select_stmt = $conn->prepare($select_query);
+        $select_stmt->bind_param("ss", $month_year, $item_code);
+        $select_stmt->execute();
+        $select_result = $select_stmt->get_result();
+        $current_values = $select_result->fetch_assoc();
+        $select_stmt->close();
+        
+        $opening = $current_values[$opening_column] ?? 0;
+        $purchase = $current_values[$purchase_column] ?? 0;
+        $current_sales = $current_values[$sales_column] ?? 0;
+        
+        // Calculate new sales and closing
+        $new_sales = $current_sales + $qty;
+        $new_closing = $opening + $purchase - $new_sales;
+        
+        logMessage("Daily stock update - Opening: $opening, Purchase: $purchase, Current Sales: $current_sales, New Sales: $new_sales, New Closing: $new_closing");
+        
+        // Update existing record with correct closing calculation
+        $update_query = "UPDATE $daily_stock_table 
+                         SET $sales_column = ?, 
+                             $closing_column = ?,
+                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        // Update next day's opening stock if it exists
+        $next_day = intval($day_num) + 1;
+        if ($next_day <= 31) {
+            $next_day_num = sprintf('%02d', $next_day);
+            $next_opening_column = "DAY_{$next_day_num}_OPEN";
+            
+            // Check if next day exists in the table
+            $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
+            $next_day_result = $conn->query($check_next_day_query);
+            
+            if ($next_day_result->num_rows > 0) {
+                logMessage("Updating next day's opening stock for day $next_day_num");
+                // Update next day's opening to match current day's closing
+                $update_next_query = "UPDATE $daily_stock_table 
+                                     SET $next_opening_column = ?,
+                                         LAST_UPDATED = CURRENT_TIMESTAMP 
+                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_next_stmt = $conn->prepare($update_next_query);
+                $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
+                $update_next_stmt->execute();
+                $update_next_stmt->close();
+            }
         }
-    } elseif ($mode === 'C') {
-        if (strpos($details2, 'COUNTRY') !== false || 
-            strpos($details2, 'CL') !== false) {
-            return 'CL';
-        }
+    } else {
+        logMessage("Creating new daily stock record for $item_code");
+        // For new records, opening and purchase are typically 0 unless specified otherwise
+        $closing = 0 - $qty; // Since opening and purchase are 0
+        
+        // Create new record
+        $insert_query = "INSERT INTO $daily_stock_table 
+                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
+                         VALUES (?, ?, 'F', 0, 0, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
+        $insert_stmt->execute();
+        $insert_stmt->close();
     }
     
-    return 'OTHER';
+    logMessage("Daily stock updated successfully for item $item_code");
 }
 
-// Function to get item size from CC in tblsubclass
-function getItemSize($conn, $item_code, $mode) {
-    // First try to get size from CC in tblsubclass
-    $query = "SELECT sc.CC 
-              FROM tblitemmaster im 
-              LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
-              WHERE im.CODE = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $mode, $item_code);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item_data = $result->fetch_assoc();
-    $stmt->close();
-    
-    if ($item_data && $item_data['CC'] > 0) {
-        return (float)$item_data['CC'];
-    }
-    
-    // If not found in subclass, try to extract from item name
-    $query = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $item_code);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item_data = $result->fetch_assoc();
-    $stmt->close();
-    
-    if ($item_data) {
-        // Try to extract size from item name (e.g., "Item Name 750ML")
-        if (preg_match('/(\d+)\s*ML/i', $item_data['DETAILS'], $matches)) {
-            return (float)$matches[1];
-        }
-    }
-    
-    // Default size if not found
-    return 750; // Common liquor bottle size
-}
 
-// Function to create a bill
-function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
-    $total_amount = 0;
-    $bill_no_str = "BL" . $bill_no;
-    
-    foreach ($items as $item) {
-        $total_amount += $item['amount'];
-    }
-    
-    return [
-        'bill_no' => $bill_no_str,
-        'bill_date' => $sale_date,
-        'total_amount' => $total_amount,
-        'items' => $items,
-        'mode' => $mode,
-        'comp_id' => $comp_id,
-        'user_id' => $user_id
-    ];
-}
 
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    logMessage("POST request received");
+    logPostData();
+    
     if (isset($_POST['update_sales'])) {
         $start_date = $_POST['start_date'];
         $end_date = $_POST['end_date'];
@@ -217,13 +311,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_id = $_SESSION['user_id'];
         $fin_year_id = $_SESSION['FIN_YEAR_ID'];
         
+        logMessage("Form submitted for sales update - Start: $start_date, End: $end_date");
+        
         // Start transaction
         $conn->begin_transaction();
+        logMessage("Transaction started");
         
         try {
             $total_amount = 0;
             $items_data = []; // Store item data for bill generation
             $daily_sales_data = []; // Store daily sales for each item
+            
+            logMessage("Processing " . count($items) . " items with quantities");
             
             // Process items with quantities
             foreach ($items as $item) {
@@ -233,6 +332,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $total_qty = intval($_POST['sale_qty'][$item_code]);
                     
                     if ($total_qty > 0) {
+                        logMessage("Item $item_code quantity: $total_qty");
                         // Generate distribution
                         $daily_sales = distributeSales($total_qty, $days_count);
                         $daily_sales_data[$item_code] = $daily_sales;
@@ -247,8 +347,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // Generate bills with volume limits
+            logMessage("Generating bills with volume limits for " . count($items_data) . " items");
             $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+            logMessage("Generated " . count($bills) . " bills");
             
             // Get stock column names
             $current_stock_column = "Current_Stock" . $comp_id;
@@ -257,6 +358,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Process each bill
             foreach ($bills as $bill) {
+                logMessage("Processing bill {$bill['bill_no']} with " . count($bill['items']) . " items, amount: {$bill['total_amount']}");
+                
                 // Insert sale header
                 $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
                                  VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
@@ -268,6 +371,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 // Insert sale details for each item in the bill
                 foreach ($bill['items'] as $item) {
+                    logMessage("Bill {$bill['bill_no']} - Item {$item['code']}: Qty={$item['qty']}, Rate={$item['rate']}, Amount={$item['amount']}");
+                    
                     $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                      VALUES (?, ?, ?, ?, ?, ?, ?)";
                     $detail_stmt = $conn->prepare($detail_query);
@@ -288,8 +393,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Commit transaction
             $conn->commit();
+            logMessage("Transaction committed successfully. Total amount: $total_amount");
             
             $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+            logMessage($success_message);
             
             // Redirect to retail_sale.php
             header("Location: retail_sale.php?success=" . urlencode($success_message));
@@ -298,6 +405,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Rollback transaction on error
             $conn->rollback();
             $error_message = "Error updating sales: " . $e->getMessage();
+            logMessage($error_message, 'ERROR');
+            logMessage("Transaction rolled back due to error", 'ERROR');
+            logMessage("Stack trace: " . $e->getTraceAsString(), 'ERROR');
         }
     }
 }
@@ -305,6 +415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Check for success message in URL
 if (isset($_GET['success'])) {
     $success_message = $_GET['success'];
+    logMessage("Success message from URL: $success_message");
 }
 
 // Initialize quantities array
@@ -321,6 +432,7 @@ $subclass_stmt->execute();
 $subclass_result = $subclass_stmt->get_result();
 $subclasses = $subclass_result->fetch_all(MYSQLI_ASSOC);
 $subclass_stmt->close();
+logMessage("Fetched " . count($subclasses) . " subclasses");
 
 // Group subclasses by CC
 $subclass_groups = [];
@@ -343,11 +455,14 @@ while ($row = $class_result->fetch_assoc()) {
     $classes[$row['SGROUP']] = $row['DESC'];
 }
 $class_stmt->close();
+logMessage("Fetched " . count($classes) . " classes");
 
 // Define all possible sizes for the sale module view
 $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-?>
-<!DOCTYPE html>
+logMessage("Sale module view initialized with " . count($all_sizes) . " sizes");
+
+logMessage("Page rendering completed");
+?><!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -949,7 +1064,6 @@ function saveToPendingSales() {
         }
     });
 }
-
 // Function to generate bills immediately
 function generateBills() {
     // Show loader
@@ -998,6 +1112,7 @@ function generateBills() {
         }
     });
 }
+
 // Document ready
 $(document).ready(function() {
     // Initialize table headers and columns

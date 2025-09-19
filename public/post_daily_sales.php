@@ -13,6 +13,9 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php";
 
+// Include volume limit utilities
+include_once "volume_limit_utils.php";
+
 $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID'];
 $user_id = $_SESSION['user_id'];
@@ -45,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
             
             // Process each selected date
             foreach ($selected_dates as $sale_date) {
-                // Get all pending sales for this date - CORRECTED: using start_date
-                $pending_sales_query = "SELECT ps.*, im.RPRICE as rate, im.LIQ_FLAG as mode 
+                // Get all pending sales for this date
+                $pending_sales_query = "SELECT ps.*, im.RPRICE as rate, im.LIQ_FLAG as mode, im.DETAILS, im.DETAILS2
                                        FROM tbl_pending_sales ps
                                        JOIN tblitemmaster im ON ps.item_code = im.CODE
                                        WHERE ps.comp_id = ? AND ps.start_date = ? AND ps.status = 'pending'";
@@ -57,57 +60,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                 $pending_sales = $pending_sales_result->fetch_all(MYSQLI_ASSOC);
                 $pending_sales_stmt->close();
                 
-                // Group by customer/restriction rules (simplified example)
-                $customer_sales = groupSalesByRestriction($pending_sales);
+                // Prepare items data for bill generation with volume limits
+                $items_data = [];
+                foreach ($pending_sales as $sale) {
+                    $items_data[$sale['item_code']] = [
+                        'name' => $sale['DETAILS'],
+                        'rate' => $sale['rate'],
+                        'total_qty' => $sale['quantity'],
+                        'details2' => $sale['DETAILS2']
+                    ];
+                }
                 
-                // Process each customer group
-                foreach ($customer_sales as $customer_group) {
-                    // Check bulk liter restrictions
-                    if (checkBulkRestrictions($customer_group)) {
-                        // Create bill for this customer group
-                        $bill_no = "BL" . $next_bill;
-                        $next_bill++;
+                // Generate bills with volume limits
+                $daily_sales_data = [];
+                foreach ($items_data as $item_code => $item_data) {
+                    $daily_sales_data[$item_code] = distributeSales($item_data['total_qty'], 1); // 1 day only
+                }
+                
+                // Get mode from first item (assuming all items have same mode)
+                $mode = !empty($pending_sales) ? $pending_sales[0]['mode'] : 'F';
+                
+                // Generate bills with the same logic as in the main file
+                $bills = generateBillsWithLimits($conn, $items_data, [$sale_date], $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                
+                // Process each bill
+                foreach ($bills as $bill) {
+                    // Insert sale header
+                    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                    $header_stmt = $conn->prepare($header_query);
+                    $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
+                                            $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                    $header_stmt->execute();
+                    $header_stmt->close();
+                    
+                    // Insert sale details for each item in the bill
+                    foreach ($bill['items'] as $item) {
+                        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                         VALUES (?, ?, ?, ?, ?, ?, ?)";
+                        $detail_stmt = $conn->prepare($detail_query);
+                        $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
+                                                $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                        $detail_stmt->execute();
+                        $detail_stmt->close();
                         
-                        $total_amount = 0;
-                        foreach ($customer_group as $sale) {
-                            $amount = $sale['quantity'] * $sale['rate'];
-                            $total_amount += $amount;
-                        }
+                        // Update stock
+                        updateItemStock($conn, $item['code'], $item['qty'], $comp_id, $fin_year_id);
                         
-                        // Insert sale header
-                        $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                         VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                        $header_stmt = $conn->prepare($header_query);
-                        $header_stmt->bind_param("ssddssi", $bill_no, $sale_date, $total_amount, $total_amount, $sale['mode'], $comp_id, $user_id);
-                        $header_stmt->execute();
-                        $header_stmt->close();
-                        
-                        // Insert sale details and update stock
-                        foreach ($customer_group as $sale) {
-                            $amount = $sale['quantity'] * $sale['rate'];
-                            
-                            // Insert sale details
-                            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                             VALUES (?, ?, ?, ?, ?, ?, ?)";
-                            $detail_stmt = $conn->prepare($detail_query);
-                            $detail_stmt->bind_param("ssddssi", $bill_no, $sale['item_code'], $sale['quantity'], $sale['rate'], $amount, $sale['mode'], $comp_id);
-                            $detail_stmt->execute();
-                            $detail_stmt->close();
-                            
-                            // Update stock
-                            updateStock($conn, $sale['item_code'], $sale['quantity'], $sale['mode'], $comp_id, $fin_year_id);
-                            
-                            // Update daily stock
-                            updateDailyStock($conn, "tbldailystock_" . $comp_id, $sale['item_code'], $sale_date, $sale['quantity'], $comp_id);
-                        }
-                    } else {
-                        // Handle restriction violation (split into multiple bills or show error)
-                        // This would be a more complex implementation based on your specific rules
-                        throw new Exception("Bulk restriction violation for date: " . $sale_date);
+                        // Update daily stock
+                        updateDailyStock($conn, "tbldailystock_" . $comp_id, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                     }
                 }
                 
-                // Mark all pending sales for this date as processed - CORRECTED: using start_date
+                // Mark all pending sales for this date as processed
                 $update_query = "UPDATE tbl_pending_sales SET status = 'processed', processed_at = NOW() 
                                 WHERE comp_id = ? AND start_date = ? AND status = 'pending'";
                 $update_stmt = $conn->prepare($update_query);
@@ -119,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
             // Commit transaction
             $conn->commit();
             
-            $success_message = "Successfully processed " . count($selected_dates) . " date(s) and generated bills!";
+            $success_message = "Successfully processed " . count($selected_dates) . " date(s) and generated " . count($bills) . " bills!";
             
         } catch (Exception $e) {
             // Rollback transaction on error
@@ -131,67 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
     }
 }
 
-// Function to get next bill number
-function getNextBillNumber($conn) {
-    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-    $result = $conn->query($query);
-    $row = $result->fetch_assoc();
-    return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-}
 
-// Function to group sales by restriction rules (simplified example)
-function groupSalesByRestriction($sales) {
-    // This is a simplified example - you would implement your specific bulk restriction logic here
-    // For example, group by customer type, item category, or other criteria
-    
-    $groups = [];
-    $current_group = [];
-    $current_liters = 0;
-    
-    foreach ($sales as $sale) {
-        // Calculate liters (assuming size is stored somewhere)
-        $liters = calculateLiters($sale['item_code'], $sale['quantity']);
-        
-        // Check if adding this sale would exceed restrictions
-        if ($current_liters + $liters > 10) { // Example: 10 liter limit per customer
-            $groups[] = $current_group;
-            $current_group = [];
-            $current_liters = 0;
-        }
-        
-        $current_group[] = $sale;
-        $current_liters += $liters;
-    }
-    
-    if (!empty($current_group)) {
-        $groups[] = $current_group;
-    }
-    
-    return $groups;
-}
-
-// Function to check bulk restrictions (simplified example)
-function checkBulkRestrictions($sales_group) {
-    $total_liters = 0;
-    
-    foreach ($sales_group as $sale) {
-        $liters = calculateLiters($sale['item_code'], $sale['quantity']);
-        $total_liters += $liters;
-    }
-    
-    // Example: Maximum 15 liters per customer per day
-    return $total_liters <= 15;
-}
-
-// Function to calculate liters from item code and quantity
-function calculateLiters($item_code, $quantity) {
-    // This would need to be implemented based on your item size data
-    // For now, return a placeholder value
-    return $quantity * 0.75; // Assuming standard bottle size
-}
-
-// Function to update stock
-function updateStock($conn, $item_code, $quantity, $mode, $comp_id, $fin_year_id) {
+// Function to update item stock
+function updateItemStock($conn, $item_code, $quantity, $comp_id, $fin_year_id) {
     $opening_stock_column = "Opening_Stock" . $comp_id;
     $current_stock_column = "Current_Stock" . $comp_id;
     
@@ -405,7 +352,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
                 <tbody>
                   <?php 
                   foreach ($pending_dates as $date): 
-                    // Get summary for each date - CORRECTED: using start_date
+                    // Get summary for each date
                     $summary_query = "SELECT COUNT(*) as item_count, SUM(quantity) as total_qty, 
                                      SUM(quantity * im.RPRICE) as total_amount 
                                      FROM tbl_pending_sales ps

@@ -25,6 +25,51 @@ if ($customerResult) {
     echo "Error fetching customers: " . $conn->error;
 }
 
+// Handle customer creation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_customer'])) {
+    $customerName = trim($_POST['customer_name']);
+    if (!empty($customerName)) {
+        // Get the next available LCODE for GCODE=32
+        $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
+        $maxResult = $conn->query($maxCodeQuery);
+        $maxCode = 1;
+        if ($maxResult && $maxResult->num_rows > 0) {
+            $maxData = $maxResult->fetch_assoc();
+            $maxCode = $maxData['max_code'] + 1;
+        }
+        
+        // Insert new customer
+       // Insert new customer
+$insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
+$stmt = $conn->prepare($insertQuery);
+$stmt->bind_param("is", $maxCode, $customerName);
+        
+        if ($stmt->execute()) {
+            $_SESSION['success_message'] = "Customer created successfully!";
+            $_SESSION['selected_customer'] = $maxCode;
+            $selectedCustomer = $maxCode;
+            
+            // Refresh customers list
+            $customerResult = $conn->query($customerQuery);
+            $customers = [];
+            if ($customerResult) {
+                while ($row = $customerResult->fetch_assoc()) {
+                    $customers[$row['LCODE']] = $row['LHEAD'];
+                }
+            }
+        } else {
+            $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
+        }
+        $stmt->close();
+    } else {
+        $_SESSION['error_message'] = "Customer name is required!";
+    }
+    
+    // Redirect to avoid form resubmission
+    header("Location: barcode_sale.php");
+    exit;
+}
+
 // Get selected customer from session if available
 $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
 
@@ -614,6 +659,9 @@ if (!empty($_SESSION['sale_items'])) {
         display: none !important;
       }
     }
+    .create-customer-btn {
+      margin-top: 32px;
+    }
   </style>
 </head>
 <body>
@@ -724,7 +772,12 @@ if (!empty($_SESSION['sale_items'])) {
       <!-- Customer Selection -->
       <form method="POST" class="mb-3">
         <div class="card">
-          <div class="card-header fw-semibold"><i class="fa-solid fa-user me-2"></i>Customer Information (Optional)</div>
+          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-user me-2"></i>Customer Information (Optional)</span>
+            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
+              <i class="fas fa-plus me-1"></i> Create New Customer
+            </button>
+          </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-8">
@@ -749,6 +802,30 @@ if (!empty($_SESSION['sale_items'])) {
           </div>
         </div>
       </form>
+
+      <!-- Create Customer Modal -->
+      <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="createCustomerModalLabel">Create New Customer</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label for="customer_name" class="form-label">Customer Name *</label>
+                  <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                </div>
+               </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" name="create_customer" class="btn btn-primary">Create Customer</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>
