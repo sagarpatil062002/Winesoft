@@ -297,7 +297,29 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     logMessage("Daily stock updated successfully for item $item_code");
 }
 
-
+// Function to categorize items for sale module view
+function categorizeItemForModule($itemCategory, $itemName) {
+    $category = (is_string($itemCategory) ? strtoupper($itemCategory) : '');
+    $name = (is_string($itemName) ? strtoupper($itemName) : '');
+    
+    // Check for wine first
+    if (strpos($category, 'WINE') !== false || strpos($name, 'WINE') !== false) {
+        return 'WINES';
+    }
+    // Check for mild beer
+    else if ((strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) && 
+             (strpos($category, 'MILD') !== false || strpos($name, 'MILD') !== false)) {
+        return 'MILD BEER';
+    }
+    // Check for regular beer
+    else if (strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) {
+        return 'FERMENTED BEER';
+    }
+    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
+    else {
+        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
+    }
+}
 
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -418,12 +440,29 @@ if (isset($_GET['success'])) {
     logMessage("Success message from URL: $success_message");
 }
 
+// Replace the current quantities initialization code (around line 400)
+// with this updated version:
+
 // Initialize quantities array
 $quantities = [];
 foreach ($items as $item) {
     $quantities[$item['CODE']] = 0;
 }
 
+// DEBUG: Log the initial quantities
+logArray($quantities, "Initial quantities");
+
+// If we have POST data with quantities, update the quantities array
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
+    foreach ($_POST['sale_qty'] as $item_code => $qty) {
+        if (isset($quantities[$item_code])) {
+            $quantities[$item_code] = intval($qty);
+        }
+    }
+    // DEBUG: Log the updated quantities from POST
+    logArray($_POST['sale_qty'], "POST sale quantities");
+    logArray($quantities, "Updated quantities from POST");
+}
 // Get subclass data for sale module view
 $subclass_query = "SELECT ITEM_GROUP, CC, `DESC`, BOTTLE_PER_CASE FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY CC, ITEM_GROUP";
 $subclass_stmt = $conn->prepare($subclass_query);
@@ -461,8 +500,12 @@ logMessage("Fetched " . count($classes) . " classes");
 $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
 logMessage("Sale module view initialized with " . count($all_sizes) . " sizes");
 
+// DEBUG: Log the final quantities before rendering
+logArray($quantities, "Final quantities before rendering");
+
 logMessage("Page rendering completed");
-?><!DOCTYPE html>
+?>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -530,6 +573,32 @@ logMessage("Page rendering completed");
       border-radius: 5px;
       margin-bottom: 15px;
     }
+    
+    /* Additional styles for sale module view */
+    .sale-module-table {
+      font-size: 0.75rem;
+    }
+    .sale-module-table th {
+      position: sticky;
+      top: 0;
+      background-color: #4e73df;
+      color: white;
+      z-index: 10;
+    }
+    .sale-module-table td {
+      text-align: center;
+      padding: 0.3rem;
+    }
+    .category-row {
+      background-color: #e9ecef;
+      font-weight: bold;
+    }
+    .size-column {
+      min-width: 50px;
+    }
+    .modal-xl {
+      max-width: 95%;
+    }
   </style>
 </head>
 <body>
@@ -558,16 +627,16 @@ logMessage("Page rendering completed");
       <?php endif; ?>
 
       <!-- Volume Limit Information -->
-<div class="volume-limit-info">
-    <h5><i class="fas fa-info-circle"></i> Volume Limit Information</h5>
-    <p>Bills will be automatically split when the total volume exceeds the category limits:</p>
-    <ul>
-        <li><strong>IMFL Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['IMFL'] ?> ML</li>
-        <li><strong>BEER Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['BEER'] ?> ML</li>
-        <li><strong>CL Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['CL'] ?> ML</li>
-    </ul>
-    <p class="mb-0">Items are sorted by volume (descending) and packed optimally to minimize the number of bills.</p>
-</div>
+      <div class="volume-limit-info">
+          <h5><i class="fas fa-info-circle"></i> Volume Limit Information</h5>
+          <p>Bills will be automatically split when the total volume exceeds the category limits:</p>
+          <ul>
+              <li><strong>IMFL Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['IMFL'] ?> ML</li>
+              <li><strong>BEER Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['BEER'] ?> ML</li>
+              <li><strong>CL Limit:</strong> <?= getCategoryLimits($conn, $comp_id)['CL'] ?> ML</li>
+          </ul>
+          <p class="mb-0">Items are sorted by volume (descending) and packed optimally to minimize the number of bills.</p>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -718,9 +787,10 @@ logMessage("Page rendering completed");
                 $item_total = $item_qty * $item['RPRICE'];
                 $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
                 
-                // Extract size from item details
+                // Extract size from item details - FIXED REGEX PATTERN
                 $size = 0;
-                if (preg_match('/(\d+)\s*ML/i', $item['DETAILS'], $matches)) {
+                // Improved regex to handle cases like "90 ML-(96)" and "1000 ML"
+                if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
                   $size = $matches[1];
                 }
               ?>
@@ -788,7 +858,7 @@ logMessage("Page rendering completed");
 
 <!-- Sale Module View Modal -->
 <div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
@@ -796,17 +866,20 @@ logMessage("Page rendering completed");
       </div>
       <div class="modal-body">
         <div class="table-responsive">
-          <table class="table table-bordered sale-module-table">
+          <table class="table table-bordered table-sm sale-module-table">
             <thead>
               <tr>
                 <th>Category</th>
-                <?php foreach ($all_sizes as $size): ?>
-                  <th><?= $size ?> ML</th>
+                <?php
+                // Define all possible sizes
+                $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
+                foreach ($all_sizes as $size): ?>
+                  <th class="size-column"><?= $size ?> ML</th>
                 <?php endforeach; ?>
               </tr>
             </thead>
             <tbody>
-              <?php 
+              <?php
               // Define categories with their IDs
               $categories = [
                 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL' => 'SPRITS',
@@ -815,12 +888,45 @@ logMessage("Page rendering completed");
                 'MILD BEER' => 'MILD BEER'
               ];
               
-              foreach ($categories as $category_id => $category_name): 
-              ?>
-                <tr>
+              // Initialize category totals
+              $category_totals = [];
+              foreach ($categories as $category_id => $category_name) {
+                $category_totals[$category_id] = array_fill_keys($all_sizes, 0);
+              }
+              
+              // Process items to calculate category totals
+              foreach ($items as $item) {
+                $item_code = $item['CODE'];
+                $item_qty = isset($quantities[$item_code]) ? $quantities[$item_code] : 0;
+                
+                if ($item_qty > 0) {
+                  // Extract size from item details
+                  $size = 0;
+                  if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
+                    $size = intval($matches[1]);
+                  }
+                  
+                  // Determine category based on item details
+                  $category = categorizeItemForModule($item['DETAILS2'], $item['DETAILS']);
+                  
+                  // Add to category total if size is valid
+                  if ($size > 0 && isset($category_totals[$category][$size])) {
+                    $category_totals[$category][$size] += $item_qty;
+                  }
+                }
+              }
+              
+              // Display category rows
+              foreach ($categories as $category_id => $category_name): ?>
+                <tr class="category-row">
                   <td><?= $category_name ?></td>
-                  <?php foreach ($all_sizes as $size): ?>
-                    <td id="module_<?= $category_id ?>_<?= $size ?>">0</td>
+                  <?php foreach ($all_sizes as $size): 
+                    $value = $category_totals[$category_id][$size];
+                    $cell_id = "module_" . str_replace([' ', '/', ','], '_', $category_id) . "_" . $size;
+                  ?>
+                    <td id="<?= $cell_id ?>">
+                      <?= $value > 0 ? $value : '' ?>
+                    </td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
@@ -830,6 +936,7 @@ logMessage("Page rendering completed");
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">Print View</button>
       </div>
     </div>
   </div>
@@ -840,6 +947,11 @@ logMessage("Page rendering completed");
 // Global variables
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
+
+// Function to toggle debug information
+function toggleDebug() {
+  $('.bg-light.rounded').toggle();
+}
 
 // Function to distribute sales uniformly (client-side version)
 function distributeSales(total_qty, days_count) {
@@ -921,13 +1033,34 @@ function categorizeItem(itemCategory, itemName, itemSize) {
 }
 
 // Function to update sale module view
+// Replace the updateSaleModuleView function with this improved version:
 function updateSaleModuleView() {
-    // Reset all values to 0
-    $('.sale-module-table td').not(':first-child').text('0');
+    console.log("Updating sale module view...");
+    
+    // Reset all values to empty
+    $('.sale-module-table td').not(':first-child').html('');
+    
+    // Initialize category totals
+    const categories = {
+        'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL': {},
+        'WINES': {},
+        'FERMENTED BEER': {},
+        'MILD BEER': {}
+    };
+    
+    // Initialize all sizes to 0 for each category
+    const allSizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
+    for (const category in categories) {
+        allSizes.forEach(size => {
+            categories[category][size] = 0;
+        });
+    }
     
     // Calculate quantities for each category and size
     $('input[name^="sale_qty"]').each(function() {
         const qty = parseInt($(this).val()) || 0;
+        console.log("Processing input with quantity:", qty, "for item:", $(this).data('code'));
+        
         if (qty > 0) {
             const itemCode = $(this).data('code');
             const itemRow = $(this).closest('tr');
@@ -935,22 +1068,43 @@ function updateSaleModuleView() {
             const itemCategory = itemRow.find('td:eq(2)').text();
             const size = $(this).data('size');
             
+            console.log("Item details:", {
+                code: itemCode,
+                name: itemName,
+                category: itemCategory,
+                size: size,
+                quantity: qty
+            });
+            
             // Determine the category type
             const categoryType = categorizeItem(itemCategory, itemName, size);
+            console.log("Determined category:", categoryType);
             
-            // Update the corresponding cell using the ID pattern
-            if (size > 0) {
-                const cellId = `module_${categoryType}_${size}`;
-                const targetCell = $(`#${cellId}`);
-                if (targetCell.length) {
-                    const currentValue = parseInt(targetCell.text()) || 0;
-                    targetCell.text(currentValue + qty);
-                }
+            // Add to the category total if size is valid
+            if (size > 0 && categories[categoryType] && categories[categoryType][size] !== undefined) {
+                categories[categoryType][size] += qty;
+                console.log("Added to category", categoryType, "size", size, "new total:", categories[categoryType][size]);
+            } else {
+                console.log("Could not add to category - size:", size, "category exists:", categories[categoryType] !== undefined);
             }
         }
     });
+    
+    // Update the table with calculated values
+    for (const category in categories) {
+        const categoryId = category.replace(/[ ,\/]/g, '_');
+        for (const size in categories[category]) {
+            const value = categories[category][size];
+            if (value > 0) {
+                const cellId = `module_${categoryId}_${size}`;
+                console.log("Updating cell", cellId, "with value", value);
+                $(`#${cellId}`).text(value);
+            }
+        }
+    }
+    
+    console.log("Sale module view update completed");
 }
-
 // Function to calculate total amount
 function calculateTotalAmount() {
     let total = 0;
@@ -1064,6 +1218,7 @@ function saveToPendingSales() {
         }
     });
 }
+
 // Function to generate bills immediately
 function generateBills() {
     // Show loader

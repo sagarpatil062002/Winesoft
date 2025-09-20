@@ -20,7 +20,7 @@ $compID = $_SESSION['CompID'];
 $view_type = isset($_GET['view_type']) ? $_GET['view_type'] : 'all';
 
 // Date selection (default to today)
-$sale_date = isset($_GET['sale_date']) ? $_GET['sale_date'] : date('Y-m-d');
+$Closing_Stock = isset($_GET['Closing_Stock']) ? $_GET['Closing_Stock'] : date('Y-m-d');
 
 // Date range selection (default to current month)
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
@@ -44,7 +44,7 @@ if ($view_type === 'date') {
               ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("is", $compID, $sale_date);
+    $stmt->bind_param("is", $compID, $Closing_Stock);
     $stmt->execute();
     $result = $stmt->get_result();
     $sales = $result->fetch_all(MYSQLI_ASSOC);
@@ -204,9 +204,9 @@ if (isset($_SESSION['error'])) {
                    class="btn btn-outline-primary <?= $view_type === 'all' ? 'view-active' : '' ?>">
                   <i class="fa-solid fa-list me-1"></i> All Sales
                 </a>
-                <a href="?view_type=date&sale_date=<?= $sale_date ?>" 
+                <a href="?view_type=date&Closing_Stock=<?= $Closing_Stock ?>" 
                    class="btn btn-outline-primary <?= $view_type === 'date' ? 'view-active' : '' ?>">
-                  <i class="fa-solid fa-calendar-day me-1"></i> Sale for Date
+                  <i class="fa-solid fa-calendar-day me-1"></i> Closing Stock
                 </a>
                 <a href="?view_type=range&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" 
                    class="btn btn-outline-primary <?= $view_type === 'range' ? 'view-active' : '' ?>">
@@ -221,8 +221,8 @@ if (isset($_SESSION['error'])) {
                 <input type="hidden" name="view_type" value="date">
                 <label class="form-label">Sale Date</label>
                 <div class="input-group">
-                  <input type="date" name="sale_date" class="form-control" 
-                         value="<?= htmlspecialchars($sale_date); ?>" required>
+                  <input type="date" name="Closing_Stock" class="form-control" 
+                         value="<?= htmlspecialchars($Closing_Stock); ?>" required>
                   <button type="submit" class="btn btn-primary">Go</button>
                 </div>
               </form>
@@ -258,7 +258,7 @@ if (isset($_SESSION['error'])) {
           <i class="fa-solid fa-list me-2"></i>
           <?php 
           if ($view_type === 'date') {
-              echo 'Sales Records for ' . date('d-M-Y', strtotime($sale_date));
+              echo 'Sales Records for ' . date('d-M-Y', strtotime($Closing_Stock));
           } elseif ($view_type === 'range') {
               echo 'Sales Records from ' . date('d-M-Y', strtotime($start_date)) . ' to ' . date('d-M-Y', strtotime($end_date));
           } else {

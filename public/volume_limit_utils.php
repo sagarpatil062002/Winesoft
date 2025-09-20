@@ -77,6 +77,7 @@ function getItemCategory($conn, $item_code, $mode) {
 /**
  * Get item size from CC in tblsubclass
  */
+
 function getItemSize($conn, $item_code, $mode) {
     // First try to get size from DETAILS2 in tblitemmaster
     $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";

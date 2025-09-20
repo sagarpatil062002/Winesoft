@@ -48,66 +48,80 @@ try {
         $voucher_no = $voucher_id;
     }
     
-    // Get ledger code for the selected particular
-    $ledger_code_query = "SELECT LCODE FROM tbllheads WHERE REF_CODE = ? AND CompID = ?";
+    // Get ledger code (LCODE) for the selected particular using REF_CODE
+    $ledger_code_query = "SELECT LCODE FROM tbllheads WHERE REF_CODE = ? AND (CompID IS NULL OR CompID = ?)";
     $stmt = $conn->prepare($ledger_code_query);
     $stmt->bind_param("si", $ledger_code, $comp_id);
     $stmt->execute();
     $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        throw new Exception("Ledger not found for reference code: $ledger_code");
+    }
+    
     $ledger_row = $result->fetch_assoc();
     $ledger_id = $ledger_row['LCODE'];
     $stmt->close();
     
-    // Prepare voucher data
-    $voucher_data = [
-        'VNO' => $voucher_no,
-        'VDATE' => $voucher_date,
-        'PARTI' => $ledger_name,
-        'AMOUNT' => $amount,
-        'DRCR' => $is_payment ? 'D' : 'C',
-        'NARR' => $narration,
-        'MODE' => $voucher_type,
-        'REF_AC' => $bank_id,
-        'REF_SAC' => $ledger_id,
-        'INV_NO' => $doc_no,
-        'LIQ_FLAG' => 'N',
-        'CHEQ_NO' => $cheq_no,
-        'CHEQ_DT' => $cheq_date,
-        'MAIN_BK' => 'CB',
-        'COMP_ID' => $comp_id
-    ];
-    
-    // Save or update voucher
-    if ($action === 'new') {
+    // For each paid invoice, create a voucher entry
+    foreach ($paid_invoices as $invoice) {
+        $paid_amount = $invoice['paid_amount'];
+        
+        // Get the purchase VOC_NO to store as reference
+        $vocNoQuery = "SELECT VOC_NO FROM tblpurchases WHERE ID = ? AND CompID = ?";
+        $stmt = $conn->prepare($vocNoQuery);
+        $stmt->bind_param("ii", $invoice['id'], $comp_id);
+        $stmt->execute();
+        $vocNoResult = $stmt->get_result();
+        $vocNoRow = $vocNoResult->fetch_assoc();
+        $stmt->close();
+        
+        $purchase_voc_no = $vocNoRow['VOC_NO'];
+        
+        // Prepare voucher data for this payment
+        $voucher_data = [
+            'VNO' => $voucher_no,
+            'VDATE' => $voucher_date,
+            'PARTI' => $ledger_name,
+            'AMOUNT' => $paid_amount,
+            'DRCR' => $is_payment ? 'D' : 'C',
+            'NARR' => $narration . ' - Payment for VOC No: ' . $purchase_voc_no,
+            'MODE' => $voucher_type,
+            'REF_AC' => $bank_id,
+            'REF_SAC' => $ledger_id,
+            'INV_NO' => $purchase_voc_no, // Store the purchase VOC_NO as reference
+            'LIQ_FLAG' => 'N',
+            'CHEQ_NO' => $cheq_no,
+            'CHEQ_DT' => $cheq_date,
+            'MAIN_BK' => 'CB',
+            'COMP_ID' => $comp_id
+        ];
+        
+        // Save voucher
         $columns = implode(', ', array_keys($voucher_data));
         $placeholders = implode(', ', array_fill(0, count($voucher_data), '?'));
         $query = "INSERT INTO tblexpenses ($columns) VALUES ($placeholders)";
-    } else {
-        $set_clause = implode(' = ?, ', array_keys($voucher_data)) . ' = ?';
-        $query = "UPDATE tblexpenses SET $set_clause WHERE VNO = ? AND COMP_ID = ?";
-        $voucher_data['VNO_OLD'] = $voucher_no;
-        $voucher_data['COMP_ID_OLD'] = $comp_id;
-    }
-    
-    $stmt = $conn->prepare($query);
-    $types = str_repeat('s', count($voucher_data));
-    $values = array_values($voucher_data);
-    
-    if ($action !== 'new') {
-        $types .= 'ii';
-        $values[] = $voucher_no;
-        $values[] = $comp_id;
-    }
-    
-    $stmt->bind_param($types, ...$values);
-    $stmt->execute();
-    $stmt->close();
-    
-    // Update purchase records with paid amounts
-    foreach ($paid_invoices as $invoice) {
-        $update_query = "UPDATE tblpurchases SET PUR_FLAG = CASE WHEN (TAMT - ?) <= 0 THEN 'T' ELSE 'P' END WHERE ID = ? AND CompID = ?";
+        
+        $stmt = $conn->prepare($query);
+        $types = str_repeat('s', count($voucher_data));
+        $values = array_values($voucher_data);
+        
+        $stmt->bind_param($types, ...$values);
+        $stmt->execute();
+        $stmt->close();
+        
+        // Update purchase record status
+        $total_paid = $invoice['total_paid'];
+        $invoice_amount = $invoice['new_balance'] + $total_paid; // Calculate original amount
+        
+        $new_flag = 'P'; // Partial payment
+        if ($total_paid >= $invoice_amount) {
+            $new_flag = 'T'; // Fully paid
+        }
+        
+        $update_query = "UPDATE tblpurchases SET PUR_FLAG = ? WHERE ID = ? AND CompID = ?";
         $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("dii", $invoice['paid_amount'], $invoice['id'], $comp_id);
+        $stmt->bind_param("sii", $new_flag, $invoice['id'], $comp_id);
         $stmt->execute();
         $stmt->close();
     }
@@ -117,6 +131,7 @@ try {
     
     $response['success'] = true;
     $response['message'] = 'Voucher saved successfully';
+    $response['voucher_no'] = $voucher_no;
     
 } catch (Exception $e) {
     $conn->rollback();

@@ -19,33 +19,23 @@ $voucher_id = isset($_GET['id']) ? $_GET['id'] : 0;
 
 // If editing/viewing, fetch voucher data
 $voucher_data = null;
-$voucher_items = [];
 if (($action === 'edit' || $action === 'view') && $voucher_id > 0) {
-    $query = "SELECT * FROM tblExpenses WHERE VNO = ? AND COMP_ID = ?";
+    $query = "SELECT e.*, l.REF_CODE 
+              FROM tblExpenses e 
+              LEFT JOIN tbllheads l ON e.REF_SAC = l.LCODE 
+              WHERE e.VNO = ? AND e.COMP_ID = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ii", $voucher_id, $_SESSION['CompID']);
     $stmt->execute();
     $result = $stmt->get_result();
     $voucher_data = $result->fetch_assoc();
     $stmt->close();
-    
-    // Fetch all voucher items if editing
-    $query = "SELECT * FROM tblExpenses WHERE VNO = ? AND COMP_ID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ii", $voucher_id, $_SESSION['CompID']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    while ($row = $result->fetch_assoc()) {
-        $voucher_items[] = $row;
-    }
-    $stmt->close();
 }
 
-// Fetch all ledger data from tbllheads table
+// Fetch all ledger data from tbllheads table that have a REF_CODE
 $ledgerData = [];
-$query = "SELECT LCODE, LHEAD FROM tbllheads WHERE CompID = ? ORDER BY LHEAD";
+$query = "SELECT LCODE, LHEAD, REF_CODE FROM tbllheads WHERE REF_CODE IS NOT NULL AND REF_CODE != ''";
 $stmt = $conn->prepare($query);
-$stmt->bind_param("i", $_SESSION['CompID']);
 $stmt->execute();
 $result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
@@ -64,104 +54,94 @@ $stmt->close();
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <style>
-    body {
-        background-color: #f8f9fa;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .content-area {
-        background-color: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .form-label {
-        font-weight: 500;
-    }
-    .action-btn {
-        margin-top: 20px;
-    }
-    h3 {
-        color: #2c3e50;
-        border-bottom: 2px solid #3498db;
-        padding-bottom: 10px;
-    }
-    .particulars-input {
-        position: relative;
-    }
-    .suggestions-box {
-        position: absolute;
-        background: white;
-        border: 1px solid #ccc;
-        width: 100%;
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-    }
-    .suggestion-item {
-        padding: 8px;
-        cursor: pointer;
-    }
-    .suggestion-item:hover, .suggestion-item.selected {
-        background-color: #f0f0f0;
-    }
-    .purchase-details {
-        margin-top: 15px;
-        max-height: 300px;
-        overflow-y: auto;
-    }
-    .purchase-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12px;
-    }
-    .purchase-table th, .purchase-table td {
-        border: 1px solid #ddd;
-        padding: 5px;
-        text-align: center;
-    }
-    .purchase-table th {
-        background-color: #f2f2f2;
-    }
-    .status-bar {
-        background-color: #333;
-        color: white;
-        padding: 5px 10px;
-        display: flex;
-        justify-content: space-between;
-        font-size: 12px;
-    }
-    .bank-fields {
-        display: none;
-    }
-    .paid-input {
-        width: 100%;
-        border: 1px solid #ddd;
-        padding: 2px 5px;
-        text-align: right;
-    }
-    .amount-cell {
-        text-align: right;
-    }
-    .voucher-table tbody tr {
-        cursor: pointer;
-    }
-    .voucher-table tbody tr:hover {
-        background-color: #f5f5f5;
-    }
-    .delete-row {
-        color: #dc3545;
-        cursor: pointer;
-    }
-    .invoice-details {
-        display: none;
-        margin-top: 10px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        background-color: #f9f9f9;
-    }
-  </style>
+.particulars-input {
+    position: relative;
+}
+.suggestions-box {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+.suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+}
+.suggestion-item:hover, .suggestion-item.selected {
+    background-color: #f0f0f0;
+}
+
+/* Pending invoices table styling */
+.purchase-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.purchase-table th,
+.purchase-table td {
+    padding: 8px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.purchase-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+}
+
+.purchase-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.purchase-table tr:hover {
+    background-color: #e9ecef;
+}
+
+.amount-cell {
+    text-align: right;
+    font-family: monospace;
+    padding: 8px;
+}
+
+.paid-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    text-align: right;
+}
+
+.select-invoice {
+    margin: 0;
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+.purchase-details {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.purchase-details h6 {
+    margin-bottom: 15px;
+    color: #495057;
+    font-weight: 600;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+    font-weight: bold;
+}  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -173,13 +153,6 @@ $stmt->close();
     <div class="content-area">
       <h3 class="mb-4"><?= ucfirst($action) ?> Voucher Entry</h3>
 
-      <div class="status-bar mb-3">
-        <div>ADMIN</div>
-        <div>CAPS</div>
-        <div>NUM</div>
-        <div id="current-time"><?= date('h:i A') ?></div>
-        <div id="current-date"><?= date('d-M-Y') ?></div>
-      </div>
 
       <!-- Voucher Type Selection -->
       <div class="card mb-3">
@@ -223,52 +196,54 @@ $stmt->close();
         </div>
       </div>
 
-      <!-- Bank Details (Only shown for Bank vouchers) -->
-      <div class="card mb-3 bank-fields" id="bank-details">
-        <div class="card-body">
-          <div class="row mb-3">
-            <div class="col-md-3">
-              <label class="form-label">Bank Name:</label>
-              <select class="form-control form-control-sm" id="bank-name">
-                <option value="">-- Select Bank --</option>
-                <?php
-                // Fetch banks from ledger heads
-                $bankQuery = "SELECT LCODE, LHEAD FROM tbllheads WHERE GCODE = 2 AND CompID = ?";
-                $bankStmt = $conn->prepare($bankQuery);
-                $bankStmt->bind_param("i", $_SESSION['CompID']);
-                $bankStmt->execute();
-                $bankResult = $bankStmt->get_result();
-                while ($bank = $bankResult->fetch_assoc()) {
-                    $selected = ($voucher_data && $voucher_data['REF_AC'] == $bank['LCODE']) ? 'selected' : '';
-                    echo "<option value='{$bank['LCODE']}' $selected>{$bank['LHEAD']}</option>";
-                }
-                $bankStmt->close();
-                ?>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Doc. No.:</label>
-              <input type="text" class="form-control form-control-sm" id="doc-no" value="<?= $voucher_data ? $voucher_data['INV_NO'] : '' ?>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Cheq. No.:</label>
-              <input type="text" class="form-control form-control-sm" id="cheq-no" value="<?= $voucher_data ? $voucher_data['CHEQ_NO'] : '' ?>">
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Doc. Date:</label>
-              <input type="date" class="form-control form-control-sm" id="doc-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-3">
-              <label class="form-label">Cheq. Date:</label>
-              <input type="date" class="form-control form-control-sm" id="cheq-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
-            </div>
-          </div>
-        </div>
+<!-- Bank Details (Only shown for Bank vouchers) -->
+<div class="card mb-3 bank-fields" id="bank-details">
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label class="form-label">Bank Name:</label>
+        <select class="form-control form-control-sm" id="bank-name">
+          <option value="">-- Select Bank --</option>
+          <?php
+          // Fetch all bank accounts from ledger heads (include all bank-related accounts)
+          $bankQuery = "SELECT LCODE, LHEAD FROM tbllheads 
+                       WHERE (LHEAD LIKE '%bank%' OR LHEAD LIKE '%Bank%' OR LHEAD LIKE '%BANK%' 
+                       OR LHEAD LIKE '%account%' OR LHEAD LIKE '%Account%' OR LHEAD LIKE '%ACCOUNT%'
+                       OR LHEAD LIKE '%cheque%' OR LHEAD LIKE '%Cheque%' OR LHEAD LIKE '%CHEQUE%'
+                       OR LHEAD LIKE '%check%' OR LHEAD LIKE '%Check%' OR LHEAD LIKE '%CHECK%')";
+          $bankStmt = $conn->prepare($bankQuery);
+          $bankStmt->execute();
+          $bankResult = $bankStmt->get_result();
+          while ($bank = $bankResult->fetch_assoc()) {
+              $selected = ($voucher_data && $voucher_data['REF_AC'] == $bank['LCODE']) ? 'selected' : '';
+              echo "<option value='{$bank['LCODE']}' $selected>{$bank['LHEAD']}</option>";
+          }
+          $bankStmt->close();
+          ?>
+        </select>
       </div>
-
-      <!-- Narration Field (Moved above particulars as requested) -->
+      <div class="col-md-3">
+        <label class="form-label">Doc. No.:</label>
+        <input type="text" class="form-control form-control-sm" id="doc-no" value="<?= $voucher_data ? $voucher_data['INV_NO'] : '' ?>">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Cheq. No.:</label>
+        <input type="text" class="form-control form-control-sm" id="cheq-no" value="<?= $voucher_data ? $voucher_data['CHEQ_NO'] : '' ?>">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Doc. Date:</label>
+        <input type="date" class="form-control form-control-sm" id="doc-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-3">
+        <label class="form-label">Cheq. Date:</label>
+        <input type="date" class="form-control form-control-sm" id="cheq-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
+      </div>
+    </div>
+  </div>
+</div>
+      <!-- Narration Section -->
       <div class="card mb-3">
         <div class="card-body">
           <div class="row">
@@ -283,68 +258,34 @@ $stmt->close();
       <!-- Voucher Table -->
       <div class="card mb-3">
         <div class="card-body">
-          <table class="table table-bordered voucher-table">
+          <table class="table table-bordered">
             <thead>
               <tr>
                 <th width="5%">#</th>
                 <th width="55%">Particulars</th>
                 <th width="20%">Debit</th>
                 <th width="20%">Credit</th>
-                <th width="5%"></th>
               </tr>
             </thead>
-            <tbody id="voucher-items">
-              <?php if (count($voucher_items) > 0): ?>
-                <?php foreach ($voucher_items as $index => $item): ?>
-                  <tr data-id="<?= $index + 1 ?>">
-                    <td><?= $index + 1 ?></td>
-                    <td class="particulars-input">
-                      <input type="text" class="form-control form-control-sm particulars-field" placeholder="Enter particulars" value="<?= $item['PARTI'] ?>" data-ledger-code="<?= $item['REF_AC'] ?>">
-                      <div class="suggestions-box" id="suggestions-<?= $index + 1 ?>"></div>
-                    </td>
-                    <td>
-                      <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= $item['DRCR'] == 'D' ? $item['AMOUNT'] : '' ?>" readonly>
-                    </td>
-                    <td>
-                      <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= $item['DRCR'] == 'C' ? $item['AMOUNT'] : '' ?>" readonly>
-                    </td>
-                    <td class="text-center">
-                      <i class="fas fa-times delete-row" data-id="<?= $index + 1 ?>"></i>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <tr data-id="1">
-                  <td>1</td>
-                  <td class="particulars-input">
-                    <input type="text" class="form-control form-control-sm particulars-field" placeholder="Enter particulars">
-                    <div class="suggestions-box" id="suggestions-1"></div>
-                  </td>
-                  <td>
-                    <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="" readonly>
-                  </td>
-                  <td>
-                    <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="" readonly>
-                  </td>
-                  <td class="text-center">
-                    <i class="fas fa-times delete-row" data-id="1"></i>
-                  </td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-            <tfoot>
+            <tbody>
               <tr>
-                <td colspan="5" class="text-end">
-                  <button type="button" class="btn btn-sm btn-primary" id="add-row">
-                    <i class="fas fa-plus"></i> Add Row
-                  </button>
+                <td>1</td>
+                <td class="particulars-input">
+                  <input type="text" class="form-control form-control-sm" id="particulars-input" placeholder="Enter particulars" value="<?= $voucher_data ? $voucher_data['PARTI'] : '' ?>">
+                  <div class="suggestions-box" id="suggestions"></div>
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>" readonly>
+                </td>
+                <td>
+                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>" readonly>
                 </td>
               </tr>
-            </tfoot>
+            </tbody>
           </table>
 
-          <!-- Pending Invoices Section -->
-          <div class="invoice-details" id="invoice-details">
+          <!-- Purchase Details (Initially Hidden) -->
+          <div class="purchase-details" id="purchase-details" style="display: none;">
             <h6>Pending Invoices</h6>
             <table class="purchase-table">
               <thead>
@@ -371,17 +312,13 @@ $stmt->close();
       <div class="card mb-3">
         <div class="card-body">
           <div class="row">
-            <div class="col-md-4">
-              <label class="form-label">Total Debit:</label>
-              <input type="text" class="form-control form-control-sm" id="total-debit" value="0.00" readonly>
+            <div class="col-md-6">
+              <label class="form-label">Pending Amt:</label>
+              <input type="text" class="form-control form-control-sm" id="pending-amt" value="0.00" readonly>
             </div>
-            <div class="col-md-4">
-              <label class="form-label">Total Credit:</label>
-              <input type="text" class="form-control form-control-sm" id="total-credit" value="0.00" readonly>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Difference:</label>
-              <input type="text" class="form-control form-control-sm" id="difference" value="0.00" readonly>
+            <div class="col-md-6">
+              <label class="form-label">Total Amount:</label>
+              <input type="text" class="form-control form-control-sm" id="total-amount" value="<?= $voucher_data ? $voucher_data['AMOUNT'] : '0.00' ?>" readonly>
             </div>
           </div>
         </div>
@@ -422,11 +359,13 @@ $stmt->close();
   $(document).ready(function() {
     // Convert PHP ledger data to JavaScript
     const ledgerData = <?= json_encode($ledgerData) ?>;
-    let rowCount = <?= count($voucher_items) > 0 ? count($voucher_items) : 1 ?>;
-    let activeRowId = null;
+    
+    // Variables for keyboard navigation
     let currentSuggestionIndex = -1;
     let filteredSuggestions = [];
-    
+    let selectedLedgerCode = '';
+    let selectedLedgerName = '';
+
     // Toggle bank fields based on voucher type
     function toggleBankFields() {
       if ($('#type-bank').is(':checked')) {
@@ -456,69 +395,25 @@ $stmt->close();
     updateDateTime();
     setInterval(updateDateTime, 60000); // Update every minute
 
-    // Add new row to voucher table
-    $('#add-row').on('click', function() {
-      rowCount++;
-      const newRow = `
-        <tr data-id="${rowCount}">
-          <td>${rowCount}</td>
-          <td class="particulars-input">
-            <input type="text" class="form-control form-control-sm particulars-field" placeholder="Enter particulars">
-            <div class="suggestions-box" id="suggestions-${rowCount}"></div>
-          </td>
-          <td>
-            <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="">
-          </td>
-          <td>
-            <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="">
-          </td>
-          <td class="text-center">
-            <i class="fas fa-times delete-row" data-id="${rowCount}"></i>
-          </td>
-        </tr>
-      `;
-      $('#voucher-items').append(newRow);
-    });
-
-    // Delete row from voucher table
-    $(document).on('click', '.delete-row', function() {
-      const rowId = $(this).data('id');
-      if ($('#voucher-items tr').length > 1) {
-        $(`#voucher-items tr[data-id="${rowId}"]`).remove();
-        // Renumber rows
-        $('#voucher-items tr').each(function(index) {
-          $(this).find('td:first').text(index + 1);
-          $(this).attr('data-id', index + 1);
-          $(this).find('.delete-row').attr('data-id', index + 1);
-        });
-        rowCount = $('#voucher-items tr').length;
-        calculateTotals();
-      } else {
-        alert('Voucher must have at least one row.');
-      }
-    });
-
     // Particulars input suggestions with keyboard navigation
-    $(document).on('input', '.particulars-field', function() {
-      const rowId = $(this).closest('tr').data('id');
-      activeRowId = rowId;
+    $('#particulars-input').on('input', function() {
       const query = $(this).val().toLowerCase();
-      const suggestions = $(`#suggestions-${rowId}`);
+      const suggestions = $('#suggestions');
       
-      if (query.length < 2) {
+      if (query.length < 1) {
         suggestions.hide();
         return;
       }
       
       filteredSuggestions = ledgerData.filter(item => 
-        item.LHEAD.toLowerCase().includes(query) || 
-        item.LCODE.toLowerCase().includes(query)
+        item.LHEAD && item.LHEAD.toLowerCase().includes(query) || 
+        (item.REF_CODE && item.REF_CODE.toLowerCase().includes(query))
       );
       
       if (filteredSuggestions.length > 0) {
         suggestions.empty();
         filteredSuggestions.forEach((item, index) => {
-          suggestions.append(`<div class="suggestion-item" data-index="${index}" data-code="${item.LCODE}" data-name="${item.LHEAD}">${item.LHEAD} (${item.LCODE})</div>`);
+          suggestions.append(`<div class="suggestion-item" data-index="${index}" data-code="${item.REF_CODE}" data-name="${item.LHEAD}">${item.LHEAD} (${item.REF_CODE})</div>`);
         });
         suggestions.show();
         currentSuggestionIndex = -1;
@@ -528,10 +423,9 @@ $stmt->close();
     });
 
     // Keyboard navigation for suggestions
-    $(document).on('keydown', '.particulars-field', function(e) {
-      const rowId = $(this).closest('tr').data('id');
-      const suggestions = $(`#suggestions-${rowId}`);
-      const suggestionItems = $(`#suggestions-${rowId} .suggestion-item`);
+    $('#particulars-input').on('keydown', function(e) {
+      const suggestions = $('#suggestions');
+      const suggestionItems = $('.suggestion-item');
       
       if (suggestionItems.length === 0 || !suggestions.is(':visible')) {
         return;
@@ -542,23 +436,23 @@ $stmt->close();
           e.preventDefault();
           if (currentSuggestionIndex < suggestionItems.length - 1) {
             currentSuggestionIndex++;
-            updateSuggestionSelection(suggestionItems);
+            updateSuggestionSelection();
           }
           break;
         case 'ArrowUp':
           e.preventDefault();
           if (currentSuggestionIndex > 0) {
             currentSuggestionIndex--;
-            updateSuggestionSelection(suggestionItems);
+            updateSuggestionSelection();
           }
           break;
         case 'Enter':
           e.preventDefault();
           if (currentSuggestionIndex >= 0) {
-            selectSuggestion(filteredSuggestions[currentSuggestionIndex]);
+            selectSuggestion(currentSuggestionIndex);
           } else if (filteredSuggestions.length > 0) {
             // If user presses enter without selecting, select the first suggestion
-            selectSuggestion(filteredSuggestions[0]);
+            selectSuggestion(0);
           }
           break;
         case 'Escape':
@@ -568,70 +462,42 @@ $stmt->close();
       }
     });
 
-    function updateSuggestionSelection(suggestionItems) {
-      suggestionItems.removeClass('selected');
+    function updateSuggestionSelection() {
+      $('.suggestion-item').removeClass('selected');
       if (currentSuggestionIndex >= 0) {
-        $(suggestionItems[currentSuggestionIndex]).addClass('selected');
+        $(`.suggestion-item[data-index="${currentSuggestionIndex}"]`).addClass('selected');
         // Scroll to selected item
-        const selectedItem = suggestionItems[currentSuggestionIndex];
+        const selectedItem = $(`.suggestion-item[data-index="${currentSuggestionIndex}"]`)[0];
         if (selectedItem) {
           selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }
     }
 
-    function selectSuggestion(selected) {
+    function selectSuggestion(index) {
+      const selected = filteredSuggestions[index];
       if (selected) {
-        const ledgerCode = selected.LCODE;
-        const ledgerName = selected.LHEAD;
-        $(`#suggestions-${activeRowId}`).hide();
-        $(`tr[data-id="${activeRowId}"] .particulars-field`).val(ledgerName).data('ledger-code', ledgerCode);
-        
-        // If this is a payment voucher, set the first row to debit and others to credit
-        // If this is a receipt voucher, set the first row to credit and others to debit
-        const isPayment = $('#mode-payment').is(':checked');
-        
-        if (activeRowId == 1) {
-          // First row
-          if (isPayment) {
-            $(`tr[data-id="${activeRowId}"] .debit-input`).val('');
-            $(`tr[data-id="${activeRowId}"] .credit-input`).val('0.00');
-          } else {
-            $(`tr[data-id="${activeRowId}"] .debit-input`).val('0.00');
-            $(`tr[data-id="${activeRowId}"] .credit-input`).val('');
-          }
-        } else {
-          // Other rows
-          if (isPayment) {
-            $(`tr[data-id="${activeRowId}"] .debit-input`).val('0.00');
-            $(`tr[data-id="${activeRowId}"] .credit-input`).val('');
-          } else {
-            $(`tr[data-id="${activeRowId}"] .debit-input`).val('');
-            $(`tr[data-id="${activeRowId}"] .credit-input`).val('0.00');
-          }
-        }
-        
-        // Enable amount input for this row
-        $(`tr[data-id="${activeRowId}"] .debit-input, tr[data-id="${activeRowId}"] .credit-input`).prop('readonly', false);
+        selectedLedgerCode = selected.REF_CODE;
+        selectedLedgerName = selected.LHEAD;
+        $('#particulars-input').val(selected.LHEAD);
+        $('#suggestions').hide();
+        currentSuggestionIndex = -1;
         
         // Fetch pending invoices for this ledger
-        fetchPendingInvoices(ledgerCode);
-        
-        // Calculate totals
-        calculateTotals();
+        fetchPendingInvoices(selected.REF_CODE);
       }
     }
 
     // Handle suggestion selection with mouse
     $(document).on('click', '.suggestion-item', function() {
       const index = $(this).data('index');
-      selectSuggestion(filteredSuggestions[index]);
+      selectSuggestion(index);
     });
 
     // Hide suggestions when clicking elsewhere
     $(document).on('click', function(e) {
       if (!$(e.target).closest('.particulars-input').length) {
-        $('.suggestions-box').hide();
+        $('#suggestions').hide();
         currentSuggestionIndex = -1;
       }
     });
@@ -649,13 +515,16 @@ $stmt->close();
         success: function(response) {
           if (response.success) {
             displayPendingInvoices(response.data);
-            $('#invoice-details').show();
+            $('#purchase-details').show();
+            $('#pending-amt').val(response.total_pending.toFixed(2));
           } else {
-            $('#invoice-details').hide();
+            alert('Error fetching pending invoices: ' + response.message);
+            $('#purchase-details').hide();
           }
         },
         error: function() {
-          $('#invoice-details').hide();
+          alert('Error connecting to server');
+          $('#purchase-details').hide();
         }
       });
     }
@@ -671,164 +540,233 @@ $stmt->close();
       }
       
       invoices.forEach(invoice => {
+        const totalAmount = parseFloat(invoice.TAMT);
+        const paidAmount = parseFloat(invoice.paid_amount);
+        const balance = parseFloat(invoice.balance);
+        
         tbody.append(`
-          <tr>
-            <td><input type="checkbox" class="select-invoice" data-id="${invoice.id}" data-balance="${invoice.balance}"></td>
+          <tr data-id="${invoice.ID}" data-total="${totalAmount}" data-paid="${paidAmount}" data-balance="${balance}">
+            <td><input type="checkbox" class="select-invoice"></td>
             <td>${invoice.VOC_NO}</td>
             <td>${invoice.INV_NO || ''}</td>
             <td>${invoice.DATE}</td>
-            <td class="amount-cell">${parseFloat(invoice.TAMT).toFixed(2)}</td>
-            <td class="amount-cell">${(parseFloat(invoice.TAMT) - parseFloat(invoice.balance)).toFixed(2)}</td>
-            <td class="amount-cell">${parseFloat(invoice.balance).toFixed(2)}</td>
-            <td><input type="number" class="paid-input" step="0.01" min="0" max="${parseFloat(invoice.balance).toFixed(2)}" value="0.00" data-balance="${parseFloat(invoice.balance).toFixed(2)}"></td>
+            <td class="amount-cell total-amount">${totalAmount.toFixed(2)}</td>
+            <td class="amount-cell paid-amount">${paidAmount.toFixed(2)}</td>
+            <td class="amount-cell balance-amount ${balance < 0 ? 'text-danger' : ''}">${balance.toFixed(2)}</td>
+            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00"></td>
           </tr>
         `);
       });
     }
 
-    // Handle paid amount input
+    // Handle paid amount input - update calculations in real-time
     $(document).on('input', '.paid-input', function() {
-      const maxAmount = parseFloat($(this).data('balance'));
-      const enteredAmount = parseFloat($(this).val()) || 0;
+      const row = $(this).closest('tr');
+      const totalAmount = parseFloat(row.data('total'));
+      const currentPaid = parseFloat(row.data('paid'));
+      const paidNow = parseFloat($(this).val()) || 0;
       
-      // Validate that paid amount doesn't exceed balance
-      if (enteredAmount > maxAmount) {
-        alert('Paid amount cannot exceed the balance amount');
-        $(this).val(maxAmount.toFixed(2));
-      }
+      // Calculate new paid amount and balance
+      const newPaidAmount = currentPaid + paidNow;
+      const newBalance = totalAmount - newPaidAmount;
       
-      // Update the corresponding debit/credit field
-      const isPayment = $('#mode-payment').is(':checked');
-      if (isPayment) {
-        $(`tr[data-id="${activeRowId}"] .credit-input`).val(enteredAmount.toFixed(2));
+      // Update the displayed values
+      row.find('.paid-amount').text(newPaidAmount.toFixed(2));
+      
+      const balanceCell = row.find('.balance-amount');
+      balanceCell.text(newBalance.toFixed(2));
+      
+      // Apply styling for negative balances
+      if (newBalance < 0) {
+        balanceCell.addClass('text-danger');
       } else {
-        $(`tr[data-id="${activeRowId}"] .debit-input`).val(enteredAmount.toFixed(2));
+        balanceCell.removeClass('text-danger');
       }
       
-      // Calculate totals
-      calculateTotals();
+      // Store the updated values in data attributes
+      row.data('paid-now', paidNow);
+      row.data('new-paid', newPaidAmount);
+      row.data('new-balance', newBalance);
+      
+      // Calculate total amount across all invoices
+      calculateTotalAmount();
     });
 
-    // Calculate totals when amount inputs change
-    $(document).on('input', '.debit-input, .credit-input', function() {
-      calculateTotals();
-    });
-
-    // Calculate debit and credit totals
-    function calculateTotals() {
-      let totalDebit = 0;
-      let totalCredit = 0;
+    // Calculate total amount from all paid inputs
+    function calculateTotalAmount() {
+      let totalPaidNow = 0;
+      let totalPending = 0;
       
-      $('.debit-input').each(function() {
-        const val = parseFloat($(this).val()) || 0;
-        totalDebit += val;
+      $('#purchase-details-body tr').each(function() {
+        const paidNow = parseFloat($(this).data('paid-now')) || 0;
+        const balance = parseFloat($(this).data('new-balance')) || parseFloat($(this).data('balance'));
+        
+        totalPaidNow += paidNow;
+        totalPending += balance;
       });
       
-      $('.credit-input').each(function() {
-        const val = parseFloat($(this).val()) || 0;
-        totalCredit += val;
-      });
+      $('#pending-amt').val(totalPending.toFixed(2));
+      $('#total-amount').val(totalPaidNow.toFixed(2));
       
-      $('#total-debit').val(totalDebit.toFixed(2));
-      $('#total-credit').val(totalCredit.toFixed(2));
-      $('#difference').val((totalDebit - totalCredit).toFixed(2));
+      // Set debit or credit based on mode
+      if ($('#mode-payment').is(':checked')) {
+        $('.credit-input').val(totalPaidNow.toFixed(2));
+        $('.debit-input').val('');
+      } else {
+        $('.debit-input').val(totalPaidNow.toFixed(2));
+        $('.credit-input').val('');
+      }
     }
 
     // Save button handler
-    $('#save-btn').on('click', function() {
-      const voucherType = $('input[name="voucher_type"]:checked').val();
-      const voucherDate = $('#voucher-date').val();
-      const narration = $('#narr').val();
+$('#save-btn').on('click', function() {
+  const particulars = $('#particulars-input').val();
+  const amount = parseFloat($('#total-amount').val()) || 0;
+  const isPayment = $('#mode-payment').is(':checked');
+  const voucherType = $('input[name="voucher_type"]:checked').val();
+  const narration = $('#narr').val();
+  const voucherDate = $('#voucher-date').val();
+  
+  // Bank fields
+  const bankName = $('#bank-name').val();
+  const docNo = $('#doc-no').val();
+  const cheqNo = $('#cheq-no').val();
+  const docDate = $('#doc-date').val();
+  const cheqDate = $('#cheq-date').val();
+  
+  if (!particulars || !selectedLedgerCode) {
+    alert('Please select a valid particulars entry');
+    return;
+  }
+  
+  if (amount <= 0) {
+    alert('Please enter a valid amount');
+    return;
+  }
+  
+  // Get paid amounts for each invoice
+  const paidInvoices = [];
+  $('#purchase-details-body tr').each(function() {
+    const paidNow = parseFloat($(this).data('paid-now')) || 0;
+    if (paidNow !== 0) {
+      const invoiceId = $(this).data('id');
+      const currentPaid = parseFloat($(this).data('paid'));
+      const newPaidAmount = currentPaid + paidNow;
+      const totalAmount = parseFloat($(this).data('total'));
       
-      // Bank fields
-      const bankName = $('#bank-name').val();
-      const docNo = $('#doc-no').val();
-      const cheqNo = $('#cheq-no').val();
-      const docDate = $('#doc-date').val();
-      const cheqDate = $('#cheq-date').val();
-      
-      // Collect all voucher items
-      const voucherItems = [];
-      let isValid = true;
-      let errorMessage = '';
-      
-      $('#voucher-items tr').each(function() {
-        const particulars = $(this).find('.particulars-field').val();
-        const ledgerCode = $(this).find('.particulars-field').data('ledger-code');
-        const debit = parseFloat($(this).find('.debit-input').val()) || 0;
-        const credit = parseFloat($(this).find('.credit-input').val()) || 0;
-        
-        if (!particulars || !ledgerCode) {
-          isValid = false;
-          errorMessage = 'Please select valid particulars for all rows';
-          return false;
-        }
-        
-        if ((debit === 0 && credit === 0) || (debit > 0 && credit > 0)) {
-          isValid = false;
-          errorMessage = 'Each row must have either debit or credit amount, not both';
-          return false;
-        }
-        
-        voucherItems.push({
-          ledger_code: ledgerCode,
-          ledger_name: particulars,
-          debit: debit,
-          credit: credit
-        });
+      paidInvoices.push({
+        id: invoiceId,
+        paid_amount: paidNow, // The amount being paid now
+        total_paid: newPaidAmount, // The new cumulative paid amount
+        new_balance: totalAmount - newPaidAmount // Calculate new balance
       });
-      
-      if (!isValid) {
-        alert(errorMessage);
-        return;
-      }
-      
-      const totalDebit = parseFloat($('#total-debit').val()) || 0;
-      const totalCredit = parseFloat($('#total-credit').val()) || 0;
-      
-      if (totalDebit !== totalCredit) {
-        alert('Total debit and credit must be equal');
-        return;
-      }
-      
-      // Submit data to server
-      $.ajax({
-        url: 'save_voucher.php',
-        type: 'POST',
-        data: {
-          action: '<?= $action ?>',
-          voucher_id: <?= $voucher_id ?>,
-          voucher_type: voucherType,
-          voucher_date: voucherDate,
-          narration: narration,
-          bank_id: bankName,
-          doc_no: docNo,
-          cheq_no: cheqNo,
-          doc_date: docDate,
-          cheq_date: cheqDate,
-          voucher_items: voucherItems,
-          comp_id: <?= $_SESSION['CompID'] ?>,
-          fin_year_id: <?= $_SESSION['FIN_YEAR_ID'] ?>
-        },
-        success: function(response) {
-          try {
-            const result = JSON.parse(response);
-            if (result.success) {
-              alert('Voucher saved successfully!');
-              // Refresh the page to clear the form
-              window.location.href = 'voucher_entry.php';
+    }
+  });
+  
+  // Submit data to server
+  $.ajax({
+    url: 'save_voucher.php',
+    type: 'POST',
+    data: {
+      action: '<?= $action ?>',
+      voucher_id: <?= $voucher_id ?>,
+      ledger_code: selectedLedgerCode,
+      ledger_name: selectedLedgerName,
+      amount: amount,
+      is_payment: isPayment,
+      voucher_type: voucherType,
+      narration: narration,
+      voucher_date: voucherDate,
+      bank_id: bankName,
+      doc_no: docNo,
+      cheq_no: cheqNo,
+      doc_date: docDate,
+      cheq_date: cheqDate,
+      paid_invoices: JSON.stringify(paidInvoices),
+      comp_id: <?= $_SESSION['CompID'] ?>,
+      fin_year_id: <?= $_SESSION['FIN_YEAR_ID'] ?>,
+      user_id: <?= $_SESSION['user_id'] ?>
+    },
+    success: function(response) {
+      try {
+        const result = JSON.parse(response);
+        if (result.success) {
+          alert('Voucher saved successfully! Voucher No: ' + result.voucher_no);
+          
+          // Instead of refreshing to a blank page, reload with the same particulars
+          // to see the updated balances
+          if (selectedLedgerCode) {
+            // Re-fetch the pending invoices to see updated balances
+            fetchPendingInvoices(selectedLedgerCode);
+            
+            // Clear the paid now inputs but keep the particulars selected
+            $('.paid-input').val('0.00');
+            $('#total-amount').val('0.00');
+            if (isPayment) {
+              $('.credit-input').val('0.00');
             } else {
-              alert('Error saving voucher: ' + result.message);
+              $('.debit-input').val('0.00');
             }
-          } catch (e) {
-            alert('Error parsing server response');
+            
+            // Reset the paid-now data attributes
+            $('#purchase-details-body tr').each(function() {
+              $(this).data('paid-now', 0);
+            });
+          } else {
+            // Refresh the page to clear the form
+            window.location.href = 'voucher_entry.php';
           }
-        },
-        error: function() {
-          alert('Error connecting to server');
+        } else {
+          alert('Error saving voucher: ' + result.message);
         }
-      });
-    });
+      } catch (e) {
+        alert('Error parsing server response: ' + e.message);
+      }
+    },
+    error: function(xhr, status, error) {
+      alert('Error connecting to server: ' + error);
+    }
+  });
+});
+
+// Fetch pending invoices from server with cache-busting
+function fetchPendingInvoices(ledgerCode) {
+  // Add timestamp to prevent caching
+  const timestamp = new Date().getTime();
+  
+  $.ajax({
+    url: 'fetch_pending_invoices.php?' + timestamp,
+    type: 'POST',
+    data: { 
+      ledger_code: ledgerCode,
+      comp_id: <?= $_SESSION['CompID'] ?>
+    },
+    dataType: 'json',
+    success: function(response) {
+      if (response.success) {
+        displayPendingInvoices(response.data);
+        $('#purchase-details').show();
+        $('#pending-amt').val(response.total_pending.toFixed(2));
+        
+        // Update the total amount field based on current mode
+        if ($('#mode-payment').is(':checked')) {
+          $('.credit-input').val('0.00');
+          $('.debit-input').val('');
+        } else {
+          $('.debit-input').val('0.00');
+          $('.credit-input').val('');
+        }
+      } else {
+        alert('Error fetching pending invoices: ' + response.message);
+        $('#purchase-details').hide();
+      }
+    },
+    error: function(xhr, status, error) {
+      alert('Error connecting to server: ' + error);
+      $('#purchase-details').hide();
+    }
+  });
+}
 
     // New button handler
     $('#new-btn').on('click', function() {
@@ -869,9 +807,6 @@ $stmt->close();
         });
       }
     });
-
-    // Initial calculation
-    calculateTotals();
   });
 </script>
 </body>

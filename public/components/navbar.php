@@ -69,9 +69,8 @@
 
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Closing Stock</span></a></li>
                     <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
-                    <li class="nav-item"><a href="customer_sales_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
+                    <li class="nav-item"><a href="barcode_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Barcode Sales</span></a></li>
                     <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
                     <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_activity</span><span class="nav-label">Voucher Entry</span></a></li>
                     <li class="nav-item"><a href="view_breakage.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakages</span></a></li>
@@ -86,7 +85,7 @@
     </a>
     <ul class="dropdown">
         <li class="nav-item"><a href="cash_memo.php" class="nav-link"><span class="nav-icon material-symbols-rounded">flash_on</span><span class="nav-label">Cash Memo</span></a></li>
-        <li class="nav-item"><a href="cash_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock_open</span><span class="nav-label">Cash Summary</span></a></li>
+        <li class="nav-item"><a href="cash_memo_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock_open</span><span class="nav-label">Cash Summary</span></a></li>
         <li class="nav-item"><a href="FLR_Datewise.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">FLR Datewise</span></a></li>
     </ul>
 </li>            <li class="nav-item has-dropdown">
@@ -103,6 +102,7 @@
                             
                         </a>
                     </li>
+                    <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Closing Stock Report</span></a></li>
                     <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchase Report</span></a></li>
                     <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">pallet</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
                     <li class="nav-item"><a href="purchase_summary_case_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">stack</span><span class="nav-label">Purchase Summary Case Report</span></a></li>
