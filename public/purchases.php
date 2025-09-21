@@ -22,6 +22,17 @@ $maxVoc    = $vocResult ? $vocResult->fetch_assoc() : ['MAX_VOC'=>0];
 $nextVoc   = intval($maxVoc['MAX_VOC']) + 1;
 $vocStmt->close();
 
+// ---- Get distinct sizes from tblsubclass ----
+$distinctSizes = [];
+$sizeQuery = "SELECT DISTINCT CC FROM tblsubclass ORDER BY CC";
+$sizeResult = $conn->query($sizeQuery);
+if ($sizeResult) {
+    while ($row = $sizeResult->fetch_assoc()) {
+        $distinctSizes[] = $row['CC'];
+    }
+}
+$sizeResult->close();
+
 // Function to clean item code by removing SCM prefix
 function cleanItemCode($code) {
     return preg_replace('/^SCM/i', '', trim($code));
@@ -165,18 +176,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_name = $item['name'] ?? '';
                 $item_size = $item['size'] ?? '';
                 $cases = $item['cases'] ?? 0;
-                $bottles = $item['bottles'] ?? 0;
-                $free_cases = $item['free_cases'] ?? 0;
-                $free_bottles = $item['free_bottles'] ?? 0;
-                $case_rate = $item['case_rate'] ?? 0;
-                $mrp = $item['mrp'] ?? 0;
-                $bottles_per_case = $item['bottles_per_case'] ?? 12;
-                $batch_no = $item['batch_no'] ?? '';
-                $auto_batch = $item['auto_batch'] ?? '';
-                $mfg_month = $item['mfg_month'] ?? '';
-                $bl = $item['bl'] ?? 0;
-                $vv = $item['vv'] ?? 0;
-                $tot_bott = $item['tot_bott'] ?? 0;
+                $bottles = $item['bottles'] || 0;
+                $free_cases = $item['free_cases'] || 0;
+                $free_bottles = $item['free_bottles'] || 0;
+                $case_rate = $item['case_rate'] || 0;
+                $mrp = $item['mrp'] || 0;
+                $bottles_per_case = $item['bottles_per_case'] || 12;
+                $batch_no = $item['batch_no'] || '';
+                $auto_batch = $item['auto_batch'] || '';
+                $mfg_month = $item['mfg_month'] || '';
+                $bl = $item['bl'] || 0;
+                $vv = $item['vv'] || 0;
+                $tot_bott = $item['tot_bott'] || 0;
                 
                 // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
@@ -288,7 +299,8 @@ function updateStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bot
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-<style>.table-container {
+<style>
+.table-container {
     overflow-x: auto;
     max-height: 420px;
     margin: 20px 0;
@@ -378,6 +390,22 @@ input.form-control-sm {
     text-align: right;
     background-color: #f1f1f1;
     border-top: 2px solid #dee2e6;
+}
+
+/* Bottles by size table styling */
+#bottlesBySizeTable th {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+}
+#bottlesBySizeTable td {
+    font-size: 0.85rem;
+    padding: 4px 6px;
+}
+.size-separator {
+    background-color: #6c757d !important;
+    color: white !important;
+    font-weight: bold;
+    width: 10px;
 }
 </style>
 </head>
@@ -470,6 +498,27 @@ input.form-control-sm {
           </div>
         </div>
 
+              <!-- TOTAL BOTTLES BY SIZE -->
+        <div class="card mb-4">
+          <div class="card-header fw-semibold"><i class="fa-solid fa-wine-bottle me-2"></i>Total Bottles by Size</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-bordered table-sm mb-0" id="bottlesBySizeTable">
+                <thead class="table-light">
+                  <tr id="sizeHeaders">
+                    <!-- Headers will be populated by JavaScript -->
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr id="sizeValues">
+                    <!-- Values will be populated by JavaScript -->
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- ITEMS -->
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center">
@@ -530,6 +579,9 @@ input.form-control-sm {
     </div>
   </div>
 </div>
+
+
+
         <!-- CHARGES -->
         <div class="card mb-4">
           <div class="card-header fw-semibold"><i class="fa-solid fa-calculator me-2"></i>Charges & Taxes</div>
@@ -628,6 +680,7 @@ $(function(){
   let itemCount = 0;
   const dbItems = <?=json_encode($items, JSON_UNESCAPED_UNICODE)?>; // for matching
   const suppliers = <?=json_encode($suppliers, JSON_UNESCAPED_UNICODE)?>; // for supplier matching
+  const distinctSizes = <?=json_encode($distinctSizes, JSON_UNESCAPED_UNICODE)?>; // from database
 
   // ---------- Helpers ----------
   function ymdFromDmyText(str){
@@ -646,8 +699,7 @@ $(function(){
   }
 
   // Function to find best supplier match
-  // Function to find best supplier match (handles cases like "SAMBARAGI TRADERS-26" vs "SAMBARAGI TRADERS")
-function findBestSupplierMatch(parsedName) {
+  function findBestSupplierMatch(parsedName) {
     if (!parsedName) return null;
     
     const parsedClean = parsedName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
@@ -658,7 +710,7 @@ function findBestSupplierMatch(parsedName) {
         const supplierName = (supplier.DETAILS || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
         const supplierCode = (supplier.CODE || '').toLowerCase();
         
-        // Remove numeric suffixes for better matching (e.e., "sambaragitraders26" → "sambaragitraders")
+        // Remove numeric suffixes for better matching
         const parsedBase = parsedClean.replace(/\d+$/, '');
         const supplierBase = supplierName.replace(/\d+$/, '');
         
@@ -669,7 +721,7 @@ function findBestSupplierMatch(parsedName) {
         if (supplierName === parsedClean) {
             score = 100;
         }
-        // 2. Base name match (e.g., "sambaragitraders" matches "sambaragitraders26")
+        // 2. Base name match
         else if (supplierBase === parsedBase && supplierBase.length > 0) {
             score = 95;
         }
@@ -699,9 +751,10 @@ function findBestSupplierMatch(parsedName) {
     
     console.log("Supplier match:", parsedName, "→", bestMatch ? bestMatch.DETAILS : "No match", "Score:", bestScore);
     return bestMatch;
-}
+  }
+
   // Improved database item matching function
-function findDbItemData(name, size, code) {
+  function findDbItemData(name, size, code) {
     // Clean inputs
     const cleanName = (name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
     const cleanSize = (size || '').toLowerCase().replace(/[^\w\s]/g, '').trim();
@@ -747,7 +800,6 @@ function findDbItemData(name, size, code) {
         if (dbSize && cleanSize === dbSize) score += 30;
         else if (dbSize && cleanSize.includes(dbSize)) score += 20;
         else if (dbSize && dbSize.includes(cleanSize)) score += 10;
-        
         // If we have a code, check if it's similar to the database code
         if (cleanCode) {
             const dbCode = (it.CODE || '').toLowerCase().trim();
@@ -768,7 +820,8 @@ function findDbItemData(name, size, code) {
     
     console.log("No match found for:", {name: cleanName, size: cleanSize, code: cleanCode});
     return null;
-}
+  }
+
   function calculateAmount(cases, individualBottles, caseRate, bottlesPerCase) {
     // Handle invalid inputs
     if (bottlesPerCase <= 0) bottlesPerCase = 1;
@@ -807,7 +860,7 @@ function findDbItemData(name, size, code) {
     return totalTradeDiscount;
   }
 
-function calculateColumnTotals() {
+  function calculateColumnTotals() {
     let totalCases = 0;
     let totalBottles = 0;
     let totalFreeCases = 0;
@@ -838,7 +891,7 @@ function calculateColumnTotals() {
       bl: totalBL,
       totBott: totalTotBott
     };
-}
+  }
 
   function updateColumnTotals() {
     const totals = calculateColumnTotals();
@@ -852,6 +905,147 @@ function calculateColumnTotals() {
     $('#totalTotBott').text(totals.totBott.toFixed(0));
   }
 
+  // Function to calculate B.L. (size in ML * total bottles / 1000)
+  function calculateBL(sizeText, totalBottles) {
+    if (!sizeText || !totalBottles) return 0;
+    
+    // Extract numeric value from size (e.g., "500 ML" → 500)
+    const sizeMatch = sizeText.match(/(\d+)/);
+    if (!sizeMatch) return 0;
+    
+    const sizeML = parseInt(sizeMatch[1]);
+    return (sizeML * totalBottles) / 1000; // Convert to liters
+  }
+
+  // Function to calculate total bottles (cases * bottles per case + individual bottles)
+  function calculateTotalBottles(cases, bottles, bottlesPerCase) {
+    return (cases * bottlesPerCase) + bottles;
+  }
+
+  // Function to calculate and update B.L. and Total Bottles for a row
+  function updateRowCalculations(row) {
+    const cases = parseFloat(row.find('.cases').val()) || 0;
+    const bottles = parseFloat(row.find('.bottles').val()) || 0;
+    const bottlesPerCase = parseInt(row.data('bottles-per-case')) || 12;
+    const size = row.find('input[name*="[size]"]').val() || '';
+    
+    // Calculate total bottles
+    const totalBottles = calculateTotalBottles(cases, bottles, bottlesPerCase);
+    
+    // Calculate B.L. (size in ML * total bottles / 1000)
+    const blValue = calculateBL(size, totalBottles);
+    
+    // Update the displayed values
+    row.find('.tot-bott-value').text(totalBottles);
+    row.find('.bl-value').text(blValue.toFixed(2));
+    
+    // Update hidden fields
+    row.find('input[name*="[tot_bott]"]').val(totalBottles);
+    row.find('input[name*="[bl]"]').val(blValue.toFixed(2));
+  }
+
+  // Function to initialize the size table headers
+  function initializeSizeTable() {
+    const $headers = $('#sizeHeaders');
+    const $values = $('#sizeValues');
+    
+    $headers.empty();
+    $values.empty();
+    
+    // Group sizes into logical categories for better display
+    const smallSizes = distinctSizes.filter(size => size <= 375);
+    const mediumSizes = distinctSizes.filter(size => size > 375 && size <= 1000);
+    const largeSizes = distinctSizes.filter(size => size > 1000);
+    
+    // Add headers for small sizes
+    smallSizes.forEach(size => {
+      $headers.append(`<th>${size} ML</th>`);
+      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
+    });
+    
+    // Add separator if we have both small and medium sizes
+    if (smallSizes.length > 0 && mediumSizes.length > 0) {
+      $headers.append('<th class="size-separator">|</th>');
+      $values.append('<td class="size-separator">|</td>');
+    }
+    
+    // Add headers for medium sizes
+    mediumSizes.forEach(size => {
+      $headers.append(`<th>${size} ML</th>`);
+      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
+    });
+    
+    // Add separator if we have both medium and large sizes
+    if (mediumSizes.length > 0 && largeSizes.length > 0) {
+      $headers.append('<th class="size-separator">|</th>');
+      $values.append('<td class="size-separator">|</td>');
+    }
+    
+    // Add headers for large sizes (display in liters for better readability)
+    largeSizes.forEach(size => {
+      const sizeInLiters = size >= 1000 ? `${size/1000}L` : `${size}ML`;
+      $headers.append(`<th>${sizeInLiters}</th>`);
+      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
+    });
+  }
+
+  // Function to calculate bottles by size
+  function calculateBottlesBySize() {
+    const sizeMap = {};
+    
+    // Initialize all sizes to 0
+    distinctSizes.forEach(size => {
+      sizeMap[size] = 0;
+    });
+    
+    $('.item-row').each(function() {
+      const row = $(this);
+      const sizeText = row.find('input[name*="[size]"]').val() || '';
+      const totBott = parseInt(row.find('input[name*="[tot_bott]"]').val()) || 0;
+      
+      if (sizeText && totBott > 0) {
+        // Extract numeric value from size text
+        const sizeMatch = sizeText.match(/(\d+)/);
+        if (sizeMatch) {
+          const sizeValue = parseInt(sizeMatch[1]);
+          
+          // Find the closest matching size from distinctSizes
+          let matchedSize = null;
+          let smallestDiff = Infinity;
+          
+          distinctSizes.forEach(dbSize => {
+            const diff = Math.abs(dbSize - sizeValue);
+            if (diff < smallestDiff && diff <= 50) { // Allow 50ml tolerance for matching
+              smallestDiff = diff;
+              matchedSize = dbSize;
+            }
+          });
+          
+          if (matchedSize !== null) {
+            sizeMap[matchedSize] += totBott;
+          } else {
+            // If no close match found, check if it's exactly one of our sizes
+            if (distinctSizes.includes(sizeValue)) {
+              sizeMap[sizeValue] += totBott;
+            }
+          }
+        }
+      }
+    });
+    
+    return sizeMap;
+  }
+
+  // Function to update bottles by size display
+  function updateBottlesBySizeDisplay() {
+    const sizeMap = calculateBottlesBySize();
+    
+    // Update all size values in the table
+    distinctSizes.forEach(size => {
+      $(`#size-${size}`).text(sizeMap[size] || '0');
+    });
+  }
+
   function addRow(item){
     if($('#noItemsRow').length) $('#noItemsRow').remove();
     
@@ -863,7 +1057,14 @@ function calculateColumnTotals() {
     const itemName = dbItem ? dbItem.DETAILS : (item.name || '');
     const itemSize = dbItem ? dbItem.DETAILS2 : (item.size || '');
     
-    const amount = calculateAmount(item.cases, item.bottles, caseRate, bottlesPerCase);
+    const cases = item.cases || 0;
+    const bottles = item.bottles || 0;
+    
+    // Calculate total bottles and B.L.
+    const totalBottles = calculateTotalBottles(cases, bottles, bottlesPerCase);
+    const blValue = calculateBL(itemSize, totalBottles);
+    
+    const amount = calculateAmount(cases, bottles, caseRate, bottlesPerCase);
     
     // Use a unique index for each row
     const currentIndex = itemCount;
@@ -875,32 +1076,31 @@ function calculateColumnTotals() {
           <input type="hidden" name="items[${currentIndex}][name]" value="${itemName}">
           <input type="hidden" name="items[${currentIndex}][size]" value="${itemSize}">
           <input type="hidden" name="items[${currentIndex}][bottles_per_case]" value="${bottlesPerCase}">
-          <!-- Add hidden fields for the new columns -->
           <input type="hidden" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}">
           <input type="hidden" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}">
           <input type="hidden" name="items[${currentIndex}][mfg_month]" value="${item.mfgMonth || ''}">
-          <input type="hidden" name="items[${currentIndex}][bl]" value="${item.bl || 0}">
+          <input type="hidden" name="items[${currentIndex}][bl]" value="${blValue.toFixed(2)}">
           <input type="hidden" name="items[${currentIndex}][vv]" value="${item.vv || 0}">
-          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${item.totBott || 0}">
+          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${totalBottles}">
           <input type="hidden" name="items[${currentIndex}][free_cases]" value="${item.freeCases || 0}">
           <input type="hidden" name="items[${currentIndex}][free_bottles]" value="${item.freeBottles || 0}">
           ${itemCode}
         </td>
         <td>${itemName}</td>
         <td>${itemSize}</td>
-        <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${item.cases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${item.bottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
-        <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free_cases]" value="${item.freeCases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free_bottles]" value="${item.freeBottles||0}" min="0, step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${cases}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${bottles}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free-cases]" value="${item.freeCases||0}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free-bottles]" value="${item.freeBottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
         <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
         <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp||0}" step="0.01"></td>
-        <td>${item.batchNo || ''}</td>
-        <td>${item.autoBatch || ''}</td>
-        <td>${item.mfgMonth || ''}</td>
-        <td>${item.bl || 0}</td>
-        <td>${item.vv || 0}</td>
-        <td>${item.totBott || 0}</td>
+        <td><input type="text" class="form-control form-control-sm batch-no" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm auto-batch" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm mfg-month" name="items[${currentIndex}][mfg_month]" value="${item.mfgMonth || ''}"></td>
+        <td class="bl-value">${blValue.toFixed(2)}</td>
+        <td><input type="number" class="form-control form-control-sm vv" name="items[${currentIndex}][vv]" value="${item.vv || 0}" step="0.01"></td>
+        <td class="tot-bott-value">${totalBottles}</td>
         <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
     $('#itemsTable tbody').append(r);
@@ -920,6 +1120,9 @@ function calculateColumnTotals() {
     
     // Update column totals
     updateColumnTotals();
+    
+    // Update bottles by size display
+    updateBottlesBySizeDisplay();
     
     calcTaxes();
   }
@@ -993,8 +1196,7 @@ function calculateColumnTotals() {
       freeCases: 0, freeBottles: 0,
       caseRate: parseFloat($(this).data('price'))||0,
       mrp: 0,
-      bl: 0,
-      totBott: 0
+      vv: 0
     });
     $('#itemModal').modal('hide');
   });
@@ -1010,11 +1212,14 @@ function calculateColumnTotals() {
       
       // Reset column totals
       $('#totalCases, #totalBottles, #totalFreeCases, #totalFreeBottles, #totalBL, #totalTotBott').text('0');
+      
+      // Update bottles by size display
+      updateBottlesBySizeDisplay();
     }
   });
 
   // ------- Recalculate on edit -------
-  $(document).on('input','.cases,.bottles,.case-rate,.mrp,.free-cases,.free-bottles', function(){
+  $(document).on('input','.cases,.bottles,.case-rate,.free-cases,.free-bottles', function(){
     const row = $(this).closest('tr');
     const cases = parseFloat(row.find('.cases').val())||0;
     const bottles = parseFloat(row.find('.bottles').val())||0;
@@ -1023,6 +1228,10 @@ function calculateColumnTotals() {
     
     const amount = calculateAmount(cases, bottles, rate, bottlesPerCase);
     row.find('.amount').text(amount.toFixed(2));
+    
+    // Update B.L. and Total Bottles calculations
+    updateRowCalculations(row);
+    
     updateTotals();
   });
 
@@ -1037,6 +1246,9 @@ function calculateColumnTotals() {
       
       // Reset column totals
       $('#totalCases, #totalBottles, #totalFreeCases, #totalFreeBottles, #totalBL, #totalTotBott').text('0');
+      
+      // Update bottles by size display
+      updateBottlesBySizeDisplay();
     } else {
       updateTotals();
     }
@@ -1063,7 +1275,7 @@ function calculateColumnTotals() {
   });
 
   // Enhanced parser for SCM code lines
-function parseSCMItemLine(scmLine) {
+  function parseSCMItemLine(scmLine) {
     // Pattern to match SCM code lines with variable spacing
     const pattern = /SCM Code:(\S+)\s+([\w\s\(\)\-\.']+)\s+([\d\.]+)\s+([\d\.]+)\s+([\w\-]+)\s+([\w\-\/]+)\s+([\w\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)/i;
     const match = scmLine.match(pattern);
@@ -1126,7 +1338,8 @@ function parseSCMItemLine(scmLine) {
         freeCases: 0,
         freeBottles: 0
     };
-}
+  }
+
   // Main SCM parsing function
   function parseSCM(text) {
     const lines = text.split(/\r?\n/).map(l => l.replace(/\u00A0/g, ' ').trim()).filter(l => l !== '');
@@ -1229,14 +1442,18 @@ function parseSCMItemLine(scmLine) {
       });
     }
     
+    // UPDATE BOTTLES BY SIZE DISPLAY AFTER ADDING SCM ITEMS
+    updateBottlesBySizeDisplay();
+    updateTotals();
+    
     return out;
   }
 
   // Arrow navigation between input fields
-$(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-rate, .mrp', function(e) {
+  $(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-rate, .mrp, .batch-no, .auto-batch, .mfg-month, .vv', function(e) {
     const $current = $(this);
     const $row = $current.closest('tr');
-    const $allInputs = $row.find('input[type="number"]');
+    const $allInputs = $row.find('input[type="number"], input[type="text"]');
     const currentIndex = $allInputs.index($current);
     
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -1252,7 +1469,7 @@ $(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-r
         
         if ($targetRow.length) {
             // Get the same input field in the next/previous row
-            const $targetInputs = $targetRow.find('input[type="number"]');
+            const $targetInputs = $targetRow.find('input[type="number"], input[type="text"]');
             if ($targetInputs.length > currentIndex) {
                 $targetInputs.eq(currentIndex).focus().select();
             }
@@ -1272,15 +1489,17 @@ $(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-r
             $targetInput.focus().select();
         }
     }
-});
+  });
 
   // Initialize
+  initializeSizeTable();
   if($('.item-row').length===0){
     $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
   }else{
     itemCount = $('.item-row').length;
     updateTotals();
   }
-});</script>
+});
+</script>
 </body>
 </html>

@@ -1,6 +1,12 @@
 <?php
 session_start();
 
+// Remove time limit for long-running imports
+set_time_limit(0);
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', '512M');
+
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
@@ -609,6 +615,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
     $importType = $_POST['import_type'];
     $file = $_FILES['import_file'];
     
+    // Remove time limits for import processing
+    set_time_limit(0);
+    ini_set('max_execution_time', 0);
+    ini_set('memory_limit', '512M');
+    
     if ($file['error'] === UPLOAD_ERR_OK) {
         $filePath = $file['tmp_name'];
         $fileName = $file['name'];
@@ -651,7 +662,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                         $allowed_classes[] = $class['SGROUP'];
                     }
                     
+                    // Prepare statements for better performance
+                    $checkQuery = $conn->prepare("SELECT CODE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ?");
+                    $updateQuery = $conn->prepare("UPDATE tblitemmaster SET Print_Name = ?, DETAILS = ?, DETAILS2 = ?, CLASS = ?, SUB_CLASS = ?, ITEM_GROUP = ?, PPRICE = ?, BPRICE = ?, MPRICE = ?, RPRICE = ? WHERE CODE = ? AND LIQ_FLAG = ?");
+                    $insertQuery = $conn->prepare("INSERT INTO tblitemmaster (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    
+                    $rowCount = 0;
                     while (($data = fgetcsv($handle)) !== FALSE) {
+                        $rowCount++;
+                        
                         if (count($data) >= 9) { // At least 9 required columns now
                             $code = $conn->real_escape_string(trim($data[$codeCol]));
                             $itemName = $conn->real_escape_string(trim($data[$itemNameCol]));
@@ -662,18 +681,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             $mprice = floatval(trim($data[$mpriceCol]));
                             $rprice = floatval(trim($data[$rpriceCol]));
                             $liqFlag = '';
-if (isset($data[$liqFlagCol]) && !empty(trim($data[$liqFlagCol]))) {
-    $liqFlag = $conn->real_escape_string(trim($data[$liqFlagCol]));
-} else {
-    $liqFlag = $mode; // Use the current mode as default
-}
-
-// Additional validation to ensure LIQ_FLAG is not empty
-if (empty($liqFlag)) {
-    $errors++;
-    $errorDetails[] = "LIQ_FLAG cannot be empty for item $code";
-    continue; // Skip this row
-} $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
+                            
+                            if (isset($data[$liqFlagCol]) && !empty(trim($data[$liqFlagCol]))) {
+                                $liqFlag = $conn->real_escape_string(trim($data[$liqFlagCol]));
+                            } else {
+                                $liqFlag = $mode; // Use the current mode as default
+                            }
+                            
+                            // Additional validation to ensure LIQ_FLAG is not empty
+                            if (empty($liqFlag)) {
+                                $errors++;
+                                $errorDetails[] = "LIQ_FLAG cannot be empty for item $code";
+                                continue; // Skip this row
+                            }
+                            
+                            $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
                             
                             // Detect class from item name
                             $class = detectClassFromItemName($itemName);
@@ -686,15 +708,15 @@ if (empty($liqFlag)) {
                             }
                             
                             // Validate LIQ_FLAG exists in tblsubclass
-$checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
-$liqFlagResult = $conn->query($checkLiqFlagQuery);
-$liqFlagExists = $liqFlagResult->fetch_assoc()['count'] > 0;
-
-if (!$liqFlagExists) {
-    $errors++;
-    $errorDetails[] = "LIQ_FLAG '$liqFlag' does not exist in tblsubclass for item $code";
-    continue; // Skip this row
-}
+                            $checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
+                            $liqFlagResult = $conn->query($checkLiqFlagQuery);
+                            $liqFlagExists = $liqFlagResult->fetch_assoc()['count'] > 0;
+                            
+                            if (!$liqFlagExists) {
+                                $errors++;
+                                $errorDetails[] = "LIQ_FLAG '$liqFlag' does not exist in tblsubclass for item $code";
+                                continue; // Skip this row
+                            }
                             
                             // Get valid ITEM_GROUP based on Subclass description and LIQ_FLAG
                             $itemGroupField = getValidItemGroup($subclass, $liqFlag, $conn);
@@ -702,26 +724,16 @@ if (!$liqFlagExists) {
                             // For SUB_CLASS, use the first character of subclass or a default
                             $subClassField = !empty($subclass) ? substr($subclass, 0, 1) : 'O';
                             
-                            // Check if item exists
-                            $checkQuery = "SELECT CODE FROM tblitemmaster WHERE CODE = '$code' AND LIQ_FLAG = '$liqFlag'";
-                            $checkResult = $conn->query($checkQuery);
+                            // Check if item exists using prepared statement
+                            $checkQuery->bind_param("ss", $code, $liqFlag);
+                            $checkQuery->execute();
+                            $checkResult = $checkQuery->get_result();
                             
                             if ($checkResult->num_rows > 0) {
-                                // Update existing item
-                                $updateQuery = "UPDATE tblitemmaster SET 
-                                    Print_Name = '$printName',
-                                    DETAILS = '$itemName',
-                                    DETAILS2 = '$subclass',
-                                    CLASS = '$class',
-                                    SUB_CLASS = '$subClassField',
-                                    ITEM_GROUP = '$itemGroupField',
-                                    PPRICE = $pprice,
-                                    BPRICE = $bprice,
-                                    MPRICE = $mprice,
-                                    RPRICE = $rprice
-                                    WHERE CODE = '$code' AND LIQ_FLAG = '$liqFlag'";
+                                // Update existing item using prepared statement
+                                $updateQuery->bind_param("ssssssddddss", $printName, $itemName, $subclass, $class, $subClassField, $itemGroupField, $pprice, $bprice, $mprice, $rprice, $code, $liqFlag);
                                 
-                                if ($conn->query($updateQuery)) {
+                                if ($updateQuery->execute()) {
                                     $updated++;
                                     
                                     // Update stock information
@@ -731,12 +743,10 @@ if (!$liqFlagExists) {
                                     $errorDetails[] = "Error updating $code: " . $conn->error;
                                 }
                             } else {
-                                // Insert new item
-                                $insertQuery = "INSERT INTO tblitemmaster 
-                                    (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG) 
-                                    VALUES ('$code', '$printName', '$itemName', '$subclass', '$class', '$subClassField', '$itemGroupField', $pprice, $bprice, $mprice, $rprice, '$liqFlag')";
+                                // Insert new item using prepared statement
+                                $insertQuery->bind_param("ssssssddddss", $code, $printName, $itemName, $subclass, $class, $subClassField, $itemGroupField, $pprice, $bprice, $mprice, $rprice, $liqFlag);
                                 
-                                if ($conn->query($insertQuery)) {
+                                if ($insertQuery->execute()) {
                                     $imported++;
                                     
                                     // Add stock information
@@ -750,10 +760,23 @@ if (!$liqFlagExists) {
                             $errors++;
                             $errorDetails[] = "Row with insufficient data: " . implode(',', $data);
                         }
+                        
+                        // Free memory periodically for large imports
+                        if ($rowCount % 100 === 0) {
+                            if (function_exists('gc_collect_cycles')) {
+                                gc_collect_cycles();
+                            }
+                        }
                     }
+                    
+                    // Close prepared statements
+                    $checkQuery->close();
+                    $updateQuery->close();
+                    $insertQuery->close();
+                    
                     fclose($handle);
                     
-                    $importMessage = "Import completed: $imported new items added, $updated items updated, $errors errors.";
+                    $importMessage = "Import completed: $imported new items added, $updated items updated, $errors errors. Processed $rowCount rows total.";
                     if (!empty($errorDetails)) {
                         $importMessage .= " Error details: " . implode('; ', array_slice($errorDetails, 0, 5));
                         if (count($errorDetails) > 5) {
@@ -1118,5 +1141,37 @@ $stock_stmt->close();
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Show loading indicator during import
+document.addEventListener('DOMContentLoaded', function() {
+    const importForm = document.querySelector('form[enctype="multipart/form-data"]');
+    if (importForm) {
+        importForm.addEventListener('submit', function() {
+            // Show loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.style.position = 'fixed';
+            loadingOverlay.style.top = '0';
+            loadingOverlay.style.left = '0';
+            loadingOverlay.style.width = '100%';
+            loadingOverlay.style.height = '100%';
+            loadingOverlay.style.backgroundColor = 'rgba(255,255,255,0.8)';
+            loadingOverlay.style.zIndex = '9999';
+            loadingOverlay.style.display = 'flex';
+            loadingOverlay.style.justifyContent = 'center';
+            loadingOverlay.style.alignItems = 'center';
+            loadingOverlay.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Importing data, please wait... This may take several minutes for large files.</p>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+        });
+    }
+});
+</script>
+
 </body>
 </html>

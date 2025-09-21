@@ -297,30 +297,6 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     logMessage("Daily stock updated successfully for item $item_code");
 }
 
-// Function to categorize items for sale module view
-function categorizeItemForModule($itemCategory, $itemName) {
-    $category = (is_string($itemCategory) ? strtoupper($itemCategory) : '');
-    $name = (is_string($itemName) ? strtoupper($itemName) : '');
-    
-    // Check for wine first
-    if (strpos($category, 'WINE') !== false || strpos($name, 'WINE') !== false) {
-        return 'WINES';
-    }
-    // Check for mild beer
-    else if ((strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) && 
-             (strpos($category, 'MILD') !== false || strpos($name, 'MILD') !== false)) {
-        return 'MILD BEER';
-    }
-    // Check for regular beer
-    else if (strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) {
-        return 'FERMENTED BEER';
-    }
-    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
-    else {
-        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    }
-}
-
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     logMessage("POST request received");
@@ -443,7 +419,7 @@ if (isset($_GET['success'])) {
 // Initialize closing balances array
 $closing_balances = [];
 foreach ($items as $item) {
-    $closing_balances[$item['CODE']] = $item['CURRENT_STOCK']; // Default to current stock
+    $closing_balances[$item['CODE']] = intval($item['CURRENT_STOCK']); // Convert to integer
 }
 
 // DEBUG: Log the initial closing balances
@@ -453,50 +429,13 @@ logArray($closing_balances, "Initial closing balances");
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
         if (isset($closing_balances[$item_code])) {
-            $closing_balances[$item_code] = floatval($closing_balance);
+            $closing_balances[$item_code] = intval($closing_balance);
         }
     }
     // DEBUG: Log the updated closing balances from POST
     logArray($_POST['closing_balance'], "POST closing balances");
     logArray($closing_balances, "Updated closing balances from POST");
 }
-
-// Get subclass data for sale module view
-$subclass_query = "SELECT ITEM_GROUP, CC, `DESC`, BOTTLE_PER_CASE FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY CC, ITEM_GROUP";
-$subclass_stmt = $conn->prepare($subclass_query);
-$subclass_stmt->bind_param("s", $mode);
-$subclass_stmt->execute();
-$subclass_result = $subclass_stmt->get_result();
-$subclasses = $subclass_result->fetch_all(MYSQLI_ASSOC);
-$subclass_stmt->close();
-logMessage("Fetched " . count($subclasses) . " subclasses");
-
-// Group subclasses by CC
-$subclass_groups = [];
-foreach ($subclasses as $subclass) {
-    $cc = $subclass['CC'];
-    if (!isset($subclass_groups[$cc])) {
-        $subclass_groups[$cc] = [];
-    }
-    $subclass_groups[$cc][] = $subclass;
-}
-
-// Get class data for categorization
-$class_query = "SELECT SGROUP, `DESC` FROM tblclass WHERE LIQ_FLAG = ?";
-$class_stmt = $conn->prepare($class_query);
-$class_stmt->bind_param("s", $mode);
-$class_stmt->execute();
-$class_result = $class_stmt->get_result();
-$classes = [];
-while ($row = $class_result->fetch_assoc()) {
-    $classes[$row['SGROUP']] = $row['DESC'];
-}
-$class_stmt->close();
-logMessage("Fetched " . count($classes) . " classes");
-
-// Define all possible sizes for the sale module view
-$all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-logMessage("Sale module view initialized with " . count($all_sizes) . " sizes");
 
 // DEBUG: Log the final closing balances before rendering
 logArray($closing_balances, "Final closing balances before rendering");
@@ -533,21 +472,6 @@ logMessage("Page rendering completed");
       100% { transform: rotate(360deg); }
     }
    
-    .sale-module-modal .modal-dialog {
-      max-width: 95%;
-    }
-    .sale-module-table th, .sale-module-table td {
-      text-align: center;
-      padding: 0.3rem;
-      font-size: 0.75rem;
-    }
-    .sale-module-table th {
-      font-size: 0.7rem;
-    }
-    .sale-module-table td {
-      font-size: 0.8rem;
-    }
-    
     /* Remove spinner arrows from number inputs */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
@@ -570,32 +494,6 @@ logMessage("Page rendering completed");
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 15px;
-    }
-    
-    /* Additional styles for sale module view */
-    .sale-module-table {
-      font-size: 0.75rem;
-    }
-    .sale-module-table th {
-      position: sticky;
-      top: 0;
-      background-color: #4e73df;
-      color: white;
-      z-index: 10;
-    }
-    .sale-module-table td {
-      text-align: center;
-      padding: 0.3rem;
-    }
-    .category-row {
-      background-color: #e9ecef;
-      font-weight: bold;
-    }
-    .size-column {
-      min-width: 50px;
-    }
-    .modal-xl {
-      max-width: 95%;
     }
   </style>
 </head>
@@ -726,11 +624,6 @@ logMessage("Page rendering completed");
             </div>
           </form>
         </div>
-        <div class="col-md-6 text-end">
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#saleModuleModal">
-            <i class="fas fa-table"></i> Sale Module View
-          </button>
-        </div>
       </div>
 
       <!-- Sales Form -->
@@ -746,6 +639,10 @@ logMessage("Page rendering completed");
           <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" style="display: none;">
             <i class="fas fa-save"></i> Generate Bills
           </button>
+          <!-- Sales Log Button -->
+<button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
+    <i class="fas fa-file-alt"></i> View Sales Log
+</button>
           
           <a href="dashboard.php" class="btn btn-secondary ms-auto">
             <i class="fas fa-sign-out-alt"></i> Exit
@@ -782,16 +679,9 @@ logMessage("Page rendering completed");
             <?php if (!empty($items)): ?>
               <?php foreach ($items as $item): 
                 $item_code = $item['CODE'];
-                $closing_balance = isset($closing_balances[$item_code]) ? $closing_balances[$item_code] : $item['CURRENT_STOCK'];
-                $sale_qty = $item['CURRENT_STOCK'] - $closing_balance;
+                $closing_balance = isset($closing_balances[$item_code]) ? $closing_balances[$item_code] : intval($item['CURRENT_STOCK']);
+                $sale_qty = intval($item['CURRENT_STOCK']) - $closing_balance;
                 $item_total = $sale_qty * $item['RPRICE'];
-                
-                // Extract size from item details - FIXED REGEX PATTERN
-                $size = 0;
-                // Improved regex to handle cases like "90 ML-(96)" and "1000 ML"
-                if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
-                  $size = $matches[1];
-                }
               ?>
                 <tr>
                   <td><?= htmlspecialchars($item_code); ?></td>
@@ -799,19 +689,18 @@ logMessage("Page rendering completed");
                   <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
                   <td><?= number_format($item['RPRICE'], 2); ?></td>
                   <td>
-                    <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
+                    <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 0); ?></span>
                   </td>
                   <td class="closing-balance-cell">
                     <input type="number" name="closing_balance[<?= htmlspecialchars($item_code); ?>]" 
-                           class="form-control closing-input" min="0" max="<?= $item['CURRENT_STOCK']; ?>" 
-                           step="0.001" value="<?= number_format($closing_balance, 3) ?>" 
+                           class="form-control closing-input" min="0" max="<?= intval($item['CURRENT_STOCK']); ?>" 
+                           step="1" value="<?= $closing_balance ?>" 
                            data-rate="<?= $item['RPRICE'] ?>"
                            data-code="<?= htmlspecialchars($item_code); ?>"
-                           data-stock="<?= $item['CURRENT_STOCK'] ?>"
-                           data-size="<?= $size ?>">
+                           data-stock="<?= intval($item['CURRENT_STOCK']) ?>">
                   </td>
                   <td id="sale_qty_<?= htmlspecialchars($item_code); ?>">
-                    <?= number_format($sale_qty, 3) ?>
+                    <?= $sale_qty ?>
                   </td>
                   <td class="action-column">
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
@@ -837,7 +726,7 @@ logMessage("Page rendering completed");
               <tr>
                 <td colspan="7" class="text-end"><strong>Total Amount:</strong></td>
                 <td class="action-column"><strong id="totalAmount"><?= number_format(array_sum(array_map(function($item) use ($closing_balances) {
-                  $sale_qty = $item['CURRENT_STOCK'] - (isset($closing_balances[$item['CODE']]) ? $closing_balances[$item['CODE']] : $item['CURRENT_STOCK']);
+                  $sale_qty = intval($item['CURRENT_STOCK']) - (isset($closing_balances[$item['CODE']]) ? $closing_balances[$item['CODE']] : intval($item['CURRENT_STOCK']));
                   return $sale_qty * $item['RPRICE'];
                 }, $items)), 2) ?></strong></td>
                 <td class="hidden-columns"></td>
@@ -846,564 +735,343 @@ logMessage("Page rendering completed");
           </table>
         </div>
         
-        <!-- Hidden field to store sale quantities for form submission -->
-        <?php foreach ($items as $item): 
-          $item_code = $item['CODE'];
-          $closing_balance = isset($closing_balances[$item_code]) ? $closing_balances[$item_code] : $item['CURRENT_STOCK'];
-          $sale_qty = $item['CURRENT_STOCK'] - $closing_balance;
-        ?>
-          <input type="hidden" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
-                 id="hidden_sale_qty_<?= htmlspecialchars($item_code); ?>" 
-                 value="<?= $sale_qty ?>">
-        <?php endforeach; ?>
-        
-        <!-- Ajax Loader -->
-        <div id="ajaxLoader" class="ajax-loader">
-          <div class="loader"></div>
-          <p>Calculating distribution...</p>
-        </div>
+        <!-- Hidden submit button for form submission -->
+        <button type="submit" name="update_sales" class="d-none" id="updateSalesBtn"></button>
       </form>
     </div>
-
-    <?php include 'components/footer.php'; ?>
   </div>
 </div>
 
-<!-- Sale Module View Modal -->
-<div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm sale-module-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <?php
-                // Define all possible sizes
-                $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-                foreach ($all_sizes as $size): ?>
-                  <th class="size-column"><?= $size ?> ML</th>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              // Define categories with their IDs
-              $categories = [
-                'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL' => 'SPRITS',
-                'WINES' => 'WINE',
-                'FERMENTED BEER' => 'FERMENTED BEER',
-                'MILD BEER' => 'MILD BEER'
-              ];
-              
-              // Initialize category totals
-              $category_totals = [];
-              foreach ($categories as $category_id => $category_name) {
-                $category_totals[$category_id] = array_fill_keys($all_sizes, 0);
-              }
-              
-              // Process items to calculate category totals
-              foreach ($items as $item) {
-                $item_code = $item['CODE'];
-                $closing_balance = isset($closing_balances[$item_code]) ? $closing_balances[$item_code] : $item['CURRENT_STOCK'];
-                $sale_qty = $item['CURRENT_STOCK'] - $closing_balance;
-                
-                if ($sale_qty > 0) {
-                  // Extract size from item details
-                  $size = 0;
-                  if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
-                    $size = intval($matches[1]);
-                  }
-                  
-                  // Determine category based on item details
-                  $category = categorizeItemForModule($item['DETAILS2'], $item['DETAILS']);
-                  
-                  // Add to category total if size is valid
-                  if ($size > 0 && isset($category_totals[$category][$size])) {
-                    $category_totals[$category][$size] += $sale_qty;
-                  }
-                }
-              }
-              
-              // Display category rows
-              foreach ($categories as $category_id => $category_name): ?>
-                <tr class="category-row">
-                  <td><?= $category_name ?></td>
-                  <?php foreach ($all_sizes as $size): 
-                    $value = $category_totals[$category_id][$size];
-                    $cell_id = "module_" . str_replace([' ', '/', ','], '_', $category_id) . "_" . $size;
-                  ?>
-                    <td id="<?= $cell_id ?>">
-                      <?= $value > 0 ? $value : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+<!-- AJAX Loader -->
+<div class="ajax-loader" id="ajaxLoader">
+  <div class="loader"></div>
+  <p>Processing your request...</p>
+</div>
+
+<!-- Sales Log Modal -->
+<div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="salesLogContent" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Sales log content will be loaded here -->
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading sales log...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printSalesLog()">Print</button>
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" onclick="window.print()">Print View</button>
-      </div>
     </div>
-  </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-// Global variables
-const dateArray = <?= json_encode($date_array) ?>;
-const daysCount = <?= $days_count ?>;
-
-// Function to toggle debug information
-function toggleDebug() {
-  $('.bg-light.rounded').toggle();
-}
-
-// Function to distribute sales uniformly (client-side version)
-function distributeSales(total_qty, days_count) {
-    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
-    
-    const base_qty = Math.floor(total_qty / days_count);
-    const remainder = total_qty % days_count;
-    
-    const daily_sales = new Array(days_count).fill(base_qty);
-    
-    // Distribute remainder evenly across days
-    for (let i = 0; i < remainder; i++) {
-        daily_sales[i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    for (let i = daily_sales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [daily_sales[i], daily_sales[j]] = [daily_sales[j], daily_sales[i]];
-    }
-    
-    return daily_sales;
-}
-
-// Function to update the distribution preview for a specific item
-function updateDistributionPreview(itemCode, saleQty) {
-    const dailySales = distributeSales(saleQty, daysCount);
-    const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
-    const itemRow = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-    
-    // Add date distribution cells after the action column
-    let totalDistributed = 0;
-    dailySales.forEach((qty, index) => {
-        totalDistributed += qty;
-        // Insert distribution cells after the action column
-        $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
-    });
-    
-    // Update amount
-    const amount = totalDistributed * rate;
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
-    
-    // Show date columns if they're hidden
-    $('.date-header, .date-distribution-cell').show();
-    
-    return dailySales;
-}
-
-// Function to categorize item based on its category and size
-function categorizeItem(itemCategory, itemName, itemSize) {
-    const category = (itemCategory || '').toUpperCase();
-    const name = (itemName || '').toUpperCase();
-    
-    // Check for wine first
-    if (category.includes('WINE') || name.includes('WINE')) {
-        return 'WINES';
-    }
-    // Check for mild beer
-    else if ((category.includes('BEER') || name.includes('BEER')) && 
-             (category.includes('MILD') || name.includes('MILD'))) {
-        return 'MILD BEER';
-    }
-    // Check for regular beer
-    else if (category.includes('BEER') || name.includes('BEER')) {
-        return 'FERMENTED BEER';
-    }
-    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
-    else {
-        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    }
-}
-
-// Function to update sale module view
-function updateSaleModuleView() {
-    console.log("Updating sale module view...");
-    
-    // Reset all values to empty
-    $('.sale-module-table td').not(':first-child').html('');
-    
-    // Initialize category totals
-    const categories = {
-        'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL': {},
-        'WINES': {},
-        'FERMENTED BEER': {},
-        'MILD BEER': {}
-    };
-    
-    // Initialize all sizes to 0 for each category
-    const allSizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-    for (const category in categories) {
-        allSizes.forEach(size => {
-            categories[category][size] = 0;
-        });
-    }
-    
-    // Calculate quantities for each category and size
-    $('input[name^="closing_balance"]').each(function() {
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const currentStock = parseFloat($(this).data('stock'));
-        const saleQty = currentStock - closingBalance;
-        
-        console.log("Processing input with sale quantity:", saleQty, "for item:", $(this).data('code'));
-        
-        if (saleQty > 0) {
-            const itemCode = $(this).data('code');
-            const itemRow = $(this).closest('tr');
-            const itemName = itemRow.find('td:eq(1)').text();
-            const itemCategory = itemRow.find('td:eq(2)').text();
-            const size = $(this).data('size');
-            
-            console.log("Item details:", {
-                code: itemCode,
-                name: itemName,
-                category: itemCategory,
-                size: size,
-                quantity: saleQty
-            });
-            
-            // Determine the category type
-            const categoryType = categorizeItem(itemCategory, itemName, size);
-            console.log("Determined category:", categoryType);
-            
-            // Add to the category total if size is valid
-            if (size > 0 && categories[categoryType] && categories[categoryType][size] !== undefined) {
-                categories[categoryType][size] += saleQty;
-                console.log("Added to category", categoryType, "size", size, "new total:", categories[categoryType][size]);
-            } else {
-                console.log("Could not add to category - size:", size, "category exists:", categories[categoryType] !== undefined);
-            }
-        }
-    });
-    
-    // Update the table with calculated values
-    for (const category in categories) {
-        const categoryId = category.replace(/[ ,\/]/g, '_');
-        for (const size in categories[category]) {
-            const value = categories[category][size];
-            if (value > 0) {
-                const cellId = `module_${categoryId}_${size}`;
-                console.log("Updating cell", cellId, "with value", value);
-                $(`#${cellId}`).text(value);
-            }
-        }
-    }
-    
-    console.log("Sale module view update completed");
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
-    $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
-    });
-    $('#totalAmount').text(total.toFixed(2));
-}
-
-// Function to initialize date headers and closing balance column
-function initializeTableHeaders() {
-    // Remove existing date headers if any
-    $('.date-header').remove();
-    
-    // Add date headers after the action column header
-    dateArray.forEach(date => {
-        const dateObj = new Date(date);
-        const day = dateObj.getDate();
-        const month = dateObj.toLocaleString('default', { month: 'short' });
-        
-        // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
-    });
-}
-
-// Function to handle row navigation with arrow keys
-function setupRowNavigation() {
-    const closingInputs = $('input.closing-input');
-    let currentRowIndex = -1;
-    
-    // Highlight row when input is focused
-    $(document).on('focus', 'input.closing-input', function() {
-        // Remove highlight from all rows
-        $('tr').removeClass('highlight-row');
-        
-        // Add highlight to current row
-        $(this).closest('tr').addClass('highlight-row');
-        
-        // Update current row index
-        currentRowIndex = closingInputs.index(this);
-    });
-    
-    // Handle arrow key navigation
-    $(document).on('keydown', 'input.closing-input', function(e) {
-        // Only handle arrow keys
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        
-        e.preventDefault(); // Prevent default scrolling behavior
-        
-        // Calculate new row index
-        let newIndex;
-        if (e.key === 'ArrowUp') {
-            newIndex = currentRowIndex - 1;
-        } else { // ArrowDown
-            newIndex = currentRowIndex + 1;
-        }
-        
-        // Check if new index is valid
-        if (newIndex >= 0 && newIndex < closingInputs.length) {
-            // Focus the input in the new row
-            $(closingInputs[newIndex]).focus().select();
-        }
-    });
-}
-
-// Function to save to pending sales
-function saveToPendingSales() {
-    // Show loader
-    $('#ajaxLoader').show();
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity (calculated from closing balance)
-    $('input[name^="closing_balance"]').each(function() {
-        const itemCode = $(this).data('code');
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const currentStock = parseFloat($(this).data('stock'));
-        const saleQty = currentStock - closingBalance;
-        
-        if (saleQty > 0) {
-            formData.append(`items[${itemCode}]`, saleQty);
-        }
-    });
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    alert('Sales data saved successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (e) {
-                alert('Error processing response: ' + response);
-            }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            alert('Error saving data. Please try again.');
-        }
-    });
-}
-
-// Function to generate bills immediately
-function generateBills() {
-    // Show loader
-    $('#ajaxLoader').show();
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('generate_bills', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity (calculated from closing balance)
-    $('input[name^="closing_balance"]').each(function() {
-        const itemCode = $(this).data('code');
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const currentStock = parseFloat($(this).data('stock'));
-        const saleQty = currentStock - closingBalance;
-        
-        if (saleQty > 0) {
-            formData.append(`items[${itemCode}]`, saleQty);
-        }
-    });
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'generate_bills.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    alert('Bills generated successfully! Generated ' + result.bill_count + ' bills. Total Amount: ₹' + result.total_amount);
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (e) {
-                alert('Error processing response: ' + response);
-            }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            alert('Error generating bills. Please try again.');
-        }
-    });
-}
-
-// Document ready
 $(document).ready(function() {
-    // Initialize table headers and columns
-    initializeTableHeaders();
+    // Initialize date range
+    const startDate = new Date('<?= $start_date ?>');
+    const endDate = new Date('<?= $end_date ?>');
+    const daysCount = <?= $days_count ?>;
     
-    // Set up row navigation with arrow keys
-    setupRowNavigation();
+    // Generate date headers
+    const dateHeaders = generateDateHeaders(startDate, endDate);
+    addDateHeadersToTable(dateHeaders);
+    
+    // Generate distribution cells for each item
+    generateDistributionCells(daysCount);
     
     // Show action buttons
-    $('#shuffleBtn, .btn-shuffle-item, .btn-shuffle').show();
-    $('#generateBillsBtn').show();
+    $('#shuffleBtn, #generateBillsBtn').show();
+    $('.btn-shuffle-item').show();
     
-    // Closing balance input change event
-    $(document).on('change', 'input[name^="closing_balance"]', function() {
-        const itemCode = $(this).data('code');
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const currentStock = parseFloat($(this).data('stock'));
-        const saleQty = currentStock - closingBalance;
-        
-        // Update the sale quantity display
-        $(`#sale_qty_${itemCode}`).text(saleQty.toFixed(3));
-        
-        // Update the hidden sale quantity field for form submission
-        $(`#hidden_sale_qty_${itemCode}`).val(saleQty);
-        
-        if (saleQty > 0) {
-            updateDistributionPreview(itemCode, saleQty);
-        } else {
-            // Remove distribution cells if sale quantity is 0
-            $(`input[name="closing_balance[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
+    // Calculate total amount on page load
+    updateTotalAmount();
+    
+    // Add keyboard navigation for closing balance inputs
+    $('.closing-input').on('keydown', function(e) {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
             
-            // Reset amount
-            $(`#amount_${itemCode}`).text('0.00');
+            // Get all closing balance inputs
+            const inputs = $('.closing-input').toArray();
+            const currentIndex = inputs.indexOf(this);
             
-            // Hide date columns if no items have quantity
-            if ($('input[name^="closing_balance"]').filter(function() { 
-                const cb = parseFloat($(this).val()) || 0;
-                const stock = parseFloat($(this).data('stock'));
-                return (stock - cb) > 0; 
-            }).length === 0) {
-                $('.date-header, .date-distribution-cell').hide();
+            // Find next/previous input
+            let nextIndex;
+            if (e.key === 'ArrowUp') {
+                nextIndex = currentIndex - 1;
+                if (nextIndex < 0) nextIndex = inputs.length - 1; // Wrap around to bottom
+            } else { // ArrowDown
+                nextIndex = currentIndex + 1;
+                if (nextIndex >= inputs.length) nextIndex = 0; // Wrap around to top
             }
+            
+            // Focus on the next/previous input
+            $(inputs[nextIndex]).focus().select();
+        }
+    });
+    
+    // Handle closing balance input changes
+    $('.closing-input').on('input', function() {
+        const itemCode = $(this).data('code');
+        const currentStock = parseInt($(this).data('stock'));
+        const rate = parseFloat($(this).data('rate'));
+        let closingBalance = parseInt($(this).val()) || 0;
+        
+        // Validate closing balance
+        if (closingBalance < 0) {
+            closingBalance = 0;
+            $(this).val(0);
+        } else if (closingBalance > currentStock) {
+            closingBalance = currentStock;
+            $(this).val(currentStock);
         }
         
-        // Update total amount
-        calculateTotalAmount();
+        // Calculate sale quantity
+        const saleQty = currentStock - closingBalance;
+        $('#sale_qty_' + itemCode).text(saleQty);
         
-        // Update sale module view
-        updateSaleModuleView();
-    });
-    
-    // Shuffle all button click event
-    $('#shuffleBtn').click(function() {
-        $('input[name^="closing_balance"]').each(function() {
-            const itemCode = $(this).data('code');
-            const closingBalance = parseFloat($(this).val()) || 0;
-            const currentStock = parseFloat($(this).data('stock'));
-            const saleQty = currentStock - closingBalance;
-            
-            if (saleQty > 0) {
-                updateDistributionPreview(itemCode, saleQty);
-            }
-        });
+        // Calculate item amount
+        const amount = saleQty * rate;
+        $('#amount_' + itemCode).text(amount.toFixed(2));
         
         // Update total amount
-        calculateTotalAmount();
+        updateTotalAmount();
+        
+        // Update distribution cells if they exist
+        updateDistributionCells(itemCode, saleQty, daysCount);
     });
     
-    // Individual shuffle button click event
+    // Shuffle all distributions
+    $('#shuffleBtn').on('click', function() {
+        shuffleAllDistributions(daysCount);
+    });
+    
+    // Generate bills
+    $('#generateBillsBtn').on('click', function() {
+        // Show loader
+        $('#ajaxLoader').show();
+        
+        // Submit the form
+        $('#updateSalesBtn').click();
+    });
+    
+    // Individual item shuffle
     $(document).on('click', '.btn-shuffle-item', function() {
         const itemCode = $(this).data('code');
-        const closingBalance = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).val()) || 0;
-        const currentStock = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('stock'));
-        const saleQty = currentStock - closingBalance;
+        const saleQty = parseInt($('#sale_qty_' + itemCode).text());
+        updateDistributionCells(itemCode, saleQty, daysCount);
+    });
+    
+    // Function to generate date headers
+    function generateDateHeaders(startDate, endDate) {
+        const headers = [];
+        let currentDate = new Date(startDate);
         
-        if (saleQty > 0) {
-            updateDistributionPreview(itemCode, saleQty);
-            
-            // Update total amount
-            calculateTotalAmount();
+        while (currentDate <= endDate) {
+            headers.push({
+                date: currentDate.toISOString().split('T')[0],
+                display: currentDate.toLocaleDateString('en-US', { 
+                    day: '2-digit', 
+                    month: 'short'
+                })
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-    });
+        
+        return headers;
+    }
     
-    // Sale module modal show event
-    $('#saleModuleModal').on('show.bs.modal', function() {
-        updateSaleModuleView();
-    });
-    
-    // Generate bills button click event
-    $('#generateBillsBtn').click(function() {
-        // Validate that at least one item has sale quantity
-        let hasQuantity = false;
-        $('input[name^="closing_balance"]').each(function() {
-            const closingBalance = parseFloat($(this).val()) || 0;
-            const currentStock = parseFloat($(this).data('stock'));
-            const saleQty = currentStock - closingBalance;
-            
-            if (saleQty > 0) {
-                hasQuantity = true;
-                return false; // Break the loop
-            }
+    // Function to add date headers to table
+    function addDateHeadersToTable(dateHeaders) {
+        // Add headers to thead
+        const headerRow = $('.table-header tr');
+        
+        // Insert after the action column and before the amount column
+        dateHeaders.forEach(header => {
+            $('<th>')
+                .addClass('date-header')
+                .attr('title', header.date)
+                .text(header.display)
+                .insertBefore(headerRow.find('.action-column'));
         });
         
-        if (!hasQuantity) {
-            alert('Please enter closing balances that result in sale quantities for at least one item.');
-            return false;
+        // Adjust colspan for footer
+        $('tfoot tr td:first').attr('colspan', 7 + dateHeaders.length);
+    }
+    
+    // Function to generate distribution cells for each item
+    function generateDistributionCells(daysCount) {
+        $('tbody tr').each(function() {
+            const itemCode = $(this).find('.closing-input').data('code');
+            const saleQty = parseInt($('#sale_qty_' + itemCode).text());
+            
+            // Add distribution cells before the action column
+            for (let i = 0; i < daysCount; i++) {
+                $('<td>')
+                    .addClass('distribution-cell')
+                    .attr('id', `dist_${itemCode}_${i}`)
+                    .text('0')
+                    .insertBefore($(this).find('.action-column'));
+            }
+            
+            // Update the cells with distribution
+            updateDistributionCells(itemCode, saleQty, daysCount);
+        });
+    }
+    
+    // Function to update distribution cells for an item
+    function updateDistributionCells(itemCode, saleQty, daysCount) {
+        if (saleQty <= 0) {
+            // Clear all distribution cells
+            for (let i = 0; i < daysCount; i++) {
+                $(`#dist_${itemCode}_${i}`).text('0');
+            }
+            return;
         }
         
-        // Show confirmation dialog
-        if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
-            // User clicked OK - generate bills immediately
-            generateBills();
-        } else {
-            // User clicked Cancel - save to pending sales
-            saveToPendingSales();
+        // Generate distribution
+        const distribution = distributeSales(saleQty, daysCount);
+        
+        // Update distribution cells
+        for (let i = 0; i < daysCount; i++) {
+            $(`#dist_${itemCode}_${i}`).text(distribution[i] || 0);
+        }
+    }
+    
+    // Function to shuffle all distributions
+    function shuffleAllDistributions(daysCount) {
+        $('tbody tr').each(function() {
+            const itemCode = $(this).find('.closing-input').data('code');
+            const saleQty = parseInt($('#sale_qty_' + itemCode).text());
+            
+            if (saleQty > 0) {
+                updateDistributionCells(itemCode, saleQty, daysCount);
+            }
+        });
+    }
+
+    // Function to load sales log content
+function loadSalesLog() {
+    // Show loading state
+    $('#salesLogContent').html(`
+        <div class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading sales log...</p>
+        </div>
+    `);
+    
+    // Load sales log content via AJAX
+    $.ajax({
+        url: 'sales_log_ajax.php', // Create this file (see below)
+        type: 'GET',
+        dataType: 'html',
+        success: function(response) {
+            $('#salesLogContent').html(response);
+        },
+        error: function() {
+            $('#salesLogContent').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to load sales log. Please try again.
+                </div>
+            `);
         }
     });
+}
+
+// Function to print sales log
+function printSalesLog() {
+    const printContent = $('#salesLogContent').html();
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Sales Log - Foreign Export</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f8f9fa; }
+                .text-center { text-align: center; }
+                .no-print { display: none; }
+            </style>
+        </head>
+        <body>
+            <h2 class="text-center">Sales Log - Foreign Export</h2>
+            ${printContent}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+// Optional: Auto-load sales log when modal is shown
+$(document).ready(function() {
+    $('#salesLogModal').on('shown.bs.modal', function() {
+        loadSalesLog();
+    });
 });
-</script> 
+    
+    // Function to update total amount
+    function updateTotalAmount() {
+        let total = 0;
+        
+        $('.amount-cell').each(function() {
+            total += parseFloat($(this).text()) || 0;
+        });
+        
+        $('#totalAmount').text(total.toFixed(2));
+    }
+    
+    // Function to distribute sales (uniform distribution)
+    function distributeSales(totalQty, daysCount) {
+        if (totalQty <= 0 || daysCount <= 0) return Array(daysCount).fill(0);
+        
+        const baseQty = Math.floor(totalQty / daysCount);
+        const remainder = totalQty % daysCount;
+        
+        const distribution = Array(daysCount).fill(baseQty);
+        
+        // Distribute remainder randomly
+        for (let i = 0; i < remainder; i++) {
+            const randomIndex = Math.floor(Math.random() * daysCount);
+            distribution[randomIndex]++;
+        }
+        
+        return distribution;
+    }
+    
+    // Add row highlighting on focus
+    $('.closing-input').on('focus', function() {
+        $(this).closest('tr').addClass('highlight-row');
+    });
+    
+    $('.closing-input').on('blur', function() {
+        $(this).closest('tr').removeClass('highlight-row');
+    });
+});
+</script>
 </body>
 </html>

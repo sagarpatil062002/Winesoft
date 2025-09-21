@@ -641,7 +641,8 @@ if (isset($_SESSION['error_message'])) {
 // Get current stock for items in sale table
 if (!empty($_SESSION['sale_items'])) {
     foreach ($_SESSION['sale_items'] as &$item) {
-        $stock_query = "SELECT COALESCE($current_stock_column, 0) as stock FROM tblitem_stock WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
+        // FIX: Check if FIN_YEAR exists, if not use '0000' as fallback
+        $stock_query = "SELECT COALESCE($current_stock_column, 0) as stock FROM tblitem_stock WHERE ITEM_CODE = ? AND (FIN_YEAR = ? OR FIN_YEAR = '0000') ORDER BY FIN_YEAR DESC LIMIT 1";
         $stock_stmt = $conn->prepare($stock_query);
         $stock_stmt->bind_param("ss", $item['code'], $fin_year_id);
         $stock_stmt->execute();
@@ -725,20 +726,9 @@ if (!empty($_SESSION['sale_items'])) {
     .search-item:last-child {
       border-bottom: none;
     }
-    .table-responsive {
-      max-height: 500px;
-      overflow-y: auto;
-    }
     .no-barcode {
       color: #6c757d;
       font-style: italic;
-    }
-    .sale-table {
-      margin-top: 20px;
-    }
-    .sale-table th {
-      background-color: #343a40;
-      color: white;
     }
     .sale-info {
       background-color: #f8f9fa;
@@ -853,6 +843,48 @@ if (!empty($_SESSION['sale_items'])) {
       border-radius: 5px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       z-index: 1000;
+    }
+    
+    /* Apply style.css styles specifically to the sale table */
+    .sale-table .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-bottom: 1rem;
+      background: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+
+    .sale-table .styled-table {
+      width: 100%;
+      min-width: 600px;
+      border-collapse: collapse;
+      color: var(--text-color);
+    }
+
+    .sale-table .styled-table thead tr {
+      background-color: var(--secondary-color);
+      color: var(--primary-color);
+    }
+
+    .sale-table .styled-table th, 
+    .sale-table .styled-table td {
+      padding: 12px;
+      text-align: left;
+      border: 1px solid #ddd;
+      vertical-align: middle;
+    }
+
+    .sale-table .styled-table tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .sale-table .styled-table tbody tr:hover {
+      background-color: #eef6ff;
+    }
+
+    .sale-table .table-striped tbody tr:nth-child(odd) {
+      background-color: rgba(0,0,0,0.02);
     }
   </style>
 </head>
@@ -1140,8 +1172,8 @@ if (!empty($_SESSION['sale_items'])) {
         <h4 class="mb-3">Current Sale Items</h4>
         
         <?php if (!empty($_SESSION['sale_items'])): ?>
-          <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+          <div class="table-container">
+            <table class="styled-table table-striped">
               <thead>
                 <tr>
                   <th>Code</th>

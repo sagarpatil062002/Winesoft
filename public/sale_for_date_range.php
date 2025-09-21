@@ -119,8 +119,8 @@ if ($sequence_type === 'system_defined') {
 
 logMessage("Order clause: $order_clause");
 
-// Fetch items from tblitemmaster with their current stock
-$query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, 
+// Fetch items from tblitemmaster with their current stock - UPDATED QUERY
+$query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                  COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
           FROM tblitemmaster im
           LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
@@ -297,30 +297,6 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     logMessage("Daily stock updated successfully for item $item_code");
 }
 
-// Function to categorize items for sale module view
-function categorizeItemForModule($itemCategory, $itemName) {
-    $category = (is_string($itemCategory) ? strtoupper($itemCategory) : '');
-    $name = (is_string($itemName) ? strtoupper($itemName) : '');
-    
-    // Check for wine first
-    if (strpos($category, 'WINE') !== false || strpos($name, 'WINE') !== false) {
-        return 'WINES';
-    }
-    // Check for mild beer
-    else if ((strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) && 
-             (strpos($category, 'MILD') !== false || strpos($name, 'MILD') !== false)) {
-        return 'MILD BEER';
-    }
-    // Check for regular beer
-    else if (strpos($category, 'BEER') !== false || strpos($name, 'BEER') !== false) {
-        return 'FERMENTED BEER';
-    }
-    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
-    else {
-        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    }
-}
-
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     logMessage("POST request received");
@@ -463,42 +439,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
     logArray($_POST['sale_qty'], "POST sale quantities");
     logArray($quantities, "Updated quantities from POST");
 }
-// Get subclass data for sale module view
-$subclass_query = "SELECT ITEM_GROUP, CC, `DESC`, BOTTLE_PER_CASE FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY CC, ITEM_GROUP";
-$subclass_stmt = $conn->prepare($subclass_query);
-$subclass_stmt->bind_param("s", $mode);
-$subclass_stmt->execute();
-$subclass_result = $subclass_stmt->get_result();
-$subclasses = $subclass_result->fetch_all(MYSQLI_ASSOC);
-$subclass_stmt->close();
-logMessage("Fetched " . count($subclasses) . " subclasses");
-
-// Group subclasses by CC
-$subclass_groups = [];
-foreach ($subclasses as $subclass) {
-    $cc = $subclass['CC'];
-    if (!isset($subclass_groups[$cc])) {
-        $subclass_groups[$cc] = [];
-    }
-    $subclass_groups[$cc][] = $subclass;
-}
-
-// Get class data for categorization
-$class_query = "SELECT SGROUP, `DESC` FROM tblclass WHERE LIQ_FLAG = ?";
-$class_stmt = $conn->prepare($class_query);
-$class_stmt->bind_param("s", $mode);
-$class_stmt->execute();
-$class_result = $class_stmt->get_result();
-$classes = [];
-while ($row = $class_result->fetch_assoc()) {
-    $classes[$row['SGROUP']] = $row['DESC'];
-}
-$class_stmt->close();
-logMessage("Fetched " . count($classes) . " classes");
-
-// Define all possible sizes for the sale module view
-$all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-logMessage("Sale module view initialized with " . count($all_sizes) . " sizes");
 
 // DEBUG: Log the final quantities before rendering
 logArray($quantities, "Final quantities before rendering");
@@ -535,21 +475,6 @@ logMessage("Page rendering completed");
       100% { transform: rotate(360deg); }
     }
    
-    .sale-module-modal .modal-dialog {
-      max-width: 95%;
-    }
-    .sale-module-table th, .sale-module-table td {
-      text-align: center;
-      padding: 0.3rem;
-      font-size: 0.75rem;
-    }
-    .sale-module-table th {
-      font-size: 0.7rem;
-    }
-    .sale-module-table td {
-      font-size: 0.8rem;
-    }
-    
     /* Remove spinner arrows from number inputs */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
@@ -572,32 +497,6 @@ logMessage("Page rendering completed");
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 15px;
-    }
-    
-    /* Additional styles for sale module view */
-    .sale-module-table {
-      font-size: 0.75rem;
-    }
-    .sale-module-table th {
-      position: sticky;
-      top: 0;
-      background-color: #4e73df;
-      color: white;
-      z-index: 10;
-    }
-    .sale-module-table td {
-      text-align: center;
-      padding: 0.3rem;
-    }
-    .category-row {
-      background-color: #e9ecef;
-      font-weight: bold;
-    }
-    .size-column {
-      min-width: 50px;
-    }
-    .modal-xl {
-      max-width: 95%;
     }
   </style>
 </head>
@@ -671,7 +570,7 @@ logMessage("Page rendering completed");
           </a>
           <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
-            Group Defined
+                         Group Defined
           </a>
         </div>
       </div>
@@ -728,11 +627,6 @@ logMessage("Page rendering completed");
             </div>
           </form>
         </div>
-        <div class="col-md-6 text-end">
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#saleModuleModal">
-            <i class="fas fa-table"></i> Sale Module View
-          </button>
-        </div>
       </div>
 
       <!-- Sales Form -->
@@ -741,19 +635,27 @@ logMessage("Page rendering completed");
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
 
         <!-- Action Buttons -->
-        <div class="d-flex gap-2 mb-3">
-          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" style="display: none;">
-            <i class="fas fa-random"></i> Shuffle All
-          </button>
-          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" style="display: none;">
-            <i class="fas fa-save"></i> Generate Bills
-          </button>
-          
-          <a href="dashboard.php" class="btn btn-secondary ms-auto">
-            <i class="fas fa-sign-out-alt"></i> Exit
-          </a>
-        </div>
-        
+<div class="d-flex gap-2 mb-3">
+  <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" style="display: none;">
+    <i class="fas fa-random"></i> Shuffle All
+  </button>
+  <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" style="display: none;">
+    <i class="fas fa-save"></i> Generate Bills
+  </button>
+  
+<!-- Sales Log Button -->
+<button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
+    <i class="fas fa-file-alt"></i> View Sales Log
+</button>
+
+<button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
+    <i class="fas fa-chart-bar"></i> View Total Sales Summary
+</button>
+  
+  <a href="dashboard.php" class="btn btn-secondary ms-auto">
+    <i class="fas fa-sign-out-alt"></i> Exit
+  </a>
+</div>
         <div class="alert alert-info mt-3">
           <i class="fas fa-info-circle"></i> 
           Total sales quantities will be uniformly distributed across the selected date range as whole numbers.
@@ -780,66 +682,64 @@ logMessage("Page rendering completed");
               </tr>
             </thead>
             <tbody>
-            <?php if (!empty($items)): ?>
-              <?php foreach ($items as $item): 
-                $item_code = $item['CODE'];
-                $item_qty = isset($quantities[$item_code]) ? $quantities[$item_code] : 0;
-                $item_total = $item_qty * $item['RPRICE'];
-                $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
-                
-                // Extract size from item details - FIXED REGEX PATTERN
-                $size = 0;
-                // Improved regex to handle cases like "90 ML-(96)" and "1000 ML"
-                if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
-                  $size = $matches[1];
-                }
-              ?>
-                <tr>
-                  <td><?= htmlspecialchars($item_code); ?></td>
-                  <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                  <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-                  <td><?= number_format($item['RPRICE'], 2); ?></td>
-                  <td>
-                    <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
-                  </td>
-                  <td>
-                    <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
-                           class="form-control qty-input" min="0" max="<?= floor($item['CURRENT_STOCK']); ?>" 
-                           step="1" value="<?= $item_qty ?>" 
-                           data-rate="<?= $item['RPRICE'] ?>"
-                           data-code="<?= htmlspecialchars($item_code); ?>"
-                           data-stock="<?= $item['CURRENT_STOCK'] ?>"
-                           data-size="<?= $size ?>">
-                  </td>
-                  <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
-                    <?= number_format($closing_balance, 3) ?>
-                  </td>
-                  <td class="action-column">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                            data-code="<?= htmlspecialchars($item_code); ?>" style="display: none;">
-                      <i class="fas fa-random"></i> Shuffle
-                    </button>
-                  </td>
-                  
-                  <!-- Date distribution cells will be inserted here by JavaScript -->
-                  
-                  <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
-                    <?= number_format($item_qty * $item['RPRICE'], 2) ?>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            <?php else: ?>
-              <tr>
-                <td colspan="9" class="text-center text-muted">No items found.</td>
-              </tr>
-            <?php endif; ?>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="7" class="text-end"><strong>Total Amount:</strong></td>
-                <td class="action-column"><strong id="totalAmount">0.00</strong></td>
-                <td class="hidden-columns"></td>
-              </tr>
+<?php if (!empty($items)): ?>
+    <?php foreach ($items as $item): 
+        $item_code = $item['CODE'];
+        $item_qty = isset($quantities[$item_code]) ? $quantities[$item_code] : 0;
+        $item_total = $item_qty * $item['RPRICE'];
+        $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+        
+        // Extract size from item details
+        $size = 0;
+        if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
+            $size = $matches[1];
+        }
+        
+        // Get class code - now available from the query
+        $class_code = $item['CLASS'] ?? 'O'; // Default to 'O' if not set
+    ?>
+        <tr data-class="<?= htmlspecialchars($class_code) ?>" 
+            data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
+            data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>">
+            <td><?= htmlspecialchars($item_code); ?></td>
+            <td><?= htmlspecialchars($item['DETAILS']); ?></td>
+            <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
+            <td><?= number_format($item['RPRICE'], 2); ?></td>
+            <td>
+                <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
+            </td>
+            <td>
+                <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
+                       class="form-control qty-input" min="0" max="<?= floor($item['CURRENT_STOCK']); ?>" 
+                       step="1" value="<?= $item_qty ?>" 
+                       data-rate="<?= $item['RPRICE'] ?>"
+                       data-code="<?= htmlspecialchars($item_code); ?>"
+                       data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                       data-size="<?= $size ?>">
+            </td>
+            <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
+                <?= number_format($closing_balance, 3) ?>
+            </td>
+            <td class="action-column">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
+                        data-code="<?= htmlspecialchars($item_code); ?>" style="display: none;">
+                    <i class="fas fa-random"></i> Shuffle
+                </button>
+            </td>
+            
+            <!-- Date distribution cells will be inserted here by JavaScript -->
+            
+            <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
+                <?= number_format($item_qty * $item['RPRICE'], 2) ?>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+<?php else: ?>
+    <tr>
+        <td colspan="9" class="text-center text-muted">No items found.</td>
+    </tr>
+<?php endif; ?>
+</tbody>
             </tfoot>
           </table>
         </div>
@@ -856,91 +756,75 @@ logMessage("Page rendering completed");
   </div>
 </div>
 
-<!-- Sale Module View Modal -->
-<div class="modal fade sale-module-modal" id="saleModuleModal" tabindex="-1" aria-labelledby="saleModuleModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="saleModuleModalLabel">Sale Module View</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm sale-module-table">
-            <thead>
-              <tr>
-                <th>Category</th>
-                <?php
-                // Define all possible sizes
-                $all_sizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-                foreach ($all_sizes as $size): ?>
-                  <th class="size-column"><?= $size ?> ML</th>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <?php
-              // Define categories with their IDs
-              $categories = [
-                'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL' => 'SPRITS',
-                'WINES' => 'WINE',
-                'FERMENTED BEER' => 'FERMENTED BEER',
-                'MILD BEER' => 'MILD BEER'
-              ];
-              
-              // Initialize category totals
-              $category_totals = [];
-              foreach ($categories as $category_id => $category_name) {
-                $category_totals[$category_id] = array_fill_keys($all_sizes, 0);
-              }
-              
-              // Process items to calculate category totals
-              foreach ($items as $item) {
-                $item_code = $item['CODE'];
-                $item_qty = isset($quantities[$item_code]) ? $quantities[$item_code] : 0;
-                
-                if ($item_qty > 0) {
-                  // Extract size from item details
-                  $size = 0;
-                  if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
-                    $size = intval($matches[1]);
-                  }
-                  
-                  // Determine category based on item details
-                  $category = categorizeItemForModule($item['DETAILS2'], $item['DETAILS']);
-                  
-                  // Add to category total if size is valid
-                  if ($size > 0 && isset($category_totals[$category][$size])) {
-                    $category_totals[$category][$size] += $item_qty;
-                  }
-                }
-              }
-              
-              // Display category rows
-              foreach ($categories as $category_id => $category_name): ?>
-                <tr class="category-row">
-                  <td><?= $category_name ?></td>
-                  <?php foreach ($all_sizes as $size): 
-                    $value = $category_totals[$category_id][$size];
-                    $cell_id = "module_" . str_replace([' ', '/', ','], '_', $category_id) . "_" . $size;
-                  ?>
-                    <td id="<?= $cell_id ?>">
-                      <?= $value > 0 ? $value : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                </tr>
-              <?php endforeach; ?>
-            </tbody>
-          </table>
+<!-- Sales Log Modal -->
+<div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="salesLogContent" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Sales log content will be loaded here -->
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading sales log...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printSalesLog()">Print</button>
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" onclick="window.print()">Print View</button>
-      </div>
     </div>
-  </div>
 </div>
+
+<!-- Total Sales Modal -->
+<div class="modal fade" id="totalSalesModal" tabindex="-1" aria-labelledby="totalSalesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="totalSalesModalLabel">Total Sales Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Total Sales Module Table will be inserted here by JavaScript -->
+                <div id="totalSalesModuleContainer">
+                    <table class="table table-bordered table-sm" id="totalSalesTable">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>2 Ltrs.</th>
+                                <th>1 Ltr.</th>
+                                <th>750 ML</th>
+                                <th>650 ML</th>
+                                <th>500 ML</th>
+                                <th>375 ML</th>
+                                <th>330 ML</th>
+                                <th>275 ML</th>
+                                <th>180 ML</th>
+                                <th>100 ML</th>
+                                <th>90 ML</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printSalesSummary()">Print</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -1008,103 +892,6 @@ function updateDistributionPreview(itemCode, totalQty) {
     return dailySales;
 }
 
-// Function to categorize item based on its category and size
-function categorizeItem(itemCategory, itemName, itemSize) {
-    const category = (itemCategory || '').toUpperCase();
-    const name = (itemName || '').toUpperCase();
-    
-    // Check for wine first
-    if (category.includes('WINE') || name.includes('WINE')) {
-        return 'WINES';
-    }
-    // Check for mild beer
-    else if ((category.includes('BEER') || name.includes('BEER')) && 
-             (category.includes('MILD') || name.includes('MILD'))) {
-        return 'MILD BEER';
-    }
-    // Check for regular beer
-    else if (category.includes('BEER') || name.includes('BEER')) {
-        return 'FERMENTED BEER';
-    }
-    // Everything else is spirits (WHISKY, GIN, BRANDY, VODKA, RUM, LIQUORS, OTHERS/GENERAL)
-    else {
-        return 'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL';
-    }
-}
-
-// Function to update sale module view
-// Replace the updateSaleModuleView function with this improved version:
-function updateSaleModuleView() {
-    console.log("Updating sale module view...");
-    
-    // Reset all values to empty
-    $('.sale-module-table td').not(':first-child').html('');
-    
-    // Initialize category totals
-    const categories = {
-        'WHISKY,GIN,BRANDY,VODKA,RUM,LIQUORS,OTHERS/GENERAL': {},
-        'WINES': {},
-        'FERMENTED BEER': {},
-        'MILD BEER': {}
-    };
-    
-    // Initialize all sizes to 0 for each category
-    const allSizes = [50, 60, 90, 100, 125, 180, 187, 200, 250, 375, 700, 750, 1000, 1500, 1750, 2000, 3000, 4500, 15000, 20000, 30000, 50000];
-    for (const category in categories) {
-        allSizes.forEach(size => {
-            categories[category][size] = 0;
-        });
-    }
-    
-    // Calculate quantities for each category and size
-    $('input[name^="sale_qty"]').each(function() {
-        const qty = parseInt($(this).val()) || 0;
-        console.log("Processing input with quantity:", qty, "for item:", $(this).data('code'));
-        
-        if (qty > 0) {
-            const itemCode = $(this).data('code');
-            const itemRow = $(this).closest('tr');
-            const itemName = itemRow.find('td:eq(1)').text();
-            const itemCategory = itemRow.find('td:eq(2)').text();
-            const size = $(this).data('size');
-            
-            console.log("Item details:", {
-                code: itemCode,
-                name: itemName,
-                category: itemCategory,
-                size: size,
-                quantity: qty
-            });
-            
-            // Determine the category type
-            const categoryType = categorizeItem(itemCategory, itemName, size);
-            console.log("Determined category:", categoryType);
-            
-            // Add to the category total if size is valid
-            if (size > 0 && categories[categoryType] && categories[categoryType][size] !== undefined) {
-                categories[categoryType][size] += qty;
-                console.log("Added to category", categoryType, "size", size, "new total:", categories[categoryType][size]);
-            } else {
-                console.log("Could not add to category - size:", size, "category exists:", categories[categoryType] !== undefined);
-            }
-        }
-    });
-    
-    // Update the table with calculated values
-    for (const category in categories) {
-        const categoryId = category.replace(/[ ,\/]/g, '_');
-        for (const size in categories[category]) {
-            const value = categories[category][size];
-            if (value > 0) {
-                const cellId = `module_${categoryId}_${size}`;
-                console.log("Updating cell", cellId, "with value", value);
-                $(`#${cellId}`).text(value);
-            }
-        }
-    }
-    
-    console.log("Sale module view update completed");
-}
 // Function to calculate total amount
 function calculateTotalAmount() {
     let total = 0;
@@ -1219,6 +1006,236 @@ function saveToPendingSales() {
     });
 }
 
+// Function to load sales log content
+function loadSalesLog() {
+    // Show loading state
+    $('#salesLogContent').html(`
+        <div class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading sales log...</p>
+        </div>
+    `);
+    
+    // Load sales log content via AJAX
+    $.ajax({
+        url: 'sales_log_ajax.php', // Create this file (see below)
+        type: 'GET',
+        dataType: 'html',
+        success: function(response) {
+            $('#salesLogContent').html(response);
+        },
+        error: function() {
+            $('#salesLogContent').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to load sales log. Please try again.
+                </div>
+            `);
+        }
+    });
+}
+
+// Function to print sales log
+function printSalesLog() {
+    const printContent = $('#salesLogContent').html();
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Sales Log - Foreign Export</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f8f9fa; }
+                .text-center { text-align: center; }
+                .no-print { display: none; }
+            </style>
+        </head>
+        <body>
+            <h2 class="text-center">Sales Log - Foreign Export</h2>
+            ${printContent}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+// Optional: Auto-load sales log when modal is shown
+$(document).ready(function() {
+    $('#salesLogModal').on('shown.bs.modal', function() {
+        loadSalesLog();
+    });
+});
+
+// Function to get item data from row
+function getItemData(itemCode) {
+    const itemRow = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
+    return {
+        classCode: itemRow.data('class'),
+        details: itemRow.data('details'),
+        details2: itemRow.data('details2'),
+        quantity: parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0
+    };
+}
+
+// Function to classify product type from class code
+function getProductType(classCode) {
+    const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
+    if (spirits.includes(classCode)) return 'SPIRITS';
+    if (classCode === 'V') return 'WINE';
+    if (classCode === 'B') return 'FERMENTED BEER';
+    if (classCode === 'M') return 'MILD BEER';
+    return 'OTHER';
+}
+
+// Function to extract volume from details
+function extractVolume(details, details2) {
+    // Priority: details2 column first
+    if (details2) {
+        const volumeMatch = details2.match(/(\d+)\s*(ML|LTR?)/i);
+        if (volumeMatch) {
+            let volume = parseInt(volumeMatch[1]);
+            const unit = volumeMatch[2].toUpperCase();
+            
+            if (unit === 'LTR' || unit === 'L') {
+                volume = volume * 1000; // Convert liters to ML
+            }
+            return volume;
+        }
+    }
+    
+    // Fallback: parse details column
+    if (details) {
+        // Handle special cases like QUART, PINT, NIP
+        if (details.includes('QUART')) return 750;
+        if (details.includes('PINT')) return 375;
+        if (details.includes('NIP')) return 90;
+        if (details.includes('80 ML')) return 80;
+        
+        // Try to extract numeric volume
+        const volumeMatch = details.match(/(\d+)\s*(ML|LTR?)/i);
+        if (volumeMatch) {
+            let volume = parseInt(volumeMatch[1]);
+            const unit = volumeMatch[2].toUpperCase();
+            
+            if (unit === 'LTR' || unit === 'L') {
+                volume = volume * 1000;
+            }
+            return volume;
+        }
+    }
+    
+    return 0; // Unknown volume
+}
+
+// Function to map volume to column
+function getVolumeColumn(volume) {
+    const volumeMap = {
+        2000: '2 Ltrs.',
+        1000: '1 Ltr.',
+        750: '750 ML',
+        650: '650 ML',
+        500: '500 ML',
+        375: '375 ML',
+        330: '330 ML',
+        275: '275 ML',
+        180: '180 ML',
+        100: '100 ML',
+        90: '90 ML',
+        80: '100 ML' // Map 80ML to 100ML column as per your example
+    };
+    
+    return volumeMap[volume] || null;
+}
+
+// Function to update total sales module
+function updateTotalSalesModule() {
+    // Initialize empty summary object
+    const salesSummary = {
+        'SPIRITS': {'2 Ltrs.': 0, '1 Ltr.': 0, '750 ML': 0, '650 ML': 0, '500 ML': 0, 
+                   '375 ML': 0, '330 ML': 0, '275 ML': 0, '180 ML': 0, '100 ML': 0, '90 ML': 0},
+        'WINE': {'2 Ltrs.': 0, '1 Ltr.': 0, '750 ML': 0, '650 ML': 0, '500 ML': 0, 
+                '375 ML': 0, '330 ML': 0, '275 ML': 0, '180 ML': 0, '100 ML': 0, '90 ML': 0},
+        'FERMENTED BEER': {'2 Ltrs.': 0, '1 Ltr.': 0, '750 ML': 0, '650 ML': 0, '500 ML': 0, 
+                          '375 ML': 0, '330 ML': 0, '275 ML': 0, '180 ML': 0, '100 ML': 0, '90 ML': 0},
+        'MILD BEER': {'2 Ltrs.': 0, '1 Ltr.': 0, '750 ML': 0, '650 ML': 0, '500 ML': 0, 
+                     '375 ML': 0, '330 ML': 0, '275 ML': 0, '180 ML': 0, '100 ML': 0, '90 ML': 0}
+    };
+
+    // Process all quantity inputs
+    $('input[name^="sale_qty"]').each(function() {
+        const quantity = parseInt($(this).val()) || 0;
+        if (quantity > 0) {
+            const itemCode = $(this).data('code');
+            const itemRow = $(this).closest('tr');
+            
+            // Get item details (you might need to store these as data attributes)
+            const classCode = itemRow.data('class'); // Store class code in data-class attribute
+            const details = itemRow.data('details'); // Store details in data-details
+            const details2 = itemRow.data('details2'); // Store details2 in data-details2
+            
+            const productType = getProductType(classCode);
+            const volume = extractVolume(details, details2);
+            const volumeColumn = getVolumeColumn(volume);
+            
+            if (volumeColumn && salesSummary[productType]) {
+                salesSummary[productType][volumeColumn] += quantity;
+            }
+        }
+    });
+
+    // Update the modal table
+    updateSalesModalTable(salesSummary);
+}
+
+// Function to update modal table with calculated values
+function updateSalesModalTable(salesSummary) {
+    const tbody = $('#totalSalesTable tbody');
+    tbody.empty();
+    
+    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'].forEach(category => {
+        const row = $('<tr>');
+        row.append($('<td>').text(category));
+        
+        ['2 Ltrs.', '1 Ltr.', '750 ML', '650 ML', '500 ML', '375 ML', 
+         '330 ML', '275 ML', '180 ML', '100 ML', '90 ML'].forEach(volume => {
+            const value = salesSummary[category][volume] || 0;
+            row.append($('<td>').text(value > 0 ? value : ''));
+        });
+        
+        tbody.append(row);
+    });
+}
+
+// Event listener for modal show
+$('#totalSalesModal').on('show.bs.modal', function() {
+    updateTotalSalesModule();
+});
+
+// Print function
+function printSalesSummary() {
+    const printContent = document.getElementById('totalSalesModuleContainer').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent;
+    window.print();
+    document.body.innerHTML = originalContent;
+    
+    // Re-initialize any necessary scripts
+    location.reload();
+}
+
 // Function to generate bills immediately
 function generateBills() {
     // Show loader
@@ -1303,12 +1320,14 @@ $(document).ready(function() {
                 $('.date-header, .date-distribution-cell').hide();
             }
         }
+
+         // Also update total sales module if modal is open
+    if ($('#totalSalesModal').hasClass('show')) {
+        updateTotalSalesModule();
+    }
         
         // Update total amount
         calculateTotalAmount();
-        
-        // Update sale module view
-        updateSaleModuleView();
     });
     
     // Shuffle all button click event
@@ -1337,11 +1356,6 @@ $(document).ready(function() {
             // Update total amount
             calculateTotalAmount();
         }
-    });
-    
-    // Sale module modal show event
-    $('#saleModuleModal').on('show.bs.modal', function() {
-        updateSaleModuleView();
     });
     
     // Generate bills button click event
