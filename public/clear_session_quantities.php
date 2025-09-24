@@ -1,12 +1,10 @@
 <?php
 session_start();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_SESSION['sale_quantities'])) {
-        unset($_SESSION['sale_quantities']);
-    }
-    echo json_encode(['success' => true]);
+if (isset($_SESSION['sale_quantities'])) {
+    unset($_SESSION['sale_quantities']);
+    echo json_encode(['success' => true, 'message' => 'Quantities cleared']);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Invalid request']);
+    echo json_encode(['success' => true, 'message' => 'No quantities to clear']);
 }
 ?>

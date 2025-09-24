@@ -141,11 +141,17 @@ if (isset($_GET['generate'])) {
         // Show print section
         $_SESSION['show_print_section'] = true;
         $_SESSION['generated_bills_count'] = count($bill_numbers_to_store);
+        $_SESSION['all_bills_data'] = $all_bills; // Store bills in session for print
     }
 }
 
 // Check if we should show the print section
 $showPrintSection = isset($_SESSION['show_print_section']) && $_SESSION['show_print_section'];
+
+// If we have stored bills in session, use them for printing
+if (isset($_SESSION['all_bills_data']) && !empty($_SESSION['all_bills_data'])) {
+    $all_bills = $_SESSION['all_bills_data'];
+}
 
 // Fetch company details including license information
 $companyName = "DIAMOND WINE SHOP";
@@ -187,29 +193,41 @@ function getRandomPermit($permits) {
     return $permits[array_rand($permits)];
 }
 
-// Assign DIFFERENT unique permits to EACH bill
+// Assign DIFFERENT unique permits to EACH bill - FIXED VERSION
 if (!empty($allPermits)) {
     // Create a copy of permits to avoid duplicates
     $availablePermits = $allPermits;
     
     if (!empty($bill_data)) {
-        $selectedPermit = getRandomPermit($availablePermits);
-        $bill_data['permit'] = $selectedPermit;
-    }
-    
-    foreach ($all_bills as &$bill) {
         if (!empty($availablePermits)) {
             $selectedPermit = getRandomPermit($availablePermits);
-            $bill['permit'] = $selectedPermit;
-            // Remove the used permit to avoid duplicates
+            $bill_data['permit'] = $selectedPermit;
+            // Remove the used permit
             $key = array_search($selectedPermit, $availablePermits);
             if ($key !== false) {
                 unset($availablePermits[$key]);
-                $availablePermits = array_values($availablePermits); // Reindex array
+                $availablePermits = array_values($availablePermits);
             }
         } else {
-            // If we run out of permits, start recycling from the beginning
-            $bill['permit'] = getRandomPermit($allPermits);
+            $bill_data['permit'] = getRandomPermit($allPermits);
+        }
+    }
+    
+    // Use proper indexing instead of references to avoid duplication issues
+    $all_bills_count = count($all_bills);
+    for ($i = 0; $i < $all_bills_count; $i++) {
+        if (!empty($availablePermits)) {
+            $selectedPermit = getRandomPermit($availablePermits);
+            $all_bills[$i]['permit'] = $selectedPermit;
+            // Remove the used permit
+            $key = array_search($selectedPermit, $availablePermits);
+            if ($key !== false) {
+                unset($availablePermits[$key]);
+                $availablePermits = array_values($availablePermits);
+            }
+        } else {
+            // If we run out of permits, use random from original array
+            $all_bills[$i]['permit'] = getRandomPermit($allPermits);
         }
     }
 }
@@ -236,6 +254,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     if (!isset($_GET['generate'])) {
         $_SESSION['show_print_section'] = false;
         $showPrintSection = false;
+        unset($_SESSION['all_bills_data']);
     }
 }
 ?>
@@ -250,73 +269,72 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-<style>
+  <style>
+    /* SCREEN STYLES */
     body {
         font-family: 'Courier New', monospace;
         background-color: #f8f9fa;
     }
     
     .cash-memo-container {
-        width: 80mm;
-        margin: 5px;
-        padding: 5px;
+        width: 300px;
+        margin: 10px;
+        padding: 8px;
         border: 1px solid #000;
         background: white;
-        page-break-inside: avoid;
         font-size: 12px;
         line-height: 1.2;
         display: inline-block;
         vertical-align: top;
-        box-sizing: border-box;
     }
     
     .cash-memo-header {
         text-align: center;
-        margin-bottom: 3px;
-        padding-bottom: 2px;
+        margin-bottom: 5px;
+        padding-bottom: 3px;
         border-bottom: 1px solid #000;
     }
     
     .license-info {
         text-align: center;
         font-weight: bold;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         font-size: 11px;
     }
     
     .shop-name {
         font-weight: bold;
         text-transform: uppercase;
-        margin-bottom: 1px;
-        font-size: 12px;
+        margin-bottom: 2px;
+        font-size: 13px;
     }
     
     .shop-address {
-        font-size: 9px;
-        margin-bottom: 3px;
+        font-size: 10px;
+        margin-bottom: 5px;
         line-height: 1.1;
     }
     
     .memo-info {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 4px;
-        padding-bottom: 2px;
+        margin-bottom: 6px;
+        padding-bottom: 3px;
         border-bottom: 1px solid #000;
-        font-size: 10px;
+        font-size: 11px;
     }
     
     .customer-info {
-        margin-bottom: 4px;
-        font-size: 10px;
+        margin-bottom: 6px;
+        font-size: 11px;
     }
     
     .permit-info {
-        margin-bottom: 4px;
-        font-size: 9px;
+        margin-bottom: 6px;
+        font-size: 10px;
         line-height: 1.1;
         border-bottom: 1px solid #000;
-        padding-bottom: 2px;
+        padding-bottom: 3px;
     }
     
     .permit-row {
@@ -327,24 +345,24 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 4px;
-        font-size: 10px;
+        margin-bottom: 6px;
+        font-size: 11px;
     }
     
     .items-table td {
-        padding: 1px 0;
+        padding: 2px 0;
         vertical-align: top;
         border-bottom: 1px dotted #ccc;
     }
     
     .total-section {
         border-top: 2px solid #000;
-        padding-top: 2px;
+        padding-top: 3px;
         text-align: right;
         font-weight: bold;
-        margin-bottom: 2px;
-        font-size: 11px;
-        padding-right: 3px;
+        margin-bottom: 3px;
+        font-size: 12px;
+        padding-right: 5px;
     }
     
     .memos-container {
@@ -362,7 +380,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .particulars-col {
         width: 40%;
         text-align: left;
-        padding-left: 2px;
+        padding-left: 3px;
     }
     
     .size-col {
@@ -373,25 +391,25 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .amount-col {
         width: 20%;
         text-align: right;
-        padding-right: 3px;
+        padding-right: 5px;
     }
     
     .table-header {
         display: flex;
         justify-content: space-between;
         text-align: center;
-        margin-bottom: 2px;
+        margin-bottom: 3px;
         font-weight: bold;
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.1;
         border-bottom: 1px solid #000;
-        padding-bottom: 1px;
+        padding-bottom: 2px;
     }
     
     .header-particulars {
         width: 40%;
         text-align: left;
-        padding-left: 2px;
+        padding-left: 3px;
     }
     
     .header-qty {
@@ -406,85 +424,138 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .header-amount {
         width: 20%;
         text-align: right;
-        padding-right: 3px;
+        padding-right: 5px;
     }
     
     .no-print {
         margin-bottom: 20px;
     }
     
+    /* PRINT STYLES */
     @media print {
-        .no-print {
-            display: none !important;
-        }
-        
-        body, html {
-            background: white;
+        /* Hide everything except cash memos */
+        body * {
+            visibility: hidden;
             margin: 0 !important;
             padding: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
         }
         
-        .dashboard-container, .main-content, .content-area {
+        /* Only show the memos container and its children */
+        .memos-container,
+        .memos-container * {
+            visibility: visible;
+        }
+        
+        /* Reset body for print */
+        body {
+            background: white !important;
             margin: 0 !important;
             padding: 0 !important;
+            font-family: 'Courier New', monospace !important;
             width: 100% !important;
-            border: none !important;
-            box-shadow: none !important;
         }
         
+        /* A4 page setup */
+        @page {
+            size: A4 portrait;
+            margin: 5mm;
+        }
+        
+        /* Memos container setup */
         .memos-container {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            grid-template-rows: repeat(2, auto) !important;
-            gap: 5mm !important;
-            width: 210mm !important;
-            height: 297mm !important;
+            display: block !important;
+            width: 100% !important;
             margin: 0 auto !important;
-            padding: 10mm !important;
-            box-sizing: border-box !important;
-            page-break-after: always !important;
+            padding: 0 !important;
+            text-align: center;
         }
         
+        /* Cash memo styling for print */
         .cash-memo-container {
-            width: 90mm !important;
+            width: 95mm !important; /* Half of A4 width minus margins */
             height: auto !important;
-            margin: 0 !important;
+            margin: 3mm !important;
             padding: 3mm !important;
+            border: 1px solid #000 !important;
+            background: white !important;
+            display: inline-block !important;
+            vertical-align: top !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            border: 1px solid #000 !important;
-            font-size: 10px !important;
-            box-sizing: border-box !important;
-            display: block !important;
             float: none !important;
+            font-size: 10px !important;
+            line-height: 1.1 !important;
+            box-sizing: border-box !important;
         }
         
-        /* A4 page settings */
-        @page {
-            size: A4;
-            margin: 0;
+        /* Ensure 2 memos per row */
+        .cash-memo-container:nth-child(2n) {
+            margin-right: 0 !important;
         }
         
-        body {
-            width: 210mm !important;
-            height: 297mm !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
+        .cash-memo-container:nth-child(2n+1) {
+            margin-left: 0 !important;
         }
         
-        .alert, .card, .navbar, .footer {
-            display: none !important;
-        }
-        
-        /* Ensure proper page breaks */
-        .memos-container:nth-child(4n) {
+        /* Page break after every 4 memos (2 rows) */
+        .cash-memo-container:nth-child(4n) {
             page-break-after: always;
+        }
+        
+        /* Header and text sizing for print */
+        .cash-memo-header {
+            margin-bottom: 3px !important;
+            padding-bottom: 2px !important;
+        }
+        
+        .license-info {
+            font-size: 10px !important;
+            margin-bottom: 2px !important;
+        }
+        
+        .shop-name {
+            font-size: 11px !important;
+            margin-bottom: 1px !important;
+        }
+        
+        .shop-address {
+            font-size: 8px !important;
+            margin-bottom: 3px !important;
+        }
+        
+        .memo-info {
+            font-size: 9px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        .customer-info {
+            font-size: 9px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        .permit-info {
+            font-size: 8px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        .items-table {
+            font-size: 9px !important;
+            margin-bottom: 4px !important;
+        }
+        
+        .total-section {
+            font-size: 10px !important;
+            margin-bottom: 2px !important;
+        }
+        
+        /* Remove all shadows, backgrounds, etc. */
+        .cash-memo-container {
+            box-shadow: none !important;
+            background: white !important;
         }
     }
     
-    /* Screen layout adjustments */
+    /* Screen responsive styles */
     @media screen and (min-width: 1200px) {
         .cash-memo-container {
             width: 45%;
@@ -505,7 +576,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             margin: 10px 0;
         }
     }
-</style>
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -557,8 +628,8 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                 <i class="fas fa-cog me-1"></i> Generate Cash Memos
               </button>
               
-              <?php if ($showPrintSection): ?>
-              <button type="button" class="btn btn-success" onclick="window.print()">
+              <?php if ($showPrintSection && !empty($all_bills)): ?>
+              <button type="button" class="btn btn-success" id="printButton">
                 <i class="fas fa-print me-1"></i> Print All Cash Memos
               </button>
               <?php endif; ?>
@@ -586,103 +657,171 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
         </div>
       </div>
 
-      <!-- Cash Memo Display -->
-<?php if ($showPrintSection): ?>
-    <?php if (!empty($bill_data)): ?>
-        <div class="memos-container">
-            <div class="cash-memo-container print-section">
-                <!-- Your existing cash memo content -->
+      <!-- Cash Memo Display - FIXED VERSION -->
+      <?php if ($showPrintSection): ?>
+        <?php if (!empty($bill_data)): ?>
+          <!-- Single bill display -->
+          <div class="memos-container">
+            <div class="cash-memo-container">
+              <div class="license-info">
+                <?= !empty($licenseNumber) ? htmlspecialchars($licenseNumber) : "FL-II 3" ?>
+              </div>
+              
+              <div class="cash-memo-header">
+                <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
+                <div class="shop-address"><?= !empty($companyAddress) ? htmlspecialchars($companyAddress) : "Vishrambag Sangli Tal Miraj Dist Sangli" ?></div>
+              </div>
+              
+              <div class="memo-info">
+                <div>No : <?= substr($bill_data['BILL_NO'], -5) ?></div>
+                <div>CASH MEMO</div>
+                <div>Date: <?= date('d/m/Y', strtotime($bill_data['BILL_DATE'])) ?></div>
+              </div>
+              
+              <div class="customer-info">
+                <div>Name: 
+                  <?php if (!empty($bill_data['permit']) && !empty($bill_data['permit']['DETAILS'])): ?>
+                    <?= htmlspecialchars($bill_data['permit']['DETAILS']) ?>
+                  <?php else: ?>
+                    <?= (!empty($bill_data['CUST_CODE']) && $bill_data['CUST_CODE'] != 'RETAIL') ? htmlspecialchars($bill_data['CUST_CODE']) : 'A.N. PARAB' ?>
+                  <?php endif; ?>
+                </div>
+                
+                <?php if (!empty($bill_data['permit'])): ?>
+                <div class="permit-info">
+                  <div class="permit-row">
+                    <div>Permit No.: <?= htmlspecialchars($bill_data['permit']['P_NO']) ?></div>
+                    <div>Exp.Dt.: <?= !empty($bill_data['permit']['P_EXP_DT']) ? date('d/m/Y', strtotime($bill_data['permit']['P_EXP_DT'])) : '04/11/2026' ?></div>
+                  </div>
+                  <div class="permit-row">
+                    <div>Place: <?= htmlspecialchars($bill_data['permit']['PLACE_ISS'] ?? 'Sangli') ?></div>
+                    <div></div>
+                  </div>
+                </div>
+                <?php endif; ?>
+              </div>
+              
+              <div class="table-header">
+                <div class="header-particulars">Particulars</div>
+                <div class="header-qty">Qty</div>
+                <div class="header-size">Size</div>
+                <div class="header-amount">Amount</div>
+              </div>
+              
+              <table class="items-table">
+                <tbody>
+                  <?php foreach ($bill_items as $item): ?>
+                  <tr>
+                    <td class="particulars-col"><?= htmlspecialchars($item['DETAILS']) ?></td>
+                    <td class="qty-col"><?= htmlspecialchars($item['QTY']) ?></td>
+                    <td class="size-col"><?= !empty($item['DETAILS2']) ? htmlspecialchars($item['DETAILS2']) : '' ?></td>
+                    <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+              
+              <div class="total-section">
+                Total: ₹<?= number_format($bill_data['NET_AMOUNT'], 2) ?>
+              </div>
             </div>
-        </div>
-    <?php elseif (isset($all_bills) && !empty($all_bills)): ?>
-        <?php
-        // Group bills into sets of 4 for printing
-        $bill_groups = array_chunk($all_bills, 4);
-        ?>
-        
-        <?php foreach ($bill_groups as $group_index => $bill_group): ?>
-            <div class="memos-container" <?= $group_index > 0 ? 'style="page-break-before: always;"' : '' ?>>
-                <?php foreach ($bill_group as $bill): ?>
-                    <div class="cash-memo-container print-section">
-                        <div class="license-info">
-                            <?= !empty($licenseNumber) ? htmlspecialchars($licenseNumber) : "FL-II 3" ?>
-                        </div>
-                        
-                        <div class="cash-memo-header">
-                            <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
-                            <div class="shop-address"><?= !empty($companyAddress) ? htmlspecialchars($companyAddress) : "Vishrambag Sangli Tal Miraj Dist Sangli" ?></div>
-                        </div>
-                        
-                        <div class="memo-info">
-                            <div>No : <?= substr($bill['header']['BILL_NO'], -5) ?></div>
-                            <div>CASH MEMO</div>
-                            <div>Date: <?= date('d/m/Y', strtotime($bill['header']['BILL_DATE'])) ?></div>
-                        </div>
-                        
-                        <div class="customer-info">
-                            <div>Name: 
-                                <?php if (!empty($bill['permit']) && !empty($bill['permit']['DETAILS'])): ?>
-                                    <?= htmlspecialchars($bill['permit']['DETAILS']) ?>
-                                <?php else: ?>
-                                    <?= (!empty($bill['header']['CUST_CODE']) && $bill['header']['CUST_CODE'] != 'RETAIL') ? htmlspecialchars($bill['header']['CUST_CODE']) : 'A.N. PARAB' ?>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <?php if (!empty($bill['permit'])): ?>
-                            <div class="permit-info">
-                                <div class="permit-row">
-                                    <div>Permit No.: <?= htmlspecialchars($bill['permit']['P_NO']) ?></div>
-                                    <div>Exp.Dt.: <?= !empty($bill['permit']['P_EXP_DT']) ? date('d/m/Y', strtotime($bill['permit']['P_EXP_DT'])) : '04/11/2026' ?></div>
-                                </div>
-                                <div class="permit-row">
-                                    <div>Place: <?= htmlspecialchars($bill['permit']['PLACE_ISS'] ?? 'Sangli') ?></div>
-                                    <div></div>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="table-header">
-                            <div class="header-particulars">Particulars</div>
-                            <div class="header-qty">Qty</div>
-                            <div class="header-size">Size</div>
-                            <div class="header-amount">Amount</div>
-                        </div>
-                        
-                        <table class="items-table">
-                            <tbody>
-                                <?php foreach ($bill['items'] as $item): ?>
-                                <tr>
-                                    <td class="particulars-col"><?= htmlspecialchars($item['DETAILS']) ?></td>
-                                    <td class="qty-col"><?= htmlspecialchars($item['QTY']) ?></td>
-                                    <td class="size-col"><?= !empty($item['DETAILS2']) ? htmlspecialchars($item['DETAILS2']) : '' ?></td>
-                                    <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                        
-                        <div class="total-section">
-                            Total: ₹<?= number_format($bill['header']['NET_AMOUNT'], 2) ?>
-                        </div>
+          </div>
+        <?php elseif (isset($all_bills) && !empty($all_bills)): ?>
+          <div class="memos-container">
+            <?php foreach ($all_bills as $index => $bill): ?>
+              <div class="cash-memo-container">
+                <div class="license-info">
+                  <?= !empty($licenseNumber) ? htmlspecialchars($licenseNumber) : "FL-II 3" ?>
+                </div>
+                
+                <div class="cash-memo-header">
+                  <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
+                  <div class="shop-address"><?= !empty($companyAddress) ? htmlspecialchars($companyAddress) : "Vishrambag Sangli Tal Miraj Dist Sangli" ?></div>
+                </div>
+                
+                <div class="memo-info">
+                  <div>No : <?= substr($bill['header']['BILL_NO'], -5) ?></div>
+                  <div>CASH MEMO</div>
+                  <div>Date: <?= date('d/m/Y', strtotime($bill['header']['BILL_DATE'])) ?></div>
+                </div>
+                
+                <div class="customer-info">
+                  <div>Name: 
+                    <?php if (!empty($bill['permit']) && !empty($bill['permit']['DETAILS'])): ?>
+                      <?= htmlspecialchars($bill['permit']['DETAILS']) ?>
+                    <?php else: ?>
+                      <?= (!empty($bill['header']['CUST_CODE']) && $bill['header']['CUST_CODE'] != 'RETAIL') ? htmlspecialchars($bill['header']['CUST_CODE']) : 'A.N. PARAB' ?>
+                    <?php endif; ?>
+                  </div>
+                  
+                  <?php if (!empty($bill['permit'])): ?>
+                  <div class="permit-info">
+                    <div class="permit-row">
+                      <div>Permit No.: <?= htmlspecialchars($bill['permit']['P_NO']) ?></div>
+                      <div>Exp.Dt.: <?= !empty($bill['permit']['P_EXP_DT']) ? date('d/m/Y', strtotime($bill['permit']['P_EXP_DT'])) : '04/11/2026' ?></div>
                     </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endforeach; ?>
-    <?php elseif (isset($_GET['generate']) && empty($bill_no)): ?>
-        <div class="alert alert-info">
+                    <div class="permit-row">
+                      <div>Place: <?= htmlspecialchars($bill['permit']['PLACE_ISS'] ?? 'Sangli') ?></div>
+                      <div></div>
+                    </div>
+                  </div>
+                  <?php endif; ?>
+                </div>
+                
+                <div class="table-header">
+                  <div class="header-particulars">Particulars</div>
+                  <div class="header-qty">Qty</div>
+                  <div class="header-size">Size</div>
+                  <div class="header-amount">Amount</div>
+                </div>
+                
+                <table class="items-table">
+                  <tbody>
+                    <?php if (!empty($bill['items'])): ?>
+                      <?php foreach ($bill['items'] as $item): ?>
+                      <tr>
+                        <td class="particulars-col"><?= htmlspecialchars($item['DETAILS']) ?></td>
+                        <td class="qty-col"><?= htmlspecialchars($item['QTY']) ?></td>
+                        <td class="size-col"><?= !empty($item['DETAILS2']) ? htmlspecialchars($item['DETAILS2']) : '' ?></td>
+                        <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>
+                      </tr>
+                      <?php endforeach; ?>
+                    <?php else: ?>
+                      <tr>
+                        <td colspan="4" style="text-align: center;">No items found</td>
+                      </tr>
+                    <?php endif; ?>
+                  </tbody>
+                </table>
+                
+                <div class="total-section">
+                  Total: ₹<?= number_format($bill['header']['NET_AMOUNT'], 2) ?>
+                </div>
+                
+                <!-- Debug info (hidden in production) -->
+                <div style="display: none;">
+                  Bill: <?= $bill['header']['BILL_NO'] ?>, 
+                  Items: <?= count($bill['items']) ?>,
+                  Index: <?= $index ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php elseif (isset($_GET['generate']) && empty($bill_no)): ?>
+          <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i> No bills found for the selected date range.
-        </div>
-    <?php elseif (isset($_GET['generate']) && !empty($bill_no)): ?>
-        <div class="alert alert-warning">
+          </div>
+        <?php elseif (isset($_GET['generate']) && !empty($bill_no)): ?>
+          <div class="alert alert-warning">
             <i class="fas fa-exclamation-triangle me-2"></i> No bill found with number: <?= htmlspecialchars($bill_no) ?>
+          </div>
+        <?php endif; ?>
+      <?php else: ?>
+        <div class="alert alert-info no-print">
+          <i class="fas fa-info-circle me-2"></i> Use the "Generate Cash Memos" button to create cash memos for printing.
         </div>
-    <?php endif; ?>
-<?php else: ?>
-    <div class="alert alert-info no-print">
-        <i class="fas fa-info-circle me-2"></i> Use the "Generate Cash Memos" button to create cash memos for printing.
+      <?php endif; ?>
     </div>
-<?php endif; ?>
     
   <?php include 'components/footer.php'; ?>
   </div>
@@ -692,21 +831,23 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Clear print section when filters are changed
 $(document).ready(function() {
+    // Clear print section when filters are changed
     $('#cashMemoForm select, #cashMemoForm input').on('change', function() {
-        // Hide the print section when filters change
         $('.memos-container').hide();
         $('.alert-info, .alert-warning').hide();
     });
     
-    // Print optimization
-    $('.btn-success').on('click', function() {
-        // Add a small delay to ensure DOM is ready for print
+    // Enhanced print functionality
+    $('#printButton').on('click', function() {
+        // Add a small delay to ensure everything is rendered
         setTimeout(function() {
             window.print();
-        }, 100);
+        }, 500);
     });
+    
+    // Debug: Log how many cash memos are visible
+    console.log('Cash memos generated: ', $('.cash-memo-container').length);
 });
 </script>
 </body>
