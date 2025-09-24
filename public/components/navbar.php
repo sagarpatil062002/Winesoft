@@ -1,3 +1,18 @@
+<?php
+// Ensure session exists
+if (!isset($_SESSION)) {
+    session_start();
+}
+
+// Fallback values if session data is not available
+$companyName = $_SESSION['COMP_NAME'] ?? 'Diamond Wine Shopee';
+$financialYear = $_SESSION['FIN_YEAR_DISPLAY'] ?? '2024-25';
+$username = $_SESSION['username'] ?? 'Admin';
+
+include_once "../config/db.php"; // MySQLi connection in $conn
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,6 +46,24 @@
                 <span class="nav-title">Winesoft</span>
             </div>
         </div>
+
+        
+             <!-- User Info Section -->
+        <div class="user-info-section">
+            <div class="user-info-item">
+                <span class="material-symbols-rounded user-info-icon">business</span>
+                <span class="user-info-text"><?= htmlspecialchars($companyName) ?></span>
+            </div>
+            <div class="user-info-item">
+                <span class="material-symbols-rounded user-info-icon">calendar_today</span>
+                <span class="user-info-text">FY <?= htmlspecialchars($financialYear) ?></span>
+            </div>
+            <div class="user-info-item">
+                <span class="material-symbols-rounded user-info-icon">person</span>
+                <span class="user-info-text">Welcome, <?= htmlspecialchars($username) ?></span>
+            </div>
+        </div>
+
         <ul class="nav-list">
             <li class="nav-item">
                 <a href="dashboard.php" class="nav-link">
@@ -150,6 +183,14 @@
                 </ul>
             </li>
         </ul>
+
+          <!-- Logout Section -->
+        <div class="logout-section">
+            <a href="logout.php" class="logout-btn">
+                <span class="material-symbols-rounded logout-icon">logout</span>
+                <span class="logout-text">Logout</span>
+            </a>
+        </div>
     </nav>
     
     <script>

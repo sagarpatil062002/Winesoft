@@ -60,7 +60,6 @@ foreach ($items as $item) {
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Brandwise Listing Report</h3>

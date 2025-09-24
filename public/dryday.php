@@ -136,7 +136,6 @@ if (isset($_GET['edit'])) {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Dry Days Management</h3>

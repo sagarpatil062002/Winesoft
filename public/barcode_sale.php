@@ -16,6 +16,27 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 
+// Get company ID and stock column names
+$comp_id = $_SESSION['CompID'];
+$fin_year_id = $_SESSION['FIN_YEAR_ID'];
+$daily_stock_table = "tbldailystock_" . $comp_id;
+$opening_stock_column = "Opening_Stock" . $comp_id;
+$current_stock_column = "Current_Stock" . $comp_id;
+
+// Check if the stock columns exist, if not create them
+$check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
+$column_result = $conn->query($check_column_query);
+
+if ($column_result->num_rows == 0) {
+    $alter_query = "ALTER TABLE tblitem_stock 
+                    ADD COLUMN $opening_stock_column DECIMAL(10,3) DEFAULT 0.000,
+                    ADD COLUMN $current_stock_column DECIMAL(10,3) DEFAULT 0.000";
+    if (!$conn->query($alter_query)) {
+        die("Error creating stock columns: " . $conn->error);
+    }
+}
+$column_result->close();
+
 // Fetch customers from tbllheads
 $customerQuery = "SELECT LCODE, LHEAD FROM tbllheads WHERE GCODE=32 ORDER BY LHEAD";
 $customerResult = $conn->query($customerQuery);
@@ -28,48 +49,183 @@ if ($customerResult) {
     echo "Error fetching customers: " . $conn->error;
 }
 
-// Handle customer creation
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_customer'])) {
-    $customerName = trim($_POST['customer_name']);
-    if (!empty($customerName)) {
-        // Get the next available LCODE for GCODE=32
-        $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
-        $maxResult = $conn->query($maxCodeQuery);
-        $maxCode = 1;
-        if ($maxResult && $maxResult->num_rows > 0) {
-            $maxData = $maxResult->fetch_assoc();
-            $maxCode = $maxData['max_code'] + 1;
-        }
+// Handle customer creation and selection in one field
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle customer selection/creation
+    if (isset($_POST['customer_field'])) {
+        $customerField = trim($_POST['customer_field']);
         
-        // Insert new customer
-        $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
-        $stmt = $conn->prepare($insertQuery);
-        $stmt->bind_param("is", $maxCode, $customerName);
-        
-        if ($stmt->execute()) {
-            $_SESSION['success_message'] = "Customer created successfully!";
-            $_SESSION['selected_customer'] = $maxCode;
-            $selectedCustomer = $maxCode;
-            
-            // Refresh customers list
-            $customerResult = $conn->query($customerQuery);
-            $customers = [];
-            if ($customerResult) {
-                while ($row = $customerResult->fetch_assoc()) {
-                    $customers[$row['LCODE']] = $row['LHEAD'];
+        if (!empty($customerField)) {
+            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
+            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
+                // Extract customer name (remove "new:" prefix if present)
+                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
+                
+                if (!empty($customerName)) {
+                    // Get the next available LCODE for GCODE=32
+                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
+                    $maxResult = $conn->query($maxCodeQuery);
+                    $maxCode = 1;
+                    if ($maxResult && $maxResult->num_rows > 0) {
+                        $maxData = $maxResult->fetch_assoc();
+                        $maxCode = $maxData['max_code'] + 1;
+                    }
+                    
+                    // Insert new customer
+                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
+                    $stmt = $conn->prepare($insertQuery);
+                    $stmt->bind_param("is", $maxCode, $customerName);
+                    
+                    if ($stmt->execute()) {
+                        $_SESSION['selected_customer'] = $maxCode;
+                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
+                        
+                        // Refresh customers list
+                        $customerResult = $conn->query($customerQuery);
+                        $customers = [];
+                        if ($customerResult) {
+                            while ($row = $customerResult->fetch_assoc()) {
+                                $customers[$row['LCODE']] = $row['LHEAD'];
+                            }
+                        }
+                    } else {
+                        $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
+                    }
+                    $stmt->close();
+                }
+            } else {
+                // It's an existing customer code
+                $customerCode = intval($customerField);
+                if (array_key_exists($customerCode, $customers)) {
+                    $_SESSION['selected_customer'] = $customerCode;
+                    $_SESSION['success_message'] = "Customer selected successfully!";
+                } else {
+                    $_SESSION['error_message'] = "Invalid customer code!";
                 }
             }
         } else {
-            $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
+            // Empty field means walk-in customer
+            $_SESSION['selected_customer'] = '';
+            $_SESSION['success_message'] = "Walk-in customer selected!";
         }
-        $stmt->close();
-    } else {
-        $_SESSION['error_message'] = "Customer name is required!";
+        
+        // Redirect to avoid form resubmission
+        header("Location: barcode_sale.php");
+        exit;
     }
     
-    // Redirect to avoid form resubmission
-    header("Location: barcode_sale.php");
-    exit;
+    // Handle adding item from search results
+    if (isset($_POST['add_from_search'])) {
+        $item_code = $_POST['item_code'];
+        $quantity = intval($_POST['quantity']);
+        
+        // Fetch item details
+        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
+                      FROM tblitemmaster 
+                      WHERE CODE = ? 
+                      LIMIT 1";
+        $item_stmt = $conn->prepare($item_query);
+        $item_stmt->bind_param("s", $item_code);
+        $item_stmt->execute();
+        $item_result = $item_stmt->get_result();
+        
+        if ($item_result->num_rows > 0) {
+            $item_data = $item_result->fetch_assoc();
+            
+            // Generate unique ID for this specific item entry
+            $unique_id = uniqid();
+            
+            // Add new item to sale
+            $_SESSION['sale_items'][] = [
+                'id' => $unique_id,
+                'code' => $item_data['CODE'],
+                'name' => $item_data['DETAILS'],
+                'size' => $item_data['DETAILS2'],
+                'price' => floatval($item_data['RPRICE']),
+                'quantity' => $quantity
+            ];
+            
+            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+            $_SESSION['last_added_item'] = $item_data['DETAILS'];
+            
+            // Auto-save after 10 items
+            if ($_SESSION['sale_count'] >= 10) {
+                processSale();
+                $_SESSION['sale_items'] = [];
+                $_SESSION['sale_count'] = 0;
+                $_SESSION['current_focus_index'] = -1;
+                $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+            }
+        } else {
+            $_SESSION['error_message'] = "Item not found!";
+        }
+        $item_stmt->close();
+        
+        // Redirect to avoid form resubmission
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle adding item to sale
+    if (isset($_POST['add_item'])) {
+        $item_code = $_POST['item_code'];
+        $quantity = intval($_POST['quantity']);
+        
+        // Fetch item details - search by BARCODE first, then by CODE
+        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
+                      FROM tblitemmaster 
+                      WHERE BARCODE = ? OR CODE = ? 
+                      LIMIT 1";
+        $item_stmt = $conn->prepare($item_query);
+        $item_stmt->bind_param("ss", $item_code, $item_code);
+        $item_stmt->execute();
+        $item_result = $item_stmt->get_result();
+        
+        if ($item_result->num_rows > 0) {
+            $item_data = $item_result->fetch_assoc();
+            
+            // Generate unique ID for this specific item entry
+            $unique_id = uniqid();
+            
+            // Add new item to sale (always as separate record)
+            $_SESSION['sale_items'][] = [
+                'id' => $unique_id,
+                'code' => $item_data['CODE'],
+                'name' => $item_data['DETAILS'],
+                'size' => $item_data['DETAILS2'],
+                'price' => floatval($item_data['RPRICE']),
+                'quantity' => $quantity
+            ];
+            
+            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+            
+            // Auto-save after 10 items
+            if ($_SESSION['sale_count'] >= 10) {
+                processSale();
+                $_SESSION['sale_items'] = [];
+                $_SESSION['sale_count'] = 0;
+                $_SESSION['current_focus_index'] = -1;
+                $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+            } else {
+                // No success message for individual item addition - just add to session
+                $_SESSION['last_added_item'] = $item_data['DETAILS'];
+            }
+        } else {
+            $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found!";
+        }
+        $item_stmt->close();
+        
+        // Redirect to avoid form resubmission
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle ESC key press to process sale
+    if (isset($_POST['process_sale_esc'])) {
+        processSale();
+        header("Location: barcode_sale.php");
+        exit;
+    }
 }
 
 // Get selected customer from session if available
@@ -78,15 +234,10 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Get company ID
-$comp_id = $_SESSION['CompID'];
-$fin_year_id = $_SESSION['FIN_YEAR_ID'];
-$current_stock_column = "Current_Stock" . $comp_id;
-
 // Fetch items from tblitemmaster for barcode scanning
 $query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
           FROM tblitemmaster 
-          WHERE 1=1"; // Removed barcode filter to include all items
+          WHERE 1=1";
 $params = [];
 $types = "";
 
@@ -116,93 +267,18 @@ if (!empty($params)) {
 if (!isset($_SESSION['sale_items'])) {
     $_SESSION['sale_items'] = [];
     $_SESSION['sale_count'] = 0;
-    $_SESSION['current_focus_index'] = -1; // Track currently focused item
+    $_SESSION['current_focus_index'] = -1;
 }
 
-// Handle form submissions
+// Handle form submissions for items
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Store customer ID in session to preserve selection
-    if (isset($_POST['customer_id'])) {
-        $_SESSION['selected_customer'] = $_POST['customer_id'];
-        $selectedCustomer = $_POST['customer_id'];
-    }
-    
-    // Handle adding item to sale
-    if (isset($_POST['add_item'])) {
-        $item_code = $_POST['item_code'];
-        $quantity = intval($_POST['quantity']);
-        
-        // Fetch item details - search by BARCODE first, then by CODE
-        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
-                      FROM tblitemmaster 
-                      WHERE BARCODE = ? OR CODE = ? 
-                      LIMIT 1";
-        $item_stmt = $conn->prepare($item_query);
-        $item_stmt->bind_param("ss", $item_code, $item_code);
-        $item_stmt->execute();
-        $item_result = $item_stmt->get_result();
-        
-        if ($item_result->num_rows > 0) {
-            $item_data = $item_result->fetch_assoc();
-            
-            // Check if item already exists in sale
-            $item_index = -1;
-            foreach ($_SESSION['sale_items'] as $index => $item) {
-                if ($item['code'] === $item_data['CODE']) {
-                    $item_index = $index;
-                    break;
-                }
-            }
-            
-            if ($item_index !== -1) {
-                // Update quantity if item already in sale
-                $_SESSION['sale_items'][$item_index]['quantity'] += $quantity;
-            } else {
-                // Add new item to sale
-                $_SESSION['sale_items'][] = [
-                    'code' => $item_data['CODE'],
-                    'name' => $item_data['DETAILS'],
-                    'size' => $item_data['DETAILS2'],
-                    'price' => floatval($item_data['RPRICE']),
-                    'quantity' => $quantity
-                ];
-            }
-            
-            $_SESSION['sale_count'] = count($_SESSION['sale_items']); // Update count based on actual items
-            
-            // Auto-save after 10 items - MODIFIED: Process immediately and redirect
-            if ($_SESSION['sale_count'] >= 10) {
-                processSale();
-                // Clear the session after processing
-                $_SESSION['sale_items'] = [];
-                $_SESSION['sale_count'] = 0;
-                $_SESSION['current_focus_index'] = -1;
-                
-                // Store success message
-                $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
-                
-                // Redirect to refresh the page with empty sale table
-                header("Location: barcode_sale.php");
-                exit;
-            }
-        } else {
-            // Item not found - store error message
-            $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found!";
-        }
-        $item_stmt->close();
-        
-        // Redirect to avoid form resubmission
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    // Handle updating item quantity
+    // Handle other actions (with redirect)
     if (isset($_POST['update_quantity'])) {
-        $item_code = $_POST['item_code'];
+        $item_id = $_POST['item_id'];
         $quantity = intval($_POST['quantity']);
         
         foreach ($_SESSION['sale_items'] as $index => $item) {
-            if ($item['code'] === $item_code) {
+            if ($item['id'] === $item_id) {
                 $_SESSION['sale_items'][$index]['quantity'] = $quantity;
                 break;
             }
@@ -212,48 +288,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Handle removing item from sale
-    if (isset($_POST['remove_item'])) {
-        $item_code = $_POST['item_code'];
-        
-        foreach ($_SESSION['sale_items'] as $index => $item) {
-            if ($item['code'] === $item_code) {
-                unset($_SESSION['sale_items'][$index]);
-                // Reindex array
-                $_SESSION['sale_items'] = array_values($_SESSION['sale_items']);
-                
-                // Update sale count based on actual items
-                $_SESSION['sale_count'] = count($_SESSION['sale_items']);
-                
-                // Adjust focus index if needed
-                if ($_SESSION['current_focus_index'] >= $index) {
-                    $_SESSION['current_focus_index'] = max(-1, $_SESSION['current_focus_index'] - 1);
-                }
-                break;
+   if (isset($_POST['remove_item'])) {
+    $item_id = $_POST['item_id'];
+    
+    foreach ($_SESSION['sale_items'] as $index => $item) {
+        if ($item['id'] === $item_id) {
+            unset($_SESSION['sale_items'][$index]);
+            $_SESSION['sale_items'] = array_values($_SESSION['sale_items']);
+            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+            
+            if ($_SESSION['current_focus_index'] >= $index) {
+                $_SESSION['current_focus_index'] = max(-1, $_SESSION['current_focus_index'] - 1);
             }
+            break;
         }
-        
-        header("Location: barcode_sale.php");
-        exit;
     }
     
-    // Handle manual sale processing
+    header("Location: barcode_sale.php");
+    exit;
+}
+    
     if (isset($_POST['process_sale'])) {
         processSale();
         header("Location: barcode_sale.php");
         exit;
     }
     
-    // Handle clearing sale
+    if (isset($_POST['preview_bill'])) {
+        $_SESSION['preview_bill_data'] = prepareBillData();
+        header("Location: barcode_sale.php#preview");
+        exit;
+    }
+    
     if (isset($_POST['clear_sale'])) {
         $_SESSION['sale_items'] = [];
         $_SESSION['sale_count'] = 0;
         $_SESSION['current_focus_index'] = -1;
+        unset($_SESSION['preview_bill_data']);
         header("Location: barcode_sale.php");
         exit;
     }
     
-    // Handle setting focus index
+    if (isset($_POST['clear_preview'])) {
+        unset($_SESSION['preview_bill_data']);
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
     if (isset($_POST['set_focus_index'])) {
         $_SESSION['current_focus_index'] = intval($_POST['set_focus_index']);
         header("Location: barcode_sale.php");
@@ -261,13 +342,142 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Function to prepare bill data for preview with volume-based splitting
+// Function to prepare bill data for preview with volume-based splitting and duplicate aggregation
+function prepareBillData() {
+    global $conn, $comp_id, $selectedCustomer, $customers;
+    
+    if (empty($_SESSION['sale_items'])) {
+        return null;
+    }
+    
+    $user_id = $_SESSION['user_id'];
+    $mode = 'F';
+    
+    // First aggregate duplicate items from session
+    $aggregated_session_items = [];
+    foreach ($_SESSION['sale_items'] as $item) {
+        $item_code = $item['code'];
+        if (!isset($aggregated_session_items[$item_code])) {
+            $aggregated_session_items[$item_code] = [
+                'code' => $item['code'],
+                'name' => $item['name'],
+                'quantity' => 0,
+                'price' => $item['price'],
+                'size' => $item['size'] // Use the size from session
+            ];
+        }
+        $aggregated_session_items[$item_code]['quantity'] += $item['quantity'];
+    }
+    $aggregated_session_items = array_values($aggregated_session_items);
+
+    $category_limits = getCategoryLimits($conn, $comp_id);
+    $category_items = [];
+
+    foreach ($aggregated_session_items as $item) {
+        $category = getItemCategory($conn, $item['code'], $mode);
+        $size = getItemSize($conn, $item['code'], $mode);
+        $volume = $item['quantity'] * $size;
+        
+        if (!isset($category_items[$category])) {
+            $category_items[$category] = [];
+        }
+        
+        $category_items[$category][] = [
+            'code' => $item['code'],
+            'qty' => $item['quantity'],
+            'rate' => $item['price'],
+            'size' => $size,
+            'size_text' => $item['size'], // Use the text size from details2
+            'volume' => $volume,
+            'amount' => $item['quantity'] * $item['price'],
+            'name' => $item['name']
+        ];
+    }
+    
+    // Calculate how many bills will be generated
+    $all_bills = [];
+    $total_bills_needed = 0;
+    
+    foreach ($category_items as $category => $items) {
+        $limit = $category_limits[$category] ?? 0;
+        
+        if ($limit <= 0) {
+            if (!empty($items)) {
+                $all_bills[] = [
+                    'category' => $category,
+                    'items' => $items,
+                    'total_volume' => array_sum(array_column($items, 'volume')),
+                    'total_amount' => array_sum(array_column($items, 'amount'))
+                ];
+                $total_bills_needed++;
+            }
+        } else {
+            $total_volume = array_sum(array_column($items, 'volume'));
+            $bills_for_category = ceil($total_volume / $limit);
+            
+            // Sort items by volume (largest first for efficient packing)
+            usort($items, function($a, $b) {
+                return $b['volume'] <=> $a['volume'];
+            });
+            
+            $bills_for_category_arr = [];
+            $current_bill_items = [];
+            $current_bill_volume = 0;
+            
+            foreach ($items as $item) {
+                // If adding this item would exceed limit and we already have items, start new bill
+                if ($current_bill_volume + $item['volume'] > $limit && !empty($current_bill_items)) {
+                    $bills_for_category_arr[] = [
+                        'items' => $current_bill_items,
+                        'volume' => $current_bill_volume,
+                        'amount' => array_sum(array_column($current_bill_items, 'amount'))
+                    ];
+                    $current_bill_items = [];
+                    $current_bill_volume = 0;
+                }
+                
+                $current_bill_items[] = $item;
+                $current_bill_volume += $item['volume'];
+            }
+            
+            if (!empty($current_bill_items)) {
+                $bills_for_category_arr[] = [
+                    'items' => $current_bill_items,
+                    'volume' => $current_bill_volume,
+                    'amount' => array_sum(array_column($current_bill_items, 'amount'))
+                ];
+            }
+            
+            foreach ($bills_for_category_arr as $bill_index => $bill_items) {
+                $all_bills[] = [
+                    'category' => $category,
+                    'bill_index' => $bill_index + 1,
+                    'items' => $bill_items['items'],
+                    'total_volume' => $bill_items['volume'],
+                    'total_amount' => $bill_items['amount']
+                ];
+            }
+            $total_bills_needed += count($bills_for_category_arr);
+        }
+    }
+    
+    $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';
+    
+    return [
+        'customer_id' => $selectedCustomer,
+        'customer_name' => $customer_name,
+        'bill_date' => date('Y-m-d H:i:s'),
+        'total_bills' => $total_bills_needed,
+        'bills' => $all_bills,
+        'grand_total' => array_sum(array_column($all_bills, 'total_amount'))
+    ];
+}
 // Function to generate a unique bill number with transaction safety
 function generateBillNumber($conn, $comp_id) {
-    // Start transaction to ensure no concurrent bill number generation
     $conn->begin_transaction();
     
     try {
-        // Try to get the maximum bill number with proper locking
         $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
                        FROM tblsaleheader 
                        WHERE COMP_ID = ? 
@@ -284,56 +494,149 @@ function generateBillNumber($conn, $comp_id) {
         }
         $bill_stmt->close();
         
-        // Commit transaction
         $conn->commit();
-        
-        // Format the bill number with leading zeros
-        return "BL" . str_pad($next_bill, 5, '0', STR_PAD_LEFT);
+return "BL" . $next_bill;
     } catch (Exception $e) {
-        // Rollback transaction on error
         $conn->rollback();
-        
-        // Fallback: use timestamp-based bill number
         $timestamp = time();
         $random_suffix = mt_rand(100, 999);
         return "BL" . substr($timestamp, -6) . $random_suffix;
     }
 }
-// Helper function to create a bill structure
-function createSaleBill($items, $bill_date, $bill_no, $mode, $comp_id, $user_id) {
-    $total_amount = 0;
+
+// Function to update item stock (NEW LOGIC from sale_for_date_range.php)
+function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
+    // Check if record exists first
+    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock_query);
+    $check_stmt->bind_param("s", $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
     
-    foreach ($items as $item) {
-        $total_amount += $item['amount'];
+    if ($stock_exists) {
+        // Update existing stock record
+        $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+        $stock_stmt = $conn->prepare($stock_query);
+        $stock_stmt->bind_param("ds", $qty, $item_code);
+        $stock_stmt->execute();
+        $stock_stmt->close();
+    } else {
+        // Create new stock record
+        $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                               VALUES (?, ?, ?, ?)";
+        $insert_stock_stmt = $conn->prepare($insert_stock_query);
+        $current_stock = -$qty; // Negative since we're deducting
+        $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
+        $insert_stock_stmt->execute();
+        $insert_stock_stmt->close();
     }
-    
-    return [
-        'bill_no' => $bill_no,
-        'bill_date' => $bill_date,
-        'total_amount' => $total_amount,
-        'items' => $items,
-        'mode' => $mode,
-        'comp_id' => $comp_id,
-        'user_id' => $user_id
-    ];
 }
-// Function to process the sale with volume-based bill splitting
+
+// Function to update daily stock table with proper opening/closing calculations (NEW LOGIC)
+function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
+    // Extract day number from date (e.g., 2025-09-03 -> day 03)
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $sales_column = "DAY_{$day_num}_SALES";
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    $opening_column = "DAY_{$day_num}_OPEN";
+    $purchase_column = "DAY_{$day_num}_PURCHASE";
+    
+    $month_year = date('Y-m', strtotime($sale_date));
+    
+    // Check if record exists for this month and item
+    $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
+                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $month_year, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Get current values to calculate closing properly
+        $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                         FROM $daily_stock_table 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $select_stmt = $conn->prepare($select_query);
+        $select_stmt->bind_param("ss", $month_year, $item_code);
+        $select_stmt->execute();
+        $select_result = $select_stmt->get_result();
+        $current_values = $select_result->fetch_assoc();
+        $select_stmt->close();
+        
+        $opening = $current_values[$opening_column] ?? 0;
+        $purchase = $current_values[$purchase_column] ?? 0;
+        $current_sales = $current_values[$sales_column] ?? 0;
+        
+        // Calculate new sales and closing
+        $new_sales = $current_sales + $qty;
+        $new_closing = $opening + $purchase - $new_sales;
+        
+        // Update existing record with correct closing calculation
+        $update_query = "UPDATE $daily_stock_table 
+                         SET $sales_column = ?, 
+                             $closing_column = ?,
+                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        // Update next day's opening stock if it exists
+        $next_day = intval($day_num) + 1;
+        if ($next_day <= 31) {
+            $next_day_num = sprintf('%02d', $next_day);
+            $next_opening_column = "DAY_{$next_day_num}_OPEN";
+            
+            // Check if next day exists in the table
+            $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
+            $next_day_result = $conn->query($check_next_day_query);
+            
+            if ($next_day_result->num_rows > 0) {
+                // Update next day's opening to match current day's closing
+                $update_next_query = "UPDATE $daily_stock_table 
+                                     SET $next_opening_column = ?,
+                                         LAST_UPDATED = CURRENT_TIMESTAMP 
+                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_next_stmt = $conn->prepare($update_next_query);
+                $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
+                $update_next_stmt->execute();
+                $update_next_stmt->close();
+            }
+        }
+    } else {
+        // For new records, opening and purchase are typically 0 unless specified otherwise
+        $closing = 0 - $qty; // Since opening and purchase are 0
+        
+        // Create new record
+        $insert_query = "INSERT INTO $daily_stock_table 
+                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
+                         VALUES (?, ?, 'F', 0, 0, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    }
+}
+
+// Function to process the sale
 function processSale() {
-    global $conn, $comp_id, $current_stock_column, $fin_year_id, $selectedCustomer, $customers;
+    global $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers;
     
     if (!empty($_SESSION['sale_items'])) {
         $user_id = $_SESSION['user_id'];
-        $mode = 'F'; // Default to Foreign Liquor
+        $mode = 'F';
         
-        // Start transaction
         $conn->begin_transaction();
         
         try {
-            // Get category limits
             $category_limits = getCategoryLimits($conn, $comp_id);
-            
-            // Group items by category and calculate volume
             $category_items = [];
+            
             foreach ($_SESSION['sale_items'] as $item) {
                 $category = getItemCategory($conn, $item['code'], $mode);
                 $size = getItemSize($conn, $item['code'], $mode);
@@ -355,24 +658,18 @@ function processSale() {
                 ];
             }
             
-            // Generate all bill numbers upfront to avoid duplicates
             $total_bills_needed = 0;
             foreach ($category_items as $category => $items) {
                 $limit = $category_limits[$category] ?? 0;
-                
                 if ($limit <= 0) {
-                    if (!empty($items)) {
-                        $total_bills_needed++;
-                    }
+                    if (!empty($items)) $total_bills_needed++;
                 } else {
-                    // Calculate how many bills this category will need
                     $total_volume = array_sum(array_column($items, 'volume'));
                     $bills_for_category = ceil($total_volume / $limit);
                     $total_bills_needed += $bills_for_category;
                 }
             }
             
-            // Generate all bill numbers at once
             $bill_numbers = [];
             for ($i = 0; $i < $total_bills_needed; $i++) {
                 $bill_numbers[] = generateBillNumber($conn, $comp_id);
@@ -381,98 +678,123 @@ function processSale() {
             $bill_index = 0;
             $all_bills = [];
             
-            // Process each category with its limit
             foreach ($category_items as $category => $items) {
                 $limit = $category_limits[$category] ?? 0;
                 
                 if ($limit <= 0) {
-                    // No limit, put all items in one bill
                     if (!empty($items)) {
-                        $all_bills[] = createSaleBill($items, date('Y-m-d H:i:s'), $bill_numbers[$bill_index++], $mode, $comp_id, $user_id);
+                        $all_bills[] = [
+                            'bill_no' => $bill_numbers[$bill_index++],
+                            'bill_date' => date('Y-m-d H:i:s'),
+                            'total_amount' => array_sum(array_column($items, 'amount')),
+                            'items' => $items,
+                            'mode' => $mode,
+                            'comp_id' => $comp_id,
+                            'user_id' => $user_id
+                        ];
                     }
                 } else {
-                    // Sort items by volume descending (First-Fit Decreasing algorithm)
                     usort($items, function($a, $b) {
                         return $b['volume'] <=> $a['volume'];
                     });
                     
-                    // Create bills by grouping items without exceeding the limit
                     $bills_for_category = [];
                     $current_bill_items = [];
                     $current_bill_volume = 0;
                     
                     foreach ($items as $item) {
-                        // If adding this item would exceed the limit, finalize current bill
                         if ($current_bill_volume + $item['volume'] > $limit && !empty($current_bill_items)) {
                             $bills_for_category[] = $current_bill_items;
                             $current_bill_items = [];
                             $current_bill_volume = 0;
                         }
                         
-                        // Add item to current bill
                         $current_bill_items[] = $item;
                         $current_bill_volume += $item['volume'];
                     }
                     
-                    // Add the last bill if it has items
                     if (!empty($current_bill_items)) {
                         $bills_for_category[] = $current_bill_items;
                     }
                     
-                    // Create actual bills from the grouped items
                     foreach ($bills_for_category as $bill_items) {
-$all_bills[] = createSaleBill($bill_items, date('Y-m-d H:i:s'), $bill_numbers[$bill_index++], $mode, $comp_id, $user_id);                    }
+                        $all_bills[] = [
+                            'bill_no' => $bill_numbers[$bill_index++],
+                            'bill_date' => date('Y-m-d H:i:s'),
+                            'total_amount' => array_sum(array_column($bill_items, 'amount')),
+                            'items' => $bill_items,
+                            'mode' => $mode,
+                            'comp_id' => $comp_id,
+                            'user_id' => $user_id
+                        ];
+                    }
                 }
             }
             
-            // Process all bills
             $processed_bills = [];
             foreach ($all_bills as $bill) {
-                $bill_data = processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode);
+                $bill_data = processSingleBill($bill, $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode);
                 if ($bill_data) {
                     $processed_bills[] = $bill_data;
                 }
             }
             
-            // Commit transaction
             $conn->commit();
             
-            // Store bill data in session for the view page
             if (!empty($processed_bills)) {
-                $_SESSION['last_bill_data'] = $processed_bills;
-                $success_message = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
+// Don't set last_bill_data for automatic preview
+// $_SESSION['last_bill_data'] = $processed_bills;                $_SESSION['success_message'] = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
             } else {
                 throw new Exception("No bills were processed successfully.");
             }
             
-            // Store messages in session to display after redirect
-            $_SESSION['success_message'] = $success_message;
-            
-            // Clear cart and selected customer
             unset($_SESSION['sale_items']);
             unset($_SESSION['sale_count']);
             unset($_SESSION['current_focus_index']);
             unset($_SESSION['selected_customer']);
+            unset($_SESSION['preview_bill_data']);
+            unset($_SESSION['last_added_item']);
             
         } catch (Exception $e) {
-            // Rollback transaction on error
             $conn->rollback();
-            $error_message = "Error processing sale: " . $e->getMessage();
-            $_SESSION['error_message'] = $error_message;
+            $_SESSION['error_message'] = "Error processing sale: " . $e->getMessage();
         }
     } else {
-        $error_message = "No items to process.";
-        $_SESSION['error_message'] = $error_message;
+        $_SESSION['error_message'] = "No items to process.";
     }
 }
-// Function to process a single bill
-// Function to process a single bill
-function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode) {
+
+// Function to process a single bill with proper stock management (UPDATED LOGIC)
+// Function to process a single bill with proper stock management and duplicate item handling
+function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode) {
     $bill_no = $bill['bill_no'];
     $sale_date = $bill['bill_date'];
-    $total_amount = $bill['total_amount'];
     
-    // Insert sale header with retry logic for duplicate bill numbers
+    // Aggregate quantities for duplicate items before processing
+    $aggregated_items = [];
+    foreach ($bill['items'] as $item) {
+        $item_code = $item['code'];
+        if (!isset($aggregated_items[$item_code])) {
+            $aggregated_items[$item_code] = [
+                'code' => $item_code,
+                'name' => $item['name'],
+                'details2' => $item['details2'],
+                'qty' => 0,
+                'rate' => $item['rate'],
+                'size' => $item['size'],
+                'volume' => 0,
+                'amount' => 0
+            ];
+        }
+        $aggregated_items[$item_code]['qty'] += $item['qty'];
+        $aggregated_items[$item_code]['volume'] += $item['volume'];
+        $aggregated_items[$item_code]['amount'] += $item['amount'];
+    }
+    
+    // Convert back to indexed array
+    $aggregated_items = array_values($aggregated_items);
+    $total_amount = array_sum(array_column($aggregated_items, 'amount'));
+    
     $max_retries = 3;
     $retry_count = 0;
     $customer_id = !empty($selectedCustomer) ? $selectedCustomer : NULL;
@@ -492,9 +814,7 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_y
             $header_stmt->close();
             
         } catch (Exception $e) {
-            // Check if it's a duplicate entry error
             if (strpos($e->getMessage(), 'Duplicate entry') !== false && $retry_count < $max_retries - 1) {
-                // Generate a new bill number and retry
                 $bill_no = generateBillNumber($conn, $comp_id);
                 $retry_count++;
                 continue;
@@ -508,13 +828,11 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_y
         throw new Exception("Failed to insert sale header after $max_retries attempts");
     }
     
-    // Rest of the function remains the same...
-    // [Keep the existing code for inserting sale details and updating stock]
-    // Insert sale details and update stock
-    foreach ($bill['items'] as $item) {
+    // Process aggregated items (no duplicates)
+    foreach ($aggregated_items as $item) {
         $amount = $item['rate'] * $item['qty'];
         
-        // Insert sale details
+        // Insert sale details (now only one record per item)
         $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                          VALUES (?, ?, ?, ?, ?, ?, ?)";
         $detail_stmt = $conn->prepare($detail_query);
@@ -526,92 +844,11 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_y
         
         $detail_stmt->close();
         
-        // Update stock - check if record exists first
-        $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
-        $check_stmt = $conn->prepare($check_stock_query);
-        $check_stmt->bind_param("ss", $item['code'], $fin_year_id);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
-        $stock_exists = $check_result->fetch_assoc()['count'] > 0;
-        $check_stmt->close();
-        
-        if ($stock_exists) {
-            // Update existing stock
-            $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
-            $stock_stmt = $conn->prepare($stock_query);
-            $stock_stmt->bind_param("dss", $item['qty'], $item['code'], $fin_year_id);
-            
-            if (!$stock_stmt->execute()) {
-                throw new Exception("Failed to update stock: " . $stock_stmt->error);
-            }
-            
-            $stock_stmt->close();
-        } else {
-            // Insert new stock record
-            $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $current_stock_column) 
-                                   VALUES (?, ?, ?)";
-            $insert_stock_stmt = $conn->prepare($insert_stock_query);
-            $current_stock = -$item['qty']; // Negative since we're deducting
-            $insert_stock_stmt->bind_param("ssd", $item['code'], $fin_year_id, $current_stock);
-            
-            if (!$insert_stock_stmt->execute()) {
-                throw new Exception("Failed to insert stock record: " . $insert_stock_stmt->error);
-            }
-            
-            $insert_stock_stmt->close();
-        }
-        
-        // Update daily stock table
-        $sale_date_only = date('Y-m-d');
-        $daily_stock_table = "tbldailystock_" . $comp_id;
-        
-        // Check if the daily stock table exists and has the correct structure
-        $table_check = $conn->query("SHOW TABLES LIKE '$daily_stock_table'");
-        if ($table_check->num_rows > 0) {
-            // Check if the table has the STOCK_DATE column
-            $column_check = $conn->query("SHOW COLUMNS FROM $daily_stock_table LIKE 'STOCK_DATE'");
-            if ($column_check->num_rows > 0) {
-                // Check if daily stock record exists
-                $check_daily_query = "SELECT COUNT(*) as count FROM $daily_stock_table WHERE ITEM_CODE = ? AND STOCK_DATE = ?";
-                $check_daily_stmt = $conn->prepare($check_daily_query);
-                $check_daily_stmt->bind_param("ss", $item['code'], $sale_date_only);
-                $check_daily_stmt->execute();
-                $check_daily_result = $check_daily_stmt->get_result();
-                $daily_exists = $check_daily_result->fetch_assoc()['count'] > 0;
-                $check_daily_stmt->close();
-                
-                if ($daily_exists) {
-                    // Update existing daily stock
-                    $daily_query = "UPDATE $daily_stock_table SET SALE_QTY = SALE_QTY + ?, SALE_VALUE = SALE_VALUE + ? 
-                                    WHERE ITEM_CODE = ? AND STOCK_DATE = ?";
-                    $daily_stmt = $conn->prepare($daily_query);
-                    $sale_value = $item['rate'] * $item['qty'];
-                    $daily_stmt->bind_param("ddss", $item['qty'], $sale_value, $item['code'], $sale_date_only);
-                    
-                    if (!$daily_stmt->execute()) {
-                        throw new Exception("Failed to update daily stock: " . $daily_stmt->error);
-                    }
-                    
-                    $daily_stmt->close();
-                } else {
-                    // Insert new daily stock record
-                    $insert_daily_query = "INSERT INTO $daily_stock_table (ITEM_CODE, STOCK_DATE, SALE_QTY, SALE_VALUE) 
-                                           VALUES (?, ?, ?, ?)";
-                    $insert_daily_stmt = $conn->prepare($insert_daily_query);
-                    $sale_value = $item['rate'] * $item['qty'];
-                    $insert_daily_stmt->bind_param("ssdd", $item['code'], $sale_date_only, $item['qty'], $sale_value);
-                    
-                    if (!$insert_daily_stmt->execute()) {
-                        throw new Exception("Failed to insert daily stock record: " . $insert_daily_stmt->error);
-                    }
-                    
-                    $insert_daily_stmt->close();
-                }
-            }
-        }
+        // UPDATE STOCK TABLES USING THE NEW LOGIC
+        updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+        updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
     }
     
-    // Return bill data for preview
     $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';
     
     return [
@@ -619,16 +856,12 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $fin_y
         'customer_id' => $selectedCustomer,
         'customer_name' => $customer_name,
         'bill_date' => $sale_date,
-        'items' => $bill['items'],
+        'items' => $aggregated_items, // Return aggregated items for preview
         'total_amount' => $total_amount,
-        'tax_rate' => 0.08, // 8% tax
-        'tax_amount' => $total_amount * 0.08,
-        'final_amount' => $total_amount * 1.08
+        'final_amount' => $total_amount
     ];
 }
-
-
-// Check for success/error messages in session
+// Check for success/error messages
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
     unset($_SESSION['success_message']);
@@ -638,10 +871,9 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
-// Get current stock for items in sale table
+// Get current stock for items
 if (!empty($_SESSION['sale_items'])) {
     foreach ($_SESSION['sale_items'] as &$item) {
-        // FIX: Check if FIN_YEAR exists, if not use '0000' as fallback
         $stock_query = "SELECT COALESCE($current_stock_column, 0) as stock FROM tblitem_stock WHERE ITEM_CODE = ? AND (FIN_YEAR = ? OR FIN_YEAR = '0000') ORDER BY FIN_YEAR DESC LIMIT 1";
         $stock_stmt = $conn->prepare($stock_query);
         $stock_stmt->bind_param("ss", $item['code'], $fin_year_id);
@@ -657,9 +889,10 @@ if (!empty($_SESSION['sale_items'])) {
         
         $stock_stmt->close();
     }
-    unset($item); // Break the reference
+    unset($item);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -670,8 +903,8 @@ if (!empty($_SESSION['sale_items'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-  <style>
-    .barcode-scanner {
+<style>
+  .barcode-scanner {
       background-color: #f8f9fa;
       padding: 15px;
       border-radius: 5px;
@@ -1034,63 +1267,40 @@ if (!empty($_SESSION['sale_items'])) {
         unset($_SESSION['last_bill_data']);
       endif; ?>
 
-      <!-- Customer Selection -->
-      <form method="POST" class="mb-3">
-        <div class="card">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="fa-solid fa-user me-2"></i>Customer Information (Optional)</span>
-            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
-              <i class="fas fa-plus me-1"></i> Create New Customer
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-8">
-                <div class="form-group">
-                  <label for="customer_id" class="form-label">Select Customer</label>
-                  <select class="form-select" id="customer_id" name="customer_id">
-                    <option value="">-- Walk-in Customer --</option>
+ <!-- Combined Customer Field -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0"><i class="fas fa-user"></i> Customer Information</h5>
+            </div>
+            <div class="card-body">
+              <form method="POST" id="customerForm">
+                <div class="customer-combined-field">
+                  <label for="customer_field" class="form-label">Select or Create Customer</label>
+                  <select class="form-select" id="customer_field" name="customer_field" style="width: 100%;">
+                    <option value=""></option>
                     <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>" <?= ($selectedCustomer == $code) ? 'selected' : '' ?>>
+                      <option value="<?= $code ?>" <?= $selectedCustomer == $code ? 'selected' : '' ?>>
                         <?= htmlspecialchars($name) ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
+                  <div class="customer-hint">
+                    <i class="fas fa-info-circle"></i> 
+                    Select existing customer or type "new: Customer Name" to create new customer. 
+                    Leave empty for walk-in customer.
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-primary mt-3">
                   <i class="fas fa-save"></i> Save Customer
                 </button>
-              </div>
+              </form>
             </div>
-          </div>
-        </div>
-      </form>
-
-      <!-- Create Customer Modal -->
-      <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="createCustomerModalLabel">Create New Customer</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST">
-              <div class="modal-body">
-                <div class="mb-3">
-                  <label for="customer_name" class="form-label">Customer Name *</label>
-                  <input type="text" class="form-control" id="customer_name" name="customer_name" required>
-                </div>
-               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" name="create_customer" class="btn btn-primary">Create Customer</button>
-              </div>
-            </form>
           </div>
         </div>
       </div>
+
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>
@@ -1222,8 +1432,8 @@ if (!empty($_SESSION['sale_items'])) {
                     <td><?= isset($item['current_stock']) ? $item['current_stock'] : 'N/A' ?></td>
                     <td>
                       <form method="POST" style="display:inline;">
-                        <input type="hidden" name="item_code" value="<?= $item['code'] ?>">
-                        <button type="submit" name="remove_item" class="btn btn-sm btn-danger">
+<input type="hidden" name="item_id" value="<?= $item['id'] ?>"> 
+                       <button type="submit" name="remove_item" class="btn btn-sm btn-danger">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -1239,31 +1449,113 @@ if (!empty($_SESSION['sale_items'])) {
                 </tr>
               </tfoot>
             </table>
-          </div>
+                 </div>
           <div class="keyboard-hint">
             <i class="fas fa-info-circle"></i> Use Arrow Up/Down keys to navigate between items, +/- to adjust quantities
           </div>
-
-          <div class="d-flex justify-content-end mt-3">
-            <form method="POST" class="me-2">
-              <button type="submit" name="clear_sale" class="btn btn-danger">
-                <i class="fas fa-trash me-1"></i> Clear Sale
-              </button>
-            </form>
-            <form method="POST">
-              <button type="submit" name="process_sale" class="btn btn-success">
-                <i class="fas fa-check me-1"></i> Process Sale
-              </button>
-            </form>
-          </div>
+<div class="d-flex justify-content-end mt-3">
+  <form method="POST" class="me-2">
+    <button type="submit" name="clear_sale" class="btn btn-danger">
+      <i class="fas fa-trash me-1"></i> Clear Sale
+    </button>
+  </form>
+  
+  <!-- Add Preview Button -->
+  <form method="POST" class="me-2">
+    <button type="submit" name="preview_bill" class="btn btn-info">
+      <i class="fas fa-eye me-1"></i> Preview Bill
+    </button>
+  </form>
+  
+  <form method="POST">
+    <button type="submit" name="process_sale" class="btn btn-success">
+      <i class="fas fa-check me-1"></i> Process Sale
+    </button>
+  </form>
+</div>
         <?php else: ?>
           <div class="alert alert-info">No items in the current sale. Scan or search for items to add.</div>
         <?php endif; ?>
       </div>
+
+      <!-- Bill Preview Section - MOVED TO HERE -->
+      <?php if (isset($_SESSION['preview_bill_data'])): 
+        $preview_data = $_SESSION['preview_bill_data'];
+      ?>
+      <div class="card mt-4" id="preview">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Bill Preview</h5>
+          <form method="POST">
+            <button type="submit" name="clear_preview" class="btn btn-sm btn-light">
+              <i class="fas fa-times me-1"></i> Close Preview
+            </button>
+          </form>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            This preview shows how the sale will be split into <?= $preview_data['total_bills'] ?> bill(s).
+          </div>
+          
+          <?php foreach ($preview_data['bills'] as $bill_index => $bill): ?>
+          <div class="bill-preview mb-4 p-3 border rounded">
+            <div class="bill-header text-center mb-3">
+              <h4>WineSoft</h4>
+              <p class="mb-1"><strong>Bill #<?= $bill_index + 1 ?></strong></p>
+              <p class="mb-0">Customer: <?= $preview_data['customer_name'] ?></p>
+              <p class="mb-0">Date: <?= date('d/m/Y H:i', strtotime($preview_data['bill_date'])) ?></p>
+            </div>
+            
+            <table class="table table-bordered table-sm">
+              <thead class="table-light">
+                <tr>
+                  <th>Item Name</th>
+                  <th class="text-center">Size</th>
+                  <th class="text-center">Qty</th>
+                  <th class="text-center">Rate</th>
+                  <th class="text-center">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($bill['items'] as $item): ?>
+                <tr>
+                  <td><?= htmlspecialchars($item['name']) ?></td>
+                  <td class="text-center"><?= htmlspecialchars($item['size_text']) ?></td>
+                  <td class="text-center"><?= $item['qty'] ?></td>
+                  <td class="text-center">₹<?= number_format($item['rate'], 2) ?></td>
+                  <td class="text-center">₹<?= number_format($item['amount'], 2) ?></td>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+              <tfoot class="table-light">
+                <tr>
+                  <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                  <td class="text-center"><strong>₹<?= number_format($bill['total_amount'], 2) ?></strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <?php endforeach; ?>
+          
+          <div class="alert alert-success text-center">
+            <h5>Grand Total: ₹<?= number_format($preview_data['grand_total'], 2) ?></h5>
+            <p class="mb-0">Total Bills: <?= $preview_data['total_bills'] ?></p>
+          </div>
+          
+          <div class="d-flex justify-content-end">
+            <form method="POST">
+              <button type="submit" name="process_sale" class="btn btn-success btn-lg">
+                <i class="fas fa-check me-1"></i> Confirm & Process Sale
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+      
     </div>
   </div>
 </div>
-
 <!-- Hidden form for adding items -->
 <form method="POST" id="addItemForm">
   <input type="hidden" name="item_code" id="itemCodeInput">

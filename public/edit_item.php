@@ -11,19 +11,39 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
-
 include_once "../config/db.php";
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Get item code and mode from URL
 $item_code = isset($_GET['code']) ? $_GET['code'] : null;
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
-// Fetch class descriptions from tblclass
+// Fetch class descriptions from tblclass - FILTERED BY LICENSE
 $classDescriptions = [];
-$classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
-$classResult = $conn->query($classQuery);
-while ($row = $classResult->fetch_assoc()) {
-    $classDescriptions[$row['SGROUP']] = $row['DESC'];
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $classQuery = "SELECT SGROUP, `DESC` FROM tblclass WHERE SGROUP IN ($class_placeholders)";
+    
+    $classStmt = $conn->prepare($classQuery);
+    $types = str_repeat('s', count($allowed_classes));
+    $classStmt->bind_param($types, ...$allowed_classes);
+    $classStmt->execute();
+    $classResult = $classStmt->get_result();
+    while ($row = $classResult->fetch_assoc()) {
+        $classDescriptions[$row['SGROUP']] = $row['DESC'];
+    }
+    $classStmt->close();
 }
 
 // Fetch subclass descriptions from tblsubclass for the current mode
@@ -65,6 +85,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ob2 = $_POST['ob2'];
     $mprice = $_POST['mprice'];
     $barcode = $_POST['barcode'];
+    $rprice = $_POST['rprice'] ?? 0;
+
+    // Validate class against license restrictions
+    if (!in_array($class, $allowed_classes)) {
+        $_SESSION['error_message'] = "Selected class is not allowed for your license type.";
+        header("Location: edit_item.php?code=" . urlencode($item_code) . "&mode=" . $mode);
+        exit;
+    }
 
     $stmt = $conn->prepare("UPDATE tblitemmaster SET 
                           Print_Name = ?, 
@@ -80,11 +108,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           OB = ?,
                           OB2 = ?,
                           MPRICE = ?,
+                          RPRICE = ?,
                           BARCODE = ?
                           WHERE CODE = ?");
-    $stmt->bind_param("ssssssdddddddds", $Print_Name, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $bottles, $gob, $ob, $ob2, $mprice, $barcode, $item_code);
+    $stmt->bind_param("ssssssdddddddds", $Print_Name, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $bottles, $gob, $ob, $ob2, $mprice, $rprice, $barcode, $item_code);
     
     if ($stmt->execute()) {
+        // Update stock information if opening stock changed
+        $opening_stock = max($gob, $ob, $ob2);
+        updateItemStock($conn, $company_id, $item_code, $mode, $opening_stock);
+        
         $_SESSION['success_message'] = "Item updated successfully!";
         header("Location: item_master.php?mode=" . $mode);
         exit;
@@ -92,6 +125,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['error_message'] = "Error updating item: " . $conn->error;
     }
     $stmt->close();
+}
+
+// Function to update item stock information
+function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
+    // Update tblitem_stock
+    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock_query);
+    $check_stmt->bind_param("s", $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    $opening_col = "OPENING_STOCK$comp_id";
+    $current_col = "CURRENT_STOCK$comp_id";
+    
+    if ($stock_exists) {
+        // Update existing stock record
+        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Insert new stock record
+        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    }
 }
 ?>
 
@@ -105,16 +169,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <style>
+    .license-info {
+        background-color: #e7f3ff;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Edit Item</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Available classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Liquor Mode Indicator -->
       <div class="mode-indicator mb-3">
@@ -145,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
               <div class="col-md-4 col-12">
                 <label for="item_group" class="form-label">Item Group</label>
-                <input type="text" class="form-control" id="item_group" name="item_group" value="<?= htmlspecialchars($item['ITEM_GROUP']) ?>">
+                <input type="text" class="form-control" id="item_group" name="item_group" value="<?= htmlspecialchars($item['ITEM_GROUP']) ?>" readonly>
               </div>
             </div>
 
@@ -206,13 +295,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="row mb-3">
-              <div class="col-md-6 col-12">
+              <div class="col-md-4 col-12">
                 <label for="pprice" class="form-label">P. Price</label>
                 <input type="number" step="0.001" class="form-control" id="pprice" name="pprice" value="<?= htmlspecialchars($item['PPRICE']) ?>" required>
               </div>
-              <div class="col-md-6 col-12">
+              <div class="col-md-4 col-12">
                 <label for="bprice" class="form-label">B. Price</label>
                 <input type="number" step="0.001" class="form-control" id="bprice" name="bprice" value="<?= htmlspecialchars($item['BPRICE']) ?>" required>
+              </div>
+              <div class="col-md-4 col-12">
+                <label for="rprice" class="form-label">R. Price</label>
+                <input type="number" step="0.001" class="form-control" id="rprice" name="rprice" value="<?= htmlspecialchars($item['RPRICE'] ?? '') ?>">
               </div>
             </div>
 
@@ -227,19 +320,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
 
-            <div class="action-btn mb-3 d-flex gap-2">
-              <button type="submit" class="btn btn-success">
+            <div class="d-flex justify-content-between mt-4">
+              <a href="item_master.php?mode=<?= $mode ?>" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+              </a>
+              <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> Update Item
               </button>
-              <a href="item_master.php?mode=<?= $mode ?>" class="btn btn-secondary ms-auto">
-                <i class="fas fa-arrow-left"></i> Back to Item Master
-              </a>
             </div>
           </form>
         </div>
       </div>
       <?php else: ?>
-        <div class="alert alert-danger">Item not found!</div>
+        <div class="alert alert-danger">Item not found.</div>
       <?php endif; ?>
     </div>
 
@@ -247,16 +340,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-// You can add dynamic behavior here if needed
-$(document).ready(function() {
-  // Example: If class selection should filter subclasses
-  // $('#class').change(function() {
-  //   // AJAX call to get relevant subclasses
-  // });
-});
-</script>
 </body>
 </html>

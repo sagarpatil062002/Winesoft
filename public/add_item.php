@@ -12,6 +12,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Resolve current page path for reload links
 $currentPage = basename($_SERVER['PHP_SELF']);
@@ -24,13 +36,19 @@ if (!in_array($mode, $allowedModes, true)) {
     $mode = 'F';
 }
 
-// Fetch classes and subclasses from database (by mode)
+// Fetch classes and subclasses from database (by mode) - FILTERED BY LICENSE
 $classes = [];
 $subclasses = [];
 
-// Classes
-if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS class_name FROM tblclass WHERE LIQ_FLAG = ? ORDER BY `DESC`")) {
-    $stmt->bind_param("s", $mode);
+// Classes - Filtered by license type
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $classQuery = "SELECT DISTINCT `DESC` AS class_name, SGROUP FROM tblclass WHERE LIQ_FLAG = ? AND SGROUP IN ($class_placeholders) ORDER BY `DESC`";
+    
+    $stmt = $conn->prepare($classQuery);
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $res = $stmt->get_result();
     if ($res) $classes = $res->fetch_all(MYSQLI_ASSOC);
@@ -80,13 +98,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows > 0) {
             $row = $result->fetch_assoc();
             $item_group = $row['ITEM_GROUP'];
+        } else {
+            // Default to 'O' if not found
+            $item_group = 'O';
         }
         $stmt->close();
+    } else {
+        $item_group = 'O'; // Default to Others
     }
 
     // Basic validation
     if ($code === '' || $details === '') {
         $error = "Item Code and Item Name are required.";
+    } else if (!in_array($class, $allowed_classes)) {
+        $error = "Selected class is not allowed for your license type.";
     } else {
         // Insert into tblitemmaster - Fixed: Added ITEM_GROUP column
         $sql = "INSERT INTO tblitemmaster 
@@ -107,6 +132,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
 
             if ($stmt->execute()) {
+                // Update stock information
+                $opening_stock = max($GOB, $OB, $OB2); // Use the largest opening stock value
+                updateItemStock($conn, $company_id, $code, $liq_flag, $opening_stock);
+                
                 $success = "Item added successfully!";
                 // Reset form
                 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
@@ -116,6 +145,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
         }
+    }
+}
+
+// Function to update item stock information
+function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
+    // Update tblitem_stock
+    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock_query);
+    $check_stmt->bind_param("s", $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    $opening_col = "OPENING_STOCK$comp_id";
+    $current_col = "CURRENT_STOCK$comp_id";
+    
+    if ($stock_exists) {
+        // Update existing stock record
+        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Insert new stock record
+        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
+        $insert_stmt->execute();
+        $insert_stmt->close();
     }
 }
 ?>
@@ -151,16 +211,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-bottom: 2px solid #3498db;
             padding-bottom: 10px;
         }
+        .license-info {
+            background-color: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
 <div class="dashboard-container">
     <?php include 'components/navbar.php'; ?>
     <div class="main-content">
-        <?php include 'components/header.php'; ?>
 
         <div class="content-area">
             <h3 class="mb-4">Add New Item</h3>
+
+            <!-- License Restriction Info -->
+            <div class="license-info mb-3">
+                <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+                <p class="mb-0">Available classes: 
+                    <?php 
+                    if (!empty($available_classes)) {
+                        $class_names = [];
+                        foreach ($available_classes as $class) {
+                            $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                        }
+                        echo implode(', ', $class_names);
+                    } else {
+                        echo 'No classes available for your license type';
+                    }
+                    ?>
+                </p>
+            </div>
 
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
@@ -207,13 +290,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <!-- Class Dropdown -->
                 <div class="col-md-3">
-                    <label for="class" class="form-label">Class</label>
-                    <select id="class" name="class" class="form-select">
+                    <label for="class" class="form-label">Class *</label>
+                    <select id="class" name="class" class="form-select" required>
                         <option value="">-- Select Class --</option>
                         <?php foreach ($classes as $class_item): ?>
-                            <option value="<?= htmlspecialchars($class_item['class_name']) ?>"
-                                <?= ($class === $class_item['class_name']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($class_item['class_name']) ?>
+                            <option value="<?= htmlspecialchars($class_item['SGROUP']) ?>"
+                                <?= ($class === $class_item['SGROUP']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($class_item['class_name']) ?> (<?= htmlspecialchars($class_item['SGROUP']) ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>

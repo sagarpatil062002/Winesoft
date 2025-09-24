@@ -98,8 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
+  
     <div class="content-area">
       <h3 class="mb-4">Edit Permit</h3>
 

@@ -62,7 +62,6 @@ if (!$item) {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <div class="card">

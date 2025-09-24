@@ -107,7 +107,6 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Closing Stock Statement</h3>

@@ -465,7 +465,6 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center mb-4">

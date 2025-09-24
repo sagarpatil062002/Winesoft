@@ -6,7 +6,6 @@ set_time_limit(0);
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '512M');
 
-
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
@@ -117,9 +116,11 @@ function addDayColumnsForMonth($conn, $comp_id, $month) {
 
 // Function to archive previous month's data
 function archiveMonthlyData($conn, $comp_id, $month) {
-    // Replace hyphens with underscores for table name compatibility
-    $safe_month = str_replace('-', '_', $month);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+    // Extract year and month for proper naming (e.g., "2025-04" becomes "2025_04")
+    $year_month = explode('-', $month);
+    $year = $year_month[0];
+    $month_num = $year_month[1];
+    $archive_table = "tbldailystock_archive_{$comp_id}_{$year}_{$month_num}";
     
     // Check if archive table exists
     $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
@@ -135,6 +136,9 @@ function archiveMonthlyData($conn, $comp_id, $month) {
             error_log("Error creating archive table: " . $conn->error);
             return false;
         }
+        
+        // Add day columns for the archive month
+        addDayColumnsForMonth($conn, $comp_id, $month);
     }
     
     // Copy data to archive
@@ -162,39 +166,46 @@ function archiveMonthlyData($conn, $comp_id, $month) {
     return true;
 }
 
-// Function to get yesterday's closing stock for today's opening
-function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
-    $yesterday = date('d', strtotime('-1 day'));
-    $yesterday_padded = str_pad($yesterday, 2, '0', STR_PAD_LEFT);
-    $current_month = date('Y-m');
-    
-    $query = "SELECT DAY_{$yesterday_padded}_CLOSING as closing_qty FROM tbldailystock_$comp_id 
-              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("sss", $current_month, $item_code, $mode);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        return (int)$row['closing_qty'];
-    }
-    
-    return 0; // Return 0 if no record found for yesterday
-}
-
-// Function to create missing archive tables
-function createMissingArchiveTables($conn, $comp_id, $fin_year, $months) {
+// NEW FUNCTION: Create archive tables for previous months in current financial year
+function createFinancialYearArchiveTables($conn, $comp_id, $fin_year) {
     // Extract the starting year from financial year (e.g., "2025-26" -> "2025")
     $fin_year_parts = explode('-', $fin_year);
     $start_year = $fin_year_parts[0];
     
-    foreach ($months as $month_num) {
+    // Financial year starts from April (4) to March (3) next year
+    $current_month = date('n'); // Current month number
+    $current_year = date('Y');
+    
+    // Determine which months need archive tables
+    $months_to_archive = [];
+    
+    if ($current_month >= 4) {
+        // Current financial year (April to current month)
+        for ($month = 4; $month <= $current_month; $month++) {
+            $months_to_archive[] = $month;
+        }
+    } else {
+        // Previous financial year (April to December) + current year (January to current month)
+        for ($month = 4; $month <= 12; $month++) {
+            $months_to_archive[] = $month;
+        }
+        for ($month = 1; $month <= $current_month; $month++) {
+            $months_to_archive[] = $month;
+        }
+    }
+    
+    foreach ($months_to_archive as $month_num) {
         $month_padded = str_pad($month_num, 2, '0', STR_PAD_LEFT);
-        $month = $start_year . '-' . $month_padded;
-        $safe_month = str_replace('-', '_', $month);
-        $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+        
+        // Determine the year for this month
+        if ($month_num >= 4) {
+            $year = $start_year;
+        } else {
+            $year = intval($start_year) + 1;
+        }
+        
+        $month = $year . '-' . $month_padded;
+        $archive_table = "tbldailystock_archive_{$comp_id}_{$year}_{$month_padded}";
         
         // Check if archive table already exists
         $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
@@ -209,32 +220,194 @@ function createMissingArchiveTables($conn, $comp_id, $fin_year, $months) {
             if ($conn->query($create_archive_query)) {
                 error_log("Created archive table: $archive_table");
                 
-                // Optionally copy existing data if available
-                $copy_data_query = "INSERT INTO $archive_table 
-                                   SELECT * FROM tbldailystock_$comp_id 
-                                   WHERE STK_MONTH = '$month'";
-                if ($conn->query($copy_data_query)) {
-                    $affected_rows = $conn->affected_rows;
-                    error_log("Copied $affected_rows records to $archive_table");
-                }
+                // Add day columns for the archive month
+                addDayColumnsForMonth($conn, $comp_id, $month);
+                
             } else {
                 error_log("Error creating archive table: " . $conn->error);
             }
-        } else {
-            error_log("Archive table $archive_table already exists");
         }
     }
 }
 
-// Only create missing archive tables if we're in development or specifically requested
-$development_mode = true; // Set to false in production after running once
-if ($development_mode && $comp_id == 1) {
-    // Months from April to August (financial year starts in April)
-    $missing_months = [4, 5, 6, 7, 8]; // Month numbers only
+// UPDATED FUNCTION: Initialize daily stock record for an item with all zeros except current day
+function initializeDailyStockRecord($conn, $comp_id, $item_code, $liq_flag, $opening_balance) {
+    $current_month = date('Y-m');
+    $today = date('d');
+    $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     
-    // Call the function to create missing archive tables using the actual financial year
-    createMissingArchiveTables($conn, $comp_id, $fin_year, $missing_months);
+    // Get days in current month
+    $year_month = explode('-', $current_month);
+    $year = $year_month[0];
+    $month_num = $year_month[1];
+    $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+    
+    // Build the INSERT query with all day columns set to 0, except today's opening/closing
+    $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
+    $placeholders = ['?', '?', '?'];
+    $values = [$current_month, $item_code, $liq_flag];
+    $types = 'sss';
+    
+    // Add all day columns (set to 0 initially)
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        
+        $columns[] = "DAY_{$day_padded}_OPEN";
+        $columns[] = "DAY_{$day_padded}_PURCHASE";
+        $columns[] = "DAY_{$day_padded}_SALES";
+        $columns[] = "DAY_{$day_padded}_CLOSING";
+        
+        if ($day_padded == $today_padded) {
+            // For today, set opening and closing to the actual opening balance, others to 0
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $values[] = $opening_balance; // OPEN = opening balance
+            $values[] = 0; // PURCHASE = 0
+            $values[] = 0; // SALES = 0
+            $values[] = $opening_balance; // CLOSING = opening balance
+            $types .= 'iiii';
+        } else {
+            // For other days, set all to 0
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $placeholders[] = '?';
+            $values[] = 0; // OPEN = 0
+            $values[] = 0; // PURCHASE = 0
+            $values[] = 0; // SALES = 0
+            $values[] = 0; // CLOSING = 0
+            $types .= 'iiii';
+        }
+    }
+    
+    $columns_str = implode(', ', $columns);
+    $placeholders_str = implode(', ', $placeholders);
+    
+    $insert_query = "INSERT INTO tbldailystock_$comp_id ($columns_str) VALUES ($placeholders_str)";
+    
+    $stmt = $conn->prepare($insert_query);
+    if ($stmt) {
+        $stmt->bind_param($types, ...$values);
+        $result = $stmt->execute();
+        $stmt->close();
+        return $result;
+    }
+    
+    return false;
 }
+
+// NEW FUNCTION: Add item to archive tables for all months in current financial year
+function addItemToArchiveTables($conn, $comp_id, $fin_year, $item_code, $liq_flag, $opening_balance) {
+    // Extract the starting year from financial year (e.g., "2025-26" -> "2025")
+    $fin_year_parts = explode('-', $fin_year);
+    $start_year = $fin_year_parts[0];
+    
+    // Financial year starts from April (4) to March (3) next year
+    $current_month = date('n'); // Current month number
+    $current_year = date('Y');
+    
+    // Determine which months need to have this item added to archive
+    $months_to_process = [];
+    
+    if ($current_month >= 4) {
+        // Current financial year (April to current month)
+        for ($month = 4; $month <= $current_month; $month++) {
+            $months_to_process[] = $month;
+        }
+    } else {
+        // Previous financial year (April to December) + current year (January to current month)
+        for ($month = 4; $month <= 12; $month++) {
+            $months_to_process[] = $month;
+        }
+        for ($month = 1; $month <= $current_month; $month++) {
+            $months_to_process[] = $month;
+        }
+    }
+    
+    foreach ($months_to_process as $month_num) {
+        $month_padded = str_pad($month_num, 2, '0', STR_PAD_LEFT);
+        
+        // Determine the year for this month
+        if ($month_num >= 4) {
+            $year = $start_year;
+        } else {
+            $year = intval($start_year) + 1;
+        }
+        
+        $month = $year . '-' . $month_padded;
+        $archive_table = "tbldailystock_archive_{$comp_id}_{$year}_{$month_padded}";
+        
+        // Check if archive table exists
+        $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                               WHERE table_schema = DATABASE() 
+                               AND table_name = '$archive_table'";
+        $check_result = $conn->query($check_archive_query);
+        $archive_exists = $check_result->fetch_assoc()['count'] > 0;
+        
+        if ($archive_exists) {
+            // Check if item already exists in archive table for this month
+            $check_item_query = "SELECT COUNT(*) as count FROM $archive_table WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $check_stmt = $conn->prepare($check_item_query);
+            $check_stmt->bind_param("ss", $item_code, $month);
+            $check_stmt->execute();
+            $item_result = $check_stmt->get_result();
+            $item_exists = $item_result->fetch_assoc()['count'] > 0;
+            $check_stmt->close();
+            
+            if (!$item_exists) {
+                // Add item to archive table with all zeros
+                $today = date('d');
+                $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
+                
+                // Get days in the archive month
+                $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+                
+                // Build the INSERT query with all day columns set to 0
+                $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
+                $placeholders = ['?', '?', '?'];
+                $values = [$month, $item_code, $liq_flag];
+                $types = 'sss';
+                
+                // Add all day columns (set to 0)
+                for ($day = 1; $day <= $days_in_month; $day++) {
+                    $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                    
+                    $columns[] = "DAY_{$day_padded}_OPEN";
+                    $columns[] = "DAY_{$day_padded}_PURCHASE";
+                    $columns[] = "DAY_{$day_padded}_SALES";
+                    $columns[] = "DAY_{$day_padded}_CLOSING";
+                    
+                    $placeholders[] = '?';
+                    $placeholders[] = '?';
+                    $placeholders[] = '?';
+                    $placeholders[] = '?';
+                    $values[] = 0; // OPEN = 0
+                    $values[] = 0; // PURCHASE = 0
+                    $values[] = 0; // SALES = 0
+                    $values[] = 0; // CLOSING = 0
+                    $types .= 'iiii';
+                }
+                
+                $columns_str = implode(', ', $columns);
+                $placeholders_str = implode(', ', $placeholders);
+                
+                $insert_query = "INSERT INTO $archive_table ($columns_str) VALUES ($placeholders_str)";
+                
+                $stmt = $conn->prepare($insert_query);
+                if ($stmt) {
+                    $stmt->bind_param($types, ...$values);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            }
+        }
+    }
+}
+
+// Create archive tables for current financial year
+createFinancialYearArchiveTables($conn, $comp_id, $fin_year);
 
 // Check if we need to switch to a new month
 $current_month = date('Y-m');
@@ -264,6 +437,28 @@ if (!$current_month_exists) {
     
     // Add day columns for the new month
     addDayColumnsForMonth($conn, $comp_id, $current_month);
+}
+
+// Function to get yesterday's closing stock for today's opening
+function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
+    $yesterday = date('d', strtotime('-1 day'));
+    $yesterday_padded = str_pad($yesterday, 2, '0', STR_PAD_LEFT);
+    $current_month = date('Y-m');
+    
+    $query = "SELECT DAY_{$yesterday_padded}_CLOSING as closing_qty FROM tbldailystock_$comp_id 
+              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("sss", $current_month, $item_code, $mode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return (int)$row['closing_qty'];
+    }
+    
+    return 0; // Return 0 if no record found for yesterday
 }
 
 // Function to update daily stock
@@ -328,14 +523,15 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
     $current_col = "CURRENT_STOCK$comp_id";
     
     if ($stock_exists) {
-        // Update existing stock record
+        // Update existing stock record - only update company-specific columns
         $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
         $update_stmt = $conn->prepare($update_query);
         $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
-        // Insert new stock record
+        // Insert new stock record with only company-specific columns
+        // Set other company columns to 0 or NULL
         $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
         $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
@@ -343,7 +539,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $insert_stmt->close();
     }
     
-    // Update daily stock for today
+    // Update daily stock for today - ONLY if record exists, don't create new one here
     $today = date('d');
     $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     $current_month = date('Y-m');
@@ -369,17 +565,10 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $update_daily_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $liqFlag);
         $update_daily_stmt->execute();
         $update_daily_stmt->close();
-    } else {
-        // Insert new daily record
-        $insert_daily_query = "INSERT INTO tbldailystock_$comp_id 
-                              (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
-                              VALUES (?, ?, ?, ?, ?)";
-        $insert_daily_stmt = $conn->prepare($insert_daily_query);
-        $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $liqFlag, $opening_balance, $opening_balance);
-        $insert_daily_stmt->execute();
-        $insert_daily_stmt->close();
     }
+    // Don't create new record here - let initializeDailyStockRecord handle it
 }
+
 // Fetch class descriptions from tblclass
 $classDescriptions = [];
 $classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
@@ -509,7 +698,6 @@ function detectClassFromItemName($itemName) {
 }
 
 // Handle export requests
-// Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
@@ -609,6 +797,7 @@ if (isset($_GET['export'])) {
         exit();
     }
 }
+
 // Handle import if form submitted
 $importMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && isset($_POST['import_type'])) {
@@ -736,8 +925,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 if ($updateQuery->execute()) {
                                     $updated++;
                                     
-                                    // Update stock information
+                                    // Update stock information ONLY for current company
                                     updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    
+                                    // Initialize daily stock record with all zeros except current day
+                                    initializeDailyStockRecord($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    
+                                    // ADD ITEM TO ARCHIVE TABLES
+                                    addItemToArchiveTables($conn, $company_id, $fin_year, $code, $liqFlag, $openingBalance);
+                                    
                                 } else {
                                     $errors++;
                                     $errorDetails[] = "Error updating $code: " . $conn->error;
@@ -749,8 +945,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 if ($insertQuery->execute()) {
                                     $imported++;
                                     
-                                    // Add stock information
+                                    // Add stock information ONLY for current company
                                     updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    
+                                    // Initialize daily stock record with all zeros except current day
+                                    initializeDailyStockRecord($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    
+                                    // ADD ITEM TO ARCHIVE TABLES
+                                    addItemToArchiveTables($conn, $company_id, $fin_year, $code, $liqFlag, $openingBalance);
+                                    
                                 } else {
                                     $errors++;
                                     $errorDetails[] = "Error inserting $code: " . $conn->error;
@@ -841,6 +1044,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
     return $subclassDescriptions[$itemGroup][$liqFlag] ?? $itemGroup;
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -909,7 +1113,8 @@ function downloadTemplate() {
     setTimeout(() => {
         URL.revokeObjectURL(url);
     }, 100);
-}</script>
+}
+</script>
 </head>
 <body>
 <div class="dashboard-container">
@@ -957,6 +1162,7 @@ function downloadTemplate() {
           </a>
         </div>
       </div>
+      
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
         <div class="btn-group">
@@ -994,7 +1200,6 @@ function downloadTemplate() {
           </a>
         </div>
       </div>
-
 
       <!-- Search -->
       <form method="GET" class="search-control mb-3">
@@ -1040,8 +1245,8 @@ function downloadTemplate() {
               <th>Print Name</th>
               <th>Class</th>
               <th>Sub Class</th>
-              <th>P. Price</th>
-              <th>B. Price</th>
+              <th>Purchase Price</th>
+              <th>Base Price</th>
               <th>MRP Price</th>
               <th>Retail Price</th>
               <th>Opening Stock</th>
@@ -1053,20 +1258,20 @@ function downloadTemplate() {
             <?php foreach ($items as $item): ?>
               <?php
               // Get opening balance from tblitem_stock
-$opening_balance = 0;
-$stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
-               FROM tblitem_stock 
-               WHERE ITEM_CODE = ?";
-$stock_stmt = $conn->prepare($stock_query);
-$stock_stmt->bind_param("s", $item['CODE']);
-$stock_stmt->execute();
-$stock_result = $stock_stmt->get_result();
+              $opening_balance = 0;
+              $stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
+                             FROM tblitem_stock 
+                             WHERE ITEM_CODE = ?";
+              $stock_stmt = $conn->prepare($stock_query);
+              $stock_stmt->bind_param("s", $item['CODE']);
+              $stock_stmt->execute();
+              $stock_result = $stock_stmt->get_result();
 
-if ($stock_result->num_rows > 0) {
-    $stock_row = $stock_result->fetch_assoc();
-    $opening_balance = $stock_row['opening'];
-}
-$stock_stmt->close();
+              if ($stock_result->num_rows > 0) {
+                  $stock_row = $stock_result->fetch_assoc();
+                  $opening_balance = $stock_row['opening'];
+              }
+              $stock_stmt->close();
               ?>
               <tr>
                 <td><?= htmlspecialchars($item['CODE']); ?></td>
@@ -1127,6 +1332,8 @@ $stock_stmt->close();
               <li>Class will be automatically detected from ItemName</li>
               <li>Only classes allowed for your license type (<?= htmlspecialchars($license_type) ?>) will be imported</li>
               <li>OpeningBalance should be a whole number (integer)</li>
+              <li>Daily stock records will be automatically created for all days in current month</li>
+              <li>Archive tables will be created and items will be added to them automatically</li>
             </ul>
           </div>
         </div>

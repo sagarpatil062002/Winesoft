@@ -163,48 +163,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $purchase_id = $conn->insert_id;
         
         // Insert purchase items
-        if (isset($_POST['items']) && is_array($_POST['items'])) {
-            $detailQuery = "INSERT INTO tblpurchasedetails (
-                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
-                CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            $detailStmt = $conn->prepare($detailQuery);
-            
-            foreach ($_POST['items'] as $item) {
-                $item_code = $item['code'] ?? '';
-                $item_name = $item['name'] ?? '';
-                $item_size = $item['size'] ?? '';
-                $cases = $item['cases'] ?? 0;
-                $bottles = $item['bottles'] || 0;
-                $free_cases = $item['free_cases'] || 0;
-                $free_bottles = $item['free_bottles'] || 0;
-                $case_rate = $item['case_rate'] || 0;
-                $mrp = $item['mrp'] || 0;
-                $bottles_per_case = $item['bottles_per_case'] || 12;
-                $batch_no = $item['batch_no'] || '';
-                $auto_batch = $item['auto_batch'] || '';
-                $mfg_month = $item['mfg_month'] || '';
-                $bl = $item['bl'] || 0;
-                $vv = $item['vv'] || 0;
-                $tot_bott = $item['tot_bott'] || 0;
-                
-                // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
-                $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
-                
-                $detailStmt->bind_param(
-                    "isssdddddddisssddi",
-                    $purchase_id, $item_code, $item_name, $item_size,
-                    $cases, $bottles, $free_cases, $free_bottles, $case_rate, $mrp, $amount, $bottles_per_case,
-                    $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
-                );
-                $detailStmt->execute();
-                
-                // Update stock after inserting each item
-                updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $date, $companyId, $conn);
-            }
-            $detailStmt->close();
+if (isset($_POST['items']) && is_array($_POST['items'])) {
+    $detailQuery = "INSERT INTO tblpurchasedetails (
+        PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+        CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $detailStmt = $conn->prepare($detailQuery);
+    
+    foreach ($_POST['items'] as $item) {
+        // Use null coalescing operator (??) instead of logical OR (||) for array values
+        $item_code = $item['code'] ?? '';
+        $item_name = $item['name'] ?? '';
+        $item_size = $item['size'] ?? '';
+        $cases = floatval($item['cases'] ?? 0);
+        $bottles = intval($item['bottles'] ?? 0);
+        $free_cases = floatval($item['free_cases'] ?? 0); // Fixed variable name
+        $free_bottles = intval($item['free_bottles'] ?? 0); // Fixed variable name
+        $case_rate = floatval($item['case_rate'] ?? 0);
+        $mrp = floatval($item['mrp'] ?? 0);
+        $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+        $batch_no = $item['batch_no'] ?? '';
+        $auto_batch = $item['auto_batch'] ?? '';
+        $mfg_month = $item['mfg_month'] ?? '';
+        $bl = floatval($item['bl'] ?? 0);
+        $vv = floatval($item['vv'] ?? 0);
+        $tot_bott = intval($item['tot_bott'] ?? 0);
+        
+        // Calculate amount correctly: cases * case_rate + bottles * (case_rate / bottles_per_case)
+        $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
+        
+        $detailStmt->bind_param(
+            "isssdddddddisssddi",
+            $purchase_id, 
+            $item_code, 
+            $item_name, 
+            $item_size,
+            $cases, 
+            $bottles, 
+            $free_cases, 
+            $free_bottles, 
+            $case_rate, 
+            $mrp, 
+            $amount, 
+            $bottles_per_case,
+            $batch_no, 
+            $auto_batch, 
+            $mfg_month, 
+            $bl, 
+            $vv, 
+            $tot_bott
+        );
+        
+        if (!$detailStmt->execute()) {
+            error_log("Error inserting purchase detail: " . $detailStmt->error);
         }
+        
+        // Update stock after inserting each item
+        updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $date, $companyId, $conn);
+    }
+    $detailStmt->close();
+}
         
         header("Location: purchase_module.php?mode=".$mode."&success=1");
         exit;
@@ -1046,7 +1065,7 @@ $(function(){
     });
   }
 
-  function addRow(item){
+function addRow(item){
     if($('#noItemsRow').length) $('#noItemsRow').remove();
     
     // Use the database item if available for accurate data
@@ -1059,10 +1078,16 @@ $(function(){
     
     const cases = item.cases || 0;
     const bottles = item.bottles || 0;
+    const freeCases = item.freeCases || 0;
+    const freeBottles = item.freeBottles || 0;
     
-    // Calculate total bottles and B.L.
-    const totalBottles = calculateTotalBottles(cases, bottles, bottlesPerCase);
-    const blValue = calculateBL(itemSize, totalBottles);
+    // Use extracted values or calculate if not provided
+    const mfgMonth = item.mfgMonth || '';
+    const vv = item.vv || 0;
+    
+    // Calculate total bottles and B.L. (use extracted values if available, otherwise calculate)
+    const totalBottles = item.totBott || calculateTotalBottles(cases, bottles, bottlesPerCase);
+    const blValue = item.bl || calculateBL(itemSize, totalBottles);
     
     const amount = calculateAmount(cases, bottles, caseRate, bottlesPerCase);
     
@@ -1078,36 +1103,35 @@ $(function(){
           <input type="hidden" name="items[${currentIndex}][bottles_per_case]" value="${bottlesPerCase}">
           <input type="hidden" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}">
           <input type="hidden" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}">
-          <input type="hidden" name="items[${currentIndex}][mfg_month]" value="${item.mfgMonth || ''}">
-          <input type="hidden" name="items[${currentIndex}][bl]" value="${blValue.toFixed(2)}">
-          <input type="hidden" name="items[${currentIndex}][vv]" value="${item.vv || 0}">
-          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${totalBottles}">
-          <input type="hidden" name="items[${currentIndex}][free_cases]" value="${item.freeCases || 0}">
-          <input type="hidden" name="items[${currentIndex}][free_bottles]" value="${item.freeBottles || 0}">
+          <input type="hidden" name="items[${currentIndex}][mfg_month]" value="${mfgMonth}"> <!-- FIXED: Correct field name -->
+          <input type="hidden" name="items[${currentIndex}][bl]" value="${blValue}"> <!-- FIXED: Use extracted or calculated BL -->
+          <input type="hidden" name="items[${currentIndex}][vv]" value="${vv}">
+          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${totalBottles}"> <!-- FIXED: Use extracted or calculated total bottles -->
+          <input type="hidden" name="items[${currentIndex}][free_cases]" value="${freeCases}">
+          <input type="hidden" name="items[${currentIndex}][free_bottles]" value="${freeBottles}">
           ${itemCode}
         </td>
         <td>${itemName}</td>
         <td>${itemSize}</td>
         <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${cases}" min="0" step="0.01"></td>
         <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${bottles}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
-        <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free-cases]" value="${item.freeCases||0}" min="0" step="0.01"></td>
-        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free-bottles]" value="${item.freeBottles||0}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
+        <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free_cases]" value="${freeCases}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free_bottles]" value="${freeBottles}" min="0" step="1" max="${bottlesPerCase - 1}"></td>
         <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
         <td class="amount">${amount.toFixed(2)}</td>
-        <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp||0}" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${item.mrp || 0}" step="0.01"></td>
         <td><input type="text" class="form-control form-control-sm batch-no" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}"></td>
         <td><input type="text" class="form-control form-control-sm auto-batch" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}"></td>
-        <td><input type="text" class="form-control form-control-sm mfg-month" name="items[${currentIndex}][mfg_month]" value="${item.mfgMonth || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm mfg-month" name="items[${currentIndex}][mfg_month]" value="${mfgMonth}"></td> <!-- FIXED: Visible field -->
         <td class="bl-value">${blValue.toFixed(2)}</td>
-        <td><input type="number" class="form-control form-control-sm vv" name="items[${currentIndex}][vv]" value="${item.vv || 0}" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm vv" name="items[${currentIndex}][vv]" value="${vv}" step="0.01"></td>
         <td class="tot-bott-value">${totalBottles}</td>
         <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
       </tr>`;
     $('#itemsTable tbody').append(r);
     itemCount++; // Increment after adding the row
     updateTotals();
-  }
-
+}
   function updateTotals(){
     let t=0;
     $('.item-row .amount').each(function(){ t += parseFloat($(this).text())||0; });
@@ -1283,29 +1307,32 @@ $(function(){
     if (match) {
         return {
             itemCode: match[1].replace("SCM", ""),
-            name: match[2].trim(), // Extract the item name
-            size: match[2].trim(), // This will be refined below
+            name: match[2].trim(),
+            size: match[2].trim(),
             cases: parseFloat(match[3]),
             bottles: parseInt(match[4]),
             batchNo: match[5],
             autoBatch: match[6],
-            mfgMonth: match[7],
+            mfgMonth: match[7],  // This should be properly extracted
             mrp: parseFloat(match[8]),
-            bl: parseFloat(match[9]),
+            bl: parseFloat(match[9]),  // This should be properly extracted
             vv: parseFloat(match[10]),
-            totBott: parseInt(match[11]),
+            totBott: parseInt(match[11]),  // This should be properly extracted
             freeCases: 0,
             freeBottles: 0
         };
     }
     
-    // Fallback parsing for lines that don't match the pattern
+    // Add debug logging to see what's being parsed
+    console.log("SCM Line being parsed:", scmLine);
+    
+    // Fallback parsing...
     const parts = scmLine.split(/\s+/);
     if (parts.length < 11) {
         console.warn("Not enough parts in SCM line:", scmLine);
         return null;
     }
-    
+  
     // Find where the size field ends (before the first numeric value)
     let sizeEndIndex = 2; // Start after "SCM Code:XXXXX"
     while (sizeEndIndex < parts.length && isNaN(parseFloat(parts[sizeEndIndex]))) {

@@ -88,6 +88,30 @@ while (strtotime($current_date) <= strtotime($to_date)) {
     $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
 }
 
+// Initialize totals for each size column
+$totals = [
+    'Fermented Beer' => [
+        'purchase' => array_fill_keys($size_columns_fb, 0),
+        'sales' => array_fill_keys($size_columns_fb, 0),
+        'closing' => array_fill_keys($size_columns_fb, 0)
+    ],
+    'Mild Beer' => [
+        'purchase' => array_fill_keys($size_columns_mb, 0),
+        'sales' => array_fill_keys($size_columns_mb, 0),
+        'closing' => array_fill_keys($size_columns_mb, 0)
+    ],
+    'Spirits' => [
+        'purchase' => array_fill_keys($size_columns_s, 0),
+        'sales' => array_fill_keys($size_columns_s, 0),
+        'closing' => array_fill_keys($size_columns_s, 0)
+    ],
+    'Wines' => [
+        'purchase' => array_fill_keys($size_columns_w, 0),
+        'sales' => array_fill_keys($size_columns_w, 0),
+        'closing' => array_fill_keys($size_columns_w, 0)
+    ]
+];
+
 // Map database sizes to Excel column sizes
 $size_mapping = [
     // Fermented Beer
@@ -125,39 +149,12 @@ function getLiquorType($class, $liq_flag) {
     return 'Spirits'; // Default for non-F items
 }
 
-// Initialize daily data array
-$daily_data = [];
-
 // Process each date in the range
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
     
-    // Initialize daily totals for this date
-    $daily_totals = [
-        'Fermented Beer' => [
-            'purchase' => array_fill_keys($size_columns_fb, 0),
-            'sales' => array_fill_keys($size_columns_fb, 0),
-            'closing' => array_fill_keys($size_columns_fb, 0)
-        ],
-        'Mild Beer' => [
-            'purchase' => array_fill_keys($size_columns_mb, 0),
-            'sales' => array_fill_keys($size_columns_mb, 0),
-            'closing' => array_fill_keys($size_columns_mb, 0)
-        ],
-        'Spirits' => [
-            'purchase' => array_fill_keys($size_columns_s, 0),
-            'sales' => array_fill_keys($size_columns_s, 0),
-            'closing' => array_fill_keys($size_columns_s, 0)
-        ],
-        'Wines' => [
-            'purchase' => array_fill_keys($size_columns_w, 0),
-            'sales' => array_fill_keys($size_columns_w, 0),
-            'closing' => array_fill_keys($size_columns_w, 0)
-        ]
-    ];
-    
-    // Fetch all stock data for this month and day
+    // Fetch all stock data for this month
     $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
                   DAY_{$day}_OPEN as opening, 
                   DAY_{$day}_PURCHASE as purchase, 
@@ -188,55 +185,44 @@ foreach ($dates as $date) {
         // Map database size to Excel size
         $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
         
-        // Add to daily totals based on liquor type and size
+        // Add to totals based on liquor type and size
         switch ($liquor_type) {
             case 'Fermented Beer':
                 if (in_array($excel_size, $size_columns_fb)) {
-                    $daily_totals['Fermented Beer']['purchase'][$excel_size] += $row['purchase'];
-                    $daily_totals['Fermented Beer']['sales'][$excel_size] += $row['sales'];
-                    $daily_totals['Fermented Beer']['closing'][$excel_size] += $row['closing'];
+                    $totals['Fermented Beer']['purchase'][$excel_size] += $row['purchase'];
+                    $totals['Fermented Beer']['sales'][$excel_size] += $row['sales'];
+                    $totals['Fermented Beer']['closing'][$excel_size] += $row['closing'];
                 }
                 break;
                 
             case 'Mild Beer':
                 if (in_array($excel_size, $size_columns_mb)) {
-                    $daily_totals['Mild Beer']['purchase'][$excel_size] += $row['purchase'];
-                    $daily_totals['Mild Beer']['sales'][$excel_size] += $row['sales'];
-                    $daily_totals['Mild Beer']['closing'][$excel_size] += $row['closing'];
+                    $totals['Mild Beer']['purchase'][$excel_size] += $row['purchase'];
+                    $totals['Mild Beer']['sales'][$excel_size] += $row['sales'];
+                    $totals['Mild Beer']['closing'][$excel_size] += $row['closing'];
                 }
                 break;
                 
             case 'Spirits':
                 if (in_array($excel_size, $size_columns_s)) {
-                    $daily_totals['Spirits']['purchase'][$excel_size] += $row['purchase'];
-                    $daily_totals['Spirits']['sales'][$excel_size] += $row['sales'];
-                    $daily_totals['Spirits']['closing'][$excel_size] += $row['closing'];
+                    $totals['Spirits']['purchase'][$excel_size] += $row['purchase'];
+                    $totals['Spirits']['sales'][$excel_size] += $row['sales'];
+                    $totals['Spirits']['closing'][$excel_size] += $row['closing'];
                 }
                 break;
                 
             case 'Wines':
                 if (in_array($excel_size, $size_columns_w)) {
-                    $daily_totals['Wines']['purchase'][$excel_size] += $row['purchase'];
-                    $daily_totals['Wines']['sales'][$excel_size] += $row['sales'];
-                    $daily_totals['Wines']['closing'][$excel_size] += $row['closing'];
+                    $totals['Wines']['purchase'][$excel_size] += $row['purchase'];
+                    $totals['Wines']['sales'][$excel_size] += $row['sales'];
+                    $totals['Wines']['closing'][$excel_size] += $row['closing'];
                 }
                 break;
         }
     }
     
     $stockStmt->close();
-    
-    // Store daily totals for this date
-    $daily_data[$date] = $daily_totals;
 }
-
-// Get the closing balance for the "to date" (last date in the range)
-$to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
-    'Fermented Beer' => ['closing' => array_fill_keys($size_columns_fb, 0)],
-    'Mild Beer' => ['closing' => array_fill_keys($size_columns_mb, 0)],
-    'Spirits' => ['closing' => array_fill_keys($size_columns_s, 0)],
-    'Wines' => ['closing' => array_fill_keys($size_columns_w, 0)]
-];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -271,7 +257,6 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
     .company-header {
       text-align: center;
       margin-bottom: 10px;
-      page-break-after: avoid;
     }
     .company-header h1 {
       font-size: 18px;
@@ -291,7 +276,6 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
       border-collapse: collapse;
       margin-bottom: 10px;
       font-size: 9px;
-      page-break-inside: avoid;
     }
     .report-table th, .report-table td {
       border: 1px solid #000;
@@ -322,7 +306,7 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
       font-size: 10px;
     }
     .filter-card {
-      background-color: #f8f9fa;
+      background-color: ' . $row['COMP_FLNO'] . 'f8f9fa;
     }
     .table-responsive {
       overflow-x: auto;
@@ -468,7 +452,7 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
               </tr>
             </thead>
             <tbody>
-              <!-- Balance of the Month row - Show only the closing balance for the "to date" -->
+              <!-- Balance of the Month row -->
               <tr>
                 <td>Balance of the Month</td>
                 <td></td>
@@ -483,25 +467,25 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
                   <td>0</td>
                 <?php endfor; ?>
                 
-                <!-- Closing Balance Section - Show only the closing balance for the "to date" -->
+                <!-- Closing Balance Section -->
                 <!-- Fermented Beer Closing -->
                 <?php foreach ($size_columns_fb as $size): ?>
-                  <td><?= $to_date_closing['Fermented Beer']['closing'][$size] ?></td>
+                  <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Mild Beer Closing -->
                 <?php foreach ($size_columns_mb as $size): ?>
-                  <td><?= $to_date_closing['Mild Beer']['closing'][$size] ?></td>
+                  <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Spirits Closing -->
                 <?php foreach ($size_columns_s as $size): ?>
-                  <td><?= $to_date_closing['Spirits']['closing'][$size] ?></td>
+                  <td><?= $totals['Spirits']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <!-- Wines Closing -->
                 <?php foreach ($size_columns_w as $size): ?>
-                  <td><?= $to_date_closing['Wines']['closing'][$size] ?></td>
+                  <td><?= $totals['Wines']['closing'][$size] ?></td>
                 <?php endforeach; ?>
                 
                 <td></td>
@@ -510,7 +494,6 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
               <!-- For each date in the range -->
               <?php foreach ($dates as $date): 
                 $day_num = date('d', strtotime($date));
-                $daily_totals = $daily_data[$date];
               ?>
                 <tr>
                   <td><?= $day_num ?></td>
@@ -519,64 +502,64 @@ $to_date_closing = isset($daily_data[$to_date]) ? $daily_data[$to_date] : [
                   <!-- Received Section -->
                   <!-- Fermented Beer Received -->
                   <?php foreach ($size_columns_fb as $size): ?>
-                    <td><?= $daily_totals['Fermented Beer']['purchase'][$size] > 0 ? $daily_totals['Fermented Beer']['purchase'][$size] : 0 ?></td>
+                    <td><?= $totals['Fermented Beer']['purchase'][$size] > 0 ? $totals['Fermented Beer']['purchase'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Mild Beer Received -->
                   <?php foreach ($size_columns_mb as $size): ?>
-                    <td><?= $daily_totals['Mild Beer']['purchase'][$size] > 0 ? $daily_totals['Mild Beer']['purchase'][$size] : 0 ?></td>
+                    <td><?= $totals['Mild Beer']['purchase'][$size] > 0 ? $totals['Mild Beer']['purchase'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Spirits Received -->
                   <?php foreach ($size_columns_s as $size): ?>
-                    <td><?= $daily_totals['Spirits']['purchase'][$size] > 0 ? $daily_totals['Spirits']['purchase'][$size] : 0 ?></td>
+                    <td><?= $totals['Spirits']['purchase'][$size] > 0 ? $totals['Spirits']['purchase'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Wines Received -->
                   <?php foreach ($size_columns_w as $size): ?>
-                    <td><?= $daily_totals['Wines']['purchase'][$size] > 0 ? $daily_totals['Wines']['purchase'][$size] : 0 ?></td>
+                    <td><?= $totals['Wines']['purchase'][$size] > 0 ? $totals['Wines']['purchase'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Sold Section -->
                   <!-- Fermented Beer Sold -->
                   <?php foreach ($size_columns_fb as $size): ?>
-                    <td><?= $daily_totals['Fermented Beer']['sales'][$size] > 0 ? $daily_totals['Fermented Beer']['sales'][$size] : 0 ?></td>
+                    <td><?= $totals['Fermented Beer']['sales'][$size] > 0 ? $totals['Fermented Beer']['sales'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Mild Beer Sold -->
                   <?php foreach ($size_columns_mb as $size): ?>
-                    <td><?= $daily_totals['Mild Beer']['sales'][$size] > 0 ? $daily_totals['Mild Beer']['sales'][$size] : 0 ?></td>
+                    <td><?= $totals['Mild Beer']['sales'][$size] > 0 ? $totals['Mild Beer']['sales'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Spirits Sold -->
                   <?php foreach ($size_columns_s as $size): ?>
-                    <td><?= $daily_totals['Spirits']['sales'][$size] > 0 ? $daily_totals['Spirits']['sales'][$size] : 0 ?></td>
+                    <td><?= $totals['Spirits']['sales'][$size] > 0 ? $totals['Spirits']['sales'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Wines Sold -->
                   <?php foreach ($size_columns_w as $size): ?>
-                    <td><?= $daily_totals['Wines']['sales'][$size] > 0 ? $daily_totals['Wines']['sales'][$size] : 0 ?></td>
+                    <td><?= $totals['Wines']['sales'][$size] > 0 ? $totals['Wines']['sales'][$size] : 0 ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Closing Balance Section -->
                   <!-- Fermented Beer Closing -->
                   <?php foreach ($size_columns_fb as $size): ?>
-                    <td><?= $daily_totals['Fermented Beer']['closing'][$size] ?></td>
+                    <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Mild Beer Closing -->
                   <?php foreach ($size_columns_mb as $size): ?>
-                    <td><?= $daily_totals['Mild Beer']['closing'][$size] ?></td>
+                    <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Spirits Closing -->
                   <?php foreach ($size_columns_s as $size): ?>
-                    <td><?= $daily_totals['Spirits']['closing'][$size] ?></td>
+                    <td><?= $totals['Spirits']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Wines Closing -->
                   <?php foreach ($size_columns_w as $size): ?>
-                    <td><?= $daily_totals['Wines']['closing'][$size] ?></td>
+                    <td><?= $totals['Wines']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <td><?= $day_num ?></td>

@@ -149,3 +149,66 @@
 .nav-link .material-symbols-rounded:not(.nav-icon):not(.dropdown-arrow) {
     display: none !important;
 }
+
+
+
+        /* Logout Button */
+        .logout-section {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+            text-decoration: none;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .logout-icon {
+            margin-right: 0.75rem;
+            font-size: 1.25rem;
+        }
+        /* User Info Section */
+        .user-info-section {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .user-info-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .user-info-icon {
+            margin-right: 0.75rem;
+            font-size: 1rem;
+            min-width: 20px;
+        }
+
+        .user-info-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }

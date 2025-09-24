@@ -107,7 +107,6 @@ if ($historyResult) {
 
 
   <div class="main-content">
-        <?php include 'components/header.php'; ?>
 
 
     <div class="content-area p-3 p-md-4">
