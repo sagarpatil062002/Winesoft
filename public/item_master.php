@@ -456,59 +456,178 @@ function getValidItemGroup($subclass, $liqFlag, $conn) {
 }
 
 // Function to detect class from item name
+// Function to detect class from item name
 function detectClassFromItemName($itemName) {
     $itemName = strtoupper($itemName);
     
-    // Whisky detection
+    // WHISKY Detection - Enhanced with more patterns
     if (strpos($itemName, 'WHISKY') !== false || 
         strpos($itemName, 'WHISKEY') !== false ||
-        strpos($itemName, 'BLEND') !== false ||
         strpos($itemName, 'SCOTCH') !== false ||
-        preg_match('/\b(8PM|OFFICER\'S|MCDOWELL)\b/', $itemName)) {
+        strpos($itemName, 'SINGLE MALT') !== false ||
+        strpos($itemName, 'BLENDED') !== false ||
+        strpos($itemName, 'BOURBON') !== false ||
+        strpos($itemName, 'RYE') !== false ||
+        preg_match('/\b(JW|J\\.W\\.|JOHNNIE WALKER|JACK DANIEL|CHIVAS|ROYAL CHALLENGE|8PM|OFFICER\'S CHOICE|MCDOWELL\'S|SIGNATURE|IMPERIAL BLUE|BLACK DOG|BLACK LABEL|RED LABEL|BLUE LABEL|PLATINUM|GOLD RESERVE|BALLANTINES|GENTLEMAN JACK|TALISKAR|CARDHU|SINGLETON)\b/', $itemName) ||
+        preg_match('/\b(\d+ YEARS?|AGED|RESERVE|CENTENARY)\b/', $itemName) ||
+        preg_match('/\b(SCOTCH|MALT|BLEND)\b/', $itemName)) {
         return 'W';
     }
     
-    // Vodka detection
-    if (strpos($itemName, 'VODKA') !== false ||
-        preg_match('/\b(ABSOLUT|SMIRNOFF|ROMANOV)\b/', $itemName)) {
-        return 'K';
-    }
-    
-    // Wine detection
+    // WINE Detection - Enhanced with more patterns
     if (strpos($itemName, 'WINE') !== false ||
-        preg_match('/\b(PORT|SHERRY|CHAMPAGNE)\b/', $itemName)) {
+        strpos($itemName, 'PORT') !== false ||
+        strpos($itemName, 'SHERRY') !== false ||
+        strpos($itemName, 'CHAMPAGNE') !== false ||
+        strpos($itemName, 'SPARKLING') !== false ||
+        strpos($itemName, 'SPARKILING') !== false || // Typo in your data
+        strpos($itemName, 'MERLOT') !== false ||
+        strpos($itemName, 'CABERNET') !== false ||
+        strpos($itemName, 'CHARDONNAY') !== false ||
+        strpos($itemName, 'SAUVIGNON') !== false ||
+        strpos($itemName, 'SHIRAZ') !== false ||
+        strpos($itemName, 'ZINFANDEL') !== false ||
+        strpos($itemName, 'TEMPRANILLO') !== false ||
+        strpos($itemName, 'GRENACHE') !== false ||
+        strpos($itemName, 'VIOGNIER') !== false ||
+        strpos($itemName, 'CHENIN') !== false ||
+        strpos($itemName, 'ROSE') !== false ||
+        strpos($itemName, 'BRUT') !== false ||
+        strpos($itemName, 'CUVEE') !== false ||
+        strpos($itemName, 'VERMOUTH') !== false ||
+        strpos($itemName, 'RED-RW') !== false ||
+        strpos($itemName, 'WHITE-WW') !== false ||
+        strpos($itemName, 'RED') !== false && (strpos($itemName, 'RW') !== false || strpos($itemName, 'RED') !== false) ||
+        strpos($itemName, 'WHITE') !== false && (strpos($itemName, 'WW') !== false || strpos($itemName, 'WHITE') !== false) ||
+        preg_match('/\b(SULA|GROVER|FRATELLI|BORDEAUX|CHATEAU|TWO OCEANS|YELLOW TAIL|ZAMPA|SOMA|MADERA|INDUSTRIE|CHANDON|FOUR SEASONS|RHYTHM|PAPILLON|SIDUS|RAYA|BRO CODE|RIO|PAUSE|GRAN)\b/', $itemName) ||
+        strpos($itemName, 'VALLEY') !== false && strpos($itemName, 'RW') !== false) {
         return 'V';
     }
     
-    // Gin detection
-    if (strpos($itemName, 'GIN') !== false ||
-        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY)\b/', $itemName)) {
-        return 'G';
-    }
-    
-    // Brandy detection
+    // BRANDY Detection
     if (strpos($itemName, 'BRANDY') !== false ||
-        preg_match('/\b(HENNESSY|MARTELL|REMY MARTIN)\b/', $itemName)) {
+        strpos($itemName, 'COGNAC') !== false ||
+        strpos($itemName, 'VSOP') !== false ||
+        strpos($itemName, 'XO') !== false ||
+        strpos($itemName, 'NAPOLEON') !== false ||
+        preg_match('/\b(HENNESSY|REMY MARTIN|MARTELL|COURVOISIER|MANSION HOUSE|OLD ADMIRAL|DUNHILL)\b/', $itemName) ||
+        strpos($itemName, 'VS ') !== false) {
         return 'D';
     }
     
-    // Rum detection
+    // VODKA Detection
+    if (strpos($itemName, 'VODKA') !== false ||
+        strpos($itemName, 'WODKA') !== false || // German spelling in your data
+        preg_match('/\b(SMIRNOFF|ABSOLUT|ROMANOV|GREY GOOSE|BELVEDERE|CIROC|FINLANDIA|GORBATSCHOW|KETAL ONE)\b/', $itemName) ||
+        strpos($itemName, 'LEMON VODKA') !== false ||
+        strpos($itemName, 'ORANGE VODKA') !== false ||
+        strpos($itemName, 'FLAVORED VODKA') !== false) {
+        return 'K';
+    }
+    
+    // GIN Detection
+    if (strpos($itemName, 'GIN') !== false ||
+        strpos($itemName, 'LONDON DRY') !== false ||
+        strpos($itemName, 'NAVY STRENGTH') !== false ||
+        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY|BEEFEATER|HENDRICK\'S|BLUE RIBAND|STRANGER|SONS|FILTR)\b/', $itemName) ||
+        strpos($itemName, 'JUNIPER') !== false ||
+        strpos($itemName, 'BOTANICAL GIN') !== false ||
+        strpos($itemName, 'DRY GIN') !== false) {
+        return 'G';
+    }
+    
+    // RUM Detection
     if (strpos($itemName, 'RUM') !== false ||
-        preg_match('/\b(BACARDI|CAPTAIN MORGAN|HAVANA)\b/', $itemName)) {
+        strpos($itemName, 'DARK RUM') !== false ||
+        strpos($itemName, 'WHITE RUM') !== false ||
+        strpos($itemName, 'SPICED RUM') !== false ||
+        strpos($itemName, 'AGED RUM') !== false ||
+        preg_match('/\b(BACARDI|CAPTAIN MORGAN|OLD MONK|HAVANA CLUB|MCDOWELL\'S RUM|CONTESSA RUM)\b/', $itemName) ||
+        strpos($itemName, 'GOLD RUM') !== false ||
+        strpos($itemName, 'NAVY RUM') !== false) {
         return 'R';
     }
     
-    // Beer detection
-    if (strpos($itemName, 'BEER') !== false ||
-        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER)\b/', $itemName)) {
-        return 'B';
+    // TEQUILA Detection - Added specific tequila detection
+    if (strpos($itemName, 'TEQUILA') !== false ||
+        preg_match('/\b(SAUZA|CAMINO REAL|JOSE CUERVO|DON ANGEL|EL JIMADOR|VILLA VERCELLI)\b/', $itemName) ||
+        strpos($itemName, 'BLANCO') !== false && strpos($itemName, 'TEQUILA') !== false ||
+        strpos($itemName, 'SILVER') !== false && strpos($itemName, 'TEQUILA') !== false ||
+        strpos($itemName, 'REPOSADO') !== false) {
+        return 'O'; // Tequila typically falls under Others in many classification systems
+    }
+    
+    // LIQUEUR Detection - Added specific liqueur detection
+    if (strpos($itemName, 'LIQUEUR') !== false ||
+        strpos($itemName, 'LIQUER') !== false || // Typo in your data
+        strpos($itemName, 'SHOT') !== false ||
+        preg_match('/\b(JAGERMEISTER|KAHLUA|BAILEYS|TRIPAL SEC|YAGAWILDE|INDIAN HONEY|CABO|COCONUT|HONEY SHOT|JIM BEAM HONEY|JIM BEAM ORANGE)\b/', $itemName) ||
+        strpos($itemName, 'HERBAL') !== false && strpos($itemName, 'LIQUEUR') !== false) {
+        return 'O'; // Liqueurs typically fall under Others
+    }
+    
+    // BEER Detection - Enhanced with comprehensive indicators
+    if (strpos($itemName, 'BEER') !== false || 
+        strpos($itemName, 'LAGER') !== false ||
+        strpos($itemName, 'ALE') !== false ||
+        strpos($itemName, 'STOUT') !== false ||
+        strpos($itemName, 'PILSNER') !== false ||
+        strpos($itemName, 'DRAUGHT') !== false ||
+        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER|HEINEKEN|CORONA|FOSTER\'S|KNOCK OUT|MILLER|BECK\'S|HOEGAARDEN|BREEZER|FIGARO|RIO|YETI|BRO CODE)\b/', $itemName) ||
+        strpos($itemName, 'BREW') !== false) {
+        
+        // Check for FERMENTED BEER (Strong) indicators
+        $strongIndicators = [
+            'STRONG', 'SUPER STRONG', 'EXTRA STRONG', 'BOLD', 'HIGH', 'POWER',
+            'XXX', '5000', '8000', '9000', '10000', 'WHEAT STRONG', 'PREMIUM STRONG',
+            'EXPORT STRONG', 'SPECIAL STRONG', 'ULTRA', 'HEAVY', 'MAXIMUM', 'HIGH PUNCH',
+            'HIGH LIFE', 'SUPERIOR STRENGTH', 'ICE', 'FIGARO STRONG', 'FIGARO EXTRA STRONG'
+        ];
+        
+        // Check for MILD BEER indicators
+        $mildIndicators = [
+            'MILD', 'SMOOTH', 'LIGHT', 'DRAUGHT', 'LAGER', 'PILSNER', 'REGULAR',
+            'PREMIUM', 'EXTRA', 'CLASSIC', 'ORIGINAL', 'LITE', 'STANDARD', 'NORMAL',
+            'CRISP', 'REFRESHING', 'BLANCHE', 'BELGIAN', 'PARTY DRINK', 'SPRITZER',
+            'FRIZZANTE', 'BIANCO', 'CLARET'
+        ];
+        
+        $isStrongBeer = false;
+        $isMildBeer = false;
+        
+        // Check for strong beer indicators first (they take priority)
+        foreach ($strongIndicators as $indicator) {
+            if (strpos($itemName, $indicator) !== false) {
+                $isStrongBeer = true;
+                break;
+            }
+        }
+        
+        // If not strong beer, check for mild indicators
+        if (!$isStrongBeer) {
+            foreach ($mildIndicators as $indicator) {
+                if (strpos($itemName, $indicator) !== false) {
+                    $isMildBeer = true;
+                    break;
+                }
+            }
+        }
+        
+        // Determine beer class
+        if ($isStrongBeer) {
+            return 'F'; // FERMENTED BEER (Strong)
+        } elseif ($isMildBeer) {
+            return 'M'; // MILD BEER
+        } else {
+            // Default to Mild Beer if no specific indicators found
+            return 'M';
+        }
     }
     
     // Default to Others if no match found
     return 'O';
 }
 
-// Handle export requests
 // Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
@@ -878,12 +997,38 @@ function downloadTemplate() {
     // Create a CSV template with headers and example rows
     const headers = ['Code', 'ItemName', 'PrintName', 'Subclass', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG', 'OpeningBalance'];
     
-    // Example rows with proper formatting
+    // Comprehensive example rows covering all classes
     const exampleRows = [
-        ['ITEM001', 'Sample Whisky Item', 'Sample Print', '180ML', '100.000', '90.000', '120.000', '110.000', '<?= $mode ?>', '100'],
-        ['ITEM002', '8 PM Special Whisky', '8 PM', '180ML', '120.000', '100.000', '150.000', '130.000', 'F', '50'],
-        ['ITEM003', 'ABSOLUT INDIA VODKA', 'Absolut', '750ML', '800.000', '700.000', '1200.000', '1000.000', 'F', '25'],
-        ['ITEM004', 'Kingfisher Strong Beer', 'Kingfisher', '650ML', '80.000', '70.000', '120.000', '100.000', 'F', '200']
+        // Whisky Examples
+        ['WHISKY001', 'Johnnie Walker Red Label Whisky', 'JW Red Label', '750ML', '2500.000', '2200.000', '2800.000', '2600.000', 'F', '50'],
+        ['WHISKY002', '8PM Premium Whisky', '8PM Premium', '180ML', '120.000', '100.000', '150.000', '130.000', 'F', '100'],
+        ['WHISKY003', 'Officer\'s Choice Whisky', 'Officer\'s Choice', '375ML', '450.000', '400.000', '500.000', '480.000', 'F', '75'],
+        
+        // Wine Examples
+        ['WINE001', 'Sula Chenin Blanc White Wine', 'Sula White', '750ML', '800.000', '700.000', '1000.000', '900.000', 'F', '30'],
+        ['WINE002', 'Grover Red Wine', 'Grover Red', '750ML', '1200.000', '1000.000', '1500.000', '1300.000', 'F', '25'],
+        
+        // Brandy Examples
+        ['BRANDY001', 'Hennessy VSOP Cognac', 'Hennessy VSOP', '750ML', '8500.000', '8000.000', '10000.000', '9500.000', 'F', '15'],
+        ['BRANDY002', 'Mansion House Brandy', 'Mansion House', '180ML', '150.000', '130.000', '180.000', '160.000', 'F', '60'],
+        
+        // Vodka Examples
+        ['VODKA001', 'Smirnoff Red Label Vodka', 'Smirnoff Red', '750ML', '900.000', '800.000', '1100.000', '1000.000', 'F', '40'],
+        ['VODKA002', 'Absolut Vodka', 'Absolut', '750ML', '1200.000', '1100.000', '1400.000', '1300.000', 'F', '35'],
+        
+        // Gin Examples
+        ['GIN001', 'Bombay Sapphire Gin', 'Bombay Sapphire', '750ML', '1500.000', '1400.000', '1800.000', '1600.000', 'F', '20'],
+        ['GIN002', 'Gordon\'s London Dry Gin', 'Gordon\'s Gin', '750ML', '800.000', '700.000', '1000.000', '900.000', 'F', '45'],
+        
+        // Rum Examples
+        ['RUM001', 'Bacardi White Rum', 'Bacardi White', '750ML', '700.000', '600.000', '850.000', '750.000', 'F', '55'],
+        ['RUM002', 'Old Monk Premium Rum', 'Old Monk', '750ML', '500.000', '450.000', '600.000', '550.000', 'F', '80'],
+        
+        // Beer Examples - Strong and Mild
+        ['BEER001', 'Kingfisher Strong Beer', 'Kingfisher Strong', '650ML', '90.000', '80.000', '120.000', '100.000', 'F', '200'],
+        ['BEER002', 'Kingfisher Premium Lager', 'Kingfisher Premium', '650ML', '85.000', '75.000', '110.000', '95.000', 'F', '180'],
+        ['BEER003', 'Tuborg Super Strong Beer', 'Tuborg Strong', '650ML', '95.000', '85.000', '125.000', '105.000', 'F', '150'],
+        ['BEER004', 'Budweiser Mild Beer', 'Budweiser Mild', '650ML', '80.000', '70.000', '100.000', '90.000', 'F', '220']
     ];
     
     // Create CSV content
@@ -909,7 +1054,8 @@ function downloadTemplate() {
     setTimeout(() => {
         URL.revokeObjectURL(url);
     }, 100);
-}</script>
+}
+</script>
 </head>
 <body>
 <div class="dashboard-container">
@@ -969,31 +1115,31 @@ function downloadTemplate() {
         </div>
       </div>
 
-      <!-- Import Template Info -->
-      <div class="import-template">
-        <p><strong>Import file requirements:</strong></p>
-        <ul>
-          <li>File must contain these columns in order: <strong>Code, ItemName, PrintName, Subclass, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance</strong></li>
-          <li>Class will be automatically detected from ItemName (e.g., "Whisky" → W, "Vodka" → K)</li>
-          <li>Only CSV files are supported for import</li>
-          <li>OpeningBalance should be a whole number (integer)</li>
-        </ul>
-        <p><strong>Naming suggestions for automatic class detection:</strong></p>
-        <ul>
-          <li>Whisky: Include "Whisky", "Whiskey", "Blend", "Scotch" or brand names like "8PM", "McDowell's"</li>
-          <li>Vodka: Include "Vodka" or brand names like "Absolut", "Smirnoff"</li>
-          <li>Beer: Include "Beer" or brand names like "Kingfisher", "Tuborg"</li>
-          <li>Wine: Include "Wine", "Port", "Sherry"</li>
-          <li>Brandy: Include "Brandy" or brand names like "Hennessy"</li>
-          <li>Rum: Include "Rum" or brand names like "Bacardi"</li>
-          <li>Gin: Include "Gin" or brand names like "Bombay"</li>
-        </ul>
-        <div class="download-template">
-          <a href="javascript:void(0);" onclick="downloadTemplate()" class="btn btn-sm btn-outline-secondary">
+<div class="import-template">
+    <p><strong>Import file requirements:</strong></p>
+    <ul>
+        <li>File must contain these columns in order: <strong>Code, ItemName, PrintName, Subclass, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance</strong></li>
+        <li>Class will be automatically detected from ItemName using intelligent pattern matching</li>
+        <li>Only CSV files are supported for import</li>
+        <li>OpeningBalance should be a whole number (integer)</li>
+    </ul>
+    <p><strong>Automatic class detection patterns:</strong></p>
+    <ul>
+        <li><strong>Whisky (W)</strong>: "Whisky/Whiskey", "Scotch", "Blended", brand names like "Johnnie Walker", "8PM", "Officer's Choice"</li>
+        <li><strong>Wine (V)</strong>: "Wine", "Port", "Sherry", "Champagne", brand names like "Sula", "Grover"</li>
+        <li><strong>Brandy (D)</strong>: "Brandy", "Cognac", "VSOP", "XO", brand names like "Hennessy", "Remy Martin"</li>
+        <li><strong>Vodka (K)</strong>: "Vodka", brand names like "Smirnoff", "Absolut", "Romanov"</li>
+        <li><strong>Gin (G)</strong>: "Gin", "London Dry", brand names like "Bombay Sapphire", "Gordon's"</li>
+        <li><strong>Rum (R)</strong>: "Rum", "Dark Rum", "White Rum", brand names like "Bacardi", "Old Monk"</li>
+        <li><strong>Beer - Fermented (F)</strong>: "Strong", "Super Strong", "5000", "8000" indicators</li>
+        <li><strong>Beer - Mild (M)</strong>: "Mild", "Light", "Lager", "Premium", "Draught" indicators</li>
+    </ul>
+    <div class="download-template">
+        <a href="javascript:void(0);" onclick="downloadTemplate()" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-download"></i> Download Template
-          </a>
-        </div>
-      </div>
+        </a>
+    </div>
+</div>
 
 
       <!-- Search -->
