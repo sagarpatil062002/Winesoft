@@ -76,19 +76,25 @@ if (!empty($params)) {
 
       <!-- Search and Filter -->
       <div class="d-flex flex-column flex-md-row gap-3 mb-3">
-        <!-- Search Form -->
-        <form method="GET" class="search-control flex-grow-1">
-          <div class="input-group">
-            <input type="text" name="search" class="form-control"
-                   placeholder="Search by ledger name or code..." value="<?= htmlspecialchars($search); ?>">
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-search"></i> Find
-            </button>
-            <?php if ($search !== ''): ?>
-              <a href="ledger_master.php" class="btn btn-secondary">Clear</a>
-            <?php endif; ?>
-          </div>
+       <!-- Search Form -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <form method="GET" class="search-control" id="searchForm">
+            <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
+            <input type="hidden" name="sequence_type" value="<?= htmlspecialchars($sequence_type); ?>">
+            <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
+            <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control"
+                       placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+                <?php if ($search !== ''): ?>
+                    <a href="?mode=<?= $mode ?>&sequence_type=<?= $sequence_type ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-secondary">Clear</a>
+                <?php endif; ?>
+            </div>
         </form>
+    </div>
+</div>
       </div>
 
       <!-- Action Buttons -->

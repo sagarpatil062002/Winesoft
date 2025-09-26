@@ -77,7 +77,6 @@ function getItemCategory($conn, $item_code, $mode) {
 /**
  * Get item size from CC in tblsubclass
  */
-
 function getItemSize($conn, $item_code, $mode) {
     // First try to get size from DETAILS2 in tblitemmaster
     $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
@@ -135,7 +134,7 @@ function getItemSize($conn, $item_code, $mode) {
 }
 
 /**
- * Generate bills with volume limits
+ * Generate bills with volume limits - UPDATED LOGIC
  */
 function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
     $category_limits = getCategoryLimits($conn, $comp_id);
@@ -147,72 +146,38 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
     foreach ($date_array as $date_index => $sale_date) {
         $daily_bills = [];
         
-        // Group items by category for this day
-        $category_items = [];
+        // Collect all items for this day
+        $all_items = [];
         foreach ($items_data as $item_code => $item_data) {
             $qty = $daily_sales_data[$item_code][$date_index] ?? 0;
             if ($qty > 0) {
                 $category = getItemCategory($conn, $item_code, $mode);
                 $size = getItemSize($conn, $item_code, $mode);
-                $volume = $qty * $size;
                 
-                if (!isset($category_items[$category])) {
-                    $category_items[$category] = [];
-                }
-                
-                $category_items[$category][] = [
+                $all_items[] = [
                     'code' => $item_code,
                     'qty' => $qty,
                     'rate' => $item_data['rate'],
                     'size' => $size,
-                    'volume' => $volume,
-                    'amount' => $qty * $item_data['rate']
+                    'amount' => $qty * $item_data['rate'],
+                    'name' => $item_data['name'],
+                    'category' => $category
                 ];
             }
         }
         
-        // Process each category with its limit
-        foreach ($category_items as $category => $items) {
-            $limit = $category_limits[$category] ?? 0;
-            
-            if ($limit <= 0) {
-                // No limit, put all items in one bill
-                if (!empty($items)) {
-                    $daily_bills[] = createBill($items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
-                }
-            } else {
-                // Sort items by volume descending (First-Fit Decreasing algorithm)
-                usort($items, function($a, $b) {
-                    return $b['volume'] <=> $a['volume'];
-                });
-                
-                // Create bills by grouping items without exceeding the limit
-                $bills_for_category = [];
-                $current_bill_items = [];
-                $current_bill_volume = 0;
-                
-                foreach ($items as $item) {
-                    // If adding this item would exceed the limit, finalize current bill
-                    if ($current_bill_volume + $item['volume'] > $limit && !empty($current_bill_items)) {
-                        $bills_for_category[] = $current_bill_items;
-                        $current_bill_items = [];
-                        $current_bill_volume = 0;
-                    }
-                    
-                    // Add item to current bill
-                    $current_bill_items[] = $item;
-                    $current_bill_volume += $item['volume'];
-                }
-                
-                // Add the last bill if it has items
-                if (!empty($current_bill_items)) {
-                    $bills_for_category[] = $current_bill_items;
-                }
-                
-                // Create actual bills from the grouped items
-                foreach ($bills_for_category as $bill_items) {
-                    $daily_bills[] = createBill($bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
-                }
+        // If no items for this day, skip
+        if (empty($all_items)) {
+            continue;
+        }
+        
+        // Create bills using the UPDATED algorithm
+        $bills_for_day = createOptimizedBills($all_items, $category_limits);
+        
+        // Create actual bills
+        foreach ($bills_for_day as $bill_items) {
+            if (!empty($bill_items)) {
+                $daily_bills[] = createBill($bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
             }
         }
         
@@ -220,6 +185,120 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
     }
     
     return $bills;
+}
+
+/**
+ * Create optimized bills that handle both scenarios - UPDATED FUNCTION
+ */
+function createOptimizedBills($all_items, $category_limits) {
+    $bills = [];
+    
+    if (empty($all_items)) {
+        return [];
+    }
+    
+    // Expand items while keeping track of quantities for optimal packing
+    $item_pools = [];
+    foreach ($all_items as $item) {
+        $category = $item['category'];
+        if (!isset($item_pools[$category])) {
+            $item_pools[$category] = [];
+        }
+        
+        $item_pools[$category][] = [
+            'code' => $item['code'],
+            'rate' => $item['rate'],
+            'size' => $item['size'],
+            'name' => $item['name'],
+            'total_qty' => $item['qty'],
+            'remaining_qty' => $item['qty']
+        ];
+    }
+    
+    // Sort each category's items by size descending
+    foreach ($item_pools as &$pool) {
+        usort($pool, function($a, $b) {
+            return $b['size'] <=> $a['size'];
+        });
+    }
+    
+    // Continue creating bills until all items are allocated
+    $has_remaining_items = true;
+    
+    while ($has_remaining_items) {
+        $current_bill = [];
+        $category_usage = []; // Track volume per category in current bill
+        
+        $has_remaining_items = false;
+        
+        // Try to fill the current bill with items from all categories
+        foreach ($item_pools as $category => &$pool) {
+            $limit = $category_limits[$category] ?? 0;
+            
+            foreach ($pool as &$item) {
+                if ($item['remaining_qty'] > 0) {
+                    $current_category_volume = $category_usage[$category] ?? 0;
+                    $available_space = $limit - $current_category_volume;
+                    
+                    // Calculate how many of this item can fit
+                    $max_fit = ($limit <= 0) ? $item['remaining_qty'] : floor($available_space / $item['size']);
+                    $qty_to_add = min($item['remaining_qty'], $max_fit);
+                    
+                    if ($qty_to_add > 0) {
+                        // Add to current bill
+                        $bill_item_key = findBillItem($current_bill, $item['code']);
+                        
+                        if ($bill_item_key !== false) {
+                            // Update existing item in bill
+                            $current_bill[$bill_item_key]['qty'] += $qty_to_add;
+                            $current_bill[$bill_item_key]['amount'] += $qty_to_add * $item['rate'];
+                        } else {
+                            // Add new item to bill
+                            $current_bill[] = [
+                                'code' => $item['code'],
+                                'qty' => $qty_to_add,
+                                'rate' => $item['rate'],
+                                'size' => $item['size'],
+                                'amount' => $qty_to_add * $item['rate'],
+                                'name' => $item['name'],
+                                'category' => $category
+                            ];
+                        }
+                        
+                        // Update tracking
+                        $item['remaining_qty'] -= $qty_to_add;
+                        $category_usage[$category] = ($category_usage[$category] ?? 0) + ($qty_to_add * $item['size']);
+                    }
+                }
+                
+                if ($item['remaining_qty'] > 0) {
+                    $has_remaining_items = true;
+                }
+            }
+        }
+        
+        // If we created a bill with items, add it to the bills list
+        if (!empty($current_bill)) {
+            $bills[] = $current_bill;
+        } else {
+            // If no items could be added to the current bill, break to avoid infinite loop
+            break;
+        }
+    }
+    
+    return $bills;
+}
+
+/**
+ * Find if item already exists in bill
+ */
+function findBillItem($bill_items, $item_code) {
+    foreach ($bill_items as $key => $item) {
+        if ($item['code'] === $item_code) {
+            return $key;
+        }
+    }
+    return false;
 }
 
 /**

@@ -148,6 +148,8 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                     <li class="nav-item"><a href="groupwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Groupwise Sales Report</span></a></li>
                     <li class="nav-item"><a href="credit_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Sales Report</span></a></li>
                     <li class="nav-item"><a href="itemwise_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Itemwise Stock Report</span></a></li>
+                    <li class="nav-item"><a href="breakage_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Breakage Report</span></a></li>
+                    <li class="nav-item"><a href="sales_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Sales  Register</span></a></li>
 
                 </ul>
             </li>

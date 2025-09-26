@@ -33,7 +33,7 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Define groups based on tblclass
+// Define groups based on tblclass - UPDATED FOR BEER CLASSES
 $groups = [
     'SPIRITS' => [
         'name' => 'SPIRITS',
@@ -45,9 +45,14 @@ $groups = [
         'classes' => ['V'], // Wines
         'liq_flag' => 'F'
     ],
-    'BEER [FERMENTED & MILD]' => [
-        'name' => 'BEER [FERMENTED & MILD]',
-        'classes' => ['F', 'M'], // Fermented Beer, Mild Beer
+    'FERMENTED BEER' => [
+        'name' => 'FERMENTED BEER',
+        'classes' => ['F'], // Fermented Beer
+        'liq_flag' => 'F'
+    ],
+    'MILD BEER' => [
+        'name' => 'MILD BEER', 
+        'classes' => ['M'], // Mild Beer
         'liq_flag' => 'F'
     ],
     'COUNTRY LIQUOR' => [
@@ -59,10 +64,12 @@ $groups = [
 
 // Generate report data based on filters
 $report_data = [];
+// Initialize group totals with the updated beer groups
 $group_totals = [
     'SPIRITS' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
     'WINE' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
-    'BEER [FERMENTED & MILD]' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
+    'FERMENTED BEER' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
+    'MILD BEER' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
     'COUNTRY LIQUOR' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0]
 ];
 $grand_total = ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0];

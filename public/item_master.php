@@ -454,13 +454,11 @@ function getValidItemGroup($subclass, $liqFlag, $conn) {
     
     return 'O'; // Final fallback
 }
-
-// Function to detect class from item name
 // Function to detect class from item name
 function detectClassFromItemName($itemName) {
     $itemName = strtoupper($itemName);
     
-    // WHISKY Detection - Enhanced with more patterns
+    // WHISKY Detection
     if (strpos($itemName, 'WHISKY') !== false || 
         strpos($itemName, 'WHISKEY') !== false ||
         strpos($itemName, 'SCOTCH') !== false ||
@@ -468,39 +466,27 @@ function detectClassFromItemName($itemName) {
         strpos($itemName, 'BLENDED') !== false ||
         strpos($itemName, 'BOURBON') !== false ||
         strpos($itemName, 'RYE') !== false ||
-        preg_match('/\b(JW|J\\.W\\.|JOHNNIE WALKER|JACK DANIEL|CHIVAS|ROYAL CHALLENGE|8PM|OFFICER\'S CHOICE|MCDOWELL\'S|SIGNATURE|IMPERIAL BLUE|BLACK DOG|BLACK LABEL|RED LABEL|BLUE LABEL|PLATINUM|GOLD RESERVE|BALLANTINES|GENTLEMAN JACK|TALISKAR|CARDHU|SINGLETON)\b/', $itemName) ||
-        preg_match('/\b(\d+ YEARS?|AGED|RESERVE|CENTENARY)\b/', $itemName) ||
-        preg_match('/\b(SCOTCH|MALT|BLEND)\b/', $itemName)) {
+        preg_match('/\b(JOHNNIE WALKER|JACK DANIEL|CHIVAS|ROYAL CHALLENGE|8PM|OFFICER\'S CHOICE|MCDOWELL\'S|SIGNATURE|IMPERIAL BLUE)\b/', $itemName) ||
+        preg_match('/\b(\d+ YEARS?|AGED)\b/', $itemName)) {
         return 'W';
     }
     
-    // WINE Detection - Enhanced with more patterns
+    // WINE Detection
     if (strpos($itemName, 'WINE') !== false ||
         strpos($itemName, 'PORT') !== false ||
         strpos($itemName, 'SHERRY') !== false ||
         strpos($itemName, 'CHAMPAGNE') !== false ||
         strpos($itemName, 'SPARKLING') !== false ||
-        strpos($itemName, 'SPARKILING') !== false || // Typo in your data
         strpos($itemName, 'MERLOT') !== false ||
         strpos($itemName, 'CABERNET') !== false ||
         strpos($itemName, 'CHARDONNAY') !== false ||
         strpos($itemName, 'SAUVIGNON') !== false ||
-        strpos($itemName, 'SHIRAZ') !== false ||
-        strpos($itemName, 'ZINFANDEL') !== false ||
-        strpos($itemName, 'TEMPRANILLO') !== false ||
-        strpos($itemName, 'GRENACHE') !== false ||
-        strpos($itemName, 'VIOGNIER') !== false ||
-        strpos($itemName, 'CHENIN') !== false ||
-        strpos($itemName, 'ROSE') !== false ||
-        strpos($itemName, 'BRUT') !== false ||
-        strpos($itemName, 'CUVEE') !== false ||
-        strpos($itemName, 'VERMOUTH') !== false ||
-        strpos($itemName, 'RED-RW') !== false ||
-        strpos($itemName, 'WHITE-WW') !== false ||
-        strpos($itemName, 'RED') !== false && (strpos($itemName, 'RW') !== false || strpos($itemName, 'RED') !== false) ||
-        strpos($itemName, 'WHITE') !== false && (strpos($itemName, 'WW') !== false || strpos($itemName, 'WHITE') !== false) ||
-        preg_match('/\b(SULA|GROVER|FRATELLI|BORDEAUX|CHATEAU|TWO OCEANS|YELLOW TAIL|ZAMPA|SOMA|MADERA|INDUSTRIE|CHANDON|FOUR SEASONS|RHYTHM|PAPILLON|SIDUS|RAYA|BRO CODE|RIO|PAUSE|GRAN)\b/', $itemName) ||
-        strpos($itemName, 'VALLEY') !== false && strpos($itemName, 'RW') !== false) {
+        strpos($itemName, 'RED WINE') !== false ||
+        strpos($itemName, 'WHITE WINE') !== false ||
+        strpos($itemName, 'ROSE WINE') !== false ||
+        strpos($itemName, 'DESSERT WINE') !== false ||
+        strpos($itemName, 'FORTIFIED WINE') !== false ||
+        preg_match('/\b(SULA|GROVER|FRATELLI|BORDEAUX|CHATEAU)\b/', $itemName)) {
         return 'V';
     }
     
@@ -517,8 +503,7 @@ function detectClassFromItemName($itemName) {
     
     // VODKA Detection
     if (strpos($itemName, 'VODKA') !== false ||
-        strpos($itemName, 'WODKA') !== false || // German spelling in your data
-        preg_match('/\b(SMIRNOFF|ABSOLUT|ROMANOV|GREY GOOSE|BELVEDERE|CIROC|FINLANDIA|GORBATSCHOW|KETAL ONE)\b/', $itemName) ||
+        preg_match('/\b(SMIRNOFF|ABSOLUT|ROMANOV|GREY GOOSE|BELVEDERE|CIROC|FINLANDIA)\b/', $itemName) ||
         strpos($itemName, 'LEMON VODKA') !== false ||
         strpos($itemName, 'ORANGE VODKA') !== false ||
         strpos($itemName, 'FLAVORED VODKA') !== false) {
@@ -529,7 +514,7 @@ function detectClassFromItemName($itemName) {
     if (strpos($itemName, 'GIN') !== false ||
         strpos($itemName, 'LONDON DRY') !== false ||
         strpos($itemName, 'NAVY STRENGTH') !== false ||
-        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY|BEEFEATER|HENDRICK\'S|BLUE RIBAND|STRANGER|SONS|FILTR)\b/', $itemName) ||
+        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY|BEEFEATER|HENDRICK\'S|BLUE RIBAND)\b/', $itemName) ||
         strpos($itemName, 'JUNIPER') !== false ||
         strpos($itemName, 'BOTANICAL GIN') !== false ||
         strpos($itemName, 'DRY GIN') !== false) {
@@ -548,24 +533,6 @@ function detectClassFromItemName($itemName) {
         return 'R';
     }
     
-    // TEQUILA Detection - Added specific tequila detection
-    if (strpos($itemName, 'TEQUILA') !== false ||
-        preg_match('/\b(SAUZA|CAMINO REAL|JOSE CUERVO|DON ANGEL|EL JIMADOR|VILLA VERCELLI)\b/', $itemName) ||
-        strpos($itemName, 'BLANCO') !== false && strpos($itemName, 'TEQUILA') !== false ||
-        strpos($itemName, 'SILVER') !== false && strpos($itemName, 'TEQUILA') !== false ||
-        strpos($itemName, 'REPOSADO') !== false) {
-        return 'O'; // Tequila typically falls under Others in many classification systems
-    }
-    
-    // LIQUEUR Detection - Added specific liqueur detection
-    if (strpos($itemName, 'LIQUEUR') !== false ||
-        strpos($itemName, 'LIQUER') !== false || // Typo in your data
-        strpos($itemName, 'SHOT') !== false ||
-        preg_match('/\b(JAGERMEISTER|KAHLUA|BAILEYS|TRIPAL SEC|YAGAWILDE|INDIAN HONEY|CABO|COCONUT|HONEY SHOT|JIM BEAM HONEY|JIM BEAM ORANGE)\b/', $itemName) ||
-        strpos($itemName, 'HERBAL') !== false && strpos($itemName, 'LIQUEUR') !== false) {
-        return 'O'; // Liqueurs typically fall under Others
-    }
-    
     // BEER Detection - Enhanced with comprehensive indicators
     if (strpos($itemName, 'BEER') !== false || 
         strpos($itemName, 'LAGER') !== false ||
@@ -573,23 +540,20 @@ function detectClassFromItemName($itemName) {
         strpos($itemName, 'STOUT') !== false ||
         strpos($itemName, 'PILSNER') !== false ||
         strpos($itemName, 'DRAUGHT') !== false ||
-        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER|HEINEKEN|CORONA|FOSTER\'S|KNOCK OUT|MILLER|BECK\'S|HOEGAARDEN|BREEZER|FIGARO|RIO|YETI|BRO CODE)\b/', $itemName) ||
-        strpos($itemName, 'BREW') !== false) {
+        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER|HEINEKEN|CORONA|FOSTER\'S)\b/', $itemName)) {
         
         // Check for FERMENTED BEER (Strong) indicators
         $strongIndicators = [
             'STRONG', 'SUPER STRONG', 'EXTRA STRONG', 'BOLD', 'HIGH', 'POWER',
             'XXX', '5000', '8000', '9000', '10000', 'WHEAT STRONG', 'PREMIUM STRONG',
-            'EXPORT STRONG', 'SPECIAL STRONG', 'ULTRA', 'HEAVY', 'MAXIMUM', 'HIGH PUNCH',
-            'HIGH LIFE', 'SUPERIOR STRENGTH', 'ICE', 'FIGARO STRONG', 'FIGARO EXTRA STRONG'
+            'EXPORT STRONG', 'SPECIAL STRONG', 'ULTRA', 'HEAVY', 'MAXIMUM'
         ];
         
         // Check for MILD BEER indicators
         $mildIndicators = [
             'MILD', 'SMOOTH', 'LIGHT', 'DRAUGHT', 'LAGER', 'PILSNER', 'REGULAR',
             'PREMIUM', 'EXTRA', 'CLASSIC', 'ORIGINAL', 'LITE', 'STANDARD', 'NORMAL',
-            'CRISP', 'REFRESHING', 'BLANCHE', 'BELGIAN', 'PARTY DRINK', 'SPRITZER',
-            'FRIZZANTE', 'BIANCO', 'CLARET'
+            'CRISP', 'REFRESHING'
         ];
         
         $isStrongBeer = false;
@@ -627,7 +591,6 @@ function detectClassFromItemName($itemName) {
     // Default to Others if no match found
     return 'O';
 }
-
 // Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];

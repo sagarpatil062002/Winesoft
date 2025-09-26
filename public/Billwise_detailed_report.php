@@ -226,6 +226,7 @@ if (isset($_GET['generate'])) {
                   <th>Item Description</th>
                   <th class="text-right">Rate</th>
                   <th class="text-center">Qty.</th>
+                  <th class="text-center">Size</th>
                   <th class="text-right">Tot. Amt.</th>
                 </tr>
               </thead>
@@ -235,7 +236,7 @@ if (isset($_GET['generate'])) {
                 foreach ($grouped_data as $bill_no_key => $bill_data): 
                 ?>
                   <tr class="bill-header">
-                    <td colspan="8">
+                    <td colspan="9">
                       <strong>Bill No:</strong> <?= htmlspecialchars($bill_no_key) ?> | 
                       <strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['date'])) ?> | 
                       <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
@@ -249,9 +250,10 @@ if (isset($_GET['generate'])) {
                     <td class="text-center"><?= date('d/m/Y', strtotime($item['DATE'])) ?></td>
                     <td class="text-center"><?= htmlspecialchars($bill_no_key) ?></td>
                     <td class="text-center"><?= htmlspecialchars($bill_data['customer']) ?></td>
-                    <td><?= htmlspecialchars($item['ItemName']) ?> <?= !empty($item['ItemSize']) ? '(' . htmlspecialchars($item['ItemSize']) . ')' : '' ?></td>
+                    <td><?= htmlspecialchars($item['ItemName']) ?></td>
                     <td class="text-right"><?= isset($item['RATE']) ? number_format($item['RATE'], 2) : number_format($item['Rate'], 2) ?></td>
                     <td class="text-center"><?= htmlspecialchars($item['Quantity']) ?></td>
+                    <td class="text-center"><?= !empty($item['ItemSize']) ? htmlspecialchars($item['ItemSize']) : '-' ?></td>
                     <td class="text-right"><?= isset($item['AMOUNT']) ? number_format($item['AMOUNT'], 2) : number_format($item['Amount'], 2) ?></td>
                   </tr>
                   <?php endforeach; ?>
@@ -259,7 +261,7 @@ if (isset($_GET['generate'])) {
                 <?php endforeach; ?>
                 
                 <tr class="total-row">
-                  <td colspan="7" class="text-end"><strong>Total Amount :</strong></td>
+                  <td colspan="8" class="text-end"><strong>Total Amount :</strong></td>
                   <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
                 </tr>
               </tbody>

@@ -16,6 +16,11 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
+// Check for success message in URL (ADD THIS SECTION)
+if (isset($_GET['success'])) {
+    $success_message = urldecode($_GET['success']);
+}
+
 // Default view selection - show all records initially
 $view_type = isset($_GET['view_type']) ? $_GET['view_type'] : 'all';
 
@@ -41,7 +46,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ? AND sh.BILL_DATE = ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC";
+              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Already in descending order
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("is", $compID, $Closing_Stock);
@@ -63,7 +68,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ? AND sh.BILL_DATE BETWEEN ? AND ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC";
+              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Already in descending order
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("iss", $compID, $start_date, $end_date);
@@ -72,7 +77,7 @@ if ($view_type === 'date') {
     $sales = $result->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 } else {
-    // Fetch all sales records (default view)
+    // Fetch all sales records (default view) - UPDATED ORDER BY CLAUSE
     $query = "SELECT 
                 sh.BILL_NO,
                 sh.BILL_DATE,
@@ -85,7 +90,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC";
+              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Ensured descending order
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $compID);
@@ -135,7 +140,7 @@ if (isset($_GET['delete_bill'])) {
     }
 }
 
-// Handle success/error messages
+// Handle success/error messages from session (for delete operations)
 if (isset($_SESSION['success'])) {
     $success_message = $_SESSION['success'];
     unset($_SESSION['success']);
@@ -178,16 +183,17 @@ if (isset($_SESSION['error'])) {
         </div>
       </div>
 
+      <!-- Success/Error Messages Section (UPDATED) -->
       <?php if (isset($success_message)): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <i class="fa-solid fa-circle-check me-2"></i> <?= $success_message ?>
+          <i class="fa-solid fa-circle-check me-2"></i> <?= htmlspecialchars($success_message) ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
       
       <?php if (isset($error_message)): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <i class="fa-solid fa-circle-exclamation me-2"></i> <?= $error_message ?>
+          <i class="fa-solid fa-circle-exclamation me-2"></i> <?= htmlspecialchars($error_message) ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
@@ -265,6 +271,7 @@ if (isset($_SESSION['error'])) {
               echo 'All Sales Records';
           }
           ?>
+          <span class="badge bg-primary ms-2"><?= count($sales) ?> bills</span>
         </div>
         <div class="card-body">
           <?php if (count($sales) > 0): ?>
@@ -292,13 +299,13 @@ if (isset($_SESSION['error'])) {
                     }
                   ?>
                     <tr>
-                      <td><?= htmlspecialchars($sale['BILL_NO']) ?></td>
+                      <td class="fw-bold"><?= htmlspecialchars($sale['BILL_NO']) ?></td>
                       <td><?= date('d-M-Y', strtotime($sale['BILL_DATE'])) ?></td>
-                      <td><?= htmlspecialchars($sale['item_count']) ?></td>
-                      <td>₹<?= number_format($sale['TOTAL_AMOUNT'], 2) ?></td>
+                      <td><span class="badge bg-secondary"><?= htmlspecialchars($sale['item_count']) ?> items</span></td>
+                      <td class="fw-bold">₹<?= number_format($sale['TOTAL_AMOUNT'], 2) ?></td>
                       <td>₹<?= number_format($sale['DISCOUNT'], 2) ?></td>
-                      <td>₹<?= number_format($sale['NET_AMOUNT'], 2) ?></td>
-                      <td><?= $liquorType ?></td>
+                      <td class="fw-bold text-success">₹<?= number_format($sale['NET_AMOUNT'], 2) ?></td>
+                      <td><span class="badge bg-info"><?= $liquorType ?></span></td>
                       <td>
                         <div class="action-buttons">
                           <!-- Edit Button -->
@@ -385,6 +392,13 @@ $('form').on('submit', function(e) {
     alert('Start date cannot be greater than End date');
     return false;
   }
+});
+
+// Auto-dismiss alerts after 5 seconds
+$(document).ready(function() {
+  setTimeout(function() {
+    $('.alert').alert('close');
+  }, 5000);
 });
 </script>
 </body>

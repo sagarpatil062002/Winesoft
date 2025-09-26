@@ -35,7 +35,7 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Define groups based on tblclass (same as groupwise_sales_report.php)
+// Define groups based on tblclass (UPDATED - Beer classes separated like groupwise_sales_report.php)
 $groups = [
     'SPIRITS' => [
         'name' => 'SPIRITS',
@@ -47,9 +47,14 @@ $groups = [
         'classes' => ['V'], // Wines
         'liq_flag' => 'F'
     ],
-    'BEER [FERMENTED & MILD]' => [
-        'name' => 'BEER [FERMENTED & MILD]',
-        'classes' => ['F', 'M'], // Fermented Beer, Mild Beer
+    'FERMENTED BEER' => [
+        'name' => 'FERMENTED BEER',
+        'classes' => ['F'], // Fermented Beer
+        'liq_flag' => 'F'
+    ],
+    'MILD BEER' => [
+        'name' => 'MILD BEER', 
+        'classes' => ['M'], // Mild Beer
         'liq_flag' => 'F'
     ],
     'COUNTRY LIQUOR' => [
@@ -61,10 +66,12 @@ $groups = [
 
 // Generate report data based on filters
 $report_data = [];
+// Initialize group totals with the updated beer groups
 $group_totals = [
     'SPIRITS' => 0,
     'WINE' => 0,
-    'BEER [FERMENTED & MILD]' => 0,
+    'FERMENTED BEER' => 0,
+    'MILD BEER' => 0,
     'COUNTRY LIQUOR' => 0
 ];
 $grand_total = 0;
@@ -115,7 +122,8 @@ if (isset($_GET['generate'])) {
             $report_data[$sale_date] = [
                 'SPIRITS' => 0,
                 'WINE' => 0,
-                'BEER [FERMENTED & MILD]' => 0,
+                'FERMENTED BEER' => 0,
+                'MILD BEER' => 0,
                 'COUNTRY LIQUOR' => 0,
                 'TOTAL' => 0
             ];
@@ -326,7 +334,8 @@ if (isset($_GET['generate'])) {
                   <th>Date</th>
                   <th>SPIRITS</th>
                   <th>WINE</th>
-                  <th>BEER [FERMENTED & MILD]</th>
+                  <th>FERMENTED BEER</th>
+                  <th>MILD BEER</th>
                   <th>COUNTRY LIQUOR</th>
                   <th>Total Sale</th>
                 </tr>
@@ -337,7 +346,8 @@ if (isset($_GET['generate'])) {
                     <td><?= date('d/m/Y', strtotime($date)) ?></td>
                     <td class="text-right"><?= number_format($groups_data['SPIRITS'], 2) ?></td>
                     <td class="text-right"><?= number_format($groups_data['WINE'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['BEER [FERMENTED & MILD]'], 2) ?></td>
+                    <td class="text-right"><?= number_format($groups_data['FERMENTED BEER'], 2) ?></td>
+                    <td class="text-right"><?= number_format($groups_data['MILD BEER'], 2) ?></td>
                     <td class="text-right"><?= number_format($groups_data['COUNTRY LIQUOR'], 2) ?></td>
                     <td class="text-right"><?= number_format($groups_data['TOTAL'], 2) ?></td>
                   </tr>
@@ -348,7 +358,8 @@ if (isset($_GET['generate'])) {
                   <td><strong>Total</strong></td>
                   <td class="text-right"><strong><?= number_format($group_totals['SPIRITS'], 2) ?></strong></td>
                   <td class="text-right"><strong><?= number_format($group_totals['WINE'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['BEER [FERMENTED & MILD]'], 2) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($group_totals['FERMENTED BEER'], 2) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($group_totals['MILD BEER'], 2) ?></strong></td>
                   <td class="text-right"><strong><?= number_format($group_totals['COUNTRY LIQUOR'], 2) ?></strong></td>
                   <td class="text-right"><strong><?= number_format($grand_total, 2) ?></strong></td>
                 </tr>

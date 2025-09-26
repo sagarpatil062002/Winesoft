@@ -44,6 +44,11 @@ if ($tableCheckResult->num_rows == 0) {
     $dailyStockTable = "tbldailystock_1";
 }
 
+// Check if the table has DAY_31 columns (for months with less than 31 days)
+$checkDay31Query = "SHOW COLUMNS FROM $dailyStockTable LIKE 'DAY_31_OPEN'";
+$day31Result = $conn->query($checkDay31Query);
+$hasDay31Columns = ($day31Result->num_rows > 0);
+
 // Function to group sizes by base size (remove suffixes after ML and trim)
 function getBaseSize($size) {
     // Extract the base size (everything before any special characters after ML)
@@ -228,10 +233,43 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
-// Process each date in the range
+// Process each date in the range with month-aware logic
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
+    $days_in_month = date('t', strtotime($date));
+    
+    // Skip if day exceeds month length AND table doesn't have DAY_31 columns
+    if ($day > $days_in_month && !$hasDay31Columns) {
+        // Initialize empty data for this date
+        $daily_data[$date] = [
+            'Spirits' => [
+                'purchase' => array_fill_keys($display_sizes_s, 0),
+                'sales' => array_fill_keys($display_sizes_s, 0),
+                'closing' => array_fill_keys($display_sizes_s, 0),
+                'opening' => array_fill_keys($display_sizes_s, 0)
+            ],
+            'Wines' => [
+                'purchase' => array_fill_keys($display_sizes_w, 0),
+                'sales' => array_fill_keys($display_sizes_w, 0),
+                'closing' => array_fill_keys($display_sizes_w, 0),
+                'opening' => array_fill_keys($display_sizes_w, 0)
+            ],
+            'Fermented Beer' => [
+                'purchase' => array_fill_keys($display_sizes_fb, 0),
+                'sales' => array_fill_keys($display_sizes_fb, 0),
+                'closing' => array_fill_keys($display_sizes_fb, 0),
+                'opening' => array_fill_keys($display_sizes_fb, 0)
+            ],
+            'Mild Beer' => [
+                'purchase' => array_fill_keys($display_sizes_mb, 0),
+                'sales' => array_fill_keys($display_sizes_mb, 0),
+                'closing' => array_fill_keys($display_sizes_mb, 0),
+                'opening' => array_fill_keys($display_sizes_mb, 0)
+            ]
+        ];
+        continue;
+    }
     
     // Initialize daily data for this date - NEW ORDER
     $daily_data[$date] = [
@@ -764,6 +802,12 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               <!-- For each date in the range -->
               <?php foreach ($dates as $date): 
                 $day_num = date('d', strtotime($date));
+                $days_in_month = date('t', strtotime($date));
+                
+                // Skip display if day exceeds month length and table doesn't have DAY_31 columns
+                if ($day_num > $days_in_month && !$hasDay31Columns) {
+                    continue;
+                }
               ?>
                 <tr>
                   <td><?= $day_num ?></td>
@@ -772,43 +816,43 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <!-- Received Section - NEW ORDER -->
                   <!-- Spirits Received -->
                   <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $daily_data[$date]['Spirits']['purchase'][$size] > 0 ? $daily_data[$date]['Spirits']['purchase'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Spirits']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Wines Received -->
                   <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $daily_data[$date]['Wines']['purchase'][$size] > 0 ? $daily_data[$date]['Wines']['purchase'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Wines']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Fermented Beer Received -->
                   <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $daily_data[$date]['Fermented Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['purchase'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Fermented Beer']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Mild Beer Received -->
                   <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $daily_data[$date]['Mild Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Mild Beer']['purchase'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Mild Beer']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Sold Section - NEW ORDER -->
                   <!-- Spirits Sold -->
                   <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Spirits']['sales'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Wines Sold -->
                   <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $daily_data[$date]['Wines']['sales'][$size] > 0 ? $daily_data[$date]['Wines']['sales'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Wines']['sales'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Fermented Beer Sold -->
                   <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $daily_data[$date]['Fermented Beer']['sales'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['sales'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Fermented Beer']['sales'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Mild Beer Sold -->
                   <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $daily_data[$date]['Mild Beer']['sales'][$size] > 0 ? $daily_data[$date]['Mild Beer']['sales'][$size] : 0 ?></td>
+                    <td><?= $daily_data[$date]['Mild Beer']['sales'][$size] ?></td>
                   <?php endforeach; ?>
                   
                   <!-- Closing Balance Section - NEW ORDER -->
@@ -832,9 +876,80 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                     <td><?= $daily_data[$date]['Mild Beer']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
-                  <td><?= $day_num ?></td>
+                  <td></td>
                 </tr>
               <?php endforeach; ?>
+              
+              <!-- Total row -->
+              <tr class="summary-row">
+                <td>Total</td>
+                <td></td>
+                
+                <!-- Received Section - NEW ORDER -->
+                <!-- Spirits Received Total -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $totals['Spirits']['purchase'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Received Total -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $totals['Wines']['purchase'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Received Total -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $totals['Fermented Beer']['purchase'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Received Total -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $totals['Mild Beer']['purchase'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Sold Section - NEW ORDER -->
+                <!-- Spirits Sold Total -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $totals['Spirits']['sales'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Sold Total -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $totals['Wines']['sales'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Sold Total -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $totals['Fermented Beer']['sales'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Sold Total -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $totals['Mild Beer']['sales'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Closing Balance Section - NEW ORDER -->
+                <!-- Spirits Closing Total -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $totals['Spirits']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Closing Total -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $totals['Wines']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Closing Total -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Closing Total -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <td></td>
+              </tr>
               
             <!-- Summary rows - Updated for new order and only in Closing Balance column -->
 <tr class="summary-row">
@@ -1026,23 +1141,18 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
   
   <td>Closing Balance</td>
 </tr>
-              
             </tbody>
           </table>
         </div>
-
+        
         <div class="footer-info">
-          <p>Generated on: <?= date('d-M-Y h:i A') ?></p>
+          <p>Note: This report is generated by WineSoft on <?= date('d-M-Y h:i A') ?></p>
         </div>
       </div>
     </div>
-    
-    <?php include 'components/footer.php'; ?>
   </div>
-  
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

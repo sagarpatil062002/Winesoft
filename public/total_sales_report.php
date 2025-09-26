@@ -509,6 +509,7 @@ function getSubclassDescription($item_group) {
                     <th>Item Description</th>
                     <th>Rate</th>
                     <th>Qty.</th>
+                    <th>Size</th>
                     <th>Tot. Amt.</th>
                   </tr>
                 </thead>
@@ -521,7 +522,7 @@ function getSubclassDescription($item_group) {
                       $current_bill = $row['BillNo'];
                   ?>
                     <tr class="bill-header">
-                      <td colspan="5">
+                      <td colspan="6">
                         <strong>Bill No:</strong> <?= htmlspecialchars($row['BillNo']) ?> | 
                         <strong>Date:</strong> <?= date('d/m/Y', strtotime($row['DATE'])) ?> | 
                         <strong>Customer:</strong> <?= htmlspecialchars($row['Customer_Name'] ?? $row['Customer_Code'] ?? 'N/A') ?>
@@ -534,15 +535,16 @@ function getSubclassDescription($item_group) {
                   
                   <tr>
                     <td><?= $sno++ ?></td>
-                    <td><?= htmlspecialchars($row['ItemName']) ?> <?= !empty($row['ItemSize']) ? '(' . htmlspecialchars($row['ItemSize']) . ')' : '' ?></td>
+                    <td><?= htmlspecialchars($row['ItemName']) ?></td>
                     <td class="text-right"><?= number_format($row['Rate'], 2) ?></td>
                     <td class="text-right"><?= htmlspecialchars($row['Quantity']) ?></td>
+                    <td class="text-center"><?= !empty($row['ItemSize']) ? htmlspecialchars($row['ItemSize']) : '-' ?></td>
                     <td class="text-right"><?= number_format($row['Amount'], 2) ?></td>
                   </tr>
                   <?php endforeach; ?>
                   
                   <tr class="total-row">
-                    <td colspan="4" class="text-end"><strong>Total Amount :</strong></td>
+                    <td colspan="5" class="text-end"><strong>Total Amount :</strong></td>
                     <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
                   </tr>
                 </tbody>

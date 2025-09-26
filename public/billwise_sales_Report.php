@@ -42,25 +42,26 @@ $discount = 0;
 $total_cash = 0;
 
 if (isset($_GET['generate'])) {
-    // Build the query to get customer sales data
-    $customer_sales_query = "SELECT 
-                cs.BillNo,
-                cs.BillDate,
-                cs.LCode,
-                l.LHEAD as CustomerName,
-                cs.ItemCode,
-                cs.ItemName,
-                cs.ItemSize,
-                cs.Rate,
-                cs.Quantity,
-                cs.Amount,
-                cs.CreatedDate,
-                u.username as UserName
-              FROM tblcustomersales cs
-              INNER JOIN tbllheads l ON cs.LCode = l.LCODE
-              LEFT JOIN users u ON cs.UserID = u.id
-              WHERE cs.BillDate = ? AND cs.CompID = ?
-              ORDER BY cs.BillNo, cs.CreatedDate";
+   // Build the query to get customer sales data
+$customer_sales_query = "SELECT 
+            cs.BillNo,
+            cs.BillDate,
+            cs.LCode,
+            l.LHEAD as CustomerName,
+            cs.ItemCode,
+            COALESCE(im.DETAILS, cs.ItemName) as ItemName,  -- Use item master name if available
+            COALESCE(im.DETAILS2, cs.ItemSize) as ItemSize,  -- Use item master size if available
+            cs.Rate,
+            cs.Quantity,
+            cs.Amount,
+            cs.CreatedDate,
+            u.username as UserName
+          FROM tblcustomersales cs
+          INNER JOIN tbllheads l ON cs.LCode = l.LCODE
+          LEFT JOIN tblitemmaster im ON cs.ItemCode = im.CODE  -- Join with item master
+          LEFT JOIN users u ON cs.UserID = u.id
+          WHERE cs.BillDate = ? AND cs.CompID = ?
+          ORDER BY cs.BillNo, cs.CreatedDate";
     
     $stmt = $conn->prepare($customer_sales_query);
     $stmt->bind_param("si", $report_date, $compID);

@@ -36,13 +36,106 @@ $companyResult = $stmt->get_result();
 $company = $companyResult->fetch_assoc();
 $companyName = $company['COMP_NAME'] ?? 'DIAMOND WINE SHOP';
 
+// Function to group sizes by base size (same as FLR Datewise)
+function getBaseSize($size) {
+    // Extract the base size (everything before any special characters after ML)
+    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
+    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
+    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
+    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
+    return trim($baseSize);
+}
+
+// Define size columns for each liquor type exactly as they appear in FLR Datewise
+$size_columns_s = [
+    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
+    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
+    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
+    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
+    '180 ML (Pet)', '180 ML', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96', 
+    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
+    '50 ML (24)', '50 ML (192)'
+];
+$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
+$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
+$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
+
+// Group sizes by base size for each liquor type (same as FLR Datewise)
+function groupSizes($sizes) {
+    $grouped = [];
+    foreach ($sizes as $size) {
+        $baseSize = getBaseSize($size);
+        if (!isset($grouped[$baseSize])) {
+            $grouped[$baseSize] = [];
+        }
+        $grouped[$baseSize][] = $size;
+    }
+    return $grouped;
+}
+
+$grouped_sizes_s = groupSizes($size_columns_s);
+$grouped_sizes_w = groupSizes($size_columns_w);
+$grouped_sizes_fb = groupSizes($size_columns_fb);
+$grouped_sizes_mb = groupSizes($size_columns_mb);
+
+// Get display sizes (base sizes) for each liquor type - NEW ORDER: Spirit, Wine, Fermented Beer, Mild Beer
+$display_sizes_s = array_keys($grouped_sizes_s);
+$display_sizes_w = array_keys($grouped_sizes_w);
+$display_sizes_fb = array_keys($grouped_sizes_fb);
+$display_sizes_mb = array_keys($grouped_sizes_mb);
+
+// Function to determine liquor type based on CLASS and LIQ_FLAG (same as FLR Datewise)
+function getLiquorType($class, $liq_flag) {
+    if ($liq_flag == 'F') {
+        switch ($class) {
+            case 'F': return 'Fermented Beer';
+            case 'M': return 'Mild Beer';
+            case 'V': return 'Wines';
+            default: return 'Spirits';
+        }
+    }
+    return 'Spirits'; // Default for non-F items
+}
+
+// Function to get grouped size for display (same as FLR Datewise)
+function getGroupedSize($size, $liquor_type) {
+    global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
+    
+    $baseSize = getBaseSize($size);
+    
+    // Check if this base size exists in the appropriate group - NEW ORDER
+    switch ($liquor_type) {
+        case 'Spirits':
+            if (in_array($baseSize, array_keys($grouped_sizes_s))) {
+                return $baseSize;
+            }
+            break;
+        case 'Wines':
+            if (in_array($baseSize, array_keys($grouped_sizes_w))) {
+                return $baseSize;
+            }
+            break;
+        case 'Fermented Beer':
+            if (in_array($baseSize, array_keys($grouped_sizes_fb))) {
+                return $baseSize;
+            }
+            break;
+        case 'Mild Beer':
+            if (in_array($baseSize, array_keys($grouped_sizes_mb))) {
+                return $baseSize;
+            }
+            break;
+    }
+    
+    return $baseSize; // Return base size even if not found in predefined groups
+}
+
 // Fetch items with closing stock
 $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
                  im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
                  ds.DAY_{$day}_CLOSING as CLOSING_STOCK
           FROM tblitemmaster im
-          LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
-          ORDER BY " . ($sequence === 'U' ? "im.DETAILS ASC, im.DETAILS2 ASC" : "im.CODE ASC");
+          LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?";
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("s", $month_year);
@@ -50,46 +143,43 @@ $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 
-// Group items by brand (first word in DETAILS) and size (DETAILS2)
-$brands = [];
+// Group items by liquor type and size (using FLR Datewise grouping logic)
+$liquor_types = [
+    'Spirits' => ['sizes' => $display_sizes_s, 'data' => []],
+    'Wines' => ['sizes' => $display_sizes_w, 'data' => []],
+    'Fermented Beer' => ['sizes' => $display_sizes_fb, 'data' => []],
+    'Mild Beer' => ['sizes' => $display_sizes_mb, 'data' => []]
+];
+
 foreach ($items as $item) {
-    $brand = trim(explode(' ', $item['DETAILS'])[0]);
+    $liquor_type = getLiquorType($item['CLASS'], $item['LIQ_FLAG']);
     $size = $item['DETAILS2'] ?? '';
     
-    if (!isset($brands[$brand])) {
-        $brands[$brand] = [];
+    // Get grouped size for display
+    $grouped_size = getGroupedSize($size, $liquor_type);
+    
+    // Only include if the grouped size exists in our display sizes for this liquor type
+    if (in_array($grouped_size, $liquor_types[$liquor_type]['sizes'])) {
+        $brand = trim(explode(' ', $item['DETAILS'])[0]);
+        
+        if (!isset($liquor_types[$liquor_type]['data'][$brand])) {
+            $liquor_types[$liquor_type]['data'][$brand] = array_fill_keys($liquor_types[$liquor_type]['sizes'], 0);
+        }
+        
+        $liquor_types[$liquor_type]['data'][$brand][$grouped_size] += (float)$item['CLOSING_STOCK'];
     }
-    
-    // Normalize size format for grouping
-    $normalized_size = normalizeSize($size);
-    
-    if (!isset($brands[$brand][$normalized_size])) {
-        $brands[$brand][$normalized_size] = [];
-    }
-    
-    $brands[$brand][$normalized_size][] = $item;
 }
 
-// Function to normalize size format
-function normalizeSize($size) {
-    $size = trim($size);
-    $size = strtoupper($size);
+// Calculate totals for each liquor type
+foreach ($liquor_types as $type => $data) {
+    $liquor_types[$type]['totals'] = array_fill_keys($data['sizes'], 0);
     
-    // Convert variations to standard format
-    if (strpos($size, 'ML') !== false) {
-        $size = preg_replace('/\s*ML.*/', ' ML', $size);
-    } elseif (strpos($size, 'LTR') !== false || strpos($size, 'LITR') !== false) {
-        $size = preg_replace('/\s*LTR.*/', ' Ltr', $size);
-        $size = preg_replace('/\s*LITR.*/', ' Ltr', $size);
-    } elseif (strpos($size, 'L') !== false && !strpos($size, 'ML')) {
-        $size = preg_replace('/\s*L.*/', ' Ltr', $size);
+    foreach ($data['data'] as $brand => $sizes) {
+        foreach ($sizes as $size => $quantity) {
+            $liquor_types[$type]['totals'][$size] += $quantity;
+        }
     }
-    
-    return trim($size);
 }
-
-// Define all possible size columns
-$size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '375 ML', '330 ML', '325 ML', '180 ML', '90 ML', '60 ML'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,6 +192,56 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>"> 
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>"> 
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>"> 
+  <style>
+    .size-column {
+        text-align: center;
+        min-width: 60px;
+    }
+    .brand-header {
+        background-color: #f0f0f0;
+        padding: 8px;
+        margin-top: 20px;
+        border-left: 4px solid #007bff;
+    }
+    .total-row {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+    .table-container {
+        overflow-x: auto;
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    .report-table th, .report-table td {
+        border: 1px solid #ddd;
+        padding: 6px;
+        text-align: left;
+    }
+    .report-table th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    .print-content {
+        display: none;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-content {
+            display: block !important;
+        }
+        .report-table {
+            font-size: 10px;
+        }
+        .report-table th, .report-table td {
+            padding: 3px;
+        }
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -112,7 +252,7 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
       <h3 class="mb-4">Closing Stock Statement</h3>
 
       <!-- Filter Form -->
-      <div class="card mb-4">
+      <div class="card mb-4 no-print">
         <div class="card-body">
           <form method="GET" class="row g-3">
             <div class="col-md-3">
@@ -162,7 +302,7 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
       </div>
 
       <!-- Action Buttons -->
-      <div class="action-btn mb-3 d-flex gap-2">
+      <div class="action-btn mb-3 d-flex gap-2 no-print">
         <button onclick="generateReport()" class="btn btn-primary">
           <i class="fas fa-file-alt"></i> Generate
         </button>
@@ -175,7 +315,7 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
       </div>
 
       <!-- Report Content -->
-      <div id="reportContent" class="print-content" style="display: none;">
+      <div id="reportContent" class="print-content">
         <div class="report-header">
           <div class="print-header">
             <h2><?= htmlspecialchars($companyName) ?></h2>
@@ -183,91 +323,30 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
           </div>
         </div>
 
-        <?php
-        $categories = [
-          'SPIRITS' => ['W', 'G', 'D', 'K', 'R'],
-          'WINE' => ['V'],
-          'FERMENTED BEER' => ['B'],
-          'MILD BEER' => ['B'],
-          'COUNTRY LIQUOR' => []
-        ];
-        
-        foreach ($categories as $category => $classes): 
-          $categoryBrands = [];
-          $categoryTotal = array_fill_keys($size_columns, 0);
-          
-          foreach ($brands as $brand => $sizes) {
-            foreach ($sizes as $size => $items) {
-              foreach ($items as $item) {
-                $includeItem = false;
-                
-                if ($category === 'MILD BEER') {
-                  if ($item['CLASS'] === 'B' && stripos($item['DETAILS'], 'mild') !== false) {
-                    $includeItem = true;
-                  }
-                } elseif ($category === 'COUNTRY LIQUOR') {
-                  if ($item['LIQ_FLAG'] === 'C') {
-                    $includeItem = true;
-                  }
-                } elseif (in_array($item['CLASS'], $classes)) {
-                  $includeItem = true;
-                }
-                
-                if ($includeItem) {
-                  if (!isset($categoryBrands[$brand])) {
-                    $categoryBrands[$brand] = [];
-                  }
-                  
-                  // Map the normalized size to our standard size columns
-                  $mapped_size = mapToStandardSize($size);
-                  
-                  if (!isset($categoryBrands[$brand][$mapped_size])) {
-                    $categoryBrands[$brand][$mapped_size] = 0;
-                  }
-                  
-                  $categoryBrands[$brand][$mapped_size] += (float)$item['CLOSING_STOCK'];
-                  
-                  // Add to category total if it's a standard size
-                  if (in_array($mapped_size, $size_columns)) {
-                    $categoryTotal[$mapped_size] += (float)$item['CLOSING_STOCK'];
-                  }
-                }
-              }
-            }
-          }
-          
-          if (!empty($categoryBrands)):
+        <?php foreach ($liquor_types as $liquor_type => $type_data): 
+            if (!empty($type_data['data'])): 
         ?>
         <div class="category-section">
-          <h4 class="brand-header"><?= $category ?></h4>
+          <h4 class="brand-header"><?= strtoupper($liquor_type) ?></h4>
           <div class="table-container">
             <table class="report-table">
               <thead>
                 <tr>
                   <th>Item Description</th>
-                  <?php foreach ($size_columns as $col): ?>
-                    <th class="size-column"><?= $col ?></th>
+                  <?php foreach ($type_data['sizes'] as $size): ?>
+                    <th class="size-column"><?= $size ?></th>
                   <?php endforeach; ?>
                 </tr>
               </thead>
               <tbody>
                 <?php
-                ksort($categoryBrands);
-                foreach ($categoryBrands as $brand => $brandSizes):
-                  // Initialize all sizes with empty values
-                  $sizes = array_fill_keys($size_columns, '');
-                  
-                  // Fill in the actual values
-                  foreach ($brandSizes as $size => $quantity) {
-                    if (in_array($size, $size_columns) && $quantity > 0) {
-                      $sizes[$size] = number_format($quantity, 0);
-                    }
-                  }
+                ksort($type_data['data']);
+                foreach ($type_data['data'] as $brand => $sizes):
                 ?>
                 <tr>
                   <td><?= htmlspecialchars($brand) ?></td>
-                  <?php foreach ($size_columns as $col): ?>
-                    <td class="size-column"><?= $sizes[$col] ?></td>
+                  <?php foreach ($type_data['sizes'] as $size): ?>
+                    <td class="size-column"><?= $sizes[$size] > 0 ? number_format($sizes[$size], 0) : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
                 <?php endforeach; ?>
@@ -275,8 +354,10 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
                 <!-- Total Row -->
                 <tr class="total-row">
                   <td style="font-weight: bold;">Total</td>
-                  <?php foreach ($size_columns as $col): ?>
-                    <td class="size-column" style="font-weight: bold;"><?= $categoryTotal[$col] > 0 ? number_format($categoryTotal[$col], 0) : '' ?></td>
+                  <?php foreach ($type_data['sizes'] as $size): ?>
+                    <td class="size-column" style="font-weight: bold;">
+                      <?= $type_data['totals'][$size] > 0 ? number_format($type_data['totals'][$size], 0) : '' ?>
+                    </td>
                   <?php endforeach; ?>
                 </tr>
               </tbody>
@@ -285,6 +366,65 @@ $size_columns = ['4.5 L', '3 L', '2 L', '1 Ltr', '750 ML', '860 ML', '800 ML', '
         </div>
         <?php endif; endforeach; ?>
         
+        <!-- Country Liquor Section (if needed) -->
+        <?php
+        $country_liquor_items = array_filter($items, function($item) {
+            return $item['LIQ_FLAG'] === 'C';
+        });
+        
+        if (!empty($country_liquor_items)):
+            $country_brands = [];
+            $country_sizes = [];
+            
+            foreach ($country_liquor_items as $item) {
+                $brand = trim(explode(' ', $item['DETAILS'])[0]);
+                $size = getBaseSize($item['DETAILS2'] ?? '');
+                
+                if (!isset($country_brands[$brand])) {
+                    $country_brands[$brand] = [];
+                }
+                if (!in_array($size, $country_sizes)) {
+                    $country_sizes[] = $size;
+                }
+                
+                if (!isset($country_brands[$brand][$size])) {
+                    $country_brands[$brand][$size] = 0;
+                }
+                
+                $country_brands[$brand][$size] += (float)$item['CLOSING_STOCK'];
+            }
+            
+            sort($country_sizes);
+        ?>
+        <div class="category-section">
+          <h4 class="brand-header">COUNTRY LIQUOR</h4>
+          <div class="table-container">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Item Description</th>
+                  <?php foreach ($country_sizes as $size): ?>
+                    <th class="size-column"><?= $size ?></th>
+                  <?php endforeach; ?>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                ksort($country_brands);
+                foreach ($country_brands as $brand => $sizes):
+                ?>
+                <tr>
+                  <td><?= htmlspecialchars($brand) ?></td>
+                  <?php foreach ($country_sizes as $size): ?>
+                    <td class="size-column"><?= isset($sizes[$size]) && $sizes[$size] > 0 ? number_format($sizes[$size], 0) : '' ?></td>
+                  <?php endforeach; ?>
+                </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <?php endif; ?>
         
       </div>
     </div>
@@ -310,57 +450,3 @@ $(document).ready(function() {
 </script>
 </body>
 </html>
-
-<?php
-// Function to map various size formats to standard size columns
-function mapToStandardSize($size) {
-    $size_mapping = [
-        '4.5 L' => ['4.5 L', '4.5 LTR', '4.5 LITR', '4.5L'],
-        '3 L' => ['3 L', '3 LTR', '3 LITR', '3L'],
-        '2 L' => ['2 L', '2 LTR', '2 LITR', '2L'],
-        '1 Ltr' => ['1 L', '1 LTR', '1 LITR', '1L'],
-        '750 ML' => ['750 ML', '750ML'],
-        '860 ML' => ['860 ML', '860ML'],
-        '800 ML' => ['800 ML', '800ML'],
-        '375 ML' => ['375 ML', '375ML'],
-        '330 ML' => ['330 ML', '330ML'],
-        '325 ML' => ['325 ML', '325ML'],
-        '180 ML' => ['180 ML', '180ML'],
-        '90 ML' => ['90 ML', '90ML'],
-        '60 ML' => ['60 ML', '60ML']
-    ];
-    
-    $size = trim(strtoupper($size));
-    
-    foreach ($size_mapping as $standard => $variations) {
-        if (in_array($size, $variations)) {
-            return $standard;
-        }
-    }
-    
-    // If no exact match, try partial matching
-    if (strpos($size, 'ML') !== false) {
-        $ml_value = preg_replace('/[^0-9]/', '', $size);
-        if ($ml_value) {
-            foreach ($size_mapping as $standard => $variations) {
-                if (strpos($standard, $ml_value . ' ML') !== false) {
-                    return $standard;
-                }
-            }
-        }
-        return '330 ML'; // Default for ML sizes
-    } elseif (strpos($size, 'L') !== false) {
-        $l_value = preg_replace('/[^0-9.]/', '', $size);
-        if ($l_value) {
-            foreach ($size_mapping as $standard => $variations) {
-                if (strpos($standard, $l_value . ' L') !== false) {
-                    return $standard;
-                }
-            }
-        }
-        return '1 Ltr'; // Default for L sizes
-    }
-    
-    return '1 Ltr'; // Final default
-}
-?>

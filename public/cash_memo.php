@@ -32,10 +32,178 @@ $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d');
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
 $bill_no = isset($_GET['bill_no']) ? $_GET['bill_no'] : '';
 
+// Function to generate cash memo text exactly as shown in image
+function generateCashMemoText($companyData, $billData, $billItems, $permitData) {
+    $text = "";
+    
+    // License info - centered
+    $license = !empty($companyData['licenseNumber']) ? $companyData['licenseNumber'] : "FL-II 3";
+    $text .= str_pad($license, 40, " ", STR_PAD_BOTH) . "\n";
+    
+    // Shop name and address - centered
+    $text .= str_pad($companyData['name'], 40, " ", STR_PAD_BOTH) . "\n";
+    $text .= str_pad($companyData['address'], 40, " ", STR_PAD_BOTH) . "\n\n";
+    
+    // Bill number and date
+    $billNoShort = substr($billData['BILL_NO'], -5);
+    $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
+    $text .= "No : " . $billNoShort . str_repeat(" ", 10) . "CASH MEMO" . str_repeat(" ", 10) . "Date: " . $billDate . "\n\n";
+    
+    // Customer name
+    $customerName = 'A.N. PARAB'; // Default
+    if (!empty($permitData) && !empty($permitData['DETAILS'])) {
+        $customerName = $permitData['DETAILS'];
+    } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
+        $customerName = $billData['CUST_CODE'];
+    }
+    $text .= "Name: " . $customerName . "\n";
+    
+    // Permit information
+    if (!empty($permitData)) {
+        $permitNo = $permitData['P_NO'] ?? '';
+        $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
+        $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
+        
+        $text .= "Permit No.: " . $permitNo . "\n";
+        $text .= "Place: " . $permitPlace . str_repeat(" ", 15) . "Exp.Dt.: " . $permitExpDate . "\n";
+    }
+    $text .= "\n";
+    
+    // Table header
+    $text .= str_pad("Particulars", 30) . str_pad("Qty", 10) . str_pad("Size", 15) . str_pad("Amount", 10) . "\n";
+    $text .= str_repeat("-", 65) . "\n";
+    
+    // Items
+    foreach ($billItems as $item) {
+        $particulars = substr($item['DETAILS'] ?? '', 0, 30);
+        $qty = number_format($item['QTY'], 3);
+        $size = substr($item['DETAILS2'] ?? '', 0, 15);
+        $amount = number_format($item['AMOUNT'], 2);
+        
+        $text .= str_pad($particulars, 30);
+        $text .= str_pad($qty, 10);
+        $text .= str_pad($size, 15);
+        $text .= str_pad($amount, 10) . "\n";
+    }
+    
+    $text .= "\n";
+    $text .= str_repeat(" ", 45) . "Total: ₹" . number_format($billData['NET_AMOUNT'], 2) . "\n";
+    
+    return $text;
+}
+
+// Function to save complete cash memo data
+function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permitData, $compID, $userID) {
+    $billNo = $billData['BILL_NO'];
+    $printDate = date('Y-m-d H:i:s');
+    
+    // Check if already printed today
+    $checkQuery = "SELECT id FROM tbl_cash_memo_prints 
+                   WHERE bill_no = ? AND comp_id = ? AND DATE(print_date) = CURDATE()";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("si", $billNo, $compID);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        $checkStmt->close();
+        return false; // Already printed today
+    }
+    $checkStmt->close();
+    
+    // Prepare data
+    $licenseNumber = !empty($companyData['licenseNumber']) ? $companyData['licenseNumber'] : "FL-II 3";
+    $shopName = $companyData['name'];
+    $shopAddress = $companyData['address'];
+    $billDate = $billData['BILL_DATE'];
+    
+    $customerName = 'A.N. PARAB';
+    if (!empty($permitData) && !empty($permitData['DETAILS'])) {
+        $customerName = $permitData['DETAILS'];
+    } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
+        $customerName = $billData['CUST_CODE'];
+    }
+    
+    $permitNo = $permitData['P_NO'] ?? null;
+    $permitPlace = $permitData['PLACE_ISS'] ?? null;
+    $permitExpDate = !empty($permitData['P_EXP_DT']) ? $permitData['P_EXP_DT'] : null;
+    
+    $itemsJson = json_encode($billItems);
+    $totalAmount = $billData['NET_AMOUNT'];
+    
+    // Generate the exact cash memo text
+    $cashMemoText = generateCashMemoText($companyData, $billData, $billItems, $permitData);
+    
+    // Insert complete data
+    $insertQuery = "INSERT INTO tbl_cash_memo_prints 
+                   (bill_no, comp_id, print_date, printed_by, 
+                    license_number, shop_name, shop_address, bill_date, 
+                    customer_name, permit_no, permit_place, permit_exp_date,
+                    items_json, total_amount, cash_memo_text) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $insertStmt = $conn->prepare($insertQuery);
+    $insertStmt->bind_param("sisisssssssssds", 
+        $billNo, $compID, $printDate, $userID,
+        $licenseNumber, $shopName, $shopAddress, $billDate,
+        $customerName, $permitNo, $permitPlace, $permitExpDate,
+        $itemsJson, $totalAmount, $cashMemoText
+    );
+    
+    $result = $insertStmt->execute();
+    $insertStmt->close();
+    
+    return $result;
+}
+
 // Handle generating cash memos when Generate is clicked
 if (isset($_GET['generate'])) {
     $print_date = date('Y-m-d H:i:s');
     $bill_numbers_to_store = [];
+    
+    // Fetch company details for saving
+    $companyDataForSave = [
+        'name' => "DIAMOND WINE SHOP",
+        'address' => "Ishvanbag Sangli Tal Hiraj Dist Sangli",
+        'licenseNumber' => ""
+    ];
+    
+    $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE FROM tblcompany WHERE CompID = ?";
+    $companyStmt = $conn->prepare($companyQuery);
+    $companyStmt->bind_param("i", $compID);
+    $companyStmt->execute();
+    $companyResult = $companyStmt->get_result();
+    if ($row = $companyResult->fetch_assoc()) {
+        $companyDataForSave['name'] = $row['COMP_NAME'];
+        $companyDataForSave['address'] = $row['COMP_ADDR'] ?? $companyDataForSave['address'];
+        $companyDataForSave['licenseNumber'] = $row['COMP_FLNO'] ?? "";
+        $addressLine = $row['CF_LINE'] ?? "";
+        if (!empty($row['CS_LINE'])) {
+            $addressLine .= (!empty($addressLine) ? " " : "") . $row['CS_LINE'];
+        }
+        if (!empty($addressLine)) {
+            $companyDataForSave['address'] = $addressLine;
+        }
+    }
+    $companyStmt->close();
+    
+    // Fetch all available permit numbers with customer names
+    $permitQuery = "SELECT P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, DETAILS FROM tblpermit WHERE P_NO IS NOT NULL AND P_NO != ''";
+    $permitResult = $conn->query($permitQuery);
+    $allPermits = [];
+    if ($permitResult) {
+        while ($row = $permitResult->fetch_assoc()) {
+            $allPermits[] = $row;
+        }
+    }
+    
+    // Function to get a random permit
+    function getRandomPermit($permits) {
+        if (empty($permits)) {
+            return null;
+        }
+        return $permits[array_rand($permits)];
+    }
     
     // If specific bill number is provided
     if (!empty($bill_no)) {
@@ -69,6 +237,15 @@ if (isset($_GET['generate'])) {
             $detailsStmt->close();
             
             $bill_total = $bill_data['NET_AMOUNT'] ?? 0;
+            
+            // Assign permit
+            if (!empty($allPermits)) {
+                $bill_data['permit'] = getRandomPermit($allPermits);
+            }
+            
+            // Save complete cash memo data
+            saveCompleteCashMemo($conn, $bill_data, $companyDataForSave, $bill_items, 
+                               $bill_data['permit'] ?? null, $compID, $_SESSION['user_id']);
         }
         $billStmt->close();
     } 
@@ -84,6 +261,8 @@ if (isset($_GET['generate'])) {
         $billsStmt->bind_param("ssi", $date_from, $date_to, $compID);
         $billsStmt->execute();
         $billsResult = $billsStmt->get_result();
+        
+        $availablePermits = $allPermits; // Copy for unique assignment
         
         while ($row = $billsResult->fetch_assoc()) {
             $bill_numbers_to_store[] = $row['BILL_NO'];
@@ -104,45 +283,33 @@ if (isset($_GET['generate'])) {
             }
             $detailsStmt->close();
             
+            // Assign unique permit if available
+            $permit = null;
+            if (!empty($availablePermits)) {
+                $permit = array_shift($availablePermits);
+            } elseif (!empty($allPermits)) {
+                $permit = getRandomPermit($allPermits);
+            }
+            
             $all_bills[] = [
                 'header' => $row,
-                'items' => $items
+                'items' => $items,
+                'permit' => $permit
             ];
+            
+            // Save complete cash memo data for this bill
+            saveCompleteCashMemo($conn, $row, $companyDataForSave, $items, $permit, $compID, $_SESSION['user_id']);
         }
         $billsStmt->close();
     }
     
-    // Store all bill numbers in the database
-    if (!empty($bill_numbers_to_store)) {
-        foreach ($bill_numbers_to_store as $bill_number) {
-            // Check if this bill has already been printed today
-            $checkQuery = "SELECT id FROM tbl_cash_memo_prints 
-                           WHERE bill_no = ? AND comp_id = ? AND DATE(print_date) = CURDATE()";
-            $checkStmt = $conn->prepare($checkQuery);
-            $checkStmt->bind_param("si", $bill_number, $compID);
-            $checkStmt->execute();
-            $checkResult = $checkStmt->get_result();
-            
-            // Only store if not already printed today
-            if ($checkResult->num_rows == 0) {
-                $insertQuery = "INSERT INTO tbl_cash_memo_prints (bill_no, comp_id, print_date, printed_by) 
-                                VALUES (?, ?, ?, ?)";
-                $insertStmt = $conn->prepare($insertQuery);
-                $insertStmt->bind_param("sisi", $bill_number, $compID, $print_date, $_SESSION['user_id']);
-                $insertStmt->execute();
-                $insertStmt->close();
-            }
-            $checkStmt->close();
-        }
-        
-        // Set success message
-        $_SESSION['success_message'] = count($bill_numbers_to_store) . " cash memo(s) generated successfully!";
-        
-        // Show print section
-        $_SESSION['show_print_section'] = true;
-        $_SESSION['generated_bills_count'] = count($bill_numbers_to_store);
-        $_SESSION['all_bills_data'] = $all_bills; // Store bills in session for print
-    }
+    // Set success message
+    $_SESSION['success_message'] = count($bill_numbers_to_store) . " cash memo(s) generated and saved successfully!";
+    
+    // Show print section
+    $_SESSION['show_print_section'] = true;
+    $_SESSION['generated_bills_count'] = count($bill_numbers_to_store);
+    $_SESSION['all_bills_data'] = $all_bills; // Store bills in session for print
 }
 
 // Check if we should show the print section
@@ -153,7 +320,7 @@ if (isset($_SESSION['all_bills_data']) && !empty($_SESSION['all_bills_data'])) {
     $all_bills = $_SESSION['all_bills_data'];
 }
 
-// Fetch company details including license information
+// Fetch company details for display
 $companyName = "DIAMOND WINE SHOP";
 $companyAddress = "Ishvanbag Sangli Tal Hiraj Dist Sangli";
 $licenseNumber = "";
@@ -174,63 +341,6 @@ if ($row = $companyResult->fetch_assoc()) {
     }
 }
 $companyStmt->close();
-
-// Fetch all available permit numbers with customer names
-$permitQuery = "SELECT P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, DETAILS FROM tblpermit WHERE P_NO IS NOT NULL AND P_NO != ''";
-$permitResult = $conn->query($permitQuery);
-$allPermits = [];
-if ($permitResult) {
-    while ($row = $permitResult->fetch_assoc()) {
-        $allPermits[] = $row;
-    }
-}
-
-// Function to get a random permit
-function getRandomPermit($permits) {
-    if (empty($permits)) {
-        return null;
-    }
-    return $permits[array_rand($permits)];
-}
-
-// Assign DIFFERENT unique permits to EACH bill - FIXED VERSION
-if (!empty($allPermits)) {
-    // Create a copy of permits to avoid duplicates
-    $availablePermits = $allPermits;
-    
-    if (!empty($bill_data)) {
-        if (!empty($availablePermits)) {
-            $selectedPermit = getRandomPermit($availablePermits);
-            $bill_data['permit'] = $selectedPermit;
-            // Remove the used permit
-            $key = array_search($selectedPermit, $availablePermits);
-            if ($key !== false) {
-                unset($availablePermits[$key]);
-                $availablePermits = array_values($availablePermits);
-            }
-        } else {
-            $bill_data['permit'] = getRandomPermit($allPermits);
-        }
-    }
-    
-    // Use proper indexing instead of references to avoid duplication issues
-    $all_bills_count = count($all_bills);
-    for ($i = 0; $i < $all_bills_count; $i++) {
-        if (!empty($availablePermits)) {
-            $selectedPermit = getRandomPermit($availablePermits);
-            $all_bills[$i]['permit'] = $selectedPermit;
-            // Remove the used permit
-            $key = array_search($selectedPermit, $availablePermits);
-            if ($key !== false) {
-                unset($availablePermits[$key]);
-                $availablePermits = array_values($availablePermits);
-            }
-        } else {
-            // If we run out of permits, use random from original array
-            $all_bills[$i]['permit'] = getRandomPermit($allPermits);
-        }
-    }
-}
 
 // Get total bills and amount for the date range (only if not already fetched)
 if (!isset($_GET['generate']) || empty($bill_no)) {
@@ -625,7 +735,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             
             <div class="action-controls">
               <button type="submit" name="generate" class="btn btn-primary">
-                <i class="fas fa-cog me-1"></i> Generate Cash Memos
+                <i class="fas fa-cog me-1"></i> Generate & Save Cash Memos
               </button>
               
               <?php if ($showPrintSection && !empty($all_bills)): ?>
@@ -657,7 +767,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
         </div>
       </div>
 
-      <!-- Cash Memo Display - FIXED VERSION -->
+      <!-- Cash Memo Display -->
       <?php if ($showPrintSection): ?>
         <?php if (!empty($bill_data)): ?>
           <!-- Single bill display -->
@@ -796,13 +906,6 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                 
                 <div class="total-section">
                   Total: ₹<?= number_format($bill['header']['NET_AMOUNT'], 2) ?>
-                </div>
-                
-                <!-- Debug info (hidden in production) -->
-                <div style="display: none;">
-                  Bill: <?= $bill['header']['BILL_NO'] ?>, 
-                  Items: <?= count($bill['items']) ?>,
-                  Index: <?= $index ?>
                 </div>
               </div>
             <?php endforeach; ?>

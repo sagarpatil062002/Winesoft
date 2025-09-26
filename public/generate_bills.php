@@ -35,9 +35,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         }
         $days_count = count($date_array);
         
+        // ========== UPDATED: Robust Sequential Bill Number Generation ==========
+        function getNextBillNumber($conn, $comp_id) {
+            // Create sequence table if it doesn't exist
+            $createTable = "CREATE TABLE IF NOT EXISTS tbl_bill_sequence (
+                comp_id INT PRIMARY KEY,
+                last_bill_number INT DEFAULT 0,
+                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )";
+            $conn->query($createTable);
+            
+            // Use transaction to ensure atomicity
+            $conn->begin_transaction();
+            
+            try {
+                // Get or create sequence for this company
+                $selectSql = "SELECT last_bill_number FROM tbl_bill_sequence WHERE comp_id = ? FOR UPDATE";
+                $selectStmt = $conn->prepare($selectSql);
+                $selectStmt->bind_param("i", $comp_id);
+                $selectStmt->execute();
+                $result = $selectStmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    $row = $result->fetch_assoc();
+                    $nextNumber = $row['last_bill_number'] + 1;
+                    
+                    // Update sequence
+                    $updateSql = "UPDATE tbl_bill_sequence SET last_bill_number = ? WHERE comp_id = ?";
+                    $updateStmt = $conn->prepare($updateSql);
+                    $updateStmt->bind_param("ii", $nextNumber, $comp_id);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                } else {
+                    $nextNumber = 1;
+                    
+                    // Insert new sequence
+                    $insertSql = "INSERT INTO tbl_bill_sequence (comp_id, last_bill_number) VALUES (?, ?)";
+                    $insertStmt = $conn->prepare($insertSql);
+                    $insertStmt->bind_param("ii", $comp_id, $nextNumber);
+                    $insertStmt->execute();
+                    $insertStmt->close();
+                }
+                
+                $selectStmt->close();
+                $conn->commit();
+                
+                return 'BL' . $nextNumber;
+                
+            } catch (Exception $e) {
+                $conn->rollback();
+                // Fallback to the original method if sequence table fails
+                return getNextBillNumberFallback($conn, $comp_id);
+            }
+        }
+        
+        // Fallback method using the original approach
+        function getNextBillNumberFallback($conn, $comp_id) {
+            // Get the highest existing bill number numerically
+            $sql = "SELECT BILL_NO FROM tblsaleheader 
+                    WHERE COMP_ID = ? 
+                    ORDER BY LENGTH(BILL_NO) DESC, BILL_NO DESC 
+                    LIMIT 1";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $comp_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $nextNumber = 1; // Default starting number
+            
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $lastBillNo = $row['BILL_NO'];
+                
+                // Extract numeric part and increment
+                if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+                    $nextNumber = intval($matches[1]) + 1;
+                }
+            }
+            
+            // Safety check: Ensure bill number doesn't exist
+            $billExists = true;
+            $attempts = 0;
+            
+            while ($billExists && $attempts < 10) {
+                $newBillNo = 'BL' . $nextNumber;
+                
+                // Check if this bill number already exists
+                $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+                $checkStmt = $conn->prepare($checkSql);
+                $checkStmt->bind_param("si", $newBillNo, $comp_id);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+                $checkRow = $checkResult->fetch_assoc();
+                
+                if ($checkRow['count'] == 0) {
+                    $billExists = false;
+                } else {
+                    $nextNumber++; // Try next number
+                    $attempts++;
+                }
+                $checkStmt->close();
+            }
+            
+            $stmt->close();
+            return 'BL' . $nextNumber;
+        }
+        // ========== END: Robust Sequential Bill Number Generation ==========
 
-       
-        // Function to update daily stock table
+        // Function to update daily stock table (UNCHANGED)
         function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
             $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
             $sales_column = "DAY_{$day_num}_SALES";
@@ -125,11 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
         }
         
-        
-       
-        
-        
-        // Function to update item stock
+        // Function to update item stock (UNCHANGED)
         function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
             // Check if record exists
             $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
@@ -157,8 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
         }
         
-        
-
         // Start transaction
         $conn->begin_transaction();
         
@@ -199,22 +299,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         $opening_stock_column = "Opening_Stock" . $comp_id;
         $daily_stock_table = "tbldailystock_" . $comp_id;
         
-        foreach ($bills as $bill) {
-            // Insert sale header
+        // ========== UPDATED: Sequential Bill Number Assignment ==========
+        $generated_bills = [];
+        
+        foreach ($bills as $index => $bill) {
+            // Generate sequential bill number for each bill
+            $sequential_bill_no = getNextBillNumber($conn, $comp_id);
+            
+            // Store bill info for reference
+            $generated_bills[] = [
+                'bill_no' => $sequential_bill_no,
+                'bill_date' => $bill['bill_date'],
+                'total_amount' => $bill['total_amount']
+            ];
+            
+            // Insert sale header with sequential bill number
             $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
                              VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
             $header_stmt = $conn->prepare($header_query);
-            $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
+            $header_stmt->bind_param("ssddssi", $sequential_bill_no, $bill['bill_date'], $bill['total_amount'], 
                                     $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
             $header_stmt->execute();
             $header_stmt->close();
             
-            // Insert sale details
+            // Insert sale details with the same sequential bill number
             foreach ($bill['items'] as $item) {
                 $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                  VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $detail_stmt = $conn->prepare($detail_query);
-                $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
+                $detail_stmt->bind_param("ssddssi", $sequential_bill_no, $item['code'], $item['qty'], 
                                         $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
                 $detail_stmt->execute();
                 $detail_stmt->close();
@@ -224,15 +337,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
             
             $total_amount += $bill['total_amount'];
+            
+            // Update the bill array with the new sequential number (for reference)
+            $bills[$index]['bill_no'] = $sequential_bill_no;
         }
+        // ========== END: Sequential Bill Number Assignment ==========
         
         // Commit transaction
         $conn->commit();
         
         $response['success'] = true;
-        $response['message'] = "Sales distributed successfully! Generated " . count($bills) . " bills.";
+        $response['message'] = "Sales distributed successfully! Generated " . count($bills) . " bills with sequential numbering.";
         $response['total_amount'] = number_format($total_amount, 2);
         $response['bill_count'] = count($bills);
+        $response['generated_bills'] = $generated_bills; // Include bill details in response
         
     } catch (Exception $e) {
         // Rollback transaction on error
@@ -247,3 +365,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
     exit;
 }
+?>
