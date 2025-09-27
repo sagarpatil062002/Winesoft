@@ -1267,63 +1267,40 @@ if (!empty($_SESSION['sale_items'])) {
         unset($_SESSION['last_bill_data']);
       endif; ?>
 
-      <!-- Customer Selection -->
-      <form method="POST" class="mb-3">
-        <div class="card">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="fa-solid fa-user me-2"></i>Customer Information (Optional)</span>
-            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
-              <i class="fas fa-plus me-1"></i> Create New Customer
-            </button>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-8">
-                <div class="form-group">
-                  <label for="customer_id" class="form-label">Select Customer</label>
-                  <select class="form-select" id="customer_id" name="customer_id">
-                    <option value="">-- Walk-in Customer --</option>
+ <!-- Combined Customer Field -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0"><i class="fas fa-user"></i> Customer Information</h5>
+            </div>
+            <div class="card-body">
+              <form method="POST" id="customerForm">
+                <div class="customer-combined-field">
+                  <label for="customer_field" class="form-label">Select or Create Customer</label>
+                  <select class="form-select" id="customer_field" name="customer_field" style="width: 100%;">
+                    <option value=""></option>
                     <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>" <?= ($selectedCustomer == $code) ? 'selected' : '' ?>>
+                      <option value="<?= $code ?>" <?= $selectedCustomer == $code ? 'selected' : '' ?>>
                         <?= htmlspecialchars($name) ?>
                       </option>
                     <?php endforeach; ?>
                   </select>
+                  <div class="customer-hint">
+                    <i class="fas fa-info-circle"></i> 
+                    Select existing customer or type "new: Customer Name" to create new customer. 
+                    Leave empty for walk-in customer.
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit" class="btn btn-primary mt-3">
                   <i class="fas fa-save"></i> Save Customer
                 </button>
-              </div>
+              </form>
             </div>
-          </div>
-        </div>
-      </form>
-
-      <!-- Create Customer Modal -->
-      <div class="modal fade" id="createCustomerModal" tabindex="-1" aria-labelledby="createCustomerModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="createCustomerModalLabel">Create New Customer</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST">
-              <div class="modal-body">
-                <div class="mb-3">
-                  <label for="customer_name" class="form-label">Customer Name *</label>
-                  <input type="text" class="form-control" id="customer_name" name="customer_name" required>
-                </div>
-               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" name="create_customer" class="btn btn-primary">Create Customer</button>
-              </div>
-            </form>
           </div>
         </div>
       </div>
+
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>

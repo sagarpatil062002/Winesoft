@@ -1576,6 +1576,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const searchItems = document.querySelectorAll('.search-item');
   const setFocusForms = document.querySelectorAll('.set-focus-form');
 
+  // Create a hidden form for ESC key processing
+  const escForm = document.createElement('form');
+  escForm.method = 'POST';
+  escForm.style.display = 'none';
+  
+  const escInput = document.createElement('input');
+  escInput.type = 'hidden';
+  escInput.name = 'process_sale_esc';
+  escInput.value = '1';
+  
+  escForm.appendChild(escInput);
+  document.body.appendChild(escForm);
+
   // Focus on barcode input on page load
   barcodeInput.focus();
 
@@ -1641,6 +1654,17 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', function(e) {
     const items = <?= json_encode($_SESSION['sale_items'] ?? []) ?>;
     const currentFocus = <?= $_SESSION['current_focus_index'] ?? -1 ?>;
+    
+    // ESC key - process sale
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      
+      // Show confirmation dialog
+      if (confirm('Are you sure you want to process the sale?')) {
+        escForm.submit();
+      }
+      return;
+    }
     
     if (items.length === 0) return;
     

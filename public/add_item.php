@@ -36,24 +36,8 @@ if (!in_array($mode, $allowedModes, true)) {
     $mode = 'F';
 }
 
-// Fetch classes and subclasses from database (by mode) - FILTERED BY LICENSE
-$classes = [];
+// Fetch subclasses from database (by mode)
 $subclasses = [];
-
-// Classes - Filtered by license type
-if (!empty($allowed_classes)) {
-    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $classQuery = "SELECT DISTINCT `DESC` AS class_name, SGROUP FROM tblclass WHERE LIQ_FLAG = ? AND SGROUP IN ($class_placeholders) ORDER BY `DESC`";
-    
-    $stmt = $conn->prepare($classQuery);
-    $params = array_merge([$mode], $allowed_classes);
-    $types = str_repeat('s', count($params));
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($res) $classes = $res->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-}
 
 // Subclasses - Include ITEM_GROUP in the query
 if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY `DESC`")) {
@@ -66,7 +50,7 @@ if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP 
 
 // Initialize variables
 $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-$pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
+$pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
 $success = $error = '';
 
 // Handle submit
@@ -75,71 +59,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = trim($_POST['code'] ?? '');
     $Print_Name = trim($_POST['Print_Name'] ?? '');
     $details = trim($_POST['details'] ?? '');
-    $class = trim($_POST['class'] ?? '');
-    $sub_class = trim($_POST['sub_class'] ?? '');
     $details2 = trim($_POST['details2'] ?? '');
     $BARCODE = trim($_POST['BARCODE'] ?? '');
     $pprice = floatval($_POST['pprice'] ?? 0);
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
     $RPRICE = floatval($_POST['RPRICE'] ?? 0);
-    $GOB = floatval($_POST['GOB'] ?? 0);
-    $OB = floatval($_POST['OB'] ?? 0);
-    $OB2 = floatval($_POST['OB2'] ?? 0);
+    $opening_balance = intval($_POST['opening_balance'] ?? 0);
     $liq_flag = $mode; // use current mode
     
-    // Get ITEM_GROUP from selected subclass
-    $item_group = '';
-    if (!empty($sub_class)) {
-        $stmt = $conn->prepare("SELECT ITEM_GROUP FROM tblsubclass WHERE `DESC` = ? AND LIQ_FLAG = ? LIMIT 1");
-        $stmt->bind_param("ss", $sub_class, $mode);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $item_group = $row['ITEM_GROUP'];
-        } else {
-            // Default to 'O' if not found
-            $item_group = 'O';
-        }
-        $stmt->close();
-    } else {
-        $item_group = 'O'; // Default to Others
-    }
-
-    // Basic validation
-    if ($code === '' || $details === '') {
+    // Auto-detect class from item name (same function as in item_master.php)
+    $class = detectClassFromItemName($details);
+    
+    // Validate class against license restrictions
+    if (!in_array($class, $allowed_classes)) {
+        $error = "Class '$class' detected from item name is not allowed for your license type '$license_type'.";
+    } else if ($code === '' || $details === '') {
         $error = "Item Code and Item Name are required.";
-    } else if (!in_array($class, $allowed_classes)) {
-        $error = "Selected class is not allowed for your license type.";
     } else {
-        // Insert into tblitemmaster - Fixed: Added ITEM_GROUP column
+        // Get ITEM_GROUP from selected subclass
+        $item_group = 'O'; // Default to Others
+        if (!empty($details2)) {
+            $stmt = $conn->prepare("SELECT ITEM_GROUP FROM tblsubclass WHERE `DESC` = ? AND LIQ_FLAG = ? LIMIT 1");
+            $stmt->bind_param("ss", $details2, $mode);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $item_group = $row['ITEM_GROUP'];
+            }
+            $stmt->close();
+        }
+
+        // For SUB_CLASS, use the first character of subclass or a default
+        $subClassField = !empty($details2) ? substr($details2, 0, 1) : 'O';
+
+        // Insert into tblitemmaster
         $sql = "INSERT INTO tblitemmaster 
-            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, 
-             GOB, OB, OB2, BARCODE, LIQ_FLAG) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, BARCODE, LIQ_FLAG) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             $error = "Prepare failed: " . $conn->error;
         } else {
-            // Correct bind types: 9 strings, 5 doubles, 1 string
             $stmt->bind_param(
-                "sssssssdddddddss",
-                $code, $Print_Name, $details, $details2, $class, $sub_class, $item_group,
-                $pprice, $bprice, $mprice, $RPRICE,
-                $GOB, $OB, $OB2,
-                $BARCODE, $liq_flag
+                "sssssssdddds",
+                $code, $Print_Name, $details, $details2, $class, $subClassField, $item_group,
+                $pprice, $bprice, $mprice, $RPRICE, $BARCODE, $liq_flag
             );
 
             if ($stmt->execute()) {
-                // Update stock information
-                $opening_stock = max($GOB, $OB, $OB2); // Use the largest opening stock value
-                updateItemStock($conn, $company_id, $code, $liq_flag, $opening_stock);
+                // Update stock information (same function as in item_master.php)
+                updateItemStock($conn, $company_id, $code, $liq_flag, $opening_balance);
                 
                 $success = "Item added successfully!";
                 // Reset form
-                $code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
-                $pprice = $bprice = $mprice = $RPRICE = $GOB = $OB = $OB2 = 0;
+                $code = $Print_Name = $details = $details2 = $BARCODE = '';
+                $pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
             } else {
                 $error = "Error: " . $stmt->error;
             }
@@ -148,7 +124,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Function to update item stock information
+// Function to detect class from item name (same as in item_master.php)
+function detectClassFromItemName($itemName) {
+    $itemName = strtoupper($itemName);
+    
+    // WHISKY Detection
+    if (strpos($itemName, 'WHISKY') !== false || 
+        strpos($itemName, 'WHISKEY') !== false ||
+        strpos($itemName, 'SCOTCH') !== false ||
+        strpos($itemName, 'SINGLE MALT') !== false ||
+        strpos($itemName, 'BLENDED') !== false ||
+        strpos($itemName, 'BOURBON') !== false ||
+        strpos($itemName, 'RYE') !== false ||
+        preg_match('/\b(JOHNNIE WALKER|JACK DANIEL|CHIVAS|ROYAL CHALLENGE|8PM|OFFICER\'S CHOICE|MCDOWELL\'S|SIGNATURE|IMPERIAL BLUE)\b/', $itemName) ||
+        preg_match('/\b(\d+ YEARS?|AGED)\b/', $itemName)) {
+        return 'W';
+    }
+    
+    // WINE Detection
+    if (strpos($itemName, 'WINE') !== false ||
+        strpos($itemName, 'PORT') !== false ||
+        strpos($itemName, 'SHERRY') !== false ||
+        strpos($itemName, 'CHAMPAGNE') !== false ||
+        strpos($itemName, 'SPARKLING') !== false ||
+        strpos($itemName, 'MERLOT') !== false ||
+        strpos($itemName, 'CABERNET') !== false ||
+        strpos($itemName, 'CHARDONNAY') !== false ||
+        strpos($itemName, 'SAUVIGNON') !== false ||
+        strpos($itemName, 'RED WINE') !== false ||
+        strpos($itemName, 'WHITE WINE') !== false ||
+        strpos($itemName, 'ROSE WINE') !== false ||
+        strpos($itemName, 'DESSERT WINE') !== false ||
+        strpos($itemName, 'FORTIFIED WINE') !== false ||
+        preg_match('/\b(SULA|GROVER|FRATELLI|BORDEAUX|CHATEAU)\b/', $itemName)) {
+        return 'V';
+    }
+    
+    // BRANDY Detection
+    if (strpos($itemName, 'BRANDY') !== false ||
+        strpos($itemName, 'COGNAC') !== false ||
+        strpos($itemName, 'VSOP') !== false ||
+        strpos($itemName, 'XO') !== false ||
+        strpos($itemName, 'NAPOLEON') !== false ||
+        preg_match('/\b(HENNESSY|REMY MARTIN|MARTELL|COURVOISIER|MANSION HOUSE|OLD ADMIRAL|DUNHILL)\b/', $itemName) ||
+        strpos($itemName, 'VS ') !== false) {
+        return 'D';
+    }
+    
+    // VODKA Detection
+    if (strpos($itemName, 'VODKA') !== false ||
+        preg_match('/\b(SMIRNOFF|ABSOLUT|ROMANOV|GREY GOOSE|BELVEDERE|CIROC|FINLANDIA)\b/', $itemName) ||
+        strpos($itemName, 'LEMON VODKA') !== false ||
+        strpos($itemName, 'ORANGE VODKA') !== false ||
+        strpos($itemName, 'FLAVORED VODKA') !== false) {
+        return 'K';
+    }
+    
+    // GIN Detection
+    if (strpos($itemName, 'GIN') !== false ||
+        strpos($itemName, 'LONDON DRY') !== false ||
+        strpos($itemName, 'NAVY STRENGTH') !== false ||
+        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY|BEEFEATER|HENDRICK\'S|BLUE RIBAND)\b/', $itemName) ||
+        strpos($itemName, 'JUNIPER') !== false ||
+        strpos($itemName, 'BOTANICAL GIN') !== false ||
+        strpos($itemName, 'DRY GIN') !== false) {
+        return 'G';
+    }
+    
+    // RUM Detection
+    if (strpos($itemName, 'RUM') !== false ||
+        strpos($itemName, 'DARK RUM') !== false ||
+        strpos($itemName, 'WHITE RUM') !== false ||
+        strpos($itemName, 'SPICED RUM') !== false ||
+        strpos($itemName, 'AGED RUM') !== false ||
+        preg_match('/\b(BACARDI|CAPTAIN MORGAN|OLD MONK|HAVANA CLUB|MCDOWELL\'S RUM|CONTESSA RUM)\b/', $itemName) ||
+        strpos($itemName, 'GOLD RUM') !== false ||
+        strpos($itemName, 'NAVY RUM') !== false) {
+        return 'R';
+    }
+    
+    // BEER Detection
+    if (strpos($itemName, 'BEER') !== false || 
+        strpos($itemName, 'LAGER') !== false ||
+        strpos($itemName, 'ALE') !== false ||
+        strpos($itemName, 'STOUT') !== false ||
+        strpos($itemName, 'PILSNER') !== false ||
+        strpos($itemName, 'DRAUGHT') !== false ||
+        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER|HEINEKEN|CORONA|FOSTER\'S)\b/', $itemName)) {
+        
+        $strongIndicators = ['STRONG', 'SUPER STRONG', 'EXTRA STRONG', 'BOLD', 'HIGH', 'POWER', 'XXX', '5000', '8000', '9000', '10000'];
+        $mildIndicators = ['MILD', 'SMOOTH', 'LIGHT', 'DRAUGHT', 'LAGER', 'PILSNER', 'REGULAR', 'PREMIUM', 'LITE'];
+        
+        $isStrongBeer = false;
+        foreach ($strongIndicators as $indicator) {
+            if (strpos($itemName, $indicator) !== false) {
+                $isStrongBeer = true;
+                break;
+            }
+        }
+        
+        if ($isStrongBeer) {
+            return 'F'; // FERMENTED BEER (Strong)
+        } else {
+            return 'M'; // MILD BEER
+        }
+    }
+    
+    // Default to Others if no match found
+    return 'O';
+}
+
+// Function to update item stock information (same as in item_master.php)
 function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
     // Update tblitem_stock
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
@@ -176,6 +262,43 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
         $insert_stmt->execute();
         $insert_stmt->close();
+    }
+    
+    // Update daily stock for today
+    $today = date('d');
+    $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
+    $current_month = date('Y-m');
+    
+    // Check if daily stock record exists
+    $check_daily_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+    $check_daily_stmt = $conn->prepare($check_daily_query);
+    $check_daily_stmt->bind_param("sss", $current_month, $item_code, $liqFlag);
+    $check_daily_stmt->execute();
+    $daily_result = $check_daily_stmt->get_result();
+    $daily_exists = $daily_result->fetch_assoc()['count'] > 0;
+    $check_daily_stmt->close();
+    
+    if ($daily_exists) {
+        // Update existing daily record
+        $update_daily_query = "UPDATE tbldailystock_$comp_id 
+                              SET DAY_{$today_padded}_OPEN = ?, 
+                                  DAY_{$today_padded}_CLOSING = ?,
+                                  LAST_UPDATED = CURRENT_TIMESTAMP 
+                              WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+        $update_daily_stmt = $conn->prepare($update_daily_query);
+        $update_daily_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $liqFlag);
+        $update_daily_stmt->execute();
+        $update_daily_stmt->close();
+    } else {
+        // Insert new daily record
+        $insert_daily_query = "INSERT INTO tbldailystock_$comp_id 
+                              (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
+                              VALUES (?, ?, ?, ?, ?)";
+        $insert_daily_stmt = $conn->prepare($insert_daily_query);
+        $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $liqFlag, $opening_balance, $opening_balance);
+        $insert_daily_stmt->execute();
+        $insert_daily_stmt->close();
     }
 }
 ?>
@@ -217,6 +340,13 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
             border-radius: 5px;
             margin-bottom: 15px;
         }
+        .class-detection-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+        }
     </style>
 </head>
 <body>
@@ -243,6 +373,12 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                     }
                     ?>
                 </p>
+            </div>
+
+            <!-- Class Detection Info -->
+            <div class="class-detection-info mb-3">
+                <strong>Note:</strong> Class will be automatically detected from the Item Name using intelligent pattern matching.
+                You don't need to select a class manually.
             </div>
 
             <?php if ($success): ?>
@@ -276,7 +412,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
 
                 <!-- New Code -->
                 <div class="col-md-3">
-                    <label for="Print_Name" class="form-label">New Code</label>
+                    <label for="Print_Name" class="form-label">Print Name</label>
                     <input type="text" id="Print_Name" name="Print_Name" class="form-control"
                            value="<?= htmlspecialchars($Print_Name) ?>">
                 </div>
@@ -285,41 +421,21 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                 <div class="col-md-3">
                     <label for="details" class="form-label">Item Name *</label>
                     <input type="text" id="details" name="details" class="form-control"
-                           value="<?= htmlspecialchars($details) ?>" required>
+                           value="<?= htmlspecialchars($details) ?>" required 
+                           onblur="detectClass()">
+                    <small class="text-muted">Class will be auto-detected from this field</small>
                 </div>
 
-                <!-- Class Dropdown -->
+                <!-- Detected Class Display (Readonly) -->
                 <div class="col-md-3">
-                    <label for="class" class="form-label">Class *</label>
-                    <select id="class" name="class" class="form-select" required>
-                        <option value="">-- Select Class --</option>
-                        <?php foreach ($classes as $class_item): ?>
-                            <option value="<?= htmlspecialchars($class_item['SGROUP']) ?>"
-                                <?= ($class === $class_item['SGROUP']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($class_item['class_name']) ?> (<?= htmlspecialchars($class_item['SGROUP']) ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label class="form-label">Detected Class</label>
+                    <input type="text" id="detected_class" class="form-control" readonly 
+                           placeholder="Class will appear here">
                 </div>
 
-                <!-- Sub Class Dropdown -->
+                <!-- Additional Details (Subclass) -->
                 <div class="col-md-3">
-                    <label for="sub_class" class="form-label">Sub Class</label>
-                    <select id="sub_class" name="sub_class" class="form-select" onchange="updateDetails2()">
-                        <option value="">-- Select Sub Class --</option>
-                        <?php foreach ($subclasses as $subclass_item): ?>
-                            <option value="<?= htmlspecialchars($subclass_item['subclass_name']) ?>"
-                                data-item-group="<?= htmlspecialchars($subclass_item['ITEM_GROUP']) ?>"
-                                <?= ($sub_class === $subclass_item['subclass_name']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($subclass_item['subclass_name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Additional Details -->
-                <div class="col-md-3">
-                    <label for="details2" class="form-label">Additional Details</label>
+                    <label for="details2" class="form-label">Subclass/Description</label>
                     <input type="text" id="details2" name="details2" class="form-control"
                            value="<?= htmlspecialchars($details2) ?>">
                 </div>
@@ -331,25 +447,11 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                            value="<?= htmlspecialchars($BARCODE) ?>">
                 </div>
 
-                <!-- Opening Stock (G) -->
+                <!-- Opening Balance -->
                 <div class="col-md-3">
-                    <label for="GOB" class="form-label">Op. Stk. (G)</label>
-                    <input type="number" step="0.001" id="GOB" name="GOB" class="form-control"
-                           value="<?= htmlspecialchars($GOB) ?>">
-                </div>
-
-                <!-- Opening Stock (C1) -->
-                <div class="col-md-3">
-                    <label for="OB" class="form-label">Op. Stk. (C1)</label>
-                    <input type="number" step="0.001" id="OB" name="OB" class="form-control"
-                           value="<?= htmlspecialchars($OB) ?>">
-                </div>
-
-                <!-- Opening Stock (C2) -->
-                <div class="col-md-3">
-                    <label for="OB2" class="form-label">Op. Stk. (C2)</label>
-                    <input type="number" step="0.001" id="OB2" name="OB2" class="form-control"
-                           value="<?= htmlspecialchars($OB2) ?>">
+                    <label for="opening_balance" class="form-label">Opening Balance</label>
+                    <input type="number" id="opening_balance" name="opening_balance" class="form-control"
+                           value="<?= htmlspecialchars($opening_balance) ?>" min="0" step="1">
                 </div>
 
                 <!-- P. Price -->
@@ -361,21 +463,21 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
 
                 <!-- B. Price -->
                 <div class="col-md-3">
-                    <label for="bprice" class="form-label">Base  Price</label>
+                    <label for="bprice" class="form-label">Base Price</label>
                     <input type="number" step="0.001" id="bprice" name="bprice" class="form-control"
                            value="<?= htmlspecialchars($bprice) ?>">
                 </div>
 
                 <!-- M. Price -->
                 <div class="col-md-3">
-                    <label for="mprice" class="form-label">MRP  Price</label>
+                    <label for="mprice" class="form-label">MRP Price</label>
                     <input type="number" step="0.001" id="mprice" name="mprice" class="form-control"
                            value="<?= htmlspecialchars($mprice) ?>">
                 </div>
 
-                <!-- V. Price -->
+                <!-- R. Price -->
                 <div class="col-md-3">
-                    <label for="RPRICE" class="form-label">RETAIL Price</label>
+                    <label for="RPRICE" class="form-label">Retail Price</label>
                     <input type="number" step="0.001" id="RPRICE" name="RPRICE" class="form-control"
                            value="<?= htmlspecialchars($RPRICE) ?>">
                 </div>
@@ -397,24 +499,42 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script>
-    function updateDetails2() {
-        const subClassSelect = document.getElementById('sub_class');
-        const details2Input = document.getElementById('details2');
-        const selectedOption = subClassSelect.options[subClassSelect.selectedIndex];
-        
-        if (selectedOption && selectedOption.value !== '') {
-            details2Input.value = selectedOption.value;
+// Simple client-side class detection (basic version)
+function detectClass() {
+    const itemName = document.getElementById('details').value.toUpperCase();
+    const detectedClassField = document.getElementById('detected_class');
+    
+    if (!itemName) {
+        detectedClassField.value = '';
+        return;
+    }
+    
+    // Basic detection logic (simplified version of server-side logic)
+    let detectedClass = 'O'; // Default to Others
+    
+    if (itemName.includes('WHISKY') || itemName.includes('WHISKEY') || itemName.includes('SCOTCH')) {
+        detectedClass = 'W (Whisky)';
+    } else if (itemName.includes('WINE') || itemName.includes('CHAMPAGNE')) {
+        detectedClass = 'V (Wine)';
+    } else if (itemName.includes('BRANDY') || itemName.includes('COGNAC') || itemName.includes('VSOP')) {
+        detectedClass = 'D (Brandy)';
+    } else if (itemName.includes('VODKA')) {
+        detectedClass = 'K (Vodka)';
+    } else if (itemName.includes('GIN')) {
+        detectedClass = 'G (Gin)';
+    } else if (itemName.includes('RUM')) {
+        detectedClass = 'R (Rum)';
+    } else if (itemName.includes('BEER')) {
+        if (itemName.includes('STRONG') || itemName.includes('5000') || itemName.includes('8000')) {
+            detectedClass = 'F (Fermented Beer - Strong)';
         } else {
-            details2Input.value = '';
+            detectedClass = 'M (Mild Beer)';
         }
     }
     
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        updateDetails2();
-    });
+    detectedClassField.value = detectedClass;
+}
 </script>
 </body>
 </html>
