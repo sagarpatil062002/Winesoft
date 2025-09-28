@@ -409,6 +409,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
   <title>FLR-3A Brandwise Register - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Include shortcuts functionality -->
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <style>
   <style>
     /* Screen styles */
     body {
@@ -644,7 +647,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">FLR-3A Brandwise Register</h3>

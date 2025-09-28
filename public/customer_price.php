@@ -236,6 +236,8 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
+
   <style>
     .price-input {
       width: 120px;

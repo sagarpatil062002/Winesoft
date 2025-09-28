@@ -38,6 +38,24 @@ function clearSessionQuantities() {
     }
 }
 
+// Enhanced stock validation function
+function validateStock($current_stock, $requested_qty, $item_code) {
+    if ($requested_qty <= 0) return true;
+    
+    if ($requested_qty > $current_stock) {
+        logMessage("Stock validation failed for item $item_code: Available: $current_stock, Requested: $requested_qty", 'WARNING');
+        return false;
+    }
+    
+    // Additional safety check - prevent negative values
+    if ($current_stock - $requested_qty < 0) {
+        logMessage("Negative closing balance prevented for item $item_code", 'WARNING');
+        return false;
+    }
+    
+    return true;
+}
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     logMessage('User not logged in, redirecting to index.php', 'WARNING');
@@ -260,6 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
         $error_message = "Duplicate submission detected. Please wait a few seconds before trying again.";
+        logMessage("Duplicate submission prevented for user " . $_SESSION['user_id'], 'WARNING');
     } else {
         $_SESSION['last_submission'] = time();
         
@@ -270,96 +289,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Start transaction
-            $conn->begin_transaction();
+            // Enhanced stock validation before transaction
+            $stock_errors = [];
+            foreach ($items as $item) {
+                $item_code = $item['CODE'];
+                
+                if (isset($_POST['sale_qty'][$item_code])) {
+                    $total_qty = intval($_POST['sale_qty'][$item_code]);
+                    $current_stock = $item['CURRENT_STOCK'];
+                    
+                    // Skip items with zero quantity
+                    if ($total_qty <= 0) continue;
+                    
+                    // Enhanced stock validation
+                    if (!validateStock($current_stock, $total_qty, $item_code)) {
+                        $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
+                    }
+                }
+            }
             
-            try {
-                $total_amount = 0;
-                $items_data = []; // Store item data for bill generation
-                $daily_sales_data = []; // Store daily sales for each item
+            // If stock errors found, stop processing
+            if (!empty($stock_errors)) {
+                $error_message = "Stock validation failed:<br>" . implode("<br>", array_slice($stock_errors, 0, 5));
+                if (count($stock_errors) > 5) {
+                    $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
+                }
+            } else {
+                // Start transaction only after validation
+                $conn->begin_transaction();
                 
-                // Process items with quantities
-                foreach ($items as $item) {
-                    $item_code = $item['CODE'];
+                try {
+                    $total_amount = 0;
+                    $items_data = []; // Store item data for bill generation
+                    $daily_sales_data = []; // Store daily sales for each item
                     
-                    if (isset($_POST['sale_qty'][$item_code])) {
-                        $total_qty = intval($_POST['sale_qty'][$item_code]);
-                        $current_stock = $item['CURRENT_STOCK'];
+                    // Process items with quantities
+                    foreach ($items as $item) {
+                        $item_code = $item['CODE'];
                         
-                        // Stock validation
-                        if ($total_qty > $current_stock) {
-                            $error_message = "Insufficient stock for item {$item_code}. Available: {$current_stock}, Requested: {$total_qty}";
-                            throw new Exception($error_message);
-                        }
-                        
-                        if ($total_qty > 0) {
-                            // Generate distribution
-                            $daily_sales = distributeSales($total_qty, $days_count);
-                            $daily_sales_data[$item_code] = $daily_sales;
+                        if (isset($_POST['sale_qty'][$item_code])) {
+                            $total_qty = intval($_POST['sale_qty'][$item_code]);
+                            $current_stock = $item['CURRENT_STOCK'];
                             
-                            // Store item data
-                            $items_data[$item_code] = [
-                                'name' => $item['DETAILS'],
-                                'rate' => $item['RPRICE'],
-                                'total_qty' => $total_qty
-                            ];
+                            if ($total_qty > 0) {
+                                // Generate distribution
+                                $daily_sales = distributeSales($total_qty, $days_count);
+                                $daily_sales_data[$item_code] = $daily_sales;
+                                
+                                // Store item data
+                                $items_data[$item_code] = [
+                                    'name' => $item['DETAILS'],
+                                    'rate' => $item['RPRICE'],
+                                    'total_qty' => $total_qty
+                                ];
+                            }
                         }
                     }
-                }
-                
-                $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
-                
-                // Get stock column names
-                $current_stock_column = "Current_Stock" . $comp_id;
-                $opening_stock_column = "Opening_Stock" . $comp_id;
-                $daily_stock_table = "tbldailystock_" . $comp_id;
-                
-                // Process each bill
-                foreach ($bills as $bill) {
-                    // Insert sale header
-                    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                    $header_stmt = $conn->prepare($header_query);
-                    $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
-                                            $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
-                    $header_stmt->execute();
-                    $header_stmt->close();
                     
-                    // Insert sale details for each item in the bill
-                    foreach ($bill['items'] as $item) {
-                        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                         VALUES (?, ?, ?, ?, ?, ?, ?)";
-                        $detail_stmt = $conn->prepare($detail_query);
-                        $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
-                                                $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
-                        $detail_stmt->execute();
-                        $detail_stmt->close();
+                    $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                    
+                    // Get stock column names
+                    $current_stock_column = "Current_Stock" . $comp_id;
+                    $opening_stock_column = "Opening_Stock" . $comp_id;
+                    $daily_stock_table = "tbldailystock_" . $comp_id;
+                    
+                    // Process each bill
+                    foreach ($bills as $bill) {
+                        // Insert sale header
+                        $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                         VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                        $header_stmt = $conn->prepare($header_query);
+                        $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
+                                                $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                        $header_stmt->execute();
+                        $header_stmt->close();
                         
-                        // Update stock
-                        updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                        // Insert sale details for each item in the bill
+                        foreach ($bill['items'] as $item) {
+                            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                             VALUES (?, ?, ?, ?, ?, ?, ?)";
+                            $detail_stmt = $conn->prepare($detail_query);
+                            $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
+                                                    $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                            $detail_stmt->execute();
+                            $detail_stmt->close();
+                            
+                            // Update stock
+                            updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                            
+                            // Update daily stock
+                            updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                        }
                         
-                        // Update daily stock
-                        updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                        $total_amount += $bill['total_amount'];
                     }
                     
-                    $total_amount += $bill['total_amount'];
+                    // Commit transaction
+                    $conn->commit();
+                    
+                    // CLEAR SESSION QUANTITIES AFTER SUCCESS
+                    clearSessionQuantities();
+                    
+                    $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+                    
+                    // Redirect to retail_sale.php
+                    header("Location: retail_sale.php?success=" . urlencode($success_message));
+                    exit;
+                } catch (Exception $e) {
+                    // Rollback transaction on error
+                    $conn->rollback();
+                    $error_message = "Error updating sales: " . $e->getMessage();
+                    logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
                 }
-                
-                // Commit transaction
-                $conn->commit();
-                
-                // CLEAR SESSION QUANTITIES AFTER SUCCESS
-                clearSessionQuantities();
-                
-                $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
-                
-                // Redirect to retail_sale.php
-                header("Location: retail_sale.php?success=" . urlencode($success_message));
-                exit;
-            } catch (Exception $e) {
-                // Rollback transaction on error
-                $conn->rollback();
-                $error_message = "Error updating sales: " . $e->getMessage();
             }
         }
     }
@@ -370,70 +411,51 @@ if (isset($_GET['success'])) {
     $success_message = $_GET['success'];
 }
 
-// Initialize quantities array from session if available, otherwise from POST
-$quantities = [];
+// ============================================================================
+// FIXED QUANTITY INITIALIZATION - SIMPLIFIED AND RELIABLE
+// ============================================================================
 
-// DEBUG: Log the current items and their quantities
-$debug_info = [
-    'total_items_fetched' => count($items),
-    'search_term' => $search,
-    'quantities_from_post' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['sale_qty'] ?? []) : 0,
-    'quantities_from_session' => isset($_SESSION['sale_quantities']) ? count($_SESSION['sale_quantities']) : 0,
-    'sample_items' => array_slice($items, 0, 3, true) // First 3 items for sample
-];
-logArray($debug_info, "DEBUG: Quantity initialization state");
-
-foreach ($items as $item) {
-    $item_code = $item['CODE'];
-    
-    // Priority: POST data (current submission)
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'][$item_code])) {
-        $quantities[$item_code] = intval($_POST['sale_qty'][$item_code]);
-        logMessage("DEBUG: Item $item_code quantity from POST: " . $quantities[$item_code]);
-    }
-    // Second priority: Session data (from previous searches)
-    elseif (isset($_SESSION['sale_quantities'][$item_code])) {
-        $quantities[$item_code] = $_SESSION['sale_quantities'][$item_code];
-        logMessage("DEBUG: Item $item_code quantity from SESSION: " . $quantities[$item_code]);
-    }
-    // Default: 0
-    else {
-        $quantities[$item_code] = 0;
-    }
-}
-
-// Merge quantities with existing session data (preserve hidden items)
+// Initialize session if not exists
 if (!isset($_SESSION['sale_quantities'])) {
     $_SESSION['sale_quantities'] = [];
 }
 
-// Update session with current quantities WITHOUT overwriting hidden items
+// Always start with session data as base
+$quantities = $_SESSION['sale_quantities'];
+
+// If this is a POST request, update quantities from form data
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
+    foreach ($_POST['sale_qty'] as $item_code => $qty) {
+        $quantities[$item_code] = intval($qty);
+    }
+}
+
+// Ensure all current items have a quantity value (set to 0 if not present)
 foreach ($items as $item) {
     $item_code = $item['CODE'];
-    
-    if (isset($quantities[$item_code])) {
-        // Update this item's quantity in session
-        $_SESSION['sale_quantities'][$item_code] = $quantities[$item_code];
+    if (!isset($quantities[$item_code])) {
+        $quantities[$item_code] = 0;
     }
-    // Items not in current search results keep their existing session values
 }
 
-// DEBUG: Log session state after update
-$session_debug = [
+// Update session with current state
+$_SESSION['sale_quantities'] = $quantities;
+
+// Log final state for debugging
+logMessage("Final quantities count: " . count($quantities));
+logMessage("Items in current view: " . count($items));
+
+// Debug info
+$debug_info = [
+    'total_items' => count($items),
     'session_quantities_count' => count($_SESSION['sale_quantities']),
-    'session_quantities_sample' => array_slice($_SESSION['sale_quantities'], 0, 5, true) // First 5 quantities
+    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['sale_qty'] ?? []) : 0,
+    'date_range' => "$start_date to $end_date",
+    'days_count' => $days_count,
+    'user_id' => $_SESSION['user_id'],
+    'comp_id' => $comp_id
 ];
-logArray($session_debug, "DEBUG: Session after update");
-
-// DEBUG: Also log if we're losing any items
-if (isset($_SESSION['sale_quantities_previous'])) {
-    $lost_items = array_diff_key($_SESSION['sale_quantities_previous'], $_SESSION['sale_quantities']);
-    if (!empty($lost_items)) {
-        logArray($lost_items, "DEBUG: ITEMS LOST FROM SESSION!");
-    }
-}
-// Store current session for comparison in next request
-$_SESSION['sale_quantities_previous'] = $_SESSION['sale_quantities'];
+logArray($debug_info, "Sales Page Load Debug Info");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -535,6 +557,43 @@ tr.has-quantity {
 /* Make the highlight more noticeable */
 tr.has-quantity td {
     font-weight: 500;
+}
+
+/* Enhanced validation styles */
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.quantity-saving {
+    background-color: #e8f5e8 !important;
+    transition: background-color 0.3s ease;
+}
+
+.quantity-error {
+    background-color: #f8d7da !important;
+    transition: background-color 0.3s ease;
+}
+
+/* Button loading state */
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn-loading:after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
 }
   </style>
 </head>
@@ -870,6 +929,91 @@ function clearSessionQuantities() {
     });
 }
 
+// Enhanced quantity validation function
+function validateQuantity(input) {
+    const itemCode = $(input).data('code');
+    const currentStock = parseFloat($(input).data('stock'));
+    let enteredQty = parseInt($(input).val()) || 0;
+    
+    // Validate input
+    if (isNaN(enteredQty) || enteredQty < 0) {
+        enteredQty = 0;
+        $(input).val(0);
+    }
+    
+    // Prevent exceeding stock with better feedback
+    if (enteredQty > currentStock) {
+        const maxAllowed = Math.floor(currentStock);
+        enteredQty = maxAllowed;
+        $(input).val(maxAllowed);
+        
+        // Show warning but don't prevent operation
+        $(input).addClass('is-invalid');
+        setTimeout(() => $(input).removeClass('is-invalid'), 2000);
+    } else {
+        $(input).removeClass('is-invalid');
+    }
+    
+    // Update UI immediately
+    updateItemUI(itemCode, enteredQty, currentStock);
+    
+    // Save to session via AJAX to prevent data loss
+    saveQuantityToSession(itemCode, enteredQty);
+    
+    return true;
+}
+
+// New function to update all UI elements for an item
+function updateItemUI(itemCode, qty, currentStock) {
+    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
+    const closingBalance = currentStock - qty;
+    const amount = qty * rate;
+    
+    // Update all related UI elements
+    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
+    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    
+    // Update row styling
+    const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
+    row.toggleClass('has-quantity', qty > 0);
+    
+    // Update closing balance styling
+    const closingCell = $(`#closing_${itemCode}`);
+    closingCell.removeClass('text-warning text-danger fw-bold');
+    
+    if (closingBalance < 0) {
+        closingCell.addClass('text-danger fw-bold');
+    } else if (closingBalance < (currentStock * 0.1)) {
+        closingCell.addClass('text-warning fw-bold');
+    }
+}
+
+// New function to save quantity to session via AJAX
+function saveQuantityToSession(itemCode, qty) {
+    // Debounce to prevent too many requests
+    if (typeof saveQuantityToSession.debounce === 'undefined') {
+        saveQuantityToSession.debounce = null;
+    }
+    
+    clearTimeout(saveQuantityToSession.debounce);
+    saveQuantityToSession.debounce = setTimeout(() => {
+        $.ajax({
+            url: 'update_session_quantity.php',
+            type: 'POST',
+            data: {
+                item_code: itemCode,
+                quantity: qty
+            },
+            success: function(response) {
+                console.log('Quantity saved to session:', itemCode, qty);
+            },
+            error: function() {
+                console.error('Failed to save quantity to session');
+            }
+        });
+    }, 500);
+}
+
 // Function to validate all quantities before form submission
 function validateAllQuantities() {
     let isValid = true;
@@ -924,46 +1068,6 @@ function distributeSales(total_qty, days_count) {
     }
     
     return daily_sales;
-}
-
-// Function to validate quantity input and prevent negative closing balance
-function validateQuantity(input) {
-    const itemCode = $(input).data('code');
-    const currentStock = parseFloat($(input).data('stock'));
-    const enteredQty = parseInt($(input).val()) || 0;
-    
-    // Prevent entering quantity greater than available stock
-    if (enteredQty > currentStock) {
-        alert(`Quantity cannot exceed available stock of ${currentStock.toFixed(3)}`);
-        $(input).val(Math.floor(currentStock)); // Set to max available
-        return false;
-    }
-    
-    // Calculate and update closing balance in real-time
-    const closingBalance = currentStock - enteredQty;
-    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
-    
-    // Update amount
-    const rate = parseFloat($(input).data('rate'));
-    const amount = enteredQty * rate;
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
-    
-    // Toggle row highlighting based on quantity
-    const row = $(input).closest('tr');
-    if (enteredQty > 0) {
-        row.addClass('has-quantity');
-    } else {
-        row.removeClass('has-quantity');
-    }
-    
-    // Highlight if closing balance is low (but not negative)
-    if (closingBalance < (currentStock * 0.1)) { // Less than 10% of original stock
-        $(`#closing_${itemCode}`).addClass('text-warning fw-bold');
-    } else {
-        $(`#closing_${itemCode}`).removeClass('text-warning fw-bold');
-    }
-    
-    return true;
 }
 
 // Function to update the distribution preview for a specific item
@@ -1063,6 +1167,30 @@ function setupRowNavigation() {
     });
 }
 
+// Function to sync all quantities to session
+function syncAllQuantitiesToSession() {
+    const promises = [];
+    
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const qty = parseInt($(this).val()) || 0;
+        
+        promises.push(
+            new Promise((resolve) => {
+                $.ajax({
+                    url: 'update_session_quantity.php',
+                    type: 'POST',
+                    data: { item_code: itemCode, quantity: qty },
+                    success: resolve,
+                    error: resolve // Resolve even on error to continue
+                });
+            })
+        );
+    });
+    
+    return Promise.all(promises);
+}
+
 // Function to save to pending sales
 function saveToPendingSales() {
     // Validate that at least one item has quantity
@@ -1084,8 +1212,9 @@ function saveToPendingSales() {
         return false;
     }
     
-    // Show loader
+    // Show loader and disable button
     $('#ajaxLoader').show();
+    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
     
     // Collect all the data
     const formData = new FormData();
@@ -1112,6 +1241,7 @@ function saveToPendingSales() {
         contentType: false,
         success: function(response) {
             $('#ajaxLoader').hide();
+            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
             try {
                 const result = JSON.parse(response);
                 if (result.success) {
@@ -1128,6 +1258,7 @@ function saveToPendingSales() {
         },
         error: function() {
             $('#ajaxLoader').hide();
+            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
             alert('Error saving data. Please try again.');
         }
     });
@@ -1154,8 +1285,9 @@ function generateBills() {
         return false;
     }
     
-    // Show loader
+    // Show loader and disable button
     $('#ajaxLoader').show();
+    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
     
     // Submit the form normally (not via AJAX) to maintain server-side processing
     document.getElementById('salesForm').submit();
@@ -1458,15 +1590,35 @@ $(document).ready(function() {
     });
     
     // Generate bills button click event - FIXED VERSION
-    $('#generateBillsBtn').click(function() {
-        // Show confirmation dialog only once
-        if (confirm('Do you want to generate sale bills now? Click "OK" to generate bills or "Cancel" to save for later posting.')) {
-            // User clicked OK - generate bills immediately
-            generateBills();
-        } else {
-            // User clicked Cancel - save to pending sales
-            saveToPendingSales();
-        }
+    $('#generateBillsBtn').click(function(e) {
+        e.preventDefault();
+        
+        // First, sync all quantities to session
+        syncAllQuantitiesToSession().then(() => {
+            // Then validate all quantities
+            if (!validateAllQuantities()) {
+                return false;
+            }
+            
+            // Check if we have any quantities > 0
+            const hasQuantities = $('input[name^="sale_qty"]').filter(function() { 
+                return parseInt($(this).val()) > 0; 
+            }).length > 0;
+            
+            if (!hasQuantities) {
+                alert('Please enter quantities for at least one item.');
+                return false;
+            }
+            
+            // Show confirmation
+            if (confirm('Generate sale bills now? Click OK to generate bills immediately, or Cancel to save for later.')) {
+                // Submit form normally
+                generateBills();
+            } else {
+                // Save to pending sales
+                saveToPendingSales();
+            }
+        });
     });
     
     // Auto-load sales log when modal is shown

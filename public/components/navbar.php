@@ -122,6 +122,10 @@ include_once "../config/db.php"; // MySQLi connection in $conn
         <li class="nav-item"><a href="cash_memo.php" class="nav-link"><span class="nav-icon material-symbols-rounded">flash_on</span><span class="nav-label">Cash Memo</span></a></li>
         <li class="nav-item"><a href="cash_memo_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock_open</span><span class="nav-label">Cash Summary</span></a></li>
         <li class="nav-item"><a href="FLR_Datewise.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">FLR Datewise</span></a></li>
+        <li class="nav-item"><a href="Brand_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Brand Register</span></a></li>
+        <li class="nav-item"><a href="Gate_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Gate Register</span></a></li>
+        <li class="nav-item"><a href="Excise_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Excise register</span></a></li>
+        <li class="nav-item"><a href="Monthly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Monthly Register</span></a></li>
     </ul>
 </li>            <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">

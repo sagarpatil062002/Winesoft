@@ -15,7 +15,6 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php";
 require_once 'license_functions.php';
 
-
 // Initialize stats array with default values
 $stats = [
     'total_items' => 0,
@@ -26,7 +25,9 @@ $stats = [
     'whisky_items' => 0,
     'wine_items' => 0,
     'gin_items' => 0,
-    'beer_items' => 0,
+    'fermented_beer_items' => 0,
+    'mild_beer_items' => 0,
+    'total_beer_items' => 0,
     'brandy_items' => 0,
     'vodka_items' => 0,
     'rum_items' => 0,
@@ -108,11 +109,27 @@ try {
         $result->free();
     }
 
-    // Beer Items (CLASS = 'B')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'B'");
+    // Fermented Beer Items (CLASS = 'F')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'F'");
     if($result) {
         $row = $result->fetch_assoc();
-        $stats['beer_items'] = number_format($row['total']);
+        $stats['fermented_beer_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Mild Beer Items (CLASS = 'M')
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'M'");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['mild_beer_items'] = number_format($row['total']);
+        $result->free();
+    }
+
+    // Total Beer Items (F + M)
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS IN ('F', 'M')");
+    if($result) {
+        $row = $result->fetch_assoc();
+        $stats['total_beer_items'] = number_format($row['total']);
         $result->free();
     }
 
@@ -287,7 +304,6 @@ try {
           </div>
         </div>
         
-        
         <!-- Dry Days Statistics Card -->
         <div class="stat-card">
           <div class="stat-icon" style="background-color: #F56565;">
@@ -332,21 +348,44 @@ try {
           </div>
         </div>
         
-        <!-- Beer Items Card -->
+        <!-- Total Beer Items Card -->
         <div class="stat-card">
           <div class="stat-icon" style="background-color: #FFD700;">
             <i class="fas fa-beer"></i>
           </div>
           <div class="stat-info">
-            <h4>Beer Items</h4>
-            <p><?php echo $stats['beer_items']; ?></p>
+            <h4>Total Beer Items</h4>
+            <p><?php echo $stats['total_beer_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Fermented Beer Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #DAA520;">
+            <i class="fas fa-beer"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Fermented Beer Items</h4>
+            <p><?php echo $stats['fermented_beer_items']; ?></p>
+          </div>
+        </div>
+        
+        <!-- Mild Beer Items Card -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background-color: #FFA500;">
+            <i class="fas fa-beer"></i>
+          </div>
+          <div class="stat-info">
+            <h4>Mild Beer Items</h4>
+            <p><?php echo $stats['mild_beer_items']; ?></p>
           </div>
         </div>
         
         <!-- Brandy Items Card -->
         <div class="stat-card">
           <div class="stat-icon" style="background-color: #D2691E;">
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bottle-wine-icon lucide-bottle-wine"><path d="M10 3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a6 6 0 0 0 1.2 3.6l.6.8A6 6 0 0 1 17 13v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-8a6 6 0 0 1 1.2-3.6l.6-.8A6 6 0 0 0 10 5z"/><path d="M17 13h-4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h4"/></svg>          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bottle-wine-icon lucide-bottle-wine"><path d="M10 3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a6 6 0 0 0 1.2 3.6l.6.8A6 6 0 0 1 17 13v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-8a6 6 0 0 1 1.2-3.6l.6-.8A6 6 0 0 0 10 5z"/><path d="M17 13h-4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h4"/></svg>
+          </div>
           <div class="stat-info">
             <h4>Brandy Items</h4>
             <p><?php echo $stats['brandy_items']; ?></p>
@@ -356,11 +395,12 @@ try {
         <!-- Vodka Items Card -->
         <div class="stat-card">
           <div class="stat-icon" style="background-color: #0ebcbcff;">
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-martini">
-  <path d="M8 22h8"/>
-  <path d="M12 11v11"/>
-  <path d="m19 3-7 8-7-8Z"/>
-</svg>          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-martini">
+              <path d="M8 22h8"/>
+              <path d="M12 11v11"/>
+              <path d="m19 3-7 8-7-8Z"/>
+            </svg>
+          </div>
           <div class="stat-info">
             <h4>Vodka Items</h4>
             <p><?php echo $stats['vodka_items']; ?></p>
@@ -370,7 +410,8 @@ try {
         <!-- Rum Items Card -->
         <div class="stat-card">
           <div class="stat-icon" style="background-color: #8B4513;">
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wine-icon lucide-wine"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>          </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wine-icon lucide-wine"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>
+          </div>
           <div class="stat-info">
             <h4>Rum Items</h4>
             <p><?php echo $stats['rum_items']; ?></p>
@@ -395,7 +436,6 @@ try {
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

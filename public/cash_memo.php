@@ -379,6 +379,9 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+    <!-- Include shortcuts functionality -->
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <style>
   <style>
     /* SCREEN STYLES */
     body {

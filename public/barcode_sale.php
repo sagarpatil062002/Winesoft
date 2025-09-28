@@ -903,6 +903,9 @@ if (!empty($_SESSION['sale_items'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+    <!-- Include shortcuts functionality -->
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <style>
 <style>
   .barcode-scanner {
       background-color: #f8f9fa;
@@ -1126,7 +1129,6 @@ if (!empty($_SESSION['sale_items'])) {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">POS System</h3>

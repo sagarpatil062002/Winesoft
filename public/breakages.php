@@ -225,7 +225,9 @@ if ($itemsResult) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">    
-</head>
+    <!-- Include shortcuts functionality -->
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <style>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>

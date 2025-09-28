@@ -302,6 +302,8 @@ if (isset($_GET['preview_bill'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
+
   <style>
     .table-container{overflow-x:auto;max-height:520px}
     table.styled-table{width:100%;border-collapse:collapse}

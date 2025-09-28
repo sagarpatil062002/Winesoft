@@ -132,6 +132,7 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
 
 </head>
 <body>
