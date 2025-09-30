@@ -35,14 +35,61 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Determine which daily stock table to use based on company ID
-$dailyStockTable = "tbldailystock_" . $compID;
+// Function to get table name for a specific date
+function getTableForDate($conn, $compID, $date) {
+    $current_month = date('Y-m');
+    $target_month = date('Y-m', strtotime($date));
+    
+    // If current month, use main table
+    if ($target_month == $current_month) {
+        $tableName = "tbldailystock_" . $compID;
+    } else {
+        // For previous months, use archive table format: tbldailystock_compID_MM_YY
+        $month = date('m', strtotime($date));
+        $year = date('y', strtotime($date));
+        $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
+    }
+    
+    // Check if table exists
+    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
+    $tableCheckResult = $conn->query($tableCheckQuery);
+    
+    if ($tableCheckResult->num_rows == 0) {
+        // If archive table doesn't exist, fall back to main table
+        $tableName = "tbldailystock_" . $compID;
+        
+        // Check if main table exists, if not use default
+        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
+        $tableCheckResult2 = $conn->query($tableCheckQuery2);
+        if ($tableCheckResult2->num_rows == 0) {
+            $tableName = "tbldailystock_1";
+        }
+    }
+    
+    return $tableName;
+}
 
-// Check if the table exists, if not use default tbldailystock_1
-$tableCheckQuery = "SHOW TABLES LIKE '$dailyStockTable'";
-$tableCheckResult = $conn->query($tableCheckQuery);
-if ($tableCheckResult->num_rows == 0) {
-    $dailyStockTable = "tbldailystock_1";
+// Function to check if table has specific day columns
+function tableHasDayColumns($conn, $tableName, $day) {
+    $day_padded = sprintf('%02d', $day);
+    
+    // Check if all required columns for this day exist
+    $columns_to_check = [
+        "DAY_{$day_padded}_OPEN",
+        "DAY_{$day_padded}_PURCHASE", 
+        "DAY_{$day_padded}_SALES",
+        "DAY_{$day_padded}_CLOSING"
+    ];
+    
+    foreach ($columns_to_check as $column) {
+        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
+        $columnResult = $conn->query($checkColumnQuery);
+        if ($columnResult->num_rows == 0) {
+            return false; // Column doesn't exist
+        }
+    }
+    
+    return true; // All columns exist
 }
 
 // Function to group sizes by base size (remove suffixes after ML and trim)
@@ -234,6 +281,16 @@ $days_in_month = date('t', strtotime($month_start));
 // Fetch all stock data for this month
 for ($day = 1; $day <= $days_in_month; $day++) {
     $padded_day = str_pad($day, 2, '0', STR_PAD_LEFT);
+    $current_date = date('Y-m-d', strtotime($month_start . ' + ' . ($day - 1) . ' days'));
+    
+    // Get appropriate table for this date
+    $dailyStockTable = getTableForDate($conn, $compID, $current_date);
+    
+    // Check if this specific table has columns for this specific day
+    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
+        // Skip this day as the table doesn't have columns for this day
+        continue;
+    }
     
     $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
                   DAY_{$padded_day}_OPEN as opening, 

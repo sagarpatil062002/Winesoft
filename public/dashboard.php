@@ -15,6 +15,304 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php";
 require_once 'license_functions.php';
 
+// =============================================================================
+// GAP DETECTION AND FIXING LOGIC (UPDATED FOR ACTUAL TABLE STRUCTURE)
+// =============================================================================
+
+/**
+ * Get current month days (28, 29, 30, or 31)
+ */
+function getCurrentMonthDays() {
+    return (int)date('t');
+}
+
+/**
+ * Get current month in YYYY-MM format
+ */
+function getCurrentMonth() {
+    return date('Y-m');
+}
+
+/**
+ * Check if day columns exist for a specific day
+ */
+function doesDayColumnsExist($conn, $tableName, $day) {
+    if ($day > 31) return false;
+    
+    $columnPrefix = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT);
+    $openCol = $columnPrefix . "_OPEN";
+    
+    $stmt = $conn->prepare("
+        SELECT COUNT(*) as column_exists 
+        FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = ? 
+        AND COLUMN_NAME = ?
+    ");
+    $stmt->bind_param("ss", $tableName, $openCol);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    
+    return $row['column_exists'] > 0;
+}
+
+/**
+ * Detect gaps in a company's live daily stock table
+ */
+function detectGapsInLiveTable($conn, $tableName, $companyId) {
+    $currentDay = (int)date('j');
+    $daysInMonth = getCurrentMonthDays();
+    $currentMonth = getCurrentMonth();
+    
+    // Safety: never exceed current month
+    $currentDay = min($currentDay, $daysInMonth);
+    
+    // Find the last day that has data
+    $lastCompleteDay = 0;
+    $gaps = [];
+    
+    for ($day = 1; $day <= $currentDay; $day++) {
+        // Check if columns exist for this day
+        if (!doesDayColumnsExist($conn, $tableName, $day)) {
+            continue; // Skip if columns don't exist
+        }
+        
+        $closingCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        // Check if this day has any non-zero, non-null closing data
+        // Note: tbldailystock_1 doesn't have CompID, so we check by STK_MONTH only
+        $checkStmt = $conn->prepare("
+            SELECT COUNT(*) as has_data 
+            FROM {$tableName} 
+            WHERE {$closingCol} IS NOT NULL 
+            AND {$closingCol} != 0 
+            AND STK_MONTH = ?
+            LIMIT 1
+        ");
+        $checkStmt->bind_param("s", $currentMonth);
+        $checkStmt->execute();
+        $result = $checkStmt->get_result();
+        $row = $result->fetch_assoc();
+        $checkStmt->close();
+        
+        if ($row['has_data'] > 0) {
+            $lastCompleteDay = $day;
+        } else {
+            // If no data but columns exist, and we have a previous complete day, it's a gap
+            if ($lastCompleteDay > 0 && $day > $lastCompleteDay) {
+                $gaps[] = $day;
+            }
+        }
+    }
+    
+    // Special case: if no data found at all, all days are gaps
+    if ($lastCompleteDay === 0 && $currentDay > 1) {
+        for ($day = 1; $day <= $currentDay; $day++) {
+            if (doesDayColumnsExist($conn, $tableName, $day)) {
+                $gaps[] = $day;
+            }
+        }
+    }
+    
+    return [
+        'last_complete_day' => $lastCompleteDay,
+        'gaps' => $gaps,
+        'current_day' => $currentDay,
+        'days_in_month' => $daysInMonth,
+        'current_month' => $currentMonth
+    ];
+}
+
+/**
+ * Auto-populate gaps in live table
+ */
+function autoPopulateLiveTable($conn, $tableName, $companyId, $gaps, $lastCompleteDay) {
+    $results = [];
+    $currentMonth = getCurrentMonth();
+    
+    // If no last complete day, we can't populate gaps
+    if ($lastCompleteDay === 0) {
+        foreach ($gaps as $day) {
+            $results[$day] = [
+                'success' => false,
+                'error' => 'No source data available to copy from'
+            ];
+        }
+        return $results;
+    }
+    
+    foreach ($gaps as $day) {
+        // Safety check - don't exceed current month
+        if ($day > getCurrentMonthDays()) {
+            continue;
+        }
+        
+        // Check if target columns exist
+        if (!doesDayColumnsExist($conn, $tableName, $day)) {
+            $results[$day] = [
+                'success' => false,
+                'error' => "Columns for day {$day} do not exist"
+            ];
+            continue;
+        }
+        
+        // Column names
+        $targetOpen = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $targetPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        $targetSales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+        $targetClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        $sourceClosing = "DAY_" . str_pad($lastCompleteDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        try {
+            // Copy data: Opening = Previous day's closing, Purchase/Sales = 0, Closing = Opening
+            // Note: tbldailystock_1 doesn't have CompID, so we update by STK_MONTH only
+            $updateStmt = $conn->prepare("
+                UPDATE {$tableName} 
+                SET 
+                    {$targetOpen} = {$sourceClosing},
+                    {$targetPurchase} = 0,
+                    {$targetSales} = 0,
+                    {$targetClosing} = {$sourceClosing}
+                WHERE STK_MONTH = ?
+                AND {$sourceClosing} IS NOT NULL
+            ");
+            $updateStmt->bind_param("s", $currentMonth);
+            $updateStmt->execute();
+            $affectedRows = $updateStmt->affected_rows;
+            $updateStmt->close();
+            
+            $results[$day] = [
+                'success' => true,
+                'affected_rows' => $affectedRows,
+                'source_day' => $lastCompleteDay
+            ];
+            
+        } catch (Exception $e) {
+            $results[$day] = [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+    return $results;
+}
+
+/**
+ * Detect gaps for all companies
+ */
+function detectAllCompanyGaps($conn) {
+    $companyGaps = [];
+    
+    // Define company tables - only check tables that exist for current company
+    $currentCompanyId = $_SESSION['CompID'] ?? 1;
+    $companyTables = [
+        '1' => 'tbldailystock_1',
+        '2' => 'tbldailystock_2', 
+        '3' => 'tbldailystock_3'
+    ];
+    
+    // Only check the table for current company
+    if (isset($companyTables[$currentCompanyId])) {
+        $tableName = $companyTables[$currentCompanyId];
+        
+        // Check if table exists
+        $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
+        if ($tableCheck->num_rows > 0) {
+            $gapInfo = detectGapsInLiveTable($conn, $tableName, $currentCompanyId);
+            if (!empty($gapInfo['gaps'])) {
+                $companyGaps[$currentCompanyId] = [
+                    'table_name' => $tableName,
+                    'company_id' => $currentCompanyId,
+                    'last_complete_day' => $gapInfo['last_complete_day'],
+                    'gaps' => $gapInfo['gaps'],
+                    'current_day' => $gapInfo['current_day'],
+                    'days_in_month' => $gapInfo['days_in_month'],
+                    'current_month' => $gapInfo['current_month']
+                ];
+            }
+        }
+    }
+    
+    return $companyGaps;
+}
+
+/**
+ * Fix gaps for all companies
+ */
+function fixAllCompanyGaps($conn) {
+    $results = [];
+    $currentCompanyId = $_SESSION['CompID'] ?? 1;
+    
+    // Define company tables
+    $companyTables = [
+        '1' => 'tbldailystock_1',
+        '2' => 'tbldailystock_2',
+        '3' => 'tbldailystock_3'
+    ];
+    
+    // Only process the table for current company
+    if (isset($companyTables[$currentCompanyId])) {
+        $tableName = $companyTables[$currentCompanyId];
+        
+        $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
+        if ($tableCheck->num_rows > 0) {
+            $gapInfo = detectGapsInLiveTable($conn, $tableName, $currentCompanyId);
+            
+            if (!empty($gapInfo['gaps'])) {
+                $fixResults = autoPopulateLiveTable(
+                    $conn, 
+                    $tableName, 
+                    $currentCompanyId, 
+                    $gapInfo['gaps'], 
+                    $gapInfo['last_complete_day']
+                );
+                
+                $results[$currentCompanyId] = [
+                    'company_id' => $currentCompanyId,
+                    'table_name' => $tableName,
+                    'gaps_fixed' => count($gapInfo['gaps']),
+                    'details' => $fixResults,
+                    'status' => 'fixed'
+                ];
+            } else {
+                $results[$currentCompanyId] = [
+                    'company_id' => $currentCompanyId,
+                    'table_name' => $tableName,
+                    'gaps_fixed' => 0,
+                    'status' => 'no_gaps'
+                ];
+            }
+        }
+    }
+    
+    return $results;
+}
+
+// Handle gap fixing request
+$gapFixResults = null;
+if (isset($_POST['fix_data_gaps']) && $_POST['fix_data_gaps'] === '1') {
+    $gapFixResults = fixAllCompanyGaps($conn);
+    $_SESSION['gap_fix_message'] = "Data gaps have been automatically filled!";
+}
+
+// Detect current gaps
+$companyGaps = detectAllCompanyGaps($conn);
+
+// Show success message if available
+$successMessage = '';
+if (isset($_SESSION['gap_fix_message'])) {
+    $successMessage = $_SESSION['gap_fix_message'];
+    unset($_SESSION['gap_fix_message']);
+}
+
+// =============================================================================
+// EXISTING DASHBOARD STATISTICS LOGIC (Keep everything as is)
+// =============================================================================
+
 // Initialize stats array with default values
 $stats = [
     'total_items' => 0,
@@ -34,7 +332,7 @@ $stats = [
     'other_items' => 0
 ];
 
-// Fetch statistics data
+// Fetch statistics data (your existing code)
 try {
     // Check database connection
     if(!isset($conn) || !$conn instanceof mysqli) {
@@ -181,8 +479,7 @@ try {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-  <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
     /* Enhanced Card Styles */
     .stats-grid {
@@ -238,6 +535,65 @@ try {
         border-radius: 5px;
         margin-bottom: 20px;
     }
+    
+    /* Gap Detection Styles */
+    .gap-alert {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .gap-company {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .gap-days {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        margin: 5px 5px 5px 0;
+    }
+    
+    .btn-gap-fix {
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-gap-fix:hover {
+        background: #ff5252;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+    
+    .success-alert {
+        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    
+    .month-info {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -245,7 +601,6 @@ try {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-
     <div class="content-area">
       <h3 class="mb-4">Dashboard Overview</h3>
       
@@ -253,6 +608,90 @@ try {
         <div class="alert alert-danger"><?php echo $error; ?></div>
       <?php endif; ?>
       
+      <?php if($successMessage): ?>
+        <div class="success-alert">
+          <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo $successMessage; ?>
+        </div>
+      <?php endif; ?>
+      
+      <?php if(!empty($companyGaps)): ?>
+        <!-- Data Gap Detection Alert -->
+        <div class="gap-alert">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h4 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Data Gaps Detected
+              </h4>
+              <div class="month-info">
+                <?php 
+                $firstCompany = reset($companyGaps);
+                echo $firstCompany['current_month'] . ' • ' . $firstCompany['days_in_month'] . ' days • Today: Day ' . $firstCompany['current_day'];
+                ?>
+              </div>
+            </div>
+            <form method="POST" style="display: inline;">
+              <button type="submit" name="fix_data_gaps" value="1" class="btn-gap-fix">
+                <i class="fas fa-magic"></i> Auto-Fill All Gaps
+              </button>
+            </form>
+          </div>
+          
+          <p class="mb-3">We found missing stock data from system downtime. Click "Auto-Fill All Gaps" to automatically populate missing days.</p>
+          
+          <div class="row">
+            <?php foreach($companyGaps as $companyId => $gapInfo): ?>
+              <div class="col-md-6 mb-2">
+                <div class="gap-company">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>🏢 Company <?php echo $companyId; ?></strong>
+                    <span class="badge bg-warning"><?php echo count($gapInfo['gaps']); ?> missing days</span>
+                  </div>
+                  <div class="mt-2">
+                    <small>Missing: 
+                      <?php 
+                      $gapDisplay = [];
+                      foreach($gapInfo['gaps'] as $day) {
+                          $gapDisplay[] = 'Day ' . $day;
+                      }
+                      echo implode(', ', $gapDisplay);
+                      ?>
+                    </small>
+                  </div>
+                  <div class="mt-1">
+                    <small class="text-light">Last complete data: Day <?php echo $gapInfo['last_complete_day']; ?></small>
+                  </div>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endif; ?>
+      
+      <?php if($gapFixResults): ?>
+        <!-- Gap Fix Results -->
+        <div class="alert alert-info">
+          <h5><i class="fas fa-tasks"></i> Gap Fixing Results</h5>
+          <?php foreach($gapFixResults as $companyId => $result): ?>
+            <div class="mb-2">
+              <strong>Company <?php echo $companyId; ?>:</strong>
+              <?php if($result['status'] === 'fixed'): ?>
+                <span class="text-success">✅ Fixed <?php echo $result['gaps_fixed']; ?> gaps</span>
+                <?php 
+                $successCount = 0;
+                foreach($result['details'] as $dayResult) {
+                    if($dayResult['success']) $successCount++;
+                }
+                ?>
+                <small class="text-muted">(<?php echo $successCount; ?> successful)</small>
+              <?php else: ?>
+                <span class="text-muted">✅ No gaps found</span>
+              <?php endif; ?>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+      <!-- Existing Statistics Grid -->
       <div class="stats-grid">
         <!-- Item Statistics Card -->
         <div class="stat-card">

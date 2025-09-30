@@ -43,9 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
         $conn->begin_transaction();
         
         try {
-            // Get next bill number
-            $next_bill = getNextBillNumber($conn);
-            
             // Process each selected date
             foreach ($selected_dates as $sale_date) {
                 // Get all pending sales for this date
@@ -83,13 +80,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                 // Generate bills with the same logic as in the main file
                 $bills = generateBillsWithLimits($conn, $items_data, [$sale_date], $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
                 
-                // Process each bill
+                // Get next bill number for this batch
+                $next_bill_number = getNextBillNumberForGenerate($conn, $comp_id);
+                
+                // Process each bill with proper sequential bill numbers
                 foreach ($bills as $bill) {
+                    // Use sequential bill number instead of TEMP
+                    $sequential_bill_no = $next_bill_number;
+                    
+                    // Increment for next bill
+                    $next_bill_number = incrementBillNumber($next_bill_number);
+                    
                     // Insert sale header
                     $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
                                      VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
                     $header_stmt = $conn->prepare($header_query);
-                    $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
+                    $header_stmt->bind_param("ssddssi", $sequential_bill_no, $bill['bill_date'], $bill['total_amount'], 
                                             $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
                     $header_stmt->execute();
                     $header_stmt->close();
@@ -99,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                         $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                          VALUES (?, ?, ?, ?, ?, ?, ?)";
                         $detail_stmt = $conn->prepare($detail_query);
-                        $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
+                        $detail_stmt->bind_param("ssddssi", $sequential_bill_no, $item['code'], $item['qty'], 
                                                 $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
                         $detail_stmt->execute();
                         $detail_stmt->close();
@@ -136,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
     }
 }
 
-
 // Function to update item stock
 function updateItemStock($conn, $item_code, $quantity, $comp_id, $fin_year_id) {
     $opening_stock_column = "Opening_Stock" . $comp_id;
@@ -168,6 +173,44 @@ function updateItemStock($conn, $item_code, $quantity, $comp_id, $fin_year_id) {
         $insert_stock_stmt->execute();
         $insert_stock_stmt->close();
     }
+}
+
+// Function to get next bill number with proper zero-padding for generate
+function getNextBillNumberForGenerate($conn, $comp_id) {
+    // Get the highest existing bill number numerically
+    $sql = "SELECT BILL_NO FROM tblsaleheader 
+            WHERE COMP_ID = ? 
+            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+            LIMIT 1";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $nextNumber = 1; // Default starting number
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $lastBillNo = $row['BILL_NO'];
+        
+        // Extract numeric part and increment
+        if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+            $nextNumber = intval($matches[1]) + 1;
+        }
+    }
+    
+    $stmt->close();
+    return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+}
+
+// Function to increment bill number
+function incrementBillNumber($bill_no) {
+    if (preg_match('/BL(\d+)/', $bill_no, $matches)) {
+        $nextNumber = intval($matches[1]) + 1;
+        return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+    return $bill_no; // fallback
 }
 
 // Function to update daily stock

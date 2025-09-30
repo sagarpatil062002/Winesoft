@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'drydays_functions.php'; // Single include
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
@@ -208,8 +209,10 @@ if (!isset($_SESSION['sale_quantities'])) {
 // Handle form submission to update session quantities
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
-        // Find the current stock for this item
+        $closing_val = floatval($closing_balance);
         $current_stock = 0;
+        
+        // Find current stock for this item
         foreach ($items as $item) {
             if ($item['CODE'] == $item_code) {
                 $current_stock = $item['CURRENT_STOCK'];
@@ -217,8 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
             }
         }
         
-        // Calculate sale quantity from closing balance
-        $closing_val = floatval($closing_balance);
+        // Calculate sale quantity: sale_qty = current_stock - closing_balance
         $sale_qty = $current_stock - $closing_val;
         
         if ($sale_qty > 0) {
@@ -230,14 +232,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     }
     
     // Log the update
-    logMessage("Session quantities updated from POST closing balances: " . count($_SESSION['sale_quantities']) . " items");
+    logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
 // Get ALL items data for JavaScript from a separate query (for Total Sales Summary)
-$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.RPRICE,
-                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
                     FROM tblitemmaster im 
-                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
                     WHERE im.LIQ_FLAG = ?";
 $all_items_stmt = $conn->prepare($all_items_query);
 $all_items_stmt->bind_param("s", $mode);
@@ -380,6 +380,52 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     }
 }
 
+// FIXED: Function to get next bill number with proper zero-padding
+function getNextBillNumber($conn) {
+    logMessage("Getting next bill number");
+    
+    // Use transaction for atomic operation
+    $conn->begin_transaction();
+    
+    try {
+        // Get the maximum numeric part of bill numbers
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
+        $result = $conn->query($query);
+        $row = $result->fetch_assoc();
+        $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+        
+        // Double-check this bill number doesn't exist (prevent race conditions)
+        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+        $check_stmt->bind_param("s", $bill_no_to_check);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $exists = $check_result->fetch_assoc()['count'] > 0;
+        $check_stmt->close();
+        
+        if ($exists) {
+            // If it exists, increment and check again
+            $next_bill++;
+        }
+        
+        $conn->commit();
+        logMessage("Next bill number: $next_bill");
+        
+        return $next_bill;
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        logMessage("Error getting next bill number: " . $e->getMessage(), 'ERROR');
+        
+        // Fallback method
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
+        $result = $conn->query($query);
+        $row = $result->fetch_assoc();
+        return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+    }
+}
+
 // Handle form submission for sales update - FIXED VERSION
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
@@ -472,55 +518,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $opening_stock_column = "Opening_Stock" . $comp_id;
                         $daily_stock_table = "tbldailystock_" . $comp_id;
                         
-// Process each bill in chronological order
-usort($bills, function($a, $b) {
-    return strtotime($a['bill_date']) - strtotime($b['bill_date']);
-});
-
-// Pre-generate ALL bill numbers in one go to prevent race conditions and ensure proper order
-$bill_numbers = [];
-$bill_count = count($bills);
-
-// Get current max bill number
-$max_sql = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
-            FROM tblsaleheader WHERE COMP_ID = ?";
-$max_stmt = $conn->prepare($max_sql);
-$max_stmt->bind_param("i", $comp_id);
-$max_stmt->execute();
-$max_result = $max_stmt->get_result();
-$max_row = $max_result->fetch_assoc();
-$max_stmt->close();
-
-$next_number = ($max_row['max_bill'] ? $max_row['max_bill'] + 1 : 1);
-
-// Generate sequential numbers for all bills WITH ZERO-PADDING
-for ($i = 0; $i < $bill_count; $i++) {
-    $bill_numbers[] = 'BL' . str_pad($next_number + $i, 4, '0', STR_PAD_LEFT);
-}
-
-logMessage("Generated bill numbers from BL" . str_pad($next_number, 4, '0', STR_PAD_LEFT) . " to BL" . str_pad($next_number + $bill_count - 1, 4, '0', STR_PAD_LEFT) . " for $bill_count bills");
-
-// Assign numbers to bills in order
-foreach ($bills as $index => &$bill) {
-    $bill['bill_no'] = $bill_numbers[$index];
-    logMessage("Assigned bill number: " . $bill['bill_no'] . " for date: " . $bill['bill_date']);
-}
-
-// Double-check for duplicate bill numbers before insertion
-$check_sql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
-$check_stmt = $conn->prepare($check_sql);
-
-foreach ($bills as $bill) {
-    $check_stmt->bind_param("si", $bill['bill_no'], $comp_id);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    $check_row = $check_result->fetch_assoc();
-    
-    if ($check_row['count'] > 0) {
-        throw new Exception("Bill number " . $bill['bill_no'] . " already exists! Cannot proceed.");
-    }
-}
-$check_stmt->close();                        
+                        // Get next bill number once to ensure proper numerical order
+                        $next_bill_number = getNextBillNumber($conn);
+                        
+                        // Process each bill in chronological AND numerical order
+                        usort($bills, function($a, $b) {
+                            return strtotime($a['bill_date']) - strtotime($b['bill_date']);
+                        });
+                        
+                        // Process each bill with proper zero-padded bill numbers
+                        foreach ($bills as $bill) {
+                            $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+                            
+                            // Insert sale header
+                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                            $header_stmt = $conn->prepare($header_query);
+                            $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
+                                                    $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                            $header_stmt->execute();
+                            $header_stmt->close();
+                            
+                            // Insert sale details for each item in the bill
+                            foreach ($bill['items'] as $item) {
+                                $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
+                                $detail_stmt = $conn->prepare($detail_query);
+                                $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
+                                                        $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                                $detail_stmt->execute();
+                                $detail_stmt->close();
+                                
+                                // Update stock
+                                updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                                
+                                // Update daily stock
+                                updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                            }
+                            
+                            $total_amount += $bill['total_amount'];
+                        }
+                        
                         // Commit transaction
                         $conn->commit();
                         
@@ -561,20 +599,20 @@ $debug_info = [
     'current_page' => $current_page,
     'total_pages' => $total_pages,
     'session_quantities_count' => count($_SESSION['sale_quantities']),
-    'post_closing_balances_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['closing_balance'] ?? []) : 0,
+    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['closing_balance'] ?? []) : 0,
     'date_range' => "$start_date to $end_date",
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
     'comp_id' => $comp_id
 ];
-logArray($debug_info, "Closing Stock Page Load Debug Info");
+logArray($debug_info, "Sales Page Load Debug Info");
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales by Date Range (Closing Balance) - WineSoft</title>
+  <title>Sales by Closing Balance - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -649,7 +687,7 @@ logArray($debug_info, "Closing Stock Page Load Debug Info");
 }
 
 /* Reduce input field height */
-.closing-input {
+.qty-input {
     height: 30px !important;
     padding: 2px 6px !important;
 }
@@ -804,7 +842,7 @@ tr.has-quantity td {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Sales by Date Range (Closing Balance)</h3>
+      <h3 class="mb-4">Sales by Closing Balance</h3>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -854,7 +892,7 @@ tr.has-quantity td {
           </a>
           <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
-            Group Defined
+                         Group Defined
           </a>
         </div>
       </div>
@@ -969,9 +1007,8 @@ tr.has-quantity td {
                 <th>Category</th>
                 <th>Rate (₹)</th>
                 <th>Current Stock</th>
-                <th>Closing Balance</th>
+                <th class="closing-balance-header">Closing Balance</th>
                 <th>Total Sale Qty</th>
-                <th class="closing-balance-header">Calculated Closing</th>
                 <th class="action-column">Action</th>
                 
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
@@ -983,13 +1020,9 @@ tr.has-quantity td {
 <?php if (!empty($items)): ?>
     <?php foreach ($items as $item): 
         $item_code = $item['CODE'];
-        $current_stock = $item['CURRENT_STOCK'];
-        $sale_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
-        
-        // Calculate closing balance from sale quantity
-        $closing_balance = $current_stock - $sale_qty;
-        $item_total = $sale_qty * $item['RPRICE'];
-        $calculated_closing = $current_stock - $sale_qty;
+        $item_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
+        $item_total = $item_qty * $item['RPRICE'];
+        $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
         
         // Extract size from item details
         $size = 0;
@@ -999,34 +1032,34 @@ tr.has-quantity td {
         
         // Get class code - now available from the query
         $class_code = $item['CLASS'] ?? 'O'; // Default to 'O' if not set
+        
+        // Calculate default closing balance for input field
+        $default_closing_balance = $item['CURRENT_STOCK'] - $item_qty;
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
     data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-    class="<?= $sale_qty > 0 ? 'has-quantity' : '' ?>">
+    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?>">
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
             <td><?= number_format($item['RPRICE'], 2); ?></td>
             <td>
-                <span class="stock-info"><?= number_format($current_stock, 3); ?></span>
+                <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
             </td>
             <td>
     <input type="number" name="closing_balance[<?= htmlspecialchars($item_code); ?>]" 
-           class="form-control closing-input" min="0" 
-           max="<?= $current_stock; ?>" 
-           step="0.001" value="<?= number_format($closing_balance, 3) ?>" 
+           class="form-control qty-input" min="0" 
+           max="<?= $item['CURRENT_STOCK']; ?>" 
+           step="0.001" value="<?= number_format($default_closing_balance, 3) ?>" 
            data-rate="<?= $item['RPRICE'] ?>"
            data-code="<?= htmlspecialchars($item_code); ?>"
-           data-stock="<?= $current_stock ?>"
+           data-stock="<?= $item['CURRENT_STOCK'] ?>"
            data-size="<?= $size ?>"
            oninput="validateClosingBalance(this)">
 </td>
-            <td id="sale_qty_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($sale_qty, 3) ?>
-            </td>
-            <td class="closing-balance-cell" id="calculated_closing_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($calculated_closing, 3) ?>
+            <td class="sale-qty-cell" id="sale_qty_<?= htmlspecialchars($item_code); ?>">
+                <?= number_format($item_qty, 3) ?>
             </td>
             <td class="action-column">
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
@@ -1038,13 +1071,13 @@ tr.has-quantity td {
             <!-- Date distribution cells will be inserted here by JavaScript -->
             
             <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($item_total, 2) ?>
+                <?= number_format($item_qty * $item['RPRICE'], 2) ?>
             </td>
         </tr>
     <?php endforeach; ?>
 <?php else: ?>
     <tr>
-        <td colspan="10" class="text-center text-muted">No items found.</td>
+        <td colspan="9" class="text-center text-muted">No items found.</td>
     </tr>
 <?php endif; ?>
 </tbody>
@@ -1244,22 +1277,21 @@ function clearSessionQuantities() {
     });
 }
 
-// Enhanced closing balance validation function
+// NEW: Enhanced closing balance validation function
 function validateClosingBalance(input) {
     const itemCode = $(input).data('code');
     const currentStock = parseFloat($(input).data('stock'));
-    const rate = parseFloat($(input).data('rate'));
-    let closingBalance = parseFloat($(input).val()) || 0;
+    let enteredClosingBalance = parseFloat($(input).val()) || 0;
     
     // Validate input
-    if (isNaN(closingBalance) || closingBalance < 0) {
-        closingBalance = 0;
+    if (isNaN(enteredClosingBalance) || enteredClosingBalance < 0) {
+        enteredClosingBalance = 0;
         $(input).val(0);
     }
     
-    // Prevent exceeding current stock
-    if (closingBalance > currentStock) {
-        closingBalance = currentStock;
+    // NEW: Prevent closing balance exceeding current stock
+    if (enteredClosingBalance > currentStock) {
+        enteredClosingBalance = currentStock;
         $(input).val(currentStock.toFixed(3));
         
         // Show warning but don't prevent operation
@@ -1269,11 +1301,11 @@ function validateClosingBalance(input) {
         $(input).removeClass('is-invalid');
     }
     
-    // Calculate sale quantity
-    const saleQty = currentStock - closingBalance;
+    // NEW: Calculate sale quantity: sale_qty = current_stock - closing_balance
+    const saleQty = currentStock - enteredClosingBalance;
     
     // Update UI immediately
-    updateItemUI(itemCode, saleQty, currentStock, rate);
+    updateItemUI(itemCode, saleQty, currentStock, enteredClosingBalance);
     
     // Save to session via AJAX to prevent data loss
     saveQuantityToSession(itemCode, saleQty);
@@ -1281,14 +1313,18 @@ function validateClosingBalance(input) {
     return true;
 }
 
-// New function to update all UI elements for an item
-function updateItemUI(itemCode, saleQty, currentStock, rate) {
-    const closingBalance = currentStock - saleQty;
+// UPDATED: Function to update all UI elements for an item
+function updateItemUI(itemCode, saleQty, currentStock, closingBalance = null) {
+    const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
     const amount = saleQty * rate;
+    
+    // If closingBalance is not provided, calculate it
+    if (closingBalance === null) {
+        closingBalance = currentStock - saleQty;
+    }
     
     // Update all related UI elements
     $(`#sale_qty_${itemCode}`).text(saleQty.toFixed(3));
-    $(`#calculated_closing_${itemCode}`).text(closingBalance.toFixed(3));
     $(`#amount_${itemCode}`).text(amount.toFixed(2));
     
     // Update row styling
@@ -1296,18 +1332,18 @@ function updateItemUI(itemCode, saleQty, currentStock, rate) {
     row.toggleClass('has-quantity', saleQty > 0);
     
     // Update closing balance styling
-    const closingCell = $(`#calculated_closing_${itemCode}`);
-    closingCell.removeClass('text-warning text-danger fw-bold');
+    const closingInput = $(`input[name="closing_balance[${itemCode}]"]`);
+    closingInput.removeClass('text-warning text-danger fw-bold');
     
     if (closingBalance < 0) {
-        closingCell.addClass('text-danger fw-bold');
+        closingInput.addClass('text-danger fw-bold');
     } else if (closingBalance < (currentStock * 0.1)) {
-        closingCell.addClass('text-warning fw-bold');
+        closingInput.addClass('text-warning fw-bold');
     }
 }
 
-// New function to save quantity to session via AJAX
-function saveQuantityToSession(itemCode, saleQty) {
+// Function to save quantity to session via AJAX
+function saveQuantityToSession(itemCode, qty) {
     // Debounce to prevent too many requests
     if (typeof saveQuantityToSession.debounce === 'undefined') {
         saveQuantityToSession.debounce = null;
@@ -1320,12 +1356,12 @@ function saveQuantityToSession(itemCode, saleQty) {
             type: 'POST',
             data: {
                 item_code: itemCode,
-                quantity: saleQty
+                quantity: qty
             },
             success: function(response) {
-                console.log('Sale quantity saved to session:', itemCode, saleQty);
+                console.log('Quantity saved to session:', itemCode, qty);
                 // Update global session quantities object
-                allSessionQuantities[itemCode] = saleQty;
+                allSessionQuantities[itemCode] = qty;
             },
             error: function() {
                 console.error('Failed to save quantity to session');
@@ -1341,8 +1377,8 @@ function validateAllQuantities() {
     
     // Validate ONLY session quantities > 0 (optimization)
     for (const itemCode in allSessionQuantities) {
-        const saleQty = allSessionQuantities[itemCode];
-        if (saleQty > 0) {
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
             // Find the stock data from the input field or use a default
             const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
             let currentStock;
@@ -1358,15 +1394,14 @@ function validateAllQuantities() {
                 }
             }
             
-            const closingBalance = currentStock - saleQty;
+            const closingBalance = currentStock - qty;
             
             if (closingBalance < 0) {
                 isValid = false;
                 errorItems.push({
                     code: itemCode,
                     stock: currentStock,
-                    saleQty: saleQty,
-                    closingBalance: closingBalance
+                    qty: qty
                 });
             }
         }
@@ -1375,9 +1410,9 @@ function validateAllQuantities() {
     if (!isValid) {
         let errorMessage = "The following items have insufficient stock:\n\n";
         errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(3)}, Sale Qty ${item.saleQty}, Closing ${item.closingBalance.toFixed(3)}\n`;
+            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(3)}, Quantity ${item.qty}\n`;
         });
-        errorMessage += "\nPlease adjust closing balances to avoid negative closing balance.";
+        errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
         alert(errorMessage);
     }
     
@@ -1417,7 +1452,6 @@ function updateDistributionPreview(itemCode, totalQty) {
     
     const dailySales = distributeSales(totalQty, daysCount);
     const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
-    const currentStock = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('stock'));
     const itemRow = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
     
     // Remove any existing distribution cells
@@ -1431,9 +1465,8 @@ function updateDistributionPreview(itemCode, totalQty) {
         $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
     });
     
-    // Update calculated closing balance
-    const calculatedClosing = currentStock - totalDistributed;
-    $(`#calculated_closing_${itemCode}`).text(calculatedClosing.toFixed(3));
+    // Update sale quantity display
+    $(`#sale_qty_${itemCode}`).text(totalDistributed.toFixed(3));
     
     // Update amount
     const amount = totalDistributed * rate;
@@ -1472,11 +1505,11 @@ function initializeTableHeaders() {
 
 // Function to handle row navigation with arrow keys
 function setupRowNavigation() {
-    const closingInputs = $('input.closing-input');
+    const closingInputs = $('input.qty-input');
     let currentRowIndex = -1;
     
     // Highlight row when input is focused
-    $(document).on('focus', 'input.closing-input', function() {
+    $(document).on('focus', 'input.qty-input', function() {
         // Remove highlight from all rows
         $('tr').removeClass('highlight-row');
         
@@ -1488,7 +1521,7 @@ function setupRowNavigation() {
     });
     
     // Handle arrow key navigation
-    $(document).on('keydown', 'input.closing-input', function(e) {
+    $(document).on('keydown', 'input.qty-input', function(e) {
         // Only handle arrow keys
         if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
         
@@ -1522,7 +1555,7 @@ function generateBills() {
     }
     
     if (!hasQuantity) {
-        alert('Please enter closing balances for at least one item to generate sale quantities.');
+        alert('Please enter closing balances for at least one item.');
         return false;
     }
     
@@ -1551,7 +1584,7 @@ function saveToPendingSales() {
     }
     
     if (!hasQuantity) {
-        alert('Please enter closing balances for at least one item to generate sale quantities.');
+        alert('Please enter closing balances for at least one item.');
         return false;
     }
     
@@ -1573,9 +1606,9 @@ function saveToPendingSales() {
     
     // Add each item's quantity from session (not just visible ones)
     for (const itemCode in allSessionQuantities) {
-        const saleQty = allSessionQuantities[itemCode];
-        if (saleQty > 0) {
-            formData.append(`sale_qty[${itemCode}]`, saleQty);
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`sale_qty[${itemCode}]`, qty);
         }
     }
     
@@ -1624,7 +1657,7 @@ function handleGenerateBills() {
     }
     
     if (!hasQuantity) {
-        alert('Please enter closing balances for at least one item to generate sale quantities.');
+        alert('Please enter closing balances for at least one item.');
         return false;
     }
     
@@ -1715,7 +1748,10 @@ function getItemData(itemCode) {
     const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
     if (inputField.length > 0) {
         const itemRow = inputField.closest('tr');
-        const saleQty = parseFloat($(`#sale_qty_${itemCode}`).text()) || 0;
+        const currentStock = parseFloat(inputField.data('stock'));
+        const closingBalance = parseFloat(inputField.val()) || 0;
+        const saleQty = currentStock - closingBalance;
+        
         return {
             classCode: itemRow.data('class'),
             details: itemRow.data('details'),
@@ -1934,6 +1970,19 @@ function updateSalesModalTable(salesSummary, allSizes) {
     });
 }
 
+// Print function
+function printSalesSummary() {
+    const printContent = document.getElementById('totalSalesModuleContainer').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = printContent;
+    window.print();
+    document.body.innerHTML = originalContent;
+    
+    // Re-initialize any necessary scripts
+    location.reload();
+}
+
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
     // Initialize table headers and columns
@@ -1947,7 +1996,7 @@ $(document).ready(function() {
     
     // Clear session button click event
     $('#clearSessionBtn').click(function() {
-        if (confirm('Are you sure you want to clear all closing balances? This action cannot be undone.')) {
+        if (confirm('Are you sure you want to clear all quantities? This action cannot be undone.')) {
             clearSessionQuantities();
         }
     });
@@ -1959,10 +2008,10 @@ $(document).ready(function() {
     });
     
     // OPTIMIZED: Event delegation with debouncing
-    let closingBalanceTimeout;
-    $(document).off('input', 'input.closing-input').on('input', 'input.closing-input', function(e) {
-        clearTimeout(closingBalanceTimeout);
-        closingBalanceTimeout = setTimeout(() => {
+    let quantityTimeout;
+    $(document).off('input', 'input.qty-input').on('input', 'input.qty-input', function(e) {
+        clearTimeout(quantityTimeout);
+        quantityTimeout = setTimeout(() => {
             validateClosingBalance(this);
         }, 200);
     });
@@ -1986,8 +2035,8 @@ $(document).ready(function() {
             // Remove distribution cells if quantity is 0
             $(`input[name="closing_balance[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
             
-            // Reset calculated closing and amount
-            $(`#calculated_closing_${itemCode}`).text(currentStock.toFixed(3));
+            // Reset sale quantity and amount
+            $(`#sale_qty_${itemCode}`).text('0.000');
             $(`#amount_${itemCode}`).text('0.00');
             
             // Hide date columns if no items have quantity
@@ -2011,7 +2060,7 @@ $(document).ready(function() {
     
     // OPTIMIZED: Shuffle all button click event - Only shuffle items with qty > 0
     $('#shuffleBtn').off('click').on('click', function() {
-        $('input.closing-input').each(function() {
+        $('input.qty-input').each(function() {
             const itemCode = $(this).data('code');
             const currentStock = parseFloat($(this).data('stock'));
             const closingBalance = parseFloat($(this).val()) || 0;
@@ -2062,13 +2111,12 @@ function initializeQuantitiesFromSession() {
         
         if (allSessionQuantities[itemCode] !== undefined) {
             const sessionQty = allSessionQuantities[itemCode];
-            // Calculate closing balance from session quantity
+            // Calculate closing balance: closing_balance = current_stock - sale_qty
             const closingBalance = currentStock - sessionQty;
             $(this).val(closingBalance.toFixed(3));
             
             // Update UI for this item
-            const rate = parseFloat($(this).data('rate'));
-            updateItemUI(itemCode, sessionQty, currentStock, rate);
+            updateItemUI(itemCode, sessionQty, currentStock, closingBalance);
             
             // Show distribution if quantity > 0 (optimization)
             if (sessionQty > 0) {
