@@ -614,83 +614,8 @@ try {
         </div>
       <?php endif; ?>
       
-      <?php if(!empty($companyGaps)): ?>
-        <!-- Data Gap Detection Alert -->
-        <div class="gap-alert">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-              <h4 class="mb-0">
-                <i class="fas fa-exclamation-triangle"></i> 
-                Data Gaps Detected
-              </h4>
-              <div class="month-info">
-                <?php 
-                $firstCompany = reset($companyGaps);
-                echo $firstCompany['current_month'] . ' • ' . $firstCompany['days_in_month'] . ' days • Today: Day ' . $firstCompany['current_day'];
-                ?>
-              </div>
-            </div>
-            <form method="POST" style="display: inline;">
-              <button type="submit" name="fix_data_gaps" value="1" class="btn-gap-fix">
-                <i class="fas fa-magic"></i> Auto-Fill All Gaps
-              </button>
-            </form>
-          </div>
-          
-          <p class="mb-3">We found missing stock data from system downtime. Click "Auto-Fill All Gaps" to automatically populate missing days.</p>
-          
-          <div class="row">
-            <?php foreach($companyGaps as $companyId => $gapInfo): ?>
-              <div class="col-md-6 mb-2">
-                <div class="gap-company">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <strong>🏢 Company <?php echo $companyId; ?></strong>
-                    <span class="badge bg-warning"><?php echo count($gapInfo['gaps']); ?> missing days</span>
-                  </div>
-                  <div class="mt-2">
-                    <small>Missing: 
-                      <?php 
-                      $gapDisplay = [];
-                      foreach($gapInfo['gaps'] as $day) {
-                          $gapDisplay[] = 'Day ' . $day;
-                      }
-                      echo implode(', ', $gapDisplay);
-                      ?>
-                    </small>
-                  </div>
-                  <div class="mt-1">
-                    <small class="text-light">Last complete data: Day <?php echo $gapInfo['last_complete_day']; ?></small>
-                  </div>
-                </div>
-              </div>
-            <?php endforeach; ?>
-          </div>
-        </div>
-      <?php endif; ?>
       
-      <?php if($gapFixResults): ?>
-        <!-- Gap Fix Results -->
-        <div class="alert alert-info">
-          <h5><i class="fas fa-tasks"></i> Gap Fixing Results</h5>
-          <?php foreach($gapFixResults as $companyId => $result): ?>
-            <div class="mb-2">
-              <strong>Company <?php echo $companyId; ?>:</strong>
-              <?php if($result['status'] === 'fixed'): ?>
-                <span class="text-success">✅ Fixed <?php echo $result['gaps_fixed']; ?> gaps</span>
-                <?php 
-                $successCount = 0;
-                foreach($result['details'] as $dayResult) {
-                    if($dayResult['success']) $successCount++;
-                }
-                ?>
-                <small class="text-muted">(<?php echo $successCount; ?> successful)</small>
-              <?php else: ?>
-                <span class="text-muted">✅ No gaps found</span>
-              <?php endif; ?>
-            </div>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+
       <!-- Existing Statistics Grid -->
       <div class="stats-grid">
         <!-- Item Statistics Card -->
