@@ -54,9 +54,6 @@ $stmt->close();
     <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
     <!-- Barcode font -->
     <link href="https://fonts.googleapis.com/css2?family=Libre+Barcode+128&display=swap" rel="stylesheet">
-      <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
 </head>
 <body>
 <div class="dashboard-container">

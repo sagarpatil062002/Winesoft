@@ -1,0 +1,1256 @@
+[2025-09-30 06:19:52] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:19:52] [INFO] Request method: GET
+[2025-09-30 06:19:52] [INFO] Search term: ''
+[2025-09-30 06:19:52] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:19:52] [INFO] Final session quantities count: 0
+[2025-09-30 06:19:52] [INFO] Items in current view: 50
+[2025-09-30 06:19:52] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3757
+    [current_page] => 1
+    [total_pages] => 76
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:20:02] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:20:02] [INFO] Request method: GET
+[2025-09-30 06:20:02] [INFO] Search term: ''
+[2025-09-30 06:20:02] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:20:52] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:20:52] [INFO] Request method: GET
+[2025-09-30 06:20:52] [INFO] Search term: ''
+[2025-09-30 06:20:52] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:21:54] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:21:54] [INFO] Request method: GET
+[2025-09-30 06:21:54] [INFO] Search term: ''
+[2025-09-30 06:21:54] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:21:54] [INFO] Final session quantities count: 0
+[2025-09-30 06:21:54] [INFO] Items in current view: 50
+[2025-09-30 06:21:54] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3757
+    [current_page] => 1
+    [total_pages] => 76
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:30:56] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:30:56] [INFO] Request method: GET
+[2025-09-30 06:30:56] [INFO] Search term: ''
+[2025-09-30 06:30:56] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:30:56] [INFO] Final session quantities count: 0
+[2025-09-30 06:30:56] [INFO] Items in current view: 0
+[2025-09-30 06:30:56] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:30:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:30:57] [INFO] Request method: GET
+[2025-09-30 06:30:57] [INFO] Search term: ''
+[2025-09-30 06:30:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:30:57] [INFO] Final session quantities count: 0
+[2025-09-30 06:30:57] [INFO] Items in current view: 50
+[2025-09-30 06:30:57] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3757
+    [current_page] => 1
+    [total_pages] => 76
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:30:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:30:57] [INFO] Request method: GET
+[2025-09-30 06:30:57] [INFO] Search term: ''
+[2025-09-30 06:30:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:30:57] [INFO] Final session quantities count: 0
+[2025-09-30 06:30:57] [INFO] Items in current view: 50
+[2025-09-30 06:30:57] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3757
+    [current_page] => 1
+    [total_pages] => 76
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:30:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:30:57] [INFO] Request method: GET
+[2025-09-30 06:30:57] [INFO] Search term: ''
+[2025-09-30 06:30:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:30:57] [INFO] Final session quantities count: 0
+[2025-09-30 06:30:57] [INFO] Items in current view: 50
+[2025-09-30 06:30:57] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3757
+    [current_page] => 1
+    [total_pages] => 76
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:54:19] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:54:19] [INFO] Request method: GET
+[2025-09-30 06:54:19] [INFO] Search term: ''
+[2025-09-30 06:54:19] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:54:19] [INFO] Final session quantities count: 0
+[2025-09-30 06:54:19] [INFO] Items in current view: 50
+[2025-09-30 06:54:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 150
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:54:19] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:54:19] [INFO] Request method: GET
+[2025-09-30 06:54:19] [INFO] Search term: ''
+[2025-09-30 06:54:19] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:54:19] [INFO] Final session quantities count: 0
+[2025-09-30 06:54:19] [INFO] Items in current view: 50
+[2025-09-30 06:54:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 150
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 06:54:27] [INFO] Session quantity updated: SCMCL0013801 = 0
+[2025-09-30 06:54:28] [INFO] Session quantity updated: SCMCL0013801 = 1
+[2025-09-30 06:54:28] [INFO] Session quantity updated: SCMCL0013801 = 1
+[2025-09-30 06:54:28] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 06:54:28] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 06:54:29] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 06:58:50] [INFO] === PAGE ACCESS ===
+[2025-09-30 06:58:50] [INFO] Request method: GET
+[2025-09-30 06:58:50] [INFO] Search term: ''
+[2025-09-30 06:58:50] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 06:58:50] [INFO] Final session quantities count: 1
+[2025-09-30 06:58:50] [INFO] Items in current view: 50
+[2025-09-30 06:58:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:01:07] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:01:07] [INFO] Request method: GET
+[2025-09-30 07:01:07] [INFO] Search term: ''
+[2025-09-30 07:01:07] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:01:07] [INFO] Final session quantities count: 1
+[2025-09-30 07:01:07] [INFO] Items in current view: 50
+[2025-09-30 07:01:07] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:31:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:31:57] [INFO] Request method: GET
+[2025-09-30 07:31:57] [INFO] Search term: ''
+[2025-09-30 07:31:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:31:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:31:57] [INFO] Request method: GET
+[2025-09-30 07:31:57] [INFO] Search term: ''
+[2025-09-30 07:31:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:31:59] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:31:59] [INFO] Request method: GET
+[2025-09-30 07:31:59] [INFO] Search term: ''
+[2025-09-30 07:31:59] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:32:01] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:32:01] [INFO] Request method: GET
+[2025-09-30 07:32:01] [INFO] Search term: ''
+[2025-09-30 07:32:01] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:32:02] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:32:02] [INFO] Request method: GET
+[2025-09-30 07:32:02] [INFO] Search term: ''
+[2025-09-30 07:32:02] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:32:02] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:32:02] [INFO] Request method: GET
+[2025-09-30 07:32:02] [INFO] Search term: ''
+[2025-09-30 07:32:02] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:44:27] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:44:27] [INFO] Request method: GET
+[2025-09-30 07:44:27] [INFO] Search term: ''
+[2025-09-30 07:44:27] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:44:27] [INFO] Final session quantities count: 1
+[2025-09-30 07:44:27] [INFO] Items in current view: 50
+[2025-09-30 07:44:27] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 150
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:44:31] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:44:31] [INFO] Request method: GET
+[2025-09-30 07:44:31] [INFO] Search term: ''
+[2025-09-30 07:44:31] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:44:31] [INFO] Final session quantities count: 0
+[2025-09-30 07:44:31] [INFO] Items in current view: 50
+[2025-09-30 07:44:31] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 150
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:44:35] [INFO] Session quantity updated: SCMCL0013801 = 0
+[2025-09-30 07:44:35] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 07:44:36] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 07:44:39] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-09-30 07:44:42] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-09-30 07:44:42] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-09-30 07:44:43] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-09-30 07:44:53] [INFO] Session quantity updated: SCMCL0013805 = 0
+[2025-09-30 07:44:54] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-09-30 07:44:54] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-09-30 07:44:55] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-09-30 07:44:57] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:44:57] [INFO] Request method: POST
+[2025-09-30 07:44:57] [INFO] Search term: ''
+[2025-09-30 07:44:57] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:44:57] [INFO] Session quantities updated from POST: 3 items
+[2025-09-30 07:44:57] [INFO] Getting next bill number
+[2025-09-30 07:44:57] [INFO] Next bill number: 67
+[2025-09-30 07:44:57] [INFO] Session quantities cleared
+[2025-09-30 07:45:41] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:45:41] [INFO] Request method: GET
+[2025-09-30 07:45:41] [INFO] Search term: ''
+[2025-09-30 07:45:41] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:45:41] [INFO] Final session quantities count: 0
+[2025-09-30 07:45:41] [INFO] Items in current view: 50
+[2025-09-30 07:45:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:45:42] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:45:42] [INFO] Request method: GET
+[2025-09-30 07:45:42] [INFO] Search term: ''
+[2025-09-30 07:45:42] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:45:42] [INFO] Final session quantities count: 0
+[2025-09-30 07:45:42] [INFO] Items in current view: 50
+[2025-09-30 07:45:42] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:45:45] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 07:45:46] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 07:45:47] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 07:45:48] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 07:45:49] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 07:45:49] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 07:45:51] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:45:51] [INFO] Request method: POST
+[2025-09-30 07:45:51] [INFO] Search term: ''
+[2025-09-30 07:45:51] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:45:51] [INFO] Session quantities updated from POST: 4 items
+[2025-09-30 07:45:51] [INFO] Getting next bill number
+[2025-09-30 07:45:51] [INFO] Next bill number: 1
+[2025-09-30 07:45:51] [INFO] Session quantities cleared
+[2025-09-30 07:45:58] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:45:58] [INFO] Request method: GET
+[2025-09-30 07:45:58] [INFO] Search term: ''
+[2025-09-30 07:45:58] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:45:58] [INFO] Final session quantities count: 0
+[2025-09-30 07:45:58] [INFO] Items in current view: 50
+[2025-09-30 07:45:58] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:46:02] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 07:46:02] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 07:46:03] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 07:46:03] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 07:46:04] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 07:46:04] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 07:46:05] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 07:46:05] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 07:46:06] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 07:46:06] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:46:07] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:46:08] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 07:46:08] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 07:46:09] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:46:09] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:46:09] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 07:46:09] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 07:46:10] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 07:46:10] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 07:46:10] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 07:46:11] [INFO] Session quantity updated: SCMPL0019030 = 10
+[2025-09-30 07:46:11] [INFO] Session quantity updated: SCMPL0019030 = 10
+[2025-09-30 07:46:12] [INFO] Session quantity updated: SCMPL0019030 = 10
+[2025-09-30 07:46:15] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:46:15] [INFO] Request method: POST
+[2025-09-30 07:46:15] [INFO] Search term: ''
+[2025-09-30 07:46:15] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:46:15] [INFO] Session quantities updated from POST: 3 items
+[2025-09-30 07:46:15] [INFO] Getting next bill number
+[2025-09-30 07:46:15] [INFO] Next bill number: 4
+[2025-09-30 07:46:16] [INFO] Session quantities cleared
+[2025-09-30 07:46:24] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:46:24] [INFO] Request method: GET
+[2025-09-30 07:46:24] [INFO] Search term: ''
+[2025-09-30 07:46:24] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:46:24] [INFO] Final session quantities count: 0
+[2025-09-30 07:46:24] [INFO] Items in current view: 50
+[2025-09-30 07:46:24] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:46:24] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:46:24] [INFO] Request method: GET
+[2025-09-30 07:46:24] [INFO] Search term: ''
+[2025-09-30 07:46:24] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:46:24] [INFO] Final session quantities count: 0
+[2025-09-30 07:46:24] [INFO] Items in current view: 50
+[2025-09-30 07:46:24] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:46:53] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:46:53] [INFO] Request method: GET
+[2025-09-30 07:46:53] [INFO] Search term: ''
+[2025-09-30 07:46:53] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:46:53] [INFO] Final session quantities count: 0
+[2025-09-30 07:46:53] [INFO] Items in current view: 50
+[2025-09-30 07:46:53] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:47:01] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 07:47:02] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 07:47:03] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 07:47:14] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:47:14] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:47:15] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 07:47:19] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 07:47:19] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 07:47:20] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 07:47:32] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:47:32] [INFO] Request method: GET
+[2025-09-30 07:47:32] [INFO] Search term: 'beer'
+[2025-09-30 07:47:32] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:47:32] [INFO] Final session quantities count: 3
+[2025-09-30 07:47:32] [INFO] Items in current view: 50
+[2025-09-30 07:47:32] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 287
+    [current_page] => 1
+    [total_pages] => 6
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:47:35] [INFO] Session quantity updated: SCMBR0039553 = 12
+[2025-09-30 07:47:35] [INFO] Session quantity updated: SCMBR0039553 = 12
+[2025-09-30 07:47:37] [INFO] Session quantity updated: SCMBR0039553 = 12
+[2025-09-30 07:47:40] [INFO] Session quantity updated: SCMBR0018136 = 15
+[2025-09-30 07:47:41] [INFO] Session quantity updated: SCMBR0018136 = 15
+[2025-09-30 07:47:43] [INFO] Session quantity updated: SCMBR0018136 = 15
+[2025-09-30 07:47:44] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:47:44] [INFO] Request method: POST
+[2025-09-30 07:47:44] [INFO] Search term: 'beer'
+[2025-09-30 07:47:44] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:47:44] [INFO] Session quantities updated from POST: 5 items
+[2025-09-30 07:47:44] [INFO] Getting next bill number
+[2025-09-30 07:47:44] [INFO] Next bill number: 15
+[2025-09-30 07:47:46] [INFO] Session quantities cleared
+[2025-09-30 07:49:36] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:49:36] [INFO] Request method: GET
+[2025-09-30 07:49:36] [INFO] Search term: ''
+[2025-09-30 07:49:36] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:49:36] [INFO] Final session quantities count: 0
+[2025-09-30 07:49:36] [INFO] Items in current view: 50
+[2025-09-30 07:49:36] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 07:49:43] [INFO] Session quantity updated: SCMPL0019030 = 15
+[2025-09-30 07:49:43] [INFO] Session quantity updated: SCMPL0019030 = 15
+[2025-09-30 07:49:45] [INFO] Session quantity updated: SCMPL0019030 = 15
+[2025-09-30 07:49:49] [INFO] === PAGE ACCESS ===
+[2025-09-30 07:49:49] [INFO] Request method: POST
+[2025-09-30 07:49:49] [INFO] Search term: ''
+[2025-09-30 07:49:49] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 07:49:49] [INFO] Session quantities updated from POST: 1 items
+[2025-09-30 07:49:49] [INFO] Getting next bill number
+[2025-09-30 07:49:49] [INFO] Next bill number: 43
+[2025-09-30 07:49:50] [INFO] Session quantities cleared
+[2025-09-30 08:12:05] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:12:05] [INFO] Request method: GET
+[2025-09-30 08:12:05] [INFO] Search term: ''
+[2025-09-30 08:12:05] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:12:05] [INFO] Final session quantities count: 0
+[2025-09-30 08:12:05] [INFO] Items in current view: 50
+[2025-09-30 08:12:05] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:12:09] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 08:12:10] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 08:12:10] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:12:11] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:12:12] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:12:12] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:12] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:14] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:15] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 08:12:16] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:12:16] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:12:16] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:16] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:17] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:12:19] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:12:19] [INFO] Request method: POST
+[2025-09-30 08:12:19] [INFO] Search term: ''
+[2025-09-30 08:12:19] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:12:19] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:12:19] [INFO] Getting next bill number
+[2025-09-30 08:12:19] [INFO] Next bill number: 58
+[2025-09-30 08:12:19] [INFO] Session quantities cleared
+[2025-09-30 08:12:45] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:12:45] [INFO] Request method: GET
+[2025-09-30 08:12:45] [INFO] Search term: ''
+[2025-09-30 08:12:45] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:12:45] [INFO] Final session quantities count: 0
+[2025-09-30 08:12:45] [INFO] Items in current view: 50
+[2025-09-30 08:12:45] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:12:48] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 08:12:48] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 08:12:49] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 08:12:50] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:12:50] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:12:52] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:12:52] [INFO] Request method: POST
+[2025-09-30 08:12:52] [INFO] Search term: ''
+[2025-09-30 08:12:52] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:12:52] [INFO] Session quantities updated from POST: 4 items
+[2025-09-30 08:12:52] [INFO] Getting next bill number
+[2025-09-30 08:12:52] [INFO] Next bill number: 1
+[2025-09-30 08:12:52] [INFO] Session quantities cleared
+[2025-09-30 08:12:52] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:17:35] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:17:35] [INFO] Request method: GET
+[2025-09-30 08:17:35] [INFO] Search term: ''
+[2025-09-30 08:17:35] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:20:39] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:20:39] [INFO] Request method: GET
+[2025-09-30 08:20:39] [INFO] Search term: ''
+[2025-09-30 08:20:39] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:20:39] [INFO] Final session quantities count: 1
+[2025-09-30 08:20:39] [INFO] Items in current view: 50
+[2025-09-30 08:20:39] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:20:44] [INFO] Session quantity updated: SCMPL0026915 = 0
+[2025-09-30 08:20:44] [INFO] Session quantity updated: SCMPL0026915 = 1
+[2025-09-30 08:20:45] [INFO] Session quantity updated: SCMPL0026915 = 1
+[2025-09-30 08:20:45] [INFO] Session quantity updated: SCMPL0026915 = 10
+[2025-09-30 08:20:45] [INFO] Session quantity updated: SCMPL0026915 = 10
+[2025-09-30 08:20:46] [INFO] Session quantity updated: SCMPL0026915 = 10
+[2025-09-30 08:20:47] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:20:47] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:20:47] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:20:47] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:20:51] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:20:51] [INFO] Request method: POST
+[2025-09-30 08:20:51] [INFO] Search term: ''
+[2025-09-30 08:20:51] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:20:51] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:20:51] [INFO] Getting next bill number
+[2025-09-30 08:20:51] [INFO] Next bill number: 1
+[2025-09-30 08:20:51] [ERROR] Transaction rolled back: Column 'BILL_NO' cannot be null
+[2025-09-30 08:20:51] [INFO] Final session quantities count: 2
+[2025-09-30 08:20:51] [INFO] Items in current view: 50
+[2025-09-30 08:20:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:20:51] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:21:10] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:10] [INFO] Request method: POST
+[2025-09-30 08:21:10] [INFO] Search term: ''
+[2025-09-30 08:21:10] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:10] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:21:10] [INFO] Getting next bill number
+[2025-09-30 08:21:10] [INFO] Next bill number: 1
+[2025-09-30 08:21:10] [ERROR] Transaction rolled back: Column 'BILL_NO' cannot be null
+[2025-09-30 08:21:10] [INFO] Final session quantities count: 2
+[2025-09-30 08:21:10] [INFO] Items in current view: 50
+[2025-09-30 08:21:10] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:15] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:15] [INFO] Request method: POST
+[2025-09-30 08:21:15] [INFO] Search term: ''
+[2025-09-30 08:21:15] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:15] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:21:15] [INFO] Getting next bill number
+[2025-09-30 08:21:15] [INFO] Next bill number: 1
+[2025-09-30 08:21:15] [ERROR] Transaction rolled back: Column 'BILL_NO' cannot be null
+[2025-09-30 08:21:15] [INFO] Final session quantities count: 2
+[2025-09-30 08:21:15] [INFO] Items in current view: 50
+[2025-09-30 08:21:15] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:34] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:34] [INFO] Request method: POST
+[2025-09-30 08:21:34] [INFO] Search term: ''
+[2025-09-30 08:21:34] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:34] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:21:34] [INFO] Getting next bill number
+[2025-09-30 08:21:34] [INFO] Next bill number: 1
+[2025-09-30 08:21:34] [ERROR] Transaction rolled back: Column 'BILL_NO' cannot be null
+[2025-09-30 08:21:34] [INFO] Final session quantities count: 2
+[2025-09-30 08:21:34] [INFO] Items in current view: 50
+[2025-09-30 08:21:34] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:38] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:38] [INFO] Request method: POST
+[2025-09-30 08:21:38] [INFO] Search term: ''
+[2025-09-30 08:21:38] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:38] [INFO] Session quantities updated from POST: 2 items
+[2025-09-30 08:21:38] [WARNING] Duplicate submission prevented for user 1
+[2025-09-30 08:21:38] [INFO] Final session quantities count: 2
+[2025-09-30 08:21:38] [INFO] Items in current view: 50
+[2025-09-30 08:21:38] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:44] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:44] [INFO] Request method: GET
+[2025-09-30 08:21:44] [INFO] Search term: ''
+[2025-09-30 08:21:44] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:44] [INFO] Final session quantities count: 2
+[2025-09-30 08:21:44] [INFO] Items in current view: 50
+[2025-09-30 08:21:44] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:46] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 08:21:47] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:47] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:48] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:52] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:21:52] [INFO] Request method: GET
+[2025-09-30 08:21:52] [INFO] Search term: ''
+[2025-09-30 08:21:52] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:21:52] [INFO] Final session quantities count: 0
+[2025-09-30 08:21:52] [INFO] Items in current view: 50
+[2025-09-30 08:21:52] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:21:54] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:54] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:55] [INFO] Session quantity updated: SCMPL0019028 = 15
+[2025-09-30 08:21:55] [INFO] Session quantity updated: SCMPL0019029 = 131
+[2025-09-30 08:21:56] [INFO] Session quantity updated: SCMPL0019029 = 131
+[2025-09-30 08:21:57] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:21:57] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:21:58] [INFO] Session quantity updated: SCMPL0019029 = 15
+[2025-09-30 08:21:58] [INFO] Session quantity updated: SCMPL0019029 = 15
+[2025-09-30 08:21:58] [INFO] Session quantity updated: SCMPL0019029 = 15
+[2025-09-30 08:21:59] [INFO] Session quantity updated: SCMPL0019030 = 5
+[2025-09-30 08:21:59] [INFO] Session quantity updated: SCMPL0019030 = 5
+[2025-09-30 08:22:01] [INFO] Session quantity updated: SCMPL0019030 = 5
+[2025-09-30 08:22:03] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:22:03] [INFO] Request method: POST
+[2025-09-30 08:22:03] [INFO] Search term: ''
+[2025-09-30 08:22:03] [INFO] Current session ID: 8iqmeo1j1arcp44gc29v95inkr
+[2025-09-30 08:22:03] [INFO] Session quantities updated from POST: 3 items
+[2025-09-30 08:22:03] [INFO] Getting next bill number
+[2025-09-30 08:22:03] [INFO] Next bill number: 1
+[2025-09-30 08:22:03] [ERROR] Transaction rolled back: Column 'BILL_NO' cannot be null
+[2025-09-30 08:22:03] [INFO] Final session quantities count: 3
+[2025-09-30 08:22:03] [INFO] Items in current view: 50
+[2025-09-30 08:22:03] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 3
+    [post_quantities_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:27:07] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:27:07] [INFO] Request method: GET
+[2025-09-30 08:27:07] [INFO] Search term: ''
+[2025-09-30 08:27:07] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 08:29:01] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:29:01] [INFO] Request method: GET
+[2025-09-30 08:29:01] [INFO] Search term: ''
+[2025-09-30 08:29:01] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 08:29:01] [INFO] Final session quantities count: 0
+[2025-09-30 08:29:01] [INFO] Items in current view: 50
+[2025-09-30 08:29:01] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 08:29:06] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:29:07] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:29:07] [INFO] Session quantity updated: SCMPL0019028 = 10
+[2025-09-30 08:29:08] [INFO] Session quantity updated: SCMPL0019030 = 0
+[2025-09-30 08:29:08] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:29:09] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:29:10] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:29:11] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 08:29:11] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:29:12] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:29:12] [INFO] Session quantity updated: SCMPL0019031 = 10
+[2025-09-30 08:29:12] [INFO] Session quantity updated: SCMPL0019030 = 0
+[2025-09-30 08:29:13] [INFO] Session quantity updated: SCMPL0019030 = 0
+[2025-09-30 08:29:14] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:29:14] [INFO] Session quantity updated: SCMPL0019029 = 0
+[2025-09-30 08:29:15] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:29:15] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:29:17] [INFO] Session quantity updated: SCMPL0019029 = 10
+[2025-09-30 08:29:21] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:29:21] [INFO] Request method: POST
+[2025-09-30 08:29:21] [INFO] Search term: ''
+[2025-09-30 08:29:21] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 08:29:21] [INFO] Session quantities updated from POST: 3 items
+[2025-09-30 08:29:21] [INFO] Getting next bill number
+[2025-09-30 08:29:21] [INFO] Next bill number: 1
+[2025-09-30 08:29:22] [INFO] Session quantities cleared
+[2025-09-30 08:44:01] [INFO] === PAGE ACCESS ===
+[2025-09-30 08:44:01] [INFO] Request method: GET
+[2025-09-30 08:44:01] [INFO] Search term: ''
+[2025-09-30 08:44:01] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 09:03:26] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:03:26] [INFO] Request method: GET
+[2025-09-30 09:03:26] [INFO] Search term: ''
+[2025-09-30 09:03:26] [INFO] Current session ID: kdqbbfj1v433ejl6e1m32sajvv
+[2025-09-30 09:03:26] [INFO] Final session quantities count: 0
+[2025-09-30 09:03:26] [INFO] Items in current view: 50
+[2025-09-30 09:03:26] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 09:14:03] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:14:03] [INFO] Request method: GET
+[2025-09-30 09:14:03] [INFO] Search term: ''
+[2025-09-30 09:14:03] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 09:14:03] [INFO] Final session quantities count: 0
+[2025-09-30 09:14:03] [INFO] Items in current view: 50
+[2025-09-30 09:14:03] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 09:14:09] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 09:14:09] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 09:14:10] [INFO] Session quantity updated: SCMPL0019028 = 137
+[2025-09-30 09:14:10] [INFO] Session quantity updated: SCMPL0019028 = 137
+[2025-09-30 09:14:12] [INFO] Session quantity updated: SCMPL0019028 = 136
+[2025-09-30 09:14:12] [INFO] Session quantity updated: SCMPL0019028 = 136
+[2025-09-30 09:14:13] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 09:14:13] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 09:14:15] [INFO] Session quantity updated: SCMPL0019029 = 118
+[2025-09-30 09:14:15] [INFO] Session quantity updated: SCMPL0019029 = 118
+[2025-09-30 09:14:16] [INFO] Session quantity updated: SCMPL0019029 = 108
+[2025-09-30 09:14:16] [INFO] Session quantity updated: SCMPL0019029 = 108
+[2025-09-30 09:14:18] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 09:14:19] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 09:14:19] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 09:14:20] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 09:14:21] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 09:14:21] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 09:14:22] [INFO] Session quantity updated: SCMPL0019031 = 177
+[2025-09-30 09:14:23] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 09:14:23] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 09:14:24] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 09:14:27] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:14:27] [INFO] Request method: POST
+[2025-09-30 09:14:27] [INFO] Search term: ''
+[2025-09-30 09:14:27] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 09:14:27] [INFO] Session quantities updated from POST closing balances: 4 items
+[2025-09-30 09:14:27] [ERROR] Transaction rolled back: Unknown column 'FIN_YEAR' in 'where clause'
+[2025-09-30 09:14:27] [INFO] Final session quantities count: 4
+[2025-09-30 09:14:27] [INFO] Items in current view: 50
+[2025-09-30 09:14:27] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 4
+    [post_closing_balances_count] => 50
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 09:19:41] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:19:41] [INFO] Request method: GET
+[2025-09-30 09:19:41] [INFO] Search term: ''
+[2025-09-30 09:19:41] [INFO] Current session ID: kdqbbfj1v433ejl6e1m32sajvv
+[2025-09-30 09:19:41] [INFO] Final session quantities count: 0
+[2025-09-30 09:19:41] [INFO] Items in current view: 50
+[2025-09-30 09:19:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 09:19:45] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-09-30 09:19:46] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 09:19:46] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 09:19:49] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:19:49] [INFO] Request method: POST
+[2025-09-30 09:19:49] [INFO] Search term: ''
+[2025-09-30 09:19:49] [INFO] Current session ID: kdqbbfj1v433ejl6e1m32sajvv
+[2025-09-30 09:19:49] [INFO] Session quantities updated from POST: 1 items
+[2025-09-30 09:19:49] [INFO] Getting next bill number
+[2025-09-30 09:19:49] [INFO] Next bill number: 1
+[2025-09-30 09:19:49] [INFO] Session quantities cleared
+[2025-09-30 09:19:49] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:19:49] [INFO] Request method: GET
+[2025-09-30 09:19:49] [INFO] Search term: ''
+[2025-09-30 09:19:49] [INFO] Current session ID: kdqbbfj1v433ejl6e1m32sajvv
+[2025-09-30 09:19:49] [INFO] Final session quantities count: 0
+[2025-09-30 09:19:49] [INFO] Items in current view: 50
+[2025-09-30 09:19:49] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 09:19:53] [INFO] === PAGE ACCESS ===
+[2025-09-30 09:19:53] [INFO] Request method: GET
+[2025-09-30 09:19:53] [INFO] Search term: ''
+[2025-09-30 09:19:53] [INFO] Current session ID: kdqbbfj1v433ejl6e1m32sajvv
+[2025-09-30 09:19:53] [INFO] Final session quantities count: 0
+[2025-09-30 09:19:53] [INFO] Items in current view: 50
+[2025-09-30 09:19:53] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 10:34:19] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:34:19] [INFO] Request method: GET
+[2025-09-30 10:34:19] [INFO] Search term: ''
+[2025-09-30 10:34:19] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:34:19] [INFO] Final session quantities count: 4
+[2025-09-30 10:34:19] [INFO] Items in current view: 50
+[2025-09-30 10:34:19] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 4
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 10:34:25] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:34:25] [INFO] Request method: POST
+[2025-09-30 10:34:25] [INFO] Search term: ''
+[2025-09-30 10:34:25] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:34:25] [INFO] Session quantities updated from POST closing balances: 4 items
+[2025-09-30 10:34:25] [INFO] Generated bill numbers from BL0010 to BL0012 for 3 bills
+[2025-09-30 10:34:25] [INFO] Assigned bill number: BL0010 for date: 2025-09-30
+[2025-09-30 10:34:25] [INFO] Assigned bill number: BL0011 for date: 2025-09-30
+[2025-09-30 10:34:25] [INFO] Assigned bill number: BL0012 for date: 2025-09-30
+[2025-09-30 10:34:25] [INFO] Session quantities cleared
+[2025-09-30 10:34:30] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:34:30] [INFO] Request method: GET
+[2025-09-30 10:34:30] [INFO] Search term: ''
+[2025-09-30 10:34:30] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:34:30] [INFO] Final session quantities count: 0
+[2025-09-30 10:34:30] [INFO] Items in current view: 50
+[2025-09-30 10:34:30] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 10:34:35] [INFO] Session quantity updated: SCMPL0019028 = 122
+[2025-09-30 10:34:35] [INFO] Session quantity updated: SCMPL0019028 = 122
+[2025-09-30 10:34:37] [INFO] Session quantity updated: SCMPL0019028 = 122
+[2025-09-30 10:34:40] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 10:34:40] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 10:34:43] [INFO] Session quantity updated: SCMPL0019029 = 107
+[2025-09-30 10:34:43] [INFO] Session quantity updated: SCMPL0019029 = 107
+[2025-09-30 10:34:44] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 10:34:45] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 10:34:45] [INFO] Session quantity updated: SCMPL0019029 = 1
+[2025-09-30 10:34:47] [INFO] Session quantity updated: SCMPL0019030 = 153
+[2025-09-30 10:34:47] [INFO] Session quantity updated: SCMPL0019030 = 153
+[2025-09-30 10:34:47] [INFO] Session quantity updated: SCMPL0019030 = 139
+[2025-09-30 10:34:48] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 10:34:48] [INFO] Session quantity updated: SCMPL0019030 = 1
+[2025-09-30 10:34:50] [INFO] Session quantity updated: SCMPL0019031 = 172
+[2025-09-30 10:34:50] [INFO] Session quantity updated: SCMPL0019031 = 172
+[2025-09-30 10:34:51] [INFO] Session quantity updated: SCMPL0019031 = 156
+[2025-09-30 10:34:51] [INFO] Session quantity updated: SCMPL0019031 = 156
+[2025-09-30 10:34:52] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 10:34:52] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 10:34:53] [INFO] Session quantity updated: SCMPL0019031 = 1
+[2025-09-30 10:34:56] [INFO] Saving pending sales for user 1, company 1
+[2025-09-30 10:34:56] [INFO] Items to save:
+Array
+(
+    [SCMPL0019028] => 1
+    [SCMPL0019029] => 1
+    [SCMPL0019030] => 1
+    [SCMPL0019031] => 1
+)
+
+[2025-09-30 10:34:56] [INFO] Date range spans 1 days: 2025-09-30
+[2025-09-30 10:34:56] [INFO] Distributing 1 units across 1 days
+[2025-09-30 10:34:56] [INFO] Distribution for 1 units: 1
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019028 distribution: 1
+[2025-09-30 10:34:56] [INFO] Distributing 1 units across 1 days
+[2025-09-30 10:34:56] [INFO] Distribution for 1 units: 1
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019029 distribution: 1
+[2025-09-30 10:34:56] [INFO] Distributing 1 units across 1 days
+[2025-09-30 10:34:56] [INFO] Distribution for 1 units: 1
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019030 distribution: 1
+[2025-09-30 10:34:56] [INFO] Distributing 1 units across 1 days
+[2025-09-30 10:34:56] [INFO] Distribution for 1 units: 1
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019031 distribution: 1
+[2025-09-30 10:34:56] [INFO] Starting bill generation with volume limits
+[2025-09-30 10:34:56] [INFO] Getting category limits for company 1
+[2025-09-30 10:34:56] [INFO] Category limits: {"IMFL":"1000.00","BEER":"4000.00","CL":"1000.00"}
+[2025-09-30 10:34:56] [INFO] Category Limits - IMFL: 1000.00, BEER: 4000.00, CL: 1000.00
+[2025-09-30 10:34:56] [INFO] Getting next bill number
+[2025-09-30 10:34:56] [INFO] Next bill number: 10
+[2025-09-30 10:34:56] [INFO] Processing date: 2025-09-30 (index: 0)
+[2025-09-30 10:34:56] [INFO] Determining category for item SCMPL0019028, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019028 - DETAILS2: 90 ML-(96)
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019028 categorized as IMFL (Foreign Liquor with ML size)
+[2025-09-30 10:34:56] [INFO] Getting size for item SCMPL0019028, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019028 - Size from DETAILS2: 90ml
+[2025-09-30 10:34:56] [INFO] Date 2025-09-30 - Item SCMPL0019028: Qty=1, Size=90ml, Volume=90ml, Category=IMFL
+[2025-09-30 10:34:56] [INFO] Determining category for item SCMPL0019029, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019029 - DETAILS2: 180 ML
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019029 categorized as IMFL (Foreign Liquor with ML size)
+[2025-09-30 10:34:56] [INFO] Getting size for item SCMPL0019029, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019029 - Size from DETAILS2: 180ml
+[2025-09-30 10:34:56] [INFO] Date 2025-09-30 - Item SCMPL0019029: Qty=1, Size=180ml, Volume=180ml, Category=IMFL
+[2025-09-30 10:34:56] [INFO] Determining category for item SCMPL0019030, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019030 - DETAILS2: 750 ML
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019030 categorized as IMFL (Foreign Liquor with ML size)
+[2025-09-30 10:34:56] [INFO] Getting size for item SCMPL0019030, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019030 - Size from DETAILS2: 750ml
+[2025-09-30 10:34:56] [INFO] Date 2025-09-30 - Item SCMPL0019030: Qty=1, Size=750ml, Volume=750ml, Category=IMFL
+[2025-09-30 10:34:56] [INFO] Determining category for item SCMPL0019031, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019031 - DETAILS2: 1000 ML
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019031 categorized as IMFL (Foreign Liquor with ML size)
+[2025-09-30 10:34:56] [INFO] Getting size for item SCMPL0019031, mode: F
+[2025-09-30 10:34:56] [INFO] Item SCMPL0019031 - Size from DETAILS2: 1000ml
+[2025-09-30 10:34:56] [INFO] Date 2025-09-30 - Item SCMPL0019031: Qty=1, Size=1000ml, Volume=1000ml, Category=IMFL
+[2025-09-30 10:34:56] [INFO] Date 2025-09-30 - Categories with items: IMFL
+[2025-09-30 10:34:56] [INFO] Processing category: IMFL with limit: 1000.00ml
+[2025-09-30 10:34:56] [INFO] Items in category: 4
+[2025-09-30 10:34:56] [INFO] Sorted items by volume (descending) for category IMFL:
+[2025-09-30 10:34:56] [INFO]   - SCMPL0019031: 1000ml
+[2025-09-30 10:34:56] [INFO]   - SCMPL0019030: 750ml
+[2025-09-30 10:34:56] [INFO]   - SCMPL0019029: 180ml
+[2025-09-30 10:34:56] [INFO]   - SCMPL0019028: 90ml
+[2025-09-30 10:34:56] [INFO] Added SCMPL0019031 (1000ml) to bill. Current volume: 1000ml
+[2025-09-30 10:34:56] [INFO] Category IMFL - Bill 1: Volume=1000ml, Items=1
+[2025-09-30 10:34:56] [INFO] Added SCMPL0019030 (750ml) to bill. Current volume: 750ml
+[2025-09-30 10:34:56] [INFO] Added SCMPL0019029 (180ml) to bill. Current volume: 930ml
+[2025-09-30 10:34:56] [INFO] Category IMFL - Bill 2: Volume=930ml, Items=2
+[2025-09-30 10:34:56] [INFO] Added SCMPL0019028 (90ml) to bill. Current volume: 90ml
+[2025-09-30 10:34:56] [INFO] Category IMFL - Final bill 3: Volume=90ml, Items=1
+[2025-09-30 10:34:56] [INFO] Created 3 bills for category IMFL
+[2025-09-30 10:34:56] [INFO] Created bill BL10 for date 2025-09-30 with 1 items, total amount: 100
+[2025-09-30 10:34:56] [INFO] Created bill BL11 for date 2025-09-30 with 2 items, total amount: 1130
+[2025-09-30 10:34:56] [INFO] Created bill BL12 for date 2025-09-30 with 1 items, total amount: 110
+[2025-09-30 10:34:56] [INFO] Total bills created: 3
+[2025-09-30 10:34:56] [INFO] Generated 3 bills with volume limits
+[2025-09-30 10:34:56] [INFO] Saved 3 bills for later posting. Date range: 2025-09-30 to 2025-09-30. Total Amount: ₹1,340.00
+[2025-09-30 10:35:02] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:35:02] [INFO] Request method: GET
+[2025-09-30 10:35:02] [INFO] Search term: ''
+[2025-09-30 10:35:02] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:35:02] [INFO] Final session quantities count: 0
+[2025-09-30 10:35:02] [INFO] Items in current view: 50
+[2025-09-30 10:35:02] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 10:43:01] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:43:01] [INFO] Request method: GET
+[2025-09-30 10:43:01] [INFO] Search term: ''
+[2025-09-30 10:43:01] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:43:01] [INFO] Final session quantities count: 0
+[2025-09-30 10:43:01] [INFO] Items in current view: 50
+[2025-09-30 10:43:01] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-09-30 to 2025-09-30
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+)
+
+[2025-09-30 10:43:06] [INFO] Session quantity updated: SCMPL0019028 = 121
+[2025-09-30 10:43:06] [INFO] Session quantity updated: SCMPL0019028 = 121
+[2025-09-30 10:43:07] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 10:43:07] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 10:43:09] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-09-30 10:43:11] [INFO] === PAGE ACCESS ===
+[2025-09-30 10:43:11] [INFO] Request method: POST
+[2025-09-30 10:43:11] [INFO] Search term: ''
+[2025-09-30 10:43:11] [INFO] Current session ID: bjleheeert2htth5e914sdkg16
+[2025-09-30 10:43:11] [INFO] Session quantities updated from POST closing balances: 1 items
+[2025-09-30 10:43:11] [INFO] Generated bill numbers from BL0013 to BL0013 for 1 bills
+[2025-09-30 10:43:11] [INFO] Assigned bill number: BL0013 for date: 2025-09-30
+[2025-09-30 10:43:11] [INFO] Session quantities cleared

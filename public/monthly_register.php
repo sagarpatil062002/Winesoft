@@ -122,28 +122,32 @@ $monthly_data = [
         'received' => array_fill_keys($display_sizes_s, 0),
         'total' => array_fill_keys($display_sizes_s, 0),
         'sold' => array_fill_keys($display_sizes_s, 0),
-        'closing' => array_fill_keys($display_sizes_s, 0)
+        'closing' => array_fill_keys($display_sizes_s, 0),
+        'breakages' => array_fill_keys($display_sizes_s, 0)
     ],
     'Wines' => [
         'opening' => array_fill_keys($display_sizes_w, 0),
         'received' => array_fill_keys($display_sizes_w, 0),
         'total' => array_fill_keys($display_sizes_w, 0),
         'sold' => array_fill_keys($display_sizes_w, 0),
-        'closing' => array_fill_keys($display_sizes_w, 0)
+        'closing' => array_fill_keys($display_sizes_w, 0),
+        'breakages' => array_fill_keys($display_sizes_w, 0)
     ],
     'Fermented Beer' => [
         'opening' => array_fill_keys($display_sizes_fb, 0),
         'received' => array_fill_keys($display_sizes_fb, 0),
         'total' => array_fill_keys($display_sizes_fb, 0),
         'sold' => array_fill_keys($display_sizes_fb, 0),
-        'closing' => array_fill_keys($display_sizes_fb, 0)
+        'closing' => array_fill_keys($display_sizes_fb, 0),
+        'breakages' => array_fill_keys($display_sizes_fb, 0)
     ],
     'Mild Beer' => [
         'opening' => array_fill_keys($display_sizes_mb, 0),
         'received' => array_fill_keys($display_sizes_mb, 0),
         'total' => array_fill_keys($display_sizes_mb, 0),
         'sold' => array_fill_keys($display_sizes_mb, 0),
-        'closing' => array_fill_keys($display_sizes_mb, 0)
+        'closing' => array_fill_keys($display_sizes_mb, 0),
+        'breakages' => array_fill_keys($display_sizes_mb, 0)
     ]
 ];
 
@@ -351,6 +355,76 @@ for ($day = 1; $day <= $days_in_month; $day++) {
     $stockStmt->close();
 }
 
+// Fetch breakages data for the selected month
+$breakages_data = [
+    'Spirits' => array_fill_keys($display_sizes_s, 0),
+    'Wines' => array_fill_keys($display_sizes_w, 0),
+    'Fermented Beer' => array_fill_keys($display_sizes_fb, 0),
+    'Mild Beer' => array_fill_keys($display_sizes_mb, 0)
+];
+
+$breakagesQuery = "SELECT b.Code, b.BRK_Qty, i.DETAILS2, i.CLASS, i.LIQ_FLAG 
+                   FROM tblbreakages b 
+                   JOIN tblitemmaster i ON b.Code = i.CODE 
+                   WHERE b.CompID = ? AND DATE_FORMAT(b.BRK_Date, '%Y-%m') = ?";
+$breakagesStmt = $conn->prepare($breakagesQuery);
+$breakagesStmt->bind_param("is", $compID, $month);
+$breakagesStmt->execute();
+$breakagesResult = $breakagesStmt->get_result();
+
+while ($row = $breakagesResult->fetch_assoc()) {
+    $item_code = $row['Code'];
+    
+    // Skip if item not found in master
+    if (!isset($items[$item_code])) continue;
+    
+    $item_details = $items[$item_code];
+    $size = $item_details['DETAILS2'];
+    $class = $item_details['CLASS'];
+    $liq_flag = $item_details['LIQ_FLAG'];
+    
+    // Determine liquor type
+    $liquor_type = getLiquorType($class, $liq_flag);
+    
+    // Map database size to Excel size
+    $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
+    
+    // Get grouped size for display
+    $grouped_size = getGroupedSize($excel_size, $liquor_type);
+    
+    // Add to breakages data based on liquor type and grouped size
+    switch ($liquor_type) {
+        case 'Spirits':
+            if (in_array($grouped_size, $display_sizes_s)) {
+                $breakages_data['Spirits'][$grouped_size] += $row['BRK_Qty'];
+                $monthly_data['Spirits']['breakages'][$grouped_size] += $row['BRK_Qty'];
+            }
+            break;
+            
+        case 'Wines':
+            if (in_array($grouped_size, $display_sizes_w)) {
+                $breakages_data['Wines'][$grouped_size] += $row['BRK_Qty'];
+                $monthly_data['Wines']['breakages'][$grouped_size] += $row['BRK_Qty'];
+            }
+            break;
+            
+        case 'Fermented Beer':
+            if (in_array($grouped_size, $display_sizes_fb)) {
+                $breakages_data['Fermented Beer'][$grouped_size] += $row['BRK_Qty'];
+                $monthly_data['Fermented Beer']['breakages'][$grouped_size] += $row['BRK_Qty'];
+            }
+            break;
+            
+        case 'Mild Beer':
+            if (in_array($grouped_size, $display_sizes_mb)) {
+                $breakages_data['Mild Beer'][$grouped_size] += $row['BRK_Qty'];
+                $monthly_data['Mild Beer']['breakages'][$grouped_size] += $row['BRK_Qty'];
+            }
+            break;
+    }
+}
+$breakagesStmt->close();
+
 // Calculate totals (Opening + Received)
 foreach ($display_sizes_s as $size) {
     $monthly_data['Spirits']['total'][$size] = 
@@ -374,6 +448,38 @@ foreach ($display_sizes_mb as $size) {
     $monthly_data['Mild Beer']['total'][$size] = 
         $monthly_data['Mild Beer']['opening'][$size] + 
         $monthly_data['Mild Beer']['received'][$size];
+}
+
+// Calculate summary totals
+$summary_totals = [
+    'opening' => 0,
+    'received' => 0,
+    'total' => 0,
+    'sold' => 0,
+    'breakages' => 0,
+    'closing' => 0
+];
+
+// Calculate totals for each category
+foreach ($monthly_data as $category => $data) {
+    foreach ($data['opening'] as $size => $value) {
+        $summary_totals['opening'] += $value;
+    }
+    foreach ($data['received'] as $size => $value) {
+        $summary_totals['received'] += $value;
+    }
+    foreach ($data['total'] as $size => $value) {
+        $summary_totals['total'] += $value;
+    }
+    foreach ($data['sold'] as $size => $value) {
+        $summary_totals['sold'] += $value;
+    }
+    foreach ($data['breakages'] as $size => $value) {
+        $summary_totals['breakages'] += $value;
+    }
+    foreach ($data['closing'] as $size => $value) {
+        $summary_totals['closing'] += $value;
+    }
 }
 
 // Calculate total columns count for table formatting
@@ -765,7 +871,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               </tr>
               
               <!-- Total -->
-              <tr class="summary-row">
+              <tr>
                 <td class="description-col">Total :-</td>
                 
                 <!-- Spirits Total -->
@@ -814,9 +920,34 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Closing Balance at the end of Current Month -->
-              <tr class="summary-row">
-                <td class="description-col">Closing Balance at the end of Current Month :-</td>
+              <!-- Breakages during the Current Month -->
+              <tr>
+                <td class="description-col">Breakages during the Current Month :-</td>
+                
+                <!-- Spirits Breakages -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $monthly_data['Spirits']['breakages'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Breakages -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $monthly_data['Wines']['breakages'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Breakages -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $monthly_data['Fermented Beer']['breakages'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Breakages -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $monthly_data['Mild Beer']['breakages'][$size] ?></td>
+                <?php endforeach; ?>
+              </tr>
+              
+              <!-- Closing Balance at the End of the Month -->
+              <tr>
+                <td class="description-col">Closing Balance at the End of the Month :-</td>
                 
                 <!-- Spirits Closing -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -838,19 +969,89 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <td><?= $monthly_data['Mild Beer']['closing'][$size] ?></td>
                 <?php endforeach; ?>
               </tr>
+              
+              <!-- Summary Row -->
+              <tr class="summary-row">
+                <td class="description-col">Total :-</td>
+                
+                <!-- Spirits Summary -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $monthly_data['Spirits']['opening'][$size] + 
+                           $monthly_data['Spirits']['received'][$size] + 
+                           $monthly_data['Spirits']['sold'][$size] + 
+                           $monthly_data['Spirits']['breakages'][$size] + 
+                           $monthly_data['Spirits']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Summary -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $monthly_data['Wines']['opening'][$size] + 
+                           $monthly_data['Wines']['received'][$size] + 
+                           $monthly_data['Wines']['sold'][$size] + 
+                           $monthly_data['Wines']['breakages'][$size] + 
+                           $monthly_data['Wines']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Summary -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $monthly_data['Fermented Beer']['opening'][$size] + 
+                           $monthly_data['Fermented Beer']['received'][$size] + 
+                           $monthly_data['Fermented Beer']['sold'][$size] + 
+                           $monthly_data['Fermented Beer']['breakages'][$size] + 
+                           $monthly_data['Fermented Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Summary -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $monthly_data['Mild Beer']['opening'][$size] + 
+                           $monthly_data['Mild Beer']['received'][$size] + 
+                           $monthly_data['Mild Beer']['sold'][$size] + 
+                           $monthly_data['Mild Beer']['breakages'][$size] + 
+                           $monthly_data['Mild Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+              </tr>
             </tbody>
           </table>
         </div>
-
+        
+        <!-- Summary Section -->
+        <div class="table-responsive mt-3">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th colspan="6" style="text-align: center;">SUMMARY</th>
+              </tr>
+              <tr>
+                <th>Opening Balance</th>
+                <th>Received</th>
+                <th>Total</th>
+                <th>Sold</th>
+                <th>Breakages</th>
+                <th>Closing Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><?= $summary_totals['opening'] ?></td>
+                <td><?= $summary_totals['received'] ?></td>
+                <td><?= $summary_totals['total'] ?></td>
+                <td><?= $summary_totals['sold'] ?></td>
+                <td><?= $summary_totals['breakages'] ?></td>
+                <td><?= $summary_totals['closing'] ?></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="footer-info">
+          <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
+        </div>
       </div>
     </div>
-    
-    <?php include 'components/footer.php'; ?>
   </div>
-  
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+<?php $conn->close(); ?>

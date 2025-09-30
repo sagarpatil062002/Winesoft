@@ -37,8 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_pending'])) {
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
     $mode = $_POST['mode'];
-    $items = $_POST['items'] ?? [];
-    
+// Get items from multiple sources to ensure we have all data
+$items = [];
+if (isset($_POST['all_sale_qty'])) {
+    $items = $_POST['all_sale_qty'];
+} elseif (isset($_POST['sale_qty'])) {
+    $items = $_POST['sale_qty'];
+} elseif (isset($_SESSION['sale_quantities'])) {
+    $items = $_SESSION['sale_quantities'];
+}
+
+// Filter out zero quantities
+$items = array_filter($items, function($qty) {
+    return $qty > 0;
+});    
     logMessage("Saving pending sales for user $user_id, company $comp_id");
     logArray($items, 'Items to save');
     

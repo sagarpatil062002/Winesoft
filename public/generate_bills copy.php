@@ -1,7 +1,11 @@
 <?php
 // generate_bills.php
 session_start();
+
 include_once "../config/db.php";
+
+// Include volume limit utilities
+include_once "volume_limit_utils.php";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
     $response = ['success' => false, 'message' => '', 'total_amount' => 0, 'bill_count' => 0];
@@ -20,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         // Create date range array
         $begin = new DateTime($start_date);
         $end = new DateTime($end_date);
-        $end = $end->modify('+1 day'); // Include end date
+        $end = $end->modify('+1 day');
         
         $interval = new DateInterval('P1D');
         $date_range = new DatePeriod($begin, $interval, $end);
@@ -31,44 +35,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         }
         $days_count = count($date_array);
         
-        // Function to distribute sales uniformly
-        function distributeSales($total_qty, $days_count) {
-            if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
+        // In generate_bills.php, replace the getNextBillNumber function with:
+
+function getNextBillNumberForGenerate($conn, $comp_id) {
+    // Get the highest existing bill number numerically
+    $sql = "SELECT BILL_NO FROM tblsaleheader 
+            WHERE COMP_ID = ? 
+            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+            LIMIT 1";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $nextNumber = 1; // Default starting number
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $lastBillNo = $row['BILL_NO'];
+        
+        // Extract numeric part and increment
+        if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+            $nextNumber = intval($matches[1]) + 1;
+        }
+    }
+    
+    $stmt->close();
+    return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+}
+        // Fallback method using the original approach with zero-padding
+        function getNextBillNumberFallback($conn, $comp_id) {
+            // Get the highest existing bill number numerically
+            $sql = "SELECT BILL_NO FROM tblsaleheader 
+                    WHERE COMP_ID = ? 
+                    ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+                    LIMIT 1";
             
-            $base_qty = floor($total_qty / $days_count);
-            $remainder = $total_qty % $days_count;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $comp_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
             
-            $daily_sales = array_fill(0, $days_count, $base_qty);
+            $nextNumber = 1; // Default starting number
             
-            // Distribute remainder evenly across days
-            for ($i = 0; $i < $remainder; $i++) {
-                $daily_sales[$i]++;
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $lastBillNo = $row['BILL_NO'];
+                
+                // Extract numeric part and increment
+                if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+                    $nextNumber = intval($matches[1]) + 1;
+                }
             }
             
-            // Shuffle the distribution to make it look more natural
-            shuffle($daily_sales);
+            // Safety check: Ensure bill number doesn't exist
+            $billExists = true;
+            $attempts = 0;
             
-            return $daily_sales;
+            while ($billExists && $attempts < 10) {
+                $newBillNo = 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                
+                // Check if this bill number already exists
+                $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+                $checkStmt = $conn->prepare($checkSql);
+                $checkStmt->bind_param("si", $newBillNo, $comp_id);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->get_result();
+                $checkRow = $checkResult->fetch_assoc();
+                
+                if ($checkRow['count'] == 0) {
+                    $billExists = false;
+                } else {
+                    $nextNumber++; // Try next number
+                    $attempts++;
+                }
+                $checkStmt->close();
+            }
+            
+            $stmt->close();
+            return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         }
-        
-        // Get next bill number - FIXED VERSION
-        function getNextBillNumber($conn) {
-            // Use a transaction-safe method to get the next bill number
-            $conn->query("LOCK TABLES tblsaleheader WRITE");
-            
-            $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-            $result = $conn->query($query);
-            $row = $result->fetch_assoc();
-            $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-            
-            $conn->query("UNLOCK TABLES");
-            
-            return $next_bill;
-        }
-        
-        // Function to update daily stock table with proper opening/closing calculations
+        // ========== END: Robust Sequential Bill Number Generation ==========
+
+        // Function to update daily stock table (UNCHANGED)
         function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
-            // Extract day number from date (e.g., 2025-09-03 -> day 03)
             $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
             $sales_column = "DAY_{$day_num}_SALES";
             $closing_column = "DAY_{$day_num}_CLOSING";
@@ -77,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             
             $month_year = date('Y-m', strtotime($sale_date));
             
-            // Check if record exists for this month and item
+            // Check if record exists
             $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
             $check_stmt = $conn->prepare($check_query);
@@ -155,101 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
         }
         
-        // Function to get category limits from tblcompany
-        function getCategoryLimits($conn, $comp_id) {
-            $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("i", $comp_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $limits = $result->fetch_assoc();
-            $stmt->close();
-            
-            return [
-                'IMFL' => $limits['IMFLLimit'] ?? 1000, // Default 1000ml if not set
-                'BEER' => $limits['BEERLimit'] ?? 0,
-                'CL' => $limits['CLLimit'] ?? 0
-            ];
-        }
-        
-        // Function to determine item category based on class and subclass
-        function getItemCategory($conn, $item_code, $mode) {
-            // Get item details directly from tblitemmaster
-            $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("s", $item_code);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $item_data = $result->fetch_assoc();
-            $stmt->close();
-            
-            if (!$item_data) return 'OTHER';
-            
-            $details2 = strtoupper($item_data['DETAILS2'] ?? '');
-            
-            // Categorize based on DETAILS2 content
-            if ($mode === 'F') {
-                if (strpos($details2, 'WHISKY') !== false || 
-                    strpos($details2, 'GIN') !== false ||
-                    strpos($details2, 'BRANDY') !== false ||
-                    strpos($details2, 'VODKA') !== false ||
-                    strpos($details2, 'RUM') !== false ||
-                    strpos($details2, 'LIQUOR') !== false) {
-                    return 'IMFL';
-                } elseif (strpos($details2, 'BEER') !== false) {
-                    return 'BEER';
-                }
-            } elseif ($mode === 'C') {
-                if (strpos($details2, 'COUNTRY') !== false || 
-                    strpos($details2, 'CL') !== false) {
-                    return 'CL';
-                }
-            }
-            
-            return 'OTHER';
-        }
-        
-        // Function to get item size from CC in tblsubclass
-        function getItemSize($conn, $item_code, $mode) {
-            // First try to get size from CC in tblsubclass
-            $query = "SELECT sc.CC 
-                      FROM tblitemmaster im 
-                      LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
-                      WHERE im.CODE = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("ss", $mode, $item_code);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $item_data = $result->fetch_assoc();
-            $stmt->close();
-            
-            if ($item_data && $item_data['CC'] > 0) {
-                return (float)$item_data['CC'];
-            }
-            
-            // If not found in subclass, try to extract from item name
-            $query = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("s", $item_code);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $item_data = $result->fetch_assoc();
-            $stmt->close();
-            
-            if ($item_data) {
-                // Try to extract size from item name (e.g., "Item Name 750ML")
-                if (preg_match('/(\d+)\s*ML/i', $item_data['DETAILS'], $matches)) {
-                    return (float)$matches[1];
-                }
-            }
-            
-            // Default size if not found
-            return 750; // Common liquor bottle size
-        }
-        
-        // Function to update item stock
+        // Function to update item stock (UNCHANGED)
         function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
-            // Check if record exists first
+            // Check if record exists
             $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
             $check_stmt = $conn->prepare($check_stock_query);
             $check_stmt->bind_param("s", $item_code);
@@ -259,148 +218,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             $check_stmt->close();
             
             if ($stock_exists) {
-                // Update existing stock
                 $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
                 $stock_stmt = $conn->prepare($stock_query);
                 $stock_stmt->bind_param("ds", $qty, $item_code);
                 $stock_stmt->execute();
                 $stock_stmt->close();
             } else {
-                // Insert new stock record
                 $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
                                        VALUES (?, ?, ?, ?)";
                 $insert_stock_stmt = $conn->prepare($insert_stock_query);
-                $current_stock = -$qty; // Negative since we're deducting
+                $current_stock = -$qty;
                 $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
                 $insert_stock_stmt->execute();
                 $insert_stock_stmt->close();
             }
         }
         
-        // Function to generate bills with volume limits - FIXED VERSION
-        function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
-            $category_limits = getCategoryLimits($conn, $comp_id);
-            $bills = [];
-            
-            // Get the starting bill number once
-            $next_bill = getNextBillNumber($conn);
-            
-            // Get stock column names
-            $current_stock_column = "Current_Stock" . $comp_id;
-            $opening_stock_column = "Opening_Stock" . $comp_id;
-            $daily_stock_table = "tbldailystock_" . $comp_id;
-            
-            foreach ($date_array as $date_index => $sale_date) {
-                $daily_bills = [];
-                
-                // Group items by category for this day
-                $category_items = [];
-                foreach ($items_data as $item_code => $item_data) {
-                    $qty = $daily_sales_data[$item_code][$date_index] ?? 0;
-                    if ($qty > 0) {
-                        $category = getItemCategory($conn, $item_code, $mode);
-                        $size = getItemSize($conn, $item_code, $mode);
-                        $volume = $qty * $size;
-                        
-                        if (!isset($category_items[$category])) {
-                            $category_items[$category] = [];
-                        }
-                        
-                        $category_items[$category][] = [
-                            'code' => $item_code,
-                            'qty' => $qty,
-                            'rate' => $item_data['rate'],
-                            'size' => $size,
-                            'volume' => $volume,
-                            'amount' => $qty * $item_data['rate']
-                        ];
-                    }
-                }
-                
-                // Process each category with its limit
-                foreach ($category_items as $category => $items) {
-                    $limit = $category_limits[$category] ?? 0;
-                    
-                    if ($limit <= 0) {
-                        // No limit, put all items in one bill
-                        if (!empty($items)) {
-                            $daily_bills[] = createBill($items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
-                        }
-                    } else {
-                        // Sort items by volume descending (First-Fit Decreasing algorithm)
-                        usort($items, function($a, $b) {
-                            return $b['volume'] <=> $a['volume'];
-                        });
-                        
-                        // Create bills by grouping items without exceeding the limit
-                        $bills_for_category = [];
-                        $current_bill_items = [];
-                        $current_bill_volume = 0;
-                        
-                        foreach ($items as $item) {
-                            // If adding this item would exceed the limit, finalize current bill
-                            if ($current_bill_volume + $item['volume'] > $limit && !empty($current_bill_items)) {
-                                $bills_for_category[] = $current_bill_items;
-                                $current_bill_items = [];
-                                $current_bill_volume = 0;
-                            }
-                            
-                            // Add item to current bill
-                            $current_bill_items[] = $item;
-                            $current_bill_volume += $item['volume'];
-                        }
-                        
-                        // Add the last bill if it has items
-                        if (!empty($current_bill_items)) {
-                            $bills_for_category[] = $current_bill_items;
-                        }
-                        
-                        // Create actual bills from the grouped items
-                        foreach ($bills_for_category as $bill_items) {
-                            $daily_bills[] = createBill($bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
-                        }
-                    }
-                }
-                
-                $bills = array_merge($bills, $daily_bills);
-            }
-            
-            return $bills;
-        }
-        
-        // Function to create a bill
-        function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
-            $total_amount = 0;
-            $bill_no_str = "BL" . $bill_no;
-            
-            foreach ($items as $item) {
-                $total_amount += $item['amount'];
-            }
-            
-            return [
-                'bill_no' => $bill_no_str,
-                'bill_date' => $sale_date,
-                'total_amount' => $total_amount,
-                'items' => $items,
-                'mode' => $mode,
-                'comp_id' => $comp_id,
-                'user_id' => $user_id
-            ];
-        }
-        
         // Start transaction
         $conn->begin_transaction();
         
         $total_amount = 0;
-        $items_data = []; // Store item data for bill generation
-        $daily_sales_data = []; // Store daily sales for each item
+        $items_data = [];
+        $daily_sales_data = [];
         
-        // Process items with quantities
         foreach ($items as $item_code => $total_qty) {
             $total_qty = intval($total_qty);
             
             if ($total_qty > 0) {
-                // Get item details
                 $item_query = "SELECT DETAILS, RPRICE FROM tblitemmaster WHERE CODE = ?";
                 $item_stmt = $conn->prepare($item_query);
                 $item_stmt->bind_param("s", $item_code);
@@ -410,14 +254,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
                 $item_stmt->close();
                 
                 if (!$item) {
-                    continue; // Skip if item not found
+                    continue;
                 }
                 
-                // Generate distribution
                 $daily_sales = distributeSales($total_qty, $days_count);
                 $daily_sales_data[$item_code] = $daily_sales;
                 
-                // Store item data
                 $items_data[$item_code] = [
                     'name' => $item['DETAILS'],
                     'rate' => $item['RPRICE'],
@@ -426,59 +268,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
         }
         
-        // Generate bills with volume limits
         $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
         
-        // Get stock column names
         $current_stock_column = "Current_Stock" . $comp_id;
         $opening_stock_column = "Opening_Stock" . $comp_id;
         $daily_stock_table = "tbldailystock_" . $comp_id;
         
-        // Process each bill
-        foreach ($bills as $bill) {
-            // Insert sale header
+        // ========== UPDATED: Sequential Bill Number Assignment with Zero-Padding ==========
+        $generated_bills = [];
+        
+        // Sort bills chronologically
+        usort($bills, function($a, $b) {
+            return strtotime($a['bill_date']) - strtotime($b['bill_date']);
+        });
+        
+        foreach ($bills as $index => $bill) {
+            // Generate sequential bill number for each bill with zero-padding
+            $sequential_bill_no = getNextBillNumber($conn, $comp_id);
+            
+            // Store bill info for reference
+            $generated_bills[] = [
+                'bill_no' => $sequential_bill_no,
+                'bill_date' => $bill['bill_date'],
+                'total_amount' => $bill['total_amount']
+            ];
+            
+            // Insert sale header with sequential bill number
             $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
                              VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
             $header_stmt = $conn->prepare($header_query);
-            $header_stmt->bind_param("ssddssi", $bill['bill_no'], $bill['bill_date'], $bill['total_amount'], 
+            $header_stmt->bind_param("ssddssi", $sequential_bill_no, $bill['bill_date'], $bill['total_amount'], 
                                     $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
             $header_stmt->execute();
             $header_stmt->close();
             
-            // Insert sale details for each item in the bill
+            // Insert sale details with the same sequential bill number
             foreach ($bill['items'] as $item) {
                 $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                  VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $detail_stmt = $conn->prepare($detail_query);
-                $detail_stmt->bind_param("ssddssi", $bill['bill_no'], $item['code'], $item['qty'], 
+                $detail_stmt->bind_param("ssddssi", $sequential_bill_no, $item['code'], $item['qty'], 
                                         $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
                 $detail_stmt->execute();
                 $detail_stmt->close();
                 
-                // Update stock
                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-                
-                // Update daily stock
                 updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
             }
             
             $total_amount += $bill['total_amount'];
+            
+            // Update the bill array with the new sequential number (for reference)
+            $bills[$index]['bill_no'] = $sequential_bill_no;
         }
+        // ========== END: Sequential Bill Number Assignment ==========
         
         // Commit transaction
         $conn->commit();
         
         $response['success'] = true;
-        $response['message'] = "Sales distributed successfully! Generated " . count($bills) . " bills.";
+        $response['message'] = "Sales distributed successfully! Generated " . count($bills) . " bills with sequential numbering.";
         $response['total_amount'] = number_format($total_amount, 2);
         $response['bill_count'] = count($bills);
+        $response['generated_bills'] = $generated_bills; // Include bill details in response
         
     } catch (Exception $e) {
         // Rollback transaction on error
         $conn->rollback();
-        $response['message'] = "Error updating sales: " . $e->getMessage();
+        $error_message = "Error updating sales: " . $e->getMessage();
+        $response['message'] = $error_message;
     }
     
     echo json_encode($response);
     exit;
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request']);
+    exit;
 }
+?>

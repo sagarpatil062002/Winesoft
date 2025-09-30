@@ -34,20 +34,42 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Determine which daily stock table to use based on company ID
-$dailyStockTable = "tbldailystock_" . $compID;
-
-// Check if the table exists, if not use default tbldailystock_1
-$tableCheckQuery = "SHOW TABLES LIKE '$dailyStockTable'";
-$tableCheckResult = $conn->query($tableCheckQuery);
-if ($tableCheckResult->num_rows == 0) {
-    $dailyStockTable = "tbldailystock_1";
+// Function to get table name for a specific date
+function getTableForDate($conn, $compID, $date) {
+    $current_month = date('Y-m');
+    $target_month = date('Y-m', strtotime($date));
+    
+    // Base table name
+    $baseTable = "tbldailystock_" . $compID;
+    
+    // If target month is current month, use base table
+    if ($target_month === $current_month) {
+        return $baseTable;
+    }
+    
+    // For previous months, use archive table format: tbldailystock_compid_mm_yy
+    $month = date('m', strtotime($date));
+    $year = date('y', strtotime($date));
+    $archiveTable = $baseTable . "_" . $month . "_" . $year;
+    
+    // Check if archive table exists
+    $tableCheckQuery = "SHOW TABLES LIKE '$archiveTable'";
+    $tableCheckResult = $conn->query($tableCheckQuery);
+    
+    if ($tableCheckResult->num_rows > 0) {
+        return $archiveTable;
+    }
+    
+    // If archive table doesn't exist, fall back to base table
+    return $baseTable;
 }
 
-// Check if the table has DAY_31 columns (for months with less than 31 days)
-$checkDay31Query = "SHOW COLUMNS FROM $dailyStockTable LIKE 'DAY_31_OPEN'";
-$day31Result = $conn->query($checkDay31Query);
-$hasDay31Columns = ($day31Result->num_rows > 0);
+// Function to check if specific day columns exist in a table
+function tableHasDayColumns($conn, $tableName, $day) {
+    $checkDayQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$day}_OPEN'";
+    $dayResult = $conn->query($checkDayQuery);
+    return ($dayResult->num_rows > 0);
+}
 
 // Function to group sizes by base size (remove suffixes after ML and trim)
 function getBaseSize($size) {
@@ -233,14 +255,20 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
-// Process each date in the range with month-aware logic
+// Process each date in the range with month-aware logic and archive table support
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
     $days_in_month = date('t', strtotime($date));
     
-    // Skip if day exceeds month length AND table doesn't have DAY_31 columns
-    if ($day > $days_in_month && !$hasDay31Columns) {
+    // Get the appropriate table for this date (current or archive)
+    $dailyStockTable = getTableForDate($conn, $compID, $date);
+    
+    // Check if this specific table has columns for this day
+    $hasDayColumns = tableHasDayColumns($conn, $dailyStockTable, $day);
+    
+    // Skip if day exceeds month length OR table doesn't have columns for this day
+    if ($day > $days_in_month || !$hasDayColumns) {
         // Initialize empty data for this date
         $daily_data[$date] = [
             'Spirits' => [
@@ -299,7 +327,7 @@ foreach ($dates as $date) {
         ]
     ];
     
-    // Fetch all stock data for this month
+    // Fetch all stock data for this month from the appropriate table
     $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
                   DAY_{$day}_OPEN as opening, 
                   DAY_{$day}_PURCHASE as purchase, 
@@ -804,8 +832,12 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 $day_num = date('d', strtotime($date));
                 $days_in_month = date('t', strtotime($date));
                 
-                // Skip display if day exceeds month length and table doesn't have DAY_31 columns
-                if ($day_num > $days_in_month && !$hasDay31Columns) {
+                // Get table for this date to check if it has the day columns
+                $tableForDate = getTableForDate($conn, $compID, $date);
+                $hasDayColumns = tableHasDayColumns($conn, $tableForDate, $day_num);
+                
+                // Skip display if day exceeds month length OR table doesn't have day columns
+                if ($day_num > $days_in_month || !$hasDayColumns) {
                     continue;
                 }
               ?>

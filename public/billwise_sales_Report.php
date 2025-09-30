@@ -49,8 +49,8 @@ $customer_sales_query = "SELECT
             cs.LCode,
             l.LHEAD as CustomerName,
             cs.ItemCode,
-            COALESCE(im.DETAILS, cs.ItemName) as ItemName,  -- Use item master name if available
-            COALESCE(im.DETAILS2, cs.ItemSize) as ItemSize,  -- Use item master size if available
+            COALESCE(im.DETAILS, cs.ItemName) as ItemName,
+            COALESCE(im.DETAILS2, cs.ItemSize) as ItemSize,
             cs.Rate,
             cs.Quantity,
             cs.Amount,
@@ -58,7 +58,7 @@ $customer_sales_query = "SELECT
             u.username as UserName
           FROM tblcustomersales cs
           INNER JOIN tbllheads l ON cs.LCode = l.LCODE
-          LEFT JOIN tblitemmaster im ON cs.ItemCode = im.CODE  -- Join with item master
+          LEFT JOIN tblitemmaster im ON cs.ItemCode = im.CODE
           LEFT JOIN users u ON cs.UserID = u.id
           WHERE cs.BillDate = ? AND cs.CompID = ?
           ORDER BY cs.BillNo, cs.CreatedDate";
@@ -158,16 +158,13 @@ $customer_sales_query = "SELECT
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
-  
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Billwise Sales Report</h3>
@@ -178,7 +175,7 @@ $customer_sales_query = "SELECT
         <div class="card-body">
           <form method="GET" class="report-filters">
             <div class="row mb-3">
-              <div class="col-md-6">
+              <div class="col-md-3">
                 <label class="form-label">Report Date:</label>
                 <input type="date" name="report_date" class="form-control" value="<?= htmlspecialchars($report_date) ?>">
               </div>
@@ -200,7 +197,7 @@ $customer_sales_query = "SELECT
       </div>
 
       <!-- Report Results -->
-      <?php if (!empty($report_data)): ?>
+      <?php if (isset($_GET['generate'])): ?>
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
@@ -208,98 +205,107 @@ $customer_sales_query = "SELECT
           </div>
           
           <div class="table-container">
-            <?php foreach ($report_data as $bill_no => $bill_data): ?>
-            <table class="report-table">
-              <thead>
-                <tr class="bill-header <?= $bill_data['type'] ?>">
-                  <td colspan="<?= $bill_data['type'] == 'customer' ? '6' : '6' ?>">
-                    Bill No: <?= $bill_no ?> | 
-                    Type: <?= $bill_data['type'] == 'customer' ? 'CUSTOMER SALE' : 'RETAIL SALE' ?> | 
-                    Customer: <?= htmlspecialchars($bill_data['customer']) ?> | 
-                    User: <?= htmlspecialchars($bill_data['user']) ?>
-                  </td>
-                </tr>
-                <tr>
-                  <th>Item Code</th>
-                  <th>Item Name</th>
-                  <th>Size</th>
-                  <th>Rate</th>
-                  <th>Qty</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($bill_data['items'] as $item): ?>
-                <tr class="<?= $bill_data['type'] == 'retail' ? 'retail-item' : '' ?>">
-                  <td><?= htmlspecialchars($item['ItemCode']) ?></td>
-                  <td><?= htmlspecialchars($item['ItemName']) ?></td>
-                  <td><?= htmlspecialchars($item['ItemSize']) ?></td>
-                  <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
-                  <td class="text-right"><?= $item['Quantity'] ?></td>
-                  <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                <tr class="total-row">
-                  <td colspan="5" class="text-end">Bill Total:</td>
-                  <td class="text-right"><?= number_format($bill_data['total'], 2) ?></td>
-                </tr>
-              </tbody>
-            </table>
-            <?php endforeach; ?>
-            
-            <!-- Grand Total -->
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th colspan="2">Summary</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="total-row">
-                  <td><strong>Grand Total</strong></td>
-                  <td class="text-right"><strong><?= number_format($overall_total, 2) ?></strong></td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <!-- Financial summary -->
-            <table class="summary-table">
-              <tr>
-                <td class="summary-label">Prev. Bal.</td>
-                <td class="text-right">: <?= number_format($prev_balance, 2) ?></td>
-              </tr>
-              <tr>
-                <td class="summary-label">Credit Sales</td>
-                <td class="text-right">: <?= number_format($credit_sales, 2) ?></td>
-              </tr>
-              <tr>
-                <td class="summary-label">Expenses</td>
-                <td class="text-right">: <?= number_format($expenses, 2) ?></td>
-              </tr>
-              <tr>
-                <td class="summary-label">Received</td>
-                <td class="text-right">: <?= number_format($received, 2) ?></td>
-              </tr>
-              <tr>
-                <td class="summary-label">Discount</td>
-                <td class="text-right">: <?= number_format($discount, 2) ?></td>
-              </tr>
-              <tr class="total-row">
-                <td class="summary-label">Total Cash</td>
-                <td class="text-right">: <?= number_format($total_cash, 2) ?></td>
-              </tr>
-            </table>
+            <?php if (!empty($report_data)): ?>
+              <?php foreach ($report_data as $bill_no => $bill_data): ?>
+              <table class="report-table mb-4">
+                <thead>
+                  <tr class="bill-header">
+                    <td colspan="6">
+                      <strong>Bill No:</strong> <?= $bill_no ?> | 
+                      <strong>Type:</strong> <?= $bill_data['type'] == 'customer' ? 'CUSTOMER SALE' : 'RETAIL SALE' ?> | 
+                      <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
+                      <strong>User:</strong> <?= htmlspecialchars($bill_data['user']) ?>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Item Code</th>
+                    <th>Item Name</th>
+                    <th>Size</th>
+                    <th class="text-right">Rate</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($bill_data['items'] as $item): ?>
+                  <tr>
+                    <td><?= htmlspecialchars($item['ItemCode']) ?></td>
+                    <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                    <td><?= htmlspecialchars($item['ItemSize']) ?></td>
+                    <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
+                    <td class="text-right"><?= $item['Quantity'] ?></td>
+                    <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                  <tr class="total-row">
+                    <td colspan="5" class="text-end"><strong>Bill Total:</strong></td>
+                    <td class="text-right"><strong><?= number_format($bill_data['total'], 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              <?php endforeach; ?>
+              
+              <!-- Grand Total -->
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th colspan="2">Summary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="total-row">
+                    <td class="text-end"><strong>Grand Total:</strong></td>
+                    <td class="text-right"><strong><?= number_format($overall_total, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <!-- Financial summary -->
+              <table class="report-table mt-4">
+                <thead>
+                  <tr>
+                    <th colspan="2">Financial Summary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="text-end">Prev. Bal.:</td>
+                    <td class="text-right"><?= number_format($prev_balance, 2) ?></td>
+                  </tr>
+                  <tr>
+                    <td class="text-end">Credit Sales:</td>
+                    <td class="text-right"><?= number_format($credit_sales, 2) ?></td>
+                  </tr>
+                  <tr>
+                    <td class="text-end">Expenses:</td>
+                    <td class="text-right"><?= number_format($expenses, 2) ?></td>
+                  </tr>
+                  <tr>
+                    <td class="text-end">Received:</td>
+                    <td class="text-right"><?= number_format($received, 2) ?></td>
+                  </tr>
+                  <tr>
+                    <td class="text-end">Discount:</td>
+                    <td class="text-right"><?= number_format($discount, 2) ?></td>
+                  </tr>
+                  <tr class="total-row">
+                    <td class="text-end"><strong>Total Cash:</strong></td>
+                    <td class="text-right"><strong><?= number_format($total_cash, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            <?php else: ?>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No sales records found for the selected date.
+              </div>
+            <?php endif; ?>
           </div>
           
-        </div>
-      <?php elseif (isset($_GET['generate'])): ?>
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i> No sales records found for the selected date.
-        </div>
+         
       <?php endif; ?>
     </div>
-      <?php include 'components/footer.php'; ?>
-
+    
+    <?php include 'components/footer.php'; ?>
   </div>
 </div>
 

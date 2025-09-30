@@ -34,20 +34,89 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Determine which daily stock table to use based on company ID
-$dailyStockTable = "tbldailystock_" . $compID;
-
-// Check if the table exists, if not use default tbldailystock_1
-$tableCheckQuery = "SHOW TABLES LIKE '$dailyStockTable'";
-$tableCheckResult = $conn->query($tableCheckQuery);
-if ($tableCheckResult->num_rows == 0) {
-    $dailyStockTable = "tbldailystock_1";
+// Function to get table name for a specific date
+function getTableForDate($conn, $compID, $date) {
+    $current_month = date('Y-m');
+    $target_month = date('Y-m', strtotime($date));
+    
+    // Current month uses main table
+    if ($target_month == $current_month) {
+        $table_name = "tbldailystock_" . $compID;
+        
+        // Check if main table exists, if not use default
+        $tableCheckQuery = "SHOW TABLES LIKE '$table_name'";
+        $tableCheckResult = $conn->query($tableCheckQuery);
+        if ($tableCheckResult->num_rows == 0) {
+            $table_name = "tbldailystock_1";
+        }
+        
+        return $table_name;
+    } 
+    // Previous months use archive table
+    else {
+        $month_year = date('m_y', strtotime($date));
+        $table_name = "tbldailystock_" . $compID . "_" . $month_year;
+        
+        // Check if archive table exists
+        $tableCheckQuery = "SHOW TABLES LIKE '$table_name'";
+        $tableCheckResult = $conn->query($tableCheckQuery);
+        if ($tableCheckResult->num_rows > 0) {
+            return $table_name;
+        } else {
+            // If archive table doesn't exist, try main table as fallback
+            $main_table = "tbldailystock_" . $compID;
+            $tableCheckQuery = "SHOW TABLES LIKE '$main_table'";
+            $tableCheckResult = $conn->query($tableCheckQuery);
+            if ($tableCheckResult->num_rows == 0) {
+                return "tbldailystock_1";
+            }
+            return $main_table;
+        }
+    }
 }
 
-// Check if the table has DAY_31 columns (for months with less than 31 days)
-$checkDay31Query = "SHOW COLUMNS FROM $dailyStockTable LIKE 'DAY_31_OPEN'";
-$day31Result = $conn->query($checkDay31Query);
-$hasDay31Columns = ($day31Result->num_rows > 0);
+// Function to get all tables needed for date range
+function getTablesForDateRange($conn, $compID, $from_date, $to_date) {
+    $tables = [];
+    $current_date = $from_date;
+    
+    while (strtotime($current_date) <= strtotime($to_date)) {
+        $table_name = getTableForDate($conn, $compID, $current_date);
+        $month_year = date('Y-m', strtotime($current_date));
+        
+        if (!isset($tables[$table_name])) {
+            $tables[$table_name] = [
+                'table_name' => $table_name,
+                'months' => []
+            ];
+        }
+        
+        if (!in_array($month_year, $tables[$table_name]['months'])) {
+            $tables[$table_name]['months'][] = $month_year;
+        }
+        
+        $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+    }
+    
+    return $tables;
+}
+
+// NEW: Check if specific day columns exist in a table
+function tableHasDayColumns($conn, $table_name, $day) {
+    $checkOpenQuery = "SHOW COLUMNS FROM $table_name LIKE 'DAY_{$day}_OPEN'";
+    $checkPurchaseQuery = "SHOW COLUMNS FROM $table_name LIKE 'DAY_{$day}_PURCHASE'";
+    $checkSalesQuery = "SHOW COLUMNS FROM $table_name LIKE 'DAY_{$day}_SALES'";
+    $checkClosingQuery = "SHOW COLUMNS FROM $table_name LIKE 'DAY_{$day}_CLOSING'";
+    
+    $openResult = $conn->query($checkOpenQuery);
+    $purchaseResult = $conn->query($checkPurchaseQuery);
+    $salesResult = $conn->query($checkSalesQuery);
+    $closingResult = $conn->query($checkClosingQuery);
+    
+    // All four columns must exist for the day to be valid
+    return ($openResult->num_rows > 0 && $purchaseResult->num_rows > 0 && 
+            $salesResult->num_rows > 0 && $closingResult->num_rows > 0);
+}
 
 // Function to group sizes by base size (remove suffixes after ML and trim)
 function getBaseSize($size) {
@@ -239,60 +308,97 @@ $grand_totals = [
     ]
 ];
 
-// Process each date in the range with month-aware logic
-$dates = [];
-$current_date = $from_date;
-while (strtotime($current_date) <= strtotime($to_date)) {
-    $dates[] = $current_date;
-    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+// Get all tables needed for the date range
+$tables_needed = getTablesForDateRange($conn, $compID, $from_date, $to_date);
+
+// Store cumulative stock data for each item
+$cumulative_stock_data = [];
+
+// Process each table
+foreach ($tables_needed as $table_info) {
+    $table_name = $table_info['table_name'];
+    $months = $table_info['months'];
+    
+    // Process each month in this table
+    foreach ($months as $month) {
+        // Process each date in the range for this month
+        $current_date = $from_date;
+        while (strtotime($current_date) <= strtotime($to_date)) {
+            $current_month = date('Y-m', strtotime($current_date));
+            
+            // Only process dates that belong to this month and table
+            if ($current_month == $month) {
+                $day = date('d', strtotime($current_date));
+                
+                // Check if this specific table has columns for this specific day
+                if (!tableHasDayColumns($conn, $table_name, $day)) {
+                    // Skip this date if columns don't exist
+                    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+                    continue;
+                }
+                
+                // Fetch all stock data for this month and day
+                $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                              DAY_{$day}_OPEN as opening, 
+                              DAY_{$day}_PURCHASE as purchase, 
+                              DAY_{$day}_SALES as sales, 
+                              DAY_{$day}_CLOSING as closing 
+                              FROM $table_name 
+                              WHERE STK_MONTH = ?";
+                
+                $stockStmt = $conn->prepare($stockQuery);
+                $stockStmt->bind_param("s", $month);
+                $stockStmt->execute();
+                $stockResult = $stockStmt->get_result();
+                
+                while ($row = $stockResult->fetch_assoc()) {
+                    $item_code = $row['ITEM_CODE'];
+                    
+                    // Skip if item not found in master
+                    if (!isset($items[$item_code])) continue;
+                    
+                    // Initialize item data if not exists
+                    if (!isset($cumulative_stock_data[$item_code])) {
+                        $cumulative_stock_data[$item_code] = [
+                            'purchase' => 0,
+                            'sales' => 0,
+                            'closing' => 0,
+                            'opening' => 0,
+                            'last_date' => $current_date
+                        ];
+                    }
+                    
+                    // NEW LOGIC: Accumulate purchase and sales (cumulative)
+                    $cumulative_stock_data[$item_code]['purchase'] += $row['purchase'];
+                    $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
+                    
+                    // For closing balance, always take the latest value (last day in range)
+                    $cumulative_stock_data[$item_code]['closing'] = $row['closing'];
+                    $cumulative_stock_data[$item_code]['last_date'] = $current_date;
+                    
+                    // For opening balance, take the first value (first day in range)
+                    if ($cumulative_stock_data[$item_code]['opening'] == 0) {
+                        $cumulative_stock_data[$item_code]['opening'] = $row['opening'];
+                    }
+                    
+                    // Store LIQ_FLAG for later use
+                    $cumulative_stock_data[$item_code]['liq_flag'] = $row['LIQ_FLAG'];
+                }
+                
+                $stockStmt->close();
+            }
+            
+            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+        }
+    }
 }
 
-// NEW: Store the latest stock data for each item
-$latest_stock_data = [];
-
-foreach ($dates as $date) {
-    $day = date('d', strtotime($date));
-    $month = date('Y-m', strtotime($date));
-    $days_in_month = date('t', strtotime($date));
-    
-    // Skip if day exceeds month length AND table doesn't have DAY_31 columns
-    if ($day > $days_in_month && !$hasDay31Columns) {
-        continue;
-    }
-    
-    // Fetch all stock data for this month
-    $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                  DAY_{$day}_OPEN as opening, 
-                  DAY_{$day}_PURCHASE as purchase, 
-                  DAY_{$day}_SALES as sales, 
-                  DAY_{$day}_CLOSING as closing 
-                  FROM $dailyStockTable 
-                  WHERE STK_MONTH = ?";
-    
-    $stockStmt = $conn->prepare($stockQuery);
-    $stockStmt->bind_param("s", $month);
-    $stockStmt->execute();
-    $stockResult = $stockStmt->get_result();
-    
-    while ($row = $stockResult->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        
-        // Skip if item not found in master
-        if (!isset($items[$item_code])) continue;
-        
-        // Store the latest data for each item (will be overwritten with each subsequent date)
-        $latest_stock_data[$item_code] = $row;
-    }
-    
-    $stockStmt->close();
-}
-
-// NEW: Process only the latest stock data (last date in the range)
-foreach ($latest_stock_data as $item_code => $row) {
+// Process cumulative stock data
+foreach ($cumulative_stock_data as $item_code => $stock_data) {
     $item_details = $items[$item_code];
     $size = $item_details['DETAILS2'];
     $class = $item_details['CLASS'];
-    $liq_flag = $item_details['LIQ_FLAG'];
+    $liq_flag = $stock_data['liq_flag'];
     
     // Extract brand name
     $brandName = getBrandName($item_details['DETAILS']);
@@ -338,61 +444,61 @@ foreach ($latest_stock_data as $item_code => $row) {
     }
     
     // Add to brand data and grand totals based on liquor type and grouped size
-    // NOW USING ONLY THE LATEST DATA (not cumulative)
+    // USING CUMULATIVE DATA for purchase and sales, LATEST for closing
     switch ($liquor_type) {
         case 'Spirits':
             if (in_array($grouped_size, $display_sizes_s)) {
-                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['sales'][$grouped_size] += $row['sales'];
-                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['closing'][$grouped_size] = $row['closing'];
-                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['opening'][$grouped_size] += $row['opening'];
+                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['sales'][$grouped_size] += $stock_data['sales'];
+                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['closing'][$grouped_size] = $stock_data['closing'];
+                $brand_data_by_category[$liquor_type][$brandName]['Spirits']['opening'][$grouped_size] += $stock_data['opening'];
                 
-                $grand_totals['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                $grand_totals['Spirits']['sales'][$grouped_size] += $row['sales'];
-                $grand_totals['Spirits']['closing'][$grouped_size] += $row['closing'];
-                $grand_totals['Spirits']['opening'][$grouped_size] += $row['opening'];
+                $grand_totals['Spirits']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $grand_totals['Spirits']['sales'][$grouped_size] += $stock_data['sales'];
+                $grand_totals['Spirits']['closing'][$grouped_size] += $stock_data['closing'];
+                $grand_totals['Spirits']['opening'][$grouped_size] += $stock_data['opening'];
             }
             break;
             
         case 'Wines':
             if (in_array($grouped_size, $display_sizes_w)) {
-                $brand_data_by_category[$liquor_type][$brandName]['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                $brand_data_by_category[$liquor_type][$brandName]['Wines']['sales'][$grouped_size] += $row['sales'];
-                $brand_data_by_category[$liquor_type][$brandName]['Wines']['closing'][$grouped_size] = $row['closing'];
-                $brand_data_by_category[$liquor_type][$brandName]['Wines']['opening'][$grouped_size] += $row['opening'];
+                $brand_data_by_category[$liquor_type][$brandName]['Wines']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $brand_data_by_category[$liquor_type][$brandName]['Wines']['sales'][$grouped_size] += $stock_data['sales'];
+                $brand_data_by_category[$liquor_type][$brandName]['Wines']['closing'][$grouped_size] = $stock_data['closing'];
+                $brand_data_by_category[$liquor_type][$brandName]['Wines']['opening'][$grouped_size] += $stock_data['opening'];
                 
-                $grand_totals['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                $grand_totals['Wines']['sales'][$grouped_size] += $row['sales'];
-                $grand_totals['Wines']['closing'][$grouped_size] += $row['closing'];
-                $grand_totals['Wines']['opening'][$grouped_size] += $row['opening'];
+                $grand_totals['Wines']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $grand_totals['Wines']['sales'][$grouped_size] += $stock_data['sales'];
+                $grand_totals['Wines']['closing'][$grouped_size] += $stock_data['closing'];
+                $grand_totals['Wines']['opening'][$grouped_size] += $stock_data['opening'];
             }
             break;
             
         case 'Fermented Beer':
             if (in_array($grouped_size, $display_sizes_fb)) {
-                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['closing'][$grouped_size] = $row['closing'];
-                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['sales'][$grouped_size] += $stock_data['sales'];
+                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['closing'][$grouped_size] = $stock_data['closing'];
+                $brand_data_by_category[$liquor_type][$brandName]['Fermented Beer']['opening'][$grouped_size] += $stock_data['opening'];
                 
-                $grand_totals['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                $grand_totals['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                $grand_totals['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                $grand_totals['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                $grand_totals['Fermented Beer']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $grand_totals['Fermented Beer']['sales'][$grouped_size] += $stock_data['sales'];
+                $grand_totals['Fermented Beer']['closing'][$grouped_size] += $stock_data['closing'];
+                $grand_totals['Fermented Beer']['opening'][$grouped_size] += $stock_data['opening'];
             }
             break;
             
         case 'Mild Beer':
             if (in_array($grouped_size, $display_sizes_mb)) {
-                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['closing'][$grouped_size] = $row['closing'];
-                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['sales'][$grouped_size] += $stock_data['sales'];
+                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['closing'][$grouped_size] = $stock_data['closing'];
+                $brand_data_by_category[$liquor_type][$brandName]['Mild Beer']['opening'][$grouped_size] += $stock_data['opening'];
                 
-                $grand_totals['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                $grand_totals['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                $grand_totals['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                $grand_totals['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                $grand_totals['Mild Beer']['purchase'][$grouped_size] += $stock_data['purchase'];
+                $grand_totals['Mild Beer']['sales'][$grouped_size] += $stock_data['sales'];
+                $grand_totals['Mild Beer']['closing'][$grouped_size] += $stock_data['closing'];
+                $grand_totals['Mild Beer']['opening'][$grouped_size] += $stock_data['opening'];
             }
             break;
     }
@@ -401,6 +507,7 @@ foreach ($latest_stock_data as $item_code => $row) {
 // Calculate total columns count for table formatting
 $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($display_sizes_fb) + count($display_sizes_mb);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -409,10 +516,10 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
   <title>FLR-3A Brandwise Register - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
-  <style>
+    /* Your existing CSS styles remain exactly the same */
     /* Screen styles */
     body {
       font-size: 12px;

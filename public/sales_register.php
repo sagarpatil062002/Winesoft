@@ -35,108 +35,223 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Define groups based on tblclass (UPDATED - Beer classes separated like groupwise_sales_report.php)
-$groups = [
-    'SPIRITS' => [
-        'name' => 'SPIRITS',
-        'classes' => ['W', 'G', 'K', 'D', 'R', 'O'], // Whisky, Gin, Vodka, Brandy, Rum, Other/General
-        'liq_flag' => 'F'
-    ],
-    'WINE' => [
-        'name' => 'WINE',
-        'classes' => ['V'], // Wines
-        'liq_flag' => 'F'
-    ],
-    'FERMENTED BEER' => [
-        'name' => 'FERMENTED BEER',
-        'classes' => ['F'], // Fermented Beer
-        'liq_flag' => 'F'
-    ],
-    'MILD BEER' => [
-        'name' => 'MILD BEER', 
-        'classes' => ['M'], // Mild Beer
-        'liq_flag' => 'F'
-    ],
-    'COUNTRY LIQUOR' => [
-        'name' => 'COUNTRY LIQUOR',
-        'classes' => ['L', 'O'], // Liquors, Other/General
-        'liq_flag' => 'C'
-    ]
+// Function to get table names for a specific date range
+function getSalesTablesForDateRange($conn, $compID, $date_from, $date_to) {
+    $tables = [];
+    
+    // Generate all months between date_from and date_to
+    $start = new DateTime($date_from);
+    $end = new DateTime($date_to);
+    $end->modify('first day of next month');
+    
+    $period = new DatePeriod($start, new DateInterval('P1M'), $end);
+    
+    foreach ($period as $dt) {
+        $year_month = $dt->format('Y-m');
+        $current_month = date('Y-m');
+        
+        // If target month is current month, use base tables
+        if ($year_month === $current_month) {
+            $tables[$year_month] = [
+                'header' => "tblsaleheader",
+                'details' => "tblsaledetails"
+            ];
+        } else {
+            // For previous months, use archive table format: tblsaleheader_mm_yy, tblsaledetails_mm_yy
+            $month = $dt->format('m');
+            $year = $dt->format('y');
+            
+            $headerTable = "tblsaleheader_" . $month . "_" . $year;
+            $detailsTable = "tblsaledetails_" . $month . "_" . $year;
+            
+            // Check if archive tables exist
+            $headerCheck = $conn->query("SHOW TABLES LIKE '$headerTable'");
+            $detailsCheck = $conn->query("SHOW TABLES LIKE '$detailsTable'");
+            
+            if ($headerCheck->num_rows > 0 && $detailsCheck->num_rows > 0) {
+                $tables[$year_month] = [
+                    'header' => $headerTable,
+                    'details' => $detailsTable
+                ];
+            } else {
+                // If archive tables don't exist, fall back to base tables
+                $tables[$year_month] = [
+                    'header' => "tblsaleheader",
+                    'details' => "tblsaledetails"
+                ];
+            }
+        }
+    }
+    
+    return $tables;
+}
+
+// Define categories based on the image format
+$categories = [
+    'IMFL Sales' => ['classes' => ['W', 'G', 'K', 'D', 'R', 'O'], 'liq_flag' => 'F'],
+    'Wine Sales' => ['classes' => ['V'], 'liq_flag' => 'F'],
+    'Beer Sales' => ['classes' => ['F', 'M'], 'liq_flag' => 'F'], // Both fermented and mild beer
+    'Country Sales' => ['classes' => ['L', 'O'], 'liq_flag' => 'C']
 ];
 
 // Generate report data based on filters
 $report_data = [];
-// Initialize group totals with the updated beer groups
-$group_totals = [
-    'SPIRITS' => 0,
-    'WINE' => 0,
-    'FERMENTED BEER' => 0,
-    'MILD BEER' => 0,
-    'COUNTRY LIQUOR' => 0
-];
-$grand_total = 0;
+$daily_totals = [];
 
 if (isset($_GET['generate'])) {
-    // Get sales data grouped by date and category
-    $rate_field = ($rate_type === 'mrp') ? 'MPRICE' : 'BPRICE';
+    // Get sales tables for the date range
+    $salesTables = getSalesTablesForDateRange($conn, $compID, $date_from, $date_to);
     
-    $query = "SELECT 
-                DATE(s.BILL_DATE) as sale_date,
-                i.CLASS as SGROUP,
-                i.LIQ_FLAG,
-                SUM(COALESCE(i.$rate_field, sd.RATE) * sd.QTY) as total_sale
-              FROM tblsaledetails sd
-              INNER JOIN tblsaleheader s ON sd.BILL_NO = s.BILL_NO AND sd.COMP_ID = s.COMP_ID
-              LEFT JOIN tblitemmaster i ON sd.ITEM_CODE = i.CODE
-              WHERE s.BILL_DATE BETWEEN ? AND ? AND s.COMP_ID = ?
-              GROUP BY DATE(s.BILL_DATE), i.CLASS, i.LIQ_FLAG
-              ORDER BY sale_date, i.CLASS";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssi", $date_from, $date_to, $compID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    while ($row = $result->fetch_assoc()) {
-        $sgroup = isset($row['SGROUP']) ? $row['SGROUP'] : 'O'; // Default to 'O' if not set
-        $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F'; // Default to 'F' if not set
-        $amount = (float)$row['total_sale'];
-        $sale_date = $row['sale_date'];
+    // Get all dates in the range from all relevant tables
+    $allDates = [];
+    foreach ($salesTables as $month => $tables) {
+        $headerTable = $tables['header'];
         
-        // Determine which group this item belongs to
-        $item_group = null;
-        foreach ($groups as $group_key => $group_info) {
-            if ($group_info['liq_flag'] === $liq_flag && in_array($sgroup, $group_info['classes'])) {
-                $item_group = $group_key;
-                break;
+        $dateQuery = "SELECT DISTINCT DATE(BILL_DATE) as sale_date 
+                      FROM $headerTable 
+                      WHERE BILL_DATE BETWEEN ? AND ? AND COMP_ID = ?
+                      ORDER BY sale_date";
+        $dateStmt = $conn->prepare($dateQuery);
+        $dateStmt->bind_param("ssi", $date_from, $date_to, $compID);
+        $dateStmt->execute();
+        $dateResult = $dateStmt->get_result();
+        
+        while ($dateRow = $dateResult->fetch_assoc()) {
+            $sale_date = $dateRow['sale_date'];
+            if (!in_array($sale_date, $allDates)) {
+                $allDates[] = $sale_date;
+                
+                // Initialize report data for this date
+                $report_data[$sale_date] = [];
+                $daily_totals[$sale_date] = 0;
+                
+                // Initialize all categories for this date
+                foreach ($categories as $category_name => $category_info) {
+                    $report_data[$sale_date][$category_name] = [
+                        'min_bill' => null,
+                        'max_bill' => null,
+                        'amount' => 0
+                    ];
+                }
             }
         }
-        
-        // If we couldn't classify the item, assign to SPIRITS as default
-        if ($item_group === null) {
-            $item_group = 'SPIRITS';
-        }
-        
-        // Store data by date and group
-        if (!isset($report_data[$sale_date])) {
-            $report_data[$sale_date] = [
-                'SPIRITS' => 0,
-                'WINE' => 0,
-                'FERMENTED BEER' => 0,
-                'MILD BEER' => 0,
-                'COUNTRY LIQUOR' => 0,
-                'TOTAL' => 0
-            ];
-        }
-        
-        $report_data[$sale_date][$item_group] += $amount;
-        $report_data[$sale_date]['TOTAL'] += $amount;
-        
-        // Update group totals
-        $group_totals[$item_group] += $amount;
-        $grand_total += $amount;
+        $dateStmt->close();
     }
-    $stmt->close();
+    
+    sort($allDates); // Sort dates chronologically
+
+    // Get sales data with bill ranges for each category and date from all relevant tables
+    $rate_field = ($rate_type === 'mrp') ? 'MPRICE' : 'BPRICE';
+    
+    foreach ($salesTables as $month => $tables) {
+        $headerTable = $tables['header'];
+        $detailsTable = $tables['details'];
+        
+        $query = "SELECT 
+                    DATE(s.BILL_DATE) as sale_date,
+                    i.CLASS as SGROUP,
+                    i.LIQ_FLAG,
+                    MIN(s.BILL_NO) as min_bill,
+                    MAX(s.BILL_NO) as max_bill,
+                    SUM(COALESCE(i.$rate_field, sd.RATE) * sd.QTY) as total_sale
+                  FROM $detailsTable sd
+                  INNER JOIN $headerTable s ON sd.BILL_NO = s.BILL_NO AND sd.COMP_ID = s.COMP_ID
+                  LEFT JOIN tblitemmaster i ON sd.ITEM_CODE = i.CODE
+                  WHERE s.BILL_DATE BETWEEN ? AND ? AND s.COMP_ID = ?
+                  GROUP BY DATE(s.BILL_DATE), i.CLASS, i.LIQ_FLAG
+                  ORDER BY sale_date, i.CLASS";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("ssi", $date_from, $date_to, $compID);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $sgroup = isset($row['SGROUP']) ? $row['SGROUP'] : 'O';
+            $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F';
+            $amount = (float)$row['total_sale'];
+            $sale_date = $row['sale_date'];
+            $min_bill = $row['min_bill'];
+            $max_bill = $row['max_bill'];
+            
+            // Determine which category this item belongs to
+            $item_category = null;
+            foreach ($categories as $category_name => $category_info) {
+                if ($category_info['liq_flag'] === $liq_flag && in_array($sgroup, $category_info['classes'])) {
+                    $item_category = $category_name;
+                    break;
+                }
+            }
+            
+            // If we couldn't classify the item, assign to IMFL Sales as default
+            if ($item_category === null) {
+                $item_category = 'IMFL Sales';
+            }
+            
+            // Update category data
+            if (isset($report_data[$sale_date][$item_category])) {
+                // If this category already has data, update min/max bills and amount
+                if ($report_data[$sale_date][$item_category]['min_bill'] === null || 
+                    $min_bill < $report_data[$sale_date][$item_category]['min_bill']) {
+                    $report_data[$sale_date][$item_category]['min_bill'] = $min_bill;
+                }
+                
+                if ($report_data[$sale_date][$item_category]['max_bill'] === null || 
+                    $max_bill > $report_data[$sale_date][$item_category]['max_bill']) {
+                    $report_data[$sale_date][$item_category]['max_bill'] = $max_bill;
+                }
+                
+                $report_data[$sale_date][$item_category]['amount'] += $amount;
+            } else {
+                // Initialize category data
+                $report_data[$sale_date][$item_category] = [
+                    'min_bill' => $min_bill,
+                    'max_bill' => $max_bill,
+                    'amount' => $amount
+                ];
+            }
+            
+            $daily_totals[$sale_date] += $amount;
+        }
+        $stmt->close();
+    }
+
+    // Get bill ranges for categories with zero sales but have bills on that date from all relevant tables
+    foreach ($salesTables as $month => $tables) {
+        $headerTable = $tables['header'];
+        
+        $billRangeQuery = "SELECT 
+                            DATE(BILL_DATE) as sale_date,
+                            MIN(BILL_NO) as min_bill,
+                            MAX(BILL_NO) as max_bill
+                          FROM $headerTable 
+                          WHERE BILL_DATE BETWEEN ? AND ? AND COMP_ID = ?
+                          GROUP BY DATE(BILL_DATE)
+                          ORDER BY sale_date";
+        
+        $billStmt = $conn->prepare($billRangeQuery);
+        $billStmt->bind_param("ssi", $date_from, $date_to, $compID);
+        $billStmt->execute();
+        $billResult = $billStmt->get_result();
+        
+        while ($billRow = $billResult->fetch_assoc()) {
+            $sale_date = $billRow['sale_date'];
+            $overall_min_bill = $billRow['min_bill'];
+            $overall_max_bill = $billRow['max_bill'];
+            
+            // For categories with zero sales but bills exist on that date, set the bill range
+            foreach ($categories as $category_name => $category_info) {
+                if (isset($report_data[$sale_date][$category_name]) && 
+                    $report_data[$sale_date][$category_name]['amount'] == 0 &&
+                    $report_data[$sale_date][$category_name]['min_bill'] === null) {
+                    
+                    $report_data[$sale_date][$category_name]['min_bill'] = $overall_min_bill;
+                    $report_data[$sale_date][$category_name]['max_bill'] = $overall_max_bill;
+                }
+            }
+        }
+        $billStmt->close();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -152,7 +267,6 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
   
   <style>
-    /* Additional styles to match the groupwise sales report */
     .filter-card {
       border: 1px solid #dee2e6;
       border-radius: 0.25rem;
@@ -206,11 +320,13 @@ if (isset($_GET['generate'])) {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
+      font-size: 14px;
     }
     
     .report-table th, .report-table td {
-      padding: 8px;
+      padding: 6px 8px;
       border: 1px solid #dee2e6;
+      vertical-align: top;
     }
     
     .report-table th {
@@ -223,13 +339,42 @@ if (isset($_GET['generate'])) {
       text-align: right;
     }
     
-    .report-table .text-end {
-      text-align: end;
+    .report-table .text-center {
+      text-align: center;
+    }
+    
+    .report-table .sr-no {
+      width: 50px;
+      text-align: center;
+    }
+    
+    .report-table .date-col {
+      width: 100px;
+      text-align: center;
+    }
+    
+    .report-table .particulars-col {
+      width: 180px;
+    }
+    
+    .report-table .bills-col {
+      width: 150px;
+      text-align: center;
+    }
+    
+    .report-table .amount-col {
+      width: 120px;
+      text-align: right;
     }
     
     .total-row {
       font-weight: bold;
       background-color: #e9ecef;
+    }
+    
+    .daily-total-row {
+      font-weight: bold;
+      background-color: #f1f3f4;
     }
     
     .footer-info {
@@ -251,6 +396,15 @@ if (isset($_GET['generate'])) {
       body {
         padding: 0;
         margin: 0;
+        font-size: 12px;
+      }
+      
+      .report-table {
+        font-size: 12px;
+      }
+      
+      .report-table th, .report-table td {
+        padding: 4px 6px;
       }
     }
   </style>
@@ -324,44 +478,96 @@ if (isset($_GET['generate'])) {
             <h1><?= htmlspecialchars($companyName) ?></h1>
             <h5>Sales Register Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
             <h6>Rate Type: <?= $rate_type === 'mrp' ? 'MRP Rate' : 'B. Rate' ?></h6>
-            <h6>Mode: <?= $mode === 'datewise' ? 'Date Wise' : 'Month Wise' ?></h6>
           </div>
           
           <div class="table-container">
             <table class="report-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>SPIRITS</th>
-                  <th>WINE</th>
-                  <th>FERMENTED BEER</th>
-                  <th>MILD BEER</th>
-                  <th>COUNTRY LIQUOR</th>
-                  <th>Total Sale</th>
+                  <th class="sr-no">Sr.No.</th>
+                  <th class="date-col">Date</th>
+                  <th class="particulars-col">Particulars</th>
+                  <th class="bills-col">[Bill's From - To]</th>
+                  <th class="amount-col">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($report_data as $date => $groups_data): ?>
-                  <tr>
-                    <td><?= date('d/m/Y', strtotime($date)) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['SPIRITS'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['WINE'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['FERMENTED BEER'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['MILD BEER'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['COUNTRY LIQUOR'], 2) ?></td>
-                    <td class="text-right"><?= number_format($groups_data['TOTAL'], 2) ?></td>
+                <?php 
+                $sr_no = 1;
+                $grand_total = 0;
+                ksort($report_data); // Sort by date
+                ?>
+                
+                <?php foreach ($report_data as $date => $categories_data): ?>
+                  <?php 
+                  $date_total = 0;
+                  $date_printed = false;
+                  $has_sales = false;
+                  
+                  // Check if any category has sales for this date
+                  foreach ($categories_data as $category_data) {
+                    if ($category_data['amount'] > 0) {
+                      $has_sales = true;
+                      break;
+                    }
+                  }
+                  
+                  // Only show date if it has sales
+                  if ($has_sales): 
+                  ?>
+                  
+                  <?php foreach ($categories as $category_name => $category_info): ?>
+                    <?php 
+                    $category_data = $categories_data[$category_name];
+                    $min_bill = $category_data['min_bill'];
+                    $max_bill = $category_data['max_bill'];
+                    $amount = $category_data['amount'];
+                    
+                    // Only show category if it has sales
+                    if ($amount > 0):
+                    ?>
+                      <tr>
+                        <?php if (!$date_printed): ?>
+                          <td class="sr-no text-center"><?= $sr_no ?></td>
+                          <td class="date-col"><?= date('d/m/Y', strtotime($date)) ?></td>
+                          <?php $date_printed = true; ?>
+                        <?php else: ?>
+                          <td class="sr-no"></td>
+                          <td class="date-col"></td>
+                        <?php endif; ?>
+                        
+                        <td class="particulars-col"><?= $category_name ?></td>
+                        <td class="bills-col text-center"><?= $min_bill ?> - <?= $max_bill ?></td>
+                        <td class="amount-col text-right"><?= number_format($amount, 2) ?></td>
+                      </tr>
+                      
+                      <?php $date_total += $amount; ?>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
+                  
+                  <!-- Daily total row -->
+                  <tr class="daily-total-row">
+                    <td class="sr-no"></td>
+                    <td class="date-col"></td>
+                    <td class="particulars-col"></td>
+                    <td class="bills-col text-center"><strong>Total</strong></td>
+                    <td class="amount-col text-right"><strong><?= number_format($date_total, 2) ?></strong></td>
                   </tr>
+                  
+                  <?php 
+                  $grand_total += $date_total;
+                  $sr_no++;
+                  ?>
+                  <?php endif; ?>
                 <?php endforeach; ?>
                 
-                <!-- Total row -->
+                <!-- Grand total row -->
                 <tr class="total-row">
-                  <td><strong>Total</strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['SPIRITS'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['WINE'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['FERMENTED BEER'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['MILD BEER'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($group_totals['COUNTRY LIQUOR'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($grand_total, 2) ?></strong></td>
+                  <td class="sr-no"></td>
+                  <td class="date-col"></td>
+                  <td class="particulars-col"></td>
+                  <td class="bills-col text-center"><strong>Grand Total</strong></td>
+                  <td class="amount-col text-right"><strong><?= number_format($grand_total, 2) ?></strong></td>
                 </tr>
               </tbody>
             </table>

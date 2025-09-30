@@ -12,6 +12,12 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
 
 // Initialize variables
 $items = [];
@@ -225,18 +231,22 @@ if ($itemsResult) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">    
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
+</head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4>Breakage Management</h4>
+        <h4><i class="fa-solid fa-wine-bottle me-2"></i>Breakage Management</h4>
+        <a href="view_breakage.php" class="btn btn-outline-danger">
+          <i class="fas fa-list-check me-1"></i> View Records
+        </a>
       </div>
 
       <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
@@ -256,7 +266,9 @@ if ($itemsResult) {
 
       <form method="POST" class="mb-4">
         <div class="card mb-4">
-          <div class="card-header breakage-header fw-semibold"><i class="fa-solid fa-wine-bottle me-2"></i>Record Breakage</div>
+          <div class="card-header breakage-header fw-semibold">
+            <i class="fa-solid fa-calendar-day me-2"></i>Breakage Details
+          </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-6">
@@ -266,12 +278,24 @@ if ($itemsResult) {
                          value="<?= date('Y-m-d\TH:i') ?>" required>
                 </div>
               </div>
+              <div class="col-md-6">
+                <div class="form-group">
+                  <label class="form-label">Current Status</label>
+                  <div class="p-2 bg-light rounded">
+                    <span class="badge <?= empty($breakageItems) ? 'bg-secondary' : 'bg-danger' ?>">
+                      <?= empty($breakageItems) ? 'No items added' : count($breakageItems) . ' item(s) in cart' ?>
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="card mb-4">
-          <div class="card-header breakage-header fw-semibold"><i class="fa-solid fa-cube me-2"></i>Add Breakage Items</div>
+          <div class="card-header breakage-header fw-semibold">
+            <i class="fa-solid fa-cube me-2"></i>Add Breakage Items
+          </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-5">
@@ -296,7 +320,7 @@ if ($itemsResult) {
               </div>
               <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" name="add_item" class="btn btn-danger w-100">
-                  <i class="fas fa-plus"></i> Add Item
+                  <i class="fas fa-plus me-1"></i> Add Item
                 </button>
               </div>
             </div>
@@ -309,11 +333,15 @@ if ($itemsResult) {
         <div class="card mb-4">
           <div class="card-header breakage-header fw-semibold d-flex justify-content-between align-items-center">
             <span><i class="fa-solid fa-list me-2"></i>Breakage Items</span>
-            <form method="POST" class="d-inline">
-              <button type="submit" name="clear_cart" class="btn btn-sm btn-outline-danger">
-                <i class="fas fa-trash"></i> Clear All
-              </button>
-            </form>
+            <div>
+              <span class="badge bg-danger rounded-pill me-2"><?= count($breakageItems) ?> items</span>
+              <form method="POST" class="d-inline">
+                <button type="submit" name="clear_cart" class="btn btn-sm btn-outline-danger" 
+                        onclick="return confirm('Are you sure you want to clear all items?')">
+                  <i class="fas fa-trash me-1"></i> Clear All
+                </button>
+              </form>
+            </div>
           </div>
           <div class="card-body p-0">
             <div class="table-container">
@@ -323,16 +351,18 @@ if ($itemsResult) {
                     <th>Item Code</th>
                     <th>Item Name</th>
                     <th>Size</th>
-                    <th>Rate</th>
-                    <th>Breakage Qty</th>
-                    <th>Amount</th>
+                    <th>Rate (₹)</th>
+                    <th class="text-end">Breakage Qty</th>
+                    <th class="text-end">Amount (₹)</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   <?php foreach ($breakageItems as $item): ?>
                     <tr>
-                      <td><?= htmlspecialchars($item['code']) ?></td>
+                      <td>
+                        <span class="badge badge-itemcode bg-secondary"><?= htmlspecialchars($item['code']) ?></span>
+                      </td>
                       <td><?= htmlspecialchars($item['name']) ?></td>
                       <td><?= htmlspecialchars($item['size']) ?></td>
                       <td>
@@ -345,12 +375,13 @@ if ($itemsResult) {
                           </button>
                         </form>
                       </td>
-                      <td><?= $item['quantity'] ?></td>
-                      <td>₹<?= number_format($item['amount'], 2) ?></td>
+                      <td class="text-end"><?= $item['quantity'] ?></td>
+                      <td class="text-end fw-bold">₹<?= number_format($item['amount'], 2) ?></td>
                       <td>
                         <form method="POST" class="d-inline">
                           <input type="hidden" name="remove_item_code" value="<?= $item['code'] ?>">
-                          <button type="submit" name="remove_item" class="btn btn-sm btn-danger">
+                          <button type="submit" name="remove_item" class="btn btn-sm btn-danger" 
+                                  onclick="return confirm('Remove this item from breakage?')">
                             <i class="fas fa-trash"></i>
                           </button>
                         </form>
@@ -359,7 +390,7 @@ if ($itemsResult) {
                   <?php endforeach; ?>
                   <tr class="table-danger">
                     <td colspan="5" class="text-end fw-bold">Total Breakage Amount:</td>
-                    <td class="fw-bold">₹<?= number_format($totalAmount, 2) ?></td>
+                    <td class="text-end fw-bold">₹<?= number_format($totalAmount, 2) ?></td>
                     <td></td>
                   </tr>
                 </tbody>
@@ -370,19 +401,22 @@ if ($itemsResult) {
 
         <div class="d-flex justify-content-end gap-2">
           <a href="dashboard.php" class="btn btn-secondary">
-            <i class="fas fa-times"></i> Cancel
+            <i class="fas fa-times me-1"></i> Cancel
           </a>
           <form method="POST">
-            <button type="submit" name="finalize_breakage" class="btn btn-danger">
-              <i class="fas fa-check"></i> Record Breakage
+            <button type="submit" name="finalize_breakage" class="btn btn-danger" 
+                    onclick="return confirm('Record this breakage? This action cannot be undone.')">
+              <i class="fas fa-check me-1"></i> Record Breakage
             </button>
           </form>
         </div>
       <?php else: ?>
-        <div class="text-center py-4">
-          <i class="fa-solid fa-wine-bottle fa-3x text-muted mb-3"></i>
-          <h5 class="text-muted">No breakage items added</h5>
-          <p class="text-muted">Add items to record breakage</p>
+        <div class="card">
+          <div class="card-body text-center py-5">
+            <i class="fa-solid fa-wine-bottle fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No breakage items added</h5>
+            <p class="text-muted">Add items above to record breakage</p>
+          </div>
         </div>
       <?php endif; ?>
     </div>
@@ -438,6 +472,11 @@ $(document).ready(function() {
       // You can display the price somewhere if needed
       console.log('Selected item price: ' + price);
     }
+  });
+
+  // Set focus on quantity field after item selection
+  $('#item_search').on('select2:select', function() {
+    $('#quantity').focus().select();
   });
 });
 </script>

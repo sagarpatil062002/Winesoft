@@ -110,6 +110,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                     <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_activity</span><span class="nav-label">Voucher Entry</span></a></li>
                     <li class="nav-item"><a href="view_breakage.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakages</span></a></li>
                     <li class="nav-item"><a href="balance_carried_forward.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Balance Carried Forward</span></a></li>
+                    <li class="nav-item"><a href="Post_daily_sales.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Post Daily Sale</span></a></li>
 
                 </ul>
             </li>    
@@ -125,6 +126,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
         <li class="nav-item"><a href="Brand_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Brand Register</span></a></li>
         <li class="nav-item"><a href="Gate_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Gate Register</span></a></li>
         <li class="nav-item"><a href="Excise_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Excise register</span></a></li>
+        <li class="nav-item"><a href="sales_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Sales  Register</span></a></li>
         <li class="nav-item"><a href="Monthly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Monthly Register</span></a></li>
     </ul>
 </li>            <li class="nav-item has-dropdown">
@@ -134,13 +136,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item">
-                        <a href="brandwise_report.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">analytics</span>
-                            <span class="nav-label">Brandwise Report</span>
-                            
-                        </a>
-                    </li>
+                  
                     <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Closing Stock Report</span></a></li>
                     <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchase Report</span></a></li>
                     <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">pallet</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
@@ -155,7 +151,6 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                     <li class="nav-item"><a href="credit_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Sales Report</span></a></li>
                     <li class="nav-item"><a href="itemwise_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Itemwise Stock Report</span></a></li>
                     <li class="nav-item"><a href="breakage_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Breakage Report</span></a></li>
-                    <li class="nav-item"><a href="sales_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Sales  Register</span></a></li>
 
                 </ul>
             </li>
@@ -186,6 +181,13 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                         <a href="dryday.php" class="nav-link">
                             <span class="nav-icon material-symbols-rounded">event_busy</span>
                             <span class="nav-label">Dry Day</span>
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a href="shortcut_manager.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">event_busy</span>
+                            <span class="nav-label">Shortcut Manager</span>
                         </a>
                     </li>
                 </ul>

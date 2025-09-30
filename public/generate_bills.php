@@ -35,66 +35,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         }
         $days_count = count($date_array);
         
-        // ========== UPDATED: Robust Sequential Bill Number Generation ==========
-        function getNextBillNumber($conn, $comp_id) {
-            // Create sequence table if it doesn't exist
-            $createTable = "CREATE TABLE IF NOT EXISTS tbl_bill_sequence (
-                comp_id INT PRIMARY KEY,
-                last_bill_number INT DEFAULT 0,
-                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )";
-            $conn->query($createTable);
-            
-            // Use transaction to ensure atomicity
-            $conn->begin_transaction();
-            
-            try {
-                // Get or create sequence for this company
-                $selectSql = "SELECT last_bill_number FROM tbl_bill_sequence WHERE comp_id = ? FOR UPDATE";
-                $selectStmt = $conn->prepare($selectSql);
-                $selectStmt->bind_param("i", $comp_id);
-                $selectStmt->execute();
-                $result = $selectStmt->get_result();
-                
-                if ($result->num_rows > 0) {
-                    $row = $result->fetch_assoc();
-                    $nextNumber = $row['last_bill_number'] + 1;
-                    
-                    // Update sequence
-                    $updateSql = "UPDATE tbl_bill_sequence SET last_bill_number = ? WHERE comp_id = ?";
-                    $updateStmt = $conn->prepare($updateSql);
-                    $updateStmt->bind_param("ii", $nextNumber, $comp_id);
-                    $updateStmt->execute();
-                    $updateStmt->close();
-                } else {
-                    $nextNumber = 1;
-                    
-                    // Insert new sequence
-                    $insertSql = "INSERT INTO tbl_bill_sequence (comp_id, last_bill_number) VALUES (?, ?)";
-                    $insertStmt = $conn->prepare($insertSql);
-                    $insertStmt->bind_param("ii", $comp_id, $nextNumber);
-                    $insertStmt->execute();
-                    $insertStmt->close();
-                }
-                
-                $selectStmt->close();
-                $conn->commit();
-                
-                return 'BL' . $nextNumber;
-                
-            } catch (Exception $e) {
-                $conn->rollback();
-                // Fallback to the original method if sequence table fails
-                return getNextBillNumberFallback($conn, $comp_id);
-            }
-        }
+        // In generate_bills.php, replace the getNextBillNumber function with:
+
+function getNextBillNumberForGenerate($conn, $comp_id) {
+    // Get the highest existing bill number numerically
+    $sql = "SELECT BILL_NO FROM tblsaleheader 
+            WHERE COMP_ID = ? 
+            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+            LIMIT 1";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $nextNumber = 1; // Default starting number
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $lastBillNo = $row['BILL_NO'];
         
-        // Fallback method using the original approach
+        // Extract numeric part and increment
+        if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+            $nextNumber = intval($matches[1]) + 1;
+        }
+    }
+    
+    $stmt->close();
+    return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+}
+        // Fallback method using the original approach with zero-padding
         function getNextBillNumberFallback($conn, $comp_id) {
             // Get the highest existing bill number numerically
             $sql = "SELECT BILL_NO FROM tblsaleheader 
                     WHERE COMP_ID = ? 
-                    ORDER BY LENGTH(BILL_NO) DESC, BILL_NO DESC 
+                    ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
                     LIMIT 1";
             
             $stmt = $conn->prepare($sql);
@@ -119,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             $attempts = 0;
             
             while ($billExists && $attempts < 10) {
-                $newBillNo = 'BL' . $nextNumber;
+                $newBillNo = 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
                 
                 // Check if this bill number already exists
                 $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
@@ -139,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
             }
             
             $stmt->close();
-            return 'BL' . $nextNumber;
+            return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         }
         // ========== END: Robust Sequential Bill Number Generation ==========
 
@@ -299,11 +274,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         $opening_stock_column = "Opening_Stock" . $comp_id;
         $daily_stock_table = "tbldailystock_" . $comp_id;
         
-        // ========== UPDATED: Sequential Bill Number Assignment ==========
+        // ========== UPDATED: Sequential Bill Number Assignment with Zero-Padding ==========
         $generated_bills = [];
         
+        // Sort bills chronologically
+        usort($bills, function($a, $b) {
+            return strtotime($a['bill_date']) - strtotime($b['bill_date']);
+        });
+        
         foreach ($bills as $index => $bill) {
-            // Generate sequential bill number for each bill
+            // Generate sequential bill number for each bill with zero-padding
             $sequential_bill_no = getNextBillNumber($conn, $comp_id);
             
             // Store bill info for reference

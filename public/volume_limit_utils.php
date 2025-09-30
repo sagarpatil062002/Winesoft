@@ -140,8 +140,8 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
     $category_limits = getCategoryLimits($conn, $comp_id);
     $bills = [];
     
-    // Get the starting bill number once
-    $next_bill = getNextBillNumber($conn);
+    // Get the starting bill number once - REMOVED DUPLICATE CALL
+    // $next_bill = getNextBillNumber($conn); // This is now handled in the main file
     
     foreach ($date_array as $date_index => $sale_date) {
         $daily_bills = [];
@@ -174,10 +174,11 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
         // Create bills using the UPDATED algorithm
         $bills_for_day = createOptimizedBills($all_items, $category_limits);
         
-        // Create actual bills
+        // Create actual bills - bill number assignment moved to main file
         foreach ($bills_for_day as $bill_items) {
             if (!empty($bill_items)) {
-                $daily_bills[] = createBill($bill_items, $sale_date, $next_bill++, $mode, $comp_id, $user_id);
+                // Pass 0 as bill number - will be assigned in main file
+                $daily_bills[] = createBill($bill_items, $sale_date, 0, $mode, $comp_id, $user_id);
             }
         }
         
@@ -302,11 +303,13 @@ function findBillItem($bill_items, $item_code) {
 }
 
 /**
- * Create a bill
+ * Create a bill - UPDATED to handle zero bill numbers
  */
 function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
     $total_amount = 0;
-    $bill_no_str = "BL" . $bill_no;
+    
+    // If bill_no is 0, don't assign a number (will be assigned in main file)
+    $bill_no_str = ($bill_no > 0) ? "BL" . str_pad($bill_no, 4, '0', STR_PAD_LEFT) : "TEMP";
     
     foreach ($items as $item) {
         $total_amount += $item['amount'];
@@ -321,22 +324,6 @@ function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
         'comp_id' => $comp_id,
         'user_id' => $user_id
     ];
-}
-
-/**
- * Get next bill number
- */
-function getNextBillNumber($conn) {
-    $conn->query("LOCK TABLES tblsaleheader WRITE");
-    
-    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-    $result = $conn->query($query);
-    $row = $result->fetch_assoc();
-    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-    
-    $conn->query("UNLOCK TABLES");
-    
-    return $next_bill;
 }
 
 /**

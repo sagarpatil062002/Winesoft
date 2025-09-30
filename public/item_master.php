@@ -115,53 +115,6 @@ function addDayColumnsForMonth($conn, $comp_id, $month) {
     }
 }
 
-// Function to archive previous month's data
-function archiveMonthlyData($conn, $comp_id, $month) {
-    // Replace hyphens with underscores for table name compatibility
-    $safe_month = str_replace('-', '_', $month);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
-    
-    // Check if archive table exists
-    $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                           WHERE table_schema = DATABASE() 
-                           AND table_name = '$archive_table'";
-    $check_result = $conn->query($check_archive_query);
-    $archive_exists = $check_result->fetch_assoc()['count'] > 0;
-    
-    if (!$archive_exists) {
-        // Create archive table with the same structure
-        $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
-        if (!$conn->query($create_archive_query)) {
-            error_log("Error creating archive table: " . $conn->error);
-            return false;
-        }
-    }
-    
-    // Copy data to archive
-    $copy_data_query = "INSERT INTO $archive_table SELECT * FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $copy_stmt = $conn->prepare($copy_data_query);
-    $copy_stmt->bind_param("s", $month);
-    if (!$copy_stmt->execute()) {
-        error_log("Error copying data to archive: " . $copy_stmt->error);
-        $copy_stmt->close();
-        return false;
-    }
-    $copy_stmt->close();
-    
-    // Delete archived data from main table
-    $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $delete_stmt = $conn->prepare($delete_query);
-    $delete_stmt->bind_param("s", $month);
-    if (!$delete_stmt->execute()) {
-        error_log("Error deleting archived data: " . $delete_stmt->error);
-        $delete_stmt->close();
-        return false;
-    }
-    $delete_stmt->close();
-    
-    return true;
-}
-
 // Function to get yesterday's closing stock for today's opening
 function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
     $yesterday = date('d', strtotime('-1 day'));
@@ -182,88 +135,6 @@ function getYesterdayClosingStock($conn, $comp_id, $item_code, $mode) {
     }
     
     return 0; // Return 0 if no record found for yesterday
-}
-
-// Function to create missing archive tables
-function createMissingArchiveTables($conn, $comp_id, $fin_year, $months) {
-    // Extract the starting year from financial year (e.g., "2025-26" -> "2025")
-    $fin_year_parts = explode('-', $fin_year);
-    $start_year = $fin_year_parts[0];
-    
-    foreach ($months as $month_num) {
-        $month_padded = str_pad($month_num, 2, '0', STR_PAD_LEFT);
-        $month = $start_year . '-' . $month_padded;
-        $safe_month = str_replace('-', '_', $month);
-        $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
-        
-        // Check if archive table already exists
-        $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                               WHERE table_schema = DATABASE() 
-                               AND table_name = '$archive_table'";
-        $check_result = $conn->query($check_archive_query);
-        $archive_exists = $check_result->fetch_assoc()['count'] > 0;
-        
-        if (!$archive_exists) {
-            // Create archive table with the same structure as the main table
-            $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
-            if ($conn->query($create_archive_query)) {
-                error_log("Created archive table: $archive_table");
-                
-                // Optionally copy existing data if available
-                $copy_data_query = "INSERT INTO $archive_table 
-                                   SELECT * FROM tbldailystock_$comp_id 
-                                   WHERE STK_MONTH = '$month'";
-                if ($conn->query($copy_data_query)) {
-                    $affected_rows = $conn->affected_rows;
-                    error_log("Copied $affected_rows records to $archive_table");
-                }
-            } else {
-                error_log("Error creating archive table: " . $conn->error);
-            }
-        } else {
-            error_log("Archive table $archive_table already exists");
-        }
-    }
-}
-
-// Only create missing archive tables if we're in development or specifically requested
-$development_mode = true; // Set to false in production after running once
-if ($development_mode && $comp_id == 1) {
-    // Months from April to August (financial year starts in April)
-    $missing_months = [4, 5, 6, 7, 8]; // Month numbers only
-    
-    // Call the function to create missing archive tables using the actual financial year
-    createMissingArchiveTables($conn, $comp_id, $fin_year, $missing_months);
-}
-
-// Check if we need to switch to a new month
-$current_month = date('Y-m');
-$check_current_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-$check_month_stmt = $conn->prepare($check_current_month_query);
-$check_month_stmt->bind_param("s", $current_month);
-$check_month_stmt->execute();
-$month_result = $check_month_stmt->get_result();
-$current_month_exists = $month_result->fetch_assoc()['count'] > 0;
-$check_month_stmt->close();
-
-if (!$current_month_exists) {
-    // Check if we have previous month data to archive
-    $previous_month = date('Y-m', strtotime('-1 month'));
-    $check_prev_month_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-    $check_prev_stmt = $conn->prepare($check_prev_month_query);
-    $check_prev_stmt->bind_param("s", $previous_month);
-    $check_prev_stmt->execute();
-    $prev_result = $check_prev_stmt->get_result();
-    $prev_month_exists = $prev_result->fetch_assoc()['count'] > 0;
-    $check_prev_stmt->close();
-    
-    if ($prev_month_exists) {
-        // Archive previous month's data
-        archiveMonthlyData($conn, $comp_id, $previous_month);
-    }
-    
-    // Add day columns for the new month
-    addDayColumnsForMonth($conn, $comp_id, $current_month);
 }
 
 // Function to update daily stock
@@ -380,6 +251,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $insert_daily_stmt->close();
     }
 }
+
 // Fetch class descriptions from tblclass
 $classDescriptions = [];
 $classQuery = "SELECT SGROUP, `DESC` FROM tblclass";
@@ -454,9 +326,15 @@ function getValidItemGroup($subclass, $liqFlag, $conn) {
     
     return 'O'; // Final fallback
 }
+
 // Function to detect class from item name
-function detectClassFromItemName($itemName) {
+function detectClassFromItemName($itemName, $liqFlag = 'F') {
     $itemName = strtoupper($itemName);
+    
+    // If LIQ_FLAG is 'C' (Country Liquor), return 'L'
+    if ($liqFlag === 'C') {
+        return 'L';
+    }
     
     // WHISKY Detection
     if (strpos($itemName, 'WHISKY') !== false || 
@@ -591,6 +469,7 @@ function detectClassFromItemName($itemName) {
     // Default to Others if no match found
     return 'O';
 }
+
 // Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
@@ -691,6 +570,7 @@ if (isset($_GET['export'])) {
         exit();
     }
 }
+
 // Handle import if form submitted
 $importMessage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && isset($_POST['import_type'])) {
@@ -779,75 +659,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             
                             $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
                             
-                            // Detect class from item name
-                            $class = detectClassFromItemName($itemName);
+                            // Detect class from item name with LIQ_FLAG context
+                            $detectedClass = detectClassFromItemName($itemName, $liqFlag);
                             
-                            // Check if class is allowed for this company's license
-                            if (!in_array($class, $allowed_classes)) {
+                            // If LIQ_FLAG is 'C' (Country Liquor), force class to 'L'
+                            if ($liqFlag === 'C') {
+                                $detectedClass = 'L';
+                            }
+                            
+                            // Validate class against license type
+                            if (!in_array($detectedClass, $allowed_classes)) {
                                 $errors++;
-                                $errorDetails[] = "Class '$class' not allowed for your license type '$license_type' for item $code";
+                                $errorDetails[] = "Item $code: Class '$detectedClass' not allowed for your license type '$license_type'";
                                 continue; // Skip this row
                             }
                             
-                            // Validate LIQ_FLAG exists in tblsubclass
-                            $checkLiqFlagQuery = "SELECT COUNT(*) as count FROM tblsubclass WHERE LIQ_FLAG = '$liqFlag'";
-                            $liqFlagResult = $conn->query($checkLiqFlagQuery);
-                            $liqFlagExists = $liqFlagResult->fetch_assoc()['count'] > 0;
+                            // Get valid ITEM_GROUP based on subclass description and LIQ_FLAG
+                            $validItemGroup = getValidItemGroup($subclass, $liqFlag, $conn);
                             
-                            if (!$liqFlagExists) {
-                                $errors++;
-                                $errorDetails[] = "LIQ_FLAG '$liqFlag' does not exist in tblsubclass for item $code";
-                                continue; // Skip this row
-                            }
-                            
-                            // Get valid ITEM_GROUP based on Subclass description and LIQ_FLAG
-                            $itemGroupField = getValidItemGroup($subclass, $liqFlag, $conn);
-                            
-                            // For SUB_CLASS, use the first character of subclass or a default
-                            $subClassField = !empty($subclass) ? substr($subclass, 0, 1) : 'O';
-                            
-                            // Check if item exists using prepared statement
+                            // Check if item already exists
                             $checkQuery->bind_param("ss", $code, $liqFlag);
                             $checkQuery->execute();
                             $checkResult = $checkQuery->get_result();
                             
                             if ($checkResult->num_rows > 0) {
-                                // Update existing item using prepared statement
-                                $updateQuery->bind_param("ssssssddddss", $printName, $itemName, $subclass, $class, $subClassField, $itemGroupField, $pprice, $bprice, $mprice, $rprice, $code, $liqFlag);
-                                
+                                // Update existing item
+                                $updateQuery->bind_param("ssssssddddss", 
+                                    $printName, $itemName, $subclass, $detectedClass, $subclass, $validItemGroup,
+                                    $pprice, $bprice, $mprice, $rprice, $code, $liqFlag
+                                );
                                 if ($updateQuery->execute()) {
                                     $updated++;
                                     
                                     // Update stock information
-                                    updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    updateItemStock($conn, $comp_id, $code, $liqFlag, $openingBalance);
                                 } else {
                                     $errors++;
-                                    $errorDetails[] = "Error updating $code: " . $conn->error;
+                                    $errorDetails[] = "Failed to update item $code: " . $updateQuery->error;
                                 }
                             } else {
-                                // Insert new item using prepared statement
-                                $insertQuery->bind_param("ssssssddddss", $code, $printName, $itemName, $subclass, $class, $subClassField, $itemGroupField, $pprice, $bprice, $mprice, $rprice, $liqFlag);
-                                
+                                // Insert new item
+                                $insertQuery->bind_param("ssssssddddss", 
+                                    $code, $printName, $itemName, $subclass, $detectedClass, $subclass, $validItemGroup,
+                                    $pprice, $bprice, $mprice, $rprice, $liqFlag
+                                );
                                 if ($insertQuery->execute()) {
                                     $imported++;
                                     
-                                    // Add stock information
-                                    updateItemStock($conn, $company_id, $code, $liqFlag, $openingBalance);
+                                    // Create stock information
+                                    updateItemStock($conn, $comp_id, $code, $liqFlag, $openingBalance);
                                 } else {
                                     $errors++;
-                                    $errorDetails[] = "Error inserting $code: " . $conn->error;
+                                    $errorDetails[] = "Failed to import item $code: " . $insertQuery->error;
                                 }
                             }
                         } else {
                             $errors++;
-                            $errorDetails[] = "Row with insufficient data: " . implode(',', $data);
-                        }
-                        
-                        // Free memory periodically for large imports
-                        if ($rowCount % 100 === 0) {
-                            if (function_exists('gc_collect_cycles')) {
-                                gc_collect_cycles();
-                            }
+                            $errorDetails[] = "Row $rowCount: Insufficient data columns";
                         }
                     }
                     
@@ -855,32 +723,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     $checkQuery->close();
                     $updateQuery->close();
                     $insertQuery->close();
-                    
                     fclose($handle);
                     
-                    $importMessage = "Import completed: $imported new items added, $updated items updated, $errors errors. Processed $rowCount rows total.";
-                    if (!empty($errorDetails)) {
-                        $importMessage .= " Error details: " . implode('; ', array_slice($errorDetails, 0, 5));
-                        if (count($errorDetails) > 5) {
-                            $importMessage .= " and " . (count($errorDetails) - 5) . " more errors.";
+                    $importMessage = "Import completed: $imported new items imported, $updated items updated, $errors errors.";
+                    if ($errors > 0) {
+                        $importMessage .= " Error details: " . implode("; ", array_slice($errorDetails, 0, 10));
+                        if (count($errorDetails) > 10) {
+                            $importMessage .= " and " . (count($errorDetails) - 10) . " more errors.";
                         }
                     }
+                } else {
+                    $importMessage = "Error: Could not open CSV file.";
                 }
             } else {
-                $importMessage = "Error: Only CSV files are supported for import.";
+                $importMessage = "Error: Please upload a valid CSV file.";
             }
         } catch (Exception $e) {
             $importMessage = "Error during import: " . $e->getMessage();
         }
     } else {
-        $importMessage = "Error uploading file. Please try again.";
+        $importMessage = "Error uploading file: " . $file['error'];
     }
 }
 
 // Fetch items from tblitemmaster for display - FILTERED BY LICENSE TYPE
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG
               FROM tblitemmaster
               WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
     
@@ -888,7 +757,7 @@ if (!empty($allowed_classes)) {
     $types = str_repeat('s', count($params));
 } else {
     // If no classes allowed, show empty result
-    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG
               FROM tblitemmaster
               WHERE 1 = 0"; // Always false condition
     $params = [];

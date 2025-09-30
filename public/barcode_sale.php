@@ -474,10 +474,12 @@ function prepareBillData() {
     ];
 }
 // Function to generate a unique bill number with transaction safety
+// FIXED: Function to generate sequential bill numbers with zero-padding
 function generateBillNumber($conn, $comp_id) {
     $conn->begin_transaction();
     
     try {
+        // Get the highest existing bill number numerically
         $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
                        FROM tblsaleheader 
                        WHERE COMP_ID = ? 
@@ -494,10 +496,38 @@ function generateBillNumber($conn, $comp_id) {
         }
         $bill_stmt->close();
         
+        // Safety check: Ensure bill number doesn't exist
+        $billExists = true;
+        $attempts = 0;
+        
+        while ($billExists && $attempts < 10) {
+            $newBillNo = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+            
+            // Check if this bill number already exists
+            $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+            $checkStmt = $conn->prepare($checkSql);
+            $checkStmt->bind_param("si", $newBillNo, $comp_id);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+            $checkRow = $checkResult->fetch_assoc();
+            
+            if ($checkRow['count'] == 0) {
+                $billExists = false;
+            } else {
+                $next_bill++; // Try next number
+                $attempts++;
+            }
+            $checkStmt->close();
+        }
+        
         $conn->commit();
-return "BL" . $next_bill;
+        
+        // Return with zero-padding to match sale_for_date_range.php
+        return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+        
     } catch (Exception $e) {
         $conn->rollback();
+        // Fallback: Use timestamp-based numbering
         $timestamp = time();
         $random_suffix = mt_rand(100, 999);
         return "BL" . substr($timestamp, -6) . $random_suffix;

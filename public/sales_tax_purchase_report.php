@@ -100,7 +100,6 @@ $company_stmt->close();
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-
 </head>
 <body>
 <div class="dashboard-container">
@@ -110,105 +109,109 @@ $company_stmt->close();
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <!-- Filters Section (Not Printable) -->
-      <div class="report-filters no-print">
-        <form method="GET" class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label">From Date</label>
-            <input type="date" class="form-control" name="from_date" value="<?= htmlspecialchars($from_date) ?>">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">To Date</label>
-            <input type="date" class="form-control" name="to_date" value="<?= htmlspecialchars($to_date) ?>">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Supplier</label>
-            <select class="form-select" name="supplier">
-              <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
-              <?php foreach ($suppliers as $code => $details): ?>
-                <option value="<?= htmlspecialchars($code) ?>" <?= $supplier === $code ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($details) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="col-md-12 mt-4">
-            <div class="btn-group">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-sync-alt"></i> Generate
+      <h3 class="mb-4">Purchase Report - Sales Tax</h3>
+
+      <!-- Report Filters -->
+      <div class="card filter-card mb-4 no-print">
+        <div class="card-header">Report Filters</div>
+        <div class="card-body">
+          <form method="GET" class="report-filters">
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Date From:</label>
+                <input type="date" name="from_date" class="form-control" value="<?= htmlspecialchars($from_date) ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Date To:</label>
+                <input type="date" name="to_date" class="form-control" value="<?= htmlspecialchars($to_date) ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Supplier:</label>
+                <select class="form-select" name="supplier">
+                  <option value="all" <?= $supplier === 'all' ? 'selected' : '' ?>>All Suppliers</option>
+                  <?php foreach ($suppliers as $code => $details): ?>
+                    <option value="<?= htmlspecialchars($code) ?>" <?= $supplier === $code ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($details) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
+            
+            <div class="action-controls">
+              <button type="submit" name="generate" class="btn btn-primary">
+                <i class="fas fa-cog me-1"></i> Generate Report
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
-                <i class="fas fa-print"></i> Print
+                <i class="fas fa-print me-1"></i> Print Report
               </button>
-              <a href="dashboard.php" class="btn btn-secondary">
-                <i class="fas fa-sign-out-alt"></i> Exit
+              <a href="dashboard.php" class="btn btn-secondary ms-auto">
+                <i class="fas fa-times me-1"></i> Exit
               </a>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
-      <!-- Printable Report Section -->
-      <div class="print-section">
-        <div class="print-header">
+      <!-- Report Results -->
+      <?php if (isset($_GET['from_date']) || isset($_GET['to_date']) || isset($_GET['supplier'])): ?>
+        <div class="print-section">
+          <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-          <h4>Purchase Report - Sales Tax</h4>
-        </div>
-
-        <!-- Report Header -->
-        <div class="report-header">
-          <div class="report-title">
-            Purchase Report - Sales Tax | From <?= $from_date_display ?> To <?= $to_date_display ?>
+            <h5>Purchase Report - Sales Tax From <?= $from_date_display ?> To <?= $to_date_display ?></h5>
             <?php if ($supplier !== 'all'): ?>
-              | Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?>
+              <p class="text-muted">Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?></p>
             <?php endif; ?>
           </div>
-        </div>
-
-        <!-- Report Table -->
-        <div class="table-container">
-          <table class="styled-table report-table">
-            <thead>
-              <tr>
-                <th>Supplier Name</th>
-                <th>Net Amt.</th>
-                <th>Sales Tax</th>
-                <th>Net Amt Wine</th>
-                <th>Total Amt.</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (!empty($purchases)): ?>
-                <?php foreach ($purchases as $purchase): ?>
-                  <tr>
-                    <td><?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?></td>
-                    <td class="text-right"><?= number_format($purchase['net_amt'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['sales_tax'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['net_amt_wine'], 2) ?></td>
-                    <td class="text-right"><?= number_format($purchase['total_amt'], 2) ?></td>
-                  </tr>
-                <?php endforeach; ?>
-                <tr class="total-row">
-                  <td class="text-center"><strong>Total</strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['sales_tax'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['net_amt_wine'], 2) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['total_amt'], 2) ?></strong></td>
-                </tr>
-              <?php else: ?>
+          
+          <div class="table-container">
+            <table class="report-table">
+              <thead>
                 <tr>
-                  <td colspan="5" class="text-center text-muted">No purchases found for the selected period.</td>
+                  <th>Supplier Name</th>
+                  <th class="text-right">Net Amt.</th>
+                  <th class="text-right">Sales Tax</th>
+                  <th class="text-right">Net Amt Wine</th>
+                  <th class="text-right">Total Amt.</th>
                 </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                <?php if (!empty($purchases)): ?>
+                  <?php foreach ($purchases as $purchase): ?>
+                    <tr>
+                      <td><?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?></td>
+                      <td class="text-right"><?= number_format($purchase['net_amt'], 2) ?></td>
+                      <td class="text-right"><?= number_format($purchase['sales_tax'], 2) ?></td>
+                      <td class="text-right"><?= number_format($purchase['net_amt_wine'], 2) ?></td>
+                      <td class="text-right"><?= number_format($purchase['total_amt'], 2) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                  <tr class="total-row">
+                    <td class="text-end"><strong>Total:</strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['sales_tax'], 2) ?></strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['net_amt_wine'], 2) ?></strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['total_amt'], 2) ?></strong></td>
+                  </tr>
+                <?php else: ?>
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">No purchases found for the selected period.</td>
+                  </tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+          
+         
+      <?php elseif (isset($_GET['from_date']) && empty($purchases)): ?>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i> No purchases found for the selected criteria.
         </div>
-      </div>
+      <?php endif; ?>
     </div>
-      <?php include 'components/footer.php'; ?>
-
+    
+    <?php include 'components/footer.php'; ?>
   </div>
-
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

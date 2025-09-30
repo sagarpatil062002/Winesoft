@@ -86,58 +86,6 @@ $current_date_time = date('d-M-Y h:i A');
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-  <style>
-    .report-table th {
-      background-color: #f8f9fa;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .total-row {
-      font-weight: bold;
-      background-color: #e9ecef;
-    }
-    .print-header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .print-footer {
-      margin-top: 30px;
-      font-size: 12px;
-      text-align: center;
-    }
-    .company-name {
-      font-size: 24px;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-    .report-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .financial-year {
-      font-size: 14px;
-      margin-bottom: 15px;
-    }
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      .print-section {
-        display: block !important;
-      }
-      body {
-        font-size: 12px;
-      }
-      .report-table {
-        font-size: 11px;
-      }
-      .print-header, .print-footer {
-        display: block !important;
-      }
-    }
-  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -147,77 +95,93 @@ $current_date_time = date('d-M-Y h:i A');
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <!-- Filters Section (Not Printable) -->
-      <div class="report-filters no-print">
-        <form method="GET" class="row g-3">
-          <div class="col-md-2">
-            <label class="form-label">From Date</label>
-            <input type="date" class="form-control" name="from_date" value="<?= htmlspecialchars($from_date) ?>">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label">To Date</label>
-            <input type="date" class="form-control" name="to_date" value="<?= htmlspecialchars($to_date) ?>">
-          </div>
-          <div class="col-md-12 mt-4">
-            <div class="btn-group">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-sync-alt"></i> Generate
+      <h3 class="mb-4">Purchase Summary Case Report</h3>
+
+      <!-- Report Filters -->
+      <div class="card filter-card mb-4 no-print">
+        <div class="card-header">Report Filters</div>
+        <div class="card-body">
+          <form method="GET" class="report-filters">
+            <div class="row mb-3">
+              <div class="col-md-3">
+                <label class="form-label">Date From:</label>
+                <input type="date" name="from_date" class="form-control" value="<?= htmlspecialchars($from_date) ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Date To:</label>
+                <input type="date" name="to_date" class="form-control" value="<?= htmlspecialchars($to_date) ?>">
+              </div>
+            </div>
+            
+            <div class="action-controls">
+              <button type="submit" name="generate" class="btn btn-primary">
+                <i class="fas fa-cog me-1"></i> Generate Report
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
-                <i class="fas fa-print"></i> Print
+                <i class="fas fa-print me-1"></i> Print Report
               </button>
-              <a href="dashboard.php" class="btn btn-secondary">
-                <i class="fas fa-sign-out-alt"></i> Exit
+              <a href="dashboard.php" class="btn btn-secondary ms-auto">
+                <i class="fas fa-times me-1"></i> Exit
               </a>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
-      <!-- Printable Report Section -->
-      <div class="print-section">
-        <div class="print-header">
-          <div class="company-name"><?= htmlspecialchars($companyName) ?></div>
-          <div class="report-title">Purchase Summary [Cases] For <?= date('Y', strtotime($fin_year['StartDate'])) ?> - <?= date('Y', strtotime($fin_year['EndDate'])) ?></div>
-          <div class="financial-year">Financial Year: <?= date('d/m/Y', strtotime($fin_year['StartDate'])) ?> To <?= date('d/m/Y', strtotime($fin_year['EndDate'])) ?></div>
-        </div>
-
-        <!-- Report Table -->
-        <div class="table-container">
-          <table class="styled-table report-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Cases</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if (!empty($purchase_data)): ?>
-                <?php foreach ($purchase_data as $data): ?>
-                  <tr>
-                    <td><?= htmlspecialchars($data['month_name']) ?></td>
-                    <td class="text-right"><?= number_format($data['total_cases'], 0) ?></td>
-                    <td class="text-right"><?= number_format($data['total_amount'], 2) ?></td>
-                  </tr>
-                <?php endforeach; ?>
-                <tr class="total-row">
-                  <td class="text-center"><strong>Total</strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['total_cases'], 0) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($totals['total_amount'], 2) ?></strong></td>
-                </tr>
-              <?php else: ?>
-                <tr>
-                  <td colspan="3" class="text-center text-muted">No purchase data found for the selected period.</td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-
+      <!-- Report Results -->
+      <?php if (isset($_GET['from_date']) || isset($_GET['to_date'])): ?>
+        <div class="print-section">
+          <div class="company-header">
+            <h1><?= htmlspecialchars($companyName) ?></h1>
+            <h5>Purchase Summary [Cases] For <?= date('Y', strtotime($fin_year['StartDate'])) ?> - <?= date('Y', strtotime($fin_year['EndDate'])) ?></h5>
+            <p class="text-muted">Financial Year: <?= date('d/m/Y', strtotime($fin_year['StartDate'])) ?> To <?= date('d/m/Y', strtotime($fin_year['EndDate'])) ?></p>
           </div>
+          
+          <div class="table-container">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Month</th>
+                  <th class="text-right">Cases</th>
+                  <th class="text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php if (!empty($purchase_data)): ?>
+                  <?php foreach ($purchase_data as $data): ?>
+                    <tr>
+                      <td><?= htmlspecialchars($data['month_name']) ?></td>
+                      <td class="text-right"><?= number_format($data['total_cases'], 0) ?></td>
+                      <td class="text-right"><?= number_format($data['total_amount'], 2) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                  <tr class="total-row">
+                    <td class="text-end"><strong>Total:</strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['total_cases'], 0) ?></strong></td>
+                    <td class="text-right"><strong><?= number_format($totals['total_amount'], 2) ?></strong></td>
+                  </tr>
+                <?php else: ?>
+                  <tr>
+                    <td colspan="3" class="text-center text-muted">No purchase data found for the selected period.</td>
+                  </tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="footer-info">
+            <p>S. S. SoftTech, Pune. (020-30224741, 9371251623, 9657860662)</p>
+            <p>Printed on: <?= date('d-M-Y h:i A') ?></p>
+          </div>
+        </div>
+      <?php elseif (isset($_GET['from_date']) && empty($purchase_data)): ?>
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle me-2"></i> No purchase data found for the selected criteria.
+        </div>
+      <?php endif; ?>
     </div>
-      <?php include 'components/footer.php'; ?>
+    
+    <?php include 'components/footer.php'; ?>
   </div>
 </div>
 

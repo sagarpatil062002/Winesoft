@@ -148,16 +148,13 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
- 
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Billwise Detailed Report</h3>
@@ -194,7 +191,7 @@ if (isset($_GET['generate'])) {
             
             <div class="action-controls">
               <button type="submit" name="generate" class="btn btn-primary">
-                <i class="fas fa-cog me-1"></i> Generate
+                <i class="fas fa-cog me-1"></i> Generate Report
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
@@ -208,80 +205,80 @@ if (isset($_GET['generate'])) {
       </div>
 
       <!-- Report Results -->
-      <?php if (!empty($report_data)): ?>
+      <?php if (isset($_GET['generate'])): ?>
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
             <h5>Billwise Detailed Report For <?= date('d-M-Y', strtotime($bill_date)) ?></h5>
             <?php if ($report_mode === 'particular' && !empty($bill_no)): ?>
-              <h6>Bill No: <?= htmlspecialchars($bill_no) ?></h6>
+              <p class="text-muted">Bill No: <?= htmlspecialchars($bill_no) ?></p>
             <?php endif; ?>
           </div>
           
           <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th class="text-center">S. No.</th>
-                  <th class="text-center">Date</th>
-                  <th class="text-center">Bill No.</th>
-                  <th class="text-center">TBL No.</th>
-                  <th>Item Description</th>
-                  <th class="text-right">Rate</th>
-                  <th class="text-center">Qty.</th>
-                  <th class="text-center">Size</th>
-                  <th class="text-right">Tot. Amt.</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php 
-                $sno = 1;
-                foreach ($grouped_data as $bill_no_key => $bill_data): 
-                ?>
-                  <tr class="bill-header">
-                    <td colspan="9">
-                      <strong>Bill No:</strong> <?= htmlspecialchars($bill_no_key) ?> | 
-                      <strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['date'])) ?> | 
-                      <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
-                      <strong>Type:</strong> <?= htmlspecialchars($bill_data['sale_type']) ?>
-                    </td>
-                  </tr>
-                  
-                  <?php foreach ($bill_data['items'] as $item): ?>
+            <?php if (!empty($report_data)): ?>
+              <table class="report-table">
+                <thead>
                   <tr>
-                    <td class="text-center"><?= $sno++ ?></td>
-                    <td class="text-center"><?= date('d/m/Y', strtotime($item['DATE'])) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($bill_no_key) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($bill_data['customer']) ?></td>
-                    <td><?= htmlspecialchars($item['ItemName']) ?></td>
-                    <td class="text-right"><?= isset($item['RATE']) ? number_format($item['RATE'], 2) : number_format($item['Rate'], 2) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($item['Quantity']) ?></td>
-                    <td class="text-center"><?= !empty($item['ItemSize']) ? htmlspecialchars($item['ItemSize']) : '-' ?></td>
-                    <td class="text-right"><?= isset($item['AMOUNT']) ? number_format($item['AMOUNT'], 2) : number_format($item['Amount'], 2) ?></td>
+                    <th class="text-center">S. No.</th>
+                    <th class="text-center">Date</th>
+                    <th class="text-center">Bill No.</th>
+                    <th class="text-center">TBL No.</th>
+                    <th>Item Description</th>
+                    <th class="text-right">Rate</th>
+                    <th class="text-center">Qty.</th>
+                    <th class="text-center">Size</th>
+                    <th class="text-right">Tot. Amt.</th>
                   </tr>
+                </thead>
+                <tbody>
+                  <?php 
+                  $sno = 1;
+                  foreach ($grouped_data as $bill_no_key => $bill_data): 
+                  ?>
+                    <tr class="bill-header">
+                      <td colspan="9">
+                        <strong>Bill No:</strong> <?= htmlspecialchars($bill_no_key) ?> | 
+                        <strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['date'])) ?> | 
+                        <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
+                        <strong>Type:</strong> <?= htmlspecialchars($bill_data['sale_type']) ?>
+                      </td>
+                    </tr>
+                    
+                    <?php foreach ($bill_data['items'] as $item): ?>
+                    <tr>
+                      <td class="text-center"><?= $sno++ ?></td>
+                      <td class="text-center"><?= date('d/m/Y', strtotime($item['DATE'])) ?></td>
+                      <td class="text-center"><?= htmlspecialchars($bill_no_key) ?></td>
+                      <td class="text-center"><?= htmlspecialchars($bill_data['customer']) ?></td>
+                      <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                      <td class="text-right"><?= isset($item['RATE']) ? number_format($item['RATE'], 2) : number_format($item['Rate'], 2) ?></td>
+                      <td class="text-center"><?= htmlspecialchars($item['Quantity']) ?></td>
+                      <td class="text-center"><?= !empty($item['ItemSize']) ? htmlspecialchars($item['ItemSize']) : '-' ?></td>
+                      <td class="text-right"><?= isset($item['AMOUNT']) ? number_format($item['AMOUNT'], 2) : number_format($item['Amount'], 2) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    
                   <?php endforeach; ?>
                   
-                <?php endforeach; ?>
-                
-                <tr class="total-row">
-                  <td colspan="8" class="text-end"><strong>Total Amount :</strong></td>
-                  <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
-                </tr>
-              </tbody>
-            </table>
+                  <tr class="total-row">
+                    <td colspan="8" class="text-end"><strong>Total Amount:</strong></td>
+                    <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            <?php else: ?>
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> No bill records found for the selected criteria.
+              </div>
+            <?php endif; ?>
           </div>
           
-        </div>
-      <?php elseif (isset($_GET['generate'])): ?>
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i> No bill records found for the selected criteria.
-        </div>
       <?php endif; ?>
     </div>
     
-  <?php include 'components/footer.php'; ?>
+    <?php include 'components/footer.php'; ?>
   </div>
-  
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

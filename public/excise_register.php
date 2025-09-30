@@ -40,21 +40,6 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Determine which daily stock table to use based on company ID
-$dailyStockTable = "tbldailystock_" . $compID;
-
-// Check if the table exists, if not use default tbldailystock_1
-$tableCheckQuery = "SHOW TABLES LIKE '$dailyStockTable'";
-$tableCheckResult = $conn->query($tableCheckQuery);
-if ($tableCheckResult->num_rows == 0) {
-    $dailyStockTable = "tbldailystock_1";
-}
-
-// Check if the table has DAY_31 columns (for months with less than 31 days)
-$checkDay31Query = "SHOW COLUMNS FROM $dailyStockTable LIKE 'DAY_31_OPEN'";
-$day31Result = $conn->query($checkDay31Query);
-$hasDay31Columns = ($day31Result->num_rows > 0);
-
 // Function to group sizes by base size (remove suffixes after ML and trim)
 function getBaseSize($size) {
     // Extract the base size (everything before any special characters after ML)
@@ -217,6 +202,63 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
+// Function to get table name for a specific date
+function getTableForDate($conn, $compID, $date) {
+    $current_month = date('Y-m');
+    $target_month = date('Y-m', strtotime($date));
+    
+    // If current month, use main table
+    if ($target_month == $current_month) {
+        $tableName = "tbldailystock_" . $compID;
+    } else {
+        // For previous months, use archive table format: tbldailystock_compID_MM_YY
+        $month = date('m', strtotime($date));
+        $year = date('y', strtotime($date));
+        $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
+    }
+    
+    // Check if table exists
+    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
+    $tableCheckResult = $conn->query($tableCheckQuery);
+    
+    if ($tableCheckResult->num_rows == 0) {
+        // If archive table doesn't exist, fall back to main table
+        $tableName = "tbldailystock_" . $compID;
+        
+        // Check if main table exists, if not use default
+        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
+        $tableCheckResult2 = $conn->query($tableCheckQuery2);
+        if ($tableCheckResult2->num_rows == 0) {
+            $tableName = "tbldailystock_1";
+        }
+    }
+    
+    return $tableName;
+}
+
+// Function to check if table has specific day columns
+function tableHasDayColumns($conn, $tableName, $day) {
+    $day_padded = sprintf('%02d', $day);
+    
+    // Check if all required columns for this day exist
+    $columns_to_check = [
+        "DAY_{$day_padded}_OPEN",
+        "DAY_{$day_padded}_PURCHASE", 
+        "DAY_{$day_padded}_SALES",
+        "DAY_{$day_padded}_CLOSING"
+    ];
+    
+    foreach ($columns_to_check as $column) {
+        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
+        $columnResult = $conn->query($checkColumnQuery);
+        if ($columnResult->num_rows == 0) {
+            return false; // Column doesn't exist
+        }
+    }
+    
+    return true; // All columns exist
+}
+
 // Fetch T.P. Nos from tblpurchases for each date
 foreach ($dates as $date) {
     $tpQuery = "SELECT DISTINCT TPNO FROM tblpurchases WHERE DATE = ? AND CompID = ?";
@@ -240,124 +282,121 @@ foreach ($dates as $date) {
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
-    $days_in_month = date('t', strtotime($date));
     
-    // Skip if day exceeds month length AND table doesn't have DAY_31 columns
-    if ($day > $days_in_month && !$hasDay31Columns) {
-        // Skip this date as it doesn't exist in this month
+    // Get appropriate table for this date
+    $dailyStockTable = getTableForDate($conn, $compID, $date);
+    
+    // Check if this specific table has columns for this specific day
+    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
+        // Skip this date as the table doesn't have columns for this day
         continue;
     }
     
-    // Only proceed if:
-    // - Day is within month length, OR
-    // - Table has DAY_31 columns (even for shorter months)
-    if ($day <= $days_in_month || $hasDay31Columns) {
-        $day_padded = sprintf('%02d', $day);
+    $day_padded = sprintf('%02d', $day);
+    
+    // Initialize daily data for this date
+    $daily_data[$date] = [
+        'Spirits' => [
+            'opening' => array_fill_keys($display_sizes_s, 0),
+            'purchase' => array_fill_keys($display_sizes_s, 0),
+            'sales' => array_fill_keys($display_sizes_s, 0),
+            'closing' => array_fill_keys($display_sizes_s, 0)
+        ],
+        'Wines' => [
+            'opening' => array_fill_keys($display_sizes_w, 0),
+            'purchase' => array_fill_keys($display_sizes_w, 0),
+            'sales' => array_fill_keys($display_sizes_w, 0),
+            'closing' => array_fill_keys($display_sizes_w, 0)
+        ],
+        'Fermented Beer' => [
+            'opening' => array_fill_keys($display_sizes_fb, 0),
+            'purchase' => array_fill_keys($display_sizes_fb, 0),
+            'sales' => array_fill_keys($display_sizes_fb, 0),
+            'closing' => array_fill_keys($display_sizes_fb, 0)
+        ],
+        'Mild Beer' => [
+            'opening' => array_fill_keys($display_sizes_mb, 0),
+            'purchase' => array_fill_keys($display_sizes_mb, 0),
+            'sales' => array_fill_keys($display_sizes_mb, 0),
+            'closing' => array_fill_keys($display_sizes_mb, 0)
+        ]
+    ];
+    
+    // Fetch stock data for this specific day
+    $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                  DAY_{$day_padded}_OPEN as opening,
+                  DAY_{$day_padded}_PURCHASE as purchase, 
+                  DAY_{$day_padded}_SALES as sales, 
+                  DAY_{$day_padded}_CLOSING as closing 
+                  FROM $dailyStockTable 
+                  WHERE STK_MONTH = ?";
+    
+    $stockStmt = $conn->prepare($stockQuery);
+    $stockStmt->bind_param("s", $month);
+    $stockStmt->execute();
+    $stockResult = $stockStmt->get_result();
+    
+    while ($row = $stockResult->fetch_assoc()) {
+        $item_code = $row['ITEM_CODE'];
         
-        // Initialize daily data for this date
-        $daily_data[$date] = [
-            'Spirits' => [
-                'opening' => array_fill_keys($display_sizes_s, 0),
-                'purchase' => array_fill_keys($display_sizes_s, 0),
-                'sales' => array_fill_keys($display_sizes_s, 0),
-                'closing' => array_fill_keys($display_sizes_s, 0)
-            ],
-            'Wines' => [
-                'opening' => array_fill_keys($display_sizes_w, 0),
-                'purchase' => array_fill_keys($display_sizes_w, 0),
-                'sales' => array_fill_keys($display_sizes_w, 0),
-                'closing' => array_fill_keys($display_sizes_w, 0)
-            ],
-            'Fermented Beer' => [
-                'opening' => array_fill_keys($display_sizes_fb, 0),
-                'purchase' => array_fill_keys($display_sizes_fb, 0),
-                'sales' => array_fill_keys($display_sizes_fb, 0),
-                'closing' => array_fill_keys($display_sizes_fb, 0)
-            ],
-            'Mild Beer' => [
-                'opening' => array_fill_keys($display_sizes_mb, 0),
-                'purchase' => array_fill_keys($display_sizes_mb, 0),
-                'sales' => array_fill_keys($display_sizes_mb, 0),
-                'closing' => array_fill_keys($display_sizes_mb, 0)
-            ]
-        ];
+        // Skip if item not found in master
+        if (!isset($items[$item_code])) continue;
         
-        // Fetch stock data for this specific day
-        $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                      DAY_{$day_padded}_OPEN as opening,
-                      DAY_{$day_padded}_PURCHASE as purchase, 
-                      DAY_{$day_padded}_SALES as sales, 
-                      DAY_{$day_padded}_CLOSING as closing 
-                      FROM $dailyStockTable 
-                      WHERE STK_MONTH = ?";
+        $item_details = $items[$item_code];
+        $size = $item_details['DETAILS2'];
+        $class = $item_details['CLASS'];
+        $liq_flag = $item_details['LIQ_FLAG'];
         
-        $stockStmt = $conn->prepare($stockQuery);
-        $stockStmt->bind_param("s", $month);
-        $stockStmt->execute();
-        $stockResult = $stockStmt->get_result();
+        // Determine liquor type
+        $liquor_type = getLiquorType($class, $liq_flag);
         
-        while ($row = $stockResult->fetch_assoc()) {
-            $item_code = $row['ITEM_CODE'];
-            
-            // Skip if item not found in master
-            if (!isset($items[$item_code])) continue;
-            
-            $item_details = $items[$item_code];
-            $size = $item_details['DETAILS2'];
-            $class = $item_details['CLASS'];
-            $liq_flag = $item_details['LIQ_FLAG'];
-            
-            // Determine liquor type
-            $liquor_type = getLiquorType($class, $liq_flag);
-            
-            // Map database size to Excel size
-            $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
-            
-            // Get grouped size for display
-            $grouped_size = getGroupedSize($excel_size, $liquor_type);
-            
-            // Add to daily data based on liquor type and grouped size
-            switch ($liquor_type) {
-                case 'Spirits':
-                    if (in_array($grouped_size, $display_sizes_s)) {
-                        $daily_data[$date]['Spirits']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Spirits']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Spirits']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Wines':
-                    if (in_array($grouped_size, $display_sizes_w)) {
-                        $daily_data[$date]['Wines']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Wines']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Wines']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Fermented Beer':
-                    if (in_array($grouped_size, $display_sizes_fb)) {
-                        $daily_data[$date]['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Mild Beer':
-                    if (in_array($grouped_size, $display_sizes_mb)) {
-                        $daily_data[$date]['Mild Beer']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-            }
+        // Map database size to Excel size
+        $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
+        
+        // Get grouped size for display
+        $grouped_size = getGroupedSize($excel_size, $liquor_type);
+        
+        // Add to daily data based on liquor type and grouped size
+        switch ($liquor_type) {
+            case 'Spirits':
+                if (in_array($grouped_size, $display_sizes_s)) {
+                    $daily_data[$date]['Spirits']['opening'][$grouped_size] += $row['opening'];
+                    $daily_data[$date]['Spirits']['purchase'][$grouped_size] += $row['purchase'];
+                    $daily_data[$date]['Spirits']['sales'][$grouped_size] += $row['sales'];
+                    $daily_data[$date]['Spirits']['closing'][$grouped_size] += $row['closing'];
+                }
+                break;
+                
+            case 'Wines':
+                if (in_array($grouped_size, $display_sizes_w)) {
+                    $daily_data[$date]['Wines']['opening'][$grouped_size] += $row['opening'];
+                    $daily_data[$date]['Wines']['purchase'][$grouped_size] += $row['purchase'];
+                    $daily_data[$date]['Wines']['sales'][$grouped_size] += $row['sales'];
+                    $daily_data[$date]['Wines']['closing'][$grouped_size] += $row['closing'];
+                }
+                break;
+                
+            case 'Fermented Beer':
+                if (in_array($grouped_size, $display_sizes_fb)) {
+                    $daily_data[$date]['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                    $daily_data[$date]['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
+                    $daily_data[$date]['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
+                    $daily_data[$date]['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
+                }
+                break;
+                
+            case 'Mild Beer':
+                if (in_array($grouped_size, $display_sizes_mb)) {
+                    $daily_data[$date]['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                    $daily_data[$date]['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
+                    $daily_data[$date]['Mild Beer']['sales'][$grouped_size] += $row['sales'];
+                    $daily_data[$date]['Mild Beer']['closing'][$grouped_size] += $row['closing'];
+                }
+                break;
         }
-        
-        $stockStmt->close();
     }
+    
+    $stockStmt->close();
 }
 
 // Calculate total columns count for table formatting
@@ -733,7 +772,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php 
                 $date_count = 0;
                 foreach ($dates as $date): 
-                  // Skip if this date was not processed due to month length constraints
+                  // Skip if this date was not processed due to missing columns
                   if (!isset($daily_data[$date])) continue;
                   
                   $day_num = date('d', strtotime($date));

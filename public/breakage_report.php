@@ -121,15 +121,13 @@ function extractSizeFromDescription($description) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">Item Wise Breakages Report</h3>
@@ -152,7 +150,7 @@ function extractSizeFromDescription($description) {
             
             <div class="action-controls">
               <button type="submit" name="generate" class="btn btn-primary">
-                <i class="fas fa-cog me-1"></i> Generate
+                <i class="fas fa-cog me-1"></i> Generate Report
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
@@ -202,10 +200,7 @@ function extractSizeFromDescription($description) {
             </table>
           </div>
           
-          <div class="footer-info">
-            <p>S. S. SoftTech, Pune. (020-30224741, 9371251623, 9657860662)</p>
-            <p>Printed on: <?= date('d-M-Y h:i A') ?></p>
-          </div>
+          
         </div>
       <?php elseif (isset($_GET['generate'])): ?>
         <div class="alert alert-info">
@@ -214,9 +209,8 @@ function extractSizeFromDescription($description) {
       <?php endif; ?>
     </div>
     
-  <?php include 'components/footer.php'; ?>
+    <?php include 'components/footer.php'; ?>
   </div>
-  
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
