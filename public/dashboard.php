@@ -16,21 +16,29 @@ include_once "../config/db.php";
 require_once 'license_functions.php';
 
 // =============================================================================
-// GAP DETECTION AND FIXING LOGIC (UPDATED FOR ACTUAL TABLE STRUCTURE)
+// COMPLETE MONTH TRANSITION SYSTEM WITH GAP FILLING
 // =============================================================================
-
-/**
- * Get current month days (28, 29, 30, or 31)
- */
-function getCurrentMonthDays() {
-    return (int)date('t');
-}
 
 /**
  * Get current month in YYYY-MM format
  */
 function getCurrentMonth() {
     return date('Y-m');
+}
+
+/**
+ * Get previous month in YYYY-MM format
+ */
+function getPreviousMonth() {
+    return date('Y-m', strtotime('first day of previous month'));
+}
+
+/**
+ * Get month suffix for table names (MM_YY format)
+ */
+function getMonthSuffix($month) {
+    $date = DateTime::createFromFormat('Y-m', $month);
+    return $date->format('m_y');
 }
 
 /**
@@ -59,39 +67,97 @@ function doesDayColumnsExist($conn, $tableName, $day) {
 }
 
 /**
- * Detect gaps in a company's live daily stock table
+ * Check if archive table already exists
  */
-function detectGapsInLiveTable($conn, $tableName, $companyId) {
-    $currentDay = (int)date('j');
-    $daysInMonth = getCurrentMonthDays();
-    $currentMonth = getCurrentMonth();
+function archiveTableExists($conn, $tableName) {
+    $stmt = $conn->prepare("SHOW TABLES LIKE ?");
+    $stmt->bind_param("s", $tableName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $exists = $result->num_rows > 0;
+    $stmt->close();
+    return $exists;
+}
+
+/**
+ * Create archive table and copy data
+ */
+function createArchiveTable($conn, $sourceTable, $archiveTable, $month) {
+    $results = [];
     
-    // Safety: never exceed current month
-    $currentDay = min($currentDay, $daysInMonth);
+    try {
+        // Check if archive table already exists
+        if (archiveTableExists($conn, $archiveTable)) {
+            return [
+                'success' => false,
+                'error' => "Archive table {$archiveTable} already exists"
+            ];
+        }
+        
+        // Step 1: Create archive table structure (same as source table)
+        $createQuery = "CREATE TABLE `{$archiveTable}` LIKE `{$sourceTable}`";
+        if (!$conn->query($createQuery)) {
+            throw new Exception("Failed to create archive table structure: " . $conn->error);
+        }
+        
+        // Step 2: Copy data from source to archive table for the specific month
+        $copyQuery = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}` WHERE STK_MONTH = '{$month}'";
+        if (!$conn->query($copyQuery)) {
+            // If copy fails, drop the created table to avoid orphaned tables
+            $conn->query("DROP TABLE IF EXISTS `{$archiveTable}`");
+            throw new Exception("Failed to copy data to archive: " . $conn->error);
+        }
+        
+        $copiedRows = $conn->affected_rows;
+        
+        $results = [
+            'success' => true,
+            'copied_rows' => $copiedRows,
+            'archive_table' => $archiveTable,
+            'source_month' => $month
+        ];
+        
+    } catch (Exception $e) {
+        $results = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+    
+    return $results;
+}
+
+/**
+ * Detect gaps in a specific month's table
+ */
+function detectGapsInMonth($conn, $tableName, $month) {
+    $daysInMonth = (int)date('t', strtotime($month . '-01'));
+    
+    // For previous months, check all days
+    $checkUptoDay = $daysInMonth;
     
     // Find the last day that has data
     $lastCompleteDay = 0;
     $gaps = [];
     
-    for ($day = 1; $day <= $currentDay; $day++) {
+    for ($day = 1; $day <= $checkUptoDay; $day++) {
         // Check if columns exist for this day
         if (!doesDayColumnsExist($conn, $tableName, $day)) {
-            continue; // Skip if columns don't exist
+            continue;
         }
         
         $closingCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
         
         // Check if this day has any non-zero, non-null closing data
-        // Note: tbldailystock_1 doesn't have CompID, so we check by STK_MONTH only
         $checkStmt = $conn->prepare("
             SELECT COUNT(*) as has_data 
-            FROM {$tableName} 
+            FROM `{$tableName}` 
             WHERE {$closingCol} IS NOT NULL 
             AND {$closingCol} != 0 
             AND STK_MONTH = ?
             LIMIT 1
         ");
-        $checkStmt->bind_param("s", $currentMonth);
+        $checkStmt->bind_param("s", $month);
         $checkStmt->execute();
         $result = $checkStmt->get_result();
         $row = $result->fetch_assoc();
@@ -107,45 +173,34 @@ function detectGapsInLiveTable($conn, $tableName, $companyId) {
         }
     }
     
-    // Special case: if no data found at all, all days are gaps
-    if ($lastCompleteDay === 0 && $currentDay > 1) {
-        for ($day = 1; $day <= $currentDay; $day++) {
-            if (doesDayColumnsExist($conn, $tableName, $day)) {
-                $gaps[] = $day;
-            }
-        }
-    }
-    
     return [
         'last_complete_day' => $lastCompleteDay,
         'gaps' => $gaps,
-        'current_day' => $currentDay,
         'days_in_month' => $daysInMonth,
-        'current_month' => $currentMonth
+        'month' => $month
     ];
 }
 
 /**
- * Auto-populate gaps in live table
+ * Auto-populate gaps in a specific month
  */
-function autoPopulateLiveTable($conn, $tableName, $companyId, $gaps, $lastCompleteDay) {
+function autoPopulateMonthGaps($conn, $tableName, $month, $gaps, $lastCompleteDay) {
     $results = [];
-    $currentMonth = getCurrentMonth();
+    $gapsFilled = 0;
     
     // If no last complete day, we can't populate gaps
     if ($lastCompleteDay === 0) {
-        foreach ($gaps as $day) {
-            $results[$day] = [
-                'success' => false,
-                'error' => 'No source data available to copy from'
-            ];
-        }
-        return $results;
+        return [
+            'success' => false,
+            'error' => 'No source data available to copy from',
+            'gaps_filled' => 0
+        ];
     }
     
     foreach ($gaps as $day) {
-        // Safety check - don't exceed current month
-        if ($day > getCurrentMonthDays()) {
+        // Safety check - don't exceed month days
+        $monthDays = (int)date('t', strtotime($month . '-01'));
+        if ($day > $monthDays) {
             continue;
         }
         
@@ -168,9 +223,8 @@ function autoPopulateLiveTable($conn, $tableName, $companyId, $gaps, $lastComple
         
         try {
             // Copy data: Opening = Previous day's closing, Purchase/Sales = 0, Closing = Opening
-            // Note: tbldailystock_1 doesn't have CompID, so we update by STK_MONTH only
             $updateStmt = $conn->prepare("
-                UPDATE {$tableName} 
+                UPDATE `{$tableName}` 
                 SET 
                     {$targetOpen} = {$sourceClosing},
                     {$targetPurchase} = 0,
@@ -179,10 +233,14 @@ function autoPopulateLiveTable($conn, $tableName, $companyId, $gaps, $lastComple
                 WHERE STK_MONTH = ?
                 AND {$sourceClosing} IS NOT NULL
             ");
-            $updateStmt->bind_param("s", $currentMonth);
+            $updateStmt->bind_param("s", $month);
             $updateStmt->execute();
             $affectedRows = $updateStmt->affected_rows;
             $updateStmt->close();
+            
+            if ($affectedRows > 0) {
+                $gapsFilled++;
+            }
             
             $results[$day] = [
                 'success' => true,
@@ -198,54 +256,132 @@ function autoPopulateLiveTable($conn, $tableName, $companyId, $gaps, $lastComple
         }
     }
     
+    return [
+        'success' => true,
+        'gaps_filled' => $gapsFilled,
+        'details' => $results
+    ];
+}
+
+/**
+ * Get last day's closing stock for a specific month
+ */
+function getLastDayClosing($conn, $tableName, $month) {
+    $daysInMonth = (int)date('t', strtotime($month . '-01'));
+    $lastDayCol = "DAY_" . str_pad($daysInMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    // Check if the column exists before querying
+    if (!doesDayColumnsExist($conn, $tableName, $daysInMonth)) {
+        return [];
+    }
+    
+    $stmt = $conn->prepare("
+        SELECT ITEM_CODE, {$lastDayCol} as closing_stock 
+        FROM `{$tableName}` 
+        WHERE STK_MONTH = ? 
+        AND {$lastDayCol} IS NOT NULL 
+        AND {$lastDayCol} != 0
+    ");
+    $stmt->bind_param("s", $month);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $closingData = [];
+    while ($row = $result->fetch_assoc()) {
+        $closingData[$row['ITEM_CODE']] = $row['closing_stock'];
+    }
+    
+    $stmt->close();
+    return $closingData;
+}
+
+/**
+ * Build dynamic day columns clearing query based on actual table structure
+ */
+function buildDayColumnsClearingQuery($conn, $tableName) {
+    $clearColumns = [];
+    
+    // Check which day columns actually exist in the table
+    for ($day = 2; $day <= 31; $day++) {
+        if (doesDayColumnsExist($conn, $tableName, $day)) {
+            $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $clearColumns[] = "DAY_{$dayPadded}_OPEN = 0";
+            $clearColumns[] = "DAY_{$dayPadded}_PURCHASE = 0";
+            $clearColumns[] = "DAY_{$dayPadded}_SALES = 0";
+            $clearColumns[] = "DAY_{$dayPadded}_CLOSING = 0";
+        }
+    }
+    
+    return implode(', ', $clearColumns);
+}
+
+/**
+ * Initialize new month with previous month's closing stock
+ */
+function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
+    $results = [];
+    
+    try {
+        // Get last day's closing stock from previous month
+        $closingData = getLastDayClosing($conn, $tableName, $previousMonth);
+        
+        if (empty($closingData)) {
+            return [
+                'success' => false,
+                'error' => "No closing stock data found for previous month {$previousMonth}"
+            ];
+        }
+        
+        // Build dynamic clearing query based on actual table structure
+        $clearColumnsQuery = buildDayColumnsClearingQuery($conn, $tableName);
+        
+        // Update existing records in the same table - change STK_MONTH and reset daily data
+        $updateCount = 0;
+        foreach ($closingData as $itemCode => $closingStock) {
+            $updateStmt = $conn->prepare("
+                UPDATE `{$tableName}` 
+                SET 
+                    STK_MONTH = ?,
+                    DAY_01_OPEN = ?,
+                    DAY_01_PURCHASE = 0,
+                    DAY_01_SALES = 0,
+                    DAY_01_CLOSING = ?,
+                    {$clearColumnsQuery}
+                WHERE STK_MONTH = ? 
+                AND ITEM_CODE = ?
+            ");
+            $updateStmt->bind_param("sdsss", $newMonth, $closingStock, $closingStock, $previousMonth, $itemCode);
+            $updateStmt->execute();
+            if ($updateStmt->affected_rows > 0) {
+                $updateCount++;
+            }
+            $updateStmt->close();
+        }
+        
+        $results = [
+            'success' => true,
+            'updated_items' => $updateCount,
+            'previous_month' => $previousMonth,
+            'new_month' => $newMonth
+        ];
+        
+    } catch (Exception $e) {
+        $results = [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+    
     return $results;
 }
 
 /**
- * Detect gaps for all companies
+ * Check if month transition is needed with gap detection
  */
-function detectAllCompanyGaps($conn) {
-    $companyGaps = [];
-    
-    // Define company tables - only check tables that exist for current company
+function checkMonthTransitionWithGaps($conn) {
     $currentCompanyId = $_SESSION['CompID'] ?? 1;
-    $companyTables = [
-        '1' => 'tbldailystock_1',
-        '2' => 'tbldailystock_2', 
-        '3' => 'tbldailystock_3'
-    ];
-    
-    // Only check the table for current company
-    if (isset($companyTables[$currentCompanyId])) {
-        $tableName = $companyTables[$currentCompanyId];
-        
-        // Check if table exists
-        $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-        if ($tableCheck->num_rows > 0) {
-            $gapInfo = detectGapsInLiveTable($conn, $tableName, $currentCompanyId);
-            if (!empty($gapInfo['gaps'])) {
-                $companyGaps[$currentCompanyId] = [
-                    'table_name' => $tableName,
-                    'company_id' => $currentCompanyId,
-                    'last_complete_day' => $gapInfo['last_complete_day'],
-                    'gaps' => $gapInfo['gaps'],
-                    'current_day' => $gapInfo['current_day'],
-                    'days_in_month' => $gapInfo['days_in_month'],
-                    'current_month' => $gapInfo['current_month']
-                ];
-            }
-        }
-    }
-    
-    return $companyGaps;
-}
-
-/**
- * Fix gaps for all companies
- */
-function fixAllCompanyGaps($conn) {
-    $results = [];
-    $currentCompanyId = $_SESSION['CompID'] ?? 1;
+    $currentMonth = getCurrentMonth();
+    $previousMonth = getPreviousMonth();
     
     // Define company tables
     $companyTables = [
@@ -254,63 +390,160 @@ function fixAllCompanyGaps($conn) {
         '3' => 'tbldailystock_3'
     ];
     
-    // Only process the table for current company
+    $transitionInfo = [];
+    
     if (isset($companyTables[$currentCompanyId])) {
         $tableName = $companyTables[$currentCompanyId];
         
+        // Check if table exists
         $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
         if ($tableCheck->num_rows > 0) {
-            $gapInfo = detectGapsInLiveTable($conn, $tableName, $currentCompanyId);
             
-            if (!empty($gapInfo['gaps'])) {
-                $fixResults = autoPopulateLiveTable(
+            // Check if current month data exists
+            $currentMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
+            $currentMonthStmt->bind_param("s", $currentMonth);
+            $currentMonthStmt->execute();
+            $currentMonthResult = $currentMonthStmt->get_result();
+            $currentMonthRow = $currentMonthResult->fetch_assoc();
+            $currentMonthStmt->close();
+            
+            // Check if previous month data exists
+            $prevMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
+            $prevMonthStmt->bind_param("s", $previousMonth);
+            $prevMonthStmt->execute();
+            $prevMonthResult = $prevMonthStmt->get_result();
+            $prevMonthRow = $prevMonthResult->fetch_assoc();
+            $prevMonthStmt->close();
+            
+            // Check for gaps in previous month
+            $previousMonthGaps = [];
+            $hasGaps = false;
+            if ($prevMonthRow['count'] > 0) {
+                $gapInfo = detectGapsInMonth($conn, $tableName, $previousMonth);
+                $hasGaps = !empty($gapInfo['gaps']);
+                $previousMonthGaps = $gapInfo;
+            }
+            
+            $transitionInfo = [
+                'company_id' => $currentCompanyId,
+                'table_name' => $tableName,
+                'current_month' => $currentMonth,
+                'previous_month' => $previousMonth,
+                'current_month_exists' => $currentMonthRow['count'] > 0,
+                'previous_month_exists' => $prevMonthRow['count'] > 0,
+                'has_gaps' => $hasGaps,
+                'gap_info' => $previousMonthGaps,
+                'needs_transition' => $prevMonthRow['count'] > 0 && !$currentMonthRow['count'] > 0
+            ];
+        }
+    }
+    
+    return $transitionInfo;
+}
+
+/**
+ * Execute complete month transition with gap filling
+ */
+function executeCompleteMonthTransition($conn) {
+    $currentCompanyId = $_SESSION['CompID'] ?? 1;
+    $currentMonth = getCurrentMonth();
+    $previousMonth = getPreviousMonth();
+    
+    // Define company tables
+    $companyTables = [
+        '1' => 'tbldailystock_1',
+        '2' => 'tbldailystock_2',
+        '3' => 'tbldailystock_3'
+    ];
+    
+    $results = [];
+    
+    if (isset($companyTables[$currentCompanyId])) {
+        $tableName = $companyTables[$currentCompanyId];
+        
+        try {
+            // Step 1: Fill gaps in previous month if any
+            $gapFillResult = ['success' => true, 'message' => 'No gaps to fill', 'gaps_filled' => 0];
+            $transitionInfo = checkMonthTransitionWithGaps($conn);
+            
+            if ($transitionInfo['has_gaps'] && !empty($transitionInfo['gap_info']['gaps'])) {
+                $gapFillResult = autoPopulateMonthGaps(
                     $conn, 
                     $tableName, 
-                    $currentCompanyId, 
-                    $gapInfo['gaps'], 
-                    $gapInfo['last_complete_day']
+                    $previousMonth, 
+                    $transitionInfo['gap_info']['gaps'], 
+                    $transitionInfo['gap_info']['last_complete_day']
                 );
-                
-                $results[$currentCompanyId] = [
-                    'company_id' => $currentCompanyId,
-                    'table_name' => $tableName,
-                    'gaps_fixed' => count($gapInfo['gaps']),
-                    'details' => $fixResults,
-                    'status' => 'fixed'
-                ];
-            } else {
-                $results[$currentCompanyId] = [
-                    'company_id' => $currentCompanyId,
-                    'table_name' => $tableName,
-                    'gaps_fixed' => 0,
-                    'status' => 'no_gaps'
-                ];
             }
+            
+            // Step 2: Create archive table for previous month
+            $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
+            $archiveResult = createArchiveTable($conn, $tableName, $archiveTable, $previousMonth);
+            
+            // Step 3: Initialize new month with previous month's closing stock
+            $initResult = ['success' => false, 'error' => 'Archive creation failed'];
+            if ($archiveResult['success']) {
+                $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
+            }
+            
+            $results = [
+                'company_id' => $currentCompanyId,
+                'table_name' => $tableName,
+                'gap_fill_result' => $gapFillResult,
+                'archive_result' => $archiveResult,
+                'init_result' => $initResult,
+                'previous_month' => $previousMonth,
+                'current_month' => $currentMonth,
+                'archive_table_name' => $archiveTable
+            ];
+            
+        } catch (Exception $e) {
+            $results = [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
         }
     }
     
     return $results;
 }
 
-// Handle gap fixing request
-$gapFixResults = null;
-if (isset($_POST['fix_data_gaps']) && $_POST['fix_data_gaps'] === '1') {
-    $gapFixResults = fixAllCompanyGaps($conn);
-    $_SESSION['gap_fix_message'] = "Data gaps have been automatically filled!";
+// Handle complete month transition request
+$transitionResults = null;
+if (isset($_POST['complete_month_transition']) && $_POST['complete_month_transition'] === '1') {
+    $transitionResults = executeCompleteMonthTransition($conn);
+    
+    if ($transitionResults && 
+        isset($transitionResults['archive_result']['success']) && 
+        $transitionResults['archive_result']['success'] && 
+        isset($transitionResults['init_result']['success']) && 
+        $transitionResults['init_result']['success']) {
+        
+        $_SESSION['transition_message'] = "Complete month transition processed successfully! Archive table created: " . $transitionResults['archive_table_name'];
+    } else {
+        $errorMsg = "Month transition failed: ";
+        if (isset($transitionResults['archive_result']['error'])) {
+            $errorMsg .= "Archive: " . $transitionResults['archive_result']['error'];
+        }
+        if (isset($transitionResults['init_result']['error'])) {
+            $errorMsg .= " Init: " . $transitionResults['init_result']['error'];
+        }
+        $_SESSION['transition_message'] = $errorMsg;
+    }
 }
 
-// Detect current gaps
-$companyGaps = detectAllCompanyGaps($conn);
+// Check if month transition is needed
+$transitionInfo = checkMonthTransitionWithGaps($conn);
 
 // Show success message if available
 $successMessage = '';
-if (isset($_SESSION['gap_fix_message'])) {
-    $successMessage = $_SESSION['gap_fix_message'];
-    unset($_SESSION['gap_fix_message']);
+if (isset($_SESSION['transition_message'])) {
+    $successMessage = $_SESSION['transition_message'];
+    unset($_SESSION['transition_message']);
 }
 
 // =============================================================================
-// EXISTING DASHBOARD STATISTICS LOGIC (Keep everything as is)
+// EXISTING DASHBOARD STATISTICS LOGIC
 // =============================================================================
 
 // Initialize stats array with default values
@@ -332,7 +565,7 @@ $stats = [
     'other_items' => 0
 ];
 
-// Fetch statistics data (your existing code)
+// Fetch statistics data
 try {
     // Check database connection
     if(!isset($conn) || !$conn instanceof mysqli) {
@@ -347,15 +580,18 @@ try {
         $result->free();
     }
 
-    // Total Customers (from tbllheads with GCODE 32 - Sundry Debtors)
-    $result = $conn->query("SELECT COUNT(*) as total FROM tbllheads WHERE GCODE = 32");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['total_customers'] = number_format($row['total']);
-        $result->free();
-    }
+    // Total Customers
+    $companyId = $_SESSION['CompID'] ?? 0;
+    $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
+    $customerCountStmt = $conn->prepare($customerCountQuery);
+    $customerCountStmt->bind_param("i", $companyId);
+    $customerCountStmt->execute();
+    $customerCountResult = $customerCountStmt->get_result();
+    $customerCount = $customerCountResult->fetch_assoc();
+    $stats['total_customers'] = number_format($customerCount['total_customers']);
+    $customerCountStmt->close();
 
-    // Total Suppliers (from tblsupplier)
+    // Total Suppliers
     $result = $conn->query("SELECT COUNT(DISTINCT CODE) as total FROM tblsupplier WHERE CODE IS NOT NULL");
     if($result) {
         $row = $result->fetch_assoc();
@@ -464,7 +700,6 @@ try {
     }
 
 } catch (Exception $e) {
-    // Handle error
     $error = "Database error: " . $e->getMessage();
 }
 ?>
@@ -481,7 +716,6 @@ try {
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
-    /* Enhanced Card Styles */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -528,16 +762,7 @@ try {
         color: #2D3748;
     }
     
-    .alert {
-        padding: 15px;
-        background-color: #fed7d7;
-        color: #c53030;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-    
-    /* Gap Detection Styles */
-    .gap-alert {
+    .transition-alert {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
@@ -546,33 +771,18 @@ try {
         margin-bottom: 25px;
     }
     
-    .gap-company {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 15px;
-        margin: 10px 0;
-    }
-    
-    .gap-days {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.2);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 14px;
-        margin: 5px 5px 5px 0;
-    }
-    
-    .btn-gap-fix {
+    .btn-transition {
         background: #ff6b6b;
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 12px 24px;
         border-radius: 6px;
         font-weight: bold;
         transition: all 0.3s ease;
+        font-size: 16px;
     }
     
-    .btn-gap-fix:hover {
+    .btn-transition:hover {
         background: #ff5252;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
@@ -587,12 +797,36 @@ try {
         margin-bottom: 25px;
     }
     
-    .month-info {
-        background: rgba(255, 255, 255, 0.15);
-        padding: 8px 12px;
-        border-radius: 6px;
+    .error-alert {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .gap-days {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 5px 12px;
+        border-radius: 20px;
         font-size: 14px;
-        margin-left: 10px;
+        margin: 5px 5px 5px 0;
+    }
+    
+    .process-steps {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .step-item {
+        padding: 8px 0;
+        border-left: 3px solid #ff6b6b;
+        padding-left: 15px;
+        margin: 5px 0;
     }
   </style>
 </head>
@@ -609,197 +843,226 @@ try {
       <?php endif; ?>
       
       <?php if($successMessage): ?>
-        <div class="success-alert">
-          <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo $successMessage; ?>
-        </div>
+        <?php if(strpos($successMessage, 'failed') === false): ?>
+          <div class="success-alert">
+            <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo $successMessage; ?>
+          </div>
+        <?php else: ?>
+          <div class="error-alert">
+            <i class="fas fa-exclamation-triangle"></i> <strong>Error!</strong> <?php echo $successMessage; ?>
+          </div>
+        <?php endif; ?>
       <?php endif; ?>
       
-      
+      <?php if($transitionInfo && $transitionInfo['needs_transition']): ?>
+        <!-- Complete Month Transition Alert -->
+        <div class="transition-alert">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h4 class="mb-0">
+                <i class="fas fa-calendar-alt"></i> 
+                Complete Month Transition Required
+              </h4>
+              <div class="mt-2">
+                <strong>Previous Month:</strong> <?php echo $transitionInfo['previous_month']; ?> │ 
+                <strong>Current Month:</strong> <?php echo $transitionInfo['current_month']; ?>
+              </div>
+            </div>
+            <form method="POST" style="display: inline;">
+              <button type="submit" name="complete_month_transition" value="1" class="btn-transition">
+                <i class="fas fa-sync-alt"></i> Process Complete Transition
+              </button>
+            </form>
+          </div>
+          
+          <p class="mb-3">
+            The system detected that we've entered a new month but the previous month requires completion and archiving.
+          </p>
+          
+          <div class="process-steps">
+            <h6><i class="fas fa-list-ol"></i> Automated Process Steps:</h6>
+            
+            <?php if($transitionInfo['has_gaps']): ?>
+            <div class="step-item">
+              <strong>Step 1: Fill Data Gaps</strong>
+              <div class="mt-1">
+                <small>Missing days in <?php echo $transitionInfo['previous_month']; ?>:</small>
+                <?php foreach($transitionInfo['gap_info']['gaps'] as $day): ?>
+                  <span class="gap-days">Day <?php echo $day; ?></span>
+                <?php endforeach; ?>
+                <br>
+                <small class="text-warning">Last complete data: Day <?php echo $transitionInfo['gap_info']['last_complete_day']; ?></small>
+              </div>
+            </div>
+            <?php endif; ?>
+            
+            <div class="step-item">
+              <strong>Step 2: Create Archive Table</strong>
+              <div class="mt-1">
+                <small>Archive: <code><?php echo $transitionInfo['table_name'] . '_' . getMonthSuffix($transitionInfo['previous_month']); ?></code></small>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <strong>Step 3: Initialize New Month</strong>
+              <div class="mt-1">
+                <small>Carry forward closing stock from <?php echo $transitionInfo['previous_month']; ?> to <?php echo $transitionInfo['current_month']; ?> opening</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
 
-      <!-- Existing Statistics Grid -->
+      <!-- Statistics Cards -->
       <div class="stats-grid">
-        <!-- Item Statistics Card -->
+        <!-- Total Items -->
         <div class="stat-card">
-          <div class="stat-icon" style="background-color: #4299E1;">
-            <i class="fas fa-wine-bottle"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Total Items</h4>
-            <p><?php echo $stats['total_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Customer Statistics Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #48BB78;">
-            <i class="fas fa-users"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Total Customers</h4>
-            <p>
-              <?php 
-              // Get the current company ID from session
-              $companyId = $_SESSION['CompID'] ?? 0;
-              
-              // Query to count customers for the current company only
-              $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
-              $customerCountStmt = $conn->prepare($customerCountQuery);
-              $customerCountStmt->bind_param("i", $companyId);
-              $customerCountStmt->execute();
-              $customerCountResult = $customerCountStmt->get_result();
-              $customerCount = $customerCountResult->fetch_assoc();
-              
-              echo $customerCount['total_customers'];
-              
-              $customerCountStmt->close();
-              ?>
-            </p>
-          </div>
-        </div>
-        
-        <!-- Supplier Statistics Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #9F7AEA;">
-            <i class="fas fa-truck"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Total Suppliers</h4>
-            <p><?php echo $stats['total_suppliers']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Dry Days Statistics Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #F56565;">
-            <i class="fas fa-calendar-times"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Dry Days (<?php echo date('Y'); ?>)</h4>
-            <p><?php echo $stats['total_dry_days']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Whisky Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #8B4513;">
-            <i class="fas fa-glass-whiskey"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Whisky Items</h4>
-            <p><?php echo $stats['whisky_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Wine Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #8B0000;">
-            <i class="fas fa-wine-glass-alt"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Wine Items</h4>
-            <p><?php echo $stats['wine_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Gin Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #87CEEB;">
-            <i class="fas fa-cocktail"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Gin Items</h4>
-            <p><?php echo $stats['gin_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Total Beer Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #FFD700;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Total Beer Items</h4>
-            <p><?php echo $stats['total_beer_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Fermented Beer Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #DAA520;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Fermented Beer Items</h4>
-            <p><?php echo $stats['fermented_beer_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Mild Beer Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #FFA500;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>Mild Beer Items</h4>
-            <p><?php echo $stats['mild_beer_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Brandy Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #D2691E;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bottle-wine-icon lucide-bottle-wine"><path d="M10 3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a6 6 0 0 0 1.2 3.6l.6.8A6 6 0 0 1 17 13v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-8a6 6 0 0 1 1.2-3.6l.6-.8A6 6 0 0 0 10 5z"/><path d="M17 13h-4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h4"/></svg>
-          </div>
-          <div class="stat-info">
-            <h4>Brandy Items</h4>
-            <p><?php echo $stats['brandy_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Vodka Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #0ebcbcff;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-martini">
-              <path d="M8 22h8"/>
-              <path d="M12 11v11"/>
-              <path d="m19 3-7 8-7-8Z"/>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <h4>Vodka Items</h4>
-            <p><?php echo $stats['vodka_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Rum Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #8B4513;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wine-icon lucide-wine"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>
-          </div>
-          <div class="stat-info">
-            <h4>Rum Items</h4>
-            <p><?php echo $stats['rum_items']; ?></p>
-          </div>
-        </div>
-        
-        <!-- Other Items Card -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background-color: #A9A9A9;">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <i class="fas fa-box"></i>
           </div>
           <div class="stat-info">
-            <h4>Other Items</h4>
+            <h4>TOTAL ITEMS</h4>
+            <p><?php echo $stats['total_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Total Customers -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-info">
+            <h4>TOTAL CUSTOMERS</h4>
+            <p><?php echo $stats['total_customers']; ?></p>
+          </div>
+        </div>
+
+        <!-- Total Suppliers -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="fas fa-truck"></i>
+          </div>
+          <div class="stat-info">
+            <h4>TOTAL SUPPLIERS</h4>
+            <p><?php echo $stats['total_suppliers']; ?></p>
+          </div>
+        </div>
+
+        <!-- Total Permits -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <div class="stat-info">
+            <h4>ACTIVE PERMITS</h4>
+            <p><?php echo $stats['total_permits']; ?></p>
+          </div>
+        </div>
+
+        <!-- Total Dry Days -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <i class="fas fa-calendar-times"></i>
+          </div>
+          <div class="stat-info">
+            <h4>DRY DAYS (<?php echo date('Y'); ?>)</h4>
+            <p><?php echo $stats['total_dry_days']; ?></p>
+          </div>
+        </div>
+
+        <!-- Whisky Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+            <i class="fas fa-glass-whiskey"></i>
+          </div>
+          <div class="stat-info">
+            <h4>WHISKY ITEMS</h4>
+            <p><?php echo $stats['whisky_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Wine Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+            <i class="fas fa-wine-bottle"></i>
+          </div>
+          <div class="stat-info">
+            <h4>WINE ITEMS</h4>
+            <p><?php echo $stats['wine_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Gin Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #fad0c4 0%, #ffd1ff 100%);">
+            <i class="fas fa-cocktail"></i>
+          </div>
+          <div class="stat-info">
+            <h4>GIN ITEMS</h4>
+            <p><?php echo $stats['gin_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Beer Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+            <i class="fas fa-beer"></i>
+          </div>
+          <div class="stat-info">
+            <h4>BEER ITEMS</h4>
+            <p><?php echo $stats['total_beer_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Brandy Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+            <i class="fas fa-wine-glass-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h4>BRANDY ITEMS</h4>
+            <p><?php echo $stats['brandy_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Vodka Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);">
+            <i class="fas fa-glass-martini-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h4>VODKA ITEMS</h4>
+            <p><?php echo $stats['vodka_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Rum Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);">
+            <i class="fas fa-tint"></i>
+          </div>
+          <div class="stat-info">
+            <h4>RUM ITEMS</h4>
+            <p><?php echo $stats['rum_items']; ?></p>
+          </div>
+        </div>
+
+        <!-- Other Items -->
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #e6dee9 0%, #d1c4e9 100%);">
+            <i class="fas fa-ellipsis-h"></i>
+          </div>
+          <div class="stat-info">
+            <h4>OTHER ITEMS</h4>
             <p><?php echo $stats['other_items']; ?></p>
           </div>
         </div>
       </div>
     </div>
-
-    <?php include 'components/footer.php'; ?>
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
 </body>
 </html>
