@@ -73,17 +73,19 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
+    /* Add any custom styles here if needed */
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
+    <?php include 'components/header.php'; ?>
 
-  
     <div class="content-area">
       <h3 class="mb-4">Cash Memo Summary Report</h3>
 
@@ -119,56 +121,52 @@ if (isset($_GET['generate'])) {
       </div>
 
       <!-- Report Results -->
-      <?php if (!empty($report_data)): ?>
-        <div class="print-section">
-          <div class="company-header">
-            <h1><?= htmlspecialchars($companyName) ?></h1>
-            <h5>Cash Memo Summary Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
-          </div>
-          
-          <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th class="text-center">Bill Date</th>
-                  <th class="text-center">Bill No</th>
-                  <th class="text-center">Customer Code</th>
-                  <th class="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php foreach ($report_data as $row): ?>
+      <?php if (isset($_GET['generate'])): ?>
+        <?php if (!empty($report_data)): ?>
+          <div class="print-section">
+            <div class="company-header">
+              <h1><?= htmlspecialchars($companyName) ?></h1>
+              <h5>Cash Memo Summary Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
+            </div>
+            
+            <div class="table-container">
+              <table class="report-table">
+                <thead>
                   <tr>
-                    <td class="text-center"><?= date('d/m/Y', strtotime($row['BILL_DATE'])) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($row['BILL_NO']) ?></td>
-                    <td class="text-center"><?= htmlspecialchars($row['CUST_CODE']) ?></td>
-                    <td class="text-right"><?= number_format($row['NET_AMOUNT'], 2) ?></td>
+                    <th class="text-center">Bill Date</th>
+                    <th class="text-center">Bill No</th>
+                    <th class="text-center">Customer Code</th>
+                    <th class="text-right">Amount</th>
                   </tr>
-                <?php endforeach; ?>
-                
-                <tr class="total-row">
-                  <td colspan="3" class="text-end"><strong>Total Amount :</strong></td>
-                  <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <?php foreach ($report_data as $row): ?>
+                    <tr>
+                      <td class="text-center"><?= date('d/m/Y', strtotime($row['BILL_DATE'])) ?></td>
+                      <td class="text-center"><?= htmlspecialchars($row['BILL_NO']) ?></td>
+                      <td class="text-center"><?= htmlspecialchars($row['CUST_CODE']) ?></td>
+                      <td class="text-right"><?= number_format($row['NET_AMOUNT'], 2) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                  
+                  <tr class="total-row">
+                    <td colspan="3" class="text-end"><strong>Total Amount :</strong></td>
+                    <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          
-          <div class="footer-info">
-            <p>S. S. SoftTech, Pune. (020-30224741, 9371251623, 9657860662)</p>
-            <p>Printed on: <?= date('d-M-Y h:i A') ?></p>
+        <?php else: ?>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> No cash memo records found for the selected criteria.
           </div>
-        </div>
-      <?php elseif (isset($_GET['generate'])): ?>
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i> No cash memo records found for the selected criteria.
-        </div>
+        <?php endif; ?>
       <?php endif; ?>
     </div>
     
-  <?php include 'components/footer.php'; ?>
+    <?php include 'components/footer.php'; ?>
   </div>
-  
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

@@ -290,11 +290,7 @@ if (isset($_SESSION['error'])) {
                             <i class="fa-solid fa-trash"></i>
                           </button>
 
-                          <!-- View Button -->
-                          <a href="view_bill.php?bill_no=<?= $sale['BILL_NO'] ?>" 
-                             class="btn btn-sm btn-info" title="View Bill">
-                            <i class="fa-solid fa-eye"></i>
-                          </a>
+                          
                         </div>
                       </td>
                     </tr>

@@ -278,7 +278,7 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// Function to update daily stock table with proper opening/closing calculations AND CLOSING STOCK VALIDATION
+// Function to update daily stock table
 function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
     // Extract day number from date (e.g., 2025-09-03 -> day 03)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
@@ -289,19 +289,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     
     $month_year = date('Y-m', strtotime($sale_date));
     
-    // ============================================================================
-    // NEW: CLOSING STOCK VALIDATION - Check if closing stock exists and is sufficient
-    // ============================================================================
-    
-    // First check if the closing column exists in the table structure
-    $check_column_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$closing_column'";
-    $column_result = $conn->query($check_column_query);
-    
-    if ($column_result->num_rows == 0) {
-        throw new Exception("Closing stock column $closing_column does not exist for date $sale_date");
-    }
-    
-    // Check if record exists for this month and item with valid closing stock
+    // Check if record exists for this month and item
     $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
                     FROM $daily_stock_table 
                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
@@ -309,9 +297,8 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     $check_stmt->bind_param("ss", $month_year, $item_code);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
-    $exists = $check_result->num_rows > 0;
     
-    if (!$exists) {
+    if ($check_result->num_rows == 0) {
         $check_stmt->close();
         throw new Exception("No stock record found for item $item_code on date $sale_date. Cannot process sale.");
     }
@@ -328,10 +315,6 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
     if ($current_closing < $qty) {
         throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $current_closing, Requested: $qty");
     }
-    
-    // ============================================================================
-    // PROCEED WITH UPDATE SINCE VALIDATION PASSED
-    // ============================================================================
     
     // Calculate new sales and closing
     $new_sales = $current_sales + $qty;
@@ -425,7 +408,7 @@ function getNextBillNumber($conn) {
     }
 }
 
-// Handle form submission for sales update - FIXED VERSION
+// Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
@@ -441,7 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Get ALL items from database for validation (not just visible ones)
+            // Get ALL items from database for validation
             $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                                        COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
                                 FROM tblitemmaster im
@@ -457,7 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $all_items_stmt->close();
             
-            // Enhanced stock validation before transaction - using ALL session quantities
+            // Enhanced stock validation before transaction
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
                 foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
@@ -479,20 +462,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
                 }
             } else {
-                // Start transaction only after validation
+                // Start transaction
                 $conn->begin_transaction();
                 
                 try {
                     $total_amount = 0;
-                    $items_data = []; // Store item data for bill generation
-                    $daily_sales_data = []; // Store daily sales for each item
+                    $items_data = [];
+                    $daily_sales_data = [];
                     
-                    // Process ONLY session quantities > 0 (optimization)
+                    // Process ONLY session quantities > 0
                     if (isset($_SESSION['sale_quantities'])) {
                         foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
-                                $current_stock = $item['CURRENT_STOCK'];
                                 
                                 // Generate distribution
                                 $daily_sales = distributeSales($total_qty, $days_count);
@@ -551,7 +533,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update stock
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
                                 
-                                // Update daily stock WITH CLOSING STOCK VALIDATION
+                                // Update daily stock
                                 updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
@@ -606,6 +588,7 @@ $debug_info = [
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -830,6 +813,20 @@ tr.has-quantity td {
     font-weight: bold;
 }
 
+/* Client-side validation styles */
+.validation-alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 500px;
+}
+
+.stock-checking {
+    background-color: #fff3cd !important;
+}
+
   </style>
 </head>
 <body>
@@ -857,6 +854,12 @@ tr.has-quantity td {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
+
+      <!-- Client-side Validation Alert -->
+      <div class="alert alert-warning validation-alert" id="clientValidationAlert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="validationMessage"></span>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -1256,6 +1259,79 @@ const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? [])
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
+// NEW: Function to check stock availability via AJAX before submission
+function checkStockAvailabilityBeforeSubmit() {
+    return new Promise((resolve, reject) => {
+        // Check if we have any quantities > 0
+        let hasQuantity = false;
+        for (const itemCode in allSessionQuantities) {
+            if (allSessionQuantities[itemCode] > 0) {
+                hasQuantity = true;
+                break;
+            }
+        }
+        
+        if (!hasQuantity) {
+            reject('Please enter quantities for at least one item.');
+            return;
+        }
+
+        // Show checking state
+        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+        $('tr.has-quantity').addClass('stock-checking');
+
+        // Prepare data for AJAX check
+        const checkData = {
+            start_date: '<?= $start_date ?>',
+            end_date: '<?= $end_date ?>',
+            mode: '<?= $mode ?>',
+            comp_id: '<?= $comp_id ?>',
+            quantities: allSessionQuantities
+        };
+
+        $.ajax({
+            url: 'check_stock_availability.php',
+            type: 'POST',
+            data: JSON.stringify(checkData),
+            contentType: 'application/json',
+            success: function(response) {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                
+                try {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        resolve(true);
+                    } else {
+                        showClientValidationAlert(result.message);
+                        reject(result.message);
+                    }
+                } catch (e) {
+                    showClientValidationAlert('Error checking stock availability. Please try again.');
+                    reject('Error checking stock availability.');
+                }
+            },
+            error: function() {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                showClientValidationAlert('Error connecting to server. Please try again.');
+                reject('Connection error');
+            }
+        });
+    });
+}
+
+// NEW: Function to show client-side validation alert
+function showClientValidationAlert(message) {
+    $('#validationMessage').text(message);
+    $('#clientValidationAlert').fadeIn();
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        $('#clientValidationAlert').fadeOut();
+    }, 10000);
+}
+
 // Function to clear session quantities via AJAX
 function clearSessionQuantities() {
     $.ajax({
@@ -1357,7 +1433,7 @@ function saveQuantityToSession(itemCode, qty) {
                 console.error('Failed to save quantity to session');
             }
         });
-    }, 200); // Reduced from 500ms to 200ms
+    }, 200);
 }
 
 // Function to validate all quantities before form submission
@@ -1535,106 +1611,91 @@ function setupRowNavigation() {
     });
 }
 
-// Function to generate bills immediately - FIXED VERSION
+// UPDATED: Function to generate bills immediately with client-side validation
 function generateBills() {
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Validate all quantities to prevent negative closing balance
+    // First validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Submit the form normally (not via AJAX) to maintain server-side processing
-    document.getElementById('salesForm').submit();
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // If validation passes, submit the form
+            $('#ajaxLoader').show();
+            document.getElementById('salesForm').submit();
+        })
+        .catch((error) => {
+            // Validation failed, don't submit
+            console.log('Client-side validation failed:', error);
+        });
 }
 
 // Function to save to pending sales via AJAX
 function saveToPendingSales() {
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Validate all quantities to prevent negative closing balance
+    // First validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity from session (not just visible ones)
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            formData.append(`sale_qty[${itemCode}]`, qty);
-        }
-    }
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // Show loader and disable button
+            $('#ajaxLoader').show();
+            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
             
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    // Clear session quantities
-                    clearSessionQuantities();
-                    alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
+            // Collect all the data
+            const formData = new FormData();
+            formData.append('save_pending', 'true');
+            formData.append('start_date', '<?= $start_date ?>');
+            formData.append('end_date', '<?= $end_date ?>');
+            formData.append('mode', '<?= $mode ?>');
+            
+            // Add each item's quantity from session (not just visible ones)
+            for (const itemCode in allSessionQuantities) {
+                const qty = allSessionQuantities[itemCode];
+                if (qty > 0) {
+                    formData.append(`sale_qty[${itemCode}]`, qty);
                 }
-            } catch (e) {
-                alert('Error processing response: ' + response);
             }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-            alert('Error saving data to pending. Please try again.');
-        }
-    });
+            
+            // Send AJAX request
+            $.ajax({
+                url: 'save_pending_sales.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success) {
+                            // Clear session quantities
+                            clearSessionQuantities();
+                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (e) {
+                        alert('Error processing response: ' + response);
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    alert('Error saving data to pending. Please try again.');
+                }
+            });
+        })
+        .catch((error) => {
+            // Validation failed, don't proceed
+            console.log('Client-side validation failed for pending sales:', error);
+        });
 }
 
 // Single button with dual functionality
@@ -1765,7 +1826,7 @@ function getProductType(classCode) {
     const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
     if (spirits.includes(classCode)) return 'SPIRITS';
     if (classCode === 'V') return 'WINE';
-    if (classCode === 'F') return 'FERMENTED BEER'; // CHANGED FROM 'B' TO 'F'
+    if (classCode === 'F') return 'FERMENTED BEER';
     if (classCode === 'M') return 'MILD BEER';
     return 'OTHER';
 }
@@ -1774,36 +1835,38 @@ function getProductType(classCode) {
 function extractVolume(details, details2) {
     // Priority: details2 column first
     if (details2) {
-        const volumeMatch = details2.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000; // Convert liters to ML
-            }
-            return volume;
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
     // Fallback: parse details column
     if (details) {
-        // Handle special cases like QUART, PINT, NIP
+        // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
-        if (details.includes('80 ML')) return 80;
         
-        // Try to extract numeric volume
-        const volumeMatch = details.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000;
-            }
-            return volume;
+        // Handle liter sizes with decimal points
+        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
@@ -1846,47 +1909,6 @@ function getVolumeColumn(volume) {
     return volumeMap[volume] || null;
 }
 
-// Function to extract volume from details - ENHANCED VERSION
-function extractVolume(details, details2) {
-    // Priority: details2 column first
-    if (details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if (details) {
-        // Handle special cases
-        if (details.includes('QUART')) return 750;
-        if (details.includes('PINT')) return 375;
-        if (details.includes('NIP')) return 90;
-        
-        // Handle liter sizes with decimal points
-        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    return 0; // Unknown volume
-}
 // OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0
 function updateTotalSalesModule() {
     // Initialize empty summary object with ALL sizes
@@ -1956,6 +1978,7 @@ function updateSalesModalTable(salesSummary, allSizes) {
         tbody.append(row);
     });
 }
+
 // Print function
 function printSalesSummary() {
     const printContent = document.getElementById('totalSalesModuleContainer').innerHTML;

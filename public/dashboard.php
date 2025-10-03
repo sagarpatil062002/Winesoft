@@ -387,6 +387,60 @@ function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
     return $results;
 }
 
+function ensureDay1Data($conn, $tableName, $month) {
+    try {
+        // Check if we have any records for this month
+        $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
+        $checkStmt->bind_param("s", $month);
+        $checkStmt->execute();
+        $result = $checkStmt->get_result();
+        $row = $result->fetch_assoc();
+        $checkStmt->close();
+        
+        if ($row['count'] > 0) {
+            // Check if Day 1 data exists
+            $day1CheckStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ? AND DAY_01_CLOSING IS NOT NULL AND DAY_01_CLOSING != 0");
+            $day1CheckStmt->bind_param("s", $month);
+            $day1CheckStmt->execute();
+            $day1Result = $day1CheckStmt->get_result();
+            $day1Row = $day1Result->fetch_assoc();
+            $day1CheckStmt->close();
+            
+            if ($day1Row['count'] === 0) {
+                // If no Day 1 data, we need to set opening = closing for day 1
+                $updateStmt = $conn->prepare("
+                    UPDATE `{$tableName}` 
+                    SET DAY_01_CLOSING = DAY_01_OPEN 
+                    WHERE STK_MONTH = ?
+                    AND DAY_01_OPEN IS NOT NULL 
+                    AND DAY_01_OPEN != 0
+                ");
+                $updateStmt->bind_param("s", $month);
+                $updateStmt->execute();
+                $affectedRows = $updateStmt->affected_rows;
+                $updateStmt->close();
+                
+                return [
+                    'success' => true,
+                    'affected_rows' => $affectedRows,
+                    'action' => 'ensured_day1_data'
+                ];
+            }
+        }
+        
+        return [
+            'success' => true,
+            'action' => 'no_action_needed'
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+}
+
 function checkMonthTransitionWithGaps($conn) {
     $currentCompanyId = $_SESSION['CompID'] ?? 1;
     $currentMonth = getCurrentMonth();
@@ -511,21 +565,44 @@ function executeCompleteMonthTransition($conn) {
                 $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
             }
             
-            // STEP 4: Fill gaps in current month if any (NEW IMPROVEMENT)
+            // STEP 4: Fill gaps in current month if any (FIXED VERSION)
             $currentGapFillResult = ['success' => true, 'message' => 'No current month gaps to fill', 'gaps_filled' => 0];
             
-            if ($initResult['success']) {
-                // Re-check for gaps in current month after initialization
-                $updatedTransitionInfo = checkMonthTransitionWithGaps($conn);
-                
-                if ($updatedTransitionInfo['has_current_gaps'] && !empty($updatedTransitionInfo['current_gap_info']['gaps'])) {
-                    $currentGapFillResult = autoPopulateMonthGaps(
-                        $conn, 
-                        $tableName, 
-                        $currentMonth, 
-                        $updatedTransitionInfo['current_gap_info']['gaps'], 
-                        $updatedTransitionInfo['current_gap_info']['last_complete_day']
-                    );
+            // Force re-check for current month gaps regardless of initialization result
+            // Wait a moment to ensure data is committed
+            usleep(500000); // 0.5 second delay
+            
+            $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
+            
+            if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] > 0) {
+                $currentGapFillResult = autoPopulateMonthGaps(
+                    $conn, 
+                    $tableName, 
+                    $currentMonth, 
+                    $currentGapInfo['gaps'], 
+                    $currentGapInfo['last_complete_day']
+                );
+            } else if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] === 0) {
+                // If no last complete day but we have gaps starting from day 1,
+                // we need to handle this specially
+                $firstGapDay = min($currentGapInfo['gaps']);
+                if ($firstGapDay === 1) {
+                    // For day 1 gaps, we need to ensure day 1 data exists
+                    $ensureDay1Result = ensureDay1Data($conn, $tableName, $currentMonth);
+                    if ($ensureDay1Result['success']) {
+                        // Re-check gaps after ensuring day 1 data
+                        usleep(300000); // 0.3 second delay
+                        $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
+                        if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] > 0) {
+                            $currentGapFillResult = autoPopulateMonthGaps(
+                                $conn, 
+                                $tableName, 
+                                $currentMonth, 
+                                $currentGapInfo['gaps'], 
+                                $currentGapInfo['last_complete_day']
+                            );
+                        }
+                    }
                 }
             }
             
@@ -536,6 +613,7 @@ function executeCompleteMonthTransition($conn) {
                 'archive_result' => $archiveResult,
                 'init_result' => $initResult,
                 'current_gap_fill_result' => $currentGapFillResult,
+                'current_gap_info' => $currentGapInfo, // Added for debugging
                 'previous_month' => $previousMonth,
                 'current_month' => $currentMonth,
                 'current_day' => $currentDay,
@@ -852,18 +930,7 @@ try {
       <?php endif; ?>
       
       <?php if($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['needs_current_gap_fill'])): ?>
-        <!-- Debug Info (remove in production) -->
-        <div class="card mb-3 bg-light">
-          <div class="card-body py-2">
-            <small class="text-muted">
-              <strong>Debug Info:</strong> 
-              Needs Transition: <?php echo $transitionInfo['needs_transition'] ? 'Yes' : 'No'; ?> | 
-              Needs Current Gap Fill: <?php echo $transitionInfo['needs_current_gap_fill'] ? 'Yes' : 'No'; ?> |
-              Previous Gaps: <?php echo $transitionInfo['has_previous_gaps'] ? count($transitionInfo['previous_gap_info']['gaps']) : '0'; ?> |
-              Current Gaps: <?php echo $transitionInfo['has_current_gaps'] ? count($transitionInfo['current_gap_info']['gaps']) : '0'; ?>
-            </small>
-          </div>
-        </div>
+        
         
         <!-- Complete Month Transition Alert -->
         <div class="card transition-alert">
