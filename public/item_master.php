@@ -955,17 +955,7 @@ function downloadTemplate() {
         <li>Only CSV files are supported for import</li>
         <li>OpeningBalance should be a whole number (integer)</li>
     </ul>
-    <p><strong>Automatic class detection patterns:</strong></p>
-    <ul>
-        <li><strong>Whisky (W)</strong>: "Whisky/Whiskey", "Scotch", "Blended", brand names like "Johnnie Walker", "8PM", "Officer's Choice"</li>
-        <li><strong>Wine (V)</strong>: "Wine", "Port", "Sherry", "Champagne", brand names like "Sula", "Grover"</li>
-        <li><strong>Brandy (D)</strong>: "Brandy", "Cognac", "VSOP", "XO", brand names like "Hennessy", "Remy Martin"</li>
-        <li><strong>Vodka (K)</strong>: "Vodka", brand names like "Smirnoff", "Absolut", "Romanov"</li>
-        <li><strong>Gin (G)</strong>: "Gin", "London Dry", brand names like "Bombay Sapphire", "Gordon's"</li>
-        <li><strong>Rum (R)</strong>: "Rum", "Dark Rum", "White Rum", brand names like "Bacardi", "Old Monk"</li>
-        <li><strong>Beer - Fermented (F)</strong>: "Strong", "Super Strong", "5000", "8000" indicators</li>
-        <li><strong>Beer - Mild (M)</strong>: "Mild", "Light", "Lager", "Premium", "Draught" indicators</li>
-    </ul>
+ 
     <div class="download-template">
         <a href="javascript:void(0);" onclick="downloadTemplate()" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-download"></i> Download Template

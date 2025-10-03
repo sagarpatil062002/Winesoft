@@ -100,47 +100,16 @@ if ($view_type === 'date') {
     $stmt->close();
 }
 
-// Handle delete action
-if (isset($_GET['delete_bill'])) {
-    $bill_no = $_GET['delete_bill'];
-    
-    // Start transaction
-    $conn->begin_transaction();
-    
-    try {
-        // Delete from sale details first
-        $deleteDetailsQuery = "DELETE FROM tblsaledetails WHERE BILL_NO = ? AND COMP_ID = ?";
-        $deleteDetailsStmt = $conn->prepare($deleteDetailsQuery);
-        $deleteDetailsStmt->bind_param("si", $bill_no, $compID);
-        $deleteDetailsStmt->execute();
-        
-        // Delete from sale header
-        $deleteHeaderQuery = "DELETE FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
-        $deleteHeaderStmt = $conn->prepare($deleteHeaderQuery);
-        $deleteHeaderStmt->bind_param("si", $bill_no, $compID);
-        $deleteHeaderStmt->execute();
-        
-        if ($deleteHeaderStmt->affected_rows > 0) {
-            $conn->commit();
-            $_SESSION['success'] = "Bill #$bill_no deleted successfully!";
-        } else {
-            throw new Exception("No records found to delete");
-        }
-        
-        $deleteDetailsStmt->close();
-        $deleteHeaderStmt->close();
-        
-        // Redirect to avoid resubmission
-        header("Location: retail_sale.php?" . http_build_query($_GET));
-        exit;
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        $_SESSION['error'] = "Error deleting bill: " . $e->getMessage();
-    }
+// Handle delete action via new delete_bill.php
+if (isset($_GET['delete_success'])) {
+    $success_message = urldecode($_GET['delete_success']);
 }
 
-// Handle success/error messages from session (for delete operations)
+if (isset($_GET['delete_error'])) {
+    $error_message = urldecode($_GET['delete_error']);
+}
+
+// Handle success/error messages from session
 if (isset($_SESSION['success'])) {
     $success_message = $_SESSION['success'];
     unset($_SESSION['success']);
@@ -308,18 +277,24 @@ if (isset($_SESSION['error'])) {
                       <td><span class="badge bg-info"><?= $liquorType ?></span></td>
                       <td>
                         <div class="action-buttons">
-                          <!-- Edit Button -->
-                          <a href="edit_sale.php?bill_no=<?= $sale['BILL_NO'] ?>" 
+                          <!-- Edit Button - Redirects to edit form -->
+                          <a href="edit_bill_form.php?bill_no=<?= $sale['BILL_NO'] ?>" 
                              class="btn btn-sm btn-warning" title="Edit Bill">
                             <i class="fa-solid fa-pen-to-square"></i>
                           </a>
                           
-                          <!-- Delete Button -->
+                          <!-- Delete Button - Uses new AJAX method -->
                           <button class="btn btn-sm btn-danger" 
-                                  title="Delete" 
+                                  title="Delete Bill" 
                                   onclick="confirmDelete('<?= $sale['BILL_NO'] ?>')">
                             <i class="fa-solid fa-trash"></i>
                           </button>
+
+                          <!-- View Button -->
+                          <a href="view_bill.php?bill_no=<?= $sale['BILL_NO'] ?>" 
+                             class="btn btn-sm btn-info" title="View Bill">
+                            <i class="fa-solid fa-eye"></i>
+                          </a>
                         </div>
                       </td>
                     </tr>
@@ -359,12 +334,36 @@ if (isset($_SESSION['error'])) {
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to delete this sale bill? This action cannot be undone.</p>
-        <p class="text-danger"><strong>Warning:</strong> All items in this bill will be permanently deleted.</p>
+        <p>Are you sure you want to delete bill <strong id="deleteBillNumber"></strong>?</p>
+        <p class="text-info">
+          <i class="fa-solid fa-info-circle me-2"></i>
+          Subsequent bills will be automatically renumbered to maintain sequence.
+        </p>
+        <p class="text-danger">
+          <i class="fa-solid fa-exclamation-triangle me-2"></i>
+          <strong>Warning:</strong> This action cannot be undone.
+        </p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a href="#" id="deleteConfirm" class="btn btn-danger">Delete</a>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="proceedWithDelete()">
+          <i class="fa-solid fa-trash me-2"></i>Delete & Renumber
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Loading Spinner Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <h6>Processing...</h6>
+        <p class="text-muted small mb-0">Please wait while we update the bill sequence</p>
       </div>
     </div>
   </div>
@@ -373,14 +372,91 @@ if (isset($_SESSION['error'])) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+let currentBillToDelete = '';
+
 function confirmDelete(billNo) {
-  // Build the delete URL with current filter parameters
-  const params = new URLSearchParams(window.location.search);
-  params.set('delete_bill', billNo);
-  
-  $('#deleteConfirm').attr('href', 'retail_sale.php?' + params.toString());
+  currentBillToDelete = billNo;
+  $('#deleteBillNumber').text(billNo);
   $('#deleteModal').modal('show');
 }
+
+function proceedWithDelete() {
+  // Close confirmation modal
+  $('#deleteModal').modal('hide');
+  
+  // Show loading modal
+  $('#loadingModal').modal('show');
+  
+  // Disable delete button to prevent multiple clicks
+  $('#confirmDeleteBtn').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-2"></i>Deleting...');
+  
+  // Send delete request to dedicated delete_bill.php
+  // Send delete request to dedicated delete_bill.php
+const formData = new FormData();
+formData.append('bill_no', currentBillToDelete);
+
+fetch('delete_bill.php', {
+  method: 'POST',
+  body: formData
+})
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response.json();
+  })
+  .then(data => {
+    // Hide loading modal
+    $('#loadingModal').modal('hide');
+    
+    if (data.success) {
+      showAlert('success', data.message || 'Bill deleted successfully! Subsequent bills have been renumbered.');
+      
+      // Reload page after short delay to show success message
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } else {
+      showAlert('danger', data.message || 'Error deleting bill. Please try again.');
+      $('#confirmDeleteBtn').prop('disabled', false).html('<i class="fa-solid fa-trash me-2"></i>Delete & Renumber');
+    }
+  })
+  .catch(error => {
+    // Hide loading modal
+    $('#loadingModal').modal('hide');
+    
+    console.error('Error:', error);
+    showAlert('danger', 'Network error: ' + error.message);
+    $('#confirmDeleteBtn').prop('disabled', false).html('<i class="fa-solid fa-trash me-2"></i>Delete & Renumber');
+  });
+}
+
+function showAlert(type, message) {
+  // Remove any existing alerts
+  $('.alert').alert('close');
+  
+  // Create new alert
+  const alertHtml = `
+    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+      <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} me-2"></i> 
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+  
+  // Prepend to content area
+  $('.content-area').prepend(alertHtml);
+  
+  // Auto-dismiss after 5 seconds
+  setTimeout(() => {
+    $('.alert').alert('close');
+  }, 5000);
+}
+
+// Reset delete button when modal is closed
+$('#deleteModal').on('hidden.bs.modal', function () {
+  $('#confirmDeleteBtn').prop('disabled', false).html('<i class="fa-solid fa-trash me-2"></i>Delete & Renumber');
+});
 
 // Apply filters with date range validation
 $('form').on('submit', function(e) {
@@ -389,7 +465,7 @@ $('form').on('submit', function(e) {
   
   if (startDate.length && endDate.length && startDate.val() && endDate.val() && startDate.val() > endDate.val()) {
     e.preventDefault();
-    alert('Start date cannot be greater than End date');
+    showAlert('warning', 'Start date cannot be greater than End date');
     return false;
   }
 });
@@ -400,6 +476,11 @@ $(document).ready(function() {
     $('.alert').alert('close');
   }, 5000);
 });
+
+// Edit bill function
+function editBill(billNo) {
+  window.location.href = 'edit_bill_form.php?bill_no=' + billNo;
+}
 </script>
 </body>
 </html>
