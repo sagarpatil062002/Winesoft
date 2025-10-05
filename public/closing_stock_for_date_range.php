@@ -57,6 +57,91 @@ function validateStock($current_stock, $requested_qty, $item_code) {
     return true;
 }
 
+// NEW: Date-wise stock validation function
+function validateDateWiseStock($conn, $item_code, $sale_date, $qty, $comp_id) {
+    if ($qty <= 0) return true;
+    
+    // Determine the correct table name based on sale date
+    $current_month = date('Y-m');
+    $sale_month = date('Y-m', strtotime($sale_date));
+    
+    if ($sale_month === $current_month) {
+        $daily_stock_table = "tbldailystock_" . $comp_id;
+    } else {
+        $sale_month_year = date('m_y', strtotime($sale_date));
+        $daily_stock_table = "tbldailystock_" . $comp_id . "_" . $sale_month_year;
+    }
+    
+    // Check if table exists
+    $check_table_query = "SHOW TABLES LIKE '$daily_stock_table'";
+    $table_result = $conn->query($check_table_query);
+    
+    if ($table_result->num_rows == 0) {
+        logMessage("Stock table '$daily_stock_table' not found for date $sale_date", 'WARNING');
+        return true; // If table doesn't exist, assume stock is available
+    }
+    
+    // Extract day number
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    $opening_column = "DAY_{$day_num}_OPEN";
+    $purchase_column = "DAY_{$day_num}_PURCHASE";
+    $sales_column = "DAY_{$day_num}_SALES";
+    
+    $month_year_full = date('Y-m', strtotime($sale_date));
+    
+    // Check if record exists
+    $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
+                    FROM $daily_stock_table 
+                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $month_year_full, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows == 0) {
+        $check_stmt->close();
+        logMessage("No stock record found for item $item_code on date $sale_date", 'WARNING');
+        return true; // If no record, assume stock is available
+    }
+    
+    $current_values = $check_result->fetch_assoc();
+    $check_stmt->close();
+    
+    $current_closing = $current_values[$closing_column] ?? 0;
+    $current_opening = $current_values[$opening_column] ?? 0;
+    $current_purchase = $current_values[$purchase_column] ?? 0;
+    $current_sales = $current_values[$sales_column] ?? 0;
+    
+    // Calculate available stock for this date
+    $available_stock = $current_opening + $current_purchase - $current_sales;
+    
+    if ($qty > $available_stock) {
+        logMessage("Date-wise stock validation failed for item $item_code on $sale_date: Available: $available_stock, Requested: $qty", 'WARNING');
+        return false;
+    }
+    
+    return true;
+}
+
+// NEW: Function to validate all date-wise stocks before transaction
+function validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id) {
+    $stock_errors = [];
+    
+    foreach ($daily_sales_data as $item_code => $daily_sales) {
+        foreach ($daily_sales as $date_index => $qty) {
+            if ($qty > 0) {
+                $sale_date = $GLOBALS['date_array'][$date_index];
+                if (!validateDateWiseStock($conn, $item_code, $sale_date, $qty, $comp_id)) {
+                    $stock_errors[] = "Item $item_code: Insufficient stock on $sale_date (Requested: $qty)";
+                }
+            }
+        }
+    }
+    
+    return $stock_errors;
+}
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     logMessage('User not logged in, redirecting to index.php', 'WARNING');
@@ -108,9 +193,8 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
-$daily_stock_table = "tbldailystock_" . $comp_id;
-$opening_stock_column = "Opening_Stock" . $comp_id;
 $current_stock_column = "Current_Stock" . $comp_id;
+$opening_stock_column = "Opening_Stock" . $comp_id;
 
 // Check if the stock columns exist, if not create them
 // Cache this check in session to avoid repeated queries
@@ -207,26 +291,13 @@ if (!isset($_SESSION['sale_quantities'])) {
 }
 
 // Handle form submission to update session quantities
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
-    foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
-        $closing_val = floatval($closing_balance);
-        $current_stock = 0;
-        
-        // Find current stock for this item
-        foreach ($items as $item) {
-            if ($item['CODE'] == $item_code) {
-                $current_stock = $item['CURRENT_STOCK'];
-                break;
-            }
-        }
-        
-        // Calculate sale quantity: sale_qty = current_stock - closing_balance
-        $sale_qty = $current_stock - $closing_val;
-        
-        if ($sale_qty > 0) {
-            $_SESSION['sale_quantities'][$item_code] = $sale_qty;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
+    foreach ($_POST['sale_qty'] as $item_code => $qty) {
+        $qty_val = intval($qty);
+        if ($qty_val > 0) {
+            $_SESSION['sale_quantities'][$item_code] = $qty_val;
         } else {
-            // Remove zero or negative quantities to keep session clean
+            // Remove zero quantities to keep session clean
             unset($_SESSION['sale_quantities'][$item_code]);
         }
     }
@@ -291,92 +362,234 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// Function to update daily stock table with proper opening/closing calculations
-function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
-    // Extract day number from date (e.g., 2025-09-03 -> day 03)
+// ENHANCED: Function to update daily stock table with support for both archived and current tables
+function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
+    // Determine the correct table name based on sale date
+    $current_month = date('Y-m'); // Current month in "YYYY-MM" format
+    $sale_month = date('Y-m', strtotime($sale_date)); // Sale month in "YYYY-MM" format
+    
+    if ($sale_month === $current_month) {
+        // Use current month table (no suffix)
+        $sale_daily_stock_table = "tbldailystock_" . $comp_id;
+    } else {
+        // Use archived month table (with suffix)
+        $sale_month_year = date('m_y', strtotime($sale_date)); // e.g., "09_25"
+        $sale_daily_stock_table = "tbldailystock_" . $comp_id . "_" . $sale_month_year;
+    }
+    
+    // Current active table (without month suffix) - for updating current month when sale is in archived month
+    $current_daily_stock_table = "tbldailystock_" . $comp_id;
+    
+    // Extract day number from date (e.g., 2025-09-27 → day 27)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
     $sales_column = "DAY_{$day_num}_SALES";
     $closing_column = "DAY_{$day_num}_CLOSING";
     $opening_column = "DAY_{$day_num}_OPEN";
     $purchase_column = "DAY_{$day_num}_PURCHASE";
     
-    $month_year = date('Y-m', strtotime($sale_date));
+    $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
+    
+    // ============================================================================
+    // STEP 1: UPDATE THE CORRECT STOCK TABLE (CURRENT OR ARCHIVED)
+    // ============================================================================
+    
+    // First, check if the required table exists
+    $check_table_query = "SHOW TABLES LIKE '$sale_daily_stock_table'";
+    $table_result = $conn->query($check_table_query);
+    
+    if ($table_result->num_rows == 0) {
+        throw new Exception("Stock table '$sale_daily_stock_table' not found for item $item_code on date $sale_date");
+    }
     
     // Check if record exists for this month and item
-    $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
+    $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
+                    FROM $sale_daily_stock_table 
                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $month_year, $item_code);
+    $check_stmt->bind_param("ss", $month_year_full, $item_code);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
-    $exists = $check_result->fetch_assoc()['count'] > 0;
+    
+    if ($check_result->num_rows == 0) {
+        $check_stmt->close();
+        throw new Exception("No stock record found for item $item_code in table $sale_daily_stock_table for date $sale_date");
+    }
+    
+    $current_values = $check_result->fetch_assoc();
     $check_stmt->close();
     
-    if ($exists) {
-        // Get current values to calculate closing properly
-        $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
-                         FROM $daily_stock_table 
-                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $select_stmt = $conn->prepare($select_query);
-        $select_stmt->bind_param("ss", $month_year, $item_code);
-        $select_stmt->execute();
-        $select_result = $select_stmt->get_result();
-        $current_values = $select_result->fetch_assoc();
-        $select_stmt->close();
-        
-        $opening = $current_values[$opening_column] ?? 0;
-        $purchase = $current_values[$purchase_column] ?? 0;
-        $current_sales = $current_values[$sales_column] ?? 0;
-        
-        // Calculate new sales and closing
-        $new_sales = $current_sales + $qty;
-        $new_closing = $opening + $purchase - $new_sales;
-        
-        // Update existing record with correct closing calculation
-        $update_query = "UPDATE $daily_stock_table 
-                         SET $sales_column = ?, 
-                             $closing_column = ?,
-                             LAST_UPDATED = CURRENT_TIMESTAMP 
-                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
-        $update_stmt->execute();
+    $current_closing = $current_values[$closing_column] ?? 0;
+    $current_opening = $current_values[$opening_column] ?? 0;
+    $current_purchase = $current_values[$purchase_column] ?? 0;
+    $current_sales = $current_values[$sales_column] ?? 0;
+    
+    // Validate closing stock is sufficient for the sale quantity
+    if ($current_closing < $qty) {
+        throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $current_closing, Requested: $qty");
+    }
+    
+    // Calculate new sales and closing
+    $new_sales = $current_sales + $qty;
+    $new_closing = $current_opening + $current_purchase - $new_sales;
+    
+    // Update existing record with correct closing calculation
+    $update_query = "UPDATE $sale_daily_stock_table 
+                     SET $sales_column = ?, 
+                         $closing_column = ?,
+                         LAST_UPDATED = CURRENT_TIMESTAMP 
+                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $update_stmt = $conn->prepare($update_query);
+    $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year_full, $item_code);
+    $update_stmt->execute();
+    
+    if ($update_stmt->affected_rows === 0) {
         $update_stmt->close();
+        throw new Exception("Failed to update daily stock for item $item_code on $sale_date in table $sale_daily_stock_table");
+    }
+    $update_stmt->close();
+    
+    // Update next day's opening stock if it exists (and if we're not at month end)
+    $next_day = intval($day_num) + 1;
+    if ($next_day <= 31) {
+        $next_day_num = sprintf('%02d', $next_day);
+        $next_opening_column = "DAY_{$next_day_num}_OPEN";
         
-        // Update next day's opening stock if it exists
-        $next_day = intval($day_num) + 1;
-        if ($next_day <= 31) {
-            $next_day_num = sprintf('%02d', $next_day);
-            $next_opening_column = "DAY_{$next_day_num}_OPEN";
+        // Check if next day exists in the table
+        $check_next_day_query = "SHOW COLUMNS FROM $sale_daily_stock_table LIKE '$next_opening_column'";
+        $next_day_result = $conn->query($check_next_day_query);
+        
+        if ($next_day_result->num_rows > 0) {
+            // Update next day's opening to match current day's closing
+            $update_next_query = "UPDATE $sale_daily_stock_table 
+                                 SET $next_opening_column = ?,
+                                     LAST_UPDATED = CURRENT_TIMESTAMP 
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_next_stmt = $conn->prepare($update_next_query);
+            $update_next_stmt->bind_param("dss", $new_closing, $month_year_full, $item_code);
+            $update_next_stmt->execute();
+            $update_next_stmt->close();
+        }
+    }
+    
+    // ============================================================================
+    // STEP 2: UPDATE CURRENT ACTIVE TABLE IF SALE DATE IS IN ARCHIVED MONTH
+    // ============================================================================
+    
+    // Check if sale date is in a different (archived) month than current month
+    if ($sale_month < $current_month) {
+        // Sale is for archived month, update current active table
+        
+        // Check if current active table exists
+        $check_current_table = "SHOW TABLES LIKE '$current_daily_stock_table'";
+        $current_table_result = $conn->query($check_current_table);
+        
+        if ($current_table_result->num_rows > 0) {
+            // Get current month's data
+            $current_stk_month = date('Y-m');
             
-            // Check if next day exists in the table
-            $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
-            $next_day_result = $conn->query($check_next_day_query);
+            // Check if item exists in current table
+            $check_current_item = "SELECT COUNT(*) as count FROM $current_daily_stock_table 
+                                  WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $check_current_stmt = $conn->prepare($check_current_item);
+            $check_current_stmt->bind_param("ss", $item_code, $current_stk_month);
+            $check_current_stmt->execute();
+            $check_current_result = $check_current_stmt->get_result();
+            $item_exists = $check_current_result->fetch_assoc()['count'] > 0;
+            $check_current_stmt->close();
             
-            if ($next_day_result->num_rows > 0) {
-                // Update next day's opening to match current day's closing
-                $update_next_query = "UPDATE $daily_stock_table 
-                                     SET $next_opening_column = ?,
-                                         LAST_UPDATED = CURRENT_TIMESTAMP 
-                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_next_stmt = $conn->prepare($update_next_query);
-                $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
-                $update_next_stmt->execute();
-                $update_next_stmt->close();
+            if ($item_exists) {
+                // Adjust current month's opening stock by deducting the sale quantity
+                $update_current_opening = "UPDATE $current_daily_stock_table 
+                                          SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                              LAST_UPDATED = CURRENT_TIMESTAMP 
+                                          WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                $update_current_stmt = $conn->prepare($update_current_opening);
+                $update_current_stmt->bind_param("dss", $qty, $item_code, $current_stk_month);
+                $update_current_stmt->execute();
+                
+                if ($update_current_stmt->affected_rows === 0) {
+                    logMessage("Warning: Failed to update current table opening stock for item $item_code", 'WARNING');
+                }
+                $update_current_stmt->close();
+                
+                // Recalculate closing balances for all days in current month
+                recalculateCurrentMonthStock($conn, $current_daily_stock_table, $item_code, $current_stk_month);
             }
         }
-    } else {
-        // For new records, opening and purchase are typically 0 unless specified otherwise
-        $closing = 0 - $qty; // Since opening and purchase are 0
+    }
+    
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing");
+}
+
+// Helper function to recalculate current month's stock
+function recalculateCurrentMonthStock($conn, $table_name, $item_code, $stk_month) {
+    // Start from day 1 and recalculate all days
+    for ($day = 1; $day <= 31; $day++) {
+        $day_num = sprintf('%02d', $day);
+        $opening_column = "DAY_{$day_num}_OPEN";
+        $purchase_column = "DAY_{$day_num}_PURCHASE";
+        $sales_column = "DAY_{$day_num}_SALES";
+        $closing_column = "DAY_{$day_num}_CLOSING";
         
-        // Create new record
-        $insert_query = "INSERT INTO $daily_stock_table 
-                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
-                         VALUES (?, ?, 'F', 0, 0, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
-        $insert_stmt->execute();
-        $insert_stmt->close();
+        // Check if day columns exist
+        $check_columns = "SHOW COLUMNS FROM $table_name LIKE '$opening_column'";
+        $column_result = $conn->query($check_columns);
+        
+        if ($column_result->num_rows == 0) {
+            continue; // Day doesn't exist in table
+        }
+        
+        // Get current values for this day
+        $day_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                      FROM $table_name 
+                      WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $day_stmt = $conn->prepare($day_query);
+        $day_stmt->bind_param("ss", $item_code, $stk_month);
+        $day_stmt->execute();
+        $day_result = $day_stmt->get_result();
+        
+        if ($day_result->num_rows > 0) {
+            $day_values = $day_result->fetch_assoc();
+            $opening = $day_values[$opening_column] ?? 0;
+            $purchase = $day_values[$purchase_column] ?? 0;
+            $sales = $day_values[$sales_column] ?? 0;
+            
+            // Calculate closing using the same formula
+            $closing = $opening + $purchase - $sales;
+            
+            // Update closing
+            $update_query = "UPDATE $table_name 
+                            SET $closing_column = ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Set next day's opening to this day's closing
+            $next_day = $day + 1;
+            if ($next_day <= 31) {
+                $next_day_num = sprintf('%02d', $next_day);
+                $next_opening_column = "DAY_{$next_day_num}_OPEN";
+                
+                // Check if next day exists
+                $check_next = "SHOW COLUMNS FROM $table_name LIKE '$next_opening_column'";
+                $next_result = $conn->query($check_next);
+                
+                if ($next_result->num_rows > 0) {
+                    $update_next_query = "UPDATE $table_name 
+                                         SET $next_opening_column = ?,
+                                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                    $update_next_stmt = $conn->prepare($update_next_query);
+                    $update_next_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+                    $update_next_stmt->execute();
+                    $update_next_stmt->close();
+                }
+            }
+        }
+        $day_stmt->close();
     }
 }
 
@@ -426,7 +639,7 @@ function getNextBillNumber($conn) {
     }
 }
 
-// Handle form submission for sales update - FIXED VERSION
+// Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
@@ -442,7 +655,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Get ALL items from database for validation (not just visible ones)
+            // Get ALL items from database for validation
             $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                                        COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
                                 FROM tblitemmaster im
@@ -458,7 +671,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $all_items_stmt->close();
             
-            // Enhanced stock validation before transaction - using ALL session quantities
+            // Enhanced stock validation before transaction
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
                 foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
@@ -480,20 +693,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
                 }
             } else {
-                // Start transaction only after validation
+                // Start transaction
                 $conn->begin_transaction();
                 
                 try {
                     $total_amount = 0;
-                    $items_data = []; // Store item data for bill generation
-                    $daily_sales_data = []; // Store daily sales for each item
+                    $items_data = [];
+                    $daily_sales_data = [];
                     
-                    // Process ONLY session quantities > 0 (optimization)
+                    // Process ONLY session quantities > 0
                     if (isset($_SESSION['sale_quantities'])) {
                         foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
-                                $current_stock = $item['CURRENT_STOCK'];
                                 
                                 // Generate distribution
                                 $daily_sales = distributeSales($total_qty, $days_count);
@@ -509,6 +721,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
                     
+                    // NEW: Date-wise stock validation before proceeding
+                    $date_wise_errors = validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id);
+                    if (!empty($date_wise_errors)) {
+                        throw new Exception("Date-wise stock validation failed:\n" . implode("\n", array_slice($date_wise_errors, 0, 10)));
+                    }
+                    
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
                         $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
@@ -516,7 +734,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
                         $opening_stock_column = "Opening_Stock" . $comp_id;
-                        $daily_stock_table = "tbldailystock_" . $comp_id;
                         
                         // Get next bill number once to ensure proper numerical order
                         $next_bill_number = getNextBillNumber($conn);
@@ -552,8 +769,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update stock
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
                                 
-                                // Update daily stock
-                                updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                                // ENHANCED: Update daily stock with archive table support
+                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
                             $total_amount += $bill['total_amount'];
@@ -599,7 +816,7 @@ $debug_info = [
     'current_page' => $current_page,
     'total_pages' => $total_pages,
     'session_quantities_count' => count($_SESSION['sale_quantities']),
-    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['closing_balance'] ?? []) : 0,
+    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['sale_qty'] ?? []) : 0,
     'date_range' => "$start_date to $end_date",
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],

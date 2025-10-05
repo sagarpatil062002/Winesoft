@@ -46,7 +46,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ? AND sh.BILL_DATE = ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Already in descending order
+              ORDER BY sh.BILL_NO DESC";
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("is", $compID, $Closing_Stock);
@@ -68,7 +68,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ? AND sh.BILL_DATE BETWEEN ? AND ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Already in descending order
+              ORDER BY sh.BILL_NO DESC";
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("iss", $compID, $start_date, $end_date);
@@ -90,7 +90,7 @@ if ($view_type === 'date') {
               LEFT JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
               WHERE sh.COMP_ID = ?
               GROUP BY sh.BILL_NO
-              ORDER BY sh.BILL_DATE DESC, sh.BILL_NO DESC"; // Ensured descending order
+              ORDER BY sh.BILL_NO DESC";
     
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $compID);
