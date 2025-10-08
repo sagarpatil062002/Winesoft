@@ -9,6 +9,22 @@ $companyId = $_SESSION['CompID'];
 
 include_once "../config/db.php";
 
+// ---- License filtering ----
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+if (!empty($available_classes)) {
+    foreach ($available_classes as $class) {
+        $allowed_classes[] = $class['SGROUP'];
+    }
+}
+
 // ---- Mode: F (Foreign) / C (Country) ----
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
@@ -171,22 +187,32 @@ function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn)
     updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $companyId);
 }
 
-// ---- Items (for case rate lookup & modal) ----
+// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ----
 $items = [];
-$itemsStmt = $conn->prepare(
-  "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG,
-          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
-          CONCAT('SCM', im.CODE) AS SCM_CODE
-     FROM tblitemmaster im
-     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
-    WHERE im.LIQ_FLAG = ?
- ORDER BY im.DETAILS"
-);
-$itemsStmt->bind_param("s", $mode);
-$itemsStmt->execute();
-$itemsResult = $itemsStmt->get_result();
-if ($itemsResult) $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
-$itemsStmt->close();
+
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemsQuery = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
+                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                          CONCAT('SCM', im.CODE) AS SCM_CODE
+                     FROM tblitemmaster im
+                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
+                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)
+                 ORDER BY im.DETAILS";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+    
+    $itemsStmt = $conn->prepare($itemsQuery);
+    $itemsStmt->bind_param($types, ...$params);
+    $itemsStmt->execute();
+    $itemsResult = $itemsStmt->get_result();
+    if ($itemsResult) $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
+    $itemsStmt->close();
+} else {
+    // If no classes allowed, show empty result
+    $items = [];
+}
 
 // ---- Suppliers (for name/code replacement) ----
 $suppliers = [];
@@ -431,6 +457,24 @@ input.form-control-sm {
     font-weight: bold;
     width: 10px;
 }
+
+/* Alert styling for missing items */
+.missing-items-alert {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    margin-top: 10px;
+}
+.missing-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.missing-item:last-child {
+    border-bottom: none;
+}
 </style>
 </head>
 <body>
@@ -441,6 +485,24 @@ input.form-control-sm {
 
     <div class="content-area p-3 p-md-4">
       <h4 class="mb-3">New Purchase - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h4>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <?php if (isset($errorMessage)): ?>
         <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
@@ -705,6 +767,7 @@ $(function(){
   const dbItems = <?=json_encode($items, JSON_UNESCAPED_UNICODE)?>; // for matching
   const suppliers = <?=json_encode($suppliers, JSON_UNESCAPED_UNICODE)?>; // for supplier matching
   const distinctSizes = <?=json_encode($distinctSizes, JSON_UNESCAPED_UNICODE)?>; // from database
+  const allowedClasses = <?= json_encode($allowed_classes) ?>; // License allowed classes
 
   // ---------- Helpers ----------
   function ymdFromDmyText(str){
@@ -791,7 +854,7 @@ $(function(){
         for (const it of dbItems) {
             const dbCode = (it.CODE || '').toLowerCase().trim();
             if (dbCode === cleanCode) {
-                console.log("Exact code match found:", it.CODE);
+                console.log("Exact code match found:", it.CODE, "Class:", it.CLASS);
                 return it;
             }
         }
@@ -800,7 +863,7 @@ $(function(){
         for (const it of dbItems) {
             const scmCode = (it.SCM_CODE || '').toLowerCase().replace(/^scm/, '').trim();
             if (scmCode === cleanCode) {
-                console.log("SCM code match found:", it.CODE);
+                console.log("SCM code match found:", it.CODE, "Class:", it.CLASS);
                 return it;
             }
         }
@@ -838,7 +901,7 @@ $(function(){
     }
     
     if (bestMatch) {
-        console.log("Best match found:", bestMatch.CODE, "Score:", bestScore);
+        console.log("Best match found:", bestMatch.CODE, "Class:", bestMatch.CLASS, "Score:", bestScore);
         return bestMatch;
     }
     
@@ -1070,11 +1133,41 @@ $(function(){
     });
   }
 
+  // Function to show missing items alert
+  function showMissingItemsAlert(missingItems, addedCount, totalCount) {
+    let alertMessage = '';
+    
+    if (missingItems.length === 0) {
+        // All items found in database
+        alertMessage = `✅ Successfully added ${addedCount} items from SCM data.`;
+    } else {
+        // Some items missing from database
+        alertMessage = `⚠️ Added ${addedCount} items from SCM data. ${missingItems.length} items were skipped because they are not in database:\n\n`;
+        
+        // Create detailed list of missing items
+        const missingList = missingItems.map(item => 
+            `• ${item.name} (${item.size}) - Code: ${item.code}`
+        ).join('\n');
+        
+        alertMessage += missingList + '\n\nPlease add these items to master data first.';
+    }
+    
+    alert(alertMessage);
+  }
+
 function addRow(item){
+    // Validate if item is allowed by license
+    const dbItem = item.dbItem || findDbItemData(item.name, item.size, item.cleanCode || item.code);
+    
+    // Skip if item is not in allowed classes
+    if (dbItem && allowedClasses.length > 0 && !allowedClasses.includes(dbItem.CLASS)) {
+        console.log('Skipping item not allowed by license:', item.name, 'Class:', dbItem.CLASS);
+        return; // Skip this item
+    }
+    
     if($('#noItemsRow').length) $('#noItemsRow').remove();
     
     // Use the database item if available for accurate data
-    const dbItem = item.dbItem || findDbItemData(item.name, item.size, item.cleanCode || item.code);
     const bottlesPerCase = dbItem ? parseInt(dbItem.BOTTLE_PER_CASE) || 12 : 12;
     const caseRate = item.caseRate || (dbItem ? parseFloat(dbItem.PPRICE) : 0) || 0;
     const itemCode = dbItem ? dbItem.CODE : (item.cleanCode || item.code || '');
@@ -1296,7 +1389,6 @@ function addRow(item){
       const parsed = parseSCM(raw);
       
       $('#pasteModal').modal('hide');
-      alert('Imported '+parsed.items.length+' items.');
     }catch(err){
       console.error(err);
       alert('Could not parse the SCM text. '+err.message);
@@ -1461,18 +1553,42 @@ function addRow(item){
       }
     }
     
-    // Add all parsed items to the table
-    $('.item-row').remove(); 
-    itemCount = 0;
-    if ($('#noItemsRow').length) $('#noItemsRow').remove();
+    // Track missing items and added items
+    const missingItems = [];
+    const addedItems = [];
     
-    if (out.items.length === 0) {
-      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
-    } else {
-      out.items.forEach(item => {
-        addRow(item);
-      });
-    }
+    // Process each item and check if it exists in database
+    out.items.forEach(item => {
+        const dbItem = item.dbItem || findDbItemData("", item.size, item.cleanCode);
+        
+        if (dbItem) {
+            // Item found in database - check license restrictions
+            if (allowedClasses.length > 0 && !allowedClasses.includes(dbItem.CLASS)) {
+                console.log('Skipping item not allowed by license:', item.name, 'Class:', dbItem.CLASS);
+                missingItems.push({
+                    code: item.cleanCode || item.itemCode,
+                    name: item.name || 'Unknown Item',
+                    size: item.size || '',
+                    reason: 'License restriction'
+                });
+            } else {
+                // Item found and allowed by license - add to table
+                addRow(item);
+                addedItems.push(item);
+            }
+        } else {
+            // Item not found in database
+            missingItems.push({
+                code: item.cleanCode || item.itemCode,
+                name: item.name || 'Unknown Item',
+                size: item.size || '',
+                reason: 'Not in database'
+            });
+        }
+    });
+    
+    // Show appropriate alert message
+    showMissingItemsAlert(missingItems, addedItems.length, out.items.length);
     
     // UPDATE BOTTLES BY SIZE DISPLAY AFTER ADDING SCM ITEMS
     updateBottlesBySizeDisplay();

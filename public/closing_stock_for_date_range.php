@@ -157,6 +157,22 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php"; // MySQLi connection in $conn
 
 // ============================================================================
+// LICENSE RESTRICTIONS - APPLIED FROM ITEM_MASTER.PHP
+// ============================================================================
+include_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
+
+// ============================================================================
 // PERFORMANCE OPTIMIZATION: DATABASE INDEXING
 // ============================================================================
 $index_queries = [
@@ -231,10 +247,22 @@ $items_per_page = 50; // Adjust based on your needs
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
-// Get total count for pagination
-$count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE im.LIQ_FLAG = ?";
-$count_params = [$mode];
-$count_types = "s";
+// ============================================================================
+// LICENSE-BASED ITEM FILTERING - APPLIED FROM ITEM_MASTER.PHP
+// ============================================================================
+
+// Get total count for pagination with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $count_params = array_merge([$mode], $allowed_classes);
+    $count_types = str_repeat('s', count($count_params));
+} else {
+    // If no classes allowed, show empty result
+    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE 1 = 0";
+    $count_params = [];
+    $count_types = "";
+}
 
 if ($search !== '') {
     $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -244,20 +272,33 @@ if ($search !== '') {
 }
 
 $count_stmt = $conn->prepare($count_query);
-$count_stmt->bind_param($count_types, ...$count_params);
+if (!empty($count_params)) {
+    $count_stmt->bind_param($count_types, ...$count_params);
+}
 $count_stmt->execute();
 $count_result = $count_stmt->get_result();
 $total_items = $count_result->fetch_assoc()['total'];
 $count_stmt->close();
 
-// Main query with pagination
-$query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                 COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-          FROM tblitemmaster im
-          LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-          WHERE im.LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Main query with pagination and license filtering
+if (!empty($allowed_classes)) {
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              WHERE 1 = 0";
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -272,7 +313,9 @@ $params[] = $offset;
 $types .= "ii";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -306,12 +349,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
     logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// Get ALL items data for JavaScript from a separate query (for Total Sales Summary)
-$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
-                    FROM tblitemmaster im 
-                    WHERE im.LIQ_FLAG = ?";
-$all_items_stmt = $conn->prepare($all_items_query);
-$all_items_stmt->bind_param("s", $mode);
+// Get ALL items data for JavaScript from a separate query (for Total Sales Summary) with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $all_items_stmt = $conn->prepare($all_items_query);
+    $all_items_params = array_merge([$mode], $allowed_classes);
+    $all_items_stmt->bind_param(str_repeat('s', count($all_items_params)), ...$all_items_params);
+} else {
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE 1 = 0";
+    $all_items_stmt = $conn->prepare($all_items_query);
+}
+
 $all_items_stmt->execute();
 $all_items_result = $all_items_stmt->get_result();
 $all_items_data = [];
@@ -655,14 +708,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Get ALL items from database for validation
-            $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                                       COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-                                FROM tblitemmaster im
-                                LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                                WHERE im.LIQ_FLAG = ?";
-            $all_items_stmt = $conn->prepare($all_items_query);
-            $all_items_stmt->bind_param("s", $mode);
+            // Get ALL items from database for validation with license filtering
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+                $all_items_stmt = $conn->prepare($all_items_query);
+                $all_items_params = array_merge([$mode], $allowed_classes);
+                $all_items_stmt->bind_param(str_repeat('s', count($all_items_params)), ...$all_items_params);
+            } else {
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE 1 = 0";
+                $all_items_stmt = $conn->prepare($all_items_query);
+            }
+            
             $all_items_stmt->execute();
             $all_items_result = $all_items_stmt->get_result();
             $all_items = [];
@@ -692,6 +757,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (count($stock_errors) > 5) {
                     $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
                 }
+                logMessage("Stock validation failed: " . implode("; ", $stock_errors), 'ERROR');
             } else {
                 // Start transaction
                 $conn->begin_transaction();
@@ -820,7 +886,9 @@ $debug_info = [
     'date_range' => "$start_date to $end_date",
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
-    'comp_id' => $comp_id
+    'comp_id' => $comp_id,
+    'license_type' => $license_type,
+    'allowed_classes' => $allowed_classes
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
@@ -876,6 +944,17 @@ logArray($debug_info, "Sales Page Load Debug Info");
       padding: 10px;
       border-radius: 5px;
       margin-bottom: 15px;
+    }
+
+    /* License info banner */
+    .license-info-banner {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        border-left: 5px solid #ff9ff3;
     }
 
     /* Closing balance warning styles */
@@ -1060,6 +1139,12 @@ tr.has-quantity td {
 
     <div class="content-area">
       <h3 class="mb-4">Sales by Closing Balance</h3>
+
+      <!-- License Information Banner -->
+      <div class="license-info-banner">
+        <i class="fas fa-id-card"></i> License Type: <?= htmlspecialchars($license_type) ?> | 
+        Available Classes: <?= htmlspecialchars(implode(', ', $allowed_classes)) ?>
+      </div>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -1294,7 +1379,7 @@ tr.has-quantity td {
     <?php endforeach; ?>
 <?php else: ?>
     <tr>
-        <td colspan="9" class="text-center text-muted">No items found.</td>
+        <td colspan="9" class="text-center text-muted">No items found matching your license criteria.</td>
     </tr>
 <?php endif; ?>
 </tbody>

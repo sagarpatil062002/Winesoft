@@ -11,8 +11,22 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
+$comp_id = $_SESSION['CompID'];
+$fin_year = $_SESSION['FIN_YEAR_ID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -21,12 +35,23 @@ $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch items
-$query = "SELECT CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, SERIAL_NO, SEQ_NO
-          FROM tblitemmaster
-          WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch items - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, SERIAL_NO, SEQ_NO
+              FROM tblitemmaster
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, DETAILS, DETAILS2, CLASS, SUB_CLASS, SERIAL_NO, SEQ_NO
+              FROM tblitemmaster
+              WHERE 1 = 0"; // Always false condition
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR DETAILS2 LIKE ?)";
@@ -45,7 +70,9 @@ if ($sequence_type === 'system_defined') {
 }
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -71,6 +98,24 @@ $stmt->close();
 
     <div class="content-area">
       <h3 class="mb-4">Item Sequence Module</h3>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -131,6 +176,7 @@ $stmt->close();
             <tr>
               <th>Item Description</th>
               <th>Category</th>
+              <th>Class</th>
               <th>Serial No.</th>
               <th>New Seq.</th>
               <th>Actions</th>
@@ -142,6 +188,7 @@ $stmt->close();
               <tr>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
+                <td><?= htmlspecialchars($item['CLASS']); ?></td>
                 <td><?= htmlspecialchars($item['SERIAL_NO']); ?></td>
                 <td>
                   <input type="number" class="form-control form-control-sm sequence-input"
@@ -149,7 +196,7 @@ $stmt->close();
                          data-code="<?= htmlspecialchars($item['CODE']); ?>">
                 </td>
                 <td>
-                  <button class="btn btn-sm save-sequence" data-code="<?= htmlspecialchars($item['CODE']); ?>">
+                  <button class="btn btn-sm btn-primary save-sequence" data-code="<?= htmlspecialchars($item['CODE']); ?>">
                     <i class="fas fa-save"></i> Save
                   </button>
                 </td>
@@ -157,7 +204,13 @@ $stmt->close();
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="5" class="text-center text-muted">No items found.</td>
+              <td colspan="6" class="text-center text-muted">
+                <?php if (empty($allowed_classes)): ?>
+                  No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
+                <?php else: ?>
+                  No items found.
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endif; ?>
           </tbody>
@@ -176,19 +229,31 @@ $(document).ready(function() {
     $('.save-sequence').click(function() {
         const code = $(this).data('code');
         const seqNo = $(this).closest('tr').find('.sequence-input').val();
+        const button = $(this);
+
+        // Show loading state
+        button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
         $.ajax({
             url: 'update_sequence.php',
             method: 'POST',
             data: { code: code, seq_no: seqNo },
-            success: function() {
+            success: function(response) {
                 alert('Sequence number updated successfully');
-                location.reload();
+                button.prop('disabled', false).html('<i class="fas fa-save"></i> Save');
             },
             error: function() {
                 alert('Error updating sequence number');
+                button.prop('disabled', false).html('<i class="fas fa-save"></i> Save');
             }
         });
+    });
+
+    // Allow saving with Enter key
+    $('.sequence-input').keypress(function(e) {
+        if (e.which === 13) { // Enter key
+            $(this).closest('tr').find('.save-sequence').click();
+        }
     });
 });
 </script>

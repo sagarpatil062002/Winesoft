@@ -19,6 +19,75 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php";
 require_once 'license_functions.php';
 
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Fetch all available classes from database and map them properly
+$all_classes = [];
+$classQuery = "SELECT SRNO, SGROUP, `DESC` FROM tblclass";
+$classResult = $conn->query($classQuery);
+while ($row = $classResult->fetch_assoc()) {
+    $all_classes[$row['SGROUP']] = [
+        'name' => $row['DESC'],
+        'id' => $row['SRNO']
+    ];
+}
+
+// Create comprehensive class mapping with icons and colors
+$class_mapping = [
+    'W' => ['name' => 'WHISKY ITEMS', 'icon' => 'fas fa-glass-whiskey', 'color' => '#ff9a9e'],
+    'V' => ['name' => 'WINE ITEMS', 'icon' => 'fas fa-wine-glass', 'color' => '#a18cd1'],
+    'G' => ['name' => 'GIN ITEMS', 'icon' => 'fas fa-cocktail', 'color' => '#fad0c4'],
+    'F' => ['name' => 'FERMENTED BEER', 'icon' => 'fas fa-beer', 'color' => '#ffecd2'],
+    'M' => ['name' => 'MILD BEER', 'icon' => 'fas fa-beer', 'color' => '#a1c4fd'],
+    'D' => ['name' => 'BRANDY ITEMS', 'icon' => 'fas fa-wine-bottle', 'color' => '#ff9a9e'],
+    'K' => ['name' => 'VODKA ITEMS', 'icon' => 'fas fa-glass-whiskey', 'color' => '#a18cd1'],
+    'R' => ['name' => 'RUM ITEMS', 'icon' => 'fas fa-glass-whiskey', 'color' => '#fad0c4'],
+    'O' => ['name' => 'OTHER ITEMS', 'icon' => 'fas fa-boxes', 'color' => '#ffecd2']
+];
+
+// For classes not in the predefined mapping, create default entries
+foreach ($all_classes as $class_code => $class_info) {
+    if (!isset($class_mapping[$class_code])) {
+        $class_mapping[$class_code] = [
+            'name' => $class_info['name'] . ' ITEMS',
+            'icon' => 'fas fa-box',
+            'color' => '#d4fc79' // default color
+        ];
+    }
+}
+
+// Filter class mapping to only include allowed classes
+$allowed_class_mapping = [];
+foreach ($available_classes as $class) {
+    $class_code = $class['SGROUP'];
+    if (isset($class_mapping[$class_code])) {
+        $allowed_class_mapping[$class_code] = $class_mapping[$class_code];
+    } else {
+        // If class code not in mapping, create a default entry
+        $allowed_class_mapping[$class_code] = [
+            'name' => $class['DESC'] . ' ITEMS',
+            'icon' => 'fas fa-box',
+            'color' => '#d4fc79'
+        ];
+    }
+}
+
+// Function to build class filter for SQL queries
+function buildClassFilter($allowed_class_ids, $class_column = 'CLASS') {
+    if (empty($allowed_class_ids)) {
+        return "1=0"; // No access to any classes
+    }
+    
+    $quoted_ids = array_map(function($id) {
+        return "'" . $id . "'";
+    }, $allowed_class_ids);
+    
+    return $class_column . " IN (" . implode(',', $quoted_ids) . ")";
+}
+
 function getCurrentMonth() {
     return date('Y-m');
 }
@@ -702,7 +771,7 @@ if (isset($_SESSION['transition_message'])) {
 }
 
 // =============================================================================
-// EXISTING DASHBOARD STATISTICS LOGIC
+// EXISTING DASHBOARD STATISTICS LOGIC - MODIFIED WITH LICENSE FILTERS
 // =============================================================================
 
 // Initialize stats array with default values
@@ -711,35 +780,35 @@ $stats = [
     'total_customers' => 0,
     'total_suppliers' => 0,
     'total_permits' => 0,
-    'total_dry_days' => 0,
-    'whisky_items' => 0,
-    'wine_items' => 0,
-    'gin_items' => 0,
-    'fermented_beer_items' => 0,
-    'mild_beer_items' => 0,
-    'total_beer_items' => 0,
-    'brandy_items' => 0,
-    'vodka_items' => 0,
-    'rum_items' => 0,
-    'other_items' => 0
+    'total_dry_days' => 0
 ];
 
-// Fetch statistics data
+// Initialize class statistics
+$class_stats = [];
+foreach ($allowed_class_mapping as $class_code => $class_info) {
+    $class_stats[$class_code] = 0;
+}
+
+// Fetch statistics data with license-based filtering
 try {
     // Check database connection
     if(!isset($conn) || !$conn instanceof mysqli) {
         throw new Exception("Database connection not established");
     }
 
-    // Total Items
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster");
+    // Build class filter for queries
+    $allowed_class_codes = array_keys($allowed_class_mapping);
+    $class_filter = buildClassFilter($allowed_class_codes);
+    
+    // Total Items (filtered by license)
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE $class_filter");
     if($result) {
         $row = $result->fetch_assoc();
         $stats['total_items'] = number_format($row['total']);
         $result->free();
     }
 
-    // Total Customers
+    // Total Customers (unchanged - not class dependent)
     $companyId = $_SESSION['CompID'] ?? 0;
     $customerCountQuery = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
     $customerCountStmt = $conn->prepare($customerCountQuery);
@@ -750,7 +819,7 @@ try {
     $stats['total_customers'] = number_format($customerCount['total_customers']);
     $customerCountStmt->close();
 
-    // Total Suppliers
+    // Total Suppliers (unchanged - not class dependent)
     $result = $conn->query("SELECT COUNT(DISTINCT CODE) as total FROM tblsupplier WHERE CODE IS NOT NULL");
     if($result) {
         $row = $result->fetch_assoc();
@@ -758,7 +827,7 @@ try {
         $result->free();
     }
 
-    // Total Permits (active)
+    // Total Permits (active) - unchanged
     $currentDate = date('Y-m-d');
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tblpermit WHERE P_EXP_DT >= ? AND PRMT_FLAG = 1");
     $stmt->bind_param("s", $currentDate);
@@ -768,7 +837,7 @@ try {
     $stats['total_permits'] = number_format($row['total']);
     $stmt->close();
 
-    // Total Dry Days (current year)
+    // Total Dry Days (current year) - unchanged
     $currentYear = date('Y');
     $stmt = $conn->prepare("SELECT COUNT(*) as total FROM tbldrydays WHERE YEAR(DDATE) = ?");
     $stmt->bind_param("s", $currentYear);
@@ -778,86 +847,32 @@ try {
     $stats['total_dry_days'] = number_format($row['total']);
     $stmt->close();
 
-    // Whisky Items (CLASS = 'W')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'W'");
+    // Get counts for each allowed class
+foreach ($allowed_class_mapping as $class_code => $class_info) {
+    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = '$class_code'");
     if($result) {
         $row = $result->fetch_assoc();
-        $stats['whisky_items'] = number_format($row['total']);
+        $class_stats[$class_code] = number_format($row['total']);
         $result->free();
     }
+}
 
-    // Wine Items (CLASS = 'V')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'V'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['wine_items'] = number_format($row['total']);
-        $result->free();
+// Special case: Total Beer Items (only if F or M classes are allowed)
+if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
+    $beer_classes = [];
+    if (isset($allowed_class_mapping['F'])) $beer_classes[] = "'F'";
+    if (isset($allowed_class_mapping['M'])) $beer_classes[] = "'M'";
+    
+    if (!empty($beer_classes)) {
+        $beer_filter = "CLASS IN (" . implode(',', $beer_classes) . ")";
+        $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE $beer_filter");
+        if($result) {
+            $row = $result->fetch_assoc();
+            $class_stats['total_beer'] = number_format($row['total']);
+            $result->free();
+        }
     }
-
-    // Gin Items (CLASS = 'G')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'G'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['gin_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Fermented Beer Items (CLASS = 'F')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'F'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['fermented_beer_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Mild Beer Items (CLASS = 'M')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'M'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['mild_beer_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Total Beer Items (F + M)
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS IN ('F', 'M')");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['total_beer_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Brandy Items (CLASS = 'D')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'D'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['brandy_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Vodka Items (CLASS = 'K')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'K'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['vodka_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Rum Items (CLASS = 'R')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'R'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['rum_items'] = number_format($row['total']);
-        $result->free();
-    }
-
-    // Other Items (CLASS = 'O')
-    $result = $conn->query("SELECT COUNT(*) as total FROM tblitemmaster WHERE CLASS = 'O'");
-    if($result) {
-        $row = $result->fetch_assoc();
-        $stats['other_items'] = number_format($row['total']);
-        $result->free();
-    }
-
+}
 } catch (Exception $e) {
     $error = "Database error: " . $e->getMessage();
 }
@@ -880,6 +895,25 @@ try {
       grid-template-columns: repeat(4, 1fr);
       gap: 20px;
       margin-top: 20px;
+    }
+    
+    /* License info badge */
+    .license-badge {
+      background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    
+    .allowed-classes-badge {
+      background: linear-gradient(45deg, #43e97b 0%, #38f9d7 100%);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      margin-left: 5px;
     }
     
     /* Responsive adjustments */
@@ -909,7 +943,17 @@ try {
 
   <div class="main-content">
     <div class="content-area">
-      <h3 class="mb-4">Dashboard Overview</h3>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">Dashboard Overview</h3>
+        <?php if($license_type): ?>
+          <div class="d-flex align-items-center">
+            <span class="license-badge">License: <?php echo htmlspecialchars($license_type); ?></span>
+            <span class="allowed-classes-badge">
+              <?php echo count($allowed_class_mapping); ?> Classes Allowed
+            </span>
+          </div>
+        <?php endif; ?>
+      </div>
       
       <?php if(isset($error)): ?>
         <div class="alert alert-danger"><?php echo $error; ?></div>
@@ -1036,7 +1080,7 @@ try {
 
       <!-- Statistics Grid - 4 PER ROW WITH SIMPLE COLORS -->
       <div class="stats-grid">
-        <!-- Total Items -->
+        <!-- Total Items (filtered by license) -->
         <div class="stat-card">
           <div class="stat-icon" style="background: var(--primary-color);">
             <i class="fas fa-box"></i>
@@ -1044,10 +1088,11 @@ try {
           <div class="stat-info">
             <h4>TOTAL ITEMS</h4>
             <p><?php echo $stats['total_items']; ?></p>
+            <small class="text-muted">License Filtered</small>
           </div>
         </div>
 
-        <!-- Total Customers -->
+        <!-- Total Customers (unchanged) -->
         <div class="stat-card">
           <div class="stat-icon" style="background: #f5576c;">
             <i class="fas fa-users"></i>
@@ -1058,7 +1103,7 @@ try {
           </div>
         </div>
 
-        <!-- Total Suppliers -->
+        <!-- Total Suppliers (unchanged) -->
         <div class="stat-card">
           <div class="stat-icon" style="background: #4facfe;">
             <i class="fas fa-truck"></i>
@@ -1069,7 +1114,7 @@ try {
           </div>
         </div>
 
-        <!-- Total Permits -->
+        <!-- Total Permits (unchanged) -->
         <div class="stat-card">
           <div class="stat-icon" style="background: #43e97b;">
             <i class="fas fa-id-card"></i>
@@ -1080,7 +1125,7 @@ try {
           </div>
         </div>
 
-        <!-- Total Dry Days -->
+        <!-- Total Dry Days (unchanged) -->
         <div class="stat-card">
           <div class="stat-icon" style="background: #fa709a;">
             <i class="fas fa-calendar-times"></i>
@@ -1091,116 +1136,60 @@ try {
           </div>
         </div>
 
-        <!-- Whisky Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff9a9e;">
-            <i class="fas fa-glass-whiskey"></i>
-          </div>
-          <div class="stat-info">
-            <h4>WHISKY ITEMS</h4>
-            <p><?php echo $stats['whisky_items']; ?></p>
-          </div>
-        </div>
+        <!-- Display only allowed class statistics -->
+        <?php foreach ($allowed_class_mapping as $class_code => $class_info): ?>
+          <?php if ($class_stats[$class_code] > 0): ?>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: <?php echo $class_info['color']; ?>;">
+                <i class="<?php echo $class_info['icon']; ?>"></i>
+              </div>
+              <div class="stat-info">
+                <h4><?php echo $class_info['name']; ?></h4>
+                <p><?php echo $class_stats[$class_code]; ?></p>
+              </div>
+            </div>
+          <?php endif; ?>
+        <?php endforeach; ?>
 
-        <!-- Wine Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #a18cd1;">
-            <i class="fas fa-wine-glass"></i>
+        <!-- Special case: Total Beer Items -->
+        <?php if (isset($class_stats['total_beer']) && $class_stats['total_beer'] > 0): ?>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #d4fc79;">
+              <i class="fas fa-beer"></i>
+            </div>
+            <div class="stat-info">
+              <h4>TOTAL BEER ITEMS</h4>
+              <p><?php echo $class_stats['total_beer']; ?></p>
+            </div>
           </div>
-          <div class="stat-info">
-            <h4>WINE ITEMS</h4>
-            <p><?php echo $stats['wine_items']; ?></p>
-          </div>
-        </div>
+        <?php endif; ?>
 
-        <!-- Gin Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #fad0c4;">
-            <i class="fas fa-cocktail"></i>
-          </div>
-          <div class="stat-info">
-            <h4>GIN ITEMS</h4>
-            <p><?php echo $stats['gin_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Fermented Beer -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffecd2;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>FERMENTED BEER</h4>
-            <p><?php echo $stats['fermented_beer_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Mild Beer -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #a1c4fd;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>MILD BEER</h4>
-            <p><?php echo $stats['mild_beer_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Total Beer -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #d4fc79;">
-            <i class="fas fa-beer"></i>
-          </div>
-          <div class="stat-info">
-            <h4>TOTAL BEER ITEMS</h4>
-            <p><?php echo $stats['total_beer_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Brandy Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ff9a9e;">
-            <i class="fas fa-wine-bottle"></i>
-          </div>
-          <div class="stat-info">
-            <h4>BRANDY ITEMS</h4>
-            <p><?php echo $stats['brandy_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Vodka Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #a18cd1;">
-            <i class="fas fa-glass-whiskey"></i>
-          </div>
-          <div class="stat-info">
-            <h4>VODKA ITEMS</h4>
-            <p><?php echo $stats['vodka_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Rum Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #fad0c4;">
-            <i class="fas fa-glass-whiskey"></i>
-          </div>
-          <div class="stat-info">
-            <h4>RUM ITEMS</h4>
-            <p><?php echo $stats['rum_items']; ?></p>
-          </div>
-        </div>
-
-        <!-- Other Items -->
-        <div class="stat-card">
-          <div class="stat-icon" style="background: #ffecd2;">
-            <i class="fas fa-boxes"></i>
-          </div>
-          <div class="stat-info">
-            <h4>OTHER ITEMS</h4>
-            <p><?php echo $stats['other_items']; ?></p>
-          </div>
-        </div>
       </div>
+      
+      <!-- Show message if no class-specific items are available -->
+      <?php 
+      $has_class_stats = false;
+      foreach ($class_stats as $count) {
+          if ($count > 0) {
+              $has_class_stats = true;
+              break;
+          }
+      }
+      ?>
+      
+      <?php if(!$has_class_stats && !empty($allowed_class_mapping)): ?>
+        <div class="alert alert-info mt-4">
+          <i class="fas fa-info-circle"></i> 
+          <strong>No items found for your licensed classes.</strong> 
+          Your license (<strong><?php echo htmlspecialchars($license_type); ?></strong>) allows access to <?php echo count($allowed_class_mapping); ?> classes, but no items are currently available in those classes.
+        </div>
+      <?php elseif(empty($allowed_class_mapping)): ?>
+        <div class="alert alert-warning mt-4">
+          <i class="fas fa-exclamation-triangle"></i> 
+          <strong>No licensed classes available.</strong> 
+          Please contact administrator to configure your license permissions.
+        </div>
+      <?php endif; ?>
     </div>
   </div>
 </div>

@@ -11,8 +11,22 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
+$comp_id = $_SESSION['CompID'];
+$fin_year = $_SESSION['FIN_YEAR_ID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -20,12 +34,23 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch reference codes from tblitemmaster
-$query = "SELECT CODE, DETAILS, DETAILS2, REF_CODE 
-          FROM tblitemmaster
-          WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch reference codes from tblitemmaster - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, DETAILS, DETAILS2, REF_CODE, CLASS
+              FROM tblitemmaster
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, DETAILS, DETAILS2, REF_CODE, CLASS
+              FROM tblitemmaster
+              WHERE 1 = 0"; // Always false condition
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ? OR REF_CODE LIKE ?)";
@@ -38,7 +63,9 @@ if ($search !== '') {
 $query .= " ORDER BY DETAILS ASC";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -65,6 +92,24 @@ $stmt->close();
     <div class="content-area">
       <h3 class="mb-4">Reference Code Master</h3>
 
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
         <label class="form-label">Liquor Mode:</label>
@@ -76,6 +121,10 @@ $stmt->close();
           <a href="?mode=C&search=<?= urlencode($search) ?>"
              class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
             Country Liquor
+          </a>
+          <a href="?mode=O&search=<?= urlencode($search) ?>"
+             class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
+            Others
           </a>
         </div>
       </div>
@@ -95,15 +144,15 @@ $stmt->close();
         </div>
       </form>
 
-
       <!-- Reference Codes Table -->
       <div class="table-container">
         <table class="styled-table table-striped">
           <thead class="table-header">
             <tr>
-              <th>Code</th>
+              <th>#</th>
               <th>Item Description</th>
               <th>Category</th>
+              <th>Class</th>
               <th>Reference Code</th>
               <th>Actions</th>
             </tr>
@@ -115,6 +164,7 @@ $stmt->close();
                 <td><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
+                <td><?= htmlspecialchars($item['CLASS']); ?></td>
                 <td><?= htmlspecialchars($item['REF_CODE']); ?></td>
                 <td>
                   <a href="edit_reference_code.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
@@ -126,7 +176,13 @@ $stmt->close();
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="5" class="text-center text-muted">No reference codes found.</td>
+              <td colspan="6" class="text-center text-muted">
+                <?php if (empty($allowed_classes)): ?>
+                  No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
+                <?php else: ?>
+                  No reference codes found.
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endif; ?>
           </tbody>

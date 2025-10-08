@@ -2,7 +2,7 @@
 session_start();
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['CompID'])) {
+if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
     exit;
@@ -17,12 +17,9 @@ if ($conn->connect_error) {
     exit;
 }
 
-$company_id = $_SESSION['CompID'];
-
 try {
-    // Fetch shortcuts from database
-    $stmt = $conn->prepare("SELECT shortcut_key, action_name, action_url FROM tbl_shortcuts WHERE company_id = ?");
-    $stmt->bind_param("i", $company_id);
+    // Fetch shortcuts from database (common for all companies)
+    $stmt = $conn->prepare("SELECT shortcut_key, action_name, action_url FROM tbl_shortcuts ORDER BY shortcut_key");
     $stmt->execute();
     $result = $stmt->get_result();
 

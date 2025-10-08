@@ -11,7 +11,22 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
+$comp_id = $_SESSION['CompID'];
+$fin_year = $_SESSION['FIN_YEAR_ID'];
+
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -19,12 +34,23 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch items from tblitemmaster with reorder levels
-$query = "SELECT CODE, DETAILS, DETAILS2, REORDER, GREORDER 
-          FROM tblitemmaster
-          WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch items from tblitemmaster with reorder levels - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, DETAILS, DETAILS2, REORDER, GREORDER, CLASS
+              FROM tblitemmaster
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, DETAILS, DETAILS2, REORDER, GREORDER, CLASS
+              FROM tblitemmaster
+              WHERE 1 = 0"; // Always false condition
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
@@ -36,7 +62,9 @@ if ($search !== '') {
 $query .= " ORDER BY DETAILS ASC";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -53,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
     
     if ($update_stmt->execute()) {
         $_SESSION['success_message'] = "Reorder levels updated successfully!";
-        header("Location: item_reorder_level.php?mode=$mode");
+        header("Location: item_reorder.php?mode=$mode");
         exit;
     } else {
         $error = "Error updating reorder levels: " . $conn->error;
@@ -81,6 +109,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
 
     <div class="content-area">
       <h3 class="mb-4">Item Reorder Level</h3>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -136,6 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
               <th>#</th>
               <th>Item Description</th>
               <th>Category</th>
+              <th>Class</th>
               <th>Reorder Level</th>
               <th>Global Reorder</th>
               <th>Actions</th>
@@ -148,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
                 <td><?= $index + 1 ?></td>
                 <td><?= htmlspecialchars($item['DETAILS']); ?></td>
                 <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
+                <td><?= htmlspecialchars($item['CLASS']); ?></td>
                 <td>
                   <form method="POST" class="d-flex gap-2 align-items-center">
                     <input type="hidden" name="code" value="<?= htmlspecialchars($item['CODE']) ?>">
@@ -178,7 +226,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
             <?php endforeach; ?>
           <?php else: ?>
             <tr>
-              <td colspan="6" class="text-center text-muted">No items found.</td>
+              <td colspan="7" class="text-center text-muted">
+                <?php if (empty($allowed_classes)): ?>
+                  No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
+                <?php else: ?>
+                  No items found.
+                <?php endif; ?>
+              </td>
             </tr>
           <?php endif; ?>
           </tbody>
@@ -192,5 +246,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_reorder'])) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Add loading state to save buttons
+    $('form').on('submit', function() {
+        const submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    });
+
+    // Show confirmation for save actions
+    $('form').on('submit', function(e) {
+        const reorderValue = $(this).find('input[name="reorder"]').val();
+        const greorderValue = $(this).find('input[name="greorder"]').val();
+        
+        if (reorderValue < 0 || greorderValue < 0) {
+            e.preventDefault();
+            alert('Reorder levels cannot be negative.');
+            $(this).find('button[type="submit"]').prop('disabled', false).html('<i class="fas fa-save"></i> Save');
+        }
+    });
+});
+</script>
 </body>
 </html>

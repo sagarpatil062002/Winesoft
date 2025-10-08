@@ -11,19 +11,36 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
-
 include_once "../config/db.php";
 require_once 'license_functions.php';
 
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Get parameters
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch items
-$query = "SELECT CODE, DETAILS, DETAILS2, CLASS, BPRICE, BARCODE FROM tblitemmaster WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch items - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, DETAILS, DETAILS2, CLASS, BPRICE, BARCODE FROM tblitemmaster WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, DETAILS, DETAILS2, CLASS, BPRICE, BARCODE FROM tblitemmaster WHERE 1 = 0";
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ? OR BARCODE LIKE ?)";
@@ -36,7 +53,9 @@ if ($search !== '') {
 $query .= " ORDER BY DETAILS ASC";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -59,6 +78,7 @@ $stmt->close();
 <div class="dashboard-container">
     <?php include 'components/navbar.php'; ?>
     <div class="main-content">
+        <?php include 'components/header.php'; ?>
 
         <div class="content-area">
             <h3 class="mb-4">Barcode Master</h3>

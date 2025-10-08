@@ -12,8 +12,20 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 $companyId = $_SESSION['CompID'];
+$fin_year = $_SESSION['FIN_YEAR_ID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$license_type = getCompanyLicenseType($companyId, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Fetch customers from tbllheads for this company only
 $customers = [];
@@ -104,12 +116,23 @@ while ($row = $subclassResult->fetch_assoc()) {
     $subclassDescriptions[$row['ITEM_GROUP']][$row['LIQ_FLAG']] = $row['DESC'];
 }
 
-// Fetch items from tblitemmaster
-$query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
-          FROM tblitemmaster
-          WHERE LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// Fetch items from tblitemmaster - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+              FROM tblitemmaster
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE
+              FROM tblitemmaster
+              WHERE 1 = 0"; // Always false condition
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ?)";
@@ -121,7 +144,9 @@ if ($search !== '') {
 $query .= " ORDER BY DETAILS ASC";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -301,6 +326,10 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
       gap: 10px;
       margin-top: 20px;
     }
+    .license-info {
+      background-color: #e7f3ff;
+      border-left: 4px solid #0d6efd;
+    }
   </style>
 </head>
 <body>
@@ -311,6 +340,24 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
 
     <div class="content-area">
       <h3 class="mb-4">Customer Wise Price Module</h3>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3 license-info">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Success Message -->
       <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
@@ -433,6 +480,9 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
             <?php if ($selectedCustomer == 0): ?>
               <small class="text-muted">Select or create a customer to edit prices</small>
             <?php endif; ?>
+            <?php if (empty($allowed_classes)): ?>
+              <small class="text-danger">No classes available for your license type (<?= htmlspecialchars($license_type) ?>)</small>
+            <?php endif; ?>
           </div>
           <div class="card-body p-0">
             <div class="table-container">
@@ -440,9 +490,10 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
                 <thead class="table-header">
                   <tr>
                     <th width="5%">#</th>
-                    <th width="40%">Details</th>
-                    <th width="25%">Category</th>
-                    <th width="30%">Price</th>
+                    <th width="35%">Details</th>
+                    <th width="20%">Category</th>
+                    <th width="15%">Class</th>
+                    <th width="25%">Price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -455,6 +506,7 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
                       <td><?= $index + 1 ?></td>
                       <td><strong><?= htmlspecialchars($item['DETAILS']) ?></strong></td>
                       <td><?= htmlspecialchars($item['DETAILS2']) ?></td>
+                      <td><?= htmlspecialchars($item['CLASS']) ?></td>
                       <td>
                         <input type="text" name="prices[<?= $item['CODE'] ?>]" 
                                value="<?= $price ?>" 
@@ -466,7 +518,13 @@ function getSubclassDescription($itemGroup, $liqFlag, $subclassDescriptions) {
                   <?php endforeach; ?>
                 <?php else: ?>
                   <tr>
-                    <td colspan="4" class="text-center text-muted">No items found.</td>
+                    <td colspan="5" class="text-center text-muted">
+                      <?php if (empty($allowed_classes)): ?>
+                        No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
+                      <?php else: ?>
+                        No items found.
+                      <?php endif; ?>
+                    </td>
                   </tr>
                 <?php endif; ?>
                 </tbody>

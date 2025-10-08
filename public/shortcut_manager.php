@@ -1,14 +1,13 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['CompID'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
 
 include_once "../config/db.php";
 
-$company_id = $_SESSION['CompID'];
 $message = '';
 
 // Handle form submission
@@ -19,8 +18,8 @@ if ($_POST) {
         $action_url = trim($_POST['action_url']);
         
         try {
-            $stmt = $conn->prepare("INSERT INTO tbl_shortcuts (company_id, shortcut_key, action_name, action_url) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("isss", $company_id, $shortcut_key, $action_name, $action_url);
+            $stmt = $conn->prepare("INSERT INTO tbl_shortcuts (shortcut_key, action_name, action_url) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $shortcut_key, $action_name, $action_url);
             $stmt->execute();
             $message = "Shortcut added successfully!";
             $stmt->close();
@@ -37,8 +36,8 @@ if ($_POST) {
         $action_url = trim($_POST['action_url']);
         
         try {
-            $stmt = $conn->prepare("UPDATE tbl_shortcuts SET shortcut_key = ?, action_name = ?, action_url = ? WHERE id = ? AND company_id = ?");
-            $stmt->bind_param("sssii", $shortcut_key, $action_name, $action_url, $shortcut_id, $company_id);
+            $stmt = $conn->prepare("UPDATE tbl_shortcuts SET shortcut_key = ?, action_name = ?, action_url = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $shortcut_key, $action_name, $action_url, $shortcut_id);
             $stmt->execute();
             $message = "Shortcut updated successfully!";
             $stmt->close();
@@ -53,8 +52,8 @@ if (isset($_GET['delete_id'])) {
     $delete_id = $_GET['delete_id'];
     
     try {
-        $stmt = $conn->prepare("DELETE FROM tbl_shortcuts WHERE id = ? AND company_id = ?");
-        $stmt->bind_param("ii", $delete_id, $company_id);
+        $stmt = $conn->prepare("DELETE FROM tbl_shortcuts WHERE id = ?");
+        $stmt->bind_param("i", $delete_id);
         $stmt->execute();
         $message = "Shortcut deleted successfully!";
         $stmt->close();
@@ -63,10 +62,9 @@ if (isset($_GET['delete_id'])) {
     }
 }
 
-// Get current shortcuts
+// Get current shortcuts (common for all companies)
 $shortcuts = [];
-$stmt = $conn->prepare("SELECT * FROM tbl_shortcuts WHERE company_id = ? ORDER BY shortcut_key");
-$stmt->bind_param("i", $company_id);
+$stmt = $conn->prepare("SELECT * FROM tbl_shortcuts ORDER BY shortcut_key");
 $stmt->execute();
 $result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
@@ -78,8 +76,8 @@ $stmt->close();
 $edit_shortcut = null;
 if (isset($_GET['edit_id'])) {
     $edit_id = $_GET['edit_id'];
-    $stmt = $conn->prepare("SELECT * FROM tbl_shortcuts WHERE id = ? AND company_id = ?");
-    $stmt->bind_param("ii", $edit_id, $company_id);
+    $stmt = $conn->prepare("SELECT * FROM tbl_shortcuts WHERE id = ?");
+    $stmt->bind_param("i", $edit_id);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($result->num_rows > 0) {
@@ -343,6 +341,10 @@ if (isset($_GET['edit_id'])) {
         <div class="content-area">
             <div class="page-header">
                 <h1 class="page-title">Keyboard Shortcuts Manager</h1>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Shortcuts are common for all companies
+                </div>
             </div>
             
             <?php if ($message): ?>

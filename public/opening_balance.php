@@ -15,6 +15,18 @@ $comp_id = $_SESSION['CompID'];
 $fin_year = $_SESSION['FIN_YEAR_ID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // ADDED: Include license functions
+
+// Get company's license type and available classes - ADDED LICENSE FILTERING
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering - ADDED
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -313,10 +325,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
 
 // Handle template download
 if (isset($_GET['download_template'])) {
-    // Fetch all items from tblitemmaster for the current liquor mode
-    $template_query = "SELECT CODE, DETAILS, DETAILS2 FROM tblitemmaster WHERE LIQ_FLAG = ? ORDER BY DETAILS ASC";
-    $template_stmt = $conn->prepare($template_query);
-    $template_stmt->bind_param("s", $mode);
+    // Fetch all items from tblitemmaster for the current liquor mode - UPDATED WITH LICENSE FILTERING
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        $template_query = "SELECT CODE, DETAILS, DETAILS2 FROM tblitemmaster WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders) ORDER BY DETAILS ASC";
+        $template_stmt = $conn->prepare($template_query);
+        $template_params = array_merge([$mode], $allowed_classes);
+        $template_types = "s" . str_repeat('s', count($allowed_classes));
+        $template_stmt->bind_param($template_types, ...$template_params);
+    } else {
+        // If no classes allowed, return empty template
+        $template_query = "SELECT CODE, DETAILS, DETAILS2 FROM tblitemmaster WHERE 1 = 0";
+        $template_stmt = $conn->prepare($template_query);
+    }
+    
     $template_stmt->execute();
     $template_result = $template_stmt->get_result();
     $template_items = $template_result->fetch_all(MYSQLI_ASSOC);
@@ -349,23 +371,44 @@ if (isset($_GET['download_template'])) {
     exit;
 }
 
-// Fetch items from tblitemmaster with opening balance for the current company only
-$query = "SELECT 
-            im.CODE, 
-            im.Print_Name, 
-            im.DETAILS, 
-            im.DETAILS2, 
-            im.CLASS, 
-            im.SUB_CLASS, 
-            im.ITEM_GROUP,
-            COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
-            COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
-          FROM tblitemmaster im
-          LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-            AND st.FIN_YEAR = ?
-          WHERE im.LIQ_FLAG = ?";
-$params = [$fin_year, $mode];
-$types = "is";
+// Fetch items from tblitemmaster with opening balance for the current company only - UPDATED WITH LICENSE FILTERING
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT 
+                im.CODE, 
+                im.Print_Name, 
+                im.DETAILS, 
+                im.DETAILS2, 
+                im.CLASS, 
+                im.SUB_CLASS, 
+                im.ITEM_GROUP,
+                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
+                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                AND st.FIN_YEAR = ?
+              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $params = array_merge([$fin_year, $mode], $allowed_classes);
+    $types = "is" . str_repeat('s', count($allowed_classes));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT 
+                im.CODE, 
+                im.Print_Name, 
+                im.DETAILS, 
+                im.DETAILS2, 
+                im.CLASS, 
+                im.SUB_CLASS, 
+                im.ITEM_GROUP,
+                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
+                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                AND st.FIN_YEAR = ?
+              WHERE 1 = 0"; // Always false condition
+    $params = [$fin_year, $mode];
+    $types = "is";
+}
 
 if ($search !== '') {
     $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -501,6 +544,24 @@ if (isset($_SESSION['import_message'])) {
         <strong>Current Month:</strong> <?= date('F Y') ?>
       </div>
 
+      <!-- License Restriction Info - ADDED -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Import from CSV Section -->
       <div class="import-section mb-4">
         <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV</h5>
@@ -615,7 +676,13 @@ if (isset($_SESSION['import_message'])) {
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="4" class="text-center text-muted">No items found.</td>
+                <td colspan="4" class="text-center text-muted">
+                  <?php if (empty($allowed_classes)): ?>
+                    No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
+                  <?php else: ?>
+                    No items found.
+                  <?php endif; ?>
+                </td>
               </tr>
             <?php endif; ?>
             </tbody>
