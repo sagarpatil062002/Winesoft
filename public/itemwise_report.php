@@ -12,6 +12,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // Add license functions
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
@@ -33,10 +45,19 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Fetch brands for dropdown - extract from DETAILS field in tblitemmaster
+// Fetch brands for dropdown - extract from DETAILS field in tblitemmaster - FILTERED BY LICENSE TYPE
 $brands = [];
-$brandQuery = "SELECT DISTINCT DETAILS as BRAND_NAME FROM tblitemmaster ORDER BY DETAILS";
-$brandStmt = $conn->prepare($brandQuery);
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $brandQuery = "SELECT DISTINCT DETAILS as BRAND_NAME FROM tblitemmaster WHERE CLASS IN ($class_placeholders) ORDER BY DETAILS";
+    $brandStmt = $conn->prepare($brandQuery);
+    $brandStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+} else {
+    // If no classes allowed, show empty brands list
+    $brandQuery = "SELECT DISTINCT DETAILS as BRAND_NAME FROM tblitemmaster WHERE 1 = 0 ORDER BY DETAILS";
+    $brandStmt = $conn->prepare($brandQuery);
+}
+
 $brandStmt->execute();
 $brandResult = $brandStmt->get_result();
 while ($row = $brandResult->fetch_assoc()) {
@@ -62,7 +83,7 @@ if (isset($_GET['generate'])) {
         $day = $selectedDate->format('d');
         $dayField = 'DAY_' . str_pad($day, 2, '0', STR_PAD_LEFT);
         
-        // Build query to get item details
+        // Build query to get item details - FILTERED BY LICENSE TYPE
         $itemQuery = "SELECT 
             CODE as ITEM_CODE,
             DETAILS as ITEM_NAME,
@@ -74,6 +95,17 @@ if (isset($_GET['generate'])) {
         
         $params = [];
         $types = "";
+        
+        // Add license type filtering
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $itemQuery .= " AND CLASS IN ($class_placeholders)";
+            $params = array_merge($params, $allowed_classes);
+            $types .= str_repeat('s', count($allowed_classes));
+        } else {
+            // If no classes allowed, show empty result
+            $itemQuery .= " AND 1 = 0";
+        }
         
         if ($liquor_mode !== 'all') {
             $itemQuery .= " AND LIQ_FLAG = ?";
@@ -149,6 +181,15 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+  <style>
+    .license-info {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -159,6 +200,24 @@ if (isset($_GET['generate'])) {
 
     <div class="content-area">
       <h3 class="mb-4">Item Wise Stock Report</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -215,6 +274,7 @@ if (isset($_GET['generate'])) {
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
+            <h5>License Type: <?= htmlspecialchars($license_type) ?></h5>
             <h5>Item Wise Stock Report For <?= date('d-M-Y', strtotime($date)) ?></h5>
             <?php if ($liquor_mode !== 'all'): ?>
               <h6>Mode: <?= $liquor_mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h6>

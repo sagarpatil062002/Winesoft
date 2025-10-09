@@ -919,7 +919,6 @@ $(function(){
   }
 
   // Function to find best supplier match
-  // Function to find best supplier match
 function findBestSupplierMatch(parsedName) {
     if (!parsedName) return null;
     
