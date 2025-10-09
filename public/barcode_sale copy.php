@@ -474,10 +474,12 @@ function prepareBillData() {
     ];
 }
 // Function to generate a unique bill number with transaction safety
+// FIXED: Function to generate sequential bill numbers with zero-padding
 function generateBillNumber($conn, $comp_id) {
     $conn->begin_transaction();
     
     try {
+        // Get the highest existing bill number numerically
         $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
                        FROM tblsaleheader 
                        WHERE COMP_ID = ? 
@@ -494,10 +496,38 @@ function generateBillNumber($conn, $comp_id) {
         }
         $bill_stmt->close();
         
+        // Safety check: Ensure bill number doesn't exist
+        $billExists = true;
+        $attempts = 0;
+        
+        while ($billExists && $attempts < 10) {
+            $newBillNo = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+            
+            // Check if this bill number already exists
+            $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+            $checkStmt = $conn->prepare($checkSql);
+            $checkStmt->bind_param("si", $newBillNo, $comp_id);
+            $checkStmt->execute();
+            $checkResult = $checkStmt->get_result();
+            $checkRow = $checkResult->fetch_assoc();
+            
+            if ($checkRow['count'] == 0) {
+                $billExists = false;
+            } else {
+                $next_bill++; // Try next number
+                $attempts++;
+            }
+            $checkStmt->close();
+        }
+        
         $conn->commit();
-return "BL" . $next_bill;
+        
+        // Return with zero-padding to match sale_for_date_range.php
+        return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+        
     } catch (Exception $e) {
         $conn->rollback();
+        // Fallback: Use timestamp-based numbering
         $timestamp = time();
         $random_suffix = mt_rand(100, 999);
         return "BL" . substr($timestamp, -6) . $random_suffix;
@@ -903,6 +933,9 @@ if (!empty($_SESSION['sale_items'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+    <!-- Include shortcuts functionality -->
+<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <style>
 <style>
   .barcode-scanner {
       background-color: #f8f9fa;
@@ -1126,7 +1159,6 @@ if (!empty($_SESSION['sale_items'])) {
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-    <?php include 'components/header.php'; ?>
 
     <div class="content-area">
       <h3 class="mb-4">POS System</h3>
@@ -1576,6 +1608,19 @@ document.addEventListener('DOMContentLoaded', function() {
   const searchItems = document.querySelectorAll('.search-item');
   const setFocusForms = document.querySelectorAll('.set-focus-form');
 
+  // Create a hidden form for ESC key processing
+  const escForm = document.createElement('form');
+  escForm.method = 'POST';
+  escForm.style.display = 'none';
+  
+  const escInput = document.createElement('input');
+  escInput.type = 'hidden';
+  escInput.name = 'process_sale_esc';
+  escInput.value = '1';
+  
+  escForm.appendChild(escInput);
+  document.body.appendChild(escForm);
+
   // Focus on barcode input on page load
   barcodeInput.focus();
 
@@ -1641,6 +1686,17 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', function(e) {
     const items = <?= json_encode($_SESSION['sale_items'] ?? []) ?>;
     const currentFocus = <?= $_SESSION['current_focus_index'] ?? -1 ?>;
+    
+    // ESC key - process sale
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      
+      // Show confirmation dialog
+      if (confirm('Are you sure you want to process the sale?')) {
+        escForm.submit();
+      }
+      return;
+    }
     
     if (items.length === 0) return;
     

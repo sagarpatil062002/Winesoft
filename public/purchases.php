@@ -475,6 +475,46 @@ input.form-control-sm {
 .missing-item:last-child {
     border-bottom: none;
 }
+
+/* Supplier suggestions styling */
+.supplier-container {
+    position: relative;
+}
+.supplier-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+.supplier-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+.supplier-suggestion:hover {
+    background-color: #f8f9fa;
+}
+.supplier-suggestion:last-child {
+    border-bottom: none;
+}
+
+/* Enhanced styling for the missing items modal */
+#licenseRestrictedList tr:hover,
+#missingItemsList tr:hover {
+  background-color: #f8f9fa;
+}
+
+.modal-table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 </style>
 </head>
 <body>
@@ -737,26 +777,119 @@ input.form-control-sm {
   </div></div>
 </div>
 
-<!-- PASTE MODAL -->
-<div class="modal fade" id="pasteModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title">Paste SCM Data</h5>
-      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-    </div>
-    <div class="modal-body">
-      <div class="alert alert-info">
-        <div><strong>How to paste:</strong> copy the table section (with headers) + the header area from SCM and paste below.</div>
-        <pre class="bg-light p-2 mt-2 small mb-0">STNO  ItemName     Size   Qty (Cases)  Qty (Bottles)  Batch No  Auto Batch  Mfg. Month  MRP  B.L.  V/v (%)  Tot. Bott.
-1     Deejay Doctor Brandy  180 ML  7.00  0  271  BT944-220225/920  Mar-2025  110.00  82.08  25.0  456
-SCM Code:SCMPL001186</pre>
+<!-- SCM Paste Modal (Enhanced from purchases.php) -->
+<div class="modal fade" id="scmPasteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Paste SCM Data</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <textarea class="form-control" id="scmData" rows="12" placeholder="Paste here..."></textarea>
-      <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-primary" type="button" id="processSCMData"><i class="fa-solid fa-gears"></i> Process Data</button>
-        <button class="btn btn-secondary" type="button" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> Cancel</button>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Paste SCM table data here:</label>
+          <textarea class="form-control" id="scmPasteArea" rows="10" placeholder="Paste the copied table from SCM system here..."></textarea>
+        </div>
+        <div class="alert alert-warning">
+          <strong>Note:</strong> Make sure to copy the entire table from SCM, including headers and the two-line rows with "SCM Code:".
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="processSCMData">Process Data</button>
       </div>
     </div>
-  </div></div>
+  </div>
+</div>
+
+<!-- Missing Items Modal (From purchases.php) -->
+<div class="modal fade" id="missingItemsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Items Requiring Attention</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-info mb-3">
+          <i class="fa-solid fa-circle-info me-2"></i>
+          <strong>Found <span id="validItemsCount">0</span> valid items and <span id="missingItemsCount">0</span> items requiring attention</strong>
+        </div>
+        
+        <!-- License Restricted Items -->
+        <div class="card mb-3" id="licenseRestrictedSection" style="display: none;">
+          <div class="card-header bg-warning text-dark">
+            <i class="fa-solid fa-ban me-2"></i>
+            <strong>License Restricted Items</strong>
+            <span class="badge bg-danger ms-2" id="restrictedCount">0</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="120">SCM Code</th>
+                    <th>Brand Name</th>
+                    <th width="80">Size</th>
+                    <th width="120">Class</th>
+                    <th width="200">Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="licenseRestrictedList">
+                  <!-- License restricted items will be listed here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Missing Items -->
+        <div class="card" id="missingItemsSection" style="display: none;">
+          <div class="card-header bg-danger text-white">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            <strong>Items Not Found in Database</strong>
+            <span class="badge bg-dark ms-2" id="missingCount">0</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="120">SCM Code</th>
+                    <th>Brand Name</th>
+                    <th width="80">Size</th>
+                    <th width="200">Possible Solutions</th>
+                  </tr>
+                </thead>
+                <tbody id="missingItemsList">
+                  <!-- Missing items will be listed here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <div class="alert alert-warning">
+            <strong><i class="fa-solid fa-lightbulb me-2"></i>Next Steps:</strong>
+            <ul class="mb-0 mt-2">
+              <li>License restricted items cannot be added due to your license type (<strong><?= htmlspecialchars($license_type) ?></strong>)</li>
+              <li>Missing items need to be added to your database first</li>
+              <li>You can proceed with the valid items found</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fa-solid fa-times me-2"></i>Cancel Processing
+        </button>
+        <button type="button" class="btn btn-success" id="continueWithFoundItems">
+          <i class="fa-solid fa-check me-2"></i>Continue with <span id="continueItemsCount">0</span> Valid Items
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -786,7 +919,8 @@ $(function(){
   }
 
   // Function to find best supplier match
-  function findBestSupplierMatch(parsedName) {
+  // Function to find best supplier match
+function findBestSupplierMatch(parsedName) {
     if (!parsedName) return null;
     
     const parsedClean = parsedName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
@@ -808,7 +942,7 @@ $(function(){
         if (supplierName === parsedClean) {
             score = 100;
         }
-        // 2. Base name match
+        // 2. Base name match (without suffixes)
         else if (supplierBase === parsedBase && supplierBase.length > 0) {
             score = 95;
         }
@@ -816,7 +950,7 @@ $(function(){
         else if (supplierName.includes(parsedClean) || parsedClean.includes(supplierName)) {
             score = 80;
         }
-        // 4. Base name contains match
+        // 4. Base name contains match (without suffixes)
         else if (supplierBase.includes(parsedBase) || parsedBase.includes(supplierBase)) {
             score = 70;
         }
@@ -836,11 +970,9 @@ $(function(){
         }
     });
     
-    console.log("Supplier match:", parsedName, "→", bestMatch ? bestMatch.DETAILS : "No match", "Score:", bestScore);
     return bestMatch;
-  }
-
-  // Improved database item matching function
+}
+  // Enhanced database item matching function (from purchases.php)
   function findDbItemData(name, size, code) {
     // Clean inputs
     const cleanName = (name || '').toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -907,6 +1039,463 @@ $(function(){
     
     console.log("No match found for:", {name: cleanName, size: cleanSize, code: cleanCode});
     return null;
+  }
+
+  // Enhanced SCM data validation (from purchases.php)
+  function validateSCMItems(scmItems) {
+    const validItems = [];
+    const missingItems = [];
+    
+    scmItems.forEach((scmItem, index) => {
+        // Clean the SCM code by removing 'SCM' prefix and any whitespace
+        const cleanCode = scmItem.scmCode ? scmItem.scmCode.replace(/^SCM/i, '').trim() : '';
+        
+        // Find matching item in database using multiple strategies
+        let matchingItem = null;
+        
+        // Strategy 1: Exact match with cleaned code
+        matchingItem = dbItems.find(dbItem => dbItem.CODE === cleanCode);
+        
+        // Strategy 2: Match by SCM_CODE field (if available)
+        if (!matchingItem) {
+            matchingItem = dbItems.find(dbItem => dbItem.SCM_CODE === scmItem.scmCode);
+        }
+        
+        // Strategy 3: Case-insensitive code match
+        if (!matchingItem) {
+            matchingItem = dbItems.find(dbItem => 
+                dbItem.CODE.toLowerCase() === cleanCode.toLowerCase()
+            );
+        }
+        
+        // Strategy 4: Partial code match
+        if (!matchingItem) {
+            matchingItem = dbItems.find(dbItem => 
+                dbItem.CODE.includes(cleanCode) || cleanCode.includes(dbItem.CODE)
+            );
+        }
+        
+        // Strategy 5: Brand name match (as fallback)
+        if (!matchingItem && scmItem.brandName) {
+            const brandSearchTerm = scmItem.brandName.toLowerCase().replace(/[\.\-]/g, ' ').trim();
+            matchingItem = dbItems.find(dbItem => {
+                const dbBrandName = dbItem.DETAILS ? dbItem.DETAILS.toLowerCase().replace(/[\.\-]/g, ' ').trim() : '';
+                return dbBrandName.includes(brandSearchTerm) || brandSearchTerm.includes(dbBrandName);
+            });
+        }
+        
+        if (matchingItem) {
+            // Check if item is allowed by license
+            if (allowedClasses.includes(matchingItem.CLASS)) {
+                validItems.push({
+                    scmData: scmItem,
+                    dbItem: matchingItem
+                });
+            } else {
+                missingItems.push({
+                    code: scmItem.scmCode,
+                    name: scmItem.brandName,
+                    size: scmItem.size,
+                    class: matchingItem.CLASS,
+                    reason: 'License restriction',
+                    type: 'restricted'
+                });
+            }
+        } else {
+            missingItems.push({
+                code: scmItem.scmCode,
+                name: scmItem.brandName,
+                size: scmItem.size,
+                reason: 'Not found in database',
+                type: 'missing'
+            });
+        }
+    });
+    
+    return { validItems, missingItems };
+  }
+
+  // Show missing items modal (from purchases.php)
+  function showMissingItemsModal(missingItems, validItems, parsedData) {
+    // Separate restricted and missing items
+    const restrictedItems = missingItems.filter(item => item.type === 'restricted');
+    const missingDbItems = missingItems.filter(item => item.type === 'missing');
+    
+    // Update counts
+    $('#validItemsCount').text(validItems.length);
+    $('#missingItemsCount').text(missingItems.length);
+    $('#continueItemsCount').text(validItems.length);
+    
+    // Show/hide restricted items section
+    if (restrictedItems.length > 0) {
+        $('#licenseRestrictedSection').show();
+        $('#restrictedCount').text(restrictedItems.length);
+        
+        const restrictedList = $('#licenseRestrictedList');
+        restrictedList.empty();
+        
+        restrictedItems.forEach(item => {
+            restrictedList.append(`
+                <tr>
+                    <td><strong>${item.code}</strong></td>
+                    <td>${item.name}</td>
+                    <td>${item.size}</td>
+                    <td><span class="badge bg-secondary">${item.class}</span></td>
+                    <td><span class="text-danger">Not allowed for your license type</span></td>
+                </tr>
+            `);
+        });
+    } else {
+        $('#licenseRestrictedSection').hide();
+    }
+    
+    // Show/hide missing items section
+    if (missingDbItems.length > 0) {
+        $('#missingItemsSection').show();
+        $('#missingCount').text(missingDbItems.length);
+        
+        const missingList = $('#missingItemsList');
+        missingList.empty();
+        
+        missingDbItems.forEach(item => {
+            missingList.append(`
+                <tr>
+                    <td><strong>${item.code}</strong></td>
+                    <td>${item.name}</td>
+                    <td>${item.size}</td>
+                    <td>
+                        <small class="text-muted">
+                            • Check item code matches your database<br>
+                            • Verify item exists in tblitemmaster<br>
+                            • Item may need to be added manually
+                        </small>
+                    </td>
+                </tr>
+            `);
+        });
+    } else {
+        $('#missingItemsSection').hide();
+    }
+    
+    // Store data for later use
+    $('#missingItemsModal').data({
+        validItems: validItems,
+        parsedData: parsedData
+    });
+    
+    $('#missingItemsModal').modal('show');
+  }
+
+  // Process valid SCM items (from purchases.php)
+  function processValidSCMItems(validItems, parsedData) {
+    // Clear existing items first
+    $('#clearItems').click();
+    
+    // Set supplier information
+    if (parsedData.supplier) {
+        $('#supplierInput').val(parsedData.supplier);
+        
+        // Try to find matching supplier code
+        const matchedSupplier = suppliers.find(s => 
+            s.DETAILS.toLowerCase().includes(parsedData.supplier.toLowerCase()) ||
+            parsedData.supplier.toLowerCase().includes(s.DETAILS.toLowerCase())
+        );
+        
+        if (matchedSupplier) {
+            $('#supplierCodeHidden').val(matchedSupplier.CODE);
+        }
+    }
+    
+    // Set TP information
+    if (parsedData.tpNo) {
+        $('#tpNo').val(parsedData.tpNo);
+    }
+    if (parsedData.tpDate) {
+        $('#tpDate').val(parsedData.tpDate);
+    }
+    
+    // Auto-generate Auto TP No from TP No and current date
+    if (parsedData.tpNo) {
+        const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const autoTpNo = `${parsedData.tpNo}-${currentDate}`;
+        $('#autoTpNo').val(autoTpNo);
+    }
+    
+    // Add valid items to table
+    validItems.forEach((validItem, index) => {
+        addRow({
+            dbItem: validItem.dbItem,
+            ...validItem.scmData,
+            cleanCode: validItem.scmData.scmCode ? validItem.scmData.scmCode.replace(/^SCM/i, '').trim() : ''
+        });
+    });
+    
+    if (validItems.length === 0) {
+        alert('No valid items found in the SCM data that match your database and license restrictions.');
+    } else {
+        alert(`Successfully added ${validItems.length} items from SCM data.`);
+    }
+  }
+
+  // COMBINED SCM PARSING FUNCTION - Preserves header extraction from purchases copy.php
+  function parseSCMData(data) {
+    const lines = data.split('\n').map(line => line.trim()).filter(line => line);
+    
+    let supplier = '';
+    let tpNo = '';
+    let tpDate = '';
+    let receivedDate = '';
+    let autoTpNo = '';
+    const items = [];
+    
+    // Parse header information (from purchases copy.php)
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Skip empty lines and total lines
+        if (!line || line.includes('Total') || line.match(/^\d+\s+Total/)) {
+            continue;
+        }
+        
+        // Extract Received Date
+        if (/Received\s*Date/i.test(line)) {
+            const nextLine = (lines[i + 1] || '').trim();
+            if (nextLine) {
+                const ymdDate = ymdFromDmyText(nextLine);
+                receivedDate = ymdDate || nextLine;
+                if (ymdDate) {
+                    $('input[name="date"]').val(ymdDate);
+                }
+            }
+        }
+        
+        // Extract Auto T.P. No
+        if (/Auto\s*T\.\s*P\.\s*No:/i.test(line)) {
+            const nextLine = (lines[i + 1] || '').trim();
+            if (nextLine && !/T\.?P\.?Date/i.test(nextLine)) {
+                autoTpNo = nextLine;
+                $('#autoTpNo').val(nextLine);
+            }
+        }
+        
+        // Extract Manual T.P. No
+        if (/T\.\s*P\.\s*No\(Manual\):/i.test(line)) {
+            const nextLine = (lines[i + 1] || '').trim();
+            if (nextLine && !/T\.?P\.?Date/i.test(nextLine)) {
+                tpNo = nextLine;
+                $('#tpNo').val(nextLine);
+            }
+        }
+        
+        // Extract T.P. Date
+        if (/T\.?P\.?Date:/i.test(line)) {
+            const nextLine = (lines[i + 1] || '').trim();
+            const ymdDate = ymdFromDmyText(nextLine);
+            if (ymdDate) {
+                tpDate = ymdDate;
+                $('#tpDate').val(ymdDate);
+            }
+        }
+        
+        // Extract Party (Supplier)
+if (/^Party\s*:/i.test(line)) {
+    const nextLine = (lines[i + 1] || '').trim();
+    if (nextLine) {
+        supplier = nextLine;
+        
+        // Try to find the best supplier match (with suffix removal logic)
+        const supplierMatch = findBestSupplierMatch(nextLine);
+        if (supplierMatch) {
+            $('#supplierInput').val(supplierMatch.DETAILS);
+            $('#supplierCodeHidden').val(supplierMatch.CODE);
+        } else {
+            $('#supplierInput').val(nextLine);
+        }
+    }
+}
+        // Item lines (SCM Code) - from purchases.php
+        if (line.includes('SCM Code:')) {
+            try {
+                const item = parseSCMLine(line);
+                if (item) {
+                    items.push(item);
+                }
+            } catch (error) {
+                console.error('Error parsing SCM line:', error);
+            }
+        }
+    }
+    
+    return { 
+        supplier, 
+        tpNo, 
+        tpDate, 
+        receivedDate,
+        autoTpNo,
+        items 
+    };
+  }
+
+  // Enhanced SCM line parsing (from purchases.php)
+  function parseSCMLine(line) {
+    // Split by multiple spaces to get parts
+    const parts = line.split(/\s{2,}/);
+    
+    if (parts.length < 2) {
+        return parseSCMLineAlternative(line);
+    }
+    
+    const item = {};
+    
+    // First part contains "SCM Code: CODE"
+    const scmCodePart = parts[0];
+    const scmCodeMatch = scmCodePart.match(/SCM Code:\s*(\S+)/i);
+    if (scmCodeMatch && scmCodeMatch[1]) {
+        item.scmCode = scmCodeMatch[1];
+        // Extract brand name from the rest of the first part if available
+        const remainingFirstPart = scmCodePart.replace(/SCM Code:\s*\S+/i, '').trim();
+        if (remainingFirstPart) {
+            item.brandName = remainingFirstPart;
+        }
+    }
+    
+    // The remaining parts contain the data
+    const dataParts = line.replace(/SCM Code:\s*\S+/i, '').trim().split(/\s+/);
+    
+    if (dataParts.length >= 11) {
+        let index = 0;
+        
+        // If brand name wasn't extracted from first part, get it from data parts
+        if (!item.brandName) {
+            let brandNameParts = [];
+            while (index < dataParts.length && !dataParts[index].match(/\d+ML/i) && !dataParts[index].match(/\d+L/i)) {
+                brandNameParts.push(dataParts[index]);
+                index++;
+            }
+            item.brandName = brandNameParts.join(' ');
+        } else {
+            // Still need to skip the brand name parts in data parts
+            while (index < dataParts.length && !dataParts[index].match(/\d+ML/i) && !dataParts[index].match(/\d+L/i)) {
+                index++;
+            }
+        }
+        
+        // Size (e.g., "375 ML", "750 ML")
+        if (index < dataParts.length) {
+            item.size = dataParts[index];
+            index++;
+        }
+        
+        // Cases (decimal)
+        if (index < dataParts.length) {
+            item.cases = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
+        
+        // Bottles (integer)
+        if (index < dataParts.length) {
+            item.bottles = parseInt(dataParts[index]) || 0;
+            index++;
+        }
+        
+        // Batch No
+        if (index < dataParts.length) {
+            item.batchNo = dataParts[index] || '';
+            index++;
+        }
+        
+        // Auto Batch
+        if (index < dataParts.length) {
+            item.autoBatch = dataParts[index] || '';
+            index++;
+        }
+        
+        // Mfg Month
+        if (index < dataParts.length) {
+            item.mfgMonth = dataParts[index] || '';
+            index++;
+        }
+        
+        // MRP (decimal)
+        if (index < dataParts.length) {
+            item.mrp = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
+        
+        // B.L. (decimal)
+        if (index < dataParts.length) {
+            item.bl = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
+        
+        // V/v (%) (decimal)
+        if (index < dataParts.length) {
+            item.vv = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
+        
+        // Total Bottles (integer)
+        if (index < dataParts.length) {
+            item.totBott = parseInt(dataParts[index]) || 0;
+        }
+        
+        // Set default values for missing fields
+        item.freeCases = item.freeCases || 0;
+        item.freeBottles = item.freeBottles || 0;
+        item.caseRate = item.caseRate || 0;
+    } else {
+        return parseSCMLineAlternative(line);
+    }
+    
+    // If we couldn't parse properly with the above method, try alternative parsing
+    if (!item.scmCode || !item.size) {
+        return parseSCMLineAlternative(line);
+    }
+    
+    return item;
+  }
+
+  function parseSCMLineAlternative(line) {
+    const item = {};
+    
+    // Extract SCM Code
+    const scmCodeMatch = line.match(/SCM Code:\s*(\S+)/i);
+    if (scmCodeMatch) {
+        item.scmCode = scmCodeMatch[1];
+    }
+    
+    // Remove SCM Code part to parse the rest
+    const remainingLine = line.replace(/SCM Code:\s*\S+/i, '').trim();
+    
+    // Use regex to extract the main data components
+    const dataMatch = remainingLine.match(/(.+?)\s+(\d+(?:\.\d+)?)\s+(\d+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+(\d+)/);
+    
+    if (dataMatch) {
+        item.brandName = dataMatch[1].trim();
+        item.cases = parseFloat(dataMatch[2]) || 0;
+        item.bottles = parseInt(dataMatch[3]) || 0;
+        item.batchNo = dataMatch[4];
+        item.autoBatch = dataMatch[5];
+        item.mfgMonth = dataMatch[6];
+        item.mrp = parseFloat(dataMatch[7]) || 0;
+        item.bl = parseFloat(dataMatch[8]) || 0;
+        item.vv = parseFloat(dataMatch[9]) || 0;
+        item.totBott = parseInt(dataMatch[10]) || 0;
+        
+        // Extract size from brand name if possible
+        const sizeMatch = item.brandName.match(/(\d+\s*ML|\d+\s*L)$/i);
+        if (sizeMatch) {
+            item.size = sizeMatch[1];
+            item.brandName = item.brandName.replace(sizeMatch[0], '').trim();
+        }
+    }
+    
+    // Set default values
+    item.freeCases = item.freeCases || 0;
+    item.freeBottles = item.freeBottles || 0;
+    item.caseRate = item.caseRate || 0;
+    
+    return item;
   }
 
   function calculateAmount(cases, individualBottles, caseRate, bottlesPerCase) {
@@ -1133,28 +1722,6 @@ $(function(){
     });
   }
 
-  // Function to show missing items alert
-  function showMissingItemsAlert(missingItems, addedCount, totalCount) {
-    let alertMessage = '';
-    
-    if (missingItems.length === 0) {
-        // All items found in database
-        alertMessage = `✅ Successfully added ${addedCount} items from SCM data.`;
-    } else {
-        // Some items missing from database
-        alertMessage = `⚠️ Added ${addedCount} items from SCM data. ${missingItems.length} items were skipped because they are not in database:\n\n`;
-        
-        // Create detailed list of missing items
-        const missingList = missingItems.map(item => 
-            `• ${item.name} (${item.size}) - Code: ${item.code}`
-        ).join('\n');
-        
-        alertMessage += missingList + '\n\nPlease add these items to master data first.';
-    }
-    
-    alert(alertMessage);
-  }
-
 function addRow(item){
     // Validate if item is allowed by license
     const dbItem = item.dbItem || findDbItemData(item.name, item.size, item.cleanCode || item.code);
@@ -1378,224 +1945,46 @@ function addRow(item){
 
   $('input[name="stax_per"],input[name="tcs_per"],input[name="cash_disc"],input[name="trade_disc"],input[name="octroi"],input[name="freight"],input[name="misc_charg"]').on('input', calcTaxes);
 
-  // ------- Paste-from-SCM -------
-  $('#pasteFromSCM').on('click', function(){ $('#pasteModal').modal('show'); $('#scmData').val('').focus(); });
+  // ------- Paste-from-SCM (Enhanced) -------
+  $('#pasteFromSCM').on('click', function(){ 
+    $('#scmPasteModal').modal('show'); 
+    $('#scmPasteArea').val('').focus(); 
+  });
 
   $('#processSCMData').on('click', function(){
-    const raw = ($('#scmData').val()||'').trim();
-    if(!raw){ alert('Please paste SCM data first.'); return; }
-
-    try{
-      const parsed = parseSCM(raw);
-      
-      $('#pasteModal').modal('hide');
-    }catch(err){
-      console.error(err);
-      alert('Could not parse the SCM text. '+err.message);
+    const scmData = $('#scmPasteArea').val().trim();
+    
+    if (!scmData) {
+        alert('Please paste SCM data first.');
+        return;
+    }
+    
+    try {
+        const parsedData = parseSCMData(scmData);
+        const validationResult = validateSCMItems(parsedData.items);
+        
+        if (validationResult.missingItems.length > 0) {
+            showMissingItemsModal(validationResult.missingItems, validationResult.validItems, parsedData);
+        } else {
+            processValidSCMItems(validationResult.validItems, parsedData);
+            $('#scmPasteModal').modal('hide');
+        }
+    } catch (error) {
+        console.error('Error parsing SCM data:', error);
+        alert('Error parsing SCM data: ' + error.message);
     }
   });
 
-  // Enhanced parser for SCM code lines
-  function parseSCMItemLine(scmLine) {
-    // Pattern to match SCM code lines with variable spacing
-    const pattern = /SCM Code:(\S+)\s+([\w\s\(\)\-\.']+)\s+([\d\.]+)\s+([\d\.]+)\s+([\w\-]+)\s+([\w\-\/]+)\s+([\w\-]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)/i;
-    const match = scmLine.match(pattern);
+  // Continue with found items
+  $('#continueWithFoundItems').click(function() {
+    const modal = $('#missingItemsModal');
+    const validItems = modal.data('validItems');
+    const parsedData = modal.data('parsedData');
     
-    if (match) {
-        return {
-            itemCode: match[1].replace("SCM", ""),
-            name: match[2].trim(),
-            size: match[2].trim(),
-            cases: parseFloat(match[3]),
-            bottles: parseInt(match[4]),
-            batchNo: match[5],
-            autoBatch: match[6],
-            mfgMonth: match[7],  // This should be properly extracted
-            mrp: parseFloat(match[8]),
-            bl: parseFloat(match[9]),  // This should be properly extracted
-            vv: parseFloat(match[10]),
-            totBott: parseInt(match[11]),  // This should be properly extracted
-            freeCases: 0,
-            freeBottles: 0
-        };
-    }
-    
-    // Add debug logging to see what's being parsed
-    console.log("SCM Line being parsed:", scmLine);
-    
-    // Fallback parsing...
-    const parts = scmLine.split(/\s+/);
-    if (parts.length < 11) {
-        console.warn("Not enough parts in SCM line:", scmLine);
-        return null;
-    }
-  
-    // Find where the size field ends (before the first numeric value)
-    let sizeEndIndex = 2; // Start after "SCM Code:XXXXX"
-    while (sizeEndIndex < parts.length && isNaN(parseFloat(parts[sizeEndIndex]))) {
-        sizeEndIndex++;
-    }
-    
-    const sizeParts = parts.slice(2, sizeEndIndex);
-    const size = sizeParts.join(' ');
-    const numericParts = parts.slice(sizeEndIndex);
-    
-    // Ensure we have enough numeric parts
-    if (numericParts.length < 9) {
-        console.warn("Not enough numeric parts in SCM line:", scmLine);
-        return null;
-    }
-    
-    return {
-        itemCode: parts[1].replace("SCM", ""),
-        name: "", // We'll need to extract this from the previous line
-        size: size,
-        cases: parseFloat(numericParts[0]) || 0,
-        bottles: parseInt(numericParts[1]) || 0,
-        batchNo: numericParts[2] || '',
-        autoBatch: numericParts[3] || '',
-        mfgMonth: numericParts[4] || '',
-        mrp: parseFloat(numericParts[5]) || 0,
-        bl: parseFloat(numericParts[6]) || 0,
-        vv: parseFloat(numericParts[7]) || 0,
-        totBott: parseInt(numericParts[8]) || 0,
-        freeCases: 0,
-        freeBottles: 0
-    };
-  }
-
-  // Main SCM parsing function
-  function parseSCM(text) {
-    const lines = text.split(/\r?\n/).map(l => l.replace(/\u00A0/g, ' ').trim()).filter(l => l !== '');
-    const out = { 
-      receivedDate: '', 
-      autoTpNo: '', 
-      manualTpNo: '', 
-      tpDate: '', 
-      party: '', 
-      items: [] 
-    };
-
-    // Parse header information
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Received Date
-      if (/Received\s*Date/i.test(line)) {
-        const nextLine = (lines[i + 1] || '').trim();
-        if (nextLine) {
-          const ymdDate = ymdFromDmyText(nextLine);
-          out.receivedDate = ymdDate || nextLine;
-          if (ymdDate) {
-            $('input[name="date"]').val(ymdDate);
-          }
-        }
-      }
-      
-      // Auto T.P. No
-      if (/Auto\s*T\.\s*P\.\s*No:/i.test(line)) {
-        const nextLine = (lines[i + 1] || '').trim();
-        if (nextLine && !/T\.?P\.?Date/i.test(nextLine)) {
-          out.autoTpNo = nextLine;
-          $('#autoTpNo').val(nextLine); // Populate the Auto TP No field
-        }
-      }
-      
-      // Manual T.P. No
-      if (/T\.\s*P\.\s*No\(Manual\):/i.test(line)) {
-        const nextLine = (lines[i + 1] || '').trim();
-        if (nextLine && !/T\.?P\.?Date/i.test(nextLine)) {
-          out.manualTpNo = nextLine;
-          $('#tpNo').val(nextLine);
-        }
-      }
-      
-      // T.P. Date
-      if (/T\.?P\.?Date:/i.test(line)) {
-        const nextLine = (lines[i + 1] || '').trim();
-        const ymdDate = ymdFromDmyText(nextLine);
-        if (ymdDate) {
-          out.tpDate = ymdDate;
-          $('#tpDate').val(ymdDate);
-        }
-      }
-      
-      // Party (Supplier)
-      if (/^Party\s*:/i.test(line)) {
-        const nextLine = (lines[i + 1] || '').trim();
-        if (nextLine) {
-          out.party = nextLine;
-          
-          // Try to find the best supplier match
-          const supplierMatch = findBestSupplierMatch(nextLine);
-          if (supplierMatch) {
-            $('#supplierInput').val(supplierMatch.DETAILS);
-            $('#supplierCodeHidden').val(supplierMatch.CODE);
-          } else {
-            $('#supplierInput').val(nextLine);
-          }
-        }
-      }
-      
-      // Item lines (SCM Code)
-      if (line.startsWith("SCM Code:")) {
-        const item = parseSCMItemLine(line);
-        if (item) {
-          // Clean the item code
-          item.cleanCode = cleanItemCode(item.itemCode);
-          
-          // Find matching database item
-          item.dbItem = findDbItemData("", item.size, item.cleanCode);
-          
-          // Add to items list
-          out.items.push(item);
-        }
-      }
-    }
-    
-    // Track missing items and added items
-    const missingItems = [];
-    const addedItems = [];
-    
-    // Process each item and check if it exists in database
-    out.items.forEach(item => {
-        const dbItem = item.dbItem || findDbItemData("", item.size, item.cleanCode);
-        
-        if (dbItem) {
-            // Item found in database - check license restrictions
-            if (allowedClasses.length > 0 && !allowedClasses.includes(dbItem.CLASS)) {
-                console.log('Skipping item not allowed by license:', item.name, 'Class:', dbItem.CLASS);
-                missingItems.push({
-                    code: item.cleanCode || item.itemCode,
-                    name: item.name || 'Unknown Item',
-                    size: item.size || '',
-                    reason: 'License restriction'
-                });
-            } else {
-                // Item found and allowed by license - add to table
-                addRow(item);
-                addedItems.push(item);
-            }
-        } else {
-            // Item not found in database
-            missingItems.push({
-                code: item.cleanCode || item.itemCode,
-                name: item.name || 'Unknown Item',
-                size: item.size || '',
-                reason: 'Not in database'
-            });
-        }
-    });
-    
-    // Show appropriate alert message
-    showMissingItemsAlert(missingItems, addedItems.length, out.items.length);
-    
-    // UPDATE BOTTLES BY SIZE DISPLAY AFTER ADDING SCM ITEMS
-    updateBottlesBySizeDisplay();
-    updateTotals();
-    
-    return out;
-  }
+    processValidSCMItems(validItems, parsedData);
+    modal.modal('hide');
+    $('#scmPasteModal').modal('hide');
+  });
 
   // Arrow navigation between input fields
   $(document).on('keydown', '.cases, .bottles, .free-cases, .free-bottles, .case-rate, .mrp, .batch-no, .auto-batch, .mfg-month, .vv', function(e) {

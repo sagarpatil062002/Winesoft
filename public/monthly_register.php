@@ -12,9 +12,21 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // ADDED: Include license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
+
+// ADDED: Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// ADDED: Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Default values - Monthly register (current month)
 $month = isset($_GET['month']) ? $_GET['month'] : date('Y-m');
@@ -151,16 +163,24 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
-// Fetch item master data with size information
+// MODIFIED: Fetch item master data with size information - FILTERED BY LICENSE TYPE
 $items = [];
-$itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster";
-$itemStmt = $conn->prepare($itemQuery);
-$itemStmt->execute();
-$itemResult = $itemStmt->get_result();
-while ($row = $itemResult->fetch_assoc()) {
-    $items[$row['CODE']] = $row;
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    $types = str_repeat('s', count($allowed_classes));
+    $itemStmt->bind_param($types, ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    while ($row = $itemResult->fetch_assoc()) {
+        $items[$row['CODE']] = $row;
+    }
+    $itemStmt->close();
+} else {
+    // If no classes allowed, items array will remain empty
 }
-$itemStmt->close();
 
 // Initialize monthly data structure - ORDER: Spirit, Wine, Fermented Beer, Mild Beer
 $monthly_data = [
@@ -308,7 +328,7 @@ for ($day = 1; $day <= $days_in_month; $day++) {
     while ($row = $stockResult->fetch_assoc()) {
         $item_code = $row['ITEM_CODE'];
         
-        // Skip if item not found in master
+        // MODIFIED: Skip if item not found in master OR if item class is not allowed by license
         if (!isset($items[$item_code])) continue;
         
         $item_details = $items[$item_code];
@@ -432,7 +452,7 @@ $breakagesResult = $breakagesStmt->get_result();
 while ($row = $breakagesResult->fetch_assoc()) {
     $item_code = $row['Code'];
     
-    // Skip if item not found in master
+    // MODIFIED: Skip if item not found in master OR if item class is not allowed by license
     if (!isset($items[$item_code])) continue;
     
     $item_details = $items[$item_code];
@@ -621,6 +641,13 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .no-print {
       display: block;
     }
+    .license-info { /* ADDED: Style for license info */
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
 
     /* Print styles */
     @media print {
@@ -772,6 +799,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     <div class="content-area">
       <h3 class="mb-4">Monthly Register (FLR-4)</h3>
 
+      <!-- ADDED: License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
@@ -838,6 +883,8 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           <h6><?= htmlspecialchars($companyName) ?></h6>
           <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?> | MORTIF.: | SPRINT 3</h6>
           <h6>Month: <?= date('F Y', strtotime($month . '-01')) ?></h6>
+          <!-- ADDED: License info in print view -->
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
         </div>
         
         <div class="table-responsive">

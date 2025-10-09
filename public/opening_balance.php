@@ -249,6 +249,84 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
     }
 }
 
+// Handle export requests
+if (isset($_GET['export'])) {
+    $exportType = $_GET['export'];
+    
+    // Fetch items from tblitemmaster with CURRENT_STOCK for the current company only - FILTERED BY LICENSE
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        $query = "SELECT 
+                    im.CODE, 
+                    im.DETAILS, 
+                    im.DETAILS2,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+        $params = array_merge([$mode], $allowed_classes);
+        $types = "s" . str_repeat('s', count($allowed_classes));
+    } else {
+        // If no classes allowed, return empty result
+        $query = "SELECT 
+                    im.CODE, 
+                    im.DETAILS, 
+                    im.DETAILS2,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE 1 = 0";
+        $params = [$mode];
+        $types = "s";
+    }
+
+    if ($search !== '') {
+        $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+        $types .= "ss";
+    }
+
+    $query .= " ORDER BY im.DETAILS ASC";
+
+    $stmt = $conn->prepare($query);
+    if ($params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $items = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    if ($exportType === 'csv') {
+        // Set headers for CSV download
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=opening_balance_export_' . $mode . '_' . date('Y-m-d') . '.csv');
+        
+        // Create output stream
+        $output = fopen('php://output', 'w');
+        
+        // Add BOM for UTF-8
+        fwrite($output, "\xEF\xBB\xBF");
+        
+        // Write header row
+        fputcsv($output, ['Item_Code', 'Item_Name', 'Category', 'Current_Stock']);
+        
+        // Write data rows
+        foreach ($items as $item) {
+            fputcsv($output, [
+                $item['CODE'],
+                $item['DETAILS'],
+                $item['DETAILS2'],
+                $item['CURRENT_STOCK']
+            ]);
+        }
+        
+        fclose($output);
+        exit;
+    }
+}
+
 // Handle CSV import
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
     $csv_file = $_FILES['csv_file']['tmp_name'];
@@ -355,7 +433,7 @@ if (isset($_GET['download_template'])) {
     fwrite($output, "\xEF\xBB\xBF");
     
     // Write header row
-    fputcsv($output, ['Item_Code', 'Item_Name', 'Category', 'Opening_Stock']);
+    fputcsv($output, ['Item_Code', 'Item_Name', 'Category', 'Current_Stock']);
     
     // Write data rows
     foreach ($template_items as $item) {
@@ -363,7 +441,7 @@ if (isset($_GET['download_template'])) {
             $item['CODE'],
             $item['DETAILS'],
             $item['DETAILS2'],
-            '' // Empty opening stock column for user to fill
+            '' // Empty current stock column for user to fill
         ]);
     }
     
@@ -371,7 +449,7 @@ if (isset($_GET['download_template'])) {
     exit;
 }
 
-// Fetch items from tblitemmaster with opening balance for the current company only - UPDATED WITH LICENSE FILTERING
+// Fetch items from tblitemmaster with CURRENT_STOCK for the current company only - UPDATED WITH LICENSE FILTERING
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $query = "SELECT 
@@ -382,14 +460,13 @@ if (!empty($allowed_classes)) {
                 im.CLASS, 
                 im.SUB_CLASS, 
                 im.ITEM_GROUP,
-                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
-                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
               FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                AND st.FIN_YEAR = ?
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
               WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
-    $params = array_merge([$fin_year, $mode], $allowed_classes);
-    $types = "is" . str_repeat('s', count($allowed_classes));
+    $params = array_merge([$mode], $allowed_classes);
+    $types = "s" . str_repeat('s', count($allowed_classes));
 } else {
     // If no classes allowed, show empty result
     $query = "SELECT 
@@ -400,14 +477,13 @@ if (!empty($allowed_classes)) {
                 im.CLASS, 
                 im.SUB_CLASS, 
                 im.ITEM_GROUP,
-                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
-                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
               FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                AND st.FIN_YEAR = ?
-              WHERE 1 = 0"; // Always false condition
-    $params = [$fin_year, $mode];
-    $types = "is";
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+              WHERE 1 = 0";
+    $params = [$mode];
+    $types = "s";
 }
 
 if ($search !== '') {
@@ -443,13 +519,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             $checkStmt->close();
             
             if ($exists) {
-                // Update existing record - only the columns for this company
+                // Update existing record - update BOTH opening and current stock
                 $updateStmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = ?");
                 $updateStmt->bind_param("iis", $balance, $balance, $code);
                 $updateStmt->execute();
                 $updateStmt->close();
             } else {
-                // Insert new record - only set columns for this company
+                // Insert new record - set BOTH opening and current stock
                 $insertStmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
                 $insertStmt->bind_param("siii", $code, $fin_year, $balance, $balance);
                 $insertStmt->execute();
@@ -499,7 +575,9 @@ if (isset($_SESSION['import_message'])) {
       overflow-y: auto;
     }
     .opening-balance-input {
-      max-width: 100px;
+      max-width: 120px;
+      margin: 0 auto;
+      display: block;
     }
     .sticky-header {
       position: sticky;
@@ -509,7 +587,7 @@ if (isset($_SESSION['import_message'])) {
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .company-column {
-      min-width: 120px;
+      min-width: 150px;
       text-align: center;
     }
     .import-section {
@@ -525,6 +603,26 @@ if (isset($_SESSION['import_message'])) {
       font-size: 0.9rem;
       color: #6c757d;
     }
+    .table th {
+      background-color: #343a40;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .action-btn {
+      position: sticky;
+      bottom: 0;
+      background-color: white;
+      padding: 10px 0;
+      border-top: 1px solid #dee2e6;
+      z-index: 100;
+    }
+    .import-export-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -536,7 +634,7 @@ if (isset($_SESSION['import_message'])) {
 
     <div class="content-area">
       <h3 class="mb-4">Opening Balance Management</h3>
-      
+
       <!-- Company and Financial Year Info -->
       <div class="company-info mb-3">
         <strong>Financial Year:</strong> <?= htmlspecialchars($fin_year) ?> | 
@@ -562,6 +660,15 @@ if (isset($_SESSION['import_message'])) {
           </p>
       </div>
 
+      <!-- Import/Export Buttons -->
+      <div class="import-export-buttons">
+        <div class="btn-group">
+          <a href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&export=csv" class="btn btn-info">
+            <i class="fas fa-file-export"></i> Export CSV
+          </a>
+        </div>
+      </div>
+
       <!-- Import from CSV Section -->
       <div class="import-section mb-4">
         <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV</h5>
@@ -570,8 +677,8 @@ if (isset($_SESSION['import_message'])) {
             <label for="csv_file" class="form-label">CSV File</label>
             <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
             <div class="csv-format">
-              <strong>CSV format:</strong> Item_Code, Item_Name, Category, Opening_Stock<br>
-              <strong>Note:</strong> Do not modify the first three columns. Only fill the Opening_Stock column.
+              <strong>CSV format:</strong> Item_Code, Item_Name, Category, Current_Stock<br>
+              <strong>Note:</strong> Do not modify the first three columns. Only fill the Current_Stock column.
             </div>
           </div>
           <div class="col-md-3">
@@ -605,15 +712,15 @@ if (isset($_SESSION['import_message'])) {
         <label class="form-label">Liquor Mode:</label>
         <div class="btn-group" role="group">
           <a href="?mode=F&search=<?= urlencode($search) ?>"
-             class="btn btn-outline-primary <?= $mode === 'F' ? 'mode-active' : '' ?>">
+             class="btn btn-outline-primary <?= $mode === 'F' ? 'active' : '' ?>">
             Foreign Liquor
           </a>
           <a href="?mode=C&search=<?= urlencode($search) ?>"
-             class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
+             class="btn btn-outline-primary <?= $mode === 'C' ? 'active' : '' ?>">
             Country Liquor
           </a>
           <a href="?mode=O&search=<?= urlencode($search) ?>"
-             class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
+             class="btn btn-outline-primary <?= $mode === 'O' ? 'active' : '' ?>">
             Others
           </a>
         </div>
@@ -647,15 +754,14 @@ if (isset($_SESSION['import_message'])) {
 
         <!-- Items Table -->
         <div class="table-container">
-          <table class="table table-striped table-bordered">
+          <table class="table table-striped table-bordered table-hover">
             <thead class="sticky-header">
               <tr>
                 <th>Code</th>
                 <th>Item Name</th>
                 <th>Category</th>
                 <th class="company-column">
-                  <?= htmlspecialchars($current_company['Comp_Name']) ?><br>
-                  <small>Opening Stock</small>
+                  Current Stock
                 </th>
               </tr>
             </thead>
@@ -667,53 +773,67 @@ if (isset($_SESSION['import_message'])) {
                   <td><?= htmlspecialchars($item['DETAILS']); ?></td>
                   <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
                   <td class="company-column">
-                    <input type="number" step="1" min="0"
-                           name="opening_stock[<?= htmlspecialchars($item['CODE']); ?>]" 
-                           value="<?= number_format($item['OPENING_STOCK'], 0); ?>" 
-                           class="form-control form-control-sm opening-balance-input">
+                    <input type="number" name="opening_stock[<?= htmlspecialchars($item['CODE']); ?>]"
+                           value="<?= (int)$item['CURRENT_STOCK']; ?>" min="0"
+                           class="form-control opening-balance-input">
                   </td>
                 </tr>
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="4" class="text-center text-muted">
-                  <?php if (empty($allowed_classes)): ?>
-                    No classes available for your license type (<?= htmlspecialchars($license_type) ?>)
-                  <?php else: ?>
-                    No items found.
-                  <?php endif; ?>
-                </td>
+                <td colspan="4" class="text-center">No items found for the selected liquor mode and license type.</td>
               </tr>
             <?php endif; ?>
             </tbody>
           </table>
+        </div>
+
+        <!-- Save Button at Bottom -->
+        <div class="action-btn mt-3 d-flex gap-2">
+          <button type="submit" name="update_balances" class="btn btn-success">
+            <i class="fas fa-save"></i> Save Opening Balances
+          </button>
+          <a href="dashboard.php" class="btn btn-secondary ms-auto">
+            <i class="fas fa-sign-out-alt"></i> Exit
+          </a>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Add confirmation before saving
-document.getElementById('balanceForm').addEventListener('submit', function(e) {
-    if (!confirm('Are you sure you want to update the opening balances for <?= htmlspecialchars($current_company['Comp_Name']) ?>?')) {
-        e.preventDefault();
+  // Auto-hide alerts after 5 seconds
+  setTimeout(() => {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+      const bsAlert = new bootstrap.Alert(alert);
+      bsAlert.close();
+    });
+  }, 5000);
+
+  // Confirm before leaving if form has changes
+  let formChanged = false;
+  const form = document.getElementById('balanceForm');
+  const inputs = form.querySelectorAll('input');
+  
+  inputs.forEach(input => {
+    input.addEventListener('change', () => {
+      formChanged = true;
+    });
+  });
+
+  window.addEventListener('beforeunload', (e) => {
+    if (formChanged) {
+      e.preventDefault();
+      e.returnValue = '';
     }
-});
+  });
 
-// Update time display every minute
-function updateTime() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    const dateString = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-    
-    document.querySelector('.badge.bg-dark:nth-child(4)').textContent = timeString;
-    document.querySelector('.badge.bg-dark:nth-child(5)').textContent = dateString;
-}
-
-setInterval(updateTime, 60000);
+  form.addEventListener('submit', () => {
+    formChanged = false;
+  });
 </script>
 </body>
 </html>

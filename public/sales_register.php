@@ -12,9 +12,20 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // Add license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
+
+// Get company's license type and available classes
+$license_type = getCompanyLicenseType($compID, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Default values
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d');
@@ -86,13 +97,18 @@ function getSalesTablesForDateRange($conn, $compID, $date_from, $date_to) {
     return $tables;
 }
 
-// Define categories based on the image format
+// Define categories based on the image format - UPDATED WITH LICENSE RESTRICTIONS
 $categories = [
-    'IMFL Sales' => ['classes' => ['W', 'G', 'K', 'D', 'R', 'O'], 'liq_flag' => 'F'],
-    'Wine Sales' => ['classes' => ['V'], 'liq_flag' => 'F'],
-    'Beer Sales' => ['classes' => ['F', 'M'], 'liq_flag' => 'F'], // Both fermented and mild beer
-    'Country Sales' => ['classes' => ['L', 'O'], 'liq_flag' => 'C']
+    'IMFL Sales' => ['classes' => array_intersect(['W', 'G', 'K', 'D', 'R', 'O'], $allowed_classes), 'liq_flag' => 'F'],
+    'Wine Sales' => ['classes' => array_intersect(['V'], $allowed_classes), 'liq_flag' => 'F'],
+    'Beer Sales' => ['classes' => array_intersect(['F', 'M'], $allowed_classes), 'liq_flag' => 'F'], // Both fermented and mild beer
+    'Country Sales' => ['classes' => array_intersect(['L', 'O'], $allowed_classes), 'liq_flag' => 'C']
 ];
+
+// Remove empty categories (where no classes are allowed by license)
+$categories = array_filter($categories, function($category) {
+    return !empty($category['classes']);
+});
 
 // Generate report data based on filters
 $report_data = [];
@@ -147,6 +163,7 @@ if (isset($_GET['generate'])) {
         $headerTable = $tables['header'];
         $detailsTable = $tables['details'];
         
+        // Build query with license restrictions
         $query = "SELECT 
                     DATE(s.BILL_DATE) as sale_date,
                     i.CLASS as SGROUP,
@@ -157,12 +174,31 @@ if (isset($_GET['generate'])) {
                   FROM $detailsTable sd
                   INNER JOIN $headerTable s ON sd.BILL_NO = s.BILL_NO AND sd.COMP_ID = s.COMP_ID
                   LEFT JOIN tblitemmaster i ON sd.ITEM_CODE = i.CODE
-                  WHERE s.BILL_DATE BETWEEN ? AND ? AND s.COMP_ID = ?
-                  GROUP BY DATE(s.BILL_DATE), i.CLASS, i.LIQ_FLAG
+                  WHERE s.BILL_DATE BETWEEN ? AND ? AND s.COMP_ID = ?";
+        
+        // Add license class restrictions if there are allowed classes
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $query .= " AND i.CLASS IN ($class_placeholders)";
+        } else {
+            // If no classes allowed, show no results
+            $query .= " AND 1 = 0";
+        }
+        
+        $query .= " GROUP BY DATE(s.BILL_DATE), i.CLASS, i.LIQ_FLAG
                   ORDER BY sale_date, i.CLASS";
         
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssi", $date_from, $date_to, $compID);
+        
+        // Bind parameters based on whether we have class restrictions
+        if (!empty($allowed_classes)) {
+            $params = array_merge([$date_from, $date_to, $compID], $allowed_classes);
+            $types = str_repeat('s', count($params));
+            $stmt->bind_param($types, ...$params);
+        } else {
+            $stmt->bind_param("ssi", $date_from, $date_to, $compID);
+        }
+        
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -183,13 +219,13 @@ if (isset($_GET['generate'])) {
                 }
             }
             
-            // If we couldn't classify the item, assign to IMFL Sales as default
-            if ($item_category === null) {
+            // If we couldn't classify the item, assign to IMFL Sales as default (if allowed)
+            if ($item_category === null && in_array($sgroup, $categories['IMFL Sales']['classes'] ?? [])) {
                 $item_category = 'IMFL Sales';
             }
             
-            // Update category data
-            if (isset($report_data[$sale_date][$item_category])) {
+            // Update category data only if category exists and is allowed
+            if ($item_category !== null && isset($report_data[$sale_date][$item_category])) {
                 // If this category already has data, update min/max bills and amount
                 if ($report_data[$sale_date][$item_category]['min_bill'] === null || 
                     $min_bill < $report_data[$sale_date][$item_category]['min_bill']) {
@@ -202,13 +238,6 @@ if (isset($_GET['generate'])) {
                 }
                 
                 $report_data[$sale_date][$item_category]['amount'] += $amount;
-            } else {
-                // Initialize category data
-                $report_data[$sale_date][$item_category] = [
-                    'min_bill' => $min_bill,
-                    'max_bill' => $max_bill,
-                    'amount' => $amount
-                ];
             }
             
             $daily_totals[$sale_date] += $amount;
@@ -384,6 +413,14 @@ if (isset($_GET['generate'])) {
       color: #6c757d;
     }
     
+    .license-info {
+      background-color: #e7f3ff;
+      border-left: 4px solid #0d6efd;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+    
     @media print {
       .no-print {
         display: none !important;
@@ -406,6 +443,10 @@ if (isset($_GET['generate'])) {
       .report-table th, .report-table td {
         padding: 4px 6px;
       }
+      
+      .license-info {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -418,6 +459,24 @@ if (isset($_GET['generate'])) {
 
     <div class="content-area">
       <h3 class="mb-4">Sales Register Report</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+        <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+        <p class="mb-0">Showing sales data for classes: 
+            <?php 
+            if (!empty($available_classes)) {
+                $class_names = [];
+                foreach ($available_classes as $class) {
+                    $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                }
+                echo implode(', ', $class_names);
+            } else {
+                echo 'No classes available for your license type';
+            }
+            ?>
+        </p>
+      </div>
 
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -478,6 +537,7 @@ if (isset($_GET['generate'])) {
             <h1><?= htmlspecialchars($companyName) ?></h1>
             <h5>Sales Register Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
             <h6>Rate Type: <?= $rate_type === 'mrp' ? 'MRP Rate' : 'B. Rate' ?></h6>
+            <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           </div>
           
           <div class="table-container">
@@ -574,12 +634,15 @@ if (isset($_GET['generate'])) {
           </div>
           
           <div class="footer-info">
-            Generated on: <?= date('d-M-Y h:i A') ?> | Generated by: <?= $_SESSION['username'] ?? 'System' ?>
+            Generated on: <?= date('d-M-Y h:i A') ?> | Generated by: <?= $_SESSION['username'] ?? 'System' ?> | License Type: <?= htmlspecialchars($license_type) ?>
           </div>
         </div>
       <?php elseif (isset($_GET['generate'])): ?>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i> No sales records found for the selected criteria.
+          <?php if (empty($allowed_classes)): ?>
+            <br><small>No license classes are available for your company.</small>
+          <?php endif; ?>
         </div>
       <?php endif; ?>
     </div>

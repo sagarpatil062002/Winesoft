@@ -12,6 +12,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
@@ -186,16 +198,28 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
-// Fetch item master data with size information and extract brand names
+// Fetch item master data with size information and extract brand names - WITH LICENSE FILTERING
 $items = [];
-$itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster";
-$itemStmt = $conn->prepare($itemQuery);
-$itemStmt->execute();
-$itemResult = $itemStmt->get_result();
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    
+    $stmt = $conn->prepare($itemQuery);
+    $stmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $stmt->execute();
+    $itemResult = $stmt->get_result();
+} else {
+    // If no classes allowed, return empty result
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE 1 = 0";
+    $itemResult = $conn->query($itemQuery);
+}
+
 while ($row = $itemResult->fetch_assoc()) {
     $items[$row['CODE']] = $row;
 }
-$itemStmt->close();
+if (isset($stmt)) {
+    $stmt->close();
+}
 
 // Function to determine liquor type based on CLASS and LIQ_FLAG
 function getLiquorType($class, $liq_flag) {
@@ -354,7 +378,7 @@ foreach ($tables_needed as $table_info) {
                 while ($row = $stockResult->fetch_assoc()) {
                     $item_code = $row['ITEM_CODE'];
                     
-                    // Skip if item not found in master
+                    // Skip if item not found in master or not allowed by license
                     if (!isset($items[$item_code])) continue;
                     
                     // Initialize item data if not exists
@@ -758,6 +782,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     <div class="content-area">
       <h3 class="mb-4">FLR-3A Brandwise Register</h3>
 
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3 no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
@@ -795,6 +837,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           <h1>Form F.L.R. 3A - Brandwise Register (See Rule 15)</h1>
           <h5>REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
         </div>
         
@@ -891,6 +934,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               <?php $sr_no = 1; ?>
               
               <!-- Spirits Section -->
+              <?php if (!empty($brand_data_by_category['Spirits'])): ?>
               <tr class="category-header">
                 <td colspan="<?= ($total_columns * 3) + 4 ?>">SPIRITS</td>
               </tr>
@@ -975,8 +1019,10 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   </td>
                 </tr>
               <?php endforeach; ?>
+              <?php endif; ?>
               
               <!-- Wines Section -->
+              <?php if (!empty($brand_data_by_category['Wines'])): ?>
               <tr class="category-header">
                 <td colspan="<?= ($total_columns * 3) + 4 ?>">WINES</td>
               </tr>
@@ -1061,8 +1107,10 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   </td>
                 </tr>
               <?php endforeach; ?>
+              <?php endif; ?>
               
               <!-- Fermented Beer Section -->
+              <?php if (!empty($brand_data_by_category['Fermented Beer'])): ?>
               <tr class="category-header">
                 <td colspan="<?= ($total_columns * 3) + 4 ?>">FERMENTED BEER</td>
               </tr>
@@ -1147,8 +1195,10 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   </td>
                 </tr>
               <?php endforeach; ?>
+              <?php endif; ?>
               
               <!-- Mild Beer Section -->
+              <?php if (!empty($brand_data_by_category['Mild Beer'])): ?>
               <tr class="category-header">
                 <td colspan="<?= ($total_columns * 3) + 4 ?>">MILD BEER</td>
               </tr>
@@ -1233,6 +1283,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   </td>
                 </tr>
               <?php endforeach; ?>
+              <?php endif; ?>
               
               <!-- Grand Total row -->
               <tr class="summary-row">
@@ -1329,6 +1380,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
             </div>
           </div>
           <p class="mt-3">Note: This register is maintained under FLR-3A format for excise compliance.</p>
+          <p>License Type: <?= htmlspecialchars($license_type) ?></p>
           <p>Generated by WineSoft on <?= date('d-M-Y h:i A') ?></p>
         </div>
       </div>

@@ -19,6 +19,12 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
+
 // Initialize variables
 $items = [];
 $breakageItems = [];
@@ -35,41 +41,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($quantity <= 0) {
             $_SESSION['error'] = "Quantity must be greater than zero";
         } else {
-            // Get item details
-            $itemQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE FROM tblitemmaster WHERE CODE = ?";
-            $stmt = $conn->prepare($itemQuery);
-            $stmt->bind_param("s", $itemCode);
+            // Get item details with license filtering
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $itemQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE, CLASS FROM tblitemmaster 
+                             WHERE CODE = ? AND CLASS IN ($class_placeholders)";
+                
+                $params = array_merge([$itemCode], $allowed_classes);
+                $types = str_repeat('s', count($params));
+                
+                $stmt = $conn->prepare($itemQuery);
+                $stmt->bind_param($types, ...$params);
+            } else {
+                // If no classes allowed, item won't be found
+                $itemQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE, CLASS FROM tblitemmaster WHERE 1 = 0";
+                $stmt = $conn->prepare($itemQuery);
+            }
+            
             $stmt->execute();
             $itemResult = $stmt->get_result();
             
             if ($itemResult->num_rows > 0) {
                 $item = $itemResult->fetch_assoc();
                 
-                // Use purchase price for breakage
-                $price = $item['PPRICE'];
-                
-                // Add to session cart
-                if (!isset($_SESSION['breakage_cart'])) {
-                    $_SESSION['breakage_cart'] = [];
-                }
-                
-                $itemKey = $itemCode;
-                if (isset($_SESSION['breakage_cart'][$itemKey])) {
-                    $_SESSION['breakage_cart'][$itemKey]['quantity'] += $quantity;
-                    $_SESSION['breakage_cart'][$itemKey]['amount'] = $_SESSION['breakage_cart'][$itemKey]['quantity'] * $price;
+                // Verify the item class is allowed for this license
+                if (in_array($item['CLASS'], $allowed_classes)) {
+                    // Use purchase price for breakage
+                    $price = $item['PPRICE'];
+                    
+                    // Add to session cart
+                    if (!isset($_SESSION['breakage_cart'])) {
+                        $_SESSION['breakage_cart'] = [];
+                    }
+                    
+                    $itemKey = $itemCode;
+                    if (isset($_SESSION['breakage_cart'][$itemKey])) {
+                        $_SESSION['breakage_cart'][$itemKey]['quantity'] += $quantity;
+                        $_SESSION['breakage_cart'][$itemKey]['amount'] = $_SESSION['breakage_cart'][$itemKey]['quantity'] * $price;
+                    } else {
+                        $_SESSION['breakage_cart'][$itemKey] = [
+                            'code' => $itemCode,
+                            'name' => $item['DETAILS'],
+                            'size' => $item['DETAILS2'],
+                            'rate' => $price,
+                            'quantity' => $quantity,
+                            'amount' => $quantity * $price,
+                            'class' => $item['CLASS']
+                        ];
+                    }
                 } else {
-                    $_SESSION['breakage_cart'][$itemKey] = [
-                        'code' => $itemCode,
-                        'name' => $item['DETAILS'],
-                        'size' => $item['DETAILS2'],
-                        'rate' => $price,
-                        'quantity' => $quantity,
-                        'amount' => $quantity * $price
-                    ];
+                    $_SESSION['error'] = "Item class not allowed for your license type";
                 }
             } else {
-                $_SESSION['error'] = "Invalid item code selected";
+                $_SESSION['error'] = "Invalid item code selected or item not allowed for your license type";
             }
+            $stmt->close();
         }
     }
     
@@ -126,16 +152,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = true;
             
             foreach ($_SESSION['breakage_cart'] as $item) {
-                // Verify item exists in master table before inserting
-                $verifyQuery = "SELECT COUNT(*) as count FROM tblitemmaster WHERE CODE = ?";
-                $verifyStmt = $conn->prepare($verifyQuery);
-                $verifyStmt->bind_param("s", $item['code']);
+                // Verify item exists in master table and is allowed by license
+                if (!empty($allowed_classes)) {
+                    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                    $verifyQuery = "SELECT COUNT(*) as count FROM tblitemmaster 
+                                   WHERE CODE = ? AND CLASS IN ($class_placeholders)";
+                    
+                    $params = array_merge([$item['code']], $allowed_classes);
+                    $types = str_repeat('s', count($params));
+                    
+                    $verifyStmt = $conn->prepare($verifyQuery);
+                    $verifyStmt->bind_param($types, ...$params);
+                } else {
+                    $verifyQuery = "SELECT COUNT(*) as count FROM tblitemmaster WHERE 1 = 0";
+                    $verifyStmt = $conn->prepare($verifyQuery);
+                }
+                
                 $verifyStmt->execute();
                 $verifyResult = $verifyStmt->get_result();
                 $itemExists = $verifyResult->fetch_assoc()['count'] > 0;
+                $verifyStmt->close();
                 
                 if (!$itemExists) {
-                    $_SESSION['error'] = "Item " . $item['code'] . " does not exist in item master. Breakage record cancelled.";
+                    $_SESSION['error'] = "Item " . $item['code'] . " does not exist in item master or is not allowed for your license type. Breakage record cancelled.";
                     $success = false;
                     break;
                 }
@@ -203,9 +242,23 @@ if (isset($_SESSION['breakage_cart'])) {
     }
 }
 
-// Fetch items for dropdown
-$itemsQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE FROM tblitemmaster ORDER BY DETAILS";
-$itemsResult = $conn->query($itemsQuery);
+// Fetch items for dropdown with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemsQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE FROM tblitemmaster 
+                  WHERE CLASS IN ($class_placeholders) 
+                  ORDER BY DETAILS";
+    
+    $stmt = $conn->prepare($itemsQuery);
+    $stmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $stmt->execute();
+    $itemsResult = $stmt->get_result();
+} else {
+    // If no classes allowed, return empty result
+    $itemsQuery = "SELECT CODE, DETAILS, DETAILS2, PPRICE FROM tblitemmaster WHERE 1 = 0 ORDER BY DETAILS";
+    $itemsResult = $conn->query($itemsQuery);
+}
+
 $itemOptions = [];
 if ($itemsResult) {
     while ($row = $itemsResult->fetch_assoc()) {
@@ -213,6 +266,9 @@ if ($itemsResult) {
             'name' => $row['DETAILS'] . ' (' . $row['DETAILS2'] . ')',
             'price' => $row['PPRICE']
         ];
+    }
+    if (isset($stmt)) {
+        $stmt->close();
     }
 } else {
     echo "Error fetching items: " . $conn->error;
@@ -247,6 +303,24 @@ if ($itemsResult) {
         <a href="view_breakage.php" class="btn btn-outline-danger">
           <i class="fas fa-list-check me-1"></i> View Records
         </a>
+      </div>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
       </div>
 
       <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
@@ -351,6 +425,7 @@ if ($itemsResult) {
                     <th>Item Code</th>
                     <th>Item Name</th>
                     <th>Size</th>
+                    <th>Class</th>
                     <th>Rate (₹)</th>
                     <th class="text-end">Breakage Qty</th>
                     <th class="text-end">Amount (₹)</th>
@@ -365,6 +440,9 @@ if ($itemsResult) {
                       </td>
                       <td><?= htmlspecialchars($item['name']) ?></td>
                       <td><?= htmlspecialchars($item['size']) ?></td>
+                      <td>
+                        <span class="badge bg-info"><?= htmlspecialchars($item['class']) ?></span>
+                      </td>
                       <td>
                         <form method="POST" class="d-inline-flex">
                           <input type="hidden" name="item_code" value="<?= $item['code'] ?>">
@@ -389,7 +467,7 @@ if ($itemsResult) {
                     </tr>
                   <?php endforeach; ?>
                   <tr class="table-danger">
-                    <td colspan="5" class="text-end fw-bold">Total Breakage Amount:</td>
+                    <td colspan="6" class="text-end fw-bold">Total Breakage Amount:</td>
                     <td class="text-end fw-bold">₹<?= number_format($totalAmount, 2) ?></td>
                     <td></td>
                   </tr>

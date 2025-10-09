@@ -12,6 +12,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // Add license functions
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Get parameters
 $date_as_on = isset($_GET['date_as_on']) ? $_GET['date_as_on'] : date('d/m/Y');
@@ -139,15 +151,34 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
-// Fetch items with closing stock
-$query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                 im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
-                 ds.DAY_{$day}_CLOSING as CLOSING_STOCK
-          FROM tblitemmaster im
-          LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?";
+// Fetch items with closing stock - FILTERED BY LICENSE TYPE
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
+                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
+                     ds.DAY_{$day}_CLOSING as CLOSING_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
+              WHERE im.CLASS IN ($class_placeholders)";
+    
+    $params = array_merge([$month_year], $allowed_classes);
+    $types = str_repeat('s', count($params));
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param($types, ...$params);
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
+                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
+                     ds.DAY_{$day}_CLOSING as CLOSING_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
+              WHERE 1 = 0"; // Always false condition
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $month_year);
+}
 
-$stmt = $conn->prepare($query);
-$stmt->bind_param("s", $month_year);
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -285,6 +316,13 @@ sort($country_sizes);
     .print-content {
         display: none;
     }
+    .license-info {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
     @media print {
         .no-print {
             display: none !important;
@@ -308,6 +346,24 @@ sort($country_sizes);
 
     <div class="content-area">
       <h3 class="mb-4">Closing Stock Statement</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Filter Form -->
       <div class="card mb-4 no-print">
@@ -377,6 +433,7 @@ sort($country_sizes);
         <div class="report-header">
           <div class="print-header">
             <h2><?= htmlspecialchars($companyName) ?></h2>
+            <p>License Type: <?= htmlspecialchars($license_type) ?></p>
             <p>Item Wise Closing Stock Statement As On <?= date('d-M-Y', strtotime($db_date)) ?></p>
           </div>
         </div>

@@ -12,9 +12,21 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // ADDED: Include license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
+
+// ADDED: Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// ADDED: Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
@@ -130,16 +142,24 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
-// Fetch item master data with size information
+// MODIFIED: Fetch item master data with size information - FILTERED BY LICENSE TYPE
 $items = [];
-$itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster";
-$itemStmt = $conn->prepare($itemQuery);
-$itemStmt->execute();
-$itemResult = $itemStmt->get_result();
-while ($row = $itemResult->fetch_assoc()) {
-    $items[$row['CODE']] = $row;
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    $types = str_repeat('s', count($allowed_classes));
+    $itemStmt->bind_param($types, ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    while ($row = $itemResult->fetch_assoc()) {
+        $items[$row['CODE']] = $row;
+    }
+    $itemStmt->close();
+} else {
+    // If no classes allowed, items array will remain empty
 }
-$itemStmt->close();
 
 // Initialize report data structure
 $dates = [];
@@ -344,7 +364,7 @@ foreach ($dates as $date) {
     while ($row = $stockResult->fetch_assoc()) {
         $item_code = $row['ITEM_CODE'];
         
-        // Skip if item not found in master
+        // Skip if item not found in master OR if item class is not allowed by license
         if (!isset($items[$item_code])) continue;
         
         $item_details = $items[$item_code];
@@ -506,6 +526,13 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .no-print {
       display: block;
     }
+    .license-info { /* ADDED: Style for license info */
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
 
   /* Print styles - ONLY MODIFIED HEIGHT AND SCALE */
     @media print {
@@ -659,6 +686,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     <div class="content-area">
       <h3 class="mb-4">FLR 1A/2A/3A Datewise Register</h3>
 
+      <!-- ADDED: License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
@@ -697,6 +742,8 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           <h5>REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+          <!-- ADDED: License info in print view -->
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
         </div>
         
         <div class="table-responsive">
@@ -766,86 +813,33 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
                 
-                <!-- Spirits Closing Balance -->
+                <!-- Spirits Closing -->
                 <?php foreach ($display_sizes_s as $size): ?>
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
                 
-                <!-- Wines Closing Balance -->
+                <!-- Wines Closing -->
                 <?php foreach ($display_sizes_w as $size): ?>
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
                 
-                <!-- Fermented Beer Closing Balance -->
+                <!-- Fermented Beer Closing -->
                 <?php foreach ($display_sizes_fb as $size): ?>
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
                 
-                <!-- Mild Beer Closing Balance -->
+                <!-- Mild Beer Closing -->
                 <?php foreach ($display_sizes_mb as $size): ?>
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
               </tr>
             </thead>
             <tbody>
-              <!-- Balance of the Month row -->
-              <tr>
-                <td>Balance of the Month</td>
-                <td></td>
-                
-                <!-- Received Section - All zeros as per Excel -->
-                <?php for ($i = 0; $i < $total_columns; $i++): ?>
-                  <td>0</td>
-                <?php endfor; ?>
-                
-                <!-- Sold Section - All zeros as per Excel -->
-                <?php for ($i = 0; $i < $total_columns; $i++): ?>
-                  <td>0</td>
-                <?php endfor; ?>
-                
-                <!-- Closing Balance Section - NEW ORDER -->
-                <!-- Spirits Closing -->
-                <?php foreach ($display_sizes_s as $size): ?>
-                  <td><?= $totals['Spirits']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-                
-                <!-- Wines Closing -->
-                <?php foreach ($display_sizes_w as $size): ?>
-                  <td><?= $totals['Wines']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-                
-                <!-- Fermented Beer Closing -->
-                <?php foreach ($display_sizes_fb as $size): ?>
-                  <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-                
-                <!-- Mild Beer Closing -->
-                <?php foreach ($display_sizes_mb as $size): ?>
-                  <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-                
-                <td></td>
-              </tr>
-              
-              <!-- For each date in the range -->
-              <?php foreach ($dates as $date): 
-                $day_num = date('d', strtotime($date));
-                $days_in_month = date('t', strtotime($date));
-                
-                // Get table for this date to check if it has the day columns
-                $tableForDate = getTableForDate($conn, $compID, $date);
-                $hasDayColumns = tableHasDayColumns($conn, $tableForDate, $day_num);
-                
-                // Skip display if day exceeds month length OR table doesn't have day columns
-                if ($day_num > $days_in_month || !$hasDayColumns) {
-                    continue;
-                }
-              ?>
+              <?php foreach ($dates as $date): ?>
                 <tr>
-                  <td><?= $day_num ?></td>
-                  <td></td>
+                  <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
+                  <td class="permit-col"></td>
                   
-                  <!-- Received Section - NEW ORDER -->
                   <!-- Spirits Received -->
                   <?php foreach ($display_sizes_s as $size): ?>
                     <td><?= $daily_data[$date]['Spirits']['purchase'][$size] ?></td>
@@ -866,7 +860,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                     <td><?= $daily_data[$date]['Mild Beer']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
                   
-                  <!-- Sold Section - NEW ORDER -->
                   <!-- Spirits Sold -->
                   <?php foreach ($display_sizes_s as $size): ?>
                     <td><?= $daily_data[$date]['Spirits']['sales'][$size] ?></td>
@@ -887,7 +880,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                     <td><?= $daily_data[$date]['Mild Beer']['sales'][$size] ?></td>
                   <?php endforeach; ?>
                   
-                  <!-- Closing Balance Section - NEW ORDER -->
                   <!-- Spirits Closing -->
                   <?php foreach ($display_sizes_s as $size): ?>
                     <td><?= $daily_data[$date]['Spirits']['closing'][$size] ?></td>
@@ -908,16 +900,14 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                     <td><?= $daily_data[$date]['Mild Beer']['closing'][$size] ?></td>
                   <?php endforeach; ?>
                   
-                  <td></td>
+                  <td class="signature-col"></td>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Total row -->
+              <!-- Summary Row -->
               <tr class="summary-row">
-                <td>Total</td>
-                <td></td>
+                <td colspan="2">Total</td>
                 
-                <!-- Received Section - NEW ORDER -->
                 <!-- Spirits Received Total -->
                 <?php foreach ($display_sizes_s as $size): ?>
                   <td><?= $totals['Spirits']['purchase'][$size] ?></td>
@@ -938,7 +928,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <td><?= $totals['Mild Beer']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
                 
-                <!-- Sold Section - NEW ORDER -->
                 <!-- Spirits Sold Total -->
                 <?php foreach ($display_sizes_s as $size): ?>
                   <td><?= $totals['Spirits']['sales'][$size] ?></td>
@@ -959,7 +948,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <td><?= $totals['Mild Beer']['sales'][$size] ?></td>
                 <?php endforeach; ?>
                 
-                <!-- Closing Balance Section - NEW ORDER -->
                 <!-- Spirits Closing Total -->
                 <?php foreach ($display_sizes_s as $size): ?>
                   <td><?= $totals['Spirits']['closing'][$size] ?></td>
@@ -982,8 +970,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 
                 <td></td>
               </tr>
-              
-            <!-- Summary rows - Updated for new order and only in Closing Balance column -->
+              <!-- Summary rows - Updated for new order and only in Closing Balance column -->
 <tr class="summary-row">
   <td>Received</td>
   <td></td>
@@ -1178,7 +1165,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         </div>
         
         <div class="footer-info">
-          <p>Note: This report is generated by WineSoft on <?= date('d-M-Y h:i A') ?></p>
+          <p>Note: This is a computer generated report and does not require signature.</p>
         </div>
       </div>
     </div>
@@ -1186,5 +1173,13 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Auto-submit form when dates change
+document.querySelectorAll('input[type="date"]').forEach(input => {
+  input.addEventListener('change', function() {
+    document.querySelector('.report-filters').submit();
+  });
+});
+</script>
 </body>
 </html>

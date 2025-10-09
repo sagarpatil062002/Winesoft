@@ -12,27 +12,24 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // Include license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Fetch current financial year from database
-$financial_year = [];
-$finyearQuery = "SELECT ID, START_DATE, END_DATE FROM tblfinyear WHERE ACTIVE = 1 LIMIT 1";
-$finyearResult = $conn->query($finyearQuery);
-if ($finyearResult->num_rows > 0) {
-    $financial_year = $finyearResult->fetch_assoc();
-} else {
-    // Fallback to current year if no active financial year found
-    $current_year = date('Y');
-    $financial_year = [
-        'START_DATE' => ($current_year - 1) . '-04-01 00:00:00',
-        'END_DATE' => $current_year . '-03-31 23:59:59'
-    ];
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
 }
 
-// Extract year from start date for display
-$year = date('Y', strtotime($financial_year['START_DATE']));
+// Default values - Yearly register (current year)
+$year = isset($_GET['year']) ? $_GET['year'] : date('Y');
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'Foreign Liquor';
 
 // Fetch company name and license number
@@ -49,6 +46,63 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
+// Function to get table name for a specific date
+function getTableForDate($conn, $compID, $date) {
+    $current_month = date('Y-m');
+    $target_month = date('Y-m', strtotime($date));
+    
+    // If current month, use main table
+    if ($target_month == $current_month) {
+        $tableName = "tbldailystock_" . $compID;
+    } else {
+        // For previous months, use archive table format: tbldailystock_compID_MM_YY
+        $month = date('m', strtotime($date));
+        $year = date('y', strtotime($date));
+        $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
+    }
+    
+    // Check if table exists
+    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
+    $tableCheckResult = $conn->query($tableCheckQuery);
+    
+    if ($tableCheckResult->num_rows == 0) {
+        // If archive table doesn't exist, fall back to main table
+        $tableName = "tbldailystock_" . $compID;
+        
+        // Check if main table exists, if not use default
+        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
+        $tableCheckResult2 = $conn->query($tableCheckQuery2);
+        if ($tableCheckResult2->num_rows == 0) {
+            $tableName = "tbldailystock_1";
+        }
+    }
+    
+    return $tableName;
+}
+
+// Function to check if table has specific day columns
+function tableHasDayColumns($conn, $tableName, $day) {
+    $day_padded = sprintf('%02d', $day);
+    
+    // Check if all required columns for this day exist
+    $columns_to_check = [
+        "DAY_{$day_padded}_OPEN",
+        "DAY_{$day_padded}_PURCHASE", 
+        "DAY_{$day_padded}_SALES",
+        "DAY_{$day_padded}_CLOSING"
+    ];
+    
+    foreach ($columns_to_check as $column) {
+        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
+        $columnResult = $conn->query($checkColumnQuery);
+        if ($columnResult->num_rows == 0) {
+            return false; // Column doesn't exist
+        }
+    }
+    
+    return true; // All columns exist
+}
+
 // Function to group sizes by base size (remove suffixes after ML and trim)
 function getBaseSize($size) {
     // Extract the base size (everything before any special characters after ML)
@@ -59,7 +113,7 @@ function getBaseSize($size) {
     return trim($baseSize);
 }
 
-// Define size columns for each liquor type exactly as they appear in FLR Datewise
+// Define size columns exactly as they appear in FLR Datewise
 $size_columns_s = [
     '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
     '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
@@ -108,16 +162,24 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
-// Fetch item master data with size information
+// Fetch item master data with size information - FILTERED BY LICENSE TYPE
 $items = [];
-$itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster";
-$itemStmt = $conn->prepare($itemQuery);
-$itemStmt->execute();
-$itemResult = $itemStmt->get_result();
-while ($row = $itemResult->fetch_assoc()) {
-    $items[$row['CODE']] = $row;
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    $types = str_repeat('s', count($allowed_classes));
+    $itemStmt->bind_param($types, ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    while ($row = $itemResult->fetch_assoc()) {
+        $items[$row['CODE']] = $row;
+    }
+    $itemStmt->close();
+} else {
+    // If no classes allowed, items array will remain empty
 }
-$itemStmt->close();
 
 // Initialize yearly data structure - ORDER: Spirit, Wine, Fermented Beer, Mild Beer
 $yearly_data = [
@@ -230,193 +292,48 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
-// Function to get table name for a specific date
-function getTableForDate($conn, $compID, $date) {
-    $current_month = date('Y-m');
-    $target_month = date('Y-m', strtotime($date));
-    
-    // If current month, use main table
-    if ($target_month == $current_month) {
-        $tableName = "tbldailystock_" . $compID;
-    } else {
-        // For previous months, use archive table format: tbldailystock_compID_MM_YY
-        $month = date('m', strtotime($date));
-        $year = date('y', strtotime($date));
-        $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
-    }
-    
-    // Check if table exists
-    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
-    $tableCheckResult = $conn->query($tableCheckQuery);
-    
-    if ($tableCheckResult->num_rows == 0) {
-        // If archive table doesn't exist, fall back to main table
-        $tableName = "tbldailystock_" . $compID;
-        
-        // Check if main table exists, if not use default
-        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
-        $tableCheckResult2 = $conn->query($tableCheckQuery2);
-        if ($tableCheckResult2->num_rows == 0) {
-            $tableName = "tbldailystock_1";
-        }
-    }
-    
-    return $tableName;
-}
-
-// Function to check if table has specific day columns
-function tableHasDayColumns($conn, $tableName, $day) {
-    $day_padded = sprintf('%02d', $day);
-    
-    // Check if all required columns for this day exist
-    $columns_to_check = [
-        "DAY_{$day_padded}_OPEN",
-        "DAY_{$day_padded}_PURCHASE", 
-        "DAY_{$day_padded}_SALES",
-        "DAY_{$day_padded}_CLOSING"
-    ];
-    
-    foreach ($columns_to_check as $column) {
-        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
-        $columnResult = $conn->query($checkColumnQuery);
-        if ($columnResult->num_rows == 0) {
-            return false; // Column doesn't exist
-        }
-    }
-    
-    return true; // All columns exist
-}
-
-// Extract financial year dates
-$year_start = date('Y-m-d', strtotime($financial_year['START_DATE']));
-$year_end = date('Y-m-d', strtotime($financial_year['END_DATE']));
-
-// Define financial year months (April to March)
-$financial_year_months = [
-    '04' => 'April', '05' => 'May', '06' => 'June', '07' => 'July', '08' => 'August',
-    '09' => 'September', '10' => 'October', '11' => 'November', '12' => 'December',
-    '01' => 'January', '02' => 'February', '03' => 'March'
+// Process yearly data - aggregate monthly data
+$months = [
+    '01' => 'January', '02' => 'February', '03' => 'March', '04' => 'April',
+    '05' => 'May', '06' => 'June', '07' => 'July', '08' => 'August',
+    '09' => 'September', '10' => 'October', '11' => 'November', '12' => 'December'
 ];
 
-// Get opening balance from first day of financial year (April 1)
-$opening_date = $year_start;
-$opening_month = date('Y-m', strtotime($opening_date));
-
-// Get appropriate table for opening date
-$openingTable = getTableForDate($conn, $compID, $opening_date);
-
-// Check if opening table has columns for day 1
-if (tableHasDayColumns($conn, $openingTable, 1)) {
-    // Fetch opening balance data for the first month of financial year
-    $openingQuery = "SELECT ITEM_CODE, LIQ_FLAG, DAY_01_OPEN as opening
-                     FROM $openingTable 
-                     WHERE STK_MONTH = ?";
-    $openingStmt = $conn->prepare($openingQuery);
-    $openingStmt->bind_param("s", $opening_month);
-    $openingStmt->execute();
-    $openingResult = $openingStmt->get_result();
-
-    while ($row = $openingResult->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        
-        // Skip if item not found in master
-        if (!isset($items[$item_code])) continue;
-        
-        $item_details = $items[$item_code];
-        $size = $item_details['DETAILS2'];
-        $class = $item_details['CLASS'];
-        $liq_flag = $item_details['LIQ_FLAG'];
-        
-        // Determine liquor type
-        $liquor_type = getLiquorType($class, $liq_flag);
-        
-        // Map database size to Excel size
-        $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
-        
-        // Get grouped size for display
-        $grouped_size = getGroupedSize($excel_size, $liquor_type);
-        
-        // Add to yearly opening data based on liquor type and grouped size
-        switch ($liquor_type) {
-            case 'Spirits':
-                if (in_array($grouped_size, $display_sizes_s)) {
-                    $yearly_data['Spirits']['opening'][$grouped_size] += $row['opening'];
-                }
-                break;
-                
-            case 'Wines':
-                if (in_array($grouped_size, $display_sizes_w)) {
-                    $yearly_data['Wines']['opening'][$grouped_size] += $row['opening'];
-                }
-                break;
-                
-            case 'Fermented Beer':
-                if (in_array($grouped_size, $display_sizes_fb)) {
-                    $yearly_data['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
-                }
-                break;
-                
-            case 'Mild Beer':
-                if (in_array($grouped_size, $display_sizes_mb)) {
-                    $yearly_data['Mild Beer']['opening'][$grouped_size] += $row['opening'];
-                }
-                break;
-        }
-    }
-    $openingStmt->close();
-}
-
-// Process all months in the financial year
-foreach ($financial_year_months as $month_num => $month_name) {
-    $start_year = date('Y', strtotime($year_start));
-    $current_year = ($month_num >= '04') ? $start_year : ($start_year + 1);
-    $current_month = $current_year . '-' . $month_num;
+foreach ($months as $month_num => $month_name) {
+    $month = $year . '-' . $month_num;
+    $month_start = $month . '-01';
+    $days_in_month = date('t', strtotime($month_start));
     
-    // Skip months that are outside the financial year range
-    $month_start = $current_year . '-' . $month_num . '-01';
-    if (strtotime($month_start) < strtotime($year_start) || strtotime($month_start) > strtotime($year_end)) {
-        continue;
-    }
-    
-    // Get number of days in this month
-    $days_in_month = date('t', strtotime($current_month . '-01'));
-    
-    // Process each day in the month
+    // Process each day of the month
     for ($day = 1; $day <= $days_in_month; $day++) {
-        $current_date = $current_year . '-' . $month_num . '-' . sprintf('%02d', $day);
-        
-        // Skip if date is outside financial year range
-        if (strtotime($current_date) < strtotime($year_start) || strtotime($current_date) > strtotime($year_end)) {
-            continue;
-        }
+        $padded_day = str_pad($day, 2, '0', STR_PAD_LEFT);
+        $current_date = date('Y-m-d', strtotime($month_start . ' + ' . ($day - 1) . ' days'));
         
         // Get appropriate table for this date
         $dailyStockTable = getTableForDate($conn, $compID, $current_date);
         
         // Check if this specific table has columns for this specific day
         if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
-            // Skip this date as the table doesn't have columns for this day
             continue;
         }
         
-        $day_padded = sprintf('%02d', $day);
-        
-        // Fetch stock data for this specific day
         $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                      DAY_{$day_padded}_PURCHASE as purchase, 
-                      DAY_{$day_padded}_SALES as sales
+                      DAY_{$padded_day}_OPEN as opening, 
+                      DAY_{$padded_day}_PURCHASE as purchase, 
+                      DAY_{$padded_day}_SALES as sales, 
+                      DAY_{$padded_day}_CLOSING as closing 
                       FROM $dailyStockTable 
                       WHERE STK_MONTH = ?";
         
         $stockStmt = $conn->prepare($stockQuery);
-        $stockStmt->bind_param("s", $current_month);
+        $stockStmt->bind_param("s", $month);
         $stockStmt->execute();
         $stockResult = $stockStmt->get_result();
         
         while ($row = $stockResult->fetch_assoc()) {
             $item_code = $row['ITEM_CODE'];
             
-            // Skip if item not found in master
+            // Skip if item not found in master OR if item class is not allowed by license
             if (!isset($items[$item_code])) continue;
             
             $item_details = $items[$item_code];
@@ -437,41 +354,81 @@ foreach ($financial_year_months as $month_num => $month_name) {
             switch ($liquor_type) {
                 case 'Spirits':
                     if (in_array($grouped_size, $display_sizes_s)) {
+                        // Opening balance (only on first day of first month - January 1st)
+                        if ($month_num == '01' && $day == 1) {
+                            $yearly_data['Spirits']['opening'][$grouped_size] += $row['opening'];
+                        }
+                        
                         // Received during year (all DAY_X_PURCHASE)
                         $yearly_data['Spirits']['received'][$grouped_size] += $row['purchase'];
                         
                         // Sold during year (all DAY_X_SALES)
                         $yearly_data['Spirits']['sold'][$grouped_size] += $row['sales'];
+                        
+                        // Closing balance (last day of last month - December 31st)
+                        if ($month_num == '12' && $day == $days_in_month) {
+                            $yearly_data['Spirits']['closing'][$grouped_size] += $row['closing'];
+                        }
                     }
                     break;
                     
                 case 'Wines':
                     if (in_array($grouped_size, $display_sizes_w)) {
+                        // Opening balance (only on first day of first month - January 1st)
+                        if ($month_num == '01' && $day == 1) {
+                            $yearly_data['Wines']['opening'][$grouped_size] += $row['opening'];
+                        }
+                        
                         // Received during year (all DAY_X_PURCHASE)
                         $yearly_data['Wines']['received'][$grouped_size] += $row['purchase'];
                         
                         // Sold during year (all DAY_X_SALES)
                         $yearly_data['Wines']['sold'][$grouped_size] += $row['sales'];
+                        
+                        // Closing balance (last day of last month - December 31st)
+                        if ($month_num == '12' && $day == $days_in_month) {
+                            $yearly_data['Wines']['closing'][$grouped_size] += $row['closing'];
+                        }
                     }
                     break;
                     
                 case 'Fermented Beer':
                     if (in_array($grouped_size, $display_sizes_fb)) {
+                        // Opening balance (only on first day of first month - January 1st)
+                        if ($month_num == '01' && $day == 1) {
+                            $yearly_data['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                        }
+                        
                         // Received during year (all DAY_X_PURCHASE)
                         $yearly_data['Fermented Beer']['received'][$grouped_size] += $row['purchase'];
                         
                         // Sold during year (all DAY_X_SALES)
                         $yearly_data['Fermented Beer']['sold'][$grouped_size] += $row['sales'];
+                        
+                        // Closing balance (last day of last month - December 31st)
+                        if ($month_num == '12' && $day == $days_in_month) {
+                            $yearly_data['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
+                        }
                     }
                     break;
                     
                 case 'Mild Beer':
                     if (in_array($grouped_size, $display_sizes_mb)) {
+                        // Opening balance (only on first day of first month - January 1st)
+                        if ($month_num == '01' && $day == 1) {
+                            $yearly_data['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                        }
+                        
                         // Received during year (all DAY_X_PURCHASE)
                         $yearly_data['Mild Beer']['received'][$grouped_size] += $row['purchase'];
                         
                         // Sold during year (all DAY_X_SALES)
                         $yearly_data['Mild Beer']['sold'][$grouped_size] += $row['sales'];
+                        
+                        // Closing balance (last day of last month - December 31st)
+                        if ($month_num == '12' && $day == $days_in_month) {
+                            $yearly_data['Mild Beer']['closing'][$grouped_size] += $row['closing'];
+                        }
                     }
                     break;
             }
@@ -481,89 +438,20 @@ foreach ($financial_year_months as $month_num => $month_name) {
     }
 }
 
-// Get closing balance from last day of financial year (March 31)
-$closing_date = $year_end;
-$closing_month = date('Y-m', strtotime($closing_date));
-
-// Get appropriate table for closing date
-$closingTable = getTableForDate($conn, $compID, $closing_date);
-
-// Check if closing table has columns for the last day
-$last_day = date('d', strtotime($closing_date));
-if (tableHasDayColumns($conn, $closingTable, $last_day)) {
-    // Fetch closing balance data for the last month of financial year
-    $closingQuery = "SELECT ITEM_CODE, LIQ_FLAG, DAY_{$last_day}_CLOSING as closing
-                     FROM $closingTable 
-                     WHERE STK_MONTH = ?";
-    $closingStmt = $conn->prepare($closingQuery);
-    $closingStmt->bind_param("s", $closing_month);
-    $closingStmt->execute();
-    $closingResult = $closingStmt->get_result();
-
-    while ($row = $closingResult->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        
-        // Skip if item not found in master
-        if (!isset($items[$item_code])) continue;
-        
-        $item_details = $items[$item_code];
-        $size = $item_details['DETAILS2'];
-        $class = $item_details['CLASS'];
-        $liq_flag = $item_details['LIQ_FLAG'];
-        
-        // Determine liquor type
-        $liquor_type = getLiquorType($class, $liq_flag);
-        
-        // Map database size to Excel size
-        $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
-        
-        // Get grouped size for display
-        $grouped_size = getGroupedSize($excel_size, $liquor_type);
-        
-        // Add to yearly closing data based on liquor type and grouped size
-        switch ($liquor_type) {
-            case 'Spirits':
-                if (in_array($grouped_size, $display_sizes_s)) {
-                    $yearly_data['Spirits']['closing'][$grouped_size] += $row['closing'];
-                }
-                break;
-                
-            case 'Wines':
-                if (in_array($grouped_size, $display_sizes_w)) {
-                    $yearly_data['Wines']['closing'][$grouped_size] += $row['closing'];
-                }
-                break;
-                
-            case 'Fermented Beer':
-                if (in_array($grouped_size, $display_sizes_fb)) {
-                    $yearly_data['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                }
-                break;
-                
-            case 'Mild Beer':
-                if (in_array($grouped_size, $display_sizes_mb)) {
-                    $yearly_data['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                }
-                break;
-        }
-    }
-    $closingStmt->close();
-}
-
-// Fetch breakages data for the entire financial year
+// Fetch breakages data for the selected year
 $breakagesQuery = "SELECT b.Code, b.BRK_Qty, i.DETAILS2, i.CLASS, i.LIQ_FLAG 
                    FROM tblbreakages b 
                    JOIN tblitemmaster i ON b.Code = i.CODE 
-                   WHERE b.CompID = ? AND b.BRK_Date BETWEEN ? AND ?";
+                   WHERE b.CompID = ? AND YEAR(b.BRK_Date) = ?";
 $breakagesStmt = $conn->prepare($breakagesQuery);
-$breakagesStmt->bind_param("iss", $compID, $year_start, $year_end);
+$breakagesStmt->bind_param("ii", $compID, $year);
 $breakagesStmt->execute();
 $breakagesResult = $breakagesStmt->get_result();
 
 while ($row = $breakagesResult->fetch_assoc()) {
     $item_code = $row['Code'];
     
-    // Skip if item not found in master
+    // Skip if item not found in master OR if item class is not allowed by license
     if (!isset($items[$item_code])) continue;
     
     $item_details = $items[$item_code];
@@ -674,12 +562,11 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yearly Register (FLR-4) - Financial Year - WineSoft</title>
+  <title>Yearly Register - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  
   <style>
-    /* Your existing CSS styles */
+    /* Screen styles */
     body {
       font-size: 12px;
       background-color: #f8f9fa;
@@ -748,6 +635,13 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     }
     .no-print {
       display: block;
+    }
+    .license-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 15px;
     }
 
     /* Print styles */
@@ -898,7 +792,25 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Yearly Register (FLR-4) - Financial Year</h3>
+      <h3 class="mb-4">Yearly Register</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -913,12 +825,17 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <option value="Country Liquor" <?= $mode == 'Country Liquor' ? 'selected' : '' ?>>Country Liquor</option>
                 </select>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Financial Year:</label>
-                <div class="form-control-plaintext">
-                  <strong><?= date('F Y', strtotime($year_start)) ?> to <?= date('F Y', strtotime($year_end)) ?></strong>
-                  <small class="text-muted ms-2">(Based on active financial year in system)</small>
-                </div>
+              <div class="col-md-3">
+                <label class="form-label">Year:</label>
+                <select name="year" class="form-control">
+                  <?php
+                  $current_year = date('Y');
+                  for ($y = $current_year - 5; $y <= $current_year + 1; $y++) {
+                    $selected = ($year == $y) ? 'selected' : '';
+                    echo "<option value=\"$y\" $selected>$y</option>";
+                  }
+                  ?>
+                </select>
               </div>
             </div>
             
@@ -940,11 +857,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       <!-- Report Results -->
       <div class="print-section">
         <div class="company-header">
-          <h5>License to <?= htmlspecialchars($companyName) ?> (<?= date('Y', strtotime($year_start)) ?> - <?= date('Y', strtotime($year_end)) ?>), Pune.</h5>
-          <h5>[Yearly Register - Financial Year]</h5>
-          <h6><?= htmlspecialchars($companyName) ?></h6>
-          <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?> | MORTIF.: | SPRINT 3</h6>
-          <h6>Financial Year: <?= date('d-M-Y', strtotime($year_start)) ?> to <?= date('d-M-Y', strtotime($year_end)) ?></h6>
+          <h5>Yearly Register - <?= htmlspecialchars($companyName) ?></h5>
+          <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?> | Year: <?= $year ?></h6>
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
         </div>
         
         <div class="table-responsive">
@@ -978,11 +893,15 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <th class="size-col vertical-text"><?= $size ?></th>
                 <?php endforeach; ?>
               </tr>
+              <tr>
+                <!-- SOL D IND. OF BOTTLES (in min.) header -->
+                <th colspan="<?= $total_columns ?>">SOL D IND. OF BOTTLES (in min.)</th>
+              </tr>
             </thead>
             <tbody>
-              <!-- Opening Balance Row -->
+              <!-- Opening Balance -->
               <tr>
-                <td class="description-col">Opening Balance</td>
+                <td class="description-col">Opening Balance of the Beginning of the Year :-</td>
                 
                 <!-- Spirits Opening -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1005,9 +924,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Received During Year Row -->
+              <!-- Received during the Year -->
               <tr>
-                <td class="description-col">Received During Year</td>
+                <td class="description-col">Received during the Year :-</td>
                 
                 <!-- Spirits Received -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1030,9 +949,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Total Row -->
+              <!-- Total -->
               <tr>
-                <td class="description-col">Total</td>
+                <td class="description-col">Total :-</td>
                 
                 <!-- Spirits Total -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1055,9 +974,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Sold During Year Row -->
+              <!-- Sold during the Year -->
               <tr>
-                <td class="description-col">Sold During Year</td>
+                <td class="description-col">Sold during the Year :-</td>
                 
                 <!-- Spirits Sold -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1080,9 +999,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Breakages Row -->
+              <!-- Breakages during the Year -->
               <tr>
-                <td class="description-col">Breakages</td>
+                <td class="description-col">Breakages during the Year :-</td>
                 
                 <!-- Spirits Breakages -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1105,9 +1024,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                 <?php endforeach; ?>
               </tr>
               
-              <!-- Closing Balance Row -->
+              <!-- Closing Balance at the End of the Year -->
               <tr>
-                <td class="description-col">Closing Balance</td>
+                <td class="description-col">Closing Balance at the End of the Year :-</td>
                 
                 <!-- Spirits Closing -->
                 <?php foreach ($display_sizes_s as $size): ?>
@@ -1132,23 +1051,79 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               
               <!-- Summary Row -->
               <tr class="summary-row">
-                <td class="description-col">Total</td>
-                <td colspan="<?= $total_columns ?>">
-                  Opening: <?= $summary_totals['opening'] ?> | 
-                  Received: <?= $summary_totals['received'] ?> | 
-                  Total: <?= $summary_totals['total'] ?> | 
-                  Sold: <?= $summary_totals['sold'] ?> | 
-                  Breakages: <?= $summary_totals['breakages'] ?> | 
-                  Closing: <?= $summary_totals['closing'] ?>
-                </td>
+                <td class="description-col">Total :-</td>
+                
+                <!-- Spirits Summary -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $yearly_data['Spirits']['opening'][$size] + 
+                           $yearly_data['Spirits']['received'][$size] + 
+                           $yearly_data['Spirits']['sold'][$size] + 
+                           $yearly_data['Spirits']['breakages'][$size] + 
+                           $yearly_data['Spirits']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Wines Summary -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $yearly_data['Wines']['opening'][$size] + 
+                           $yearly_data['Wines']['received'][$size] + 
+                           $yearly_data['Wines']['sold'][$size] + 
+                           $yearly_data['Wines']['breakages'][$size] + 
+                           $yearly_data['Wines']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Fermented Beer Summary -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $yearly_data['Fermented Beer']['opening'][$size] + 
+                           $yearly_data['Fermented Beer']['received'][$size] + 
+                           $yearly_data['Fermented Beer']['sold'][$size] + 
+                           $yearly_data['Fermented Beer']['breakages'][$size] + 
+                           $yearly_data['Fermented Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+                
+                <!-- Mild Beer Summary -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $yearly_data['Mild Beer']['opening'][$size] + 
+                           $yearly_data['Mild Beer']['received'][$size] + 
+                           $yearly_data['Mild Beer']['sold'][$size] + 
+                           $yearly_data['Mild Beer']['breakages'][$size] + 
+                           $yearly_data['Mild Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Summary Section -->
+        <div class="table-responsive mt-3">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th colspan="6" style="text-align: center;">YEARLY SUMMARY</th>
+              </tr>
+              <tr>
+                <th>Opening Balance</th>
+                <th>Received</th>
+                <th>Total</th>
+                <th>Sold</th>
+                <th>Breakages</th>
+                <th>Closing Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><?= $summary_totals['opening'] ?></td>
+                <td><?= $summary_totals['received'] ?></td>
+                <td><?= $summary_totals['total'] ?></td>
+                <td><?= $summary_totals['sold'] ?></td>
+                <td><?= $summary_totals['breakages'] ?></td>
+                <td><?= $summary_totals['closing'] ?></td>
               </tr>
             </tbody>
           </table>
         </div>
         
         <div class="footer-info">
-          <p>Generated on: <?= date('d-m-Y h:i A') ?> | Software: WineSoft | User: <?= $_SESSION['user_name'] ?? 'Admin' ?></p>
-          <p>Financial Year: <?= date('d-M-Y', strtotime($year_start)) ?> to <?= date('d-M-Y', strtotime($year_end)) ?></p>
+          <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
         </div>
       </div>
     </div>

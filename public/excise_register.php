@@ -12,9 +12,20 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'license_functions.php'; // Add license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
+
+// Get company's license type and available classes
+$license_type = getCompanyLicenseType($compID, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Default values - Set to single date by default
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
@@ -99,16 +110,20 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
-// Fetch item master data with size information
+// Fetch item master data with size information - FILTERED BY LICENSE TYPE
 $items = [];
-$itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster";
-$itemStmt = $conn->prepare($itemQuery);
-$itemStmt->execute();
-$itemResult = $itemStmt->get_result();
-while ($row = $itemResult->fetch_assoc()) {
-    $items[$row['CODE']] = $row;
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    $itemStmt = $conn->prepare($itemQuery);
+    $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    while ($row = $itemResult->fetch_assoc()) {
+        $items[$row['CODE']] = $row;
+    }
+    $itemStmt->close();
 }
-$itemStmt->close();
 
 // Initialize report data structure
 $dates = [];
@@ -339,7 +354,7 @@ foreach ($dates as $date) {
     while ($row = $stockResult->fetch_assoc()) {
         $item_code = $row['ITEM_CODE'];
         
-        // Skip if item not found in master
+        // Skip if item not found in master (due to license filtering)
         if (!isset($items[$item_code])) continue;
         
         $item_details = $items[$item_code];
@@ -496,6 +511,13 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       height: 10px;
       background-color: #f9f9f9;
     }
+    .license-info {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+    }
 
   /* Print styles */
     @media print {
@@ -651,6 +673,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     <div class="content-area">
       <h3 class="mb-4">Excise Register (FLR-3) Printing Module</h3>
 
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
+
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
@@ -704,6 +744,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           <h1>Excise Register (FLR-3)</h1>
           <h5>Mode: <?= htmlspecialchars($mode) ?></h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
         </div>
         
@@ -839,27 +880,27 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                     <?php endforeach; ?>
                   </tr>
                   
-                  <!-- Third row for Issued (Sales) -->
+                  <!-- Third row for Sales -->
                   <tr>
                     <td></td>
-                    <td>Iss.</td>
+                    <td>Sale</td>
                     
-                    <!-- Spirits Issued -->
+                    <!-- Spirits Sales -->
                     <?php foreach ($display_sizes_s as $size): ?>
                       <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : '' ?></td>
                     <?php endforeach; ?>
                     
-                    <!-- Wines Issued -->
+                    <!-- Wines Sales -->
                     <?php foreach ($display_sizes_w as $size): ?>
                       <td><?= $daily_data[$date]['Wines']['sales'][$size] > 0 ? $daily_data[$date]['Wines']['sales'][$size] : '' ?></td>
                     <?php endforeach; ?>
                     
-                    <!-- Fermented Beer Issued -->
+                    <!-- Fermented Beer Sales -->
                     <?php foreach ($display_sizes_fb as $size): ?>
                       <td><?= $daily_data[$date]['Fermented Beer']['sales'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['sales'][$size] : '' ?></td>
                     <?php endforeach; ?>
                     
-                    <!-- Mild Beer Issued -->
+                    <!-- Mild Beer Sales -->
                     <?php foreach ($display_sizes_mb as $size): ?>
                       <td><?= $daily_data[$date]['Mild Beer']['sales'][$size] > 0 ? $daily_data[$date]['Mild Beer']['sales'][$size] : '' ?></td>
                     <?php endforeach; ?>
@@ -868,7 +909,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <!-- Fourth row for Closing Stock -->
                   <tr>
                     <td></td>
-                    <td>Cl. Stk.</td>
+                    <td>Clo.</td>
                     
                     <!-- Spirits Closing Stock -->
                     <?php foreach ($display_sizes_s as $size): ?>
@@ -895,72 +936,12 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
                   <tr class="empty-row">
                     <td colspan="<?= 2 + $total_columns ?>">&nbsp;</td>
                   </tr>
+                  
                 <?php endforeach; ?>
                 
-                <!-- Summary row -->
-                <?php if ($date_count > 0): ?>
-                  <tr class="summary-row">
-                    <td colspan="2">TOTAL</td>
-                    
-                    <!-- Spirits Totals -->
-                    <?php foreach ($display_sizes_s as $size): ?>
-                      <td>
-                        <?php
-                        $total = 0;
-                        foreach ($dates as $date) {
-                          if (isset($daily_data[$date])) {
-                            $total += $daily_data[$date]['Spirits']['sales'][$size];
-                          }
-                        }
-                        echo $total > 0 ? $total : '';
-                        ?>
-                      </td>
-                    <?php endforeach; ?>
-                    
-                    <!-- Wines Totals -->
-                    <?php foreach ($display_sizes_w as $size): ?>
-                      <td>
-                        <?php
-                        $total = 0;
-                        foreach ($dates as $date) {
-                          if (isset($daily_data[$date])) {
-                            $total += $daily_data[$date]['Wines']['sales'][$size];
-                          }
-                        }
-                        echo $total > 0 ? $total : '';
-                        ?>
-                      </td>
-                    <?php endforeach; ?>
-                    
-                    <!-- Fermented Beer Totals -->
-                    <?php foreach ($display_sizes_fb as $size): ?>
-                      <td>
-                        <?php
-                        $total = 0;
-                        foreach ($dates as $date) {
-                          if (isset($daily_data[$date])) {
-                            $total += $daily_data[$date]['Fermented Beer']['sales'][$size];
-                          }
-                        }
-                        echo $total > 0 ? $total : '';
-                        ?>
-                      </td>
-                    <?php endforeach; ?>
-                    
-                    <!-- Mild Beer Totals -->
-                    <?php foreach ($display_sizes_mb as $size): ?>
-                      <td>
-                        <?php
-                        $total = 0;
-                        foreach ($dates as $date) {
-                          if (isset($daily_data[$date])) {
-                            $total += $daily_data[$date]['Mild Beer']['sales'][$size];
-                          }
-                        }
-                        echo $total > 0 ? $total : '';
-                        ?>
-                      </td>
-                    <?php endforeach; ?>
+                <?php if ($date_count == 0): ?>
+                  <tr>
+                    <td colspan="<?= 2 + $total_columns ?>" class="text-center">No data available for the selected date range.</td>
                   </tr>
                 <?php endif; ?>
               </tbody>
@@ -968,7 +949,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           </div>
           
           <div class="footer-info">
-            <p>Generated on: <?= date('d-M-Y H:i:s') ?> | Total Records: <?= $date_count ?></p>
+            <p>Generated on: <?= date('d-M-Y h:i A') ?> | Total Days: <?= $date_count ?></p>
           </div>
         <?php endif; ?>
       </div>
@@ -979,59 +960,40 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function exportToExcel() {
-  // Get the current date range for filename
-  const fromDate = "<?= $from_date ?>";
-  const toDate = "<?= $to_date ?>";
-  const mode = "<?= $mode ?>";
+  // Get the table element
+  var table = document.getElementById('excise-register-table');
   
-  // Create a filename
-  const filename = `FLR3_${mode}_${fromDate}_to_${toDate}.xlsx`;
+  // Create a new workbook
+  var wb = XLSX.utils.book_new();
   
-  // Create a temporary table for export (without print-specific styles)
-  const originalTable = document.getElementById('excise-register-table');
-  const tempTable = originalTable.cloneNode(true);
+  // Clone the table to avoid modifying the original
+  var tableClone = table.cloneNode(true);
   
-  // Remove print-specific classes and styles
-  tempTable.classList.remove('report-table');
-  tempTable.querySelectorAll('.vertical-text').forEach(cell => {
-    cell.style.writingMode = 'horizontal-tb';
-    cell.style.transform = 'none';
-    cell.classList.remove('vertical-text');
+  // Remove empty rows for Excel export
+  var emptyRows = tableClone.querySelectorAll('.empty-row');
+  emptyRows.forEach(function(row) {
+    row.parentNode.removeChild(row);
   });
   
-  // Create HTML content for export
-  const htmlContent = `
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid black; padding: 4px; text-align: center; }
-        th { background-color: #f0f0f0; font-weight: bold; }
-        .summary-row { background-color: #e9ecef; font-weight: bold; }
-      </style>
-    </head>
-    <body>
-      <h2>Excise Register (FLR-3)</h2>
-      <h3>Mode: ${mode}</h3>
-      <h4><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h4>
-      <h4>From Date: <?= date('d-M-Y', strtotime($from_date)) ?> To Date: <?= date('d-M-Y', strtotime($to_date)) ?></h4>
-      ${tempTable.outerHTML}
-      <p>Generated on: <?= date('d-M-Y H:i:s') ?></p>
-    </body>
-    </html>
-  `;
+  // Convert table to worksheet
+  var ws = XLSX.utils.table_to_sheet(tableClone);
   
-  // Create blob and download
-  const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Add worksheet to workbook
+  XLSX.utils.book_append_sheet(wb, ws, 'Excise Register');
+  
+  // Generate Excel file and download
+  var fileName = 'Excise_Register_<?= date('Y-m-d') ?>.xlsx';
+  XLSX.writeFile(wb, fileName);
+}
+
+// Load XLSX library dynamically
+if (typeof XLSX === 'undefined') {
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  script.onload = function() {
+    console.log('XLSX library loaded');
+  };
+  document.head.appendChild(script);
 }
 </script>
 </body>
