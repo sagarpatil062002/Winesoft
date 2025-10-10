@@ -16,6 +16,19 @@ if (!isset($_GET['bill_no'])) {
 $bill_no = $_GET['bill_no'];
 $comp_id = $_SESSION['CompID'];
 
+// Include license functions
+require_once 'license_functions.php';
+
+// Get company's license type and available classes
+$license_type = getCompanyLicenseType($comp_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
+
 // Fetch bill data
 $header_sql = "SELECT * FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
 $header_stmt = $conn->prepare($header_sql);
@@ -30,8 +43,8 @@ if (!$header) {
     exit;
 }
 
-// Fetch bill items
-$items_sql = "SELECT sd.*, im.DETAILS as item_name, im.DETAILS2 as item_details, im.RPRICE as default_rate
+// Fetch bill items with license filtering
+$items_sql = "SELECT sd.*, im.DETAILS as item_name, im.DETAILS2 as item_details, im.RPRICE as default_rate, im.CLASS
               FROM tblsaledetails sd 
               JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE 
               WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -41,12 +54,26 @@ $items_stmt->execute();
 $items_result = $items_stmt->get_result();
 $items = $items_result->fetch_all(MYSQLI_ASSOC);
 
-// Fetch all items for dropdown - REMOVED COMP_ID FILTER
-$all_items_sql = "SELECT CODE, DETAILS, DETAILS2, RPRICE FROM tblitemmaster ORDER BY DETAILS";
-$all_items_stmt = $conn->prepare($all_items_sql);
-$all_items_stmt->execute();
-$all_items_result = $all_items_stmt->get_result();
-$all_items = $all_items_result->fetch_all(MYSQLI_ASSOC);
+// Fetch all items for dropdown with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $all_items_sql = "SELECT CODE, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster 
+                     WHERE CLASS IN ($class_placeholders) 
+                     ORDER BY DETAILS";
+    $all_items_stmt = $conn->prepare($all_items_sql);
+    $all_items_stmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $all_items_stmt->execute();
+    $all_items_result = $all_items_stmt->get_result();
+} else {
+    // If no classes allowed, return empty result
+    $all_items_sql = "SELECT CODE, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster WHERE 1 = 0 ORDER BY DETAILS";
+    $all_items_result = $conn->query($all_items_sql);
+}
+
+$all_items = [];
+if ($all_items_result) {
+    $all_items = $all_items_result->fetch_all(MYSQLI_ASSOC);
+}
 
 // Include volume utilities to calculate sizes
 include_once "volume_limit_utils.php";
@@ -57,6 +84,9 @@ $category_limits = getCategoryLimits($conn, $comp_id);
 <html lang="en">
 <head>
     <?php include 'common_header.php'; ?>
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
 </head>
 <body>
 <div class="dashboard-container">
@@ -71,6 +101,24 @@ $category_limits = getCategoryLimits($conn, $comp_id);
                 <a href="retail_sale.php" class="btn btn-secondary">
                     <i class="fa-solid fa-arrow-left me-2"></i>Back to Sales
                 </a>
+            </div>
+
+            <!-- License Restriction Info -->
+            <div class="alert alert-info mb-3">
+                <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+                <p class="mb-0">Showing items for classes: 
+                    <?php 
+                    if (!empty($available_classes)) {
+                        $class_names = [];
+                        foreach ($available_classes as $class) {
+                            $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                        }
+                        echo implode(', ', $class_names);
+                    } else {
+                        echo 'No classes available for your license type';
+                    }
+                    ?>
+                </p>
             </div>
 
             <!-- Volume Limits Info -->
@@ -158,12 +206,14 @@ $category_limits = getCategoryLimits($conn, $comp_id);
                                     ?>
                                     <tr data-item-code="<?= htmlspecialchars($item['ITEM_CODE']) ?>" data-size="<?= $size ?>">
                                         <td>
-                                            <select class="form-control form-control-sm item-select" name="items[<?= $index ?>][code]" required>
+                                            <select class="form-control form-control-sm item-select select2-item" name="items[<?= $index ?>][code]" required>
                                                 <option value="">Select Item</option>
                                                 <?php foreach($all_items as $item_option): ?>
                                                 <option value="<?= htmlspecialchars($item_option['CODE']) ?>" 
                                                         data-rate="<?= $item_option['RPRICE'] ?>"
                                                         data-details="<?= htmlspecialchars($item_option['DETAILS2'] ?? '') ?>"
+                                                        data-size="<?= htmlspecialchars($item_option['DETAILS2'] ?? '') ?>"
+                                                        data-class="<?= htmlspecialchars($item_option['CLASS'] ?? '') ?>"
                                                         <?= $item_option['CODE'] == $item['ITEM_CODE'] ? 'selected' : '' ?>>
                                                     <?= htmlspecialchars($item_option['CODE']) ?> - <?= htmlspecialchars($item_option['DETAILS']) ?>
                                                 </option>
@@ -259,11 +309,63 @@ $category_limits = getCategoryLimits($conn, $comp_id);
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
     let categoryLimits = <?= json_encode($category_limits) ?>;
     let itemCounter = <?= count($items) ?>;
     let allItems = <?= json_encode($all_items) ?>;
+    
+    // Initialize Select2 for all item selects
+    function initializeSelect2(selector) {
+        $(selector).select2({
+            theme: 'bootstrap-5',
+            placeholder: "Type to search items...",
+            allowClear: true,
+            templateResult: formatItem,
+            templateSelection: formatItemSelection,
+            dropdownParent: $(selector).closest('tr')
+        });
+    }
+
+    // Initialize existing select2 elements
+    $('.select2-item').each(function() {
+        initializeSelect2(this);
+    });
+    
+    // Format how items appear in the dropdown
+    function formatItem(item) {
+        if (!item.id) {
+            return item.text;
+        }
+        
+        var $element = $(item.element);
+        var size = $element.data('size') || '';
+        var itemClass = $element.data('class') || '';
+        var rate = $element.data('rate') || 0;
+        
+        var $item = $(
+            '<div class="item-option">' +
+                '<div class="fw-semibold">' + item.text + '</div>' +
+                '<div class="small text-muted">' +
+                    '<span class="me-3">Size: ' + size + '</span>' +
+                    '<span class="me-3">Class: ' + itemClass + '</span>' +
+                    '<span>Rate: ₹' + parseFloat(rate).toFixed(2) + '</span>' +
+                '</div>' +
+            '</div>'
+        );
+        return $item;
+    }
+    
+    // Format how the selected item appears
+    function formatItemSelection(item) {
+        if (!item.id) {
+            return item.text;
+        }
+        // Show just the item name in the selection
+        return item.text.split(' (₹')[0];
+    }
     
     // Initialize item sizes data
     let itemSizes = {};
@@ -280,12 +382,14 @@ $(document).ready(function() {
         const newRow = `
             <tr data-item-code="" data-size="0">
                 <td>
-                    <select class="form-control form-control-sm item-select" name="items[${newIndex}][code]" required>
+                    <select class="form-control form-control-sm item-select select2-item" name="items[${newIndex}][code]" required>
                         <option value="">Select Item</option>
                         ${allItems.map(item => `
                             <option value="${item.CODE}" 
                                     data-rate="${item.RPRICE}"
-                                    data-details="${item.DETAILS2 || ''}">
+                                    data-details="${item.DETAILS2 || ''}"
+                                    data-size="${item.DETAILS2 || ''}"
+                                    data-class="${item.CLASS || ''}">
                                 ${item.CODE} - ${item.DETAILS}
                             </option>
                         `).join('')}
@@ -319,6 +423,10 @@ $(document).ready(function() {
             </tr>
         `;
         $('#itemsTable').append(newRow);
+        
+        // Initialize Select2 for the new row
+        initializeSelect2($('#itemsTable tr:last .select2-item'));
+        
         updateItemCount();
     });
 
@@ -329,6 +437,7 @@ $(document).ready(function() {
         const itemCode = selectedOption.val();
         const defaultRate = selectedOption.data('rate');
         const itemDetails = selectedOption.data('details');
+        const itemSize = selectedOption.data('size');
         
         if (itemCode) {
             // Update row data
@@ -345,7 +454,7 @@ $(document).ready(function() {
             }
             
             // Update item details
-            row.find('.item-details').text(itemDetails);
+            row.find('.item-details').text(itemDetails || itemSize || '');
             
             // Recalculate row
             calculateRowAmount(row);
@@ -534,6 +643,11 @@ $(document).ready(function() {
             console.error('Fetch error:', error);
             alert('Network error: ' + error.message);
         });
+    });
+
+    // Set focus on quantity field after item selection
+    $(document).on('select2:select', '.item-select', function() {
+        $(this).closest('tr').find('.quantity').focus().select();
     });
 
     // Initial calculations

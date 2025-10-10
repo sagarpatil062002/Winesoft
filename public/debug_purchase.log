@@ -4439,3 +4439,2625 @@
     "total_items": 3
 }
 [2025-10-10 12:15:45] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 13:51:10] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 13:51:10] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 13:51:10] POST data: []
+[2025-10-10 13:51:10] GET data: {
+    "mode": "F"
+}
+[2025-10-10 13:51:10] Company ID from session: 1
+[2025-10-10 13:51:10] Database connection included
+[2025-10-10 13:51:10] License functions included
+[2025-10-10 13:51:10] License type: FLBR-II
+[2025-10-10 13:51:10] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 13:51:10] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 13:51:10] Purchase mode: F
+[2025-10-10 13:51:10] Next voucher number: 1
+[2025-10-10 13:51:10] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 13:51:10] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 13:51:10] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 13:51:10] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 13:51:10] Database connection closed
+[2025-10-10 13:51:10] === PURCHASE SESSION ENDED ===
+[2025-10-10 13:53:04] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 13:53:04] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 13:53:04] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-10",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 13:53:04] GET data: {
+    "mode": "F"
+}
+[2025-10-10 13:53:04] Company ID from session: 1
+[2025-10-10 13:53:04] Database connection included
+[2025-10-10 13:53:04] License functions included
+[2025-10-10 13:53:04] License type: FLBR-II
+[2025-10-10 13:53:04] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 13:53:04] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 13:53:04] Purchase mode: F
+[2025-10-10 13:53:04] Next voucher number: 1
+[2025-10-10 13:53:04] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 13:53:04] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 13:53:04] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 13:53:04] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 13:53:04] === FORM SUBMISSION STARTED ===
+[2025-10-10 13:53:04] Form data extracted: {
+    "date": "2025-10-10",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 13:53:04] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-10",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 13:53:04] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2025-10-10 13:53:04] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 13:53:04] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 13:53:04] Item 0 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 13:53:04] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:04] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:04] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 13:53:04] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 13:53:04] Item 1 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 13:53:04] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:04] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:05] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 13:53:05] Item 2 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 13:53:05] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:05] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:05] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 13:53:05] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 13:53:05] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 13:53:05] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-10",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 13:53:05] GET data: {
+    "mode": "F"
+}
+[2025-10-10 13:53:05] Company ID from session: 1
+[2025-10-10 13:53:05] Database connection included
+[2025-10-10 13:53:05] License functions included
+[2025-10-10 13:53:05] License type: FLBR-II
+[2025-10-10 13:53:05] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 13:53:05] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 13:53:05] Purchase mode: F
+[2025-10-10 13:53:05] Next voucher number: 2
+[2025-10-10 13:53:05] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 13:53:05] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 13:53:05] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 13:53:05] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 13:53:05] === FORM SUBMISSION STARTED ===
+[2025-10-10 13:53:05] Form data extracted: {
+    "date": "2025-10-10",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 13:53:05] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-10",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 13:53:05] Purchase header inserted successfully: {
+    "purchase_id": 2,
+    "affected_rows": 1
+}
+[2025-10-10 13:53:05] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 13:53:05] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 13:53:05] Item 0 inserted successfully: {
+    "purchase_id": 2,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 13:53:05] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:05] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:05] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 13:53:05] Item 1 inserted successfully: {
+    "purchase_id": 2,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 13:53:05] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:05] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:05] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 13:53:05] Item 2 inserted successfully: {
+    "purchase_id": 2,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 13:53:05] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 13:53:05] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 13:53:05] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 13:53:05] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 13:58:20] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 13:58:20] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 13:58:20] POST data: []
+[2025-10-10 13:58:20] GET data: {
+    "mode": "F"
+}
+[2025-10-10 13:58:20] Company ID from session: 1
+[2025-10-10 13:58:20] Database connection included
+[2025-10-10 13:58:20] License functions included
+[2025-10-10 13:58:20] License type: FLBR-II
+[2025-10-10 13:58:20] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 13:58:20] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 13:58:20] Purchase mode: F
+[2025-10-10 13:58:20] Next voucher number: 1
+[2025-10-10 13:58:20] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 13:58:20] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 13:58:20] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 13:58:20] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 13:58:20] Database connection closed
+[2025-10-10 13:58:20] === PURCHASE SESSION ENDED ===
+[2025-10-10 13:58:54] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 13:58:54] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 13:58:54] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-08-31",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 13:58:54] GET data: {
+    "mode": "F"
+}
+[2025-10-10 13:58:54] Company ID from session: 1
+[2025-10-10 13:58:54] Database connection included
+[2025-10-10 13:58:54] License functions included
+[2025-10-10 13:58:54] License type: FLBR-II
+[2025-10-10 13:58:54] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 13:58:54] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 13:58:54] Purchase mode: F
+[2025-10-10 13:58:54] Next voucher number: 1
+[2025-10-10 13:58:54] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 13:58:54] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 13:58:54] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 13:58:54] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 13:58:54] === FORM SUBMISSION STARTED ===
+[2025-10-10 13:58:54] Form data extracted: {
+    "date": "2025-08-31",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 13:58:54] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-08-31",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 13:58:54] Purchase header inserted successfully: {
+    "purchase_id": 3,
+    "affected_rows": 1
+}
+[2025-10-10 13:58:54] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 13:58:54] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 13:58:54] Item 0 inserted successfully: {
+    "purchase_id": 3,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 13:58:54] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 13:58:54] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 13:58:54] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 13:58:55] Item 1 inserted successfully: {
+    "purchase_id": 3,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 13:58:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 13:58:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 13:58:55] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 13:58:55] Item 2 inserted successfully: {
+    "purchase_id": 3,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 13:58:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 13:58:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 13:58:55] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 13:58:55] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 14:01:50] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:01:50] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 14:01:50] POST data: []
+[2025-10-10 14:01:50] GET data: {
+    "mode": "F"
+}
+[2025-10-10 14:01:50] Company ID from session: 1
+[2025-10-10 14:01:50] Database connection included
+[2025-10-10 14:01:50] License functions included
+[2025-10-10 14:01:50] License type: FLBR-II
+[2025-10-10 14:01:50] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:01:50] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:01:50] Purchase mode: F
+[2025-10-10 14:01:50] Next voucher number: 1
+[2025-10-10 14:01:50] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:01:50] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:01:50] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:01:50] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:01:50] Database connection closed
+[2025-10-10 14:01:50] === PURCHASE SESSION ENDED ===
+[2025-10-10 14:02:03] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:02:03] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 14:02:03] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-08-31",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 14:02:03] GET data: {
+    "mode": "F"
+}
+[2025-10-10 14:02:03] Company ID from session: 1
+[2025-10-10 14:02:03] Database connection included
+[2025-10-10 14:02:03] License functions included
+[2025-10-10 14:02:03] License type: FLBR-II
+[2025-10-10 14:02:03] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:02:03] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:02:03] Purchase mode: F
+[2025-10-10 14:02:03] Next voucher number: 1
+[2025-10-10 14:02:03] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:02:03] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:02:03] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:02:03] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:02:03] === FORM SUBMISSION STARTED ===
+[2025-10-10 14:02:03] Form data extracted: {
+    "date": "2025-08-31",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 14:02:03] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-08-31",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 14:02:03] Purchase header inserted successfully: {
+    "purchase_id": 4,
+    "affected_rows": 1
+}
+[2025-10-10 14:02:03] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 14:02:03] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 14:02:03] Item 0 inserted successfully: {
+    "purchase_id": 4,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 14:02:03] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 14:02:03] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 14:02:03] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 14:02:03] Item 1 inserted successfully: {
+    "purchase_id": 4,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 14:02:03] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 14:02:03] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 14:02:03] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 14:02:03] Item 2 inserted successfully: {
+    "purchase_id": 4,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 14:02:03] Checking if month is archived: {
+    "company_id": 1,
+    "month": "8",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_08_25"
+}
+[2025-10-10 14:02:03] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_08_25'"
+}
+[2025-10-10 14:02:03] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 14:02:03] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 14:08:33] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:08:33] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 14:08:33] POST data: []
+[2025-10-10 14:08:33] GET data: {
+    "mode": "F"
+}
+[2025-10-10 14:08:33] Company ID from session: 1
+[2025-10-10 14:08:33] Database connection included
+[2025-10-10 14:08:33] License functions included
+[2025-10-10 14:08:33] License type: FLBR-II
+[2025-10-10 14:08:33] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:08:33] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:08:33] Purchase mode: F
+[2025-10-10 14:08:33] Next voucher number: 1
+[2025-10-10 14:08:33] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:08:33] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:08:34] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:08:34] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:08:34] Database connection closed
+[2025-10-10 14:08:34] === PURCHASE SESSION ENDED ===
+[2025-10-10 14:08:55] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:08:55] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 14:08:55] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-10",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 14:08:55] GET data: {
+    "mode": "F"
+}
+[2025-10-10 14:08:55] Company ID from session: 1
+[2025-10-10 14:08:55] Database connection included
+[2025-10-10 14:08:55] License functions included
+[2025-10-10 14:08:55] License type: FLBR-II
+[2025-10-10 14:08:55] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:08:55] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:08:55] Purchase mode: F
+[2025-10-10 14:08:55] Next voucher number: 1
+[2025-10-10 14:08:55] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:08:55] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:08:55] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:08:55] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:08:55] === FORM SUBMISSION STARTED ===
+[2025-10-10 14:08:55] Form data extracted: {
+    "date": "2025-10-10",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 14:08:55] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-10",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 14:08:55] Purchase header inserted successfully: {
+    "purchase_id": 5,
+    "affected_rows": 1
+}
+[2025-10-10 14:08:55] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 14:08:55] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 14:08:55] Item 0 inserted successfully: {
+    "purchase_id": 5,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 14:08:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:08:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:08:55] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 14:08:55] Item 1 inserted successfully: {
+    "purchase_id": 5,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 14:08:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:08:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:08:55] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 14:08:55] Item 2 inserted successfully: {
+    "purchase_id": 5,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 14:08:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:08:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:08:55] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 14:08:55] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 14:57:58] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:57:58] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay",
+    "stock_columns_checked": true,
+    "last_submission": 1760100976,
+    "sale_quantities": []
+}
+[2025-10-10 14:57:58] POST data: []
+[2025-10-10 14:57:58] GET data: []
+[2025-10-10 14:57:58] Company ID from session: 1
+[2025-10-10 14:57:58] Database connection included
+[2025-10-10 14:57:58] License functions included
+[2025-10-10 14:57:58] License type: FLBR-II
+[2025-10-10 14:57:58] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:57:58] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:57:58] Purchase mode: F
+[2025-10-10 14:57:58] Next voucher number: 1
+[2025-10-10 14:57:58] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:57:58] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:57:58] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:57:58] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:57:58] Database connection closed
+[2025-10-10 14:57:58] === PURCHASE SESSION ENDED ===
+[2025-10-10 14:58:12] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 14:58:12] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay",
+    "stock_columns_checked": true,
+    "last_submission": 1760100976,
+    "sale_quantities": []
+}
+[2025-10-10 14:58:12] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-10",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMWN0019742",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "ND107",
+            "auto_batch": "BTWN52-210525\/33",
+            "mfg_month": "Apr-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "570"
+        },
+        {
+            "code": "SCMWN0019743",
+            "name": "Sula Vineyards Shiraz Cabernet-RW .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "ND108",
+            "auto_batch": "BTWN52-270625\/41",
+            "mfg_month": "Jun-2025",
+            "bl": "9",
+            "vv": "12",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "1045"
+        },
+        {
+            "code": "SCMWN0041837",
+            "name": "Sula Vineyards Muscat Blanc .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "DD9701",
+            "auto_batch": "BTWN56-150725\/840",
+            "mfg_month": "Jun-2025",
+            "bl": "4.5",
+            "vv": "7.5",
+            "tot_bott": "6",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "6",
+            "case_rate": "100.000",
+            "mrp": "875"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "1500.00",
+    "tamt": "1500.00"
+}
+[2025-10-10 14:58:12] GET data: []
+[2025-10-10 14:58:12] Company ID from session: 1
+[2025-10-10 14:58:12] Database connection included
+[2025-10-10 14:58:12] License functions included
+[2025-10-10 14:58:12] License type: FLBR-II
+[2025-10-10 14:58:12] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 14:58:12] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 14:58:12] Purchase mode: F
+[2025-10-10 14:58:12] Next voucher number: 1
+[2025-10-10 14:58:12] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 14:58:12] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 14:58:12] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 14:58:12] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 14:58:12] === FORM SUBMISSION STARTED ===
+[2025-10-10 14:58:12] Form data extracted: {
+    "date": "2025-10-10",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-08-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "1500.00",
+    "total_amt": "1500.00"
+}
+[2025-10-10 14:58:12] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-10",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "1500.00",
+        "7654",
+        "2025-08-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "F",
+        1
+    ]
+}
+[2025-10-10 14:58:12] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2025-10-10 14:58:12] Starting to process purchase items: {
+    "item_count": 3
+}
+[2025-10-10 14:58:12] Processing item 0: {
+    "item_code": "SCMWN0019742",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-10 14:58:12] Item 0 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0019742"
+}
+[2025-10-10 14:58:12] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:58:12] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:58:12] Processing item 1: {
+    "item_code": "SCMWN0019743",
+    "item_name": "Sula Vineyards Shiraz Cabernet-RW .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 12,
+    "bl": 9
+}
+[2025-10-10 14:58:12] Item 1 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0019743"
+}
+[2025-10-10 14:58:12] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:58:12] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:58:12] Processing item 2: {
+    "item_code": "SCMWN0041837",
+    "item_name": "Sula Vineyards Muscat Blanc .",
+    "cases": 0,
+    "bottles": 6,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 600,
+    "tot_bott": 6,
+    "bl": 4.5
+}
+[2025-10-10 14:58:12] Item 2 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMWN0041837"
+}
+[2025-10-10 14:58:12] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-10 14:58:12] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-10 14:58:12] Purchase items processing completed: {
+    "successful_items": 3,
+    "total_items": 3
+}
+[2025-10-10 14:58:12] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-10 15:13:14] === NEW PURCHASE SESSION STARTED ===
+[2025-10-10 15:13:14] Session data: {
+    "user_id": "1",
+    "username": "Digvijay",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-10 15:13:14] POST data: []
+[2025-10-10 15:13:14] GET data: []
+[2025-10-10 15:13:14] Company ID from session: 1
+[2025-10-10 15:13:14] Database connection included
+[2025-10-10 15:13:14] License functions included
+[2025-10-10 15:13:14] License type: FLBR-II
+[2025-10-10 15:13:14] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-10 15:13:14] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-10 15:13:14] Purchase mode: F
+[2025-10-10 15:13:14] Next voucher number: 2
+[2025-10-10 15:13:14] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-10 15:13:14] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN (?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "F",
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "sssssss"
+}
+[2025-10-10 15:13:14] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-10 15:13:14] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-10 15:13:14] Database connection closed
+[2025-10-10 15:13:14] === PURCHASE SESSION ENDED ===

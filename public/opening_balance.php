@@ -345,15 +345,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             $details2 = trim($data[2]);
             $balance = intval(trim($data[3])); // Convert to integer
             
-            // Validate item code exists and matches details
-            $check_item_stmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitemmaster WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ?");
-            $check_item_stmt->bind_param("sss", $code, $details, $details2);
+            // Validate item code exists and matches details AND check if item is allowed for company's license
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster 
+                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ? 
+                                   AND LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+                $check_item_stmt = $conn->prepare($check_item_query);
+                
+                $params = array_merge([$code, $details, $details2, $mode], $allowed_classes);
+                $types = "ssss" . str_repeat('s', count($allowed_classes));
+                $check_item_stmt->bind_param($types, ...$params);
+            } else {
+                // If no classes allowed, item validation will fail
+                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster 
+                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ? 
+                                   AND LIQ_FLAG = ? AND 1 = 0";
+                $check_item_stmt = $conn->prepare($check_item_query);
+                $check_item_stmt->bind_param("ssss", $code, $details, $details2, $mode);
+            }
+            
             $check_item_stmt->execute();
             $item_result = $check_item_stmt->get_result();
-            $item_exists = $item_result->fetch_assoc()['count'] > 0;
+            $item_exists_and_allowed = $item_result->fetch_assoc()['count'] > 0;
             $check_item_stmt->close();
             
-            if ($item_exists) {
+            if ($item_exists_and_allowed) {
                 // Check if ANY record exists for this item (regardless of financial year)
                 $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?");
                 $checkStmt->bind_param("s", $code);
@@ -384,7 +401,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 
                 $imported_count++;
             } else {
-                $error_messages[] = "Item validation failed for '$code' - '$details' - '$details2'. Please check the item details.";
+                $error_messages[] = "Item validation failed for '$code' - '$details' - '$details2'. Item not found or not allowed for your license type.";
             }
         }
     }
@@ -393,7 +410,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     
     $_SESSION['import_message'] = [
         'success' => true,
-        'message' => "Successfully imported $imported_count opening balances",
+        'message' => "Successfully imported $imported_count opening balances (only items allowed for your license type were processed)",
         'errors' => $error_messages
     ];
     
@@ -678,7 +695,8 @@ if (isset($_SESSION['import_message'])) {
             <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
             <div class="csv-format">
               <strong>CSV format:</strong> Item_Code, Item_Name, Category, Current_Stock<br>
-              <strong>Note:</strong> Do not modify the first three columns. Only fill the Current_Stock column.
+              <strong>Note:</strong> Do not modify the first three columns. Only fill the Current_Stock column.<br>
+              <strong>License Filter:</strong> Only items allowed for your license type will be imported.
             </div>
           </div>
           <div class="col-md-3">
