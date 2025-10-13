@@ -530,6 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    vertical-align: middle;
 }
 
 .styled-table thead th {
@@ -538,8 +539,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     background: #f8fafc;
     z-index: 1;
     font-weight: 600;
-    text-align: center;
-    vertical-align: middle;
 }
 
 .styled-table tbody tr:hover {
@@ -547,47 +546,243 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* Fixed column widths to match SCM layout */
-.col-code { width: 150px; }
-.col-name { width: 180px; }
-.col-size { width: 100px; }
-.col-cases { width: 100px; }
-.col-bottles { width: 100px; }
-.col-free-cases { width: 100px; }      /* NEW */
-.col-free-bottles { width: 100px; }    /* NEW */
-.col-rate { width: 100px; }
-.col-amount { width: 100px; }
-.col-mrp { width: 100px; }
-.col-batch { width: 90px; }
-.col-auto-batch { width: 180px; }
-.col-mfg { width: 100px; }
-.col-bl { width: 100px; }
-.col-vv { width: 90px; }
-.col-totbott { width: 100px; }
-.col-action { width: 60px; }
+.styled-table th.col-code,
+.styled-table td.col-code { width: 150px; }
 
-/* Text alignment */
-#itemsTable td:first-child,
-#itemsTable th:first-child {
+.styled-table th.col-name,
+.styled-table td.col-name { width: 180px; }
+
+.styled-table th.col-size,
+.styled-table td.col-size { width: 100px; }
+
+.styled-table th.col-cases,
+.styled-table td.col-cases { width: 100px; }
+
+.styled-table th.col-bottles,
+.styled-table td.col-bottles { width: 100px; }
+
+.styled-table th.col-free-cases,
+.styled-table td.col-free-cases { width: 100px; }
+
+.styled-table th.col-free-bottles,
+.styled-table td.col-free-bottles { width: 100px; }
+
+.styled-table th.col-rate,
+.styled-table td.col-rate { width: 100px; }
+
+.styled-table th.col-amount,
+.styled-table td.col-amount { width: 100px; }
+
+.styled-table th.col-mrp,
+.styled-table td.col-mrp { width: 100px; }
+
+.styled-table th.col-batch,
+.styled-table td.col-batch { width: 90px; }
+
+.styled-table th.col-auto-batch,
+.styled-table td.col-auto-batch { width: 180px; }
+
+.styled-table th.col-mfg,
+.styled-table td.col-mfg { width: 100px; }
+
+.styled-table th.col-bl,
+.styled-table td.col-bl { width: 100px; }
+
+.styled-table th.col-vv,
+.styled-table td.col-vv { width: 90px; }
+
+.styled-table th.col-totbott,
+.styled-table td.col-totbott { width: 100px; }
+
+.styled-table th.col-action,
+.styled-table td.col-action { width: 60px; }
+
+/* ===== HEADER & DATA CELL ALIGNMENT ===== */
+
+/* Column 1-2: LEFT ALIGNED (Item Code, Brand Name) */
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1), /* Item Code */
+.styled-table th:nth-child(2),
+.styled-table td:nth-child(2) { /* Brand Name */
     text-align: left;
+    padding-left: 10px;
 }
 
-#itemsTable td:nth-child(2),
-#itemsTable th:nth-child(2) {
-    text-align: left;
-}
-
-#itemsTable td, 
-#itemsTable th {
+/* Column 3-7: CENTER ALIGNED (Size, Cases, Bottles, Free Cases, Free Bottles) */
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3), /* Size */
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4), /* Cases */
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5), /* Bottles */
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6), /* Free Cases */
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7) { /* Free Bottles */
     text-align: center;
-    vertical-align: middle;
 }
 
-/* Input field styling */
-input.form-control-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+/* Column 8-10: RIGHT ALIGNED (Case Rate, Amount, MRP) */
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8), /* Case Rate */
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9), /* Amount */
+.styled-table th:nth-child(10),
+.styled-table td:nth-child(10) { /* MRP */
+    text-align: right;
+    padding-right: 12px;
+}
+
+/* Column 11-13: LEFT ALIGNED (Batch No, Auto Batch, Mfg Month) - TEXT FIELDS */
+.styled-table th:nth-child(11),
+.styled-table td:nth-child(11), /* Batch No */
+.styled-table th:nth-child(12),
+.styled-table td:nth-child(12), /* Auto Batch */
+.styled-table th:nth-child(13),
+.styled-table td:nth-child(13) { /* Mfg Month */
+    text-align: left;
+    padding-left: 8px;
+}
+
+/* Column 14-16: RIGHT ALIGNED (B.L., V/v %, Total Bott) */
+.styled-table th:nth-child(14),
+.styled-table td:nth-child(14), /* B.L. */
+.styled-table th:nth-child(15),
+.styled-table td:nth-child(15), /* V/v (%) */
+.styled-table th:nth-child(16),
+.styled-table td:nth-child(16) { /* Total Bott */
+    text-align: right;
+    padding-right: 12px;
+}
+
+/* Column 17: CENTER ALIGNED (Action) */
+.styled-table th:nth-child(17),
+.styled-table td:nth-child(17) { /* Action */
+    text-align: center;
+}
+
+/* ===== INPUT FIELD ALIGNMENT ===== */
+.styled-table input[type="number"],
+.styled-table input[type="text"] {
     width: 100%;
     box-sizing: border-box;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+/* Center aligned inputs */
+.styled-table td:nth-child(4) input,  /* Cases */
+.styled-table td:nth-child(5) input,  /* Bottles */
+.styled-table td:nth-child(6) input,  /* Free Cases */
+.styled-table td:nth-child(7) input { /* Free Bottles */
+    text-align: center;
+}
+
+/* Right aligned numeric inputs */
+.styled-table td:nth-child(8) input,  /* Case Rate */
+.styled-table td:nth-child(9) input,  /* Amount */
+.styled-table td:nth-child(10) input, /* MRP */
+.styled-table td:nth-child(14) input, /* B.L. */
+.styled-table td:nth-child(15) input, /* V/v (%) */
+.styled-table td:nth-child(16) input { /* Total Bott */
+    text-align: right;
+}
+
+/* Left aligned text inputs */
+.styled-table td:nth-child(11) input, /* Batch No */
+.styled-table td:nth-child(12) input, /* Auto Batch */
+.styled-table td:nth-child(13) input { /* Mfg Month */
+    text-align: left;
+}
+
+/* ===== TFOOT ALIGNMENT (Matches exactly with thead and tbody) ===== */
+
+/* Column 1-2: LEFT ALIGNED */
+.totals-row td:nth-child(1),
+.totals-row td:nth-child(2) {
+    text-align: left;
+    padding-left: 10px;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Column 3-7: CENTER ALIGNED */
+.totals-row td:nth-child(3), /* Size */
+.totals-row td:nth-child(4), /* Cases */
+.totals-row td:nth-child(5), /* Bottles */
+.totals-row td:nth-child(6), /* Free Cases */
+.totals-row td:nth-child(7) { /* Free Bottles */
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Column 8-16: RIGHT ALIGNED */
+.totals-row td:nth-child(8),  /* Case Rate */
+.totals-row td:nth-child(9),  /* Amount */
+.totals-row td:nth-child(10), /* MRP */
+.totals-row td:nth-child(11), /* Batch No */
+.totals-row td:nth-child(12), /* Auto Batch */
+.totals-row td:nth-child(13), /* Mfg Month */
+.totals-row td:nth-child(14), /* B.L. */
+.totals-row td:nth-child(15), /* V/v (%) */
+.totals-row td:nth-child(16) { /* Total Bott */
+    text-align: right;
+    padding-right: 12px;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Column 17: CENTER ALIGNED */
+.totals-row td:nth-child(17) { /* Action */
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* ===== ENHANCED STYLING ===== */
+/* Make numeric values more readable */
+.styled-table td:nth-child(8),  /* Case Rate */
+.styled-table td:nth-child(9),  /* Amount */
+.styled-table td:nth-child(10), /* MRP */
+.styled-table td:nth-child(14), /* B.L. */
+.styled-table td:nth-child(16) { /* Total Bott */
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+/* Improve header appearance */
+.styled-table thead th {
+    background: #2B6CB0;
+    color: white;
+    border-bottom: 2px solid #2B6CB0;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+/* Better hover effects */
+.styled-table tbody tr:hover {
+    background-color: #ecf0f1;
+    transition: background-color 0.2s ease;
+}
+
+/* Action button styling */
+.remove-item {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border: none;
+    border-radius: 3px;
+    background: #e74c3c;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.remove-item:hover {
+    background: #c0392b;
 }
 
 /* Total amount styling */

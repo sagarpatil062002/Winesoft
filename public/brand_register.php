@@ -32,6 +32,9 @@ $compID = $_SESSION['CompID'];
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 
+// Check if report should be shown
+$show_report = isset($_GET['generate']) || (isset($_GET['from_date']) && isset($_GET['to_date']));
+
 // Fetch company name and license number
 $companyName = "DIAMOND WINE SHOP";
 $licenseNo = "3";
@@ -543,11 +546,11 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
   <!-- Include shortcuts functionality -->
   <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
-    /* Your existing CSS styles remain exactly the same */
     /* Screen styles */
     body {
       font-size: 12px;
       background-color: #f8f9fa;
+      overflow-x: hidden;
     }
     .company-header {
       text-align: center;
@@ -567,13 +570,43 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       font-size: 12px;
       margin-bottom: 5px;
     }
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-      font-size: 10px;
-    }
-    .report-table th, .report-table td {
+    
+    /* FIXED SCROLLING CONTAINER - Similar to closing_stock.php */
+    .table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+  margin-bottom: 15px;
+  border: 1px solid #dee2e6;
+  max-height: calc(100vh - 300px); /* Limit height to viewport */
+}
+
+/* Fixed horizontal scrollbar container */
+.scrollbar-container {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 20px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  z-index: 1000;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.scrollbar-content {
+  height: 1px; /* Minimal height, just to enable scrolling */
+  min-width: 100%; /* Ensure it's at least as wide as the table */
+}
+.report-table {
+  width: auto;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-bottom: 0; /* Remove bottom margin */
+}    .report-table th, .report-table td {
       border: 1px solid #000;
       padding: 4px;
       text-align: center;
@@ -608,10 +641,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .filter-card {
       background-color: #f8f9fa;
     }
-    .table-responsive {
-      overflow-x: auto;
-      max-width: 100%;
-    }
     .action-controls {
       display: flex;
       gap: 10px;
@@ -620,8 +649,27 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .no-print {
       display: block;
     }
+    .print-content {
+      display: none;
+    }
 
-    /* Print styles - MODIFIED TO REMOVE PAGE BREAKS */
+    /* Show report on screen when needed */
+    .print-content.screen-display {
+        display: block !important;
+        margin-top: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    @media screen {
+        .print-content.screen-display .table-container {
+            max-height: 70vh;
+        }
+    }
+
+    /* Print styles - UPDATED TO MATCH CLOSING_STOCK.PHP */
     @media print {
       @page {
         size: legal landscape;
@@ -635,39 +683,20 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         line-height: 1;
         background: white;
         width: 100%;
-        height: 100%;
-        transform: scale(0.8);
-        transform-origin: 0 0;
-        width: 125%;
       }
       
       .no-print {
         display: none !important;
       }
       
-      body * {
-        visibility: hidden;
-      }
-      
-      .print-section, .print-section * {
-        visibility: visible;
-      }
-      
-      .print-section {
-        position: relative;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        page-break-inside: avoid;
+      .print-content {
+        display: block !important;
       }
       
       .company-header {
         text-align: center;
         margin-bottom: 5px;
         padding: 2px;
-        page-break-after: avoid;
       }
       
       .company-header h1 {
@@ -685,11 +714,10 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         margin-bottom: 2px !important;
       }
       
-      .table-responsive {
-        overflow: visible;
-        width: 100%;
-        height: auto;
-        page-break-inside: avoid;
+      .table-container {
+        overflow: visible !important;
+        width: 100% !important;
+        border: none !important;
       }
       
       .report-table {
@@ -697,7 +725,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         font-size: 6px !important;
         table-layout: fixed;
         border-collapse: collapse;
-        page-break-inside: avoid;
       }
       
       .report-table th, .report-table td {
@@ -716,7 +743,6 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         font-weight: bold;
       }
       
-      /* ONLY INCREASE HEIGHT FOR SIZE COLUMNS */
       .vertical-text {
         writing-mode: vertical-lr;
         transform: rotate(180deg);
@@ -750,25 +776,12 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       .category-header {
         background-color: #d1ecf1 !important;
         font-weight: bold;
-        page-break-before: avoid;
       }
       
       .footer-info {
         text-align: center;
         margin-top: 3px;
         font-size: 6px;
-        page-break-before: avoid;
-      }
-      
-      /* Ensure no page breaks within the table */
-      tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-      }
-      
-      /* Specifically prevent breaks after category headers */
-      .category-header + tr {
-        page-break-before: avoid;
       }
     }
   </style>
@@ -820,7 +833,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               <button type="submit" name="generate" class="btn btn-primary">
                 <i class="fas fa-cog me-1"></i> Generate
               </button>
-              <button type="button" class="btn btn-success" onclick="window.print()">
+              <button type="button" class="btn btn-success" onclick="generateReport()">
                 <i class="fas fa-print me-1"></i> Print Report
               </button>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
@@ -832,7 +845,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       </div>
 
       <!-- Report Results -->
-      <div class="print-section">
+      <div id="reportContent" class="<?= $show_report ? 'print-content screen-display' : 'print-content' ?>">
         <div class="company-header">
           <h1>Form F.L.R. 3A - Brandwise Register (See Rule 15)</h1>
           <h5>REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
@@ -841,7 +854,8 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
         </div>
         
-        <div class="table-responsive">
+        <!-- FIXED SCROLLING CONTAINER - Similar to closing_stock.php -->
+        <div class="table-container">
           <table class="report-table">
             <thead>
               <tr>
@@ -1365,6 +1379,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               </tr>
             </tbody>
           </table>
+            <div class="scrollbar-container">
+    <div class="scrollbar-content"></div>
+
         </div>
         
         <div class="footer-info">
@@ -1389,5 +1406,23 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Function for print button
+function generateReport() {
+    window.print();
+}
+
+// Show report immediately if filters were submitted
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('generate') || urlParams.has('from_date')) {
+        const reportContent = document.getElementById('reportContent');
+        if (reportContent) {
+            reportContent.style.display = 'block';
+            reportContent.classList.add('screen-display');
+        }
+    }
+});
+</script>
 </body>
 </html>

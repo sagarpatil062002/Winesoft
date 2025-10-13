@@ -13,7 +13,7 @@ include_once "../config/db.php";
 // Handle success message
 $success = isset($_GET['success']) ? $_GET['success'] : 0;
 
-// Build query with filters
+// Build query with filters - FIXED: Include all purchases regardless of payment status
 $whereConditions = ["p.CompID = ?", "p.PUR_FLAG = ?"];
 $params = [$companyId, $mode];
 $paramTypes = "is";
@@ -43,7 +43,7 @@ if (isset($_GET['supplier']) && !empty($_GET['supplier'])) {
     $paramTypes .= "s";
 }
 
-// Get all purchases for this company with filters
+// Get all purchases for this company with filters - FIXED: Removed payment status condition
 $purchases = [];
 $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name 
                   FROM tblpurchases p 
@@ -78,6 +78,24 @@ $purchaseStmt->close();
   .status-badge{padding:4px 8px;border-radius:4px;font-size:0.8rem}
   .status-completed{background:#d1fae5;color:#065f46}
   .status-pending{background:#fef3c7;color:#92400e}
+  .status-paid{background:#dbeafe;color:#1e40af}
+  
+  /* Purchase Summary Table Styles */
+  #purchaseSummaryTable th {
+    font-size: 11px;
+    padding: 4px 2px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  #purchaseSummaryTable td {
+    font-size: 11px;
+    padding: 4px 2px;
+    text-align: center;
+  }
+  .table-success {
+    background-color: #d1edff !important;
+    font-weight: bold;
+  }
 </style>
 </head>
 <body>
@@ -89,9 +107,14 @@ $purchaseStmt->close();
     <div class="content-area p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4>Purchase Module - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h4>
-        <a href="purchases.php?mode=<?=$mode?>" class="btn btn-primary">
-          <i class="fa-solid fa-plus me-1"></i> New Purchase
-        </a>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
+            <i class="fas fa-chart-bar"></i> Purchase Summary
+          </button>
+          <a href="purchases.php?mode=<?=$mode?>" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-1"></i> New Purchase
+          </a>
+        </div>
       </div>
 
       <?php if ($success): ?>
@@ -151,7 +174,15 @@ $purchaseStmt->close();
                   </tr>
                 </thead>
                 <tbody>
-                  <?php foreach($purchases as $purchase): ?>
+                  <?php foreach($purchases as $purchase): 
+                    // Determine status
+                    $status = 'Completed';
+                    $statusClass = 'status-completed';
+                    if (isset($purchase['PAYMENT_STATUS']) && $purchase['PAYMENT_STATUS'] === 'paid') {
+                        $status = 'Paid';
+                        $statusClass = 'status-paid';
+                    }
+                  ?>
                     <tr>
                       <td><?=htmlspecialchars($purchase['VOC_NO'])?></td>
                       <td><?=htmlspecialchars($purchase['DATE'])?></td>
@@ -160,23 +191,21 @@ $purchaseStmt->close();
                       <td><?=htmlspecialchars($purchase['INV_DATE'])?></td>
                       <td>₹<?=number_format($purchase['TAMT'], 2)?></td>
                       <td>
-                        <span class="status-badge status-completed">Completed</span>
+                        <span class="status-badge <?=$statusClass?>"><?=$status?></span>
                       </td>
                       <td>
-
-    <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
-       class="btn btn-sm btn-warning" title="Edit">
-      <i class="fa-solid fa-edit"></i>
-    </a>
-
-    <button class="btn btn-sm btn-danger" 
-            title="Delete" 
-            onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>')">
-      <i class="fa-solid fa-trash"></i>
-    </button>
-  </div>
-</td>
-
+                        <div class="action-buttons">
+                          <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
+                             class="btn btn-sm btn-warning" title="Edit">
+                            <i class="fa-solid fa-edit"></i>
+                          </a>
+                          <button class="btn btn-sm btn-danger" 
+                                  title="Delete" 
+                                  onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>')">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   <?php endforeach; ?>
                 </tbody>
@@ -198,6 +227,83 @@ $purchaseStmt->close();
 
     <?php include 'components/footer.php'; ?>
   </div>
+</div>
+
+<!-- Purchase Summary Modal -->
+<div class="modal fade" id="purchaseSummaryModal" tabindex="-1" aria-labelledby="purchaseSummaryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="purchaseSummaryModalLabel">Purchase Summary - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Summary filters -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">From Date</label>
+                        <input type="date" id="purchaseFromDate" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">To Date</label>
+                        <input type="date" id="purchaseToDate" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-primary w-100" onclick="loadPurchaseSummary()">
+                            <i class="fas fa-refresh"></i> Update Summary
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm" id="purchaseSummaryTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <!-- ML Sizes -->
+                                <th>50 ML</th>
+                                <th>60 ML</th>
+                                <th>90 ML</th>
+                                <th>170 ML</th>
+                                <th>180 ML</th>
+                                <th>200 ML</th>
+                                <th>250 ML</th>
+                                <th>275 ML</th>
+                                <th>330 ML</th>
+                                <th>355 ML</th>
+                                <th>375 ML</th>
+                                <th>500 ML</th>
+                                <th>650 ML</th>
+                                <th>700 ML</th>
+                                <th>750 ML</th>
+                                <th>1000 ML</th>
+                                <!-- Liter Sizes -->
+                                <th>1.5L</th>
+                                <th>1.75L</th>
+                                <th>2L</th>
+                                <th>3L</th>
+                                <th>4.5L</th>
+                                <th>15L</th>
+                                <th>20L</th>
+                                <th>30L</th>
+                                <th>50L</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printPurchaseSummary()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Delete Confirmation Modal -->
@@ -237,6 +343,145 @@ $('form').on('submit', function(e) {
     alert('From date cannot be greater than To date');
     return false;
   }
+});
+
+// Function to load purchase summary via AJAX
+function loadPurchaseSummary() {
+    const fromDate = $('#purchaseFromDate').val();
+    const toDate = $('#purchaseToDate').val();
+    const mode = '<?= $mode ?>';
+    
+    // Show loading
+    $('#purchaseSummaryTable tbody').html(`
+        <tr>
+            <td colspan="26" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading purchase summary...</p>
+            </td>
+        </tr>
+    `);
+    
+    $.ajax({
+        url: 'purchase_summary_ajax.php',
+        type: 'GET',
+        data: {
+            mode: mode,
+            from_date: fromDate,
+            to_date: toDate,
+            comp_id: '<?= $companyId ?>'
+        },
+        success: function(response) {
+            try {
+                const summaryData = JSON.parse(response);
+                updatePurchaseSummaryTable(summaryData);
+            } catch (e) {
+                $('#purchaseSummaryTable tbody').html(`
+                    <tr>
+                        <td colspan="26" class="text-center text-danger">
+                            Error loading purchase summary
+                        </td>
+                    </tr>
+                `);
+            }
+        },
+        error: function() {
+            $('#purchaseSummaryTable tbody').html(`
+                <tr>
+                    <td colspan="26" class="text-center text-danger">
+                        Failed to load purchase summary
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+// Function to update the purchase summary table
+function updatePurchaseSummaryTable(summaryData) {
+    const tbody = $('#purchaseSummaryTable tbody');
+    tbody.empty();
+    
+    const allSizes = [
+        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+    ];
+    
+    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'];
+    
+    categories.forEach(category => {
+        const row = $('<tr>');
+        row.append($('<td>').text(category));
+        
+        allSizes.forEach(size => {
+            const value = summaryData[category]?.[size] || 0;
+            const cell = $('<td>').text(value > 0 ? value : '');
+            
+            if (value > 0) {
+                cell.addClass('table-success');
+            }
+            
+            row.append(cell);
+        });
+        
+        tbody.append(row);
+    });
+}
+
+// Function to print purchase summary
+function printPurchaseSummary() {
+    const printContent = $('#purchaseSummaryTable').parent().html();
+    const printWindow = window.open('', '_blank');
+    const mode = '<?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?>';
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Purchase Summary - ${mode}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
+                th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+                th { background-color: #f8f9fa; font-weight: bold; }
+                .table-success { background-color: #d1edff !important; }
+                .text-center { text-align: center; }
+                h2 { text-align: center; margin-bottom: 20px; }
+                .summary-info { text-align: center; margin-bottom: 15px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <h2>Purchase Summary - ${mode}</h2>
+            <div class="summary-info">
+                Date Range: ${$('#purchaseFromDate').val()} to ${$('#purchaseToDate').val()}
+            </div>
+            ${printContent}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+// Initialize modal
+$('#purchaseSummaryModal').on('show.bs.modal', function() {
+    // Set default dates if not set
+    if (!$('#purchaseFromDate').val()) {
+        $('#purchaseFromDate').val('<?= date('Y-m-01') ?>'); // First day of current month
+    }
+    if (!$('#purchaseToDate').val()) {
+        $('#purchaseToDate').val('<?= date('Y-m-d') ?>'); // Today
+    }
+    
+    // Load initial summary
+    loadPurchaseSummary();
 });
 </script>
 </body>

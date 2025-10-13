@@ -201,14 +201,22 @@
                     die("Connection failed: " . $conn->connect_error);
                 }
                 
-                // First, let's check if the License_Type column exists in tblcompany
-                $check_column = $conn->query("SHOW COLUMNS FROM tblcompany LIKE 'License_Type'");
-                if ($check_column->num_rows == 0) {
-                    // Add the License_Type column if it doesn't exist
-                    $alter_table = $conn->query("ALTER TABLE tblcompany ADD License_Type VARCHAR(20) NULL AFTER COMP_FLNO");
-                    
-                    if ($alter_table === FALSE) {
-                        echo '<div class="alert alert-error">Error adding License_Type column: ' . $conn->error . '</div>';
+                // Check and add missing columns if they don't exist
+                $columns_to_check = [
+                    'License_Type' => 'VARCHAR(20) NULL AFTER COMP_FLNO',
+                    'IMFLLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER license_type_id',
+                    'BEERLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER IMFLLimit',
+                    'CLLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER BEERLimit'
+                ];
+                
+                foreach ($columns_to_check as $column_name => $column_definition) {
+                    $check_column = $conn->query("SHOW COLUMNS FROM tblcompany LIKE '$column_name'");
+                    if ($check_column->num_rows == 0) {
+                        $alter_table = $conn->query("ALTER TABLE tblcompany ADD $column_name $column_definition");
+                        
+                        if ($alter_table === FALSE) {
+                            echo '<div class="alert alert-error">Error adding ' . $column_name . ' column: ' . $conn->error . '</div>';
+                        }
                     }
                 }
                 
@@ -219,8 +227,11 @@
                     $cs_line = trim($_POST['cs_line']);
                     $fin_year = intval($_POST['fin_year']);
                     $comp_addr = trim($_POST['comp_addr']);
+                    $license_type_id = isset($_POST['license_type']) ? intval($_POST['license_type']) : 0;
                     $comp_flno = trim($_POST['comp_flno']);
-$license_type_id = isset($_POST['license_type']) ? intval($_POST['license_type']) : 0;
+                    $imfl_limit = isset($_POST['imfl_limit']) ? floatval($_POST['imfl_limit']) : 0.00;
+                    $beer_limit = isset($_POST['beer_limit']) ? floatval($_POST['beer_limit']) : 0.00;
+                    $cl_limit = isset($_POST['cl_limit']) ? floatval($_POST['cl_limit']) : 0.00;
                     
                     $admin_username = trim($_POST['admin_username']);
                     $admin_password = $_POST['admin_password'];
@@ -262,8 +273,9 @@ $license_type_id = isset($_POST['license_type']) ? intval($_POST['license_type']
                         
                         try {
                             // Insert company
-                            $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, COMP_FLNO, license_type_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-$insert_company->bind_param("sssissi", $company_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno, $license_type_id);
+                            $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, license_type_id, COMP_FLNO, IMFLLimit, BEERLimit, CLLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $insert_company->bind_param("sssisiiddd", $company_name, $cf_line, $cs_line, $fin_year, $comp_addr, $license_type_id, $comp_flno, $imfl_limit, $beer_limit, $cl_limit);
+                            
                             if ($insert_company->execute()) {
                                 $company_id = $insert_company->insert_id;
                                 
@@ -344,16 +356,7 @@ $insert_company->bind_param("sssissi", $company_name, $cf_line, $cs_line, $fin_y
                             </div>
                         </div>
                         
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cf_line">CF Line</label>
-                                <input type="text" id="cf_line" name="cf_line" maxlength="15">
-                            </div>
-                            <div class="form-group">
-                                <label for="cs_line">CS Line</label>
-                                <input type="text" id="cs_line" name="cs_line" maxlength="35">
-                            </div>
-                        </div>
+
                         
                         <div class="form-row">
                             <div class="form-group full-width">
@@ -364,17 +367,32 @@ $insert_company->bind_param("sssissi", $company_name, $cf_line, $cs_line, $fin_y
                         
                         <div class="form-row">
                             <div class="form-group">
+                                <label for="license_type">License Type</label>
+                                <select id="license_type" name="license_type">
+                                    <option value="">Select License Type</option>
+                                    <?php foreach ($license_types as $id => $license_code): ?>
+                                        <option value="<?php echo $id; ?>"><?php echo $license_code; ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group">
                                 <label for="comp_flno">FL No.</label>
                                 <input type="text" id="comp_flno" name="comp_flno" maxlength="12">
                             </div>
+                        </div>
+                        
+                        <div class="form-row">
                             <div class="form-group">
-                                <label for="license_type">License Type</label>
-                                <select id="license_type" name="license_type">
-    <option value="">Select License Type</option>
-    <?php foreach ($license_types as $id => $license_code): ?>
-        <option value="<?php echo $id; ?>"><?php echo $license_code; ?></option>
-    <?php endforeach; ?>
-</select>
+                                <label for="imfl_limit">IMFL Limit</label>
+                                <input type="number" step="0.01" id="imfl_limit" name="imfl_limit" value="1000.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="beer_limit">BEER Limit</label>
+                                <input type="number" step="0.01" id="beer_limit" name="beer_limit" value="4000.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="cl_limit">CL Limit</label>
+                                <input type="number" step="0.01" id="cl_limit" name="cl_limit" value="2000.00">
                             </div>
                         </div>
                     </div>

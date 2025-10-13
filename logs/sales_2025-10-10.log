@@ -1363,3 +1363,74 @@ Array
 
 )
 
+[2025-10-10 16:05:12] [INFO] === PAGE ACCESS ===
+[2025-10-10 16:05:12] [INFO] Request method: GET
+[2025-10-10 16:05:12] [INFO] Search term: ''
+[2025-10-10 16:05:12] [INFO] Current session ID: nh9mab8daig01k8gm6v89oa5k5
+[2025-10-10 16:05:12] [INFO] Final session quantities count: 0
+[2025-10-10 16:05:12] [INFO] Items in current view: 50
+[2025-10-10 16:05:12] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-10 to 2025-10-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-10 16:05:14] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-10 16:05:14] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-10 16:05:15] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-10 16:05:15] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-10 16:05:16] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-10 16:05:17] [INFO] === PAGE ACCESS ===
+[2025-10-10 16:05:17] [INFO] Request method: POST
+[2025-10-10 16:05:17] [INFO] Search term: ''
+[2025-10-10 16:05:17] [INFO] Current session ID: nh9mab8daig01k8gm6v89oa5k5
+[2025-10-10 16:05:17] [INFO] Session quantities updated from POST: 1 items
+[2025-10-10 16:05:18] [INFO] Getting next bill number
+[2025-10-10 16:05:18] [INFO] Next bill number: 16
+[2025-10-10 16:05:18] [ERROR] Transaction rolled back: Insufficient closing stock for item SCMWN0020397 on 2025-10-10. Available: -12, Requested: 1
+[2025-10-10 16:05:18] [INFO] Final session quantities count: 1
+[2025-10-10 16:05:18] [INFO] Items in current view: 50
+[2025-10-10 16:05:18] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 1
+    [post_quantities_count] => 50
+    [date_range] => 2025-10-10 to 2025-10-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+

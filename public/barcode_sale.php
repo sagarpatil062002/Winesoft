@@ -555,63 +555,60 @@ function prepareBillData() {
 }
 
 // Function to generate a unique bill number with transaction safety
+// FIXED: Function to generate a unique bill number - simplified and reliable
 function generateBillNumber($conn, $comp_id) {
-    $conn->begin_transaction();
+    // Get the maximum numeric part of bill numbers for this company
+    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
+              FROM tblsaleheader 
+              WHERE COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+    $stmt->close();
     
-    try {
-        // Get the highest existing bill number numerically
-        $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
-                       FROM tblsaleheader 
-                       WHERE COMP_ID = ? 
-                       FOR UPDATE";
-        $bill_stmt = $conn->prepare($bill_query);
-        $bill_stmt->bind_param("i", $comp_id);
-        $bill_stmt->execute();
-        $bill_result = $bill_stmt->get_result();
-        
-        $next_bill = 1;
-        if ($bill_result->num_rows > 0) {
-            $bill_row = $bill_result->fetch_assoc();
-            $next_bill = ($bill_row['max_bill'] ? $bill_row['max_bill'] + 1 : 1);
-        }
-        $bill_stmt->close();
-        
-        // Safety check: Ensure bill number doesn't exist
-        $billExists = true;
-        $attempts = 0;
-        
-        while ($billExists && $attempts < 10) {
-            $newBillNo = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-            
-            // Check if this bill number already exists
-            $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
-            $checkStmt = $conn->prepare($checkSql);
-            $checkStmt->bind_param("si", $newBillNo, $comp_id);
-            $checkStmt->execute();
-            $checkResult = $checkStmt->get_result();
-            $checkRow = $checkResult->fetch_assoc();
-            
-            if ($checkRow['count'] == 0) {
-                $billExists = false;
-            } else {
-                $next_bill++; // Try next number
-                $attempts++;
-            }
-            $checkStmt->close();
-        }
-        
-        $conn->commit();
-        
-        // Return with zero-padding to match sale_for_date_range.php
-        return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        // Fallback: Use timestamp-based numbering
+    // Double-check this bill number doesn't exist (prevent race conditions)
+    $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+    $check_stmt->bind_param("si", $bill_no_to_check, $comp_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // If it exists, increment and use next number
+        $next_bill++;
+    }
+    
+    // Final safety check - ensure we have a valid bill number
+    if ($next_bill <= 0) {
+        // Ultimate fallback - use timestamp-based numbering
         $timestamp = time();
         $random_suffix = mt_rand(100, 999);
         return "BL" . substr($timestamp, -6) . $random_suffix;
     }
+    
+    return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+}
+
+// Helper function to get the next bill number without zero-padding
+function getNextBillNumber($conn, $comp_id) {
+    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
+              FROM tblsaleheader 
+              WHERE COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+    $stmt->close();
+    
+    return $next_bill;
 }
 
 // Function to update item stock
@@ -781,10 +778,20 @@ function processSale() {
             }
             
             $bill_numbers = [];
-            for ($i = 0; $i < $total_bills_needed; $i++) {
-                $bill_numbers[] = generateBillNumber($conn, $comp_id);
-            }
-            
+// Generate sequential bill numbers starting from the next available
+$base_bill_number = getNextBillNumber($conn, $comp_id);
+// Extract numeric part from base bill number
+if (preg_match('/BL(\d+)/', $base_bill_number, $matches)) {
+    $base_number = intval($matches[1]);
+    for ($i = 0; $i < $total_bills_needed; $i++) {
+        $bill_numbers[] = "BL" . str_pad($base_number + $i, 4, '0', STR_PAD_LEFT);
+    }
+} else {
+    // Fallback to individual generation
+    for ($i = 0; $i < $total_bills_needed; $i++) {
+        $bill_numbers[] = generateBillNumber($conn, $comp_id);
+    }
+}
             $bill_index = 0;
             $all_bills = [];
             
@@ -876,6 +883,13 @@ function processSale() {
 // Function to process a single bill with proper stock management and duplicate item handling
 function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode) {
     $bill_no = $bill['bill_no'];
+    
+    // CRITICAL FIX: Ensure bill_no is never null
+    if (empty($bill_no) || $bill_no === 'TEMP') {
+        // Generate a proper bill number immediately
+        $bill_no = generateBillNumber($conn, $comp_id);
+    }
+    
     $sale_date = $bill['bill_date'];
     
     // Aggregate quantities for duplicate items before processing
