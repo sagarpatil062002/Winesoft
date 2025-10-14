@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once 'drydays_functions.php'; // Single include
+require_once 'license_functions.php'; // ADDED: Include license 
+require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
@@ -159,7 +161,6 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // ============================================================================
 // LICENSE RESTRICTIONS - APPLIED FROM ITEM_MASTER.PHP
 // ============================================================================
-include_once 'license_functions.php';
 
 // Get company's license type and available classes
 $company_id = $_SESSION['CompID'];
@@ -334,11 +335,24 @@ if (!isset($_SESSION['sale_quantities'])) {
 }
 
 // Handle form submission to update session quantities
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
-    foreach ($_POST['sale_qty'] as $item_code => $qty) {
-        $qty_val = intval($qty);
-        if ($qty_val > 0) {
-            $_SESSION['sale_quantities'][$item_code] = $qty_val;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
+    foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
+        $closing_val = floatval($closing_balance);
+        $current_stock = 0;
+        
+        // Find current stock for this item
+        foreach ($items as $item) {
+            if ($item['CODE'] == $item_code) {
+                $current_stock = $item['CURRENT_STOCK'];
+                break;
+            }
+        }
+        
+        // Calculate sale quantity: sale_qty = current_stock - closing_balance
+        $sale_qty = $current_stock - $closing_val;
+        
+        if ($sale_qty > 0) {
+            $_SESSION['sale_quantities'][$item_code] = $sale_qty;
         } else {
             // Remove zero quantities to keep session clean
             unset($_SESSION['sale_quantities'][$item_code]);
@@ -647,24 +661,29 @@ function recalculateCurrentMonthStock($conn, $table_name, $item_code, $stk_month
 }
 
 // FIXED: Function to get next bill number with proper zero-padding
-function getNextBillNumber($conn) {
-    logMessage("Getting next bill number");
+// UPDATED: Function to get next bill number with proper zero-padding AND CompID consideration
+function getNextBillNumber($conn, $comp_id) {
+    logMessage("Getting next bill number for CompID: $comp_id");
     
     // Use transaction for atomic operation
     $conn->begin_transaction();
     
     try {
-        // Get the maximum numeric part of bill numbers
-        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-        $result = $conn->query($query);
+        // Get the maximum numeric part of bill numbers FOR THIS COMPANY
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+        $stmt->close();
         
-        // Double-check this bill number doesn't exist (prevent race conditions)
-        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ?";
+        // Double-check this bill number doesn't exist FOR THIS COMPANY (prevent race conditions)
+        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $check_stmt = $conn->prepare($check_query);
         $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-        $check_stmt->bind_param("s", $bill_no_to_check);
+        $check_stmt->bind_param("si", $bill_no_to_check, $comp_id);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
         $exists = $check_result->fetch_assoc()['count'] > 0;
@@ -676,18 +695,22 @@ function getNextBillNumber($conn) {
         }
         
         $conn->commit();
-        logMessage("Next bill number: $next_bill");
+        logMessage("Next bill number for CompID $comp_id: $next_bill");
         
         return $next_bill;
         
     } catch (Exception $e) {
         $conn->rollback();
-        logMessage("Error getting next bill number: " . $e->getMessage(), 'ERROR');
+        logMessage("Error getting next bill number for CompID $comp_id: " . $e->getMessage(), 'ERROR');
         
         // Fallback method
-        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-        $result = $conn->query($query);
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         $row = $result->fetch_assoc();
+        $stmt->close();
         return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
     }
 }
@@ -801,8 +824,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $current_stock_column = "Current_Stock" . $comp_id;
                         $opening_stock_column = "Opening_Stock" . $comp_id;
                         
-                        // Get next bill number once to ensure proper numerical order
-                        $next_bill_number = getNextBillNumber($conn);
+                        // Get next bill number once to ensure proper numerical order FOR THIS COMPANY
+                        $next_bill_number = getNextBillNumber($conn, $comp_id);
                         
                         // Process each bill in chronological AND numerical order
                         usort($bills, function($a, $b) {
@@ -810,8 +833,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         });
                         
                         // Process each bill with proper zero-padded bill numbers
+                        $bill_numbers = []; // Store bill numbers for cash memo generation
+                        
                         foreach ($bills as $bill) {
                             $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+                            $bill_numbers[] = $padded_bill_no; // Store for cash memo generation
                             
                             // Insert sale header
                             $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
@@ -850,6 +876,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
                         
+                        // ADD AUTOMATIC CASH MEMO GENERATION
+                        $cash_memos_generated = 0;
+                        $cash_memo_errors = [];
+
+                        // Generate cash memos for all created bills
+                        foreach ($bill_numbers as $bill_no) {
+                            if (autoGenerateCashMemoForBill($conn, $bill_no, $comp_id, $_SESSION['user_id'])) {
+                                $cash_memos_generated++;
+                                logCashMemoGeneration($bill_no, true);
+                            } else {
+                                $cash_memo_errors[] = $bill_no;
+                                logCashMemoGeneration($bill_no, false, "Cash memo generation failed");
+                            }
+                        }
+
+                        // Update success message to include cash memo info
+                        if ($cash_memos_generated > 0) {
+                            $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                        }
+
+                        if (!empty($cash_memo_errors)) {
+                            $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                            if (count($cash_memo_errors) > 5) {
+                                $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                            }
+                        }
+
                         // Redirect to retail_sale.php
                         header("Location: retail_sale.php?success=" . urlencode($success_message));
                         exit;
@@ -882,7 +935,7 @@ $debug_info = [
     'current_page' => $current_page,
     'total_pages' => $total_pages,
     'session_quantities_count' => count($_SESSION['sale_quantities']),
-    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['sale_qty'] ?? []) : 0,
+    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['closing_balance'] ?? []) : 0,
     'date_range' => "$start_date to $end_date",
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],

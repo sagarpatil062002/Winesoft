@@ -1,0 +1,575 @@
+[14-Oct-2025 07:33:11 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:33:11 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:33:11 Europe/Berlin] Mode: F
+[14-Oct-2025 07:33:11 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:33:11 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:33:11 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:33:11 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[14-Oct-2025 07:33:11 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:33:11 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[14-Oct-2025 07:33:11 Europe/Berlin] Parameter Types: is
+[14-Oct-2025 07:33:11 Europe/Berlin] Found 1 purchase records
+[14-Oct-2025 07:33:11 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:33:11 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:33:11 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[14-Oct-2025 07:48:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:48:19 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:48:19 Europe/Berlin] Mode: ALL
+[14-Oct-2025 07:48:19 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:48:19 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:48:19 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:48:19 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[14-Oct-2025 07:48:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P')
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:48:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[14-Oct-2025 07:48:19 Europe/Berlin] Parameter Types: i
+[14-Oct-2025 07:48:19 Europe/Berlin] Found 4 purchase records
+[14-Oct-2025 07:48:19 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:48:19 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:48:19 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => P
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-12 09:11:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:48:19 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-12 09:00:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:48:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[14-Oct-2025 07:50:15 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:50:15 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:50:15 Europe/Berlin] Mode: ALL
+[14-Oct-2025 07:50:15 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:50:15 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:50:15 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:50:15 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[14-Oct-2025 07:50:15 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P')
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:50:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[14-Oct-2025 07:50:16 Europe/Berlin] Parameter Types: i
+[14-Oct-2025 07:50:16 Europe/Berlin] Found 4 purchase records
+[14-Oct-2025 07:50:16 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:50:16 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:50:16 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => P
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-12 09:11:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:50:16 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-12 09:00:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:50:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[14-Oct-2025 07:51:13 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:51:13 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:51:13 Europe/Berlin] Mode: ALL
+[14-Oct-2025 07:51:13 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:51:13 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:51:13 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:51:13 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[14-Oct-2025 07:51:13 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P')
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:51:13 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[14-Oct-2025 07:51:13 Europe/Berlin] Parameter Types: i
+[14-Oct-2025 07:51:13 Europe/Berlin] Found 4 purchase records
+[14-Oct-2025 07:51:13 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:51:13 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:51:13 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 11:20:47
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:13 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-12 09:00:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:13 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[14-Oct-2025 07:51:17 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:51:17 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:51:17 Europe/Berlin] Mode: ALL
+[14-Oct-2025 07:51:17 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:51:17 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:51:17 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:51:17 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[14-Oct-2025 07:51:17 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P')
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:51:17 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[14-Oct-2025 07:51:17 Europe/Berlin] Parameter Types: i
+[14-Oct-2025 07:51:17 Europe/Berlin] Found 4 purchase records
+[14-Oct-2025 07:51:17 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:51:17 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:51:17 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 11:20:47
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:17 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-12 09:00:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:17 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[14-Oct-2025 07:51:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[14-Oct-2025 07:51:22 Europe/Berlin] Company ID: 1
+[14-Oct-2025 07:51:22 Europe/Berlin] Mode: ALL
+[14-Oct-2025 07:51:22 Europe/Berlin] Session CompID: 1
+[14-Oct-2025 07:51:22 Europe/Berlin] Session User ID: 1
+[14-Oct-2025 07:51:22 Europe/Berlin] Database connection successful
+[14-Oct-2025 07:51:22 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[14-Oct-2025 07:51:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P')
+                  ORDER BY p.DATE DESC, p.VOC_NO DESC
+[14-Oct-2025 07:51:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[14-Oct-2025 07:51:22 Europe/Berlin] Parameter Types: i
+[14-Oct-2025 07:51:22 Europe/Berlin] Found 4 purchase records
+[14-Oct-2025 07:51:22 Europe/Berlin] Sample purchase data:
+[14-Oct-2025 07:51:22 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-13 11:00:07
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[14-Oct-2025 07:51:22 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 11:20:47
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:22 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-12 09:00:59
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[14-Oct-2025 07:51:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===

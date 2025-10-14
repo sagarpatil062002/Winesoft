@@ -5,6 +5,8 @@ session_start();
 include_once "volume_limit_utils.php";
 // Include license functions
 require_once 'license_functions.php';
+// ADDED: Include cash memo functions
+require_once 'cash_memo_functions.php';
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -554,7 +556,6 @@ function prepareBillData() {
     ];
 }
 
-// Function to generate a unique bill number with transaction safety
 // FIXED: Function to generate a unique bill number - simplified and reliable
 function generateBillNumber($conn, $comp_id) {
     // Get the maximum numeric part of bill numbers for this company
@@ -593,22 +594,6 @@ function generateBillNumber($conn, $comp_id) {
     }
     
     return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-}
-
-// Helper function to get the next bill number without zero-padding
-function getNextBillNumber($conn, $comp_id) {
-    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
-              FROM tblsaleheader 
-              WHERE COMP_ID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-    $stmt->close();
-    
-    return $next_bill;
 }
 
 // Function to update item stock
@@ -777,20 +762,10 @@ function processSale() {
                 }
             }
             
-            $bill_numbers = [];
+           $bill_numbers = [];
 // Generate sequential bill numbers starting from the next available
-$base_bill_number = getNextBillNumber($conn, $comp_id);
-// Extract numeric part from base bill number
-if (preg_match('/BL(\d+)/', $base_bill_number, $matches)) {
-    $base_number = intval($matches[1]);
-    for ($i = 0; $i < $total_bills_needed; $i++) {
-        $bill_numbers[] = "BL" . str_pad($base_number + $i, 4, '0', STR_PAD_LEFT);
-    }
-} else {
-    // Fallback to individual generation
-    for ($i = 0; $i < $total_bills_needed; $i++) {
-        $bill_numbers[] = generateBillNumber($conn, $comp_id);
-    }
+for ($i = 0; $i < $total_bills_needed; $i++) {
+    $bill_numbers[] = generateBillNumber($conn, $comp_id);
 }
             $bill_index = 0;
             $all_bills = [];
@@ -849,17 +824,43 @@ if (preg_match('/BL(\d+)/', $base_bill_number, $matches)) {
             }
             
             $processed_bills = [];
+            $cash_memos_generated = 0; // ADDED: Cash memo counter
+            $cash_memo_errors = []; // ADDED: Cash memo error tracker
+            
             foreach ($all_bills as $bill) {
                 $bill_data = processSingleBill($bill, $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode);
                 if ($bill_data) {
                     $processed_bills[] = $bill_data;
+                    
+                    // ADDED: Generate cash memo for this bill
+                    if (autoGenerateCashMemoForBill($conn, $bill_data['bill_no'], $comp_id, $user_id)) {
+                        $cash_memos_generated++;
+                        logCashMemoGeneration($bill_data['bill_no'], true);
+                    } else {
+                        $cash_memo_errors[] = $bill_data['bill_no'];
+                        logCashMemoGeneration($bill_data['bill_no'], false, "Cash memo generation failed");
+                    }
                 }
             }
             
             $conn->commit();
             
             if (!empty($processed_bills)) {
-                $_SESSION['success_message'] = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
+                $success_message = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
+                
+                // ADDED: Include cash memo info in success message
+                if ($cash_memos_generated > 0) {
+                    $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                }
+                
+                if (!empty($cash_memo_errors)) {
+                    $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                    if (count($cash_memo_errors) > 5) {
+                        $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                    }
+                }
+                
+                $_SESSION['success_message'] = $success_message;
             } else {
                 throw new Exception("No bills were processed successfully.");
             }

@@ -15,6 +15,8 @@ include_once "../config/db.php";
 
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
+// Include cash memo functions
+require_once 'cash_memo_functions.php';
 
 $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID'];
@@ -38,6 +40,11 @@ $pending_stmt->close();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
     if (isset($_POST['selected_dates']) && !empty($_POST['selected_dates'])) {
         $selected_dates = $_POST['selected_dates'];
+        
+        // Initialize counters for cash memos
+        $cash_memos_generated = 0;
+        $cash_memo_errors = [];
+        $total_bills_generated = 0;
         
         // Start transaction
         $conn->begin_transaction();
@@ -79,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                 
                 // Generate bills with the same logic as in the main file
                 $bills = generateBillsWithLimits($conn, $items_data, [$sale_date], $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                $total_bills_generated += count($bills);
                 
                 // Get next bill number for this batch
                 $next_bill_number = getNextBillNumberForGenerate($conn, $comp_id);
@@ -116,6 +124,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                         // Update daily stock
                         updateDailyStock($conn, "tbldailystock_" . $comp_id, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                     }
+                    
+                    // AUTO-GENERATE CASH MEMO FOR THIS BILL (NEW ADDITION)
+                    if (autoGenerateCashMemoForBill($conn, $sequential_bill_no, $comp_id, $user_id)) {
+                        $cash_memos_generated++;
+                        logCashMemoGeneration($sequential_bill_no, true);
+                    } else {
+                        $cash_memo_errors[] = $sequential_bill_no;
+                        logCashMemoGeneration($sequential_bill_no, false, "Cash memo generation failed in post daily sales");
+                    }
                 }
                 
                 // Mark all pending sales for this date as processed
@@ -130,7 +147,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
             // Commit transaction
             $conn->commit();
             
-            $success_message = "Successfully processed " . count($selected_dates) . " date(s) and generated " . count($bills) . " bills!";
+            // Build success message with cash memo info
+            $success_message = "Successfully processed " . count($selected_dates) . " date(s) and generated " . $total_bills_generated . " bills!";
+            
+            // Add cash memo information
+            if ($cash_memos_generated > 0) {
+                $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+            }
+            
+            if (!empty($cash_memo_errors)) {
+                $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                if (count($cash_memo_errors) > 5) {
+                    $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                }
+            }
             
         } catch (Exception $e) {
             // Rollback transaction on error
@@ -372,6 +402,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
                 <i class="fas fa-info-circle"></i> 
                 Sales will be processed with bulk liter restrictions applied. 
                 Each date may generate multiple bills based on restriction rules.
+                Cash memos will be automatically generated for all bills.
               </div>
             </div>
           </div>

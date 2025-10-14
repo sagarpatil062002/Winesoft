@@ -37,8 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
         
         // In generate_bills.php, replace the getNextBillNumber function with:
 
+// In generate_bills.php, replace the getNextBillNumber function with:
+
 function getNextBillNumberForGenerate($conn, $comp_id) {
-    // Get the highest existing bill number numerically
+    // Get the highest existing bill number numerically FOR THIS COMP_ID
     $sql = "SELECT BILL_NO FROM tblsaleheader 
             WHERE COMP_ID = ? 
             ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
@@ -49,7 +51,7 @@ function getNextBillNumberForGenerate($conn, $comp_id) {
     $stmt->execute();
     $result = $stmt->get_result();
     
-    $nextNumber = 1; // Default starting number
+    $nextNumber = 1; // Default starting number for this company
     
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
@@ -64,59 +66,59 @@ function getNextBillNumberForGenerate($conn, $comp_id) {
     $stmt->close();
     return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 }
-        // Fallback method using the original approach with zero-padding
-        function getNextBillNumberFallback($conn, $comp_id) {
-            // Get the highest existing bill number numerically
-            $sql = "SELECT BILL_NO FROM tblsaleheader 
-                    WHERE COMP_ID = ? 
-                    ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
-                    LIMIT 1";
-            
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("i", $comp_id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            
-            $nextNumber = 1; // Default starting number
-            
-            if ($result->num_rows > 0) {
-                $row = $result->fetch_assoc();
-                $lastBillNo = $row['BILL_NO'];
-                
-                // Extract numeric part and increment
-                if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
-                    $nextNumber = intval($matches[1]) + 1;
-                }
-            }
-            
-            // Safety check: Ensure bill number doesn't exist
-            $billExists = true;
-            $attempts = 0;
-            
-            while ($billExists && $attempts < 10) {
-                $newBillNo = 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-                
-                // Check if this bill number already exists
-                $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
-                $checkStmt = $conn->prepare($checkSql);
-                $checkStmt->bind_param("si", $newBillNo, $comp_id);
-                $checkStmt->execute();
-                $checkResult = $checkStmt->get_result();
-                $checkRow = $checkResult->fetch_assoc();
-                
-                if ($checkRow['count'] == 0) {
-                    $billExists = false;
-                } else {
-                    $nextNumber++; // Try next number
-                    $attempts++;
-                }
-                $checkStmt->close();
-            }
-            
-            $stmt->close();
-            return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+// Also update the fallback function to use CompID:
+function getNextBillNumberFallback($conn, $comp_id) {
+    // Get the highest existing bill number numerically FOR THIS COMP_ID
+    $sql = "SELECT BILL_NO FROM tblsaleheader 
+            WHERE COMP_ID = ? 
+            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+            LIMIT 1";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $nextNumber = 1; // Default starting number for this company
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        $lastBillNo = $row['BILL_NO'];
+        
+        // Extract numeric part and increment
+        if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+            $nextNumber = intval($matches[1]) + 1;
         }
-        // ========== END: Robust Sequential Bill Number Generation ==========
+    }
+    
+    // Safety check: Ensure bill number doesn't exist FOR THIS COMPANY
+    $billExists = true;
+    $attempts = 0;
+    
+    while ($billExists && $attempts < 10) {
+        $newBillNo = 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        
+        // Check if this bill number already exists FOR THIS COMPANY
+        $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+        $checkStmt = $conn->prepare($checkSql);
+        $checkStmt->bind_param("si", $newBillNo, $comp_id);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        $checkRow = $checkResult->fetch_assoc();
+        
+        if ($checkRow['count'] == 0) {
+            $billExists = false;
+        } else {
+            $nextNumber++; // Try next number
+            $attempts++;
+        }
+        $checkStmt->close();
+    }
+    
+    $stmt->close();
+    return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+}        // ========== END: Robust Sequential Bill Number Generation ==========
 
         // Function to update daily stock table (UNCHANGED)
         function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {

@@ -129,7 +129,7 @@ function isMonthArchived($conn, $comp_id, $month, $year) {
 }
 
 // Function to update archived month stock with complete calculation - CORRECTED
-function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate, $mode) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $month = date('n', strtotime($purchaseDate));
     $year = date('Y', strtotime($purchaseDate));
@@ -169,15 +169,16 @@ function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pu
         // For new record, opening is 0, so closing = purchase
         $insert_query = "INSERT INTO $archive_table 
                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
-                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
+                        VALUES (?, ?, ?, 0, ?, 0, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $insert_stmt->bind_param("sssii", $monthYear, $itemCode, $mode, $totalBottles, $totalBottles);
         $result = $insert_stmt->execute();
         $insert_stmt->close();
     }
 }
+
 // Function to update current month stock with complete calculation - CORRECTED
-function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate, $mode) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     $dailyStockTable = "tbldailystock_" . $comp_id;
@@ -211,13 +212,14 @@ function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pur
         // For new record, opening is 0, so closing = purchase
         $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
                                  (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
-                                 VALUES (?, ?, 'F', 0, ?, 0, ?)";
+                                 VALUES (?, ?, ?, 0, ?, 0, ?)";
         $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $dailyStmt->bind_param("sssii", $monthYear, $itemCode, $mode, $totalBottles, $totalBottles);
         $result = $dailyStmt->execute();
         $dailyStmt->close();
     }
 }
+
 // Function to update item stock - SIMPLIFIED
 function updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $companyId) {
     $stockColumn = "CURRENT_STOCK" . $companyId;
@@ -236,7 +238,7 @@ function updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $compan
 }
 
 // Function to update stock after purchase - USING EXTRACTED TOTAL BOTTLES
-function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
+function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn, $mode) {
     // $totalBottles is the EXTRACTED value from SCM, not calculated
     
     // Get day of month from purchase date
@@ -250,15 +252,16 @@ function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn)
     
     if ($isArchived) {
         // Update archived month data - tbldailystock_{comp_id}_{mm}_{yy}
-        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $mode);
     } else {
         // Update current month data - tbldailystock_{comp_id}
-        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $mode);
     }
     
     // UPDATE tblitem_stock - Add to current stock (SIMPLE UPDATE)
     updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $companyId);
 }
+
 // ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ----
 $items = [];
 
@@ -461,8 +464,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'item_code' => $item_code
                     ]);
                     
-                    // Update stock using the EXTRACTED tot_bott value
-                    updateStock($item_code, $tot_bott, $date, $companyId, $conn);
+                    // Update stock using the EXTRACTED tot_bott value - PASS MODE PARAMETER
+                    updateStock($item_code, $tot_bott, $date, $companyId, $conn, $mode);
                 } else {
                     debugLog("Error inserting purchase detail for item $index", [
                         'error' => $detailStmt->error,

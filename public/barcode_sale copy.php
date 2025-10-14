@@ -3,6 +3,8 @@ session_start();
 
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
+// Include license functions
+require_once 'license_functions.php';
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -22,6 +24,14 @@ $fin_year_id = $_SESSION['FIN_YEAR_ID'];
 $daily_stock_table = "tbldailystock_" . $comp_id;
 $opening_stock_column = "Opening_Stock" . $comp_id;
 $current_stock_column = "Current_Stock" . $comp_id;
+
+// Get company's license type and available classes for item filtering
+$license_type = getCompanyLicenseType($comp_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
 
 // Check if the stock columns exist, if not create them
 $check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
@@ -119,13 +129,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_code = $_POST['item_code'];
         $quantity = intval($_POST['quantity']);
         
-        // Fetch item details
-        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
-                      FROM tblitemmaster 
-                      WHERE CODE = ? 
-                      LIMIT 1";
-        $item_stmt = $conn->prepare($item_query);
-        $item_stmt->bind_param("s", $item_code);
+        // Fetch item details with license restriction check
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE CODE = ? 
+                          AND CLASS IN ($class_placeholders)
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+            
+            // Bind parameters: item code + all allowed classes
+            $params = array_merge([$item_code], $allowed_classes);
+            $types = str_repeat('s', count($params));
+            $item_stmt->bind_param($types, ...$params);
+        } else {
+            // If no classes allowed, show empty result
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE 1 = 0
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+        }
+        
         $item_stmt->execute();
         $item_result = $item_stmt->get_result();
         
@@ -157,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
             }
         } else {
-            $_SESSION['error_message'] = "Item not found!";
+            $_SESSION['error_message'] = "Item not found or not allowed for your license type!";
         }
         $item_stmt->close();
         
@@ -171,13 +197,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $item_code = $_POST['item_code'];
         $quantity = intval($_POST['quantity']);
         
-        // Fetch item details - search by BARCODE first, then by CODE
-        $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
-                      FROM tblitemmaster 
-                      WHERE BARCODE = ? OR CODE = ? 
-                      LIMIT 1";
-        $item_stmt = $conn->prepare($item_query);
-        $item_stmt->bind_param("ss", $item_code, $item_code);
+        // Fetch item details with license restriction check - search by BARCODE first, then by CODE
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE (BARCODE = ? OR CODE = ?)
+                          AND CLASS IN ($class_placeholders)
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+            
+            // Bind parameters: barcode, code + all allowed classes
+            $params = array_merge([$item_code, $item_code], $allowed_classes);
+            $types = str_repeat('s', count($params));
+            $item_stmt->bind_param($types, ...$params);
+        } else {
+            // If no classes allowed, show empty result
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE 1 = 0
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+        }
+        
         $item_stmt->execute();
         $item_result = $item_stmt->get_result();
         
@@ -211,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['last_added_item'] = $item_data['DETAILS'];
             }
         } else {
-            $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found!";
+            $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found or not allowed for your license type!";
         }
         $item_stmt->close();
         
@@ -234,12 +276,19 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Fetch items from tblitemmaster for barcode scanning
-$query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE 
+// Fetch items from tblitemmaster for barcode scanning with license restrictions
+$query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
           FROM tblitemmaster 
           WHERE 1=1";
 $params = [];
 $types = "";
+
+// Add license restriction
+if (!empty($allowed_classes)) {
+    $query .= " AND CLASS IN (" . implode(',', array_fill(0, count($allowed_classes), '?')) . ")";
+    $params = array_merge($params, $allowed_classes);
+    $types .= str_repeat('s', count($allowed_classes));
+}
 
 if ($search !== '') {
     $query .= " AND (DETAILS LIKE ? OR CODE LIKE ? OR BARCODE LIKE ?)";
@@ -272,14 +321,46 @@ if (!isset($_SESSION['sale_items'])) {
 
 // Handle form submissions for items
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Handle other actions (with redirect)
+    // Handle quantity updates with + and - buttons
     if (isset($_POST['update_quantity'])) {
         $item_id = $_POST['item_id'];
-        $quantity = intval($_POST['quantity']);
+        $new_quantity = intval($_POST['quantity']);
         
         foreach ($_SESSION['sale_items'] as $index => $item) {
             if ($item['id'] === $item_id) {
-                $_SESSION['sale_items'][$index]['quantity'] = $quantity;
+                $_SESSION['sale_items'][$index]['quantity'] = $new_quantity;
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle quantity increment
+    if (isset($_POST['increment_quantity'])) {
+        $item_id = $_POST['item_id'];
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                $_SESSION['sale_items'][$index]['quantity'] += 1;
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle quantity decrement
+    if (isset($_POST['decrement_quantity'])) {
+        $item_id = $_POST['item_id'];
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                if ($_SESSION['sale_items'][$index]['quantity'] > 1) {
+                    $_SESSION['sale_items'][$index]['quantity'] -= 1;
+                }
                 break;
             }
         }
@@ -342,10 +423,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Function to prepare bill data for preview with volume-based splitting
 // Function to prepare bill data for preview with volume-based splitting and duplicate aggregation
 function prepareBillData() {
-    global $conn, $comp_id, $selectedCustomer, $customers;
+    global $conn, $comp_id, $selectedCustomer, $customers, $allowed_classes;
     
     if (empty($_SESSION['sale_items'])) {
         return null;
@@ -473,68 +553,49 @@ function prepareBillData() {
         'grand_total' => array_sum(array_column($all_bills, 'total_amount'))
     ];
 }
-// Function to generate a unique bill number with transaction safety
-// FIXED: Function to generate sequential bill numbers with zero-padding
+
+// FIXED: Function to generate a unique bill number - simplified and reliable
 function generateBillNumber($conn, $comp_id) {
-    $conn->begin_transaction();
+    // Get the maximum numeric part of bill numbers for this company
+    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
+              FROM tblsaleheader 
+              WHERE COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+    $stmt->close();
     
-    try {
-        // Get the highest existing bill number numerically
-        $bill_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
-                       FROM tblsaleheader 
-                       WHERE COMP_ID = ? 
-                       FOR UPDATE";
-        $bill_stmt = $conn->prepare($bill_query);
-        $bill_stmt->bind_param("i", $comp_id);
-        $bill_stmt->execute();
-        $bill_result = $bill_stmt->get_result();
-        
-        $next_bill = 1;
-        if ($bill_result->num_rows > 0) {
-            $bill_row = $bill_result->fetch_assoc();
-            $next_bill = ($bill_row['max_bill'] ? $bill_row['max_bill'] + 1 : 1);
-        }
-        $bill_stmt->close();
-        
-        // Safety check: Ensure bill number doesn't exist
-        $billExists = true;
-        $attempts = 0;
-        
-        while ($billExists && $attempts < 10) {
-            $newBillNo = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-            
-            // Check if this bill number already exists
-            $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
-            $checkStmt = $conn->prepare($checkSql);
-            $checkStmt->bind_param("si", $newBillNo, $comp_id);
-            $checkStmt->execute();
-            $checkResult = $checkStmt->get_result();
-            $checkRow = $checkResult->fetch_assoc();
-            
-            if ($checkRow['count'] == 0) {
-                $billExists = false;
-            } else {
-                $next_bill++; // Try next number
-                $attempts++;
-            }
-            $checkStmt->close();
-        }
-        
-        $conn->commit();
-        
-        // Return with zero-padding to match sale_for_date_range.php
-        return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        // Fallback: Use timestamp-based numbering
+    // Double-check this bill number doesn't exist (prevent race conditions)
+    $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+    $check_stmt->bind_param("si", $bill_no_to_check, $comp_id);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // If it exists, increment and use next number
+        $next_bill++;
+    }
+    
+    // Final safety check - ensure we have a valid bill number
+    if ($next_bill <= 0) {
+        // Ultimate fallback - use timestamp-based numbering
         $timestamp = time();
         $random_suffix = mt_rand(100, 999);
         return "BL" . substr($timestamp, -6) . $random_suffix;
     }
+    
+    return "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
 }
+// Helper function to get the next bill number without zero-padding
 
-// Function to update item stock (NEW LOGIC from sale_for_date_range.php)
+// Function to update item stock
 function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
     // Check if record exists first
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
@@ -564,7 +625,7 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// Function to update daily stock table with proper opening/closing calculations (NEW LOGIC)
+// Function to update daily stock table with proper opening/closing calculations
 function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
     // Extract day number from date (e.g., 2025-09-03 -> day 03)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
@@ -655,7 +716,7 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
 
 // Function to process the sale
 function processSale() {
-    global $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers;
+    global $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $allowed_classes;
     
     if (!empty($_SESSION['sale_items'])) {
         $user_id = $_SESSION['user_id'];
@@ -700,11 +761,11 @@ function processSale() {
                 }
             }
             
-            $bill_numbers = [];
-            for ($i = 0; $i < $total_bills_needed; $i++) {
-                $bill_numbers[] = generateBillNumber($conn, $comp_id);
-            }
-            
+           $bill_numbers = [];
+// Generate sequential bill numbers starting from the next available
+for ($i = 0; $i < $total_bills_needed; $i++) {
+    $bill_numbers[] = generateBillNumber($conn, $comp_id);
+}
             $bill_index = 0;
             $all_bills = [];
             
@@ -772,8 +833,7 @@ function processSale() {
             $conn->commit();
             
             if (!empty($processed_bills)) {
-// Don't set last_bill_data for automatic preview
-// $_SESSION['last_bill_data'] = $processed_bills;                $_SESSION['success_message'] = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
+                $_SESSION['success_message'] = "Sale completed successfully! Generated " . count($processed_bills) . " bills.";
             } else {
                 throw new Exception("No bills were processed successfully.");
             }
@@ -794,10 +854,16 @@ function processSale() {
     }
 }
 
-// Function to process a single bill with proper stock management (UPDATED LOGIC)
 // Function to process a single bill with proper stock management and duplicate item handling
 function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $opening_stock_column, $daily_stock_table, $fin_year_id, $selectedCustomer, $customers, $user_id, $mode) {
     $bill_no = $bill['bill_no'];
+    
+    // CRITICAL FIX: Ensure bill_no is never null
+    if (empty($bill_no) || $bill_no === 'TEMP') {
+        // Generate a proper bill number immediately
+        $bill_no = generateBillNumber($conn, $comp_id);
+    }
+    
     $sale_date = $bill['bill_date'];
     
     // Aggregate quantities for duplicate items before processing
@@ -874,7 +940,7 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $openi
         
         $detail_stmt->close();
         
-        // UPDATE STOCK TABLES USING THE NEW LOGIC
+        // UPDATE STOCK TABLES
         updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
         updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
     }
@@ -891,6 +957,7 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $openi
         'final_amount' => $total_amount
     ];
 }
+
 // Check for success/error messages
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
@@ -933,224 +1000,251 @@ if (!empty($_SESSION['sale_items'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
-<style>
-  .barcode-scanner {
-      background-color: #f8f9fa;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
+    .barcode-scanner {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
     }
     .scanner-animation {
-      height: 4px;
-      background: #007bff;
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 10px 0;
-      position: relative;
+        height: 4px;
+        background: #007bff;
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 10px 0;
+        position: relative;
     }
     .scanner-animation::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 20%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-      animation: scanner 2s infinite linear;
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 20%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+        animation: scanner 2s infinite linear;
     }
     @keyframes scanner {
-      0% { left: -20%; }
-      100% { left: 120%; }
+        0% { left: -20%; }
+        100% { left: 120%; }
     }
     .status-indicator {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      margin-right: 5px;
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 5px;
     }
     .status-ready { background-color: #28a745; }
     .status-scanning { background-color: #ffc107; }
     .search-results {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #dee2e6;
-      border-radius: 5px;
-      margin-top: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-top: 10px;
     }
     .search-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
     }
     .search-item:hover {
-      background-color: #f8f9fa;
+        background-color: #f8f9fa;
     }
     .search-item:last-child {
-      border-bottom: none;
+        border-bottom: none;
     }
     .no-barcode {
-      color: #6c757d;
-      font-style: italic;
+        color: #6c757d;
+        font-style: italic;
     }
     .sale-info {
-      background-color: #f8f9fa;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 10px;
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
     }
     .search-header {
-      background-color: #f8f9fa;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 10px;
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
     }
     .auto-save-notice {
-      background-color: #fff3cd;
-      border: 1px solid #ffeaa7;
-      color: #856404;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
     }
     .quantity-controls {
-      display: flex;
-      align-items: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .quantity-btn {
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid #ddd;
-      background-color: #f8f9fa;
-      cursor: pointer;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ddd;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        border-radius: 3px;
     }
     .quantity-btn:hover {
-      background-color: #e9ecef;
+        background-color: #e9ecef;
     }
-    .quantity-input {
-      width: 50px;
-      text-align: center;
-      margin: 0 5px;
+    .quantity-btn:disabled {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+    .quantity-display {
+        width: 50px;
+        text-align: center;
+        margin: 0 5px;
+        font-weight: bold;
     }
     .focused-row {
-      background-color: rgba(0, 123, 255, 0.1) !important;
-      box-shadow: 0 0 0 2px #007bff;
+        background-color: rgba(0, 123, 255, 0.1) !important;
+        box-shadow: 0 0 0 2px #007bff;
     }
     .keyboard-hint {
-      font-size: 0.8rem;
-      color: #6c757d;
-      margin-top: 5px;
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 5px;
     }
     .bill-preview {
-      width: 80mm;
-      margin: 0 auto;
-      padding: 5px;
-      font-family: monospace;
-      font-size: 12px;
+        width: 80mm;
+        margin: 0 auto;
+        padding: 5px;
+        font-family: monospace;
+        font-size: 12px;
     }
     .text-center {
-      text-align: center;
+        text-align: center;
     }
     .text-right {
-      text-align: right;
+        text-align: right;
     }
     .bill-header {
-      border-bottom: 1px dashed #000;
-      padding-bottom: 5px;
-      margin-bottom: 5px;
+        border-bottom: 1px dashed #000;
+        padding-bottom: 5px;
+        margin-bottom: 5px;
     }
     .bill-footer {
-      border-top: 1px dashed #000;
-      padding-top: 5px;
-      margin-top: 5px;
+        border-top: 1px dashed #000;
+        padding-top: 5px;
+        margin-top: 5px;
     }
     .bill-table {
-      width: 100%;
-      border-collapse: collapse;
+        width: 100%;
+        border-collapse: collapse;
     }
     .bill-table th, .bill-table td {
-      padding: 2px 0;
+        padding: 2px 0;
     }
     .bill-table .text-right {
-      text-align: right;
+        text-align: right;
     }
     @media print {
-      body * {
-        visibility: hidden;
-      }
-      .bill-preview, .bill-preview * {
-        visibility: visible;
-      }
-      .bill-preview {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
-      .no-print {
-        display: none !important;
-      }
+        body * {
+            visibility: hidden;
+        }
+        .bill-preview, .bill-preview * {
+            visibility: visible;
+        }
+        .bill-preview {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none !important;
+        }
     }
     .create-customer-btn {
-      margin-top: 32px;
+        margin-top: 32px;
     }
     .bill-navigation {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: white;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      z-index: 1000;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    /* License restriction info */
+    .license-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    /* Customer field styling */
+    .customer-combined-field {
+        position: relative;
+    }
+    .customer-hint {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
     }
     
     /* Apply style.css styles specifically to the sale table */
     .sale-table .table-container {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      margin-bottom: 1rem;
-      background: var(--white);
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+        background: var(--white);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
     }
 
     .sale-table .styled-table {
-      width: 100%;
-      min-width: 600px;
-      border-collapse: collapse;
-      color: var(--text-color);
+        width: 100%;
+        min-width: 600px;
+        border-collapse: collapse;
+        color: var(--text-color);
     }
 
     .sale-table .styled-table thead tr {
-      background-color: var(--secondary-color);
-      color: var(--primary-color);
+        background-color: var(--secondary-color);
+        color: var(--primary-color);
     }
 
     .sale-table .styled-table th, 
     .sale-table .styled-table td {
-      padding: 12px;
-      text-align: left;
-      border: 1px solid #ddd;
-      vertical-align: middle;
+        padding: 12px;
+        text-align: left;
+        border: 1px solid #ddd;
+        vertical-align: middle;
     }
 
     .sale-table .styled-table tbody tr:nth-child(even) {
-      background-color: #f9f9f9;
+        background-color: #f9f9f9;
     }
 
     .sale-table .styled-table tbody tr:hover {
-      background-color: #eef6ff;
+        background-color: #eef6ff;
     }
 
     .sale-table .table-striped tbody tr:nth-child(odd) {
-      background-color: rgba(0,0,0,0.02);
+        background-color: rgba(0,0,0,0.02);
     }
   </style>
 </head>
@@ -1162,6 +1256,24 @@ if (!empty($_SESSION['sale_items'])) {
 
     <div class="content-area">
       <h3 class="mb-4">POS System</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Allowed classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -1178,128 +1290,7 @@ if (!empty($_SESSION['sale_items'])) {
       </div>
       <?php endif; ?>
 
-      <!-- Bill Preview Modal -->
-      <?php if (isset($_SESSION['last_bill_data']) && is_array($_SESSION['last_bill_data'])): 
-        $bills_data = $_SESSION['last_bill_data'];
-        $companyName = "WineSoft"; // Replace with actual company name if available
-        $current_bill_index = 0;
-      ?>
-      <div class="modal fade show" id="billPreviewModal" tabindex="-1" aria-labelledby="billPreviewModalLabel" aria-modal="true" style="display: block;">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="billPreviewModalLabel">Bill Preview (<?= count($bills_data) ?> bills generated)</h5>
-              <button type="button" class="btn-close" onclick="window.location.href='barcode_sale.php'"></button>
-            </div>
-            <div class="modal-body">
-              <?php foreach ($bills_data as $index => $bill_data): ?>
-              <div class="bill-preview <?= $index !== $current_bill_index ? 'd-none' : '' ?>" id="bill-<?= $index ?>">
-                <div class="bill-header text-center">
-                  <h1><?= htmlspecialchars($companyName) ?></h1>
-                </div>
-                
-                <div style="margin: 5px 0;">
-                  <p style="margin: 2px 0;"><strong>Bill No:</strong> <?= $bill_data['bill_no'] ?></p>
-                  <p style="margin: 2px 0;"><strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['bill_date'])) ?></p>
-                  <p style="margin: 2px 0;"><strong>Customer:</strong> <?= $bill_data['customer_name'] ?> <?= !empty($bill_data['customer_id']) ? '(' . $bill_data['customer_id'] . ')' : '' ?></p>
-                </div>
-                
-                <table class="bill-table">
-                  <thead>
-                    <tr>
-                      <th>Item</th>
-                      <th class="text-right">Qty</th>
-                      <th class="text-right">Rate</th>
-                      <th class="text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($bill_data['items'] as $item): ?>
-                    <tr>
-                      <td><?= substr($item['name'], 0, 15) ?></td>
-                      <td class="text-right"><?= $item['qty'] ?></td>
-                      <td class="text-right"><?= number_format($item['rate'], 2) ?></td>
-                      <td class="text-right"><?= number_format($item['rate'] * $item['qty'], 2) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-                
-                <div class="bill-footer">
-                  <table class="bill-table">
-                    <tr>
-                      <td>Sub Total:</td>
-                      <td class="text-right">₹<?= number_format($bill_data['total_amount'], 2) ?></td>
-                    </tr>
-                    <tr>
-                      <td>Tax (<?= ($bill_data['tax_rate'] * 100) ?>%):</td>
-                      <td class="text-right">₹<?= number_format($bill_data['tax_amount'], 2) ?></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Total Due:</strong></td>
-                      <td class="text-right"><strong>₹<?= number_format($bill_data['final_amount'], 2) ?></strong></td>
-                    </tr>
-                  </table>
-                  
-                  <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
-                  <p style="margin: 2px 0; text-align: center; font-size: 10px;">GST #: 103340329010001</p>
-                </div>
-              </div>
-              <?php endforeach; ?>
-              
-              <?php if (count($bills_data) > 1): ?>
-              <div class="bill-navigation">
-                <button class="btn btn-sm btn-secondary me-2" onclick="showPrevBill()">Previous</button>
-                <span id="bill-counter">Bill 1 of <?= count($bills_data) ?></span>
-                <button class="btn btn-sm btn-secondary ms-2" onclick="showNextBill()">Next</button>
-              </div>
-              <?php endif; ?>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" onclick="window.location.href='barcode_sale.php'">Close</button>
-              <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
-            </div>
-          </div>
-          <script>
-            let currentBillIndex = 0;
-            const totalBills = <?= count($bills_data) ?>;
-            
-            function showBill(index) {
-              // Hide all bills
-              document.querySelectorAll('.bill-preview').forEach(bill => {
-                bill.classList.add('d-none');
-              });
-              
-              // Show the selected bill
-              document.getElementById('bill-' + index).classList.remove('d-none');
-              
-              // Update counter
-              document.getElementById('bill-counter').textContent = 'Bill ' + (index + 1) + ' of ' + totalBills;
-              
-              currentBillIndex = index;
-            }
-            
-            function showNextBill() {
-              if (currentBillIndex < totalBills - 1) {
-                showBill(currentBillIndex + 1);
-              }
-            }
-            
-            function showPrevBill() {
-              if (currentBillIndex > 0) {
-                showBill(currentBillIndex - 1);
-              }
-            }
-          </script>
-        </div>
-      </div>
-      <div class="modal-backdrop fade show"></div>
-      <?php 
-        // Clear the bill data after displaying
-        unset($_SESSION['last_bill_data']);
-      endif; ?>
-
- <!-- Combined Customer Field -->
+      <!-- Combined Customer Field -->
       <div class="row mb-4">
         <div class="col-12">
           <div class="card">
@@ -1310,29 +1301,33 @@ if (!empty($_SESSION['sale_items'])) {
               <form method="POST" id="customerForm">
                 <div class="customer-combined-field">
                   <label for="customer_field" class="form-label">Select or Create Customer</label>
-                  <select class="form-select" id="customer_field" name="customer_field" style="width: 100%;">
-                    <option value=""></option>
+                  <input type="text" 
+                         class="form-control" 
+                         id="customer_field" 
+                         name="customer_field" 
+                         list="customerOptions"
+                         placeholder="Type to search customers or type 'new: Customer Name' to create new"
+                         value="<?= !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : '' ?>">
+                  <datalist id="customerOptions">
+                    <option value="">Walk-in Customer</option>
                     <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>" <?= $selectedCustomer == $code ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($name) ?>
-                      </option>
+                      <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
                     <?php endforeach; ?>
-                  </select>
+                  </datalist>
                   <div class="customer-hint">
                     <i class="fas fa-info-circle"></i> 
-                    Select existing customer or type "new: Customer Name" to create new customer. 
+                    Select existing customer from dropdown or type "new: Customer Name" to create new customer. 
                     Leave empty for walk-in customer.
                   </div>
                 </div>
                 <button type="submit" class="btn btn-primary mt-3">
-                  <i class="fas fa-save"></i> Save Customer
+                  <i class="fas fa-save"></i> Save Customer Selection
                 </button>
               </form>
             </div>
           </div>
         </div>
       </div>
-
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>
@@ -1443,18 +1438,21 @@ if (!empty($_SESSION['sale_items'])) {
                     <td>₹<?= number_format($item['price'], 2) ?></td>
                     <td>
                       <div class="quantity-controls">
+                        <!-- Decrement Button -->
                         <form method="POST" class="d-inline">
-                          <input type="hidden" name="item_code" value="<?= $item['code'] ?>">
-                          <input type="hidden" name="quantity" value="<?= $item['quantity'] - 1 ?>">
-                          <button type="submit" name="update_quantity" class="quantity-btn" <?= $item['quantity'] <= 1 ? 'disabled' : '' ?>>
+                          <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
+                          <button type="submit" name="decrement_quantity" class="quantity-btn" <?= $item['quantity'] <= 1 ? 'disabled' : '' ?>>
                             <i class="fas fa-minus"></i>
                           </button>
                         </form>
+                        
+                        <!-- Quantity Display -->
                         <span class="quantity-display"><?= $item['quantity'] ?></span>
+                        
+                        <!-- Increment Button -->
                         <form method="POST" class="d-inline">
-                          <input type="hidden" name="item_code" value="<?= $item['code'] ?>">
-                          <input type="hidden" name="quantity" value="<?= $item['quantity'] + 1 ?>">
-                          <button type="submit" name="update_quantity" class="quantity-btn">
+                          <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
+                          <button type="submit" name="increment_quantity" class="quantity-btn">
                             <i class="fas fa-plus"></i>
                           </button>
                         </form>
@@ -1464,8 +1462,8 @@ if (!empty($_SESSION['sale_items'])) {
                     <td><?= isset($item['current_stock']) ? $item['current_stock'] : 'N/A' ?></td>
                     <td>
                       <form method="POST" style="display:inline;">
-<input type="hidden" name="item_id" value="<?= $item['id'] ?>"> 
-                       <button type="submit" name="remove_item" class="btn btn-sm btn-danger">
+                        <input type="hidden" name="item_id" value="<?= $item['id'] ?>"> 
+                        <button type="submit" name="remove_item" class="btn btn-sm btn-danger">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -1481,36 +1479,36 @@ if (!empty($_SESSION['sale_items'])) {
                 </tr>
               </tfoot>
             </table>
-                 </div>
+          </div>
           <div class="keyboard-hint">
             <i class="fas fa-info-circle"></i> Use Arrow Up/Down keys to navigate between items, +/- to adjust quantities
           </div>
-<div class="d-flex justify-content-end mt-3">
-  <form method="POST" class="me-2">
-    <button type="submit" name="clear_sale" class="btn btn-danger">
-      <i class="fas fa-trash me-1"></i> Clear Sale
-    </button>
-  </form>
-  
-  <!-- Add Preview Button -->
-  <form method="POST" class="me-2">
-    <button type="submit" name="preview_bill" class="btn btn-info">
-      <i class="fas fa-eye me-1"></i> Preview Bill
-    </button>
-  </form>
-  
-  <form method="POST">
-    <button type="submit" name="process_sale" class="btn btn-success">
-      <i class="fas fa-check me-1"></i> Process Sale
-    </button>
-  </form>
-</div>
+          <div class="d-flex justify-content-end mt-3">
+            <form method="POST" class="me-2">
+              <button type="submit" name="clear_sale" class="btn btn-danger">
+                <i class="fas fa-trash me-1"></i> Clear Sale
+              </button>
+            </form>
+            
+            <!-- Add Preview Button -->
+            <form method="POST" class="me-2">
+              <button type="submit" name="preview_bill" class="btn btn-info">
+                <i class="fas fa-eye me-1"></i> Preview Bill
+              </button>
+            </form>
+            
+            <form method="POST">
+              <button type="submit" name="process_sale" class="btn btn-success">
+                <i class="fas fa-check me-1"></i> Process Sale
+              </button>
+            </form>
+          </div>
         <?php else: ?>
           <div class="alert alert-info">No items in the current sale. Scan or search for items to add.</div>
         <?php endif; ?>
       </div>
 
-      <!-- Bill Preview Section - MOVED TO HERE -->
+      <!-- Bill Preview Section -->
       <?php if (isset($_SESSION['preview_bill_data'])): 
         $preview_data = $_SESSION['preview_bill_data'];
       ?>
@@ -1588,6 +1586,7 @@ if (!empty($_SESSION['sale_items'])) {
     </div>
   </div>
 </div>
+
 <!-- Hidden form for adding items -->
 <form method="POST" id="addItemForm">
   <input type="hidden" name="item_code" id="itemCodeInput">
@@ -1606,7 +1605,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const itemCodeInput = document.getElementById('itemCodeInput');
   const quantityInput = document.getElementById('quantityInput');
   const searchItems = document.querySelectorAll('.search-item');
-  const setFocusForms = document.querySelectorAll('.set-focus-form');
+  const customerField = document.getElementById('customer_field');
 
   // Create a hidden form for ESC key processing
   const escForm = document.createElement('form');
@@ -1674,14 +1673,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Handle set focus forms
-  setFocusForms.forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      this.submit();
-    });
-  });
-
   // Keyboard navigation for items
   document.addEventListener('keydown', function(e) {
     const items = <?= json_encode($_SESSION['sale_items'] ?? []) ?>;
@@ -1698,50 +1689,103 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
+    // Plus key - increase quantity of focused item
+    if ((e.key === '+' || e.key === '=') && currentFocus >= 0) {
+      e.preventDefault();
+      const itemId = items[currentFocus].id;
+      const incrementForm = document.createElement('form');
+      incrementForm.method = 'POST';
+      incrementForm.style.display = 'none';
+      
+      const itemIdInput = document.createElement('input');
+      itemIdInput.type = 'hidden';
+      itemIdInput.name = 'item_id';
+      itemIdInput.value = itemId;
+      
+      incrementForm.appendChild(itemIdInput);
+      document.body.appendChild(incrementForm);
+      
+      // Submit increment form
+      const incrementInput = document.createElement('input');
+      incrementInput.type = 'hidden';
+      incrementInput.name = 'increment_quantity';
+      incrementInput.value = '1';
+      incrementForm.appendChild(incrementInput);
+      
+      incrementForm.submit();
+    }
+    
+    // Minus key - decrease quantity of focused item
+    if ((e.key === '-' || e.key === '_') && currentFocus >= 0) {
+      e.preventDefault();
+      const itemId = items[currentFocus].id;
+      const decrementForm = document.createElement('form');
+      decrementForm.method = 'POST';
+      decrementForm.style.display = 'none';
+      
+      const itemIdInput = document.createElement('input');
+      itemIdInput.type = 'hidden';
+      itemIdInput.name = 'item_id';
+      itemIdInput.value = itemId;
+      
+      decrementForm.appendChild(itemIdInput);
+      document.body.appendChild(decrementForm);
+      
+      // Submit decrement form
+      const decrementInput = document.createElement('input');
+      decrementInput.type = 'hidden';
+      decrementInput.name = 'decrement_quantity';
+      decrementInput.value = '1';
+      decrementForm.appendChild(decrementInput);
+      
+      decrementForm.submit();
+    }
+    
     if (items.length === 0) return;
     
     // Arrow down - move to next item
     if (e.key === 'ArrowDown' && currentFocus < items.length - 1) {
       e.preventDefault();
       const newFocus = currentFocus + 1;
-      document.querySelector(`input[name="set_focus_index"][value="${newFocus}"]`).closest('form').submit();
+      
+      // Create and submit focus form
+      const focusForm = document.createElement('form');
+      focusForm.method = 'POST';
+      focusForm.style.display = 'none';
+      
+      const focusInput = document.createElement('input');
+      focusInput.type = 'hidden';
+      focusInput.name = 'set_focus_index';
+      focusInput.value = newFocus;
+      
+      focusForm.appendChild(focusInput);
+      document.body.appendChild(focusForm);
+      focusForm.submit();
     }
     
     // Arrow up - move to previous item
     if (e.key === 'ArrowUp' && currentFocus > 0) {
       e.preventDefault();
       const newFocus = currentFocus - 1;
-      document.querySelector(`input[name="set_focus_index"][value="${newFocus}"]`).closest('form').submit();
-    }
-    
-    // Plus key - increase quantity of focused item
-    if ((e.key === '+' || e.key === '=') && currentFocus >= 0) {
-      e.preventDefault();
-      const itemCode = items[currentFocus].code;
-      const quantityInput = document.querySelector(`input[name="item_code"][value="${itemCode}"]`)
-        .closest('form')
-        .querySelector('input[name="quantity"]');
-      quantityInput.value = parseInt(quantityInput.value) + 1;
-      document.querySelector(`input[name="item_code"][value="${itemCode}"]`).closest('form').submit();
-    }
-    
-    // Minus key - decrease quantity of focused item
-    if ((e.key === '-' || e.key === '_') && currentFocus >= 0) {
-      e.preventDefault();
-      const itemCode = items[currentFocus].code;
-      const quantityInput = document.querySelector(`input[name="item_code"][value="${itemCode}"]`)
-        .closest('form')
-        .querySelector('input[name="quantity"]');
-      const newQuantity = parseInt(quantityInput.value) - 1;
-      if (newQuantity >= 1) {
-        quantityInput.value = newQuantity;
-        document.querySelector(`input[name="item_code"][value="${itemCode}"]`).closest('form').submit();
-      }
+      
+      // Create and submit focus form
+      const focusForm = document.createElement('form');
+      focusForm.method = 'POST';
+      focusForm.style.display = 'none';
+      
+      const focusInput = document.createElement('input');
+      focusInput.type = 'hidden';
+      focusInput.name = 'set_focus_index';
+      focusInput.value = newFocus;
+      
+      focusForm.appendChild(focusInput);
+      document.body.appendChild(focusForm);
+      focusForm.submit();
     }
   });
 
   // Auto-focus on barcode input after actions
-  <?php if (isset($_POST['add_item']) || isset($_POST['remove_item']) || isset($_POST['process_sale']) || isset($_POST['clear_sale']) || isset($_POST['update_quantity'])): ?>
+  <?php if (isset($_POST['add_item']) || isset($_POST['remove_item']) || isset($_POST['process_sale']) || isset($_POST['clear_sale']) || isset($_POST['update_quantity']) || isset($_POST['increment_quantity']) || isset($_POST['decrement_quantity'])): ?>
     window.onload = function() {
       document.getElementById('barcodeInput').focus();
     };
