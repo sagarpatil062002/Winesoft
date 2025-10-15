@@ -243,11 +243,13 @@ function getNextBillNumberFallback($conn, $comp_id) {
         $items_data = [];
         $daily_sales_data = [];
         
+        // CHANGE 1: Process ALL items sent from frontend, not just current mode items
         foreach ($items as $item_code => $total_qty) {
             $total_qty = intval($total_qty);
             
             if ($total_qty > 0) {
-                $item_query = "SELECT DETAILS, RPRICE FROM tblitemmaster WHERE CODE = ?";
+                // Get item details including LIQ_FLAG
+                $item_query = "SELECT DETAILS, RPRICE, LIQ_FLAG FROM tblitemmaster WHERE CODE = ?";
                 $item_stmt = $conn->prepare($item_query);
                 $item_stmt->bind_param("s", $item_code);
                 $item_stmt->execute();
@@ -262,15 +264,19 @@ function getNextBillNumberFallback($conn, $comp_id) {
                 $daily_sales = distributeSales($total_qty, $days_count);
                 $daily_sales_data[$item_code] = $daily_sales;
                 
+                // Store item with its actual LIQ_FLAG for volume limit processing
                 $items_data[$item_code] = [
                     'name' => $item['DETAILS'],
                     'rate' => $item['RPRICE'],
-                    'total_qty' => $total_qty
+                    'total_qty' => $total_qty,
+                    'liq_flag' => $item['LIQ_FLAG'] // Include LIQ_FLAG for category-based processing
                 ];
             }
         }
         
-        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+        // CHANGE 2: Update Bill Generation Call - Use 'ALL' mode to process all items
+        // Let volume limit function handle the category-based splitting
+        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, 'ALL', $comp_id, $user_id, $fin_year_id);
         
         $current_stock_column = "Current_Stock" . $comp_id;
         $opening_stock_column = "Opening_Stock" . $comp_id;
@@ -286,7 +292,7 @@ function getNextBillNumberFallback($conn, $comp_id) {
         
         foreach ($bills as $index => $bill) {
             // Generate sequential bill number for each bill with zero-padding
-            $sequential_bill_no = getNextBillNumber($conn, $comp_id);
+            $sequential_bill_no = getNextBillNumberForGenerate($conn, $comp_id);
             
             // Store bill info for reference
             $generated_bills[] = [

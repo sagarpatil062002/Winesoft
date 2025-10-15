@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once 'drydays_functions.php'; // Single include
+require_once 'license_functions.php'; // ADDED: Include license 
+require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
@@ -72,6 +74,21 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php"; // MySQLi connection in $conn
 
 // ============================================================================
+// LICENSE-BASED FILTERING - ADDED FROM ITEM_MASTER.PHP
+// ============================================================================
+
+// Get company's license type and available classes
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
+
+// ============================================================================
 // PERFORMANCE OPTIMIZATION: DATABASE INDEXING
 // ============================================================================
 $index_queries = [
@@ -108,9 +125,8 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
-$daily_stock_table = "tbldailystock_" . $comp_id;
-$opening_stock_column = "Opening_Stock" . $comp_id;
 $current_stock_column = "Current_Stock" . $comp_id;
+$opening_stock_column = "Opening_Stock" . $comp_id;
 
 // Check if the stock columns exist, if not create them
 // Cache this check in session to avoid repeated queries
@@ -141,16 +157,24 @@ if ($sequence_type === 'system_defined') {
 }
 
 // ============================================================================
-// PERFORMANCE OPTIMIZATION: PAGINATION
+// PERFORMANCE OPTIMIZATION: PAGINATION WITH LICENSE FILTERING
 // ============================================================================
 $items_per_page = 50; // Adjust based on your needs
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
-// Get total count for pagination
-$count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE im.LIQ_FLAG = ?";
-$count_params = [$mode];
-$count_types = "s";
+// MODIFIED: Get total count for pagination with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $count_params = array_merge([$mode], $allowed_classes);
+    $count_types = str_repeat('s', count($count_params));
+} else {
+    // If no classes allowed, show empty result
+    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE 1 = 0";
+    $count_params = [];
+    $count_types = "";
+}
 
 if ($search !== '') {
     $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -160,20 +184,34 @@ if ($search !== '') {
 }
 
 $count_stmt = $conn->prepare($count_query);
-$count_stmt->bind_param($count_types, ...$count_params);
+if (!empty($count_params)) {
+    $count_stmt->bind_param($count_types, ...$count_params);
+}
 $count_stmt->execute();
 $count_result = $count_stmt->get_result();
 $total_items = $count_result->fetch_assoc()['total'];
 $count_stmt->close();
 
-// Main query with pagination
-$query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                 COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-          FROM tblitemmaster im
-          LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-          WHERE im.LIQ_FLAG = ?";
-$params = [$mode];
-$types = "s";
+// MODIFIED: Main query with pagination and license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $params = array_merge([$mode], $allowed_classes);
+    $types = str_repeat('s', count($params));
+} else {
+    // If no classes allowed, show empty result
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              WHERE 1 = 0";
+    $params = [];
+    $types = "";
+}
 
 if ($search !== '') {
     $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -188,7 +226,9 @@ $params[] = $offset;
 $types .= "ii";
 
 $stmt = $conn->prepare($query);
-$stmt->bind_param($types, ...$params);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
@@ -222,12 +262,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
     logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// Get ALL items data for JavaScript from a separate query (for Total Sales Summary)
-$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
-                    FROM tblitemmaster im 
-                    WHERE im.LIQ_FLAG = ?";
-$all_items_stmt = $conn->prepare($all_items_query);
-$all_items_stmt->bind_param("s", $mode);
+// MODIFIED: Get ALL items data for JavaScript from a separate query with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $all_items_stmt = $conn->prepare($all_items_query);
+    $all_items_params = array_merge([$mode], $allowed_classes);
+    $all_items_types = str_repeat('s', count($all_items_params));
+    $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
+} else {
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE 1 = 0";
+    $all_items_stmt = $conn->prepare($all_items_query);
+}
+
 $all_items_stmt->execute();
 $all_items_result = $all_items_stmt->get_result();
 $all_items_data = [];
@@ -278,42 +329,57 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// Function to update daily stock table with proper opening/closing calculations AND CLOSING STOCK VALIDATION
-function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
-    // Extract day number from date (e.g., 2025-09-03 -> day 03)
+// ENHANCED: Function to update daily stock table with support for both archived and current tables
+function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
+    // Determine the correct table name based on sale date
+    $current_month = date('Y-m'); // Current month in "YYYY-MM" format
+    $sale_month = date('Y-m', strtotime($sale_date)); // Sale month in "YYYY-MM" format
+    
+    if ($sale_month === $current_month) {
+        // Use current month table (no suffix)
+        $sale_daily_stock_table = "tbldailystock_" . $comp_id;
+    } else {
+        // Use archived month table (with suffix)
+        $sale_month_year = date('m_y', strtotime($sale_date)); // e.g., "09_25"
+        $sale_daily_stock_table = "tbldailystock_" . $comp_id . "_" . $sale_month_year;
+    }
+    
+    // Current active table (without month suffix) - for updating current month when sale is in archived month
+    $current_daily_stock_table = "tbldailystock_" . $comp_id;
+    
+    // Extract day number from date (e.g., 2025-09-27 → day 27)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
     $sales_column = "DAY_{$day_num}_SALES";
     $closing_column = "DAY_{$day_num}_CLOSING";
     $opening_column = "DAY_{$day_num}_OPEN";
     $purchase_column = "DAY_{$day_num}_PURCHASE";
     
-    $month_year = date('Y-m', strtotime($sale_date));
+    $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
     
     // ============================================================================
-    // NEW: CLOSING STOCK VALIDATION - Check if closing stock exists and is sufficient
+    // STEP 1: UPDATE THE CORRECT STOCK TABLE (CURRENT OR ARCHIVED)
     // ============================================================================
     
-    // First check if the closing column exists in the table structure
-    $check_column_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$closing_column'";
-    $column_result = $conn->query($check_column_query);
+    // First, check if the required table exists
+    $check_table_query = "SHOW TABLES LIKE '$sale_daily_stock_table'";
+    $table_result = $conn->query($check_table_query);
     
-    if ($column_result->num_rows == 0) {
-        throw new Exception("Closing stock column $closing_column does not exist for date $sale_date");
+    if ($table_result->num_rows == 0) {
+        throw new Exception("Stock table '$sale_daily_stock_table' not found for item $item_code on date $sale_date");
     }
     
-    // Check if record exists for this month and item with valid closing stock
+    // Check if record exists for this month and item
     $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
-                    FROM $daily_stock_table 
+                    FROM $sale_daily_stock_table 
                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $month_year, $item_code);
+    $check_stmt->bind_param("ss", $month_year_full, $item_code);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
-    $exists = $check_result->num_rows > 0;
     
-    if (!$exists) {
+    if ($check_result->num_rows == 0) {
         $check_stmt->close();
-        throw new Exception("No stock record found for item $item_code on date $sale_date. Cannot process sale.");
+        throw new Exception("No stock record found for item $item_code in table $sale_daily_stock_table for date $sale_date");
     }
     
     $current_values = $check_result->fetch_assoc();
@@ -329,75 +395,194 @@ function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qt
         throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $current_closing, Requested: $qty");
     }
     
-    // ============================================================================
-    // PROCEED WITH UPDATE SINCE VALIDATION PASSED
-    // ============================================================================
-    
     // Calculate new sales and closing
     $new_sales = $current_sales + $qty;
     $new_closing = $current_opening + $current_purchase - $new_sales;
     
     // Update existing record with correct closing calculation
-    $update_query = "UPDATE $daily_stock_table 
+    $update_query = "UPDATE $sale_daily_stock_table 
                      SET $sales_column = ?, 
                          $closing_column = ?,
                          LAST_UPDATED = CURRENT_TIMESTAMP 
                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
     $update_stmt = $conn->prepare($update_query);
-    $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
+    $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year_full, $item_code);
     $update_stmt->execute();
     
     if ($update_stmt->affected_rows === 0) {
         $update_stmt->close();
-        throw new Exception("Failed to update daily stock for item $item_code on $sale_date");
+        throw new Exception("Failed to update daily stock for item $item_code on $sale_date in table $sale_daily_stock_table");
     }
     $update_stmt->close();
     
-    // Update next day's opening stock if it exists
+    // Update next day's opening stock if it exists (and if we're not at month end)
     $next_day = intval($day_num) + 1;
     if ($next_day <= 31) {
         $next_day_num = sprintf('%02d', $next_day);
         $next_opening_column = "DAY_{$next_day_num}_OPEN";
         
         // Check if next day exists in the table
-        $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
+        $check_next_day_query = "SHOW COLUMNS FROM $sale_daily_stock_table LIKE '$next_opening_column'";
         $next_day_result = $conn->query($check_next_day_query);
         
         if ($next_day_result->num_rows > 0) {
             // Update next day's opening to match current day's closing
-            $update_next_query = "UPDATE $daily_stock_table 
+            $update_next_query = "UPDATE $sale_daily_stock_table 
                                  SET $next_opening_column = ?,
                                      LAST_UPDATED = CURRENT_TIMESTAMP 
                                  WHERE STK_MONTH = ? AND ITEM_CODE = ?";
             $update_next_stmt = $conn->prepare($update_next_query);
-            $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
+            $update_next_stmt->bind_param("dss", $new_closing, $month_year_full, $item_code);
             $update_next_stmt->execute();
             $update_next_stmt->close();
         }
     }
     
-    logMessage("Daily stock updated successfully for item $item_code on $sale_date: Sales=$new_sales, Closing=$new_closing");
+    // ============================================================================
+    // STEP 2: UPDATE CURRENT ACTIVE TABLE IF SALE DATE IS IN ARCHIVED MONTH
+    // ============================================================================
+    
+    // Check if sale date is in a different (archived) month than current month
+    if ($sale_month < $current_month) {
+        // Sale is for archived month, update current active table
+        
+        // Check if current active table exists
+        $check_current_table = "SHOW TABLES LIKE '$current_daily_stock_table'";
+        $current_table_result = $conn->query($check_current_table);
+        
+        if ($current_table_result->num_rows > 0) {
+            // Get current month's data
+            $current_stk_month = date('Y-m');
+            
+            // Check if item exists in current table
+            $check_current_item = "SELECT COUNT(*) as count FROM $current_daily_stock_table 
+                                  WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $check_current_stmt = $conn->prepare($check_current_item);
+            $check_current_stmt->bind_param("ss", $item_code, $current_stk_month);
+            $check_current_stmt->execute();
+            $check_current_result = $check_current_stmt->get_result();
+            $item_exists = $check_current_result->fetch_assoc()['count'] > 0;
+            $check_current_stmt->close();
+            
+            if ($item_exists) {
+                // Adjust current month's opening stock by deducting the sale quantity
+                $update_current_opening = "UPDATE $current_daily_stock_table 
+                                          SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                              LAST_UPDATED = CURRENT_TIMESTAMP 
+                                          WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                $update_current_stmt = $conn->prepare($update_current_opening);
+                $update_current_stmt->bind_param("dss", $qty, $item_code, $current_stk_month);
+                $update_current_stmt->execute();
+                
+                if ($update_current_stmt->affected_rows === 0) {
+                    logMessage("Warning: Failed to update current table opening stock for item $item_code", 'WARNING');
+                }
+                $update_current_stmt->close();
+                
+                // Recalculate closing balances for all days in current month
+                recalculateCurrentMonthStock($conn, $current_daily_stock_table, $item_code, $current_stk_month);
+            }
+        }
+    }
+    
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing");
+}
+// Helper function to recalculate current month's stock
+function recalculateCurrentMonthStock($conn, $table_name, $item_code, $stk_month) {
+    // Start from day 1 and recalculate all days
+    for ($day = 1; $day <= 31; $day++) {
+        $day_num = sprintf('%02d', $day);
+        $opening_column = "DAY_{$day_num}_OPEN";
+        $purchase_column = "DAY_{$day_num}_PURCHASE";
+        $sales_column = "DAY_{$day_num}_SALES";
+        $closing_column = "DAY_{$day_num}_CLOSING";
+        
+        // Check if day columns exist
+        $check_columns = "SHOW COLUMNS FROM $table_name LIKE '$opening_column'";
+        $column_result = $conn->query($check_columns);
+        
+        if ($column_result->num_rows == 0) {
+            continue; // Day doesn't exist in table
+        }
+        
+        // Get current values for this day
+        $day_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                      FROM $table_name 
+                      WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $day_stmt = $conn->prepare($day_query);
+        $day_stmt->bind_param("ss", $item_code, $stk_month);
+        $day_stmt->execute();
+        $day_result = $day_stmt->get_result();
+        
+        if ($day_result->num_rows > 0) {
+            $day_values = $day_result->fetch_assoc();
+            $opening = $day_values[$opening_column] ?? 0;
+            $purchase = $day_values[$purchase_column] ?? 0;
+            $sales = $day_values[$sales_column] ?? 0;
+            
+            // Calculate closing using the same formula
+            $closing = $opening + $purchase - $sales;
+            
+            // Update closing
+            $update_query = "UPDATE $table_name 
+                            SET $closing_column = ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Set next day's opening to this day's closing
+            $next_day = $day + 1;
+            if ($next_day <= 31) {
+                $next_day_num = sprintf('%02d', $next_day);
+                $next_opening_column = "DAY_{$next_day_num}_OPEN";
+                
+                // Check if next day exists
+                $check_next = "SHOW COLUMNS FROM $table_name LIKE '$next_opening_column'";
+                $next_result = $conn->query($check_next);
+                
+                if ($next_result->num_rows > 0) {
+                    $update_next_query = "UPDATE $table_name 
+                                         SET $next_opening_column = ?,
+                                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                    $update_next_stmt = $conn->prepare($update_next_query);
+                    $update_next_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+                    $update_next_stmt->execute();
+                    $update_next_stmt->close();
+                }
+            }
+        }
+        $day_stmt->close();
+    }
 }
 
 // FIXED: Function to get next bill number with proper zero-padding
-function getNextBillNumber($conn) {
-    logMessage("Getting next bill number");
+// UPDATED: Function to get next bill number with proper zero-padding AND CompID consideration
+function getNextBillNumber($conn, $comp_id) {
+    logMessage("Getting next bill number for CompID: $comp_id");
     
     // Use transaction for atomic operation
     $conn->begin_transaction();
     
     try {
-        // Get the maximum numeric part of bill numbers
-        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-        $result = $conn->query($query);
+        // Get the maximum numeric part of bill numbers FOR THIS COMPANY
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+        $stmt->close();
         
-        // Double-check this bill number doesn't exist (prevent race conditions)
-        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ?";
+        // Double-check this bill number doesn't exist FOR THIS COMPANY (prevent race conditions)
+        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $check_stmt = $conn->prepare($check_query);
         $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
-        $check_stmt->bind_param("s", $bill_no_to_check);
+        $check_stmt->bind_param("si", $bill_no_to_check, $comp_id);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
         $exists = $check_result->fetch_assoc()['count'] > 0;
@@ -409,23 +594,26 @@ function getNextBillNumber($conn) {
         }
         
         $conn->commit();
-        logMessage("Next bill number: $next_bill");
+        logMessage("Next bill number for CompID $comp_id: $next_bill");
         
         return $next_bill;
         
     } catch (Exception $e) {
         $conn->rollback();
-        logMessage("Error getting next bill number: " . $e->getMessage(), 'ERROR');
+        logMessage("Error getting next bill number for CompID $comp_id: " . $e->getMessage(), 'ERROR');
         
         // Fallback method
-        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader";
-        $result = $conn->query($query);
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
         $row = $result->fetch_assoc();
+        $stmt->close();
         return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
     }
 }
-
-// Handle form submission for sales update - FIXED VERSION
+// Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
@@ -441,14 +629,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Get ALL items from database for validation (not just visible ones)
-            $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                                       COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-                                FROM tblitemmaster im
-                                LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                                WHERE im.LIQ_FLAG = ?";
-            $all_items_stmt = $conn->prepare($all_items_query);
-            $all_items_stmt->bind_param("s", $mode);
+            // MODIFIED: Get ALL items from database for validation with license filtering
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+                $all_items_stmt = $conn->prepare($all_items_query);
+                $all_items_params = array_merge([$mode], $allowed_classes);
+                $all_items_types = str_repeat('s', count($all_items_params));
+                $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
+            } else {
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE 1 = 0";
+                $all_items_stmt = $conn->prepare($all_items_query);
+            }
+            
             $all_items_stmt->execute();
             $all_items_result = $all_items_stmt->get_result();
             $all_items = [];
@@ -457,7 +658,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $all_items_stmt->close();
             
-            // Enhanced stock validation before transaction - using ALL session quantities
+            // Enhanced stock validation before transaction
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
                 foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
@@ -479,20 +680,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
                 }
             } else {
-                // Start transaction only after validation
+                // Start transaction
                 $conn->begin_transaction();
                 
                 try {
                     $total_amount = 0;
-                    $items_data = []; // Store item data for bill generation
-                    $daily_sales_data = []; // Store daily sales for each item
+                    $items_data = [];
+                    $daily_sales_data = [];
                     
-                    // Process ONLY session quantities > 0 (optimization)
+                    // Process ONLY session quantities > 0
                     if (isset($_SESSION['sale_quantities'])) {
                         foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
-                                $current_stock = $item['CURRENT_STOCK'];
                                 
                                 // Generate distribution
                                 $daily_sales = distributeSales($total_qty, $days_count);
@@ -515,10 +715,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
                         $opening_stock_column = "Opening_Stock" . $comp_id;
-                        $daily_stock_table = "tbldailystock_" . $comp_id;
                         
                         // Get next bill number once to ensure proper numerical order
-                        $next_bill_number = getNextBillNumber($conn);
+                        // Get next bill number once to ensure proper numerical order FOR THIS COMPANY
+$next_bill_number = getNextBillNumber($conn, $comp_id);
                         
                         // Process each bill in chronological AND numerical order
                         usort($bills, function($a, $b) {
@@ -526,49 +726,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         });
                         
                         // Process each bill with proper zero-padded bill numbers
-                        foreach ($bills as $bill) {
-                            $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
-                            
-                            // Insert sale header
-                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                            $header_stmt = $conn->prepare($header_query);
-                            $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
-                                                    $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
-                            $header_stmt->execute();
-                            $header_stmt->close();
-                            
-                            // Insert sale details for each item in the bill
-                            foreach ($bill['items'] as $item) {
-                                $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
-                                $detail_stmt = $conn->prepare($detail_query);
-                                $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
-                                                        $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
-                                $detail_stmt->execute();
-                                $detail_stmt->close();
-                                
-                                // Update stock
-                                updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-                                
-                                // Update daily stock WITH CLOSING STOCK VALIDATION
-                                updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
-                            }
-                            
-                            $total_amount += $bill['total_amount'];
-                        }
-                        
-                        // Commit transaction
-                        $conn->commit();
-                        
-                        // CLEAR SESSION QUANTITIES AFTER SUCCESS
-                        clearSessionQuantities();
-                        
-                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
-                        
-                        // Redirect to retail_sale.php
-                        header("Location: retail_sale.php?success=" . urlencode($success_message));
-                        exit;
+                        // Process each bill with proper zero-padded bill numbers
+foreach ($bills as $bill) {
+    $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+    
+    // Insert sale header
+    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+    $header_stmt = $conn->prepare($header_query);
+    $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
+                            $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+    $header_stmt->execute();
+    $header_stmt->close();
+    
+    // Insert sale details for each item in the bill
+    foreach ($bill['items'] as $item) {
+        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $detail_stmt = $conn->prepare($detail_query);
+        $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
+                                $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+        $detail_stmt->execute();
+        $detail_stmt->close();
+        
+        // Update stock
+        updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+        
+        // Update daily stock with enhanced function
+        updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+    }
+    
+    $total_amount += $bill['total_amount'];
+}
+
+// Commit transaction
+$conn->commit();
+
+// CLEAR SESSION QUANTITIES AFTER SUCCESS
+clearSessionQuantities();
+
+$success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+
+// ADD AUTOMATIC CASH MEMO GENERATION
+$cash_memos_generated = 0;
+$cash_memo_errors = [];
+
+// Generate cash memos for all created bills
+foreach ($bills as $bill_index => $bill) {
+    $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
+    
+    if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
+        $cash_memos_generated++;
+        logCashMemoGeneration($padded_bill_no, true);
+    } else {
+        $cash_memo_errors[] = $padded_bill_no;
+        logCashMemoGeneration($padded_bill_no, false, "Cash memo generation failed");
+    }
+}
+
+// Update success message to include cash memo info
+if ($cash_memos_generated > 0) {
+    $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+}
+
+if (!empty($cash_memo_errors)) {
+    $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+    if (count($cash_memo_errors) > 5) {
+        $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+    }
+}
+
+// Redirect to retail_sale.php
+header("Location: retail_sale.php?success=" . urlencode($success_message));
+exit;
                     } else {
                         $error_message = "No quantities entered for any items.";
                     }
@@ -602,10 +832,13 @@ $debug_info = [
     'date_range' => "$start_date to $end_date",
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
-    'comp_id' => $comp_id
+    'comp_id' => $comp_id,
+    'license_type' => $license_type, // ADDED: License info in debug
+    'allowed_classes' => $allowed_classes // ADDED: Allowed classes in debug
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -830,6 +1063,20 @@ tr.has-quantity td {
     font-weight: bold;
 }
 
+/* Client-side validation styles */
+.validation-alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 500px;
+}
+
+.stock-checking {
+    background-color: #fff3cd !important;
+}
+
   </style>
 </head>
 <body>
@@ -842,6 +1089,24 @@ tr.has-quantity td {
 
     <div class="content-area">
       <h3 class="mb-4">Sales by Date Range</h3>
+
+      <!-- ADDED: License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -857,6 +1122,12 @@ tr.has-quantity td {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
+
+      <!-- Client-side Validation Alert -->
+      <div class="alert alert-warning validation-alert" id="clientValidationAlert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="validationMessage"></span>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -1166,7 +1437,7 @@ tr.has-quantity td {
 <div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
+                        <div class="modal-header">
                 <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -1255,6 +1526,79 @@ const daysCount = <?= $days_count ?>;
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary
 const allItemsData = <?= json_encode($all_items_data) ?>;
+
+// NEW: Function to check stock availability via AJAX before submission
+function checkStockAvailabilityBeforeSubmit() {
+    return new Promise((resolve, reject) => {
+        // Check if we have any quantities > 0
+        let hasQuantity = false;
+        for (const itemCode in allSessionQuantities) {
+            if (allSessionQuantities[itemCode] > 0) {
+                hasQuantity = true;
+                break;
+            }
+        }
+        
+        if (!hasQuantity) {
+            reject('Please enter quantities for at least one item.');
+            return;
+        }
+
+        // Show checking state
+        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+        $('tr.has-quantity').addClass('stock-checking');
+
+        // Prepare data for AJAX check
+        const checkData = {
+            start_date: '<?= $start_date ?>',
+            end_date: '<?= $end_date ?>',
+            mode: '<?= $mode ?>',
+            comp_id: '<?= $comp_id ?>',
+            quantities: allSessionQuantities
+        };
+
+        $.ajax({
+            url: 'check_stock_availability.php',
+            type: 'POST',
+            data: JSON.stringify(checkData),
+            contentType: 'application/json',
+            success: function(response) {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                
+                try {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        resolve(true);
+                    } else {
+                        showClientValidationAlert(result.message);
+                        reject(result.message);
+                    }
+                } catch (e) {
+                    showClientValidationAlert('Error checking stock availability. Please try again.');
+                    reject('Error checking stock availability.');
+                }
+            },
+            error: function() {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                showClientValidationAlert('Error connecting to server. Please try again.');
+                reject('Connection error');
+            }
+        });
+    });
+}
+
+// NEW: Function to show client-side validation alert
+function showClientValidationAlert(message) {
+    $('#validationMessage').text(message);
+    $('#clientValidationAlert').fadeIn();
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        $('#clientValidationAlert').fadeOut();
+    }, 10000);
+}
 
 // Function to clear session quantities via AJAX
 function clearSessionQuantities() {
@@ -1357,7 +1701,7 @@ function saveQuantityToSession(itemCode, qty) {
                 console.error('Failed to save quantity to session');
             }
         });
-    }, 200); // Reduced from 500ms to 200ms
+    }, 200);
 }
 
 // Function to validate all quantities before form submission
@@ -1535,106 +1879,91 @@ function setupRowNavigation() {
     });
 }
 
-// Function to generate bills immediately - FIXED VERSION
+// UPDATED: Function to generate bills immediately with client-side validation
 function generateBills() {
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Validate all quantities to prevent negative closing balance
+    // First validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Submit the form normally (not via AJAX) to maintain server-side processing
-    document.getElementById('salesForm').submit();
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // If validation passes, submit the form
+            $('#ajaxLoader').show();
+            document.getElementById('salesForm').submit();
+        })
+        .catch((error) => {
+            // Validation failed, don't submit
+            console.log('Client-side validation failed:', error);
+        });
 }
 
 // Function to save to pending sales via AJAX
 function saveToPendingSales() {
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Validate all quantities to prevent negative closing balance
+    // First validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity from session (not just visible ones)
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            formData.append(`sale_qty[${itemCode}]`, qty);
-        }
-    }
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // Show loader and disable button
+            $('#ajaxLoader').show();
+            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
             
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    // Clear session quantities
-                    clearSessionQuantities();
-                    alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
+            // Collect all the data
+            const formData = new FormData();
+            formData.append('save_pending', 'true');
+            formData.append('start_date', '<?= $start_date ?>');
+            formData.append('end_date', '<?= $end_date ?>');
+            formData.append('mode', '<?= $mode ?>');
+            
+            // Add each item's quantity from session (not just visible ones)
+            for (const itemCode in allSessionQuantities) {
+                const qty = allSessionQuantities[itemCode];
+                if (qty > 0) {
+                    formData.append(`sale_qty[${itemCode}]`, qty);
                 }
-            } catch (e) {
-                alert('Error processing response: ' + response);
             }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-            alert('Error saving data to pending. Please try again.');
-        }
-    });
+            
+            // Send AJAX request
+            $.ajax({
+                url: 'save_pending_sales.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success) {
+                            // Clear session quantities
+                            clearSessionQuantities();
+                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (e) {
+                        alert('Error processing response: ' + response);
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    alert('Error saving data to pending. Please try again.');
+                }
+            });
+        })
+        .catch((error) => {
+            // Validation failed, don't proceed
+            console.log('Client-side validation failed for pending sales:', error);
+        });
 }
 
 // Single button with dual functionality
@@ -1760,13 +2089,14 @@ function getItemData(itemCode) {
     return null;
 }
 
-// Function to classify product type from class code
+// UPDATED: Function to classify product type from class code - ADDED COUNTRY LIQUOR
 function getProductType(classCode) {
     const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
     if (spirits.includes(classCode)) return 'SPIRITS';
     if (classCode === 'V') return 'WINE';
-    if (classCode === 'F') return 'FERMENTED BEER'; // CHANGED FROM 'B' TO 'F'
+    if (classCode === 'F') return 'FERMENTED BEER';
     if (classCode === 'M') return 'MILD BEER';
+    if (classCode === 'L') return 'COUNTRY LIQUOR'; // ADDED COUNTRY LIQUOR
     return 'OTHER';
 }
 
@@ -1774,36 +2104,38 @@ function getProductType(classCode) {
 function extractVolume(details, details2) {
     // Priority: details2 column first
     if (details2) {
-        const volumeMatch = details2.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000; // Convert liters to ML
-            }
-            return volume;
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
     // Fallback: parse details column
     if (details) {
-        // Handle special cases like QUART, PINT, NIP
+        // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
-        if (details.includes('80 ML')) return 80;
         
-        // Try to extract numeric volume
-        const volumeMatch = details.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000;
-            }
-            return volume;
+        // Handle liter sizes with decimal points
+        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
@@ -1846,48 +2178,7 @@ function getVolumeColumn(volume) {
     return volumeMap[volume] || null;
 }
 
-// Function to extract volume from details - ENHANCED VERSION
-function extractVolume(details, details2) {
-    // Priority: details2 column first
-    if (details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if (details) {
-        // Handle special cases
-        if (details.includes('QUART')) return 750;
-        if (details.includes('PINT')) return 375;
-        if (details.includes('NIP')) return 90;
-        
-        // Handle liter sizes with decimal points
-        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    return 0; // Unknown volume
-}
-// OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0
+// UPDATED: Function to update total sales module - ADDED COUNTRY LIQUOR CATEGORY
 function updateTotalSalesModule() {
     // Initialize empty summary object with ALL sizes
     const allSizes = [
@@ -1896,11 +2187,13 @@ function updateTotalSalesModule() {
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
     
+    // UPDATED: Added COUNTRY LIQUOR category in the requested order
     const salesSummary = {
         'SPIRITS': {},
         'WINE': {},
         'FERMENTED BEER': {},
-        'MILD BEER': {}
+        'MILD BEER': {},
+        'COUNTRY LIQUOR': {} // ADDED COUNTRY LIQUOR AT THE END
     };
     
     // Initialize all sizes to 0 for each category
@@ -1932,12 +2225,13 @@ function updateTotalSalesModule() {
     updateSalesModalTable(salesSummary, allSizes);
 }
 
-// Function to update modal table with calculated values
+// UPDATED: Function to update modal table with calculated values - ADDED COUNTRY LIQUOR ROW
 function updateSalesModalTable(salesSummary, allSizes) {
     const tbody = $('#totalSalesTable tbody');
     tbody.empty();
     
-    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'].forEach(category => {
+    // UPDATED: Added COUNTRY LIQUOR in the requested order
+    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'].forEach(category => {
         const row = $('<tr>');
         row.append($('<td>').text(category));
         
@@ -1956,6 +2250,7 @@ function updateSalesModalTable(salesSummary, allSizes) {
         tbody.append(row);
     });
 }
+
 // Print function
 function printSalesSummary() {
     const printContent = document.getElementById('totalSalesModuleContainer').innerHTML;

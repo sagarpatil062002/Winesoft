@@ -21,11 +21,14 @@ function getCategoryLimits($conn, $comp_id) {
 }
 
 /**
- * Determine item category based on class and subclass
+ * Determine item category based on LIQ_FLAG and item details - ENHANCED
  */
 function getItemCategory($conn, $item_code, $mode) {
-    // Get item details directly from tblitemmaster
-    $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
+    // Get item details including LIQ_FLAG from tblitemmaster
+    $query = "SELECT im.DETAILS2, sc.LIQ_FLAG 
+              FROM tblitemmaster im 
+              LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP 
+              WHERE im.CODE = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $item_code);
     $stmt->execute();
@@ -38,66 +41,67 @@ function getItemCategory($conn, $item_code, $mode) {
     }
     
     $details2 = strtoupper($item_data['DETAILS2'] ?? '');
+    $liq_flag = $item_data['LIQ_FLAG'] ?? '';
     
-    // Categorize based on DETAILS2 content
-    if ($mode === 'F') {
+    // PRIMARY: Use LIQ_FLAG for categorization if available
+    if (!empty($liq_flag)) {
+        switch (strtoupper($liq_flag)) {
+            case 'F':
+            case 'FL':
+                return 'IMFL';
+            case 'C':
+            case 'CL':
+                return 'CL';
+            case 'B':
+            case 'BEER':
+                return 'BEER';
+        }
+    }
+    
+    // SECONDARY: Categorize based on DETAILS2 content if LIQ_FLAG not available
+    if ($mode === 'F' || $mode === 'FL') {
         // Check if it's a liquor item by looking for ML size indication
         if (preg_match('/\d+\s*ML/i', $details2)) {
             return 'IMFL';
         }
-        if (strpos($details2, 'WHISKY') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'GIN') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'BRANDY') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'VODKA') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'RUM') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'LIQUOR') !== false) {
-            return 'IMFL';
-        } elseif (strpos($details2, 'BEER') !== false) {
+        
+        // Specific liquor type detection
+        $liquor_keywords = ['WHISKY', 'WHISKEY', 'GIN', 'BRANDY', 'VODKA', 'RUM', 'LIQUOR', 'WINE', 'SCOTCH', 'BOURBON', 'TEQUILA'];
+        foreach ($liquor_keywords as $keyword) {
+            if (strpos($details2, $keyword) !== false) {
+                return 'IMFL';
+            }
+        }
+        
+        // Beer detection
+        if (strpos($details2, 'BEER') !== false || strpos($details2, 'LAGER') !== false || strpos($details2, 'ALE') !== false) {
             return 'BEER';
         }
         
-        // Default: if it's in Foreign Liquor mode but doesn't match above, still treat as IMFL
+        // Default: if it's in Foreign Liquor mode but doesn't match above, treat as IMFL
         return 'IMFL';
         
-    } elseif ($mode === 'C') {
-        if (strpos($details2, 'COUNTRY') !== false || 
-            strpos($details2, 'CL') !== false) {
-            return 'CL';
+    } elseif ($mode === 'C' || $mode === 'CL') {
+        // Country liquor detection
+        $cl_keywords = ['COUNTRY', 'CL', 'DESI', 'LOCAL', 'TRADITIONAL'];
+        foreach ($cl_keywords as $keyword) {
+            if (strpos($details2, $keyword) !== false) {
+                return 'CL';
+            }
         }
+        
+        return 'CL'; // Default for CL mode
     }
     
     return 'OTHER';
 }
 
 /**
- * Get item size from CC in tblsubclass
+ * Get item size from CC in tblsubclass or extract from details - ENHANCED
  */
 function getItemSize($conn, $item_code, $mode) {
-    // First try to get size from DETAILS2 in tblitemmaster
-    $query = "SELECT DETAILS2 FROM tblitemmaster WHERE CODE = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $item_code);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item_data = $result->fetch_assoc();
-    $stmt->close();
-    
-    if ($item_data && !empty($item_data['DETAILS2'])) {
-        $details2 = $item_data['DETAILS2'];
-        // Extract size from DETAILS2 (e.g., "180 ML", "750 ML", "90 ML-(96)", "1000 ML")
-        if (preg_match('/(\d+)\s*ML/i', $details2, $matches)) {
-            $size = (float)$matches[1];
-            return $size;
-        }
-    }
-    
-    // If not found in DETAILS2, try to get from CC in tblsubclass
-    $query = "SELECT sc.CC 
+    // First try to get size from DETAILS2 in tblitemmaster with better extraction
+    $query = "SELECT im.DETAILS2, sc.CC 
               FROM tblitemmaster im 
               LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
               WHERE im.CODE = ?";
@@ -108,11 +112,29 @@ function getItemSize($conn, $item_code, $mode) {
     $item_data = $result->fetch_assoc();
     $stmt->close();
     
+    // Priority 1: Use CC from tblsubclass if available and valid
     if ($item_data && $item_data['CC'] > 0) {
         return (float)$item_data['CC'];
     }
     
-    // If not found in subclass, try to extract from item name in DETAILS
+    // Priority 2: Extract from DETAILS2 with improved pattern matching
+    if ($item_data && !empty($item_data['DETAILS2'])) {
+        $details2 = $item_data['DETAILS2'];
+        // Enhanced size extraction (handles various formats)
+        if (preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $details2, $matches)) {
+            $size = (float)$matches[1];
+            // Common size validation
+            $common_sizes = [30, 60, 90, 120, 180, 250, 330, 350, 500, 650, 750, 1000, 1500];
+            foreach ($common_sizes as $common_size) {
+                if (abs($size - $common_size) <= 10) { // Allow small variations
+                    return $common_size;
+                }
+            }
+            return $size;
+        }
+    }
+    
+    // Priority 3: Try to get from DETAILS in tblitemmaster
     $query = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $item_code);
@@ -122,31 +144,38 @@ function getItemSize($conn, $item_code, $mode) {
     $stmt->close();
     
     if ($item_data && !empty($item_data['DETAILS'])) {
-        // Try to extract size from item name (e.g., "Item Name 750ML")
-        if (preg_match('/(\d+)\s*ML/i', $item_data['DETAILS'], $matches)) {
+        // Try to extract size from item name
+        if (preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $item_data['DETAILS'], $matches)) {
             $size = (float)$matches[1];
             return $size;
         }
     }
     
-    // Default size if not found
-    return 750; // Common liquor bottle size
+    // Default sizes based on category and mode
+    $category = getItemCategory($conn, $item_code, $mode);
+    switch ($category) {
+        case 'IMFL':
+            return 750; // Standard liquor bottle
+        case 'BEER':
+            return 650; // Standard beer bottle/can
+        case 'CL':
+            return 180; // Standard country liquor pouch
+        default:
+            return 750; // Common default
+    }
 }
 
 /**
- * Generate bills with volume limits - UPDATED LOGIC
+ * Generate bills with volume limits - ENHANCED MULTI-CATEGORY LOGIC
  */
 function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
     $category_limits = getCategoryLimits($conn, $comp_id);
     $bills = [];
     
-    // Get the starting bill number once - REMOVED DUPLICATE CALL
-    // $next_bill = getNextBillNumber($conn); // This is now handled in the main file
-    
     foreach ($date_array as $date_index => $sale_date) {
         $daily_bills = [];
         
-        // Collect all items for this day
+        // Collect all items for this day with enhanced categorization
         $all_items = [];
         foreach ($items_data as $item_code => $item_data) {
             $qty = $daily_sales_data[$item_code][$date_index] ?? 0;
@@ -171,8 +200,8 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
             continue;
         }
         
-        // Create bills using the UPDATED algorithm
-        $bills_for_day = createOptimizedBills($all_items, $category_limits);
+        // Create bills using the ENHANCED multi-category algorithm
+        $bills_for_day = createMultiCategoryBills($all_items, $category_limits);
         
         // Create actual bills - bill number assignment moved to main file
         foreach ($bills_for_day as $bill_items) {
@@ -189,24 +218,24 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
 }
 
 /**
- * Create optimized bills that handle both scenarios - UPDATED FUNCTION
+ * Create optimized bills with proper multi-category handling - ENHANCED
  */
-function createOptimizedBills($all_items, $category_limits) {
+function createMultiCategoryBills($all_items, $category_limits) {
     $bills = [];
     
     if (empty($all_items)) {
         return [];
     }
     
-    // Expand items while keeping track of quantities for optimal packing
-    $item_pools = [];
+    // Organize items by category with quantity tracking
+    $category_pools = [];
     foreach ($all_items as $item) {
         $category = $item['category'];
-        if (!isset($item_pools[$category])) {
-            $item_pools[$category] = [];
+        if (!isset($category_pools[$category])) {
+            $category_pools[$category] = [];
         }
         
-        $item_pools[$category][] = [
+        $category_pools[$category][] = [
             'code' => $item['code'],
             'rate' => $item['rate'],
             'size' => $item['size'],
@@ -216,33 +245,46 @@ function createOptimizedBills($all_items, $category_limits) {
         ];
     }
     
-    // Sort each category's items by size descending
-    foreach ($item_pools as &$pool) {
+    // Sort each category's items by size descending (largest first for better packing)
+    foreach ($category_pools as &$pool) {
         usort($pool, function($a, $b) {
             return $b['size'] <=> $a['size'];
         });
     }
     
     // Continue creating bills until all items are allocated
-    $has_remaining_items = true;
+    $iteration_count = 0;
+    $max_iterations = 1000; // Safety limit to prevent infinite loops
     
-    while ($has_remaining_items) {
+    while (hasRemainingItems($category_pools) && $iteration_count < $max_iterations) {
         $current_bill = [];
-        $category_usage = []; // Track volume per category in current bill
+        $category_volumes = []; // Track volume per category in current bill
         
-        $has_remaining_items = false;
+        // Initialize category volumes
+        foreach (array_keys($category_limits) as $category) {
+            $category_volumes[$category] = 0;
+        }
         
-        // Try to fill the current bill with items from all categories
-        foreach ($item_pools as $category => &$pool) {
-            $limit = $category_limits[$category] ?? 0;
+        // Try to add items from each category to the current bill
+        foreach ($category_pools as $category => &$pool) {
+            $category_limit = $category_limits[$category] ?? 0;
+            
+            // Skip if category has no limit or no items
+            if ($category_limit <= 0 || empty($pool)) {
+                continue;
+            }
             
             foreach ($pool as &$item) {
-                if ($item['remaining_qty'] > 0) {
-                    $current_category_volume = $category_usage[$category] ?? 0;
-                    $available_space = $limit - $current_category_volume;
-                    
-                    // Calculate how many of this item can fit
-                    $max_fit = ($limit <= 0) ? $item['remaining_qty'] : floor($available_space / $item['size']);
+                if ($item['remaining_qty'] <= 0) {
+                    continue;
+                }
+                
+                $current_volume = $category_volumes[$category];
+                $available_space = $category_limit - $current_volume;
+                
+                if ($available_space >= $item['size']) {
+                    // Calculate how many can fit
+                    $max_fit = floor($available_space / $item['size']);
                     $qty_to_add = min($item['remaining_qty'], $max_fit);
                     
                     if ($qty_to_add > 0) {
@@ -268,26 +310,143 @@ function createOptimizedBills($all_items, $category_limits) {
                         
                         // Update tracking
                         $item['remaining_qty'] -= $qty_to_add;
-                        $category_usage[$category] = ($category_usage[$category] ?? 0) + ($qty_to_add * $item['size']);
+                        $category_volumes[$category] += $qty_to_add * $item['size'];
                     }
                 }
                 
-                if ($item['remaining_qty'] > 0) {
-                    $has_remaining_items = true;
+                // Check if we've reached the category limit
+                if ($category_volumes[$category] >= $category_limit) {
+                    break; // Move to next category
                 }
             }
+        }
+        
+        // Add smaller items to fill remaining space (optimization pass)
+        if (!empty($current_bill)) {
+            $current_bill = fillRemainingSpace($current_bill, $category_pools, $category_volumes, $category_limits);
         }
         
         // If we created a bill with items, add it to the bills list
         if (!empty($current_bill)) {
             $bills[] = $current_bill;
-        } else {
-            // If no items could be added to the current bill, break to avoid infinite loop
-            break;
         }
+        
+        $iteration_count++;
+    }
+    
+    // Safety check: if we hit max iterations, force create bills with remaining items
+    if ($iteration_count >= $max_iterations && hasRemainingItems($category_pools)) {
+        $forced_bills = createForcedBills($category_pools);
+        $bills = array_merge($bills, $forced_bills);
     }
     
     return $bills;
+}
+
+/**
+ * Check if there are any remaining items across all categories
+ */
+function hasRemainingItems($category_pools) {
+    foreach ($category_pools as $pool) {
+        foreach ($pool as $item) {
+            if ($item['remaining_qty'] > 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Fill remaining space in bill with smaller items - OPTIMIZATION
+ */
+function fillRemainingSpace($current_bill, &$category_pools, $category_volumes, $category_limits) {
+    foreach ($category_pools as $category => &$pool) {
+        $category_limit = $category_limits[$category] ?? 0;
+        $current_volume = $category_volumes[$category] ?? 0;
+        $available_space = $category_limit - $current_volume;
+        
+        if ($available_space <= 0) {
+            continue;
+        }
+        
+        // Sort items by size ascending (smallest first for filling space)
+        usort($pool, function($a, $b) {
+            return $a['size'] <=> $b['size'];
+        });
+        
+        foreach ($pool as &$item) {
+            if ($item['remaining_qty'] <= 0) {
+                continue;
+            }
+            
+            if ($item['size'] <= $available_space) {
+                $max_fit = floor($available_space / $item['size']);
+                $qty_to_add = min($item['remaining_qty'], $max_fit);
+                
+                if ($qty_to_add > 0) {
+                    // Add to current bill
+                    $bill_item_key = findBillItem($current_bill, $item['code']);
+                    
+                    if ($bill_item_key !== false) {
+                        $current_bill[$bill_item_key]['qty'] += $qty_to_add;
+                        $current_bill[$bill_item_key]['amount'] += $qty_to_add * $item['rate'];
+                    } else {
+                        $current_bill[] = [
+                            'code' => $item['code'],
+                            'qty' => $qty_to_add,
+                            'rate' => $item['rate'],
+                            'size' => $item['size'],
+                            'amount' => $qty_to_add * $item['rate'],
+                            'name' => $item['name'],
+                            'category' => $category
+                        ];
+                    }
+                    
+                    // Update tracking
+                    $item['remaining_qty'] -= $qty_to_add;
+                    $available_space -= $qty_to_add * $item['size'];
+                    $category_volumes[$category] += $qty_to_add * $item['size'];
+                }
+            }
+            
+            if ($available_space <= 0) {
+                break;
+            }
+        }
+    }
+    
+    return $current_bill;
+}
+
+/**
+ * Create forced bills for any remaining items (safety mechanism)
+ */
+function createForcedBills(&$category_pools) {
+    $forced_bills = [];
+    
+    foreach ($category_pools as $category => &$pool) {
+        foreach ($pool as &$item) {
+            while ($item['remaining_qty'] > 0) {
+                $qty_to_add = min($item['remaining_qty'], 10); // Add max 10 per forced bill
+                
+                $forced_bill = [[
+                    'code' => $item['code'],
+                    'qty' => $qty_to_add,
+                    'rate' => $item['rate'],
+                    'size' => $item['size'],
+                    'amount' => $qty_to_add * $item['rate'],
+                    'name' => $item['name'],
+                    'category' => $category
+                ]];
+                
+                $forced_bills[] = $forced_bill;
+                $item['remaining_qty'] -= $qty_to_add;
+            }
+        }
+    }
+    
+    return $forced_bills;
 }
 
 /**

@@ -34,18 +34,18 @@ if (!$conn) {
 // Handle success message
 $success = isset($_GET['success']) ? $_GET['success'] : 0;
 
-// Build query with filters - UPDATED: Handle ALL mode
+// Build query with filters - UPDATED: Handle ALL mode and include 'C' status
 $whereConditions = ["p.CompID = ?"];
 $params = [$companyId];
 $paramTypes = "i";
 
-// Handle mode filter
+// Handle mode filter - UPDATED: Include 'C' status
 if ($mode !== 'ALL') {
     $whereConditions[] = "p.PUR_FLAG = ?";
     $params[] = $mode;
     $paramTypes .= "s";
 } else {
-    $whereConditions[] = "p.PUR_FLAG IN ('F', 'T', 'P')";
+    $whereConditions[] = "p.PUR_FLAG IN ('F', 'T', 'P', 'C')";
 }
 
 // Log filter parameters
@@ -86,7 +86,7 @@ $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name
                   FROM tblpurchases p 
                   LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
                   WHERE " . implode(" AND ", $whereConditions) . "
-                  ORDER BY p.DATE DESC, p.VOC_NO DESC";
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC";
                   
 error_log("Final Query: " . $purchaseQuery);
 error_log("Parameters: " . print_r($params, true));
@@ -132,7 +132,13 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Purchase Module - <?= $mode === 'ALL' ? 'All Purchases' : ($mode === 'F' ? 'Foreign Liquor' : 'Country Liquor') ?></title>
+<title>Purchase Module - <?= 
+    $mode === 'ALL' ? 'All Purchases' : 
+    ($mode === 'F' ? 'Foreign Liquor' : 
+    ($mode === 'T' ? 'Unpaid Purchases' : 
+    ($mode === 'P' ? 'Partial Payments' : 
+    ($mode === 'C' ? 'Completed Purchases' : 'Unknown')))) 
+?></title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -145,8 +151,44 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
   .action-buttons{display:flex;gap:5px}
   .status-badge{padding:4px 8px;border-radius:4px;font-size:0.8rem}
   .status-completed{background:#d1fae5;color:#065f46}
-  .status-pending{background:#fef3c7;color:#92400e}
-  .status-paid{background:#dbeafe;color:#1e40af}
+  .status-unpaid{background:#fef3c7;color:#92400e}
+  .status-partial{background:#dbeafe;color:#1e40af}
+  
+  /* Purchase type navigation styles */
+  .purchase-type-nav {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  .purchase-type-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .purchase-type-btn {
+    padding: 10px 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    color: #495057;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    text-align: center;
+  }
+  .purchase-type-btn:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+    background: #f8f9ff;
+  }
+  .purchase-type-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
   
   /* Purchase Summary Table Styles */
   #purchaseSummaryTable th {
@@ -212,8 +254,25 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
         </div>
       </div>
 
+      <!-- Purchase Type Navigation -->
+      <div class="purchase-type-nav">
+        <div class="purchase-type-buttons">
+          <a href="?mode=ALL" class="purchase-type-btn <?= $mode === 'ALL' ? 'active' : '' ?>">All Purchases</a>
+          <a href="?mode=F" class="purchase-type-btn <?= $mode === 'F' ? 'active' : '' ?>">Foreign Liquor</a>
+          <a href="?mode=T" class="purchase-type-btn <?= $mode === 'T' ? 'active' : '' ?>">Unpaid Purchases</a>
+          <a href="?mode=P" class="purchase-type-btn <?= $mode === 'P' ? 'active' : '' ?>">Partial Payments</a>
+          <a href="?mode=C" class="purchase-type-btn <?= $mode === 'C' ? 'active' : '' ?>">Completed Purchases</a>
+        </div>
+      </div>
+
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4>Purchase Module - <?= $mode === 'ALL' ? 'All Purchases' : ($mode === 'F' ? 'Foreign Liquor' : 'Country Liquor') ?></h4>
+        <h4>Purchase Module - <?= 
+            $mode === 'ALL' ? 'All Purchases' : 
+            ($mode === 'F' ? 'Foreign Liquor' : 
+            ($mode === 'T' ? 'Unpaid Purchases' : 
+            ($mode === 'P' ? 'Partial Payments' : 
+            ($mode === 'C' ? 'Completed Purchases' : 'Unknown')))) 
+        ?></h4>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
             <i class="fas fa-chart-bar"></i> Purchase Summary
@@ -238,15 +297,6 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
           <form method="GET" class="row g-3">
             <input type="hidden" name="mode" value="<?=$mode?>">
             <div class="col-md-3">
-              <label class="form-label">Purchase Type</label>
-              <select class="form-select" name="mode">
-                <option value="ALL" <?= $mode === 'ALL' ? 'selected' : '' ?>>All Purchases</option>
-                <option value="F" <?= $mode === 'F' ? 'selected' : '' ?>>Final (F)</option>
-                <option value="T" <?= $mode === 'T' ? 'selected' : '' ?>>Temporary (T)</option>
-                <option value="P" <?= $mode === 'P' ? 'selected' : '' ?>>Paid (P)</option>
-              </select>
-            </div>
-            <div class="col-md-3">
               <label class="form-label">From Date</label>
               <input type="date" class="form-control" name="from_date" value="<?=isset($_GET['from_date']) ? $_GET['from_date'] : ''?>">
             </div>
@@ -264,7 +314,7 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
             </div>
             <div class="col-12">
               <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter me-1"></i> Apply Filters</button>
-              <a href="purchase_module.php?mode=ALL" class="btn btn-secondary"><i class="fa-solid fa-times me-1"></i> Clear</a>
+              <a href="purchase_module.php?mode=<?=$mode?>" class="btn btn-secondary"><i class="fa-solid fa-times me-1"></i> Clear</a>
             </div>
           </form>
         </div>
@@ -291,15 +341,22 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
                 </thead>
                 <tbody>
                   <?php foreach($purchases as $purchase): 
-                    $status = 'Completed';
-                    $statusClass = 'status-completed';
+                    // UPDATED: Correct status mapping
+                    $status = 'Unknown';
+                    $statusClass = 'status-unpaid';
                     
-                    if ($purchase['PUR_FLAG'] === 'T') {
-                        $status = 'Temporary';
-                        $statusClass = 'status-pending';
+                    if ($purchase['PUR_FLAG'] === 'C') {
+                        $status = 'Completed';
+                        $statusClass = 'status-completed';
+                    } elseif ($purchase['PUR_FLAG'] === 'T') {
+                        $status = 'Unpaid';
+                        $statusClass = 'status-unpaid';
                     } elseif ($purchase['PUR_FLAG'] === 'P') {
-                        $status = 'Paid';
-                        $statusClass = 'status-paid';
+                        $status = 'Partial';
+                        $statusClass = 'status-partial';
+                    } elseif ($purchase['PUR_FLAG'] === 'F') {
+                        $status = 'Final';
+                        $statusClass = 'status-completed';
                     }
                   ?>
                     <tr>
@@ -372,8 +429,9 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
                         <select class="form-select" id="purchaseType">
                             <option value="ALL">All Types</option>
                             <option value="F">Final (F)</option>
-                            <option value="T">Temporary (T)</option>
-                            <option value="P">Paid (P)</option>
+                            <option value="T">Unpaid (T)</option>
+                            <option value="P">Partial (P)</option>
+                            <option value="C">Completed (C)</option>
                         </select>
                     </div>
                 </div>
@@ -519,16 +577,18 @@ function loadPurchaseSummary() {
             debugAjax('AJAX Response received', response);
             
             try {
-                if (response.trim() === '') {
-                    throw new Error('Empty response from server');
+                // Handle case where response might be a string that needs parsing
+                let summaryData;
+                if (typeof response === 'string') {
+                    // Try to parse JSON if it's a string
+                    if (response.trim() === '') {
+                        throw new Error('Empty response from server');
+                    }
+                    summaryData = JSON.parse(response);
+                } else {
+                    // It's already an object
+                    summaryData = response;
                 }
-                
-                // Check if response is valid JSON
-                if (response.startsWith('<')) {
-                    throw new Error('Server returned HTML instead of JSON. Check for PHP errors.');
-                }
-                
-                const summaryData = JSON.parse(response);
                 
                 if (summaryData.error) {
                     throw new Error(summaryData.error);
@@ -545,6 +605,7 @@ function loadPurchaseSummary() {
                             <i class="fas fa-exclamation-triangle"></i><br>
                             Error loading purchase summary<br>
                             <small>${e.message}</small>
+                            <br><small>Check browser console for details</small>
                         </td>
                     </tr>
                 `);
@@ -554,13 +615,26 @@ function loadPurchaseSummary() {
             console.error('AJAX Error:', status, error);
             debugAjax('AJAX Error', {status: status, error: error, responseText: xhr.responseText});
             
+            let errorMessage = 'Failed to load purchase summary';
+            if (xhr.responseText) {
+                // Try to extract error message from response
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    if (errorResponse.error) {
+                        errorMessage = errorResponse.error;
+                    }
+                } catch (e) {
+                    // If not JSON, show raw response
+                    errorMessage = 'Server error: ' + xhr.responseText.substring(0, 100);
+                }
+            }
+            
             $('#purchaseSummaryTable tbody').html(`
                 <tr>
                     <td colspan="26" class="text-center text-danger">
                         <i class="fas fa-exclamation-triangle"></i><br>
-                        Failed to load purchase summary<br>
-                        <small>Server error: ${error}</small>
-                        <br><small>Check browser console and server logs for details</small>
+                        ${errorMessage}<br>
+                        <small>Status: ${status}, Error: ${error}</small>
                     </td>
                 </tr>
             `);
@@ -581,16 +655,32 @@ function updatePurchaseSummaryTable(summaryData) {
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
     
-    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'];
+    // UPDATED: Added COUNTRY LIQUOR category
+    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+    
+    // Check if we have valid data structure
+    if (!summaryData || typeof summaryData !== 'object') {
+        tbody.html(`
+            <tr>
+                <td colspan="26" class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle"></i><br>
+                    Invalid data structure received
+                </td>
+            </tr>
+        `);
+        return;
+    }
     
     // Check if we have any data
     let hasData = false;
     categories.forEach(category => {
-        allSizes.forEach(size => {
-            if (summaryData[category] && summaryData[category][size] > 0) {
-                hasData = true;
-            }
-        });
+        if (summaryData[category]) {
+            allSizes.forEach(size => {
+                if (summaryData[category][size] > 0) {
+                    hasData = true;
+                }
+            });
+        }
     });
     
     if (!hasData) {
@@ -599,20 +689,21 @@ function updatePurchaseSummaryTable(summaryData) {
             <tr>
                 <td colspan="26" class="text-center text-muted">
                     <i class="fas fa-info-circle"></i><br>
-                    No purchase data found for the selected date range
+                    No purchase data found for the selected date range and filters
                 </td>
             </tr>
         `);
         return;
     }
     
+    // Create rows for each category
     categories.forEach(category => {
         const row = $('<tr>');
-        row.append($('<td>').text(category));
+        row.append($('<td>').addClass('fw-semibold').text(category));
         
         allSizes.forEach(size => {
-            const value = summaryData[category]?.[size] || 0;
-            const cell = $('<td>').text(value > 0 ? value : '');
+            const value = summaryData[category] && summaryData[category][size] ? summaryData[category][size] : 0;
+            const cell = $('<td>').text(value > 0 ? value.toLocaleString() : '');
             
             if (value > 0) {
                 cell.addClass('table-success');
@@ -625,6 +716,38 @@ function updatePurchaseSummaryTable(summaryData) {
     });
     
     debugAjax('Summary table updated successfully');
+    
+    // Add a total row if needed
+    addTotalRow(summaryData, allSizes, categories);
+}
+
+// Function to add total row
+function addTotalRow(summaryData, allSizes, categories) {
+    const totals = {};
+    
+    allSizes.forEach(size => {
+        totals[size] = 0;
+        categories.forEach(category => {
+            if (summaryData[category] && summaryData[category][size]) {
+                totals[size] += summaryData[category][size];
+            }
+        });
+    });
+    
+    // Check if we have any totals
+    const hasTotals = allSizes.some(size => totals[size] > 0);
+    
+    if (hasTotals) {
+        const totalRow = $('<tr>').addClass('table-primary fw-bold');
+        totalRow.append($('<td>').text('TOTAL'));
+        
+        allSizes.forEach(size => {
+            const cell = $('<td>').text(totals[size] > 0 ? totals[size].toLocaleString() : '');
+            totalRow.append(cell);
+        });
+        
+        $('#purchaseSummaryTable tbody').append(totalRow);
+    }
 }
 
 // Function to print purchase summary
@@ -634,7 +757,8 @@ function printPurchaseSummary() {
     const purchaseType = $('#purchaseType').val();
     const typeLabel = purchaseType === 'ALL' ? 'All Purchases' : 
                      purchaseType === 'F' ? 'Foreign Liquor' : 
-                     purchaseType === 'T' ? 'Temporary Purchases' : 'Paid Purchases';
+                     purchaseType === 'T' ? 'Unpaid Purchases' : 
+                     purchaseType === 'P' ? 'Partial Payments' : 'Completed Purchases';
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
     

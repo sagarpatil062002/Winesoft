@@ -262,19 +262,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
     logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// MODIFIED: Get ALL items data for JavaScript from a separate query with license filtering
+// MODIFIED: Get ALL items data for JavaScript from ALL modes for Total Sales Summary
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
-                        FROM tblitemmaster im 
-                        WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
+                               COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                        FROM tblitemmaster im
+                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                        WHERE im.CLASS IN ($class_placeholders)"; // REMOVED mode filter
     $all_items_stmt = $conn->prepare($all_items_query);
-    $all_items_params = array_merge([$mode], $allowed_classes);
+    $all_items_params = $allowed_classes; // REMOVED mode parameter
     $all_items_types = str_repeat('s', count($all_items_params));
     $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
 } else {
-    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
-                        FROM tblitemmaster im 
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
+                               COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                        FROM tblitemmaster im
+                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
                         WHERE 1 = 0";
     $all_items_stmt = $conn->prepare($all_items_query);
 }
@@ -629,20 +633,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // MODIFIED: Get ALL items from database for validation with license filtering
+            // MODIFIED: Get ALL items from database for validation WITHOUT mode filtering
             if (!empty($allowed_classes)) {
                 $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
                                            COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
                                     FROM tblitemmaster im
                                     LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+                                    WHERE im.CLASS IN ($class_placeholders)"; // REMOVED mode filter
                 $all_items_stmt = $conn->prepare($all_items_query);
-                $all_items_params = array_merge([$mode], $allowed_classes);
+                $all_items_params = $allowed_classes; // REMOVED mode parameter
                 $all_items_types = str_repeat('s', count($all_items_params));
                 $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
             } else {
-                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
                                            COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
                                     FROM tblitemmaster im
                                     LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
@@ -688,7 +692,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $items_data = [];
                     $daily_sales_data = [];
                     
-                    // Process ONLY session quantities > 0
+                    // Process ALL session quantities > 0 (from ALL modes)
                     if (isset($_SESSION['sale_quantities'])) {
                         foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
@@ -702,7 +706,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $items_data[$item_code] = [
                                     'name' => $item['DETAILS'],
                                     'rate' => $item['RPRICE'],
-                                    'total_qty' => $total_qty
+                                    'total_qty' => $total_qty,
+                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode
                                 ];
                             }
                         }
@@ -717,8 +722,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $opening_stock_column = "Opening_Stock" . $comp_id;
                         
                         // Get next bill number once to ensure proper numerical order
-                        // Get next bill number once to ensure proper numerical order FOR THIS COMPANY
-$next_bill_number = getNextBillNumber($conn, $comp_id);
+                        $next_bill_number = getNextBillNumber($conn, $comp_id);
                         
                         // Process each bill in chronological AND numerical order
                         usort($bills, function($a, $b) {
@@ -726,79 +730,78 @@ $next_bill_number = getNextBillNumber($conn, $comp_id);
                         });
                         
                         // Process each bill with proper zero-padded bill numbers
-                        // Process each bill with proper zero-padded bill numbers
-foreach ($bills as $bill) {
-    $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
-    
-    // Insert sale header
-    $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                     VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-    $header_stmt = $conn->prepare($header_query);
-    $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
-                            $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
-    $header_stmt->execute();
-    $header_stmt->close();
-    
-    // Insert sale details for each item in the bill
-    foreach ($bill['items'] as $item) {
-        $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $detail_stmt = $conn->prepare($detail_query);
-        $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
-                                $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
-        $detail_stmt->execute();
-        $detail_stmt->close();
-        
-        // Update stock
-        updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-        
-        // Update daily stock with enhanced function
-        updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
-    }
-    
-    $total_amount += $bill['total_amount'];
-}
+                        foreach ($bills as $bill) {
+                            $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+                            
+                            // Insert sale header
+                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                            $header_stmt = $conn->prepare($header_query);
+                            $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
+                                                    $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                            $header_stmt->execute();
+                            $header_stmt->close();
+                            
+                            // Insert sale details for each item in the bill
+                            foreach ($bill['items'] as $item) {
+                                $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
+                                $detail_stmt = $conn->prepare($detail_query);
+                                $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
+                                                        $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                                $detail_stmt->execute();
+                                $detail_stmt->close();
+                                
+                                // Update stock
+                                updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                                
+                                // Update daily stock with enhanced function
+                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                            }
+                            
+                            $total_amount += $bill['total_amount'];
+                        }
 
-// Commit transaction
-$conn->commit();
+                        // Commit transaction
+                        $conn->commit();
 
-// CLEAR SESSION QUANTITIES AFTER SUCCESS
-clearSessionQuantities();
+                        // CLEAR SESSION QUANTITIES AFTER SUCCESS
+                        clearSessionQuantities();
 
-$success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
 
-// ADD AUTOMATIC CASH MEMO GENERATION
-$cash_memos_generated = 0;
-$cash_memo_errors = [];
+                        // ADD AUTOMATIC CASH MEMO GENERATION
+                        $cash_memos_generated = 0;
+                        $cash_memo_errors = [];
 
-// Generate cash memos for all created bills
-foreach ($bills as $bill_index => $bill) {
-    $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
-    
-    if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
-        $cash_memos_generated++;
-        logCashMemoGeneration($padded_bill_no, true);
-    } else {
-        $cash_memo_errors[] = $padded_bill_no;
-        logCashMemoGeneration($padded_bill_no, false, "Cash memo generation failed");
-    }
-}
+                        // Generate cash memos for all created bills
+                        foreach ($bills as $bill_index => $bill) {
+                            $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
+                            
+                            if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
+                                $cash_memos_generated++;
+                                logCashMemoGeneration($padded_bill_no, true);
+                            } else {
+                                $cash_memo_errors[] = $padded_bill_no;
+                                logCashMemoGeneration($padded_bill_no, false, "Cash memo generation failed");
+                            }
+                        }
 
-// Update success message to include cash memo info
-if ($cash_memos_generated > 0) {
-    $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
-}
+                        // Update success message to include cash memo info
+                        if ($cash_memos_generated > 0) {
+                            $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                        }
 
-if (!empty($cash_memo_errors)) {
-    $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
-    if (count($cash_memo_errors) > 5) {
-        $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
-    }
-}
+                        if (!empty($cash_memo_errors)) {
+                            $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                            if (count($cash_memo_errors) > 5) {
+                                $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                            }
+                        }
 
-// Redirect to retail_sale.php
-header("Location: retail_sale.php?success=" . urlencode($success_message));
-exit;
+                        // Redirect to retail_sale.php
+                        header("Location: retail_sale.php?success=" . urlencode($success_message));
+                        exit;
                     } else {
                         $error_message = "No quantities entered for any items.";
                     }
@@ -1524,7 +1527,7 @@ const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
 // Pass ALL session quantities to JavaScript
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
-// NEW: Pass ALL items data to JavaScript for Total Sales Summary
+// NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
 // NEW: Function to check stock availability via AJAX before submission
@@ -2076,7 +2079,7 @@ function getItemData(itemCode) {
             quantity: parseInt(inputField.val()) || 0
         };
     } else {
-        // If not in current view, get from allItemsData
+        // If not in current view, get from allItemsData (now includes all modes)
         if (allItemsData[itemCode]) {
             return {
                 classCode: allItemsData[itemCode].CLASS,
@@ -2089,13 +2092,14 @@ function getItemData(itemCode) {
     return null;
 }
 
-// Function to classify product type from class code
+// UPDATED: Function to classify product type from class code - ADDED COUNTRY LIQUOR
 function getProductType(classCode) {
     const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
     if (spirits.includes(classCode)) return 'SPIRITS';
     if (classCode === 'V') return 'WINE';
     if (classCode === 'F') return 'FERMENTED BEER';
     if (classCode === 'M') return 'MILD BEER';
+    if (classCode === 'L') return 'COUNTRY LIQUOR'; // ADDED COUNTRY LIQUOR
     return 'OTHER';
 }
 
@@ -2177,8 +2181,10 @@ function getVolumeColumn(volume) {
     return volumeMap[volume] || null;
 }
 
-// OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0
+// UPDATED: Function to update total sales module - PROCESS ALL ITEMS FROM ALL MODES
 function updateTotalSalesModule() {
+    console.log('updateTotalSalesModule called - Processing ALL items from ALL modes');
+    
     // Initialize empty summary object with ALL sizes
     const allSizes = [
         '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
@@ -2186,11 +2192,13 @@ function updateTotalSalesModule() {
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
     
+    // UPDATED: Added COUNTRY LIQUOR category in the requested order
     const salesSummary = {
         'SPIRITS': {},
         'WINE': {},
         'FERMENTED BEER': {},
-        'MILD BEER': {}
+        'MILD BEER': {},
+        'COUNTRY LIQUOR': {} // ADDED COUNTRY LIQUOR AT THE END
     };
     
     // Initialize all sizes to 0 for each category
@@ -2200,39 +2208,53 @@ function updateTotalSalesModule() {
         });
     });
 
-    // Process ONLY session quantities > 0 (optimization)
+    console.log('Processing ALL session quantities from ALL modes:', allSessionQuantities);
+
+    // Process ALL session quantities > 0 (from ALL modes)
+    let processedItems = 0;
     for (const itemCode in allSessionQuantities) {
         const quantity = allSessionQuantities[itemCode];
         if (quantity > 0) {
-            // Get item data from ALL items data (works for items not in current view)
+            // Get item data from ALL items data (works for items from all modes)
             const itemData = getItemData(itemCode);
             if (itemData) {
                 const productType = getProductType(itemData.classCode);
                 const volume = extractVolume(itemData.details, itemData.details2);
                 const volumeColumn = getVolumeColumn(volume);
                 
+                console.log(`Item ${itemCode}: Class=${itemData.classCode}, ProductType=${productType}, Volume=${volume}, VolumeColumn=${volumeColumn}, Quantity=${quantity}`);
+                
                 if (volumeColumn && salesSummary[productType]) {
                     salesSummary[productType][volumeColumn] += quantity;
+                    processedItems++;
                 }
             }
         }
     }
 
+    console.log(`Processed ${processedItems} items with quantities from ALL modes`);
+    console.log('Final sales summary:', salesSummary);
+
     // Update the modal table
     updateSalesModalTable(salesSummary, allSizes);
 }
 
-// Function to update modal table with calculated values
+// UPDATED: Function to update modal table with calculated values - ADDED COUNTRY LIQUOR ROW
 function updateSalesModalTable(salesSummary, allSizes) {
     const tbody = $('#totalSalesTable tbody');
     tbody.empty();
     
-    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'].forEach(category => {
+    console.log('Updating modal table with categories:', Object.keys(salesSummary));
+    
+    // UPDATED: Added COUNTRY LIQUOR in the requested order
+    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+    
+    categories.forEach(category => {
         const row = $('<tr>');
         row.append($('<td>').text(category));
         
         allSizes.forEach(size => {
-            const value = salesSummary[category][size] || 0;
+            const value = salesSummary[category] ? (salesSummary[category][size] || 0) : 0;
             const cell = $('<td>').text(value > 0 ? value : '');
             
             // Add subtle highlighting for non-zero values
@@ -2245,6 +2267,8 @@ function updateSalesModalTable(salesSummary, allSizes) {
         
         tbody.append(row);
     });
+    
+    console.log('Modal table updated successfully with data from ALL modes');
 }
 
 // Print function
@@ -2262,6 +2286,8 @@ function printSalesSummary() {
 
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
+    console.log('Document ready - Initializing...');
+    
     // Initialize table headers and columns
     initializeTableHeaders();
     
@@ -2325,6 +2351,7 @@ $(document).ready(function() {
 
         // Also update total sales module if modal is open
         if ($('#totalSalesModal').hasClass('show')) {
+            console.log('Modal is open, updating total sales module with ALL modes data...');
             updateTotalSalesModule();
         }
         
@@ -2367,8 +2394,15 @@ $(document).ready(function() {
         loadSalesLog();
     });
     
-    // Update total sales module when modal is shown
+    // Update total sales module when modal is shown - FIXED: Use 'show.bs.modal' instead of 'shown.bs.modal'
     $('#totalSalesModal').on('show.bs.modal', function() {
+        console.log('Total Sales Modal opened - updating data from ALL modes...');
+        updateTotalSalesModule();
+    });
+    
+    // Also update when modal is already shown but data changes
+    $('#totalSalesModal').on('shown.bs.modal', function() {
+        console.log('Total Sales Modal shown - refreshing data from ALL modes...');
         updateTotalSalesModule();
     });
 });
@@ -2398,6 +2432,6 @@ function initializeQuantitiesFromSession() {
         $('.date-header').show();
     }
 }
-</script> 
+</script>
 </body>
 </html>

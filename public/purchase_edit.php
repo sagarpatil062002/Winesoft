@@ -560,7 +560,7 @@ input.form-control-sm {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
-      <h4 class="mb-3">Edit Purchase - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h4>
+      <h4 class="mb-3">Edit Purchase</h4>
 
       <?php if (isset($errorMessage)): ?>
         <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>

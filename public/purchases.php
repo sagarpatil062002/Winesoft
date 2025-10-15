@@ -129,7 +129,7 @@ function isMonthArchived($conn, $comp_id, $month, $year) {
 }
 
 // Function to update archived month stock with complete calculation - CORRECTED
-function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate, $mode) {
+function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $month = date('n', strtotime($purchaseDate));
     $year = date('Y', strtotime($purchaseDate));
@@ -169,16 +169,15 @@ function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pu
         // For new record, opening is 0, so closing = purchase
         $insert_query = "INSERT INTO $archive_table 
                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
-                        VALUES (?, ?, ?, 0, ?, 0, ?)";
+                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sssii", $monthYear, $itemCode, $mode, $totalBottles, $totalBottles);
+        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
         $result = $insert_stmt->execute();
         $insert_stmt->close();
     }
 }
-
 // Function to update current month stock with complete calculation - CORRECTED
-function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate, $mode) {
+function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     $dailyStockTable = "tbldailystock_" . $comp_id;
@@ -212,14 +211,13 @@ function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pur
         // For new record, opening is 0, so closing = purchase
         $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
                                  (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
-                                 VALUES (?, ?, ?, 0, ?, 0, ?)";
+                                 VALUES (?, ?, 'F', 0, ?, 0, ?)";
         $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("sssii", $monthYear, $itemCode, $mode, $totalBottles, $totalBottles);
+        $dailyStmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
         $result = $dailyStmt->execute();
         $dailyStmt->close();
     }
 }
-
 // Function to update item stock - SIMPLIFIED
 function updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $companyId) {
     $stockColumn = "CURRENT_STOCK" . $companyId;
@@ -238,7 +236,7 @@ function updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $compan
 }
 
 // Function to update stock after purchase - USING EXTRACTED TOTAL BOTTLES
-function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn, $mode) {
+function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
     // $totalBottles is the EXTRACTED value from SCM, not calculated
     
     // Get day of month from purchase date
@@ -252,17 +250,16 @@ function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn,
     
     if ($isArchived) {
         // Update archived month data - tbldailystock_{comp_id}_{mm}_{yy}
-        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $mode);
+        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     } else {
         // Update current month data - tbldailystock_{comp_id}
-        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $mode);
+        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     }
     
     // UPDATE tblitem_stock - Add to current stock (SIMPLE UPDATE)
     updateItemStock($conn, $itemCode, $totalBottles, $purchaseDate, $companyId);
 }
-
-// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ----
+// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ONLY ----
 $items = [];
 
 if (!empty($allowed_classes)) {
@@ -272,10 +269,10 @@ if (!empty($allowed_classes)) {
                           CONCAT('SCM', im.CODE) AS SCM_CODE
                      FROM tblitemmaster im
                      LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
-                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)
+                    WHERE im.CLASS IN ($class_placeholders)  -- REMOVED: im.LIQ_FLAG = ?
                  ORDER BY im.DETAILS";
     
-    $params = array_merge([$mode], $allowed_classes);
+    $params = $allowed_classes; // REMOVED: array_merge([$mode], $allowed_classes)
     $types = str_repeat('s', count($params));
     
     debugLog("Items query parameters", [
@@ -367,18 +364,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'parameters' => [
             $date, $supplier_code, $auto_tp_no, $voc_no, $inv_no, $inv_date, $tamt,
             $tp_no, $tp_date, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
-            $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
+            $tcs_per, $tcs_amt, $misc_charg, 'T', $companyId  // CHANGED: $mode to 'T'
         ]
     ]);
 
-    $insertStmt = $conn->prepare($insertQuery);
+$insertStmt = $conn->prepare($insertQuery);
+if ($insertStmt) {
+    // Create variables for binding (don't bind literals directly)
+    $pur_flag = 'T'; // Create variable for the literal value
+    
     $insertStmt->bind_param(
         "sssisssdddddddddddsi",
         $date, $supplier_code, $auto_tp_no, $voc_no, $inv_no, $inv_date, $tamt,
         $tp_no, $tp_date, $trade_disc, $cash_disc, $octroi, $freight, $stax_per, $stax_amt,
-        $tcs_per, $tcs_amt, $misc_charg, $mode, $companyId
+        $tcs_per, $tcs_amt, $misc_charg, $pur_flag, $companyId
     );
-    
+} else {
+    $errorMessage = "Error preparing statement: " . $conn->error;
+    debugLog("Error preparing purchase header statement", [
+        'error' => $conn->error,
+        'query' => $insertQuery
+    ]);
+}
     if ($insertStmt->execute()) {
         $purchase_id = $conn->insert_id;
         debugLog("Purchase header inserted successfully", [
@@ -464,8 +471,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'item_code' => $item_code
                     ]);
                     
-                    // Update stock using the EXTRACTED tot_bott value - PASS MODE PARAMETER
-                    updateStock($item_code, $tot_bott, $date, $companyId, $conn, $mode);
+                    // Update stock using the EXTRACTED tot_bott value
+                    updateStock($item_code, $tot_bott, $date, $companyId, $conn);
                 } else {
                     debugLog("Error inserting purchase detail for item $index", [
                         'error' => $detailStmt->error,
@@ -894,7 +901,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
-      <h4 class="mb-3">New Purchase - <?= $mode === 'F' ? 'Foreign Liquor' : 'Country Liquor' ?></h4>
+      <h4 class="mb-3">New Purchase</h4>
 
       <!-- Debug Panel -->
 

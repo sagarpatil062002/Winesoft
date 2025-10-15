@@ -42,12 +42,13 @@ $toDate = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 
 error_log("Purchase Summary Request: Company=$companyId, Mode=$mode, From=$fromDate, To=$toDate");
 
-// Initialize summary structure
+// Initialize summary structure - UPDATED: All categories
 $purchaseSummary = [
     'SPIRITS' => [],
     'WINE' => [],
     'FERMENTED BEER' => [],
-    'MILD BEER' => []
+    'MILD BEER' => [],
+    'COUNTRY LIQUOR' => []
 ];
 
 // All possible sizes
@@ -68,7 +69,7 @@ foreach (array_keys($purchaseSummary) as $category) {
 error_log("Initialized summary structure with zeros");
 
 try {
-    // UPDATED QUERY: Include all purchase types when mode is 'ALL'
+    // UPDATED QUERY: Include item class and 'C' status when mode is 'ALL'
     $query = "
         SELECT 
             pd.ItemCode,
@@ -79,9 +80,11 @@ try {
             pd.ItemName,
             p.ID as PurchaseID,
             p.DATE as PurchaseDate,
-            p.PUR_FLAG
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
         FROM tblpurchasedetails pd
         INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
         WHERE p.CompID = ?
         AND p.DATE BETWEEN ? AND ?
     ";
@@ -90,7 +93,7 @@ try {
     if ($mode !== 'ALL') {
         $query .= " AND p.PUR_FLAG = ?";
     } else {
-        $query .= " AND p.PUR_FLAG IN ('F', 'T', 'P')";
+        $query .= " AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')";
     }
 
     error_log("Executing query: " . $query);
@@ -123,8 +126,8 @@ try {
     while ($row = $result->fetch_assoc()) {
         $rawData[] = $row; // Store for debugging
         
-        // Use ItemName to determine product type since we're not joining with itemmaster
-        $productType = getProductTypeFromName($row['ItemName']);
+        // Use ItemClass to determine product type - UPDATED LOGIC
+        $productType = getProductTypeFromClass($row['ItemClass'], $row['ItemName']);
         $volume = extractVolume($row['Size'], $row['ItemName']);
         
         // Calculate total quantity
@@ -142,6 +145,7 @@ try {
         // DEBUG: Log each item processing
         error_log("Item $processedItems: " . $row['ItemName']);
         error_log("  - Size: " . $row['Size']);
+        error_log("  - Class: " . ($row['ItemClass'] ?? 'NOT SET'));
         error_log("  - Extracted Volume: " . $volume);
         error_log("  - Volume Column: " . ($volumeColumn ?: 'NOT FOUND'));
         error_log("  - Product Type: " . $productType);
@@ -178,7 +182,48 @@ try {
 header('Content-Type: application/json');
 echo json_encode($purchaseSummary);
 
-// Helper functions with enhanced debugging
+// UPDATED: Helper function to determine product type from class - MATCHING SALE LOGIC
+function getProductTypeFromClass($itemClass, $itemName) {
+    error_log("getProductTypeFromClass: Class='$itemClass', Name='$itemName'");
+    
+    // Classification based on CLASS field (matching sale_for_date_range.php logic)
+    $classMappings = [
+        // Spirits
+        'W' => 'SPIRITS', // Whisky
+        'G' => 'SPIRITS', // Gin
+        'D' => 'SPIRITS', // Brandy
+        'K' => 'SPIRITS', // ??? 
+        'R' => 'SPIRITS', // Rum
+        'O' => 'SPIRITS', // Other spirits
+        
+        // Wine
+        'V' => 'WINE',    // Wine
+        
+        // Beer
+        'F' => 'FERMENTED BEER', // Fermented beer
+        'M' => 'MILD BEER',      // Mild beer
+        
+        // Country Liquor
+        'L' => 'COUNTRY LIQUOR', // Country Liquor
+        'C' => 'COUNTRY LIQUOR', // Country Liquor (alternative)
+        
+        // Default fallback
+        'B' => 'FERMENTED BEER', // Beer (default)
+    ];
+    
+    // Priority: Use class mapping first
+    if (!empty($itemClass) && isset($classMappings[$itemClass])) {
+        $result = $classMappings[$itemClass];
+        error_log("  - Classified as $result (Class: $itemClass)");
+        return $result;
+    }
+    
+    // Fallback to name-based classification if class not available or not mapped
+    error_log("  - Falling back to name-based classification");
+    return getProductTypeFromName($itemName);
+}
+
+// Fallback helper function for name-based classification
 function getProductTypeFromName($itemName) {
     if (empty($itemName)) {
         error_log("getProductTypeFromName: Empty item name, defaulting to SPIRITS");
@@ -188,10 +233,20 @@ function getProductTypeFromName($itemName) {
     $name = strtoupper($itemName);
     error_log("getProductTypeFromName: Analyzing '$name'");
     
+    // Country Liquor detection from name (fallback)
+    if (strpos($name, 'COUNTRY') !== false || strpos($name, 'DESI') !== false || 
+        strpos($name, 'LOCAL') !== false || strpos($name, 'INDIGENOUS') !== false) {
+        error_log("  - Classified as COUNTRY LIQUOR (Name-based)");
+        return 'COUNTRY LIQUOR';
+    }
+    
+    // Wine detection
     if (strpos($name, 'WINE') !== false || strpos($name, 'PORT') !== false || strpos($name, 'SHERRY') !== false) {
         error_log("  - Classified as WINE");
         return 'WINE';
     }
+    
+    // Beer detection
     if (strpos($name, 'BEER') !== false) {
         if (strpos($name, 'MILD') !== false) {
             error_log("  - Classified as MILD BEER");
@@ -200,9 +255,11 @@ function getProductTypeFromName($itemName) {
         error_log("  - Classified as FERMENTED BEER");
         return 'FERMENTED BEER';
     }
+    
+    // Spirits detection
     if (strpos($name, 'VODKA') !== false || strpos($name, 'RUM') !== false || 
-        strpos($name, 'WHISKY') !== false || strpos($name, 'GIN') !== false || 
-        strpos($name, 'BRANDY') !== false) {
+        strpos($name, 'WHISKY') !== false || strpos($name, 'WHISKEY') !== false || 
+        strpos($name, 'GIN') !== false || strpos($name, 'BRANDY') !== false) {
         error_log("  - Classified as SPIRITS");
         return 'SPIRITS';
     }
