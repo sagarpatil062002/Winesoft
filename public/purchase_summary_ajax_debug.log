@@ -6105,3 +6105,3940 @@
 )
 
 [15-Oct-2025 08:46:17 Europe/Berlin] Processed 69 items successfully
+[15-Oct-2025 16:29:40 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[15-Oct-2025 16:29:40 Europe/Berlin] Request Time: 2025-10-15 16:29:40
+[15-Oct-2025 16:29:40 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-10-01
+    [to_date] => 2025-10-15
+    [comp_id] => 1
+    [debug] => true
+)
+
+[15-Oct-2025 16:29:40 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:29:40 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-10-01, To=2025-10-15
+[15-Oct-2025 16:29:40 Europe/Berlin] Initialized summary structure with zeros
+[15-Oct-2025 16:29:40 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 0: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 1: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 2: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 3: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 4: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 5: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 6: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 7: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 8: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 9: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 10: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 11: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 12: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 13: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 14: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 15: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 16: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 17: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 18: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 19: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 20: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 21: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 22: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 23: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 24: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 25: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 26: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 27: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 28: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 29: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 30: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 31: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 32: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 33: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 34: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 35: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 36: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 37: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 38: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 39: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 40: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 41: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 42: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 43: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 44: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 45: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 46: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 47: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 48: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 49: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 50: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='375 ML', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 51: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 52: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='2000 ML Pet (6)', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '2000 ML Pet (6)'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 2000ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 2000 -> 2L
+[15-Oct-2025 16:29:40 Europe/Berlin] Item 53: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Size: 2000 ML Pet (6)
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Extracted Volume: 2000
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Volume Column: 2L
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:40 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:40 Europe/Berlin]   - ADDED to SPIRITS -> 2L: +6
+[15-Oct-2025 16:29:40 Europe/Berlin]   ---
+[15-Oct-2025 16:29:40 Europe/Berlin] getProductTypeFromClass: Class='V', Name='SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Classified as WINE (Class: V)
+[15-Oct-2025 16:29:40 Europe/Berlin] extractVolume: Size='180 ML', ItemName='SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:40 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:40 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:41 Europe/Berlin] Item 54: SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Class: V
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Product Type: WINE
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Cases: 4.00, Bottles: 24, BPC: 1
+[15-Oct-2025 16:29:41 Europe/Berlin]   - Total Qty: 28
+[15-Oct-2025 16:29:41 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:41 Europe/Berlin]   - ADDED to WINE -> 180 ML: +28
+[15-Oct-2025 16:29:41 Europe/Berlin]   ---
+[15-Oct-2025 16:29:41 Europe/Berlin] Raw data from query: Array
+(
+    [0] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [1] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [2] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [3] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [4] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [5] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [6] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [7] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [8] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [9] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [10] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [11] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [12] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [13] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [14] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [15] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [16] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [17] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [18] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [19] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [20] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [21] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [22] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [23] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [24] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [25] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [26] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [27] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [28] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [29] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [30] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [31] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [32] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [33] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [34] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [35] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [36] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [37] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [38] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [39] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [40] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [41] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [42] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [43] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [44] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [45] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [46] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [47] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [48] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [49] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [50] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [51] => Array
+        (
+            [ItemCode] => SCMPL0034977
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [52] => Array
+        (
+            [ItemCode] => SCMPL0034978
+            [Size] => 180 ML
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [53] => Array
+        (
+            [ItemCode] => SCMPL0038199
+            [Size] => 2000 ML Pet (6)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 6
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [54] => Array
+        (
+            [ItemCode] => SCMWN0041743
+            [Size] => 180 ML
+            [Cases] => 4.00
+            [Bottles] => 24
+            [BottlesPerCase] => 1
+            [ItemName] => SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => V
+        )
+
+)
+
+[15-Oct-2025 16:29:41 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 888
+            [170 ML] => 0
+            [180 ML] => 20
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 312
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 45
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 6
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 28
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[15-Oct-2025 16:29:41 Europe/Berlin] Processed 55 items successfully
+[15-Oct-2025 16:29:53 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[15-Oct-2025 16:29:53 Europe/Berlin] Request Time: 2025-10-15 16:29:53
+[15-Oct-2025 16:29:53 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-07-01
+    [to_date] => 2025-10-15
+    [comp_id] => 1
+    [debug] => true
+)
+
+[15-Oct-2025 16:29:53 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:29:53 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-07-01, To=2025-10-15
+[15-Oct-2025 16:29:53 Europe/Berlin] Initialized summary structure with zeros
+[15-Oct-2025 16:29:53 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 0: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 1: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 2: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 3: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 4: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 5: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 6: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 7: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 8: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 9: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 10: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 11: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:53 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:53 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin] Item 12: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:53 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:53 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:53 Europe/Berlin]   ---
+[15-Oct-2025 16:29:53 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:53 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 13: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 14: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 15: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 16: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 17: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 18: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 19: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 20: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 21: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 22: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 23: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 24: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 25: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 26: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 27: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 28: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 29: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 30: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 31: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 32: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 33: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 34: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 35: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML (Pet)-96', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML (Pet)-96'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 36: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML (Pet)-96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 96
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +96
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='MAGIC MOMENTS PURE GRAIN VODKA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 37: MAGIC MOMENTS PURE GRAIN VODKA .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 38: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 39: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='Black by Bacardi Ultra Deluxe Original Premium Cra'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 40: Black by Bacardi Ultra Deluxe Original Premium Cra
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 41: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML(100)', ItemName='Bacardi Limon Ultra Deluxe Original citrus Rum .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML(100)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 42: Bacardi Limon Ultra Deluxe Original citrus Rum .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML(100)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 90 ML: +100
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 43: BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 44: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 45: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 46: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 47: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='K', Name='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: K)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML (Pet)', ItemName='M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML (Pet)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 48: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML (Pet)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: K
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='750 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '750 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 750ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 750 -> 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 49: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 750
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 750 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 0.00, Bottles: 6, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 750 ML: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='G', Name='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: G)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 50: BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: G
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +1
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='375 ML', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '375 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 375ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 375 -> 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 51: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 375
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 375 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 24
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 375 ML: +24
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 52: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 2.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 2
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +2
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='W', Name='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='2000 ML Pet (6)', ItemName='ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '2000 ML Pet (6)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 2000ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 2000 -> 2L
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 53: ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 2000 ML Pet (6)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: W
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 2000
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 2L
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: SPIRITS
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 1.00, Bottles: 0, BPC: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 6
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to SPIRITS -> 2L: +6
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='V', Name='SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as WINE (Class: V)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='180 ML', ItemName='SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '180 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 180ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 54: SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: V
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 180
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 180 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: WINE
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 4.00, Bottles: 24, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 28
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: C
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to WINE -> 180 ML: +28
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='F', Name='Tuborg Strong Premium Beer .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as FERMENTED BEER (Class: F)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='500 ML (CAN)', ItemName='Tuborg Strong Premium Beer .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '500 ML (CAN)'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 500ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 500 -> 500 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 55: Tuborg Strong Premium Beer .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 500 ML (CAN)
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: F
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 500
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 500 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: FERMENTED BEER
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 5.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 5
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: F
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to FERMENTED BEER -> 500 ML: +5
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='F', Name='Tuborg Strong Premium Beer .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as FERMENTED BEER (Class: F)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='650 ML', ItemName='Tuborg Strong Premium Beer .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '650 ML'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 650ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 650 -> 650 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 56: Tuborg Strong Premium Beer .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 650 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: F
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 650
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 650 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: FERMENTED BEER
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 20.00, Bottles: 0, BPC: 1
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 20
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: F
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to FERMENTED BEER -> 650 ML: +20
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='L', Name='DESHI DARU TANGO PUNCH-NV .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as COUNTRY LIQUOR (Class: L)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML (Pet)-100', ItemName='DESHI DARU TANGO PUNCH-NV .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML (Pet)-100'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin] Item 57: DESHI DARU TANGO PUNCH-NV .
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Size: 90 ML (Pet)-100
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Class: L
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Product Type: COUNTRY LIQUOR
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Cases: 20.00, Bottles: 0, BPC: 12
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Total Qty: 240
+[15-Oct-2025 16:29:54 Europe/Berlin]   - PUR_FLAG: T
+[15-Oct-2025 16:29:54 Europe/Berlin]   - ADDED to COUNTRY LIQUOR -> 90 ML: +240
+[15-Oct-2025 16:29:54 Europe/Berlin]   ---
+[15-Oct-2025 16:29:54 Europe/Berlin] getProductTypeFromClass: Class='L', Name='ICAP SANTRA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Classified as COUNTRY LIQUOR (Class: L)
+[15-Oct-2025 16:29:54 Europe/Berlin] extractVolume: Size='90 ML (Pet)-100', ItemName='ICAP SANTRA .'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Checking size column: '90 ML (Pet)-100'
+[15-Oct-2025 16:29:54 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:54 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:55 Europe/Berlin] Item 58: ICAP SANTRA .
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Size: 90 ML (Pet)-100
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Class: L
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Product Type: COUNTRY LIQUOR
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Cases: 10.00, Bottles: 0, BPC: 12
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Total Qty: 120
+[15-Oct-2025 16:29:55 Europe/Berlin]   - PUR_FLAG: T
+[15-Oct-2025 16:29:55 Europe/Berlin]   - ADDED to COUNTRY LIQUOR -> 90 ML: +120
+[15-Oct-2025 16:29:55 Europe/Berlin]   ---
+[15-Oct-2025 16:29:55 Europe/Berlin] getProductTypeFromClass: Class='L', Name='THREE X-Sangali .'
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Classified as COUNTRY LIQUOR (Class: L)
+[15-Oct-2025 16:29:55 Europe/Berlin] extractVolume: Size='90 ML (Pet)-100', ItemName='THREE X-Sangali .'
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Checking size column: '90 ML (Pet)-100'
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Found ML size: 90ML
+[15-Oct-2025 16:29:55 Europe/Berlin] getVolumeColumn: 90 -> 90 ML
+[15-Oct-2025 16:29:55 Europe/Berlin] Item 59: THREE X-Sangali .
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Size: 90 ML (Pet)-100
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Class: L
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Extracted Volume: 90
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Volume Column: 90 ML
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Product Type: COUNTRY LIQUOR
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Cases: 20.00, Bottles: 0, BPC: 12
+[15-Oct-2025 16:29:55 Europe/Berlin]   - Total Qty: 240
+[15-Oct-2025 16:29:55 Europe/Berlin]   - PUR_FLAG: T
+[15-Oct-2025 16:29:55 Europe/Berlin]   - ADDED to COUNTRY LIQUOR -> 90 ML: +240
+[15-Oct-2025 16:29:55 Europe/Berlin]   ---
+[15-Oct-2025 16:29:55 Europe/Berlin] Raw data from query: Array
+(
+    [0] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [1] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [2] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [3] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [4] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [5] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [6] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [7] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [8] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [9] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [10] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [11] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [12] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [13] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [14] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [15] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [16] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 1
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [17] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [18] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [19] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [20] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [21] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [22] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [23] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [24] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [25] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [26] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [27] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [28] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [29] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [30] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [31] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [32] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [33] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 2
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [34] => Array
+        (
+            [ItemCode] => SCMPL0010664
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [35] => Array
+        (
+            [ItemCode] => SCMPL0010665
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [36] => Array
+        (
+            [ItemCode] => SCMPL0036420
+            [Size] => 90 ML (Pet)-96
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 96
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [37] => Array
+        (
+            [ItemCode] => SCMPL0040014
+            [Size] => 180 ML (Pet)
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => MAGIC MOMENTS PURE GRAIN VODKA .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [38] => Array
+        (
+            [ItemCode] => SCMPL0024580
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [39] => Array
+        (
+            [ItemCode] => SCMPL0024581
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [40] => Array
+        (
+            [ItemCode] => SCMPL0024582
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => Black by Bacardi Ultra Deluxe Original Premium Cra
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [41] => Array
+        (
+            [ItemCode] => SCMPL0030963
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [42] => Array
+        (
+            [ItemCode] => SCMPL0030964
+            [Size] => 90 ML(100)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 100
+            [ItemName] => Bacardi Limon Ultra Deluxe Original citrus Rum .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [43] => Array
+        (
+            [ItemCode] => SCMPL0034626
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI GINGER ULTRA DELUXE ORIGINAL GINGER RUM .
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [44] => Array
+        (
+            [ItemCode] => SCMPL0038457
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [45] => Array
+        (
+            [ItemCode] => SCMPL0038458
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA GREE
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [46] => Array
+        (
+            [ItemCode] => SCMPL0038469
+            [Size] => 750 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [47] => Array
+        (
+            [ItemCode] => SCMPL0038470
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [48] => Array
+        (
+            [ItemCode] => SCMPL0040016
+            [Size] => 180 ML (Pet)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => K
+        )
+
+    [49] => Array
+        (
+            [ItemCode] => SCMPL0038510
+            [Size] => 750 ML
+            [Cases] => 0.00
+            [Bottles] => 6
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [50] => Array
+        (
+            [ItemCode] => SCMPL0038512
+            [Size] => 180 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => BACARDI MANGO CHILLI ULTRA DELUXE ORIGINAL MANGO C
+            [PurchaseID] => 4
+            [PurchaseDate] => 2025-10-12
+            [PUR_FLAG] => C
+            [ItemClass] => G
+        )
+
+    [51] => Array
+        (
+            [ItemCode] => SCMPL0034977
+            [Size] => 375 ML
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 24
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [52] => Array
+        (
+            [ItemCode] => SCMPL0034978
+            [Size] => 180 ML
+            [Cases] => 2.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [53] => Array
+        (
+            [ItemCode] => SCMPL0038199
+            [Size] => 2000 ML Pet (6)
+            [Cases] => 1.00
+            [Bottles] => 0
+            [BottlesPerCase] => 6
+            [ItemName] => ICONIQ WHITE FINEST INTERNATIONAL GRAIN WHISKY .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => W
+        )
+
+    [54] => Array
+        (
+            [ItemCode] => SCMWN0041743
+            [Size] => 180 ML
+            [Cases] => 4.00
+            [Bottles] => 24
+            [BottlesPerCase] => 1
+            [ItemName] => SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .
+            [PurchaseID] => 5
+            [PurchaseDate] => 2025-10-13
+            [PUR_FLAG] => C
+            [ItemClass] => V
+        )
+
+    [55] => Array
+        (
+            [ItemCode] => SCMBR0018163
+            [Size] => 500 ML (CAN)
+            [Cases] => 5.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Tuborg Strong Premium Beer .
+            [PurchaseID] => 8
+            [PurchaseDate] => 2025-08-31
+            [PUR_FLAG] => F
+            [ItemClass] => F
+        )
+
+    [56] => Array
+        (
+            [ItemCode] => SCMBR0018164
+            [Size] => 650 ML
+            [Cases] => 20.00
+            [Bottles] => 0
+            [BottlesPerCase] => 1
+            [ItemName] => Tuborg Strong Premium Beer .
+            [PurchaseID] => 8
+            [PurchaseDate] => 2025-08-31
+            [PUR_FLAG] => F
+            [ItemClass] => F
+        )
+
+    [57] => Array
+        (
+            [ItemCode] => SCMCL0012761
+            [Size] => 90 ML (Pet)-100
+            [Cases] => 20.00
+            [Bottles] => 0
+            [BottlesPerCase] => 12
+            [ItemName] => DESHI DARU TANGO PUNCH-NV .
+            [PurchaseID] => 10
+            [PurchaseDate] => 2025-07-01
+            [PUR_FLAG] => T
+            [ItemClass] => L
+        )
+
+    [58] => Array
+        (
+            [ItemCode] => SCMCL0013629
+            [Size] => 90 ML (Pet)-100
+            [Cases] => 10.00
+            [Bottles] => 0
+            [BottlesPerCase] => 12
+            [ItemName] => ICAP SANTRA .
+            [PurchaseID] => 10
+            [PurchaseDate] => 2025-07-01
+            [PUR_FLAG] => T
+            [ItemClass] => L
+        )
+
+    [59] => Array
+        (
+            [ItemCode] => SCMCL0013677
+            [Size] => 90 ML (Pet)-100
+            [Cases] => 20.00
+            [Bottles] => 0
+            [BottlesPerCase] => 12
+            [ItemName] => THREE X-Sangali .
+            [PurchaseID] => 10
+            [PurchaseDate] => 2025-07-01
+            [PUR_FLAG] => T
+            [ItemClass] => L
+        )
+
+)
+
+[15-Oct-2025 16:29:55 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 888
+            [170 ML] => 0
+            [180 ML] => 20
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 312
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 45
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 6
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 28
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 5
+            [650 ML] => 20
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 600
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[15-Oct-2025 16:29:55 Europe/Berlin] Processed 60 items successfully

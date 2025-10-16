@@ -67,18 +67,16 @@ try {
     foreach ($paid_invoices as $invoice) {
         $paid_amount = $invoice['paid_amount'];
         
-        // Get the purchase details including current PUR_FLAG and total amount
-        $purchaseQuery = "SELECT VOC_NO, TAMT, PUR_FLAG FROM tblpurchases WHERE ID = ? AND CompID = ?";
-        $stmt = $conn->prepare($purchaseQuery);
+        // Get the purchase VOC_NO to store as reference
+        $vocNoQuery = "SELECT VOC_NO FROM tblpurchases WHERE ID = ? AND CompID = ?";
+        $stmt = $conn->prepare($vocNoQuery);
         $stmt->bind_param("ii", $invoice['id'], $comp_id);
         $stmt->execute();
-        $purchaseResult = $stmt->get_result();
-        $purchaseRow = $purchaseResult->fetch_assoc();
+        $vocNoResult = $stmt->get_result();
+        $vocNoRow = $vocNoResult->fetch_assoc();
         $stmt->close();
         
-        $purchase_voc_no = $purchaseRow['VOC_NO'];
-        $total_amount = $purchaseRow['TAMT'];
-        $current_pur_flag = $purchaseRow['PUR_FLAG'];
+        $purchase_voc_no = $vocNoRow['VOC_NO'];
         
         // Prepare voucher data for this payment
         $voucher_data = [
@@ -112,31 +110,23 @@ try {
         $stmt->execute();
         $stmt->close();
         
-        // Update purchase record status with correct PUR_FLAG logic
-        $new_paid_amount = $invoice['total_paid']; // This is the cumulative paid amount
-        $balance = $total_amount - $new_paid_amount;
+        // Update purchase record status - FIXED: Use 'C' for completed instead of 'T'
+        $total_paid = $invoice['total_paid'];
+        $invoice_amount = $invoice['new_balance'] + $total_paid; // Calculate original amount
         
-        // Determine new PUR_FLAG based on payment status
-        if ($balance <= 0) {
-            // Fully paid - no balance remaining
-            $new_flag = 'C'; // Completed
-        } elseif ($new_paid_amount > 0 && $balance > 0) {
-            // Partial payment made but balance remains
-            $new_flag = 'P'; // Partial
-        } else {
-            // No payment made (shouldn't happen in this context)
+        // FIXED: Correct PUR_FLAG values
+        $new_flag = 'P'; // Partial payment
+        if ($total_paid >= $invoice_amount) {
+            $new_flag = 'C'; // Completed (fully paid) - CHANGED FROM 'T' TO 'C'
+        } elseif ($total_paid == 0) {
             $new_flag = 'T'; // Unpaid
         }
         
-        // Update the purchase record with new paid amount and status
-        $update_query = "UPDATE tblpurchases SET PUR_FLAG = ?, paid_amount = ? WHERE ID = ? AND CompID = ?";
+        $update_query = "UPDATE tblpurchases SET PUR_FLAG = ? WHERE ID = ? AND CompID = ?";
         $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("sdii", $new_flag, $new_paid_amount, $invoice['id'], $comp_id);
+        $stmt->bind_param("sii", $new_flag, $invoice['id'], $comp_id);
         $stmt->execute();
         $stmt->close();
-        
-        // Debug log for status transition
-        error_log("Purchase ID {$invoice['id']} status updated: {$current_pur_flag} -> {$new_flag}, Paid: {$new_paid_amount}, Total: {$total_amount}, Balance: {$balance}");
     }
     
     $conn->commit();

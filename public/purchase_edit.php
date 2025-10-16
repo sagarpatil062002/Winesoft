@@ -327,11 +327,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $basic_amt = $_POST['basic_amt'] ?? 0;
     $tamt = $_POST['tamt'] ?? 0;
     
+    // FIXED: Preserve the original PUR_FLAG instead of using $mode
+    $pur_flag = $purchase['PUR_FLAG']; // Keep the original flag
+    
     // Start transaction for data consistency
     $conn->begin_transaction();
     
     try {
-        // First, reverse stock for all existing items
+        // FIXED: Use the NEW date for both reversal and restocking to maintain consistency
+        $stockDate = $date; // Use the new date for all stock operations
+        
+        // First, reverse stock for all existing items using NEW date
         foreach ($existingItems as $existingItem) {
             reverseStock(
                 $existingItem['ItemCode'],
@@ -340,13 +346,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $existingItem['FreeCases'],
                 $existingItem['FreeBottles'],
                 $existingItem['BottlesPerCase'],
-                $purchase['DATE'],
+                $stockDate,  // FIXED: Use new date instead of $purchase['DATE']
                 $companyId,
                 $conn
             );
         }
         
-        // Update purchase header
+        // Update purchase header - FIXED: Use original PUR_FLAG instead of $mode
         $updateQuery = "UPDATE tblpurchases SET
             DATE = ?, SUBCODE = ?, AUTO_TPNO = ?, INV_NO = ?, INV_DATE = ?, TAMT = ?,
             TPNO = ?, TP_DATE = ?, SCHDIS = ?, CASHDIS = ?, OCTROI = ?, FREIGHT = ?, 
@@ -355,10 +361,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $updateStmt = $conn->prepare($updateQuery);
         $updateStmt->bind_param(
-            "ssssssssddddddddddsii",
+            "ssssssssdddddddddsii",
             $date, $supplier_code, $auto_tp_no, $inv_no, $inv_date, $tamt,
             $tp_no, $tp_date, $trade_disc, $cash_disc, $octroi, $freight, 
-            $stax_per, $stax_amt, $tcs_per, $tcs_amt, $misc_charg, $mode,
+            $stax_per, $stax_amt, $tcs_per, $tcs_amt, $misc_charg, $pur_flag, // FIXED: Use $pur_flag instead of $mode
             $purchaseId, $companyId
         );
         
@@ -390,18 +396,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_name = $item['name'] ?? '';
                 $item_size = $item['size'] ?? '';
                 $cases = $item['cases'] ?? 0;
-                $bottles = $item['bottles'] || 0;
-                $free_cases = $item['free_cases'] || 0;
-                $free_bottles = $item['free_bottles'] || 0;
-                $case_rate = $item['case_rate'] || 0;
-                $mrp = $item['mrp'] || 0;
-                $bottles_per_case = $item['bottles_per_case'] || 12;
-                $batch_no = $item['batch_no'] || '';
-                $auto_batch = $item['auto_batch'] || '';
-                $mfg_month = $item['mfg_month'] || '';
-                $bl = $item['bl'] || 0;
-                $vv = $item['vv'] || 0;
-                $tot_bott = $item['tot_bott'] || 0;
+                $bottles = $item['bottles'] ?? 0; // FIXED: Changed || to ??
+                $free_cases = $item['free_cases'] ?? 0; // FIXED: Changed || to ??
+                $free_bottles = $item['free_bottles'] ?? 0; // FIXED: Changed || to ??
+                $case_rate = $item['case_rate'] ?? 0; // FIXED: Changed || to ??
+                $mrp = $item['mrp'] ?? 0; // FIXED: Changed || to ??
+                $bottles_per_case = $item['bottles_per_case'] ?? 12; // FIXED: Changed || to ??
+                $batch_no = $item['batch_no'] ?? ''; // FIXED: Changed || to ??
+                $auto_batch = $item['auto_batch'] ?? ''; // FIXED: Changed || to ??
+                $mfg_month = $item['mfg_month'] ?? ''; // FIXED: Changed || to ??
+                $bl = $item['bl'] ?? 0; // FIXED: Changed || to ??
+                $vv = $item['vv'] ?? 0; // FIXED: Changed || to ??
+                $tot_bott = $item['totbott'] ?? 0; // FIXED: Changed || to ??
                 
                 // Calculate amount correctly
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
@@ -416,8 +422,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Error inserting item: " . $detailStmt->error);
                 }
                 
-                // Update stock with new values
-                updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $date, $companyId, $conn);
+                // Update stock with new values using the same date
+                updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $stockDate, $companyId, $conn);
             }
             $detailStmt->close();
         }
@@ -425,12 +431,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Commit transaction
         $conn->commit();
         
+        // Log successful update
+        error_log("Purchase updated successfully - ID: $purchaseId, Company: $companyId, Original PUR_FLAG: $pur_flag");
+        
         header("Location: purchase_module.php?mode=".$mode."&success=1");
         exit;
     } catch (Exception $e) {
         // Rollback transaction on error
         $conn->rollback();
         $errorMessage = "Error updating purchase: " . $e->getMessage();
+        error_log("Purchase update failed - ID: $purchaseId, Error: " . $e->getMessage());
     }
 }
 ?>
@@ -551,6 +561,22 @@ input.form-control-sm {
     font-weight: bold;
     width: 10px;
 }
+
+/* Status indicator for PUR_FLAG */
+.pur-flag-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+.pur-flag-A { background-color: #d4edda; color: #155724; }
+.pur-flag-F { background-color: #cce7ff; color: #004085; }
+.pur-flag-T { background-color: #fff3cd; color: #856404; }
+.pur-flag-P { background-color: #d1ecf1; color: #0c5460; }
+.pur-flag-C { background-color: #d1edff; color: #004085; }
 </style>
 </head>
 <body>
@@ -560,7 +586,13 @@ input.form-control-sm {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
-      <h4 class="mb-3">Edit Purchase</h4>
+      <div class="position-relative">
+        <h4 class="mb-3">Edit Purchase</h4>
+        <!-- FIXED: Show current PUR_FLAG status -->
+        <span class="pur-flag-indicator pur-flag-<?= $purchase['PUR_FLAG'] ?>">
+          PUR_FLAG: <?= $purchase['PUR_FLAG'] ?>
+        </span>
+      </div>
 
       <?php if (isset($errorMessage)): ?>
         <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
@@ -761,7 +793,8 @@ input.form-control-sm {
               </div>
               <div class="col-md-3">
                 <label class="form-label">Basic Amount</label>
-                <input type="number" class="form-control" name="basic_amt" id="basicAmt" step="0.01" value="<?=htmlspecialchars($purchase['TAMT'] ?? 0)?>" readonly>
+                <input type="number" class="form-control" name="basic_amt" id="basicAmt" step="0.01" 
+                       value="<?= htmlspecialchars($purchase['TAMT'] ?? 0) ?>" readonly>
               </div>
               <div class="col-md-3">
                 <label class="form-label">Total Amount</label>
@@ -784,8 +817,6 @@ input.form-control-sm {
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -988,10 +1019,22 @@ function initEventListeners() {
         }
     });
     
-    // Charges calculation events
-    ['tradeDisc', 'cashDisc', 'octroi', 'freight', 'staxPer', 'tcsPer', 'miscCharg'].forEach(id => {
-        document.getElementById(id).addEventListener('input', updateCharges);
+    // Charges calculation events - ensure all inputs are connected
+    const chargeInputs = [
+        'tradeDisc', 'cashDisc', 'octroi', 'freight', 
+        'staxPer', 'tcsPer', 'miscCharg'
+    ];
+    
+    chargeInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateCharges);
+            element.addEventListener('change', updateCharges);
+        }
     });
+    
+    // Also update charges when the page loads to show initial values
+    setTimeout(updateCharges, 100);
 }
 
 function addItemToTable(existingItem = null) {
@@ -1255,8 +1298,9 @@ function updateTotals() {
     document.getElementById('totalBL').textContent = totalBL.toFixed(2);
     document.getElementById('totalTotBott').textContent = totalTotBott;
     
-    // Update basic amount
+    // Update basic amount and trigger charges calculation
     document.getElementById('basicAmt').value = totalAmount.toFixed(2);
+    updateCharges(); // Add this line to recalculate charges when totals change
 }
 
 function calculateBottlesBySize() {
@@ -1295,7 +1339,7 @@ function calculateBottlesBySize() {
                 } else {
                     // If no close match found, check if it's exactly one of our sizes
                     if (distinctSizes.includes(sizeValue)) {
-                        sizeMap[sizeValue] += totBott;
+                                            sizeMap[sizeValue] += totBott;
                     }
                 }
             }
@@ -1324,19 +1368,23 @@ function updateCharges() {
     const tcsPer = parseFloat(document.getElementById('tcsPer').value) || 0;
     const miscCharg = parseFloat(document.getElementById('miscCharg').value) || 0;
     
+    console.log('Calculating charges:', { basicAmt, tradeDisc, cashDisc, octroi, freight, staxPer, tcsPer, miscCharg });
+    
     // Calculate discounts
     const tradeDiscAmt = basicAmt * (tradeDisc / 100);
     const cashDiscAmt = basicAmt * (cashDisc / 100);
     
-    // Calculate taxable amount
+    // Calculate taxable amount (after discounts)
     const taxableAmt = basicAmt - tradeDiscAmt - cashDiscAmt;
     
-    // Calculate taxes
+    // Calculate taxes on taxable amount
     const staxAmt = taxableAmt * (staxPer / 100);
     const tcsAmt = taxableAmt * (tcsPer / 100);
     
     // Calculate total amount
     const totalAmt = taxableAmt + octroi + freight + staxAmt + tcsAmt + miscCharg;
+    
+    console.log('Calculated amounts:', { tradeDiscAmt, cashDiscAmt, taxableAmt, staxAmt, tcsAmt, totalAmt });
     
     // Update fields
     document.getElementById('staxAmt').value = staxAmt.toFixed(2);

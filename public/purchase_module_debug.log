@@ -542,3 +542,5257 @@
 [15-Oct-2025 09:24:51 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
 [15-Oct-2025 09:24:51 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
 [15-Oct-2025 09:24:51 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:32 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:32 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:32 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:24:32 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:32 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:32 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:32 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:24:32 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:32 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:24:32 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:24:32 Europe/Berlin] Found 9 purchase records
+[15-Oct-2025 16:24:32 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:32 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:24:32 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:32 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:24:32 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:32 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:32 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:32 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:41 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:41 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:41 Europe/Berlin] Mode: F
+[15-Oct-2025 16:24:41 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:41 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:41 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:41 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[15-Oct-2025 16:24:41 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:41 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[15-Oct-2025 16:24:41 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:41 Europe/Berlin] Found 3 purchase records
+[15-Oct-2025 16:24:41 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:41 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:41 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:24:41 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 7
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 6
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:51:02
+    [UpdatedAt] => 2025-10-14 22:51:02
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:41 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:41 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:41 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:43 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:43 Europe/Berlin] Mode: T
+[15-Oct-2025 16:24:43 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:43 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:43 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:43 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[15-Oct-2025 16:24:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[15-Oct-2025 16:24:43 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:43 Europe/Berlin] Found 2 purchase records
+[15-Oct-2025 16:24:43 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:43 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:24:43 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 6
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 5
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:16:04
+    [UpdatedAt] => 2025-10-14 23:00:52
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:43 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:46 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:46 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:46 Europe/Berlin] Mode: P
+[15-Oct-2025 16:24:46 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:46 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:46 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:46 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[15-Oct-2025 16:24:46 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:46 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[15-Oct-2025 16:24:46 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:46 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 16:24:46 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:48 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:48 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:48 Europe/Berlin] Mode: C
+[15-Oct-2025 16:24:48 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:48 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:48 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:48 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[15-Oct-2025 16:24:48 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:48 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[15-Oct-2025 16:24:48 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:48 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 16:24:48 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:48 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:24:48 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 16:24:48 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 16:24:48 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:52 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:52 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:52 Europe/Berlin] Mode: P
+[15-Oct-2025 16:24:52 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:52 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:52 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:52 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[15-Oct-2025 16:24:52 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:52 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[15-Oct-2025 16:24:52 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:52 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 16:24:52 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:55 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:55 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:55 Europe/Berlin] Mode: T
+[15-Oct-2025 16:24:55 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:55 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:55 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:55 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[15-Oct-2025 16:24:55 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:55 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[15-Oct-2025 16:24:55 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 16:24:55 Europe/Berlin] Found 2 purchase records
+[15-Oct-2025 16:24:55 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:55 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:24:55 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 6
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 5
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:16:04
+    [UpdatedAt] => 2025-10-14 23:00:52
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:55 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:55 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:59 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:24:59 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:24:59 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:24:59 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:24:59 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:24:59 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:24:59 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:24:59 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:24:59 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:24:59 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:24:59 Europe/Berlin] Found 9 purchase records
+[15-Oct-2025 16:24:59 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:24:59 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:24:59 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:24:59 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:24:59 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:24:59 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:59 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:24:59 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:25:16 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:25:16 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:25:16 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:25:16 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:25:16 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:25:16 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:25:16 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:25:16 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:25:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:25:16 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:25:16 Europe/Berlin] Found 9 purchase records
+[15-Oct-2025 16:25:16 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:25:16 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:25:16 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:25:16 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:25:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:25:16 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:25:16 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:25:16 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:14 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:26:14 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:26:14 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:26:14 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:26:14 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:26:14 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:26:14 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:26:14 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:26:14 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:26:14 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:26:14 Europe/Berlin] Found 9 purchase records
+[15-Oct-2025 16:26:14 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:26:14 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:26:14 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:26:14 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:26:14 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:26:14 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:14 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:14 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:26:24 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:26:24 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:26:24 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:26:24 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:26:24 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:26:24 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:26:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:26:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:26:24 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:26:24 Europe/Berlin] Found 8 purchase records
+[15-Oct-2025 16:26:24 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:26:24 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:26:24 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:26:24 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:26:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:26:24 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:24 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:26:29 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:26:29 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:26:29 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:26:29 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:26:29 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:26:29 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:26:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:26:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:26:29 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:26:29 Europe/Berlin] Found 7 purchase records
+[15-Oct-2025 16:26:29 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:26:29 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:26:29 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 9
+    [DATE] => 2025-07-01
+    [SUBCODE] => 
+    [VOC_NO] => 8
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:53:00
+    [UpdatedAt] => 2025-10-14 22:53:00
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => 
+)
+
+[15-Oct-2025 16:26:29 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:26:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:26:29 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 365
+[15-Oct-2025 16:26:34 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:26:34 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:26:34 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:26:34 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:26:34 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:26:34 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:26:34 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:26:34 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:26:34 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:26:34 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:26:34 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:26:34 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:26:34 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:26:34 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:26:34 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:26:34 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:27:56 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:27:56 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:27:56 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:27:56 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:27:56 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:27:57 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:27:57 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:27:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:27:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:27:57 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:27:57 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:27:57 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:27:57 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:27:57 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:27:57 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:27:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:28:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:28:25 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:28:25 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:28:25 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:28:25 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:28:25 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:28:25 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:28:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:28:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:28:25 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:28:25 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:28:25 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:28:25 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:28:25 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:28:25 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:28:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:28:49 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:28:49 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:28:49 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:28:49 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:28:49 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:28:49 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:28:49 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:28:49 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:28:49 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:28:49 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:28:49 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:28:49 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:28:49 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:28:49 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:28:49 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:28:49 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:29:28 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:29:28 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:29:28 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:29:28 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:29:28 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:29:28 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:29:28 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:29:28 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:29:28 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:29:28 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:29:28 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:29:28 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:29:28 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:29:28 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:29:28 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:29:28 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:29:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:29:37 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:29:37 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:29:37 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:29:37 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:29:37 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:29:37 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:29:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:29:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:29:37 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:29:37 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:29:37 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:29:37 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:29:37 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:29:37 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:29:37 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:30:32 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:30:32 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:30:32 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:30:32 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:30:32 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:30:32 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:30:32 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:30:32 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:30:32 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:30:32 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:30:32 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:30:32 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:30:32 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:30:32 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:30:32 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:30:32 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:42:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:42:43 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:42:43 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:42:43 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:42:43 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:42:43 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:42:43 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:42:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:42:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:42:43 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:42:43 Europe/Berlin] Found 6 purchase records
+[15-Oct-2025 16:42:43 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:42:43 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 10
+    [DATE] => 2025-07-01
+    [SUBCODE] => RAJ
+    [VOC_NO] => 9
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 6000.00
+    [TPNO] => 1197
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 1
+    [CreatedAt] => 2025-10-15 09:17:38
+    [UpdatedAt] => 2025-10-15 09:17:38
+    [AUTO_TPNO] => CL2296-300625/1197
+    [supplier_name] => RAJ MARKETING & CO.
+)
+
+[15-Oct-2025 16:42:43 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:42:43 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:42:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:43:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:43:29 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:43:29 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:43:29 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:43:29 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:43:29 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:43:29 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:43:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:43:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:43:29 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:43:29 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 16:43:29 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:43:29 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:43:29 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:43:29 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 16:43:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 16:43:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 16:43:37 Europe/Berlin] Company ID: 1
+[15-Oct-2025 16:43:37 Europe/Berlin] Mode: ALL
+[15-Oct-2025 16:43:37 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 16:43:37 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 16:43:37 Europe/Berlin] Database connection successful
+[15-Oct-2025 16:43:37 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 16:43:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 16:43:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 16:43:37 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 16:43:37 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 16:43:37 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 16:43:37 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 16:43:38 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 16:43:38 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 16:43:38 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:12:45 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:12:45 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:12:45 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:12:45 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:12:45 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:12:45 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:12:45 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:12:45 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:12:45 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:12:45 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:12:45 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 17:12:45 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:12:45 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 17:12:45 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:12:45 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:12:45 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:12:51 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:12:51 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:12:51 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:12:51 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:12:51 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:12:51 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:12:51 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:12:51 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:12:51 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:12:51 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:12:51 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 17:12:51 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:12:51 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 17:12:51 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:12:51 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:12:51 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:15:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:15:25 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:15:25 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:15:25 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:15:25 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:15:25 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:15:25 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:15:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:15:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:15:25 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:15:25 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 17:15:25 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:15:25 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 17:15:25 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:15:25 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:15:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:15:39 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:15:39 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:15:39 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:15:39 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:15:39 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:15:39 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:15:39 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:15:39 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:15:39 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:15:39 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:15:39 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 17:15:39 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:15:39 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 17:15:39 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:15:39 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:15:39 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:15:48 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:15:48 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:15:48 Europe/Berlin] Mode: C
+[15-Oct-2025 17:15:48 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:15:48 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:15:48 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:15:48 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[15-Oct-2025 17:15:48 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:15:48 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[15-Oct-2025 17:15:48 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 17:15:48 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:15:48 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:15:48 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:15:48 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:15:48 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:15:48 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:15:51 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:15:51 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:15:51 Europe/Berlin] Mode: T
+[15-Oct-2025 17:15:51 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:15:51 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:15:51 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:15:51 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[15-Oct-2025 17:15:51 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:15:51 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[15-Oct-2025 17:15:51 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 17:15:51 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 17:15:51 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:17:35 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:17:35 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:17:35 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:17:35 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:17:35 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:17:35 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:17:35 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:17:35 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:17:35 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:17:35 Europe/Berlin] Found 5 purchase records
+[15-Oct-2025 17:17:35 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:17:35 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 8
+    [DATE] => 2025-08-31
+    [SUBCODE] => HARE
+    [VOC_NO] => 7
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 16600.00
+    [TPNO] => 16062
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => F
+    [CompID] => 1
+    [CreatedAt] => 2025-10-14 22:52:22
+    [UpdatedAt] => 2025-10-14 22:52:22
+    [AUTO_TPNO] => FL170-310825/16062
+    [supplier_name] => HARESH TRADERS
+)
+
+[15-Oct-2025 17:17:35 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:17:35 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:18:04 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:18:04 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:18:04 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:18:04 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:18:04 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:18:04 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:18:04 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:18:04 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:18:04 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:18:04 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:18:04 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:18:04 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:18:04 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:18:04 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:18:04 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:18:04 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:18:08 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:18:08 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:18:08 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:18:08 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:18:08 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:18:08 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:18:08 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:18:08 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:18:08 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:18:08 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:18:08 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:18:08 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:18:08 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:18:08 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:18:08 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:18:08 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:23:12 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:23:12 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:23:12 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:23:12 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:23:12 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:23:12 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:23:12 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:23:12 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:23:12 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 17:23:12 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 17:23:12 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:23:12 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:23:12 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:23:12 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:12 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:12 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:23:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:23:24 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:23:24 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:23:24 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:23:24 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:23:24 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:23:24 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:23:24 Europe/Berlin] From Date filter: 2025-07-01
+[15-Oct-2025 17:23:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') AND p.DATE >= ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:23:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+)
+
+[15-Oct-2025 17:23:24 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 17:23:24 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:23:24 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:23:24 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:23:24 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:24 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 17:23:33 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 17:23:33 Europe/Berlin] Company ID: 1
+[15-Oct-2025 17:23:33 Europe/Berlin] Mode: ALL
+[15-Oct-2025 17:23:33 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 17:23:33 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 17:23:33 Europe/Berlin] Database connection successful
+[15-Oct-2025 17:23:33 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 17:23:33 Europe/Berlin] From Date filter: 2025-07-01
+[15-Oct-2025 17:23:33 Europe/Berlin] To Date filter: 2025-10-15
+[15-Oct-2025 17:23:33 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') AND p.DATE >= ? AND p.DATE <= ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 17:23:33 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+    [2] => 2025-10-15
+)
+
+[15-Oct-2025 17:23:33 Europe/Berlin] Parameter Types: iss
+[15-Oct-2025 17:23:33 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 17:23:33 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 17:23:33 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 17:23:33 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:33 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 17:23:33 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:24:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:24:37 Europe/Berlin] Company ID: 2
+[15-Oct-2025 18:24:37 Europe/Berlin] Mode: ALL
+[15-Oct-2025 18:24:37 Europe/Berlin] Session CompID: 2
+[15-Oct-2025 18:24:37 Europe/Berlin] Session User ID: 2
+[15-Oct-2025 18:24:37 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:24:37 Europe/Berlin] Initial filters - Company: 2, Mode: ALL
+[15-Oct-2025 18:24:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:24:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+)
+
+[15-Oct-2025 18:24:37 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 18:24:37 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:24:37 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:24:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:24:43 Europe/Berlin] Company ID: 2
+[15-Oct-2025 18:24:43 Europe/Berlin] Mode: F
+[15-Oct-2025 18:24:43 Europe/Berlin] Session CompID: 2
+[15-Oct-2025 18:24:43 Europe/Berlin] Session User ID: 2
+[15-Oct-2025 18:24:43 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:24:43 Europe/Berlin] Initial filters - Company: 2, Mode: F
+[15-Oct-2025 18:24:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:24:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+    [1] => F
+)
+
+[15-Oct-2025 18:24:43 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:24:43 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:24:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:24:44 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:24:44 Europe/Berlin] Company ID: 2
+[15-Oct-2025 18:24:44 Europe/Berlin] Mode: T
+[15-Oct-2025 18:24:44 Europe/Berlin] Session CompID: 2
+[15-Oct-2025 18:24:44 Europe/Berlin] Session User ID: 2
+[15-Oct-2025 18:24:44 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:24:44 Europe/Berlin] Initial filters - Company: 2, Mode: T
+[15-Oct-2025 18:24:44 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:24:44 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+    [1] => T
+)
+
+[15-Oct-2025 18:24:44 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:24:44 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:24:44 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:24:45 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:24:45 Europe/Berlin] Company ID: 2
+[15-Oct-2025 18:24:45 Europe/Berlin] Mode: P
+[15-Oct-2025 18:24:45 Europe/Berlin] Session CompID: 2
+[15-Oct-2025 18:24:45 Europe/Berlin] Session User ID: 2
+[15-Oct-2025 18:24:45 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:24:45 Europe/Berlin] Initial filters - Company: 2, Mode: P
+[15-Oct-2025 18:24:45 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:24:45 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+    [1] => P
+)
+
+[15-Oct-2025 18:24:45 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:24:45 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:24:45 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:24:46 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:24:46 Europe/Berlin] Company ID: 2
+[15-Oct-2025 18:24:46 Europe/Berlin] Mode: C
+[15-Oct-2025 18:24:46 Europe/Berlin] Session CompID: 2
+[15-Oct-2025 18:24:46 Europe/Berlin] Session User ID: 2
+[15-Oct-2025 18:24:46 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:24:46 Europe/Berlin] Initial filters - Company: 2, Mode: C
+[15-Oct-2025 18:24:46 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:24:46 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+    [1] => C
+)
+
+[15-Oct-2025 18:24:46 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:24:46 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:24:46 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:09 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:09 Europe/Berlin] Mode: ALL
+[15-Oct-2025 18:25:09 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:09 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:09 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:09 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 18:25:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 18:25:09 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 18:25:09 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 18:25:09 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 18:25:09 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 18:25:09 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:09 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:16 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:16 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:16 Europe/Berlin] Mode: C
+[15-Oct-2025 18:25:16 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:16 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:16 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:16 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[15-Oct-2025 18:25:16 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[15-Oct-2025 18:25:16 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:25:16 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 18:25:16 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 18:25:16 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 18:25:16 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:16 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:19 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:19 Europe/Berlin] Mode: P
+[15-Oct-2025 18:25:19 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:19 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:19 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:19 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[15-Oct-2025 18:25:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[15-Oct-2025 18:25:19 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:25:19 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:25:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:20 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:20 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:20 Europe/Berlin] Mode: T
+[15-Oct-2025 18:25:20 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:20 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:20 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:20 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[15-Oct-2025 18:25:20 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:20 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[15-Oct-2025 18:25:20 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:25:20 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:25:20 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:22 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:22 Europe/Berlin] Mode: F
+[15-Oct-2025 18:25:22 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:22 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:22 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:22 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[15-Oct-2025 18:25:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[15-Oct-2025 18:25:22 Europe/Berlin] Parameter Types: is
+[15-Oct-2025 18:25:22 Europe/Berlin] Found 0 purchase records
+[15-Oct-2025 18:25:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:25:23 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:25:23 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:25:23 Europe/Berlin] Mode: ALL
+[15-Oct-2025 18:25:23 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:25:23 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:25:23 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:25:23 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 18:25:23 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:25:23 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[15-Oct-2025 18:25:23 Europe/Berlin] Parameter Types: i
+[15-Oct-2025 18:25:23 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 18:25:23 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 18:25:23 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 18:25:23 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:23 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:25:23 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Oct-2025 18:29:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Oct-2025 18:29:37 Europe/Berlin] Company ID: 1
+[15-Oct-2025 18:29:37 Europe/Berlin] Mode: ALL
+[15-Oct-2025 18:29:37 Europe/Berlin] Session CompID: 1
+[15-Oct-2025 18:29:37 Europe/Berlin] Session User ID: 1
+[15-Oct-2025 18:29:37 Europe/Berlin] Database connection successful
+[15-Oct-2025 18:29:37 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[15-Oct-2025 18:29:37 Europe/Berlin] From Date filter: 2025-07-01
+[15-Oct-2025 18:29:37 Europe/Berlin] To Date filter: 2025-10-15
+[15-Oct-2025 18:29:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') AND p.DATE >= ? AND p.DATE <= ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[15-Oct-2025 18:29:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+    [2] => 2025-10-15
+)
+
+[15-Oct-2025 18:29:37 Europe/Berlin] Parameter Types: iss
+[15-Oct-2025 18:29:37 Europe/Berlin] Found 4 purchase records
+[15-Oct-2025 18:29:37 Europe/Berlin] Sample purchase data:
+[15-Oct-2025 18:29:37 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[15-Oct-2025 18:29:37 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:29:37 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[15-Oct-2025 18:29:37 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:38 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:38 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:38 Europe/Berlin] Mode: ALL
+[16-Oct-2025 05:06:38 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:38 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:38 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:38 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 05:06:38 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:38 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:06:38 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 05:06:38 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:06:38 Europe/Berlin] Sample purchase data:
+[16-Oct-2025 05:06:38 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[16-Oct-2025 05:06:38 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:38 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:38 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:41 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:41 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:41 Europe/Berlin] Mode: F
+[16-Oct-2025 05:06:41 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:41 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:41 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:41 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[16-Oct-2025 05:06:41 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:41 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[16-Oct-2025 05:06:41 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:06:41 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:06:41 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:42 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:42 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Mode: T
+[16-Oct-2025 05:06:42 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:42 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[16-Oct-2025 05:06:42 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:42 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 05:06:42 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:06:42 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:06:42 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:42 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:42 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Mode: T
+[16-Oct-2025 05:06:42 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:42 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:42 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[16-Oct-2025 05:06:42 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:42 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 05:06:42 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:06:42 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:06:42 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:43 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Mode: P
+[16-Oct-2025 05:06:43 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:43 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[16-Oct-2025 05:06:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[16-Oct-2025 05:06:43 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:06:43 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:06:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:43 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Mode: C
+[16-Oct-2025 05:06:43 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:43 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:43 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[16-Oct-2025 05:06:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[16-Oct-2025 05:06:43 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:06:43 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:06:43 Europe/Berlin] Sample purchase data:
+[16-Oct-2025 05:06:43 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[16-Oct-2025 05:06:43 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:43 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:06:44 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:06:44 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:06:44 Europe/Berlin] Mode: ALL
+[16-Oct-2025 05:06:44 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:06:44 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:06:44 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:06:44 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 05:06:44 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:06:44 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:06:44 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 05:06:44 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:06:44 Europe/Berlin] Sample purchase data:
+[16-Oct-2025 05:06:44 Europe/Berlin] Purchase 1: Array
+(
+    [ID] => 5
+    [DATE] => 2025-10-13
+    [SUBCODE] => BHAR
+    [VOC_NO] => 4
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 24900.00
+    [TPNO] => 7585
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-13 11:00:07
+    [UpdatedAt] => 2025-10-14 23:00:42
+    [AUTO_TPNO] => FL173-310825/7587
+    [supplier_name] => BHARAT WINES
+)
+
+[16-Oct-2025 05:06:44 Europe/Berlin] Purchase 2: Array
+(
+    [ID] => 4
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 3
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 09:10:57
+    [UpdatedAt] => 2025-10-14 22:59:56
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:44 Europe/Berlin] Purchase 3: Array
+(
+    [ID] => 2
+    [DATE] => 2025-10-12
+    [SUBCODE] => AMAR
+    [VOC_NO] => 2
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 7180.00
+    [TPNO] => 7649
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => C
+    [CompID] => 1
+    [CreatedAt] => 2025-10-12 08:58:50
+    [UpdatedAt] => 2025-10-14 22:59:52
+    [AUTO_TPNO] => FL1305-310825/7649
+    [supplier_name] => AMAR TRADERS
+)
+
+[16-Oct-2025 05:06:44 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:03 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:03 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:03 Europe/Berlin] Mode: ALL
+[16-Oct-2025 05:36:03 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:03 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:03 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:03 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 05:36:03 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:03 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:36:03 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 05:36:03 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 05:36:03 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:36:03 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:36:03 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 05:36:03 Europe/Berlin] Purchase 1: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 05:36:03 Europe/Berlin] Purchase 2: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:03 Europe/Berlin] Purchase 3: ID=2, VOC_NO=2, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:03 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:26 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:26 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:26 Europe/Berlin] Mode: T
+[16-Oct-2025 05:36:26 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:26 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:26 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:26 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[16-Oct-2025 05:36:26 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:26 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 05:36:26 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:36:26 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 05:36:26 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 05:36:26 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:36:26 Europe/Berlin] No purchases found with current filters
+[16-Oct-2025 05:36:26 Europe/Berlin] Database counts - Total: 6, Unpaid(T): 0, Partial(P): 0, Completed(C): 4, Final(F): 0
+[16-Oct-2025 05:36:26 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:28 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:28 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:28 Europe/Berlin] Mode: P
+[16-Oct-2025 05:36:28 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:28 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:28 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:28 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[16-Oct-2025 05:36:28 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:28 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[16-Oct-2025 05:36:28 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:36:28 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 05:36:28 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[16-Oct-2025 05:36:28 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 05:36:28 Europe/Berlin] No purchases found with current filters
+[16-Oct-2025 05:36:28 Europe/Berlin] Database counts - Total: 6, Unpaid(T): 0, Partial(P): 0, Completed(C): 4, Final(F): 0
+[16-Oct-2025 05:36:28 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:30 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:30 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:30 Europe/Berlin] Mode: C
+[16-Oct-2025 05:36:30 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:30 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:30 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:30 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[16-Oct-2025 05:36:30 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:30 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[16-Oct-2025 05:36:30 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:36:30 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 05:36:30 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[16-Oct-2025 05:36:30 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:36:30 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 05:36:30 Europe/Berlin] Purchase 1: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 05:36:30 Europe/Berlin] Purchase 2: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:30 Europe/Berlin] Purchase 3: ID=2, VOC_NO=2, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:30 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:32 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:32 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:32 Europe/Berlin] Mode: ALL
+[16-Oct-2025 05:36:32 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:32 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:32 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:32 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 05:36:32 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:32 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:36:32 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 05:36:32 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 05:36:32 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 05:36:32 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:36:32 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 05:36:32 Europe/Berlin] Purchase 1: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 05:36:32 Europe/Berlin] Purchase 2: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:32 Europe/Berlin] Purchase 3: ID=2, VOC_NO=2, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:32 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 05:36:42 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 05:36:42 Europe/Berlin] Company ID: 1
+[16-Oct-2025 05:36:42 Europe/Berlin] Mode: ALL
+[16-Oct-2025 05:36:42 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 05:36:42 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 05:36:42 Europe/Berlin] Database connection successful
+[16-Oct-2025 05:36:42 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 05:36:42 Europe/Berlin] From Date filter: 2025-07-01
+[16-Oct-2025 05:36:42 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') AND p.DATE >= ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 05:36:42 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+)
+
+[16-Oct-2025 05:36:42 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 05:36:42 Europe/Berlin] Number of where conditions: 3
+[16-Oct-2025 05:36:42 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+)
+
+[16-Oct-2025 05:36:42 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 05:36:42 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 05:36:42 Europe/Berlin] Purchase 1: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 05:36:42 Europe/Berlin] Purchase 2: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:42 Europe/Berlin] Purchase 3: ID=2, VOC_NO=2, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 05:36:42 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:00:35 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:00:35 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:00:35 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:00:35 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:00:35 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:00:35 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:00:35 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:00:35 Europe/Berlin] From Date filter: 2025-07-01
+[16-Oct-2025 06:00:35 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') AND p.DATE >= ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:00:35 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+)
+
+[16-Oct-2025 06:00:35 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:00:35 Europe/Berlin] Number of where conditions: 3
+[16-Oct-2025 06:00:35 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => 2025-07-01
+)
+
+[16-Oct-2025 06:00:35 Europe/Berlin] Found 6 purchase records
+[16-Oct-2025 06:00:35 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:00:35 Europe/Berlin] Purchase 1: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:00:35 Europe/Berlin] Purchase 2: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:00:35 Europe/Berlin] Purchase 3: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:00:35 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:06:21 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:06:21 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:06:21 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:06:21 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:06:21 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:06:21 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:06:21 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:06:21 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:06:21 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:06:21 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:06:21 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:06:21 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:06:21 Europe/Berlin] Found 6 purchase records
+[16-Oct-2025 06:06:21 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:06:21 Europe/Berlin] Purchase 1: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:06:21 Europe/Berlin] Purchase 2: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:06:21 Europe/Berlin] Purchase 3: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:06:21 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:07:20 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:07:20 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:07:20 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:07:20 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:07:20 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:07:20 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:07:20 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:07:20 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:07:20 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:07:20 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:07:20 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:07:20 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:07:20 Europe/Berlin] Found 5 purchase records
+[16-Oct-2025 06:07:20 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:07:20 Europe/Berlin] Purchase 1: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:07:20 Europe/Berlin] Purchase 2: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:07:20 Europe/Berlin] Purchase 3: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 06:07:20 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:07:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:07:24 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:07:24 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:07:24 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:07:24 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:07:24 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:07:24 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:07:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:07:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:07:24 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:07:24 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:07:24 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:07:24 Europe/Berlin] Found 5 purchase records
+[16-Oct-2025 06:07:24 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:07:24 Europe/Berlin] Purchase 1: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:07:24 Europe/Berlin] Purchase 2: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:07:24 Europe/Berlin] Purchase 3: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 06:07:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:10:55 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:10:55 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:10:55 Europe/Berlin] Mode: F
+[16-Oct-2025 06:10:55 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:10:55 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:10:55 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:10:55 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[16-Oct-2025 06:10:55 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:10:55 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[16-Oct-2025 06:10:55 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:10:55 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:10:55 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[16-Oct-2025 06:10:55 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 06:10:55 Europe/Berlin] No purchases found with current filters
+[16-Oct-2025 06:10:55 Europe/Berlin] Database counts - Total: 6, Unpaid(T): 1, Partial(P): 0, Completed(C): 4, Final(F): 0
+[16-Oct-2025 06:10:55 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:10:56 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:10:56 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:10:56 Europe/Berlin] Mode: T
+[16-Oct-2025 06:10:56 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:10:56 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:10:56 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:10:56 Europe/Berlin] Initial filters - Company: 1, Mode: T
+[16-Oct-2025 06:10:56 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:10:56 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 06:10:56 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:10:56 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:10:56 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => T
+)
+
+[16-Oct-2025 06:10:56 Europe/Berlin] Found 1 purchase records
+[16-Oct-2025 06:10:56 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:10:56 Europe/Berlin] Purchase 1: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:10:56 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:10:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:10:57 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Mode: P
+[16-Oct-2025 06:10:57 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:10:57 Europe/Berlin] Initial filters - Company: 1, Mode: P
+[16-Oct-2025 06:10:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:10:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[16-Oct-2025 06:10:57 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:10:57 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:10:57 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => P
+)
+
+[16-Oct-2025 06:10:57 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 06:10:57 Europe/Berlin] No purchases found with current filters
+[16-Oct-2025 06:10:57 Europe/Berlin] Database counts - Total: 6, Unpaid(T): 1, Partial(P): 0, Completed(C): 4, Final(F): 0
+[16-Oct-2025 06:10:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:10:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:10:57 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Mode: C
+[16-Oct-2025 06:10:57 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:10:57 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:10:57 Europe/Berlin] Initial filters - Company: 1, Mode: C
+[16-Oct-2025 06:10:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:10:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[16-Oct-2025 06:10:57 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:10:57 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:10:57 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => C
+)
+
+[16-Oct-2025 06:10:57 Europe/Berlin] Found 4 purchase records
+[16-Oct-2025 06:10:57 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:10:57 Europe/Berlin] Purchase 1: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:10:57 Europe/Berlin] Purchase 2: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 06:10:57 Europe/Berlin] Purchase 3: ID=2, VOC_NO=2, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 06:10:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:10:58 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:10:58 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:10:58 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:10:58 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:10:58 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:10:58 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:10:58 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:10:58 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:10:58 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:10:58 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:10:58 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:10:58 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:10:58 Europe/Berlin] Found 5 purchase records
+[16-Oct-2025 06:10:58 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:10:58 Europe/Berlin] Purchase 1: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:10:58 Europe/Berlin] Purchase 2: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:10:58 Europe/Berlin] Purchase 3: ID=4, VOC_NO=3, PUR_FLAG=C, DATE=2025-10-12
+[16-Oct-2025 06:10:58 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:21:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:21:36 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:21:36 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:21:36 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:21:36 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:21:36 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:21:36 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:21:36 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:21:36 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:21:36 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:21:36 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:21:36 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:21:36 Europe/Berlin] Found 6 purchase records
+[16-Oct-2025 06:21:36 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:21:36 Europe/Berlin] Purchase 1: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:21:36 Europe/Berlin] Purchase 2: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:21:36 Europe/Berlin] Purchase 3: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:21:36 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:22:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:22:25 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:22:25 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:22:25 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:22:25 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:22:25 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:22:25 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:22:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:22:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:22:25 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:22:25 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:22:25 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:22:25 Europe/Berlin] Found 6 purchase records
+[16-Oct-2025 06:22:25 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:22:25 Europe/Berlin] Purchase 1: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:22:25 Europe/Berlin] Purchase 2: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:22:25 Europe/Berlin] Purchase 3: ID=5, VOC_NO=4, PUR_FLAG=C, DATE=2025-10-13
+[16-Oct-2025 06:22:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:26:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:26:57 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:26:57 Europe/Berlin] Mode: F
+[16-Oct-2025 06:26:57 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:26:57 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:26:57 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:26:57 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[16-Oct-2025 06:26:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:26:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[16-Oct-2025 06:26:57 Europe/Berlin] Parameter Types: is
+[16-Oct-2025 06:26:57 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:26:57 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+    [1] => F
+)
+
+[16-Oct-2025 06:26:57 Europe/Berlin] Found 0 purchase records
+[16-Oct-2025 06:26:57 Europe/Berlin] No purchases found with current filters
+[16-Oct-2025 06:26:57 Europe/Berlin] Database counts - Total: 7, Unpaid(T): 3, Partial(P): 0, Completed(C): 4, Final(F): 0
+[16-Oct-2025 06:26:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:27:02 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:27:02 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:27:02 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:27:02 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:27:02 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:27:02 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:27:02 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:27:02 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:27:02 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:02 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:27:02 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:27:02 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:02 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 06:27:02 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:27:02 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 06:27:02 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:27:02 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:27:02 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:27:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:27:09 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:27:09 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:27:09 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:27:09 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:27:09 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:27:09 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:27:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:27:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:09 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:27:09 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:27:09 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:09 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 06:27:09 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:27:09 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 06:27:09 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:27:09 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:27:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 06:27:39 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 06:27:39 Europe/Berlin] Company ID: 1
+[16-Oct-2025 06:27:39 Europe/Berlin] Mode: ALL
+[16-Oct-2025 06:27:39 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 06:27:39 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 06:27:39 Europe/Berlin] Database connection successful
+[16-Oct-2025 06:27:39 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 06:27:39 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 06:27:39 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:39 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 06:27:39 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 06:27:39 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 06:27:39 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 06:27:39 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 06:27:39 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 06:27:39 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 06:27:39 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 06:27:39 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:04:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:04:09 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:04:09 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:04:09 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:04:09 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:04:09 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:04:09 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:04:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:04:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:04:09 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:04:09 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:04:09 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:04:09 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:04:09 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:04:09 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:04:09 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:04:09 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=P, DATE=2025-08-31
+[16-Oct-2025 07:04:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:04:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:04:22 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:04:22 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:04:22 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:04:22 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:04:22 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:04:22 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:04:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:04:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:04:22 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:04:22 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:04:22 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:04:22 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:04:22 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:04:22 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:04:22 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:04:22 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=P, DATE=2025-08-31
+[16-Oct-2025 07:04:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:05:23 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:05:23 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:05:23 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:05:23 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:05:23 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:05:23 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:05:23 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:05:23 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:05:23 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:23 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:05:23 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:05:23 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:23 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:05:23 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:05:23 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:05:23 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:05:23 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 07:05:23 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:05:27 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:05:27 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:05:27 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:05:27 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:05:27 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:05:27 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:05:27 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:05:27 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:05:27 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:27 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:05:27 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:05:27 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:27 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:05:27 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:05:27 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:05:27 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:05:27 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 07:05:27 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:05:28 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:05:28 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:05:28 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:05:28 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:05:28 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:05:28 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:05:28 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:05:28 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:05:28 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:28 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:05:28 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:05:28 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:05:28 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:05:28 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:05:28 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:05:28 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:05:28 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 07:05:28 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:13:47 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:13:47 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:13:47 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:13:47 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:13:47 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:13:47 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:13:47 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:13:47 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:13:47 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:13:47 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:13:47 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:13:47 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:13:47 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:13:47 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:13:47 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:13:47 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=P, DATE=2025-07-01
+[16-Oct-2025 07:13:47 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 07:13:47 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:14:23 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:14:23 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:14:23 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:14:23 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:14:23 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:14:23 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:14:23 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:14:23 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:14:23 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:14:23 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:14:23 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:14:23 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:14:23 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:14:23 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:14:23 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:14:23 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=C, DATE=2025-07-01
+[16-Oct-2025 07:14:23 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=T, DATE=2025-08-31
+[16-Oct-2025 07:14:23 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:14:55 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:14:55 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:14:55 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:14:55 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:14:55 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:14:55 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:14:55 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:14:55 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:14:55 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:14:55 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:14:55 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:14:55 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:14:55 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:14:55 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:14:55 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:14:55 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=C, DATE=2025-07-01
+[16-Oct-2025 07:14:55 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=c, DATE=2025-08-31
+[16-Oct-2025 07:14:55 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:15:06 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:15:06 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:15:06 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:15:06 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:15:06 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:15:06 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:15:06 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:15:06 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:15:06 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:15:06 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:15:06 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:15:06 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:15:06 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:15:06 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:15:06 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:15:06 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=C, DATE=2025-07-01
+[16-Oct-2025 07:15:06 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=C, DATE=2025-08-31
+[16-Oct-2025 07:15:06 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:16:52 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:16:52 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:16:52 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:16:52 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:16:52 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:16:52 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:16:52 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:16:52 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:16:52 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:16:52 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:16:52 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:16:52 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:16:52 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:16:52 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:16:52 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:16:52 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=C, DATE=2025-07-01
+[16-Oct-2025 07:16:52 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=C, DATE=2025-08-31
+[16-Oct-2025 07:16:52 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[16-Oct-2025 07:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[16-Oct-2025 07:17:35 Europe/Berlin] Company ID: 1
+[16-Oct-2025 07:17:35 Europe/Berlin] Mode: ALL
+[16-Oct-2025 07:17:35 Europe/Berlin] Session CompID: 1
+[16-Oct-2025 07:17:35 Europe/Berlin] Session User ID: 1
+[16-Oct-2025 07:17:35 Europe/Berlin] Database connection successful
+[16-Oct-2025 07:17:35 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[16-Oct-2025 07:17:35 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[16-Oct-2025 07:17:35 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:17:35 Europe/Berlin] Parameter Types: i
+[16-Oct-2025 07:17:35 Europe/Berlin] Number of where conditions: 2
+[16-Oct-2025 07:17:35 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[16-Oct-2025 07:17:35 Europe/Berlin] Found 7 purchase records
+[16-Oct-2025 07:17:35 Europe/Berlin] Sample purchase data (first 3):
+[16-Oct-2025 07:17:35 Europe/Berlin] Purchase 1: ID=11, VOC_NO=10, PUR_FLAG=T, DATE=2025-05-15
+[16-Oct-2025 07:17:35 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
+[16-Oct-2025 07:17:35 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=C, DATE=2025-08-31
+[16-Oct-2025 07:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG END ===

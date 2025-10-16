@@ -4,6 +4,13 @@ require_once 'drydays_functions.php'; // Single include
 require_once 'license_functions.php'; // ADDED: Include license 
 require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
+// ============================================================================
+// PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
+// ============================================================================
+set_time_limit(0); // No time limit
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', '1024M'); // 1GB memory
+
 // Logging function
 function logMessage($message, $level = 'INFO') {
     $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
@@ -148,28 +155,6 @@ function validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id) {
 // VOLUME-BASED BILL GENERATION FUNCTIONS (FROM sale_for_date_range.php)
 // ============================================================================
 
-// Function to distribute sales across dates
-function distributeSales($total_qty, $days_count) {
-    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
-    
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
-    
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    for ($i = count($daily_sales) - 1; $i > 0; $i--) {
-        $j = mt_rand(0, $i);
-        list($daily_sales[$i], $daily_sales[$j]) = array($daily_sales[$j], $daily_sales[$i]);
-    }
-    
-    return $daily_sales;
-}
 
 // Function to extract bottle size from item details
 function extractBottleSize($details, $details2) {
@@ -226,98 +211,6 @@ function getVolumeLimits($license_type) {
     return $limits[$license_type] ?? $limits['DEFAULT'];
 }
 
-// Function to generate bills with volume limits
-function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
-    $bills = [];
-    $license_type = getCompanyLicenseType($comp_id, $conn);
-    $volume_limits = getVolumeLimits($license_type);
-    
-    logMessage("Generating bills with volume limits: " . json_encode($volume_limits));
-    
-    // Process each date
-    foreach ($date_array as $date_index => $bill_date) {
-        $daily_items = [];
-        $daily_total_amount = 0;
-        $total_bottles = 0;
-        $total_volume = 0;
-        
-        // Collect items for this date
-        foreach ($items_data as $item_code => $item) {
-            $daily_qty = $daily_sales_data[$item_code][$date_index] ?? 0;
-            
-            if ($daily_qty > 0) {
-                $bottle_size = extractBottleSize($item['name'], '');
-                $item_volume = $bottle_size * $daily_qty;
-                
-                // Check if adding this item would exceed limits
-                if (($total_bottles + $daily_qty <= $volume_limits['max_bottles']) && 
-                    ($total_volume + $item_volume <= $volume_limits['max_volume'])) {
-                    
-                    $amount = $daily_qty * $item['rate'];
-                    
-                    $daily_items[] = [
-                        'code' => $item_code,
-                        'qty' => $daily_qty,
-                        'rate' => $item['rate'],
-                        'amount' => $amount,
-                        'size' => $bottle_size
-                    ];
-                    
-                    $daily_total_amount += $amount;
-                    $total_bottles += $daily_qty;
-                    $total_volume += $item_volume;
-                } else {
-                    // If limits exceeded, create a bill with current items and start new one
-                    if (!empty($daily_items)) {
-                        $bills[] = [
-                            'bill_date' => $bill_date,
-                            'items' => $daily_items,
-                            'total_amount' => $daily_total_amount,
-                            'mode' => $mode,
-                            'comp_id' => $comp_id,
-                            'user_id' => $user_id
-                        ];
-                        
-                        // Reset for new bill
-                        $daily_items = [];
-                        $daily_total_amount = 0;
-                        $total_bottles = 0;
-                        $total_volume = 0;
-                    }
-                    
-                    // Add current item to new bill
-                    $amount = $daily_qty * $item['rate'];
-                    $daily_items[] = [
-                        'code' => $item_code,
-                        'qty' => $daily_qty,
-                        'rate' => $item['rate'],
-                        'amount' => $amount,
-                        'size' => $bottle_size
-                    ];
-                    
-                    $daily_total_amount = $amount;
-                    $total_bottles = $daily_qty;
-                    $total_volume = $bottle_size * $daily_qty;
-                }
-            }
-        }
-        
-        // Add remaining items for this date
-        if (!empty($daily_items)) {
-            $bills[] = [
-                'bill_date' => $bill_date,
-                'items' => $daily_items,
-                'total_amount' => $daily_total_amount,
-                'mode' => $mode,
-                'comp_id' => $comp_id,
-                'user_id' => $user_id
-            ];
-        }
-    }
-    
-    logMessage("Generated " . count($bills) . " bills with volume-based splitting");
-    return $bills;
-}
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -882,6 +775,10 @@ function getNextBillNumber($conn, $comp_id) {
     }
 }
 
+// ============================================================================
+// PERFORMANCE OPTIMIZED: MAIN UPDATE PROCESSING
+// ============================================================================
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
@@ -892,6 +789,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['last_submission'] = time();
         
         if (isset($_POST['update_sales'])) {
+            
+            // ============================================================================
+            // PERFORMANCE OPTIMIZATION - DATABASE OPTIMIZATIONS
+            // ============================================================================
+            $conn->query("SET SESSION wait_timeout = 28800");
+            $conn->query("SET autocommit = 0");
+            
+            // Reduce logging frequency
+            $bulk_operation = (count($_SESSION['sale_quantities'] ?? []) > 100);
+            
+            if ($bulk_operation) {
+                logMessage("Starting bulk sales operation with " . count($_SESSION['sale_quantities']) . " items - Performance mode enabled");
+            }
+            
             $start_date = $_POST['start_date'];
             $end_date = $_POST['end_date'];
             $comp_id = $_SESSION['CompID'];
@@ -945,9 +856,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $items_data = [];
                     $daily_sales_data = [];
                     
-                    // Process ONLY session quantities > 0 (from ALL modes)
-                    if (isset($_SESSION['sale_quantities'])) {
-                        foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                    // ============================================================================
+                    // PERFORMANCE OPTIMIZATION: BATCH PROCESSING WITH PROGRESS
+                    // ============================================================================
+                    $batch_size = 50;
+                    $session_items = array_keys($_SESSION['sale_quantities']);
+                    $total_session_items = count($session_items);
+                    $processed_items = 0;
+                    
+                    // Cache item data to avoid repeated database lookups
+                    $item_cache = [];
+                    foreach ($all_items as $item_code => $item) {
+                        $item_cache[$item_code] = [
+                            'stock' => $item['CURRENT_STOCK'],
+                            'rate' => $item['RPRICE'],
+                            'details' => $item['DETAILS']
+                        ];
+                    }
+                    
+                    // MySQL Performance Tweaks
+                    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+                    $conn->query("SET UNIQUE_CHECKS = 0");
+                    $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
+                    
+                    // Process ONLY session quantities > 0 (from ALL modes) in batches
+                    for ($i = 0; $i < $total_session_items; $i += $batch_size) {
+                        $batch_items = array_slice($session_items, $i, $batch_size);
+                        
+                        foreach ($batch_items as $item_code) {
+                            $processed_items++;
+                            $total_qty = $_SESSION['sale_quantities'][$item_code];
+                            
+                            // Reduce logging frequency during bulk operations
+                            if (!$bulk_operation || $processed_items % 50 == 0) {
+                                logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
+                            }
+                            
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
@@ -963,6 +907,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     'mode' => $item['LIQ_FLAG'] // Use item's actual mode, not current page mode
                                 ];
                             }
+                        }
+                        
+                        // Optional: Add small delay to prevent server overload
+                        if ($bulk_operation) {
+                            usleep(100000); // 0.1 second
                         }
                     }
                     
@@ -1073,6 +1022,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->rollback();
                     $error_message = "Error updating sales: " . $e->getMessage();
                     logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
+                }
+                
+                // ============================================================================
+                // PERFORMANCE OPTIMIZATION: CLEANUP
+                // ============================================================================
+                
+                // Re-enable database constraints
+                $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+                $conn->query("SET UNIQUE_CHECKS = 1");
+                
+                // Clean up memory
+                if (isset($all_items)) unset($all_items);
+                if (isset($items_data)) unset($items_data); 
+                if (isset($daily_sales_data)) unset($daily_sales_data);
+                gc_collect_cycles();
+                
+                if ($bulk_operation) {
+                    logMessage("Bulk sales operation completed - Processed $processed_items items");
                 }
             }
         }

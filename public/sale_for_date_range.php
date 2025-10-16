@@ -617,8 +617,31 @@ function getNextBillNumber($conn, $comp_id) {
         return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
     }
 }
+
+// ============================================================================
+// PERFORMANCE OPTIMIZATION: BULK OPERATION HANDLING
+// ============================================================================
+
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ============================================================================
+    // PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
+    // ============================================================================
+    set_time_limit(0); // No time limit
+    ini_set('max_execution_time', 0);
+    ini_set('memory_limit', '1024M'); // 1GB memory
+    
+    // Database optimizations
+    $conn->query("SET SESSION wait_timeout = 28800");
+    $conn->query("SET autocommit = 0");
+    
+    // Check if this is a bulk operation
+    $bulk_operation = (count($_SESSION['sale_quantities'] ?? []) > 100);
+    
+    if ($bulk_operation) {
+        logMessage("Starting bulk sales operation with " . count($_SESSION['sale_quantities']) . " items - Performance mode enabled");
+    }
+    
     // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
         $error_message = "Duplicate submission detected. Please wait a few seconds before trying again.";
@@ -665,7 +688,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Enhanced stock validation before transaction
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
+                $item_count = 0;
                 foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                    $item_count++;
+                    // Reduce logging frequency for bulk operations
+                    if ($bulk_operation && $item_count % 50 == 0) {
+                        logMessage("Stock validation progress: $item_count/" . count($_SESSION['sale_quantities']) . " items checked");
+                    }
+                    
                     if ($total_qty > 0 && isset($all_items[$item_code])) {
                         $current_stock = $all_items[$item_code]['CURRENT_STOCK'];
                         
@@ -694,7 +724,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Process ALL session quantities > 0 (from ALL modes)
                     if (isset($_SESSION['sale_quantities'])) {
+                        $item_count = 0;
                         foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                            $item_count++;
+                            // Reduce logging frequency for bulk operations
+                            if ($bulk_operation && $item_count % 50 == 0) {
+                                logMessage("Processing progress: $item_count/" . count($_SESSION['sale_quantities']) . " items processed");
+                            }
+                            
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
@@ -730,7 +767,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         });
                         
                         // Process each bill with proper zero-padded bill numbers
+                        $bill_count = 0;
+                        $total_bills = count($bills);
+                        
                         foreach ($bills as $bill) {
+                            $bill_count++;
+                            if ($bulk_operation && $bill_count % 10 == 0) {
+                                logMessage("Bill generation progress: $bill_count/$total_bills bills created");
+                            }
+                            
                             $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
                             
                             // Insert sale header
@@ -775,7 +820,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $cash_memo_errors = [];
 
                         // Generate cash memos for all created bills
+                        $cash_memo_count = 0;
+                        $total_cash_memos = count($bills);
+                        
                         foreach ($bills as $bill_index => $bill) {
+                            $cash_memo_count++;
+                            if ($bulk_operation && $cash_memo_count % 10 == 0) {
+                                logMessage("Cash memo generation progress: $cash_memo_count/$total_cash_memos processed");
+                            }
+                            
                             $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
                             
                             if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
@@ -799,6 +852,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
 
+                        // Clean up memory
+                        unset($all_items);
+                        unset($items_data);
+                        unset($daily_sales_data);
+                        unset($bills);
+                        gc_collect_cycles();
+                        
+                        if ($bulk_operation) {
+                            logMessage("Bulk sales operation completed successfully");
+                        }
+
                         // Redirect to retail_sale.php
                         header("Location: retail_sale.php?success=" . urlencode($success_message));
                         exit;
@@ -814,6 +878,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+    
+    // Re-enable database constraints
+    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+    $conn->query("SET UNIQUE_CHECKS = 1");
 }
 
 // Check for success message in URL

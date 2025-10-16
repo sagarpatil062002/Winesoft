@@ -34,17 +34,18 @@ if (!$conn) {
 // Handle success message
 $success = isset($_GET['success']) ? $_GET['success'] : 0;
 
-// Build query with filters - UPDATED: Handle ALL mode and include 'C' status
+// Build query with filters - FIXED: Better handling of ALL mode
 $whereConditions = ["p.CompID = ?"];
 $params = [$companyId];
 $paramTypes = "i";
 
-// Handle mode filter - UPDATED: Include 'C' status
+// Handle mode filter - FIXED: Better logic for mode handling
 if ($mode !== 'ALL') {
     $whereConditions[] = "p.PUR_FLAG = ?";
     $params[] = $mode;
     $paramTypes .= "s";
 } else {
+    // For ALL mode, include all possible PUR_FLAG values
     $whereConditions[] = "p.PUR_FLAG IN ('F', 'T', 'P', 'C')";
 }
 
@@ -80,7 +81,7 @@ if (isset($_GET['supplier']) && !empty($_GET['supplier'])) {
     error_log("Supplier filter: " . $_GET['supplier']);
 }
 
-// Get all purchases for this company with filters
+// Get all purchases for this company with filters - FIXED: Better query construction
 $purchases = [];
 $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name 
                   FROM tblpurchases p 
@@ -91,14 +92,22 @@ $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name
 error_log("Final Query: " . $purchaseQuery);
 error_log("Parameters: " . print_r($params, true));
 error_log("Parameter Types: " . $paramTypes);
+error_log("Number of where conditions: " . count($whereConditions));
 
+// FIXED: Better query execution with error handling
 $purchaseStmt = $conn->prepare($purchaseQuery);
 if (!$purchaseStmt) {
     error_log("QUERY PREPARE FAILED: " . $conn->error);
     $queryError = "Query preparation failed: " . $conn->error;
 } else {
+    // Only bind parameters if we have them
     if (!empty($params)) {
-        $purchaseStmt->bind_param($paramTypes, ...$params);
+        // Debug the binding
+        error_log("Binding parameters: " . print_r($params, true));
+        $bindResult = $purchaseStmt->bind_param($paramTypes, ...$params);
+        if (!$bindResult) {
+            error_log("PARAMETER BINDING FAILED: " . $purchaseStmt->error);
+        }
     }
     
     if (!$purchaseStmt->execute()) {
@@ -112,10 +121,34 @@ if (!$purchaseStmt) {
             
             // Log first few purchases for debugging
             if (count($purchases) > 0) {
-                error_log("Sample purchase data:");
+                error_log("Sample purchase data (first 3):");
                 for ($i = 0; $i < min(3, count($purchases)); $i++) {
-                    error_log("Purchase " . ($i+1) . ": " . print_r($purchases[$i], true));
+                    error_log("Purchase " . ($i+1) . ": ID=" . $purchases[$i]['ID'] . 
+                             ", VOC_NO=" . $purchases[$i]['VOC_NO'] . 
+                             ", PUR_FLAG=" . $purchases[$i]['PUR_FLAG'] . 
+                             ", DATE=" . $purchases[$i]['DATE']);
                 }
+            } else {
+                error_log("No purchases found with current filters");
+                
+                // Debug: Let's check what's actually in the database
+                $debugQuery = "SELECT COUNT(*) as total_count, 
+                              SUM(CASE WHEN PUR_FLAG = 'T' THEN 1 ELSE 0 END) as unpaid_count,
+                              SUM(CASE WHEN PUR_FLAG = 'P' THEN 1 ELSE 0 END) as partial_count,
+                              SUM(CASE WHEN PUR_FLAG = 'C' THEN 1 ELSE 0 END) as completed_count,
+                              SUM(CASE WHEN PUR_FLAG = 'F' THEN 1 ELSE 0 END) as final_count
+                              FROM tblpurchases WHERE CompID = ?";
+                $debugStmt = $conn->prepare($debugQuery);
+                $debugStmt->bind_param("i", $companyId);
+                $debugStmt->execute();
+                $debugResult = $debugStmt->get_result();
+                $debugData = $debugResult->fetch_assoc();
+                error_log("Database counts - Total: " . $debugData['total_count'] . 
+                         ", Unpaid(T): " . $debugData['unpaid_count'] . 
+                         ", Partial(P): " . $debugData['partial_count'] . 
+                         ", Completed(C): " . $debugData['completed_count'] . 
+                         ", Final(F): " . $debugData['final_count']);
+                $debugStmt->close();
             }
         } else {
             error_log("GET RESULT FAILED: " . $purchaseStmt->error);
@@ -231,48 +264,52 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
     <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
-      <!-- Debug Panel -->
+      <!-- Debug Information Panel -->
       <div class="debug-panel">
-        <h6 class="debug-toggle" onclick="toggleDebug()">🔍 Debug Information (Click to toggle)</h6>
-        <div id="debugContent" style="display: none;">
-          <strong>Session Data:</strong><br>
+        <div class="debug-toggle" onclick="toggleDebug()">
+          <i class="fa-solid fa-bug"></i> Debug Information (Click to toggle)
+        </div>
+        <div id="debugContent" style="display: none; margin-top: 10px;">
+          <strong>Debug Info:</strong><br>
           Company ID: <?= $companyId ?><br>
           Mode: <?= $mode ?><br>
-          User ID: <?= $_SESSION['user_id'] ?? 'NOT SET' ?><br><br>
-          
-          <strong>Query Info:</strong><br>
-          Records Found: <?= count($purchases) ?><br>
-          <?php if (isset($queryError)): ?>
-          Query Error: <?= $queryError ?><br>
-          <?php endif; ?>
-          <?php if (isset($executeError)): ?>
-          Execute Error: <?= $executeError ?><br>
-          <?php endif; ?>
-          <?php if (isset($dbError)): ?>
-          DB Error: <?= $dbError ?><br>
-          <?php endif; ?>
+          Purchases Found: <?= count($purchases) ?><br>
+          <?php if (isset($queryError)): ?>Query Error: <?= $queryError ?><br><?php endif; ?>
+          <?php if (isset($executeError)): ?>Execute Error: <?= $executeError ?><br><?php endif; ?>
         </div>
       </div>
 
       <!-- Purchase Type Navigation -->
       <div class="purchase-type-nav">
         <div class="purchase-type-buttons">
-          <a href="?mode=ALL" class="purchase-type-btn <?= $mode === 'ALL' ? 'active' : '' ?>">All Purchases</a>
-          <a href="?mode=F" class="purchase-type-btn <?= $mode === 'F' ? 'active' : '' ?>">Foreign Liquor</a>
-          <a href="?mode=T" class="purchase-type-btn <?= $mode === 'T' ? 'active' : '' ?>">Unpaid Purchases</a>
-          <a href="?mode=P" class="purchase-type-btn <?= $mode === 'P' ? 'active' : '' ?>">Partial Payments</a>
-          <a href="?mode=C" class="purchase-type-btn <?= $mode === 'C' ? 'active' : '' ?>">Completed Purchases</a>
+          <a href="purchase_module.php?mode=ALL" class="purchase-type-btn <?= $mode === 'ALL' ? 'active' : '' ?>">
+            <i class="fa-solid fa-list me-1"></i> All Purchases
+          </a>
+          <a href="purchase_module.php?mode=F" class="purchase-type-btn <?= $mode === 'F' ? 'active' : '' ?>">
+            <i class="fa-solid fa-wine-bottle me-1"></i> Foreign Liquor
+          </a>
+          <a href="purchase_module.php?mode=T" class="purchase-type-btn <?= $mode === 'T' ? 'active' : '' ?>">
+            <i class="fa-solid fa-clock me-1"></i> Unpaid
+          </a>
+          <a href="purchase_module.php?mode=P" class="purchase-type-btn <?= $mode === 'P' ? 'active' : '' ?>">
+            <i class="fa-solid fa-percent me-1"></i> Partial
+          </a>
+          <a href="purchase_module.php?mode=C" class="purchase-type-btn <?= $mode === 'C' ? 'active' : '' ?>">
+            <i class="fa-solid fa-check me-1"></i> Completed
+          </a>
         </div>
       </div>
 
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4>Purchase Module - <?= 
-            $mode === 'ALL' ? 'All Purchases' : 
-            ($mode === 'F' ? 'Foreign Liquor' : 
+        <h4 class="mb-0">
+          <?= 
+            $mode === 'ALL' ? 'All Purchase Records' : 
+            ($mode === 'F' ? 'Foreign Liquor Purchases' : 
             ($mode === 'T' ? 'Unpaid Purchases' : 
-            ($mode === 'P' ? 'Partial Payments' : 
-            ($mode === 'C' ? 'Completed Purchases' : 'Unknown')))) 
-        ?></h4>
+            ($mode === 'P' ? 'Partial Payment Purchases' : 
+            ($mode === 'C' ? 'Completed Purchases' : 'Purchase Records')))) 
+          ?>
+        </h4>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
             <i class="fas fa-chart-bar"></i> Purchase Summary
