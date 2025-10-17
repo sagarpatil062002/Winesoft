@@ -807,6 +807,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $total_amount += $bill['total_amount'];
                         }
 
+                        // ============================================================================
+                        // OPTIMIZED CASH MEMO GENERATION - PERFORMANCE SAFE
+                        // ============================================================================
+                        $cash_memos_generated = 0;
+                        $cash_memo_errors = [];
+
+                        if (count($bills) > 0) {
+                            logMessage("Starting optimized cash memo generation for " . count($bills) . " bills");
+                            
+                            $cash_memo_start_time = time();
+                            $MAX_CASH_MEMO_TIME = 20; // seconds - safety limit
+                            $cash_memo_count = 0;
+                            
+                            foreach ($bills as $bill_index => $bill) {
+                                // SAFETY: Break if cash memo generation takes too long
+                                if ((time() - $cash_memo_start_time) > $MAX_CASH_MEMO_TIME) {
+                                    logMessage("Cash memo generation timeout after $MAX_CASH_MEMO_TIME seconds - skipping remaining bills", 'WARNING');
+                                    break;
+                                }
+                                
+                                $cash_memo_count++;
+                                $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
+                                
+                                try {
+                                    if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
+                                        $cash_memos_generated++;
+                                        logMessage("Cash memo generated for bill: $padded_bill_no");
+                                    } else {
+                                        $cash_memo_errors[] = $padded_bill_no;
+                                        logMessage("Failed to generate cash memo for bill: $padded_bill_no", 'WARNING');
+                                    }
+                                } catch (Exception $e) {
+                                    $cash_memo_errors[] = $padded_bill_no;
+                                    logMessage("Exception generating cash memo for $padded_bill_no: " . $e->getMessage(), 'ERROR');
+                                    // CONTINUE with next bill - don't stop entire process
+                                }
+                                
+                                // Small delay for large batches to prevent database overload
+                                if (count($bills) > 50 && $cash_memo_count % 10 == 0) {
+                                    usleep(100000); // 0.1 second delay
+                                }
+                            }
+                            
+                            logMessage("Cash memo generation completed: $cash_memos_generated successful, " . count($cash_memo_errors) . " failed");
+                        }
+
                         // Commit transaction
                         $conn->commit();
 
@@ -815,32 +861,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
 
-                        // ADD AUTOMATIC CASH MEMO GENERATION
-                        $cash_memos_generated = 0;
-                        $cash_memo_errors = [];
-
-                        // Generate cash memos for all created bills
-                        $cash_memo_count = 0;
-                        $total_cash_memos = count($bills);
-                        
-                        foreach ($bills as $bill_index => $bill) {
-                            $cash_memo_count++;
-                            if ($bulk_operation && $cash_memo_count % 10 == 0) {
-                                logMessage("Cash memo generation progress: $cash_memo_count/$total_cash_memos processed");
-                            }
-                            
-                            $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
-                            
-                            if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
-                                $cash_memos_generated++;
-                                logCashMemoGeneration($padded_bill_no, true);
-                            } else {
-                                $cash_memo_errors[] = $padded_bill_no;
-                                logCashMemoGeneration($padded_bill_no, false, "Cash memo generation failed");
-                            }
-                        }
-
-                        // Update success message to include cash memo info
+                        // Add cash memo info to success message
                         if ($cash_memos_generated > 0) {
                             $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
                         }

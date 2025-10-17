@@ -4,13 +4,6 @@ require_once 'drydays_functions.php'; // Single include
 require_once 'license_functions.php'; // ADDED: Include license 
 require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
-// ============================================================================
-// PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
-// ============================================================================
-set_time_limit(0); // No time limit
-ini_set('max_execution_time', 0);
-ini_set('memory_limit', '1024M'); // 1GB memory
-
 // Logging function
 function logMessage($message, $level = 'INFO') {
     $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
@@ -150,67 +143,6 @@ function validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id) {
     
     return $stock_errors;
 }
-
-// ============================================================================
-// VOLUME-BASED BILL GENERATION FUNCTIONS (FROM sale_for_date_range.php)
-// ============================================================================
-
-
-// Function to extract bottle size from item details
-function extractBottleSize($details, $details2) {
-    // Priority: details2 column first
-    if ($details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details2, $matches);
-        if ($literMatch) {
-            $volume = floatval($matches[1]);
-            return round($volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details2, $matches);
-        if ($mlMatch) {
-            return intval($matches[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if ($details) {
-        // Handle special cases
-        if (stripos($details, 'QUART') !== false) return 750;
-        if (stripos($details, 'PINT') !== false) return 375;
-        if (stripos($details, 'NIP') !== false) return 90;
-        
-        // Handle liter sizes with decimal points
-        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details, $matches);
-        if ($literMatch) {
-            $volume = floatval($matches[1]);
-            return round($volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details, $matches);
-        if ($mlMatch) {
-            return intval($matches[1]);
-        }
-    }
-    
-    return 0; // Unknown size
-}
-
-// Function to calculate volume limits based on license type
-function getVolumeLimits($license_type) {
-    $limits = [
-        'FL' => ['max_bottles' => 12, 'max_volume' => 9000], // Foreign Liquor
-        'CL' => ['max_bottles' => 6, 'max_volume' => 4500],  // Country Liquor  
-        'BEER' => ['max_bottles' => 12, 'max_volume' => 9000], // Beer
-        'WINE' => ['max_bottles' => 12, 'max_volume' => 9000], // Wine
-        'DEFAULT' => ['max_bottles' => 12, 'max_volume' => 9000]
-    ];
-    
-    return $limits[$license_type] ?? $limits['DEFAULT'];
-}
-
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -431,14 +363,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// ============================================================================
-// MODIFIED: Get ALL items data for JavaScript from ALL modes (for Total Sales Summary)
-// ============================================================================
-$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
-                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-                    FROM tblitemmaster im
-                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE";
-$all_items_stmt = $conn->prepare($all_items_query);
+// Get ALL items data for JavaScript from a separate query (for Total Sales Summary) with license filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    $all_items_stmt = $conn->prepare($all_items_query);
+    $all_items_params = array_merge([$mode], $allowed_classes);
+    $all_items_stmt->bind_param(str_repeat('s', count($all_items_params)), ...$all_items_params);
+} else {
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS
+                        FROM tblitemmaster im 
+                        WHERE 1 = 0";
+    $all_items_stmt = $conn->prepare($all_items_query);
+}
+
 $all_items_stmt->execute();
 $all_items_result = $all_items_stmt->get_result();
 $all_items_data = [];
@@ -505,7 +445,7 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     }
     
     // Current active table (without month suffix) - for updating current month when sale is in archived month
-    $current_daily_stock_table = "tbldailystock_" . $comp_id; // FIXED: Removed extra double quote
+    $current_daily_stock_table = "tbldailystock_" . $comp_id;
     
     // Extract day number from date (e.g., 2025-09-27 → day 27)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
@@ -647,6 +587,7 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     
     logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing");
 }
+
 // Helper function to recalculate current month's stock
 function recalculateCurrentMonthStock($conn, $table_name, $item_code, $stk_month) {
     // Start from day 1 and recalculate all days
@@ -774,10 +715,6 @@ function getNextBillNumber($conn, $comp_id) {
     }
 }
 
-// ============================================================================
-// PERFORMANCE OPTIMIZED: MAIN UPDATE PROCESSING
-// ============================================================================
-
 // Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if this is a duplicate submission
@@ -788,34 +725,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['last_submission'] = time();
         
         if (isset($_POST['update_sales'])) {
-            
-            // ============================================================================
-            // PERFORMANCE OPTIMIZATION - DATABASE OPTIMIZATIONS
-            // ============================================================================
-            $conn->query("SET SESSION wait_timeout = 28800");
-            $conn->query("SET autocommit = 0");
-            
-            // Reduce logging frequency
-            $bulk_operation = (count($_SESSION['sale_quantities'] ?? []) > 100);
-            
-            if ($bulk_operation) {
-                logMessage("Starting bulk sales operation with " . count($_SESSION['sale_quantities']) . " items - Performance mode enabled");
-            }
-            
             $start_date = $_POST['start_date'];
             $end_date = $_POST['end_date'];
             $comp_id = $_SESSION['CompID'];
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // ============================================================================
-            // MODIFIED: Get ALL items from ALL modes for validation (not filtered by current mode)
-            // ============================================================================
-            $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
-                                       COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-                                FROM tblitemmaster im
-                                LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE";
-            $all_items_stmt = $conn->prepare($all_items_query);
+            // Get ALL items from database for validation with license filtering
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+                $all_items_stmt = $conn->prepare($all_items_query);
+                $all_items_params = array_merge([$mode], $allowed_classes);
+                $all_items_stmt->bind_param(str_repeat('s', count($all_items_params)), ...$all_items_params);
+            } else {
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
+                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                    FROM tblitemmaster im
+                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                                    WHERE 1 = 0";
+                $all_items_stmt = $conn->prepare($all_items_query);
+            }
+            
             $all_items_stmt->execute();
             $all_items_result = $all_items_stmt->get_result();
             $all_items = [];
@@ -855,46 +790,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $items_data = [];
                     $daily_sales_data = [];
                     
-                    // ============================================================================
-                    // PERFORMANCE OPTIMIZATION: BATCH PROCESSING WITH PROGRESS
-                    // ============================================================================
-                    $batch_size = 50;
-                    $session_items = array_keys($_SESSION['sale_quantities']);
-                    $total_session_items = count($session_items);
-                    $processed_items = 0;
-                    
-                    // Cache item data to avoid repeated database lookups
-                    $item_cache = [];
-                    foreach ($all_items as $item_code => $item) {
-                        $item_cache[$item_code] = [
-                            'stock' => $item['CURRENT_STOCK'],
-                            'rate' => $item['RPRICE'],
-                            'details' => $item['DETAILS']
-                        ];
-                    }
-                    
-                    // MySQL Performance Tweaks
-                    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
-                    $conn->query("SET UNIQUE_CHECKS = 0");
-                    $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
-                    
-                    // Process ONLY session quantities > 0 (from ALL modes) in batches
-                    for ($i = 0; $i < $total_session_items; $i += $batch_size) {
-                        $batch_items = array_slice($session_items, $i, $batch_size);
-                        
-                        foreach ($batch_items as $item_code) {
-                            $processed_items++;
-                            $total_qty = $_SESSION['sale_quantities'][$item_code];
-                            
-                            // Reduce logging frequency during bulk operations
-                            if (!$bulk_operation || $processed_items % 50 == 0) {
-                                logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
-                            }
-                            
+                    // Process ONLY session quantities > 0
+                    if (isset($_SESSION['sale_quantities'])) {
+                        foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
-                                // Generate distribution using VOLUME-BASED distribution
+                                // Generate distribution
                                 $daily_sales = distributeSales($total_qty, $days_count);
                                 $daily_sales_data[$item_code] = $daily_sales;
                                 
@@ -902,15 +804,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $items_data[$item_code] = [
                                     'name' => $item['DETAILS'],
                                     'rate' => $item['RPRICE'],
-                                    'total_qty' => $total_qty,
-                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode, not current page mode
+                                    'total_qty' => $total_qty
                                 ];
                             }
-                        }
-                        
-                        // Optional: Add small delay to prevent server overload
-                        if ($bulk_operation) {
-                            usleep(100000); // 0.1 second
                         }
                     }
                     
@@ -922,9 +818,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
-                        // ============================================================================
-                        // VOLUME-BASED BILL GENERATION (FROM sale_for_date_range.php)
-                        // ============================================================================
                         $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
                         
                         // Get stock column names
@@ -983,9 +876,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
                         
-                        // ============================================================================
-                        // ADD AUTOMATIC CASH MEMO GENERATION (FROM OLD VERSION)
-                        // ============================================================================
+                        // ADD AUTOMATIC CASH MEMO GENERATION
                         $cash_memos_generated = 0;
                         $cash_memo_errors = [];
 
@@ -1023,24 +914,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->rollback();
                     $error_message = "Error updating sales: " . $e->getMessage();
                     logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
-                }
-                
-                // ============================================================================
-                // PERFORMANCE OPTIMIZATION: CLEANUP
-                // ============================================================================
-                
-                // Re-enable database constraints
-                $conn->query("SET FOREIGN_KEY_CHECKS = 1");
-                $conn->query("SET UNIQUE_CHECKS = 1");
-                
-                // Clean up memory
-                if (isset($all_items)) unset($all_items);
-                if (isset($items_data)) unset($items_data); 
-                if (isset($daily_sales_data)) unset($daily_sales_data);
-                gc_collect_cycles();
-                
-                if ($bulk_operation) {
-                    logMessage("Bulk sales operation completed - Processed $processed_items items");
                 }
             }
         }
@@ -1631,7 +1504,7 @@ tr.has-quantity td {
         <div class="pagination-info">
             Showing <?= count($items) ?> of <?= $total_items ?> items (Page <?= $current_page ?> of <?= $total_pages ?>)
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
-              | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages (ALL MODES)</span>
+              | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages</span>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -1680,7 +1553,7 @@ tr.has-quantity td {
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="totalSalesModalLabel">Total Sales Summary (ALL MODES)</h5>
+                <h5 class="modal-title" id="totalSalesModalLabel">Total Sales Summary</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1901,7 +1774,7 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// Function to distribute sales uniformly (client-side version) - VOLUME-BASED
+// Function to distribute sales uniformly (client-side version)
 function distributeSales(total_qty, days_count) {
     if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
     
@@ -2025,7 +1898,7 @@ function setupRowNavigation() {
     });
 }
 
-// Function to generate bills immediately - FIXED VERSION WITH VOLUME-BASED SPLITTING
+// Function to generate bills immediately - FIXED VERSION
 function generateBills() {
     // Check if we have any quantities > 0 (optimized check)
     let hasQuantity = false;
@@ -2259,9 +2132,8 @@ function getProductType(classCode) {
     const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
     if (spirits.includes(classCode)) return 'SPIRITS';
     if (classCode === 'V') return 'WINE';
-    if (classCode === 'F') return 'FERMENTED BEER';
+    if (classCode === 'F') return 'FERMENTED BEER'; // CHANGED FROM 'B' TO 'F'
     if (classCode === 'M') return 'MILD BEER';
-    if (classCode === 'L') return 'COUNTRY LIQUOR';
     return 'OTHER';
 }
 
@@ -2383,7 +2255,7 @@ function extractVolume(details, details2) {
     return 0; // Unknown volume
 }
 
-// OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0 FROM ALL MODES
+// OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0
 function updateTotalSalesModule() {
     // Initialize empty summary object with ALL sizes
     const allSizes = [
@@ -2396,8 +2268,7 @@ function updateTotalSalesModule() {
         'SPIRITS': {},
         'WINE': {},
         'FERMENTED BEER': {},
-        'MILD BEER': {},
-        'COUNTRY LIQUOR': {}
+        'MILD BEER': {}
     };
     
     // Initialize all sizes to 0 for each category
@@ -2407,7 +2278,7 @@ function updateTotalSalesModule() {
         });
     });
 
-    // Process ONLY session quantities > 0 (optimization) - FROM ALL MODES
+    // Process ONLY session quantities > 0 (optimization)
     for (const itemCode in allSessionQuantities) {
         const quantity = allSessionQuantities[itemCode];
         if (quantity > 0) {
@@ -2434,7 +2305,7 @@ function updateSalesModalTable(salesSummary, allSizes) {
     const tbody = $('#totalSalesTable tbody');
     tbody.empty();
     
-    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'].forEach(category => {
+    ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER'].forEach(category => {
         const row = $('<tr>');
         row.append($('<td>').text(category));
         

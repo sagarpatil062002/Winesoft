@@ -1,0 +1,1160 @@
+[2025-10-17 05:56:12] [INFO] === PAGE ACCESS ===
+[2025-10-17 05:56:12] [INFO] Request method: GET
+[2025-10-17 05:56:12] [INFO] Search term: ''
+[2025-10-17 05:56:12] [INFO] Current session ID: g3fsfv0as6i621e2qtu4t0tq5a
+[2025-10-17 05:56:12] [INFO] Final session quantities count: 0
+[2025-10-17 05:56:12] [INFO] Items in current view: 50
+[2025-10-17 05:56:12] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 05:56:16] [INFO] === PAGE ACCESS ===
+[2025-10-17 05:56:16] [INFO] Request method: GET
+[2025-10-17 05:56:16] [INFO] Search term: ''
+[2025-10-17 05:56:16] [INFO] Current session ID: g3fsfv0as6i621e2qtu4t0tq5a
+[2025-10-17 05:56:16] [INFO] Final session quantities count: 0
+[2025-10-17 05:56:16] [INFO] Items in current view: 50
+[2025-10-17 05:56:16] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 05:56:21] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-17 05:56:22] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-17 05:56:22] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:56:22] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:56:23] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:56:24] [INFO] === PAGE ACCESS ===
+[2025-10-17 05:56:24] [INFO] Request method: POST
+[2025-10-17 05:56:24] [INFO] Search term: ''
+[2025-10-17 05:56:24] [INFO] Current session ID: g3fsfv0as6i621e2qtu4t0tq5a
+[2025-10-17 05:56:24] [INFO] Session quantities updated from POST: 1 items
+[2025-10-17 05:56:24] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 05:56:24] [INFO] Next bill number for CompID 2: 1
+[2025-10-17 05:56:24] [INFO] Daily stock updated successfully for item SCMWN0020397 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=48
+[2025-10-17 05:56:24] [INFO] Session quantities cleared
+[2025-10-17 05:59:07] [INFO] === PAGE ACCESS ===
+[2025-10-17 05:59:07] [INFO] Request method: GET
+[2025-10-17 05:59:07] [INFO] Search term: ''
+[2025-10-17 05:59:07] [INFO] Current session ID: g3fsfv0as6i621e2qtu4t0tq5a
+[2025-10-17 05:59:07] [INFO] Final session quantities count: 0
+[2025-10-17 05:59:07] [INFO] Items in current view: 50
+[2025-10-17 05:59:07] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 05:59:09] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-17 05:59:10] [INFO] Session quantity updated: SCMWN0020397 = 41
+[2025-10-17 05:59:10] [INFO] Session quantity updated: SCMWN0020397 = 41
+[2025-10-17 05:59:11] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-17 05:59:11] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-17 05:59:12] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:59:12] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:59:13] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 05:59:15] [INFO] === PAGE ACCESS ===
+[2025-10-17 05:59:15] [INFO] Request method: POST
+[2025-10-17 05:59:15] [INFO] Search term: ''
+[2025-10-17 05:59:15] [INFO] Current session ID: g3fsfv0as6i621e2qtu4t0tq5a
+[2025-10-17 05:59:15] [INFO] Session quantities updated from POST: 1 items
+[2025-10-17 05:59:15] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 05:59:15] [INFO] Next bill number for CompID 2: 2
+[2025-10-17 05:59:15] [INFO] Daily stock updated successfully for item SCMWN0020397 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=47
+[2025-10-17 05:59:15] [INFO] Session quantities cleared
+[2025-10-17 06:15:47] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:15:47] [INFO] Request method: GET
+[2025-10-17 06:15:47] [INFO] Search term: ''
+[2025-10-17 06:15:47] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:15:47] [INFO] Final session quantities count: 0
+[2025-10-17 06:15:47] [INFO] Items in current view: 50
+[2025-10-17 06:15:47] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 06:16:14] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:16:14] [INFO] Request method: GET
+[2025-10-17 06:16:14] [INFO] Search term: ''
+[2025-10-17 06:16:14] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:17:02] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:17:02] [INFO] Request method: GET
+[2025-10-17 06:17:02] [INFO] Search term: ''
+[2025-10-17 06:17:02] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:17:02] [INFO] Final session quantities count: 0
+[2025-10-17 06:17:02] [INFO] Items in current view: 50
+[2025-10-17 06:17:02] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 06:17:06] [INFO] Session quantity updated: SCMWN0020397 = 31
+[2025-10-17 06:17:06] [INFO] Session quantity updated: SCMWN0020397 = 31
+[2025-10-17 06:17:07] [INFO] Session quantity updated: SCMWN0020397 = 47
+[2025-10-17 06:17:07] [INFO] Session quantity updated: SCMWN0020397 = 47
+[2025-10-17 06:17:08] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 06:17:08] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 06:17:09] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-17 06:18:42] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:18:42] [INFO] Request method: POST
+[2025-10-17 06:18:42] [INFO] Search term: ''
+[2025-10-17 06:18:42] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:18:42] [INFO] Session quantities updated from POST: 1 items
+[2025-10-17 06:18:42] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 06:18:42] [INFO] Next bill number for CompID 2: 3
+[2025-10-17 06:18:42] [INFO] Daily stock updated successfully for item SCMWN0020397 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=46
+[2025-10-17 06:18:42] [INFO] Session quantities cleared
+[2025-10-17 06:59:30] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:59:30] [INFO] Request method: GET
+[2025-10-17 06:59:30] [INFO] Search term: ''
+[2025-10-17 06:59:30] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:59:30] [INFO] Final session quantities count: 0
+[2025-10-17 06:59:30] [INFO] Items in current view: 50
+[2025-10-17 06:59:30] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 06:59:32] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:59:32] [INFO] Request method: GET
+[2025-10-17 06:59:32] [INFO] Search term: ''
+[2025-10-17 06:59:32] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:59:32] [INFO] Final session quantities count: 0
+[2025-10-17 06:59:32] [INFO] Items in current view: 50
+[2025-10-17 06:59:32] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 06:59:37] [INFO] Session quantity updated: SCMWN0020398 = 0
+[2025-10-17 06:59:37] [INFO] Session quantity updated: SCMWN0020398 = 0
+[2025-10-17 06:59:37] [INFO] Session quantity updated: SCMWN0020398 = 1
+[2025-10-17 06:59:37] [INFO] Session quantity updated: SCMWN0020398 = 1
+[2025-10-17 06:59:39] [INFO] Session quantity updated: SCMWN0020398 = 1
+[2025-10-17 06:59:40] [INFO] === PAGE ACCESS ===
+[2025-10-17 06:59:40] [INFO] Request method: POST
+[2025-10-17 06:59:40] [INFO] Search term: ''
+[2025-10-17 06:59:40] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 06:59:40] [INFO] Session quantities updated from POST: 1 items
+[2025-10-17 06:59:40] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 06:59:40] [INFO] Next bill number for CompID 2: 4
+[2025-10-17 06:59:40] [INFO] Daily stock updated successfully for item SCMWN0020398 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=149
+[2025-10-17 06:59:40] [INFO] Starting optimized cash memo generation for 1 bills
+[2025-10-17 06:59:40] [INFO] Cash memo generated for bill: BL0004
+[2025-10-17 06:59:40] [INFO] Cash memo generation completed: 1 successful, 0 failed
+[2025-10-17 06:59:40] [INFO] Session quantities cleared
+[2025-10-17 07:03:37] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:03:37] [INFO] Request method: GET
+[2025-10-17 07:03:37] [INFO] Search term: ''
+[2025-10-17 07:03:37] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 07:03:37] [INFO] Final session quantities count: 0
+[2025-10-17 07:03:37] [INFO] Items in current view: 50
+[2025-10-17 07:03:37] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 07:03:42] [INFO] Session quantity updated: SCMBR0039553 = 20
+[2025-10-17 07:03:42] [INFO] Session quantity updated: SCMBR0039553 = 20
+[2025-10-17 07:03:43] [INFO] Session quantity updated: SCMBR0039553 = 20
+[2025-10-17 07:03:44] [INFO] Session quantity updated: SCMBR0039554 = 5
+[2025-10-17 07:03:44] [INFO] Session quantity updated: SCMBR0039554 = 50
+[2025-10-17 07:03:45] [INFO] Session quantity updated: SCMBR0039554 = 50
+[2025-10-17 07:03:46] [INFO] Session quantity updated: SCMBR0039554 = 50
+[2025-10-17 07:03:49] [INFO] Session quantity updated: SCMBR0039555 = 1
+[2025-10-17 07:03:50] [INFO] Session quantity updated: SCMBR0039555 = 10
+[2025-10-17 07:03:50] [INFO] Session quantity updated: SCMBR0039555 = 10
+[2025-10-17 07:03:50] [INFO] Session quantity updated: SCMBR0039555 = 10
+[2025-10-17 07:03:51] [INFO] Session quantity updated: SCMBR0041385 = 20
+[2025-10-17 07:03:52] [INFO] Session quantity updated: SCMBR0041385 = 20
+[2025-10-17 07:03:53] [INFO] Session quantity updated: SCMBR0041385 = 0
+[2025-10-17 07:03:53] [INFO] Session quantity updated: SCMBR0041385 = 0
+[2025-10-17 07:03:55] [INFO] Session quantity updated: SCMBR0041385 = 4
+[2025-10-17 07:03:55] [INFO] Session quantity updated: SCMBR0041385 = 4
+[2025-10-17 07:03:56] [INFO] Session quantity updated: SCMBR0041385 = 40
+[2025-10-17 07:03:56] [INFO] Session quantity updated: SCMBR0041385 = 40
+[2025-10-17 07:03:57] [INFO] Session quantity updated: SCMBR0041385 = 40
+[2025-10-17 07:03:58] [INFO] Session quantity updated: SCMBR0021531 = 10
+[2025-10-17 07:03:59] [INFO] Session quantity updated: SCMBR0021531 = 10
+[2025-10-17 07:04:00] [INFO] Session quantity updated: SCMBR0021531 = 10
+[2025-10-17 07:04:01] [INFO] Session quantity updated: SCMWN0020108 = 20
+[2025-10-17 07:04:02] [INFO] Session quantity updated: SCMWN0020108 = 20
+[2025-10-17 07:04:05] [INFO] Session quantity updated: SCMWN0019260 = 150
+[2025-10-17 07:04:05] [INFO] Session quantity updated: SCMWN0019260 = 150
+[2025-10-17 07:04:06] [INFO] Session quantity updated: SCMWN0019260 = 15
+[2025-10-17 07:04:06] [INFO] Session quantity updated: SCMWN0019260 = 15
+[2025-10-17 07:04:07] [INFO] Session quantity updated: SCMWN0019260 = 15
+[2025-10-17 07:04:08] [INFO] Session quantity updated: SCMWN0019261 = 80
+[2025-10-17 07:04:09] [INFO] Session quantity updated: SCMWN0019261 = 80
+[2025-10-17 07:04:09] [INFO] Session quantity updated: SCMWN0019261 = 80
+[2025-10-17 07:04:11] [INFO] Session quantity updated: SCMBR0028502 = 56
+[2025-10-17 07:04:11] [INFO] Session quantity updated: SCMBR0028502 = 56
+[2025-10-17 07:04:12] [INFO] Session quantity updated: SCMBR0028502 = 56
+[2025-10-17 07:04:13] [INFO] Session quantity updated: SCMBR0028505 = 200
+[2025-10-17 07:04:13] [INFO] Session quantity updated: SCMBR0028505 = 200
+[2025-10-17 07:04:14] [INFO] Session quantity updated: SCMBR0028505 = 0
+[2025-10-17 07:04:14] [INFO] Session quantity updated: SCMBR0028505 = 0
+[2025-10-17 07:04:14] [INFO] Session quantity updated: SCMBR0028505 = 4
+[2025-10-17 07:04:15] [INFO] Session quantity updated: SCMBR0028505 = 4
+[2025-10-17 07:04:15] [INFO] Session quantity updated: SCMBR0028505 = 0
+[2025-10-17 07:04:15] [INFO] Session quantity updated: SCMBR0028505 = 0
+[2025-10-17 07:04:16] [INFO] Session quantity updated: SCMBR0028505 = 0
+[2025-10-17 07:04:17] [INFO] Session quantity updated: SCMBR0028507 = 4
+[2025-10-17 07:04:17] [INFO] Session quantity updated: SCMBR0028507 = 4
+[2025-10-17 07:04:18] [INFO] Session quantity updated: SCMBR0028507 = 0
+[2025-10-17 07:04:18] [INFO] Session quantity updated: SCMBR0028507 = 0
+[2025-10-17 07:04:19] [INFO] Session quantity updated: SCMBR0028507 = 0
+[2025-10-17 07:04:20] [INFO] Session quantity updated: SCMBR0018964 = 145
+[2025-10-17 07:04:20] [INFO] Session quantity updated: SCMBR0018964 = 145
+[2025-10-17 07:04:21] [INFO] Session quantity updated: SCMBR0018964 = 1
+[2025-10-17 07:04:21] [INFO] Session quantity updated: SCMBR0018964 = 1
+[2025-10-17 07:04:21] [INFO] Session quantity updated: SCMBR0018964 = 150
+[2025-10-17 07:04:22] [INFO] Session quantity updated: SCMBR0018964 = 150
+[2025-10-17 07:04:24] [INFO] Session quantity updated: SCMBR0018964 = 150
+[2025-10-17 07:04:33] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:04:33] [INFO] Request method: POST
+[2025-10-17 07:04:33] [INFO] Search term: ''
+[2025-10-17 07:04:33] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 07:04:33] [INFO] Session quantities updated from POST: 10 items
+[2025-10-17 07:04:33] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 07:04:33] [INFO] Next bill number for CompID 2: 5
+[2025-10-17 07:04:33] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:04:33] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:04:33] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:04:33] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:04:33] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=179
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=24, Closing=176
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=173
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=30, Closing=170
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=167
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=36, Closing=164
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=161
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=42, Closing=158
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=155
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=48, Closing=152
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0039554 on 2025-10-17 in table tbldailystock_2: Sales=50, Closing=150
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=22, Closing=178
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=175
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=28, Closing=172
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=169
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=34, Closing=166
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=163
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0041385 on 2025-10-17 in table tbldailystock_2: Sales=40, Closing=160
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=179
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=24, Closing=176
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=173
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=30, Closing=170
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=167
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=36, Closing=164
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=161
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=42, Closing=158
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=155
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=48, Closing=152
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=51, Closing=149
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=54, Closing=146
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=56, Closing=144
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=22, Closing=178
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=175
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=28, Closing=172
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=169
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=34, Closing=166
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=163
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=40, Closing=160
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=43, Closing=157
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=46, Closing=154
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=49, Closing=151
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=52, Closing=148
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=55, Closing=145
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=58, Closing=142
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=61, Closing=139
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=64, Closing=136
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=67, Closing=133
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=70, Closing=130
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=73, Closing=127
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=76, Closing=124
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=79, Closing=121
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=82, Closing=118
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=85, Closing=115
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=88, Closing=112
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=91, Closing=109
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=94, Closing=106
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=97, Closing=103
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=100, Closing=100
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=103, Closing=97
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=106, Closing=94
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=109, Closing=91
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=112, Closing=88
+[2025-10-17 07:04:34] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=115, Closing=85
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=118, Closing=82
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=121, Closing=79
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=124, Closing=76
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=127, Closing=73
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=130, Closing=70
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=133, Closing=67
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=136, Closing=64
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=139, Closing=61
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=142, Closing=58
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=145, Closing=55
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=148, Closing=52
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0018964 on 2025-10-17 in table tbldailystock_2: Sales=150, Closing=50
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039555 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=198
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039555 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039555 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039555 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=192
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039555 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0021531 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=148
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0021531 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=146
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0021531 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=144
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0021531 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=142
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0021531 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=140
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=149
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=148
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=147
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=146
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=145
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=144
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=143
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=142
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=141
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=140
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=139
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=138
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=137
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=136
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=135
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=134
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=133
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=132
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=131
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMBR0039553 on 2025-10-17 in table tbldailystock_2: Sales=20, Closing=130
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=198
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=195
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=192
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=189
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=186
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=183
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0020108 on 2025-10-17 in table tbldailystock_2: Sales=20, Closing=180
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=149
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=148
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=147
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=146
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=145
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=144
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=143
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=142
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=141
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=140
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=139
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=138
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=137
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=136
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019260 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=135
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=198
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=195
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=192
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=189
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=186
+[2025-10-17 07:04:35] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=183
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=20, Closing=180
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=179
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=22, Closing=178
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=23, Closing=177
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=24, Closing=176
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=175
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=26, Closing=174
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=173
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=28, Closing=172
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=29, Closing=171
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=30, Closing=170
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=169
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=32, Closing=168
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=167
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=34, Closing=166
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=35, Closing=165
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=36, Closing=164
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=163
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=38, Closing=162
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=161
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=40, Closing=160
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=41, Closing=159
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=42, Closing=158
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=43, Closing=157
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=44, Closing=156
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=155
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=46, Closing=154
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=47, Closing=153
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=48, Closing=152
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=49, Closing=151
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=50, Closing=150
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=51, Closing=149
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=52, Closing=148
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=53, Closing=147
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=54, Closing=146
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=55, Closing=145
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=56, Closing=144
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=57, Closing=143
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=58, Closing=142
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=59, Closing=141
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=60, Closing=140
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=61, Closing=139
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=62, Closing=138
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=63, Closing=137
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=64, Closing=136
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=65, Closing=135
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=66, Closing=134
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=67, Closing=133
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=68, Closing=132
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=69, Closing=131
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=70, Closing=130
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=71, Closing=129
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=72, Closing=128
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=73, Closing=127
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=74, Closing=126
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=75, Closing=125
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=76, Closing=124
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=77, Closing=123
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=78, Closing=122
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=79, Closing=121
+[2025-10-17 07:04:36] [INFO] Daily stock updated successfully for item SCMWN0019261 on 2025-10-17 in table tbldailystock_2: Sales=80, Closing=120
+[2025-10-17 07:04:36] [INFO] Starting optimized cash memo generation for 244 bills
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0005
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0006
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0007
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0008
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0009
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0010
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0011
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0012
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0013
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0014
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0015
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0016
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0017
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0018
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0019
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0020
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0021
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0022
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0023
+[2025-10-17 07:04:36] [INFO] Cash memo generated for bill: BL0024
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0025
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0026
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0027
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0028
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0029
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0030
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0031
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0032
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0033
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0034
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0035
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0036
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0037
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0038
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0039
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0040
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0041
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0042
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0043
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0044
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0045
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0046
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0047
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0048
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0049
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0050
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0051
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0052
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0053
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0054
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0055
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0056
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0057
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0058
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0059
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0060
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0061
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0062
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0063
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0064
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0065
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0066
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0067
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0068
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0069
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0070
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0071
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0072
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0073
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0074
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0075
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0076
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0077
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0078
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0079
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0080
+[2025-10-17 07:04:37] [INFO] Cash memo generated for bill: BL0081
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0082
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0083
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0084
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0085
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0086
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0087
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0088
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0089
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0090
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0091
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0092
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0093
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0094
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0095
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0096
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0097
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0098
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0099
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0100
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0101
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0102
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0103
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0104
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0105
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0106
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0107
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0108
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0109
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0110
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0111
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0112
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0113
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0114
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0115
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0116
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0117
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0118
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0119
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0120
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0121
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0122
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0123
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0124
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0125
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0126
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0127
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0128
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0129
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0130
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0131
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0132
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0133
+[2025-10-17 07:04:38] [INFO] Cash memo generated for bill: BL0134
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0135
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0136
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0137
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0138
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0139
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0140
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0141
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0142
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0143
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0144
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0145
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0146
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0147
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0148
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0149
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0150
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0151
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0152
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0153
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0154
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0155
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0156
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0157
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0158
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0159
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0160
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0161
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0162
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0163
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0164
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0165
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0166
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0167
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0168
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0169
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0170
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0171
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0172
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0173
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0174
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0175
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0176
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0177
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0178
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0179
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0180
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0181
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0182
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0183
+[2025-10-17 07:04:39] [INFO] Cash memo generated for bill: BL0184
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0185
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0186
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0187
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0188
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0189
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0190
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0191
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0192
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0193
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0194
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0195
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0196
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0197
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0198
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0199
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0200
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0201
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0202
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0203
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0204
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0205
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0206
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0207
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0208
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0209
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0210
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0211
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0212
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0213
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0214
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0215
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0216
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0217
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0218
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0219
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0220
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0221
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0222
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0223
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0224
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0225
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0226
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0227
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0228
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0229
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0230
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0231
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0232
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0233
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0234
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0235
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0236
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0237
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0238
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0239
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0240
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0241
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0242
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0243
+[2025-10-17 07:04:40] [INFO] Cash memo generated for bill: BL0244
+[2025-10-17 07:04:41] [INFO] Cash memo generated for bill: BL0245
+[2025-10-17 07:04:41] [INFO] Cash memo generated for bill: BL0246
+[2025-10-17 07:04:41] [INFO] Cash memo generated for bill: BL0247
+[2025-10-17 07:04:41] [INFO] Cash memo generated for bill: BL0248
+[2025-10-17 07:04:41] [INFO] Cash memo generation completed: 244 successful, 0 failed
+[2025-10-17 07:04:41] [INFO] Session quantities cleared
+[2025-10-17 07:05:27] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:05:27] [INFO] Request method: GET
+[2025-10-17 07:05:27] [INFO] Search term: ''
+[2025-10-17 07:05:27] [INFO] Current session ID: da3e2lr8j9bocaaujmcvabaa00
+[2025-10-17 07:05:27] [INFO] Final session quantities count: 0
+[2025-10-17 07:05:27] [INFO] Items in current view: 50
+[2025-10-17 07:05:27] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3607
+    [current_page] => 1
+    [total_pages] => 73
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+        )
+
+)
+
+[2025-10-17 07:05:30] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-10-17 07:05:30] [INFO] Session quantity updated: SCMPL0019028 = 0
+[2025-10-17 07:05:31] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-10-17 07:05:31] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-10-17 07:05:32] [INFO] Session quantity updated: SCMPL0019028 = 1
+[2025-10-17 07:05:34] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:05:34] [INFO] Request method: POST
+[2025-10-17 07:05:34] [INFO] Search term: ''
+[2025-10-17 07:05:34] [INFO] Current session ID: da3e2lr8j9bocaaujmcvabaa00
+[2025-10-17 07:05:34] [INFO] Session quantities updated from POST: 1 items
+[2025-10-17 07:05:34] [INFO] Getting next bill number for CompID: 1
+[2025-10-17 07:05:34] [INFO] Next bill number for CompID 1: 1
+[2025-10-17 07:05:34] [INFO] Daily stock updated successfully for item SCMPL0019028 on 2025-10-17 in table tbldailystock_1: Sales=1, Closing=198
+[2025-10-17 07:05:34] [INFO] Starting optimized cash memo generation for 1 bills
+[2025-10-17 07:05:34] [INFO] Cash memo generated for bill: BL0001
+[2025-10-17 07:05:34] [INFO] Cash memo generation completed: 1 successful, 0 failed
+[2025-10-17 07:05:34] [INFO] Session quantities cleared
+[2025-10-17 07:13:11] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:13:11] [INFO] Request method: GET
+[2025-10-17 07:13:11] [INFO] Search term: ''
+[2025-10-17 07:13:11] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 07:13:11] [INFO] Final session quantities count: 0
+[2025-10-17 07:13:11] [INFO] Items in current view: 50
+[2025-10-17 07:13:11] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-17 to 2025-10-17
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-17 07:33:43] [INFO] Session quantity updated: SCMBR0028503 = 169
+[2025-10-17 07:33:44] [INFO] Session quantity updated: SCMBR0028503 = 169
+[2025-10-17 07:33:44] [INFO] Session quantity updated: SCMBR0028503 = 160
+[2025-10-17 07:33:45] [INFO] Session quantity updated: SCMBR0028503 = 160
+[2025-10-17 07:33:45] [INFO] Session quantity updated: SCMBR0028503 = 70
+[2025-10-17 07:33:45] [INFO] Session quantity updated: SCMBR0028503 = 70
+[2025-10-17 07:33:46] [INFO] Session quantity updated: SCMBR0028503 = 70
+[2025-10-17 07:33:49] [INFO] Session quantity updated: SCMBR0028504 = 50
+[2025-10-17 07:33:50] [INFO] Session quantity updated: SCMBR0028504 = 50
+[2025-10-17 07:33:51] [INFO] Session quantity updated: SCMBR0028504 = 50
+[2025-10-17 07:33:52] [INFO] Session quantity updated: SCMBR0028505 = 185
+[2025-10-17 07:33:52] [INFO] Session quantity updated: SCMBR0028505 = 185
+[2025-10-17 07:33:52] [INFO] Session quantity updated: SCMBR0028505 = 50
+[2025-10-17 07:33:52] [INFO] Session quantity updated: SCMBR0028505 = 50
+[2025-10-17 07:33:53] [INFO] Session quantity updated: SCMBR0028505 = 50
+[2025-10-17 07:33:57] [INFO] Session quantity updated: SCMBR0028502 = 100
+[2025-10-17 07:33:57] [INFO] Session quantity updated: SCMBR0028502 = 100
+[2025-10-17 07:33:59] [INFO] Session quantity updated: SCMBR0028502 = 100
+[2025-10-17 07:34:02] [INFO] === PAGE ACCESS ===
+[2025-10-17 07:34:02] [INFO] Request method: POST
+[2025-10-17 07:34:02] [INFO] Search term: ''
+[2025-10-17 07:34:02] [INFO] Current session ID: n34tahtg291o61n3odfdjdoul9
+[2025-10-17 07:34:02] [INFO] Session quantities updated from POST: 4 items
+[2025-10-17 07:34:02] [INFO] Processing item 1/4: SCMBR0028503, Qty: 70
+[2025-10-17 07:34:02] [INFO] Processing item 2/4: SCMBR0028504, Qty: 50
+[2025-10-17 07:34:02] [INFO] Processing item 3/4: SCMBR0028505, Qty: 50
+[2025-10-17 07:34:02] [INFO] Processing item 4/4: SCMBR0028502, Qty: 100
+[2025-10-17 07:34:03] [INFO] Getting next bill number for CompID: 2
+[2025-10-17 07:34:03] [INFO] Next bill number for CompID 2: 249
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=59, Closing=141
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=62, Closing=138
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=65, Closing=135
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=68, Closing=132
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=71, Closing=129
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=74, Closing=126
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=77, Closing=123
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=80, Closing=120
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=83, Closing=117
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=86, Closing=114
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=89, Closing=111
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=92, Closing=108
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=95, Closing=105
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=98, Closing=102
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=101, Closing=99
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=104, Closing=96
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=107, Closing=93
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=110, Closing=90
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=113, Closing=87
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=116, Closing=84
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=119, Closing=81
+[2025-10-17 07:34:03] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=122, Closing=78
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=125, Closing=75
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=128, Closing=72
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=131, Closing=69
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=134, Closing=66
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=137, Closing=63
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=140, Closing=60
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=143, Closing=57
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=146, Closing=54
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=149, Closing=51
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=152, Closing=48
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=155, Closing=45
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028502 on 2025-10-17 in table tbldailystock_2: Sales=156, Closing=44
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=169
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=167
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=165
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=163
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=161
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=159
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=157
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=155
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=153
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=151
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=149
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=23, Closing=147
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=145
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=143
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=29, Closing=141
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=139
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=137
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=35, Closing=135
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=133
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=131
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=41, Closing=129
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=43, Closing=127
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=125
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=47, Closing=123
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=49, Closing=121
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=51, Closing=119
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=53, Closing=117
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=55, Closing=115
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=57, Closing=113
+[2025-10-17 07:34:04] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=59, Closing=111
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=61, Closing=109
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=63, Closing=107
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=65, Closing=105
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=67, Closing=103
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=69, Closing=101
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028503 on 2025-10-17 in table tbldailystock_2: Sales=70, Closing=100
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=1, Closing=199
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=198
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=195
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=192
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=189
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=186
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=183
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=20, Closing=180
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=179
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=22, Closing=178
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=23, Closing=177
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=24, Closing=176
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=175
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=26, Closing=174
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=173
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=28, Closing=172
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=29, Closing=171
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=30, Closing=170
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=169
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=32, Closing=168
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=167
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=34, Closing=166
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=35, Closing=165
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=36, Closing=164
+[2025-10-17 07:34:05] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=163
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=38, Closing=162
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=161
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=40, Closing=160
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=41, Closing=159
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=42, Closing=158
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=43, Closing=157
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=44, Closing=156
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=155
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=46, Closing=154
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=47, Closing=153
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=48, Closing=152
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=49, Closing=151
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028504 on 2025-10-17 in table tbldailystock_2: Sales=50, Closing=150
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=2, Closing=198
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=3, Closing=197
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=4, Closing=196
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=5, Closing=195
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=6, Closing=194
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=7, Closing=193
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=8, Closing=192
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=9, Closing=191
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=10, Closing=190
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=11, Closing=189
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=12, Closing=188
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=13, Closing=187
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=14, Closing=186
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=15, Closing=185
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=16, Closing=184
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=17, Closing=183
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=18, Closing=182
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=19, Closing=181
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=20, Closing=180
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=21, Closing=179
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=22, Closing=178
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=23, Closing=177
+[2025-10-17 07:34:06] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=24, Closing=176
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=25, Closing=175
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=26, Closing=174
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=27, Closing=173
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=28, Closing=172
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=29, Closing=171
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=30, Closing=170
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=31, Closing=169
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=32, Closing=168
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=33, Closing=167
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=34, Closing=166
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=35, Closing=165
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=36, Closing=164
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=37, Closing=163
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=38, Closing=162
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=39, Closing=161
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=40, Closing=160
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=41, Closing=159
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=42, Closing=158
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=43, Closing=157
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=44, Closing=156
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=45, Closing=155
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=46, Closing=154
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=47, Closing=153
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=48, Closing=152
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=49, Closing=151
+[2025-10-17 07:34:07] [INFO] Daily stock updated successfully for item SCMBR0028505 on 2025-10-17 in table tbldailystock_2: Sales=50, Closing=150
+[2025-10-17 07:34:07] [INFO] Session quantities cleared

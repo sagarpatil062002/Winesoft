@@ -3555,3 +3555,116 @@
 [2025-10-16 07:05:23] Suppliers fetched: {
     "count": 36
 }
+[2025-10-17 06:15:45] === NEW PURCHASE SESSION STARTED ===
+[2025-10-17 06:15:45] Session data: {
+    "user_id": "2",
+    "username": "Digvijay",
+    "CompID": 2,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Digvijay"
+}
+[2025-10-17 06:15:45] POST data: []
+[2025-10-17 06:15:45] GET data: []
+[2025-10-17 06:15:45] Company ID from session: 2
+[2025-10-17 06:15:45] Database connection included
+[2025-10-17 06:15:45] License functions included
+[2025-10-17 06:15:45] License type: FLBR-II
+[2025-10-17 06:15:45] Available classes: [
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-17 06:15:45] Allowed class SGROUP values: [
+    "V",
+    "F",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-17 06:15:45] Purchase mode: F
+[2025-10-17 06:15:45] Next voucher number: 1
+[2025-10-17 06:15:45] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-17 06:15:45] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "V",
+        "F",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssss"
+}
+[2025-10-17 06:15:45] Items fetched from database: {
+    "count": 821,
+    "license_filter_applied": true
+}
+[2025-10-17 06:15:45] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-17 06:15:45] Database connection closed
+[2025-10-17 06:15:45] === PURCHASE SESSION ENDED ===
