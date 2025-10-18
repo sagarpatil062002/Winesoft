@@ -538,16 +538,17 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
         background-color: #f8f9fa;
         margin: 0;
         padding: 0;
+        overflow-x: hidden;
     }
     
     .cash-memo-container {
-        width: 300px;
-        margin: 10px;
-        padding: 8px;
+        width: 280px;
+        margin: 8px;
+        padding: 6px;
         border: 1px solid #000;
         background: white;
-        font-size: 12px;
-        line-height: 1.2;
+        font-size: 11px;
+        line-height: 1.1;
         display: inline-block;
         vertical-align: top;
         box-sizing: border-box;
@@ -555,51 +556,51 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     
     .cash-memo-header {
         text-align: center;
-        margin-bottom: 5px;
-        padding-bottom: 3px;
+        margin-bottom: 4px;
+        padding-bottom: 2px;
         border-bottom: 1px solid #000;
     }
     
     .license-info {
         text-align: center;
         font-weight: bold;
-        margin-bottom: 3px;
-        font-size: 11px;
+        margin-bottom: 2px;
+        font-size: 10px;
     }
     
     .shop-name {
         font-weight: bold;
         text-transform: uppercase;
-        margin-bottom: 2px;
-        font-size: 13px;
+        margin-bottom: 1px;
+        font-size: 12px;
     }
     
     .shop-address {
-        font-size: 10px;
-        margin-bottom: 5px;
-        line-height: 1.1;
+        font-size: 9px;
+        margin-bottom: 4px;
+        line-height: 1;
     }
     
     .memo-info {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 6px;
-        padding-bottom: 3px;
+        margin-bottom: 5px;
+        padding-bottom: 2px;
         border-bottom: 1px solid #000;
-        font-size: 11px;
+        font-size: 10px;
     }
     
     .customer-info {
-        margin-bottom: 6px;
-        font-size: 11px;
+        margin-bottom: 5px;
+        font-size: 10px;
     }
     
     .permit-info {
-        margin-bottom: 6px;
-        font-size: 10px;
-        line-height: 1.1;
+        margin-bottom: 5px;
+        font-size: 9px;
+        line-height: 1;
         border-bottom: 1px solid #000;
-        padding-bottom: 3px;
+        padding-bottom: 2px;
     }
     
     .permit-row {
@@ -610,24 +611,24 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 6px;
-        font-size: 11px;
+        margin-bottom: 5px;
+        font-size: 10px;
     }
     
     .items-table td {
-        padding: 2px 0;
+        padding: 1px 0;
         vertical-align: top;
         border-bottom: 1px dotted #ccc;
     }
     
     .total-section {
         border-top: 2px solid #000;
-        padding-top: 3px;
+        padding-top: 2px;
         text-align: right;
         font-weight: bold;
-        margin-bottom: 3px;
-        font-size: 12px;
-        padding-right: 5px;
+        margin-bottom: 2px;
+        font-size: 11px;
+        padding-right: 4px;
     }
     
     .memos-container {
@@ -645,7 +646,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .particulars-col {
         width: 40%;
         text-align: left;
-        padding-left: 3px;
+        padding-left: 2px;
     }
     
     .size-col {
@@ -656,25 +657,25 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .amount-col {
         width: 20%;
         text-align: right;
-        padding-right: 5px;
+        padding-right: 4px;
     }
     
     .table-header {
         display: flex;
         justify-content: space-between;
         text-align: center;
-        margin-bottom: 3px;
+        margin-bottom: 2px;
         font-weight: bold;
-        font-size: 11px;
-        line-height: 1.1;
+        font-size: 10px;
+        line-height: 1;
         border-bottom: 1px solid #000;
-        padding-bottom: 2px;
+        padding-bottom: 1px;
     }
     
     .header-particulars {
         width: 40%;
         text-align: left;
-        padding-left: 3px;
+        padding-left: 2px;
     }
     
     .header-qty {
@@ -689,40 +690,53 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .header-amount {
         width: 20%;
         text-align: right;
-        padding-right: 5px;
+        padding-right: 4px;
     }
     
     .no-print {
         margin-bottom: 20px;
     }
 
-    /* PRINT STYLES - OPTIMIZED FOR 6 CASH MEMOS PER PAGE */
+    /* Show report on screen when needed */
+    .print-content.screen-display {
+        display: block !important;
+        margin-top: 20px;
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    @media screen {
+        .print-content.screen-display .memos-container {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+    }
+
+    /* PRINT STYLES - SAME SIZE AS SCREEN */
     @media print {
-        /* Hide everything except cash memos */
-        body * {
-            display: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            visibility: hidden !important;
+        @page {
+            size: A4 landscape; /* Changed to landscape to fit screen size */
+            margin: 10mm;
         }
         
-        /* Show only the memos container and its direct children */
-        body,
-        .memos-container,
-        .memos-container * {
-            display: block !important;
-            visibility: visible !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        /* Reset body for printing */
         body {
-            background: white !important;
+            margin: 0;
+            padding: 0;
+            background: white;
+            width: 100%;
             font-family: 'Courier New', monospace !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
+        }
+        
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-content {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         /* Memos container takes full page */
@@ -735,66 +749,65 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             page-break-inside: avoid !important;
         }
         
-        /* Cash memo container for print - 3 columns x 2 rows = 6 per page */
+        /* Cash memo container for print - EXACT SAME SIZE AS SCREEN */
         .cash-memo-container {
-            width: 33.33% !important;
-            height: 140mm !important;
-            margin: 0 !important;
-            padding: 3mm !important;
-            border: 1px solid #000 !important;
+            width: 280px !important; /* Same as screen */
+            height: auto !important; /* Auto height */
+            margin: 8px !important; /* Same as screen */
+            padding: 6px !important; /* Same as screen */
+            border: 1px solid #000 !important; /* Same as screen */
             background: white !important;
             display: inline-block !important;
             vertical-align: top !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            font-size: 9px !important;
-            line-height: 1 !important;
+            font-size: 11px !important; /* Same as screen */
+            line-height: 1.1 !important; /* Same as screen */
             box-sizing: border-box !important;
             float: none !important;
-            position: relative !important;
         }
         
-        /* Ensure exactly 6 per page with proper page breaks */
-        .cash-memo-container:nth-child(6n+1) {
+        /* Ensure proper page breaks - 4 per page in landscape */
+        .cash-memo-container:nth-child(4n+1) {
             page-break-before: always;
         }
         
-        /* Print-specific text sizing */
+        /* All other styles remain exactly the same as screen */
         .license-info {
-            font-size: 8px !important;
-            margin-bottom: 1px !important;
+            font-size: 10px !important;
+            margin-bottom: 2px !important;
         }
         
         .shop-name {
-            font-size: 10px !important;
+            font-size: 12px !important;
             margin-bottom: 1px !important;
         }
         
         .shop-address {
-            font-size: 7px !important;
-            margin-bottom: 2px !important;
+            font-size: 9px !important;
+            margin-bottom: 4px !important;
             line-height: 1 !important;
         }
         
         .memo-info {
-            font-size: 8px !important;
-            margin-bottom: 3px !important;
+            font-size: 10px !important;
+            margin-bottom: 5px !important;
         }
         
         .customer-info {
-            font-size: 8px !important;
-            margin-bottom: 3px !important;
+            font-size: 10px !important;
+            margin-bottom: 5px !important;
         }
         
         .permit-info {
-            font-size: 7px !important;
-            margin-bottom: 3px !important;
+            font-size: 9px !important;
+            margin-bottom: 5px !important;
             line-height: 1 !important;
         }
         
         .items-table {
-            font-size: 8px !important;
-            margin-bottom: 3px !important;
+            font-size: 10px !important;
+            margin-bottom: 5px !important;
         }
         
         .items-table td {
@@ -803,18 +816,9 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
         }
         
         .total-section {
-            font-size: 9px !important;
-            margin-bottom: 1px !important;
-            position: absolute !important;
-            bottom: 3mm !important;
-            right: 3mm !important;
-            width: calc(100% - 6mm) !important;
-        }
-        
-        /* Page setup - minimal margins */
-        @page {
-            size: A4 portrait;
-            margin: 5mm;
+            font-size: 11px !important;
+            margin-bottom: 2px !important;
+            padding-right: 4px !important;
         }
         
         /* Remove any page headers/footers */
@@ -911,108 +915,110 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
 
       <!-- Print Section -->
       <?php if ($showPrintSection && (!empty($all_bills) || !empty($bill_data))): ?>
-        <div class="print-section no-print">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4>Cash Memos Ready for Printing</h4>
-            <div>
-              <button class="btn btn-success me-2" onclick="window.print()">
-                <i class="fas fa-print me-1"></i> Print All
-              </button>
-              <button class="btn btn-secondary" onclick="window.location.href='cash_memo.php'">
-                <i class="fas fa-times me-1"></i> Close
-              </button>
-            </div>
-          </div>
-          
-          <p class="text-muted mb-3">
-            Showing <?= count($all_bills) ?: 1 ?> cash memo(s). Layout: 6 cash memos per page (3 columns × 2 rows).
-          </p>
-        </div>
-
-        <!-- Cash Memos Container -->
-        <div class="memos-container">
-          <?php
-          // Function to display a single cash memo
-          function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null) {
-              $billNo = $billData['BILL_NO'];
-              $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
-              $billNoShort = substr($billNo, -5);
-              $totalAmount = $billData['NET_AMOUNT'];
-              
-              // Customer name logic
-              $customerName = 'A.N. PARAB'; // Default
-              if (!empty($permitData) && !empty($permitData['DETAILS'])) {
-                  $customerName = $permitData['DETAILS'];
-              } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
-                  $customerName = $billData['CUST_CODE'];
-              }
-              
-              // Permit information
-              $permitNo = $permitData['P_NO'] ?? '';
-              $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
-              $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
-              ?>
-              <div class="cash-memo-container">
-                <div class="cash-memo-header">
-                  <div class="license-info"><?= htmlspecialchars($licenseNumber ?: "FL-II 3") ?></div>
-                  <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
-                  <div class="shop-address"><?= htmlspecialchars($companyAddress) ?></div>
-                </div>
-                
-                <div class="memo-info">
-                  <span>No: <?= $billNoShort ?></span>
-                  <span>CASH MEMO</span>
-                  <span>Date: <?= $billDate ?></span>
-                </div>
-                
-                <div class="customer-info">
-                  Name: <?= htmlspecialchars($customerName) ?>
-                </div>
-                
-                <?php if (!empty($permitData)): ?>
-                <div class="permit-info">
-                  <div class="permit-row">
-                    <span>Permit No.: <?= htmlspecialchars($permitNo) ?></span>
-                    <span>Exp.Dt.: <?= $permitExpDate ?></span>
-                  </div>
-                  <div>Place: <?= htmlspecialchars($permitPlace) ?></div>
-                </div>
-                <?php endif; ?>
-                
-                <div class="table-header">
-                  <div class="header-particulars">Particulars</div>
-                  <div class="header-qty">Qty</div>
-                  <div class="header-size">Size</div>
-                  <div class="header-amount">Amount</div>
-                </div>
-                
-                <table class="items-table">
-                  <?php foreach ($billItems as $item): ?>
-                  <tr>
-                    <td class="particulars-col"><?= htmlspecialchars(substr($item['DETAILS'] ?? '', 0, 30)) ?></td>
-                    <td class="qty-col"><?= number_format($item['QTY'], 3) ?></td>
-                    <td class="size-col"><?= htmlspecialchars(substr($item['DETAILS2'] ?? '', 0, 15)) ?></td>
-                    <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>
-                  </tr>
-                  <?php endforeach; ?>
-                </table>
-                
-                <div class="total-section">
-                  Total: ₹<?= number_format($totalAmount, 2) ?>
-                </div>
+        <div id="reportContent" class="<?= $showPrintSection ? 'print-content screen-display' : 'print-content' ?>">
+          <div class="print-section no-print">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4>Cash Memos Ready for Printing</h4>
+              <div>
+                <button class="btn btn-success me-2" onclick="generateReport()">
+                  <i class="fas fa-print me-1"></i> Print All
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='cash_memo.php'">
+                  <i class="fas fa-times me-1"></i> Close
+                </button>
               </div>
-              <?php
-          }
-          
-          // Display single bill or multiple bills
-          if (!empty($bill_data)) {
-              displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null);
-          } elseif (!empty($all_bills)) {
-              foreach ($all_bills as $bill) {
-                  displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit']);
-              }
-          }
-          ?>
+            </div>
+            
+            <p class="text-muted mb-3">
+              Showing <?= count($all_bills) ?: 1 ?> cash memo(s). Layout: 4 cash memos per page in landscape orientation.
+            </p>
+          </div>
+
+          <!-- Cash Memos Container -->
+          <div class="memos-container">
+            <?php
+            // Function to display a single cash memo
+            function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null) {
+                $billNo = $billData['BILL_NO'];
+                $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
+                $billNoShort = substr($billNo, -5);
+                $totalAmount = $billData['NET_AMOUNT'];
+                
+                // Customer name logic
+                $customerName = 'A.N. PARAB'; // Default
+                if (!empty($permitData) && !empty($permitData['DETAILS'])) {
+                    $customerName = $permitData['DETAILS'];
+                } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
+                    $customerName = $billData['CUST_CODE'];
+                }
+                
+                // Permit information
+                $permitNo = $permitData['P_NO'] ?? '';
+                $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
+                $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
+                ?>
+                <div class="cash-memo-container">
+                  <div class="cash-memo-header">
+                    <div class="license-info"><?= htmlspecialchars($licenseNumber ?: "FL-II 3") ?></div>
+                    <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
+                    <div class="shop-address"><?= htmlspecialchars($companyAddress) ?></div>
+                  </div>
+                  
+                  <div class="memo-info">
+                    <span>No: <?= $billNoShort ?></span>
+                    <span>CASH MEMO</span>
+                    <span>Date: <?= $billDate ?></span>
+                  </div>
+                  
+                  <div class="customer-info">
+                    Name: <?= htmlspecialchars($customerName) ?>
+                  </div>
+                  
+                  <?php if (!empty($permitData)): ?>
+                  <div class="permit-info">
+                    <div class="permit-row">
+                      <span>Permit No.: <?= htmlspecialchars($permitNo) ?></span>
+                      <span>Exp.Dt.: <?= $permitExpDate ?></span>
+                    </div>
+                    <div>Place: <?= htmlspecialchars($permitPlace) ?></div>
+                  </div>
+                  <?php endif; ?>
+                  
+                  <div class="table-header">
+                    <div class="header-particulars">Particulars</div>
+                    <div class="header-qty">Qty</div>
+                    <div class="header-size">Size</div>
+                    <div class="header-amount">Amount</div>
+                  </div>
+                  
+                  <table class="items-table">
+                    <?php foreach ($billItems as $item): ?>
+                    <tr>
+                      <td class="particulars-col"><?= htmlspecialchars(substr($item['DETAILS'] ?? '', 0, 25)) ?></td>
+                      <td class="qty-col"><?= number_format($item['QTY'], 3) ?></td>
+                      <td class="size-col"><?= htmlspecialchars(substr($item['DETAILS2'] ?? '', 0, 12)) ?></td>
+                      <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                  </table>
+                  
+                  <div class="total-section">
+                    Total: ₹<?= number_format($totalAmount, 2) ?>
+                  </div>
+                </div>
+                <?php
+            }
+            
+            // Display single bill or multiple bills
+            if (!empty($bill_data)) {
+                displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null);
+            } elseif (!empty($all_bills)) {
+                foreach ($all_bills as $bill) {
+                    displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit']);
+                }
+            }
+            ?>
+          </div>
         </div>
       <?php endif; ?>
 
@@ -1031,6 +1037,23 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Function for print button
+function generateReport() {
+    window.print();
+}
+
+// Show report immediately if filters were submitted
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('generate') || urlParams.has('show_print')) {
+        const reportContent = document.getElementById('reportContent');
+        if (reportContent) {
+            reportContent.style.display = 'block';
+            reportContent.classList.add('screen-display');
+        }
+    }
+});
+
 // Auto-submit form when dates change to update summary
 document.addEventListener('DOMContentLoaded', function() {
     const dateFrom = document.querySelector('input[name="date_from"]');
