@@ -55,13 +55,13 @@ $grouped_data = [];
 
 if (isset($_GET['generate'])) {
     // Build query based on selected filters
-    $retail_query = "SELECT 
-        sh.BILL_NO, 
+    $retail_query = "SELECT
+        sh.BILL_NO,
         sh.BILL_DATE as DATE,
         sh.CUST_CODE as Customer_Code,
         'Retail Sale' as Sale_Type,
         sd.ITEM_CODE,
-        COALESCE(im.DETAILS, 'Unknown Item') as ItemName,
+        COALESCE(CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END, 'Unknown Item') as ItemName,
         COALESCE(im.DETAILS2, '') as ItemSize,
         sd.RATE,
         sd.QTY as Quantity,

@@ -44,9 +44,9 @@ if (!$header) {
 }
 
 // Fetch bill items with license filtering
-$items_sql = "SELECT sd.*, im.DETAILS as item_name, im.DETAILS2 as item_details, im.RPRICE as default_rate, im.CLASS
-              FROM tblsaledetails sd 
-              JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE 
+$items_sql = "SELECT sd.*, CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END as item_name, im.DETAILS2 as item_details, im.RPRICE as default_rate, im.CLASS
+              FROM tblsaledetails sd
+              JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
               WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
 $items_stmt = $conn->prepare($items_sql);
 $items_stmt->bind_param("si", $bill_no, $comp_id);
@@ -57,16 +57,16 @@ $items = $items_result->fetch_all(MYSQLI_ASSOC);
 // Fetch all items for dropdown with license filtering
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $all_items_sql = "SELECT CODE, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster 
-                     WHERE CLASS IN ($class_placeholders) 
-                     ORDER BY DETAILS";
+    $all_items_sql = "SELECT CODE, CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END as display_name, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster
+                     WHERE CLASS IN ($class_placeholders)
+                     ORDER BY CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END";
     $all_items_stmt = $conn->prepare($all_items_sql);
     $all_items_stmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
     $all_items_stmt->execute();
     $all_items_result = $all_items_stmt->get_result();
 } else {
     // If no classes allowed, return empty result
-    $all_items_sql = "SELECT CODE, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster WHERE 1 = 0 ORDER BY DETAILS";
+    $all_items_sql = "SELECT CODE, CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END as display_name, DETAILS, DETAILS2, RPRICE, CLASS FROM tblitemmaster WHERE 1 = 0 ORDER BY CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END";
     $all_items_result = $conn->query($all_items_sql);
 }
 
@@ -209,13 +209,13 @@ $category_limits = getCategoryLimits($conn, $comp_id);
                                             <select class="form-control form-control-sm item-select select2-item" name="items[<?= $index ?>][code]" required>
                                                 <option value="">Select Item</option>
                                                 <?php foreach($all_items as $item_option): ?>
-                                                <option value="<?= htmlspecialchars($item_option['CODE']) ?>" 
+                                                <option value="<?= htmlspecialchars($item_option['CODE']) ?>"
                                                         data-rate="<?= $item_option['RPRICE'] ?>"
                                                         data-details="<?= htmlspecialchars($item_option['DETAILS2'] ?? '') ?>"
                                                         data-size="<?= htmlspecialchars($item_option['DETAILS2'] ?? '') ?>"
                                                         data-class="<?= htmlspecialchars($item_option['CLASS'] ?? '') ?>"
                                                         <?= $item_option['CODE'] == $item['ITEM_CODE'] ? 'selected' : '' ?>>
-                                                    <?= htmlspecialchars($item_option['CODE']) ?> - <?= htmlspecialchars($item_option['DETAILS']) ?>
+                                                    <?= htmlspecialchars($item_option['CODE']) ?> - <?= htmlspecialchars($item_option['display_name']) ?>
                                                 </option>
                                                 <?php endforeach; ?>
                                             </select>
@@ -385,12 +385,12 @@ $(document).ready(function() {
                     <select class="form-control form-control-sm item-select select2-item" name="items[${newIndex}][code]" required>
                         <option value="">Select Item</option>
                         ${allItems.map(item => `
-                            <option value="${item.CODE}" 
+                            <option value="${item.CODE}"
                                     data-rate="${item.RPRICE}"
                                     data-details="${item.DETAILS2 || ''}"
                                     data-size="${item.DETAILS2 || ''}"
                                     data-class="${item.CLASS || ''}">
-                                ${item.CODE} - ${item.DETAILS}
+                                ${item.CODE} - ${item.display_name}
                             </option>
                         `).join('')}
                     </select>

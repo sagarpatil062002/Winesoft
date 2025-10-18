@@ -91,7 +91,6 @@ if ($item_code) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $Print_Name = $_POST['Print_Name'];
     $details = $_POST['details'];
-    $details2 = $_POST['details2'];
     $class = $_POST['class'];
     $sub_class = $_POST['sub_class'];
     $item_group = $_POST['item_group'];
@@ -109,10 +108,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Check if subclass was changed - if not, keep the original value
+    $original_sub_class = $item['SUB_CLASS'];
+    $final_sub_class = ($sub_class !== $original_sub_class) ? $sub_class : $original_sub_class;
+
     $stmt = $conn->prepare("UPDATE tblitemmaster SET 
                           Print_Name = ?, 
                           DETAILS = ?, 
-                          DETAILS2 = ?, 
                           CLASS = ?, 
                           SUB_CLASS = ?, 
                           ITEM_GROUP = ?,
@@ -122,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           RPRICE = ?,
                           BARCODE = ?
                           WHERE CODE = ?");
-    $stmt->bind_param("ssssssdddds", $Print_Name, $details, $details2, $class, $sub_class, $item_group, $pprice, $bprice, $mprice, $rprice, $barcode, $item_code);
+    $stmt->bind_param("sssssdddds", $Print_Name, $details, $class, $final_sub_class, $item_group, $pprice, $bprice, $mprice, $rprice, $barcode, $item_code);
     
     if ($stmt->execute()) {
         // Update stock information using the same function as in item_master.php
@@ -399,6 +401,7 @@ function detectClassFromItemName($itemName) {
         <div class="card-body">
           <form method="POST">
             <input type="hidden" name="mode" value="<?= $mode ?>">
+            <input type="hidden" name="original_sub_class" value="<?= htmlspecialchars($item['SUB_CLASS']) ?>">
             
             <div class="row mb-3">
               <div class="col-md-4 col-12">
@@ -421,8 +424,15 @@ function detectClassFromItemName($itemName) {
                 <input type="text" class="form-control" id="details" name="details" value="<?= htmlspecialchars($item['DETAILS']) ?>" required>
               </div>
               <div class="col-md-6 col-12">
-                <label for="details2" class="form-label">Subclass/Description</label>
-                <input type="text" class="form-control" id="details2" name="details2" value="<?= htmlspecialchars($item['DETAILS2']) ?>">
+                <label for="sub_class" class="form-label">Sub Class</label>
+                <select class="form-select" id="sub_class" name="sub_class" required>
+                  <option value="">Select Sub Class</option>
+                  <?php foreach ($subclassDescriptions as $code => $desc): ?>
+                    <option value="<?= htmlspecialchars($code) ?>" <?= $item['SUB_CLASS'] == $code ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($code) ?> - <?= htmlspecialchars($desc) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
               </div>
             </div>
 
@@ -439,15 +449,8 @@ function detectClassFromItemName($itemName) {
                 </select>
               </div>
               <div class="col-md-6 col-12">
-                <label for="sub_class" class="form-label">Sub Class</label>
-                <select class="form-select" id="sub_class" name="sub_class" required>
-                  <option value="">Select Sub Class</option>
-                  <?php foreach ($subclassDescriptions as $code => $desc): ?>
-                    <option value="<?= htmlspecialchars($code) ?>" <?= $item['SUB_CLASS'] == $code ? 'selected' : '' ?>>
-                      <?= htmlspecialchars($code) ?> - <?= htmlspecialchars($desc) ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
+                <label for="barcode" class="form-label">Bar Code</label>
+                <input type="text" class="form-control" id="barcode" name="barcode" value="<?= htmlspecialchars($item['BARCODE'] ?? '') ?>">
               </div>
             </div>
 
@@ -458,10 +461,6 @@ function detectClassFromItemName($itemName) {
                 <input type="number" class="form-control" id="opening_balance" name="opening_balance" 
                        value="<?= htmlspecialchars($opening_balance) ?>" min="0" step="1">
                 <small class="text-muted">Current stock quantity (whole number)</small>
-              </div>
-              <div class="col-md-6 col-12">
-                <label for="barcode" class="form-label">Bar Code</label>
-                <input type="text" class="form-control" id="barcode" name="barcode" value="<?= htmlspecialchars($item['BARCODE'] ?? '') ?>">
               </div>
             </div>
 

@@ -76,11 +76,11 @@ function generateCashMemoText($companyData, $billData, $billItems, $permitData) 
     
     // Items
     foreach ($billItems as $item) {
-        $particulars = substr($item['DETAILS'] ?? '', 0, 30);
+        $particulars = !empty($item['Print_Name']) ? substr($item['Print_Name'], 0, 30) : substr($item['DETAILS'] ?? '', 0, 30);
         $qty = number_format($item['QTY'], 3);
         $size = substr($item['DETAILS2'] ?? '', 0, 15);
         $amount = number_format($item['AMOUNT'], 2);
-        
+
         $text .= str_pad($particulars, 30);
         $text .= str_pad($qty, 10);
         $text .= str_pad($size, 15);
@@ -231,7 +231,7 @@ if (isset($_GET['generate'])) {
         }
     }
     
-    // Function to get a random permit
+    // Function to get a random permit - moved outside the generate block
     function getRandomPermit($permits) {
         if (empty($permits)) {
             return null;
@@ -256,7 +256,7 @@ if (isset($_GET['generate'])) {
             $bill_numbers_to_store[] = $bill_no;
             
             // Get bill details with bottle size information (DETAILS2 column)
-            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2
+            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2, im.Print_Name
                              FROM tblsaledetails sd
                              LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                              WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -302,7 +302,7 @@ if (isset($_GET['generate'])) {
             $bill_numbers_to_store[] = $row['BILL_NO'];
             
             // Get bill details for each bill with bottle size (DETAILS2 column)
-            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2
+            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2, im.Print_Name
                              FROM tblsaledetails sd
                              LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                              WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -364,7 +364,7 @@ if (isset($_GET['show_print'])) {
             $bill_data = $billResult->fetch_assoc();
             
             // Get bill details with bottle size information (DETAILS2 column)
-            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2
+            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2, im.Print_Name
                              FROM tblsaledetails sd
                              LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                              WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -421,7 +421,7 @@ if (isset($_GET['show_print'])) {
         
         while ($row = $billsResult->fetch_assoc()) {
             // Get bill details for each bill with bottle size (DETAILS2 column)
-            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2
+            $detailsQuery = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS, im.DETAILS2, im.Print_Name
                              FROM tblsaledetails sd
                              LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                              WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -994,7 +994,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                   <table class="items-table">
                     <?php foreach ($billItems as $item): ?>
                     <tr>
-                      <td class="particulars-col"><?= htmlspecialchars(substr($item['DETAILS'] ?? '', 0, 25)) ?></td>
+                      <td class="particulars-col"><?= htmlspecialchars(substr(!empty($item['Print_Name']) ? $item['Print_Name'] : ($item['DETAILS'] ?? ''), 0, 25)) ?></td>
                       <td class="qty-col"><?= number_format($item['QTY'], 3) ?></td>
                       <td class="size-col"><?= htmlspecialchars(substr($item['DETAILS2'] ?? '', 0, 12)) ?></td>
                       <td class="amount-col"><?= number_format($item['AMOUNT'], 2) ?></td>

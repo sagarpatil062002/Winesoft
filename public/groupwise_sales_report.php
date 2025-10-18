@@ -124,11 +124,11 @@ if (isset($_GET['generate'])) {
         $stmt->bind_param("ssi", $date_from, $date_to, $compID);
     } else {
         // Use tblsaleheader and tblsaledetails tables
-        $sales_query = "SELECT 
+        $sales_query = "SELECT
                     sh.BILL_NO,
                     sh.BILL_DATE,
                     sd.ITEM_CODE,
-                    i.DETAILS as ITEM_NAME,
+                    CASE WHEN i.Print_Name != '' THEN i.Print_Name ELSE i.DETAILS END as ITEM_NAME,
                     i.CLASS as SGROUP,
                     c.DESC as CLASS_DESC,
                     i.LIQ_FLAG,

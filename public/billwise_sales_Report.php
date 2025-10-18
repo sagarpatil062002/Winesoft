@@ -43,13 +43,13 @@ $total_cash = 0;
 
 if (isset($_GET['generate'])) {
    // Build the query to get customer sales data
-$customer_sales_query = "SELECT 
+$customer_sales_query = "SELECT
             cs.BillNo,
             cs.BillDate,
             cs.LCode,
             l.LHEAD as CustomerName,
             cs.ItemCode,
-            COALESCE(im.DETAILS, cs.ItemName) as ItemName,
+            COALESCE(CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END, cs.ItemName) as ItemName,
             COALESCE(im.DETAILS2, cs.ItemSize) as ItemSize,
             cs.Rate,
             cs.Quantity,
@@ -92,12 +92,12 @@ $customer_sales_query = "SELECT
     $stmt->close();
     
     // Get retail sales data with actual item details
-    $retail_sales_query = "SELECT 
+    $retail_sales_query = "SELECT
                 sh.BILL_NO as BillNo,
                 sh.BILL_DATE as BillDate,
                 'RETAIL SALE' as CustomerName,
                 sd.ITEM_CODE as ItemCode,
-                COALESCE(im.DETAILS, 'Unknown Item') as ItemName,
+                COALESCE(CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END, 'Unknown Item') as ItemName,
                 COALESCE(im.DETAILS2, '') as ItemSize,
                 sd.RATE as Rate,
                 sd.QTY as Quantity,

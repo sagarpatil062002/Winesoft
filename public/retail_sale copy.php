@@ -152,15 +152,15 @@ if (isset($_GET['preview_bill'])) {
     $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
     
     // Fetch bill details
-    $billQuery = "SELECT 
-                    sh.BILL_NO, 
-                    sh.BILL_DATE, 
+    $billQuery = "SELECT
+                    sh.BILL_NO,
+                    sh.BILL_DATE,
                     sh.TOTAL_AMOUNT,
                     sh.DISCOUNT,
                     sh.NET_AMOUNT,
                     sh.LIQ_FLAG,
                     sd.ITEM_CODE,
-                    im.DETAILS as ITEM_NAME,
+                    CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END as ITEM_NAME,
                     sd.QTY,
                     sd.RATE,
                     sd.AMOUNT
@@ -168,7 +168,7 @@ if (isset($_GET['preview_bill'])) {
                   JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
                   JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                   WHERE sh.BILL_NO = ? AND sh.COMP_ID = ?
-                  ORDER BY im.DETAILS";
+                  ORDER BY CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END";
     
     $billStmt = $conn->prepare($billQuery);
     $billStmt->bind_param("si", $bill_no, $compID);

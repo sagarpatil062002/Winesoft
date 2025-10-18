@@ -82,17 +82,17 @@ $items = array_filter($items, function($qty) {
         $items_data = [];
         foreach ($items as $item_code => $quantity) {
             // Get item details from database
-            $item_query = "SELECT DETAILS, RPRICE, DETAILS2 FROM tblitemmaster WHERE CODE = ?";
+            $item_query = "SELECT CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END as display_name, DETAILS, RPRICE, DETAILS2 FROM tblitemmaster WHERE CODE = ?";
             $item_stmt = $conn->prepare($item_query);
             $item_stmt->bind_param("s", $item_code);
             $item_stmt->execute();
             $item_result = $item_stmt->get_result();
             $item_details = $item_result->fetch_assoc();
             $item_stmt->close();
-            
+
             if ($item_details) {
                 $items_data[$item_code] = [
-                    'name' => $item_details['DETAILS'],
+                    'name' => $item_details['display_name'],
                     'rate' => $item_details['RPRICE'],
                     'total_qty' => $quantity,
                     'details2' => $item_details['DETAILS2']

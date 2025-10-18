@@ -102,7 +102,7 @@ function getSalesData($sale_type, $report_type, $counter, $date_from, $date_to, 
         // For retail sales, we need to join with itemmaster to get proper names and prices
         $item_join = "LEFT JOIN tblitemmaster im ON sd.$item_code_field = im.CODE
                       LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP";
-        $item_name_field = "COALESCE(im.DETAILS, 'Unknown Item')";
+        $item_name_field = "COALESCE(CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END, 'Unknown Item')";
         $item_size_field = "COALESCE(im.DETAILS2, '')";
         $item_group_field = "im.ITEM_GROUP";
         $cc_field = "COALESCE(sc.CC, 0)";

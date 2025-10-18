@@ -101,7 +101,7 @@ function getBillData($conn, $bill_no, $comp_id) {
     if (!$header) return null;
     
     // Get items
-    $items_sql = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, im.DETAILS as item_name
+    $items_sql = "SELECT sd.ITEM_CODE, sd.QTY, sd.RATE, sd.AMOUNT, CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END as item_name
                   FROM tblsaledetails sd
                   JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                   WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
@@ -455,14 +455,14 @@ function getNextBillNumber($conn, $comp_id) {
  * Get item name
  */
 function getItemName($conn, $item_code) {
-    $sql = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
+    $sql = "SELECT CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END as item_name FROM tblitemmaster WHERE CODE = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $item_code);
     $stmt->execute();
     $result = $stmt->get_result();
     $item = $result->fetch_assoc();
     $stmt->close();
-    
-    return $item ? $item['DETAILS'] : 'Unknown Item';
+
+    return $item ? $item['item_name'] : 'Unknown Item';
 }
 ?>

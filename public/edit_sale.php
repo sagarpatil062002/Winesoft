@@ -42,16 +42,16 @@ $billHeader = $headerResult->fetch_assoc();
 $headerStmt->close();
 
 // Fetch bill items
-$itemsQuery = "SELECT 
-                sd.ITEM_CODE, 
-                im.DETAILS as ITEM_NAME, 
-                sd.QTY, 
-                sd.RATE, 
-                sd.AMOUNT 
+$itemsQuery = "SELECT
+                sd.ITEM_CODE,
+                CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END as ITEM_NAME,
+                sd.QTY,
+                sd.RATE,
+                sd.AMOUNT
                FROM tblsaledetails sd
                JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
                WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?
-               ORDER BY im.DETAILS";
+               ORDER BY CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END";
 $itemsStmt = $conn->prepare($itemsQuery);
 $itemsStmt->bind_param("si", $bill_no, $compID);
 $itemsStmt->execute();
@@ -161,11 +161,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch all available items for the dropdown with their prices
-$allItemsQuery = "SELECT i.CODE, i.DETAILS, i.DETAILS2, COALESCE(cp.WPrice, i.BPRICE) as Price 
-                  FROM tblitemmaster i 
-                  LEFT JOIN tblcustomerprices cp ON i.CODE = cp.CODE 
-                  GROUP BY i.CODE 
-                  ORDER BY i.DETAILS";
+$allItemsQuery = "SELECT i.CODE, CASE WHEN i.Print_Name != '' THEN i.Print_Name ELSE i.DETAILS END as display_name, i.DETAILS, i.DETAILS2, COALESCE(cp.WPrice, i.BPRICE) as Price
+                  FROM tblitemmaster i
+                  LEFT JOIN tblcustomerprices cp ON i.CODE = cp.CODE
+                  GROUP BY i.CODE
+                  ORDER BY CASE WHEN i.Print_Name != '' THEN i.Print_Name ELSE i.DETAILS END";
 $allItemsStmt = $conn->prepare($allItemsQuery);
 $allItemsStmt->execute();
 $allItemsResult = $allItemsStmt->get_result();
@@ -176,7 +176,7 @@ $allItemsStmt->close();
 $itemOptions = [];
 foreach ($allItems as $item) {
     $itemOptions[$item['CODE']] = [
-        'name' => $item['DETAILS'] . ' (' . $item['DETAILS2'] . ')',
+        'name' => $item['display_name'] . ' (' . $item['DETAILS2'] . ')',
         'price' => $item['Price']
     ];
 }

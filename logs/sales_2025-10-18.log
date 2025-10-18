@@ -1,0 +1,171 @@
+[2025-10-18 07:31:58] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:31:58] [INFO] Request method: GET
+[2025-10-18 07:31:58] [INFO] Search term: ''
+[2025-10-18 07:31:58] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:31:58] [INFO] Final session quantities count: 0
+[2025-10-18 07:31:58] [INFO] Items in current view: 50
+[2025-10-18 07:31:58] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-18 to 2025-10-18
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-18 07:33:01] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:33:01] [INFO] Request method: GET
+[2025-10-18 07:33:01] [INFO] Search term: ''
+[2025-10-18 07:33:01] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:33:01] [INFO] Final session quantities count: 0
+[2025-10-18 07:33:01] [INFO] Items in current view: 50
+[2025-10-18 07:33:01] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-18 to 2025-10-18
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-18 07:35:17] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:35:17] [INFO] Request method: GET
+[2025-10-18 07:35:17] [INFO] Search term: ''
+[2025-10-18 07:35:17] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:35:18] [INFO] Final session quantities count: 0
+[2025-10-18 07:35:18] [INFO] Items in current view: 50
+[2025-10-18 07:35:18] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-18 to 2025-10-18
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-18 07:42:45] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:42:45] [INFO] Request method: GET
+[2025-10-18 07:42:45] [INFO] Search term: ''
+[2025-10-18 07:42:45] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:42:45] [INFO] Final session quantities count: 0
+[2025-10-18 07:42:45] [INFO] Items in current view: 50
+[2025-10-18 07:42:45] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-18 to 2025-10-18
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+
+[2025-10-18 07:42:48] [INFO] Session quantity updated: SCMWN0020397 = 0
+[2025-10-18 07:42:49] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-18 07:42:49] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-18 07:42:49] [INFO] Session quantity updated: SCMWN0020397 = 1
+[2025-10-18 07:42:51] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:42:51] [INFO] Request method: POST
+[2025-10-18 07:42:51] [INFO] Search term: ''
+[2025-10-18 07:42:51] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:42:51] [INFO] Session quantities updated from POST: 1 items
+[2025-10-18 07:42:51] [INFO] Getting next bill number for CompID: 2
+[2025-10-18 07:42:51] [INFO] Next bill number for CompID 2: 418
+[2025-10-18 07:42:51] [INFO] Daily stock updated successfully for item SCMWN0020397 on 2025-10-18 in table tbldailystock_2: Sales=1, Closing=48
+[2025-10-18 07:42:51] [INFO] Starting optimized cash memo generation for 1 bills
+[2025-10-18 07:42:51] [INFO] Cash memo generated for bill: BL0418
+[2025-10-18 07:42:51] [INFO] Cash memo generation completed: 1 successful, 0 failed
+[2025-10-18 07:42:51] [INFO] Session quantities cleared
+[2025-10-18 07:52:19] [INFO] === PAGE ACCESS ===
+[2025-10-18 07:52:19] [INFO] Request method: GET
+[2025-10-18 07:52:19] [INFO] Search term: ''
+[2025-10-18 07:52:19] [INFO] Current session ID: hq3em7273mjcmsrjq2p2qvfm3f
+[2025-10-18 07:52:20] [INFO] Final session quantities count: 0
+[2025-10-18 07:52:20] [INFO] Items in current view: 50
+[2025-10-18 07:52:20] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 821
+    [current_page] => 1
+    [total_pages] => 17
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-18 to 2025-10-18
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FLBR-II
+    [allowed_classes] => Array
+        (
+            [0] => V
+            [1] => F
+            [2] => O
+            [3] => O
+            [4] => O
+            [5] => M
+        )
+
+)
+

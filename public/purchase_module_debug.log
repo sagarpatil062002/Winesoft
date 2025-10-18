@@ -5796,3 +5796,87 @@
 [16-Oct-2025 07:17:35 Europe/Berlin] Purchase 2: ID=10, VOC_NO=9, PUR_FLAG=T, DATE=2025-07-01
 [16-Oct-2025 07:17:35 Europe/Berlin] Purchase 3: ID=8, VOC_NO=7, PUR_FLAG=C, DATE=2025-08-31
 [16-Oct-2025 07:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[18-Oct-2025 07:33:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[18-Oct-2025 07:33:09 Europe/Berlin] Company ID: 2
+[18-Oct-2025 07:33:09 Europe/Berlin] Mode: ALL
+[18-Oct-2025 07:33:09 Europe/Berlin] Session CompID: 2
+[18-Oct-2025 07:33:09 Europe/Berlin] Session User ID: 2
+[18-Oct-2025 07:33:09 Europe/Berlin] Database connection successful
+[18-Oct-2025 07:33:09 Europe/Berlin] Initial filters - Company: 2, Mode: ALL
+[18-Oct-2025 07:33:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[18-Oct-2025 07:33:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:33:09 Europe/Berlin] Parameter Types: i
+[18-Oct-2025 07:33:09 Europe/Berlin] Number of where conditions: 2
+[18-Oct-2025 07:33:09 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:33:09 Europe/Berlin] Found 0 purchase records
+[18-Oct-2025 07:33:09 Europe/Berlin] No purchases found with current filters
+[18-Oct-2025 07:33:09 Europe/Berlin] Database counts - Total: 0, Unpaid(T): , Partial(P): , Completed(C): , Final(F): 
+[18-Oct-2025 07:33:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[18-Oct-2025 07:33:21 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[18-Oct-2025 07:33:21 Europe/Berlin] Company ID: 2
+[18-Oct-2025 07:33:21 Europe/Berlin] Mode: ALL
+[18-Oct-2025 07:33:21 Europe/Berlin] Session CompID: 2
+[18-Oct-2025 07:33:21 Europe/Berlin] Session User ID: 2
+[18-Oct-2025 07:33:21 Europe/Berlin] Database connection successful
+[18-Oct-2025 07:33:21 Europe/Berlin] Initial filters - Company: 2, Mode: ALL
+[18-Oct-2025 07:33:21 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[18-Oct-2025 07:33:21 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:33:21 Europe/Berlin] Parameter Types: i
+[18-Oct-2025 07:33:21 Europe/Berlin] Number of where conditions: 2
+[18-Oct-2025 07:33:21 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:33:21 Europe/Berlin] Found 0 purchase records
+[18-Oct-2025 07:33:21 Europe/Berlin] No purchases found with current filters
+[18-Oct-2025 07:33:21 Europe/Berlin] Database counts - Total: 0, Unpaid(T): , Partial(P): , Completed(C): , Final(F): 
+[18-Oct-2025 07:33:21 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[18-Oct-2025 07:35:16 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[18-Oct-2025 07:35:16 Europe/Berlin] Company ID: 2
+[18-Oct-2025 07:35:16 Europe/Berlin] Mode: ALL
+[18-Oct-2025 07:35:16 Europe/Berlin] Session CompID: 2
+[18-Oct-2025 07:35:16 Europe/Berlin] Session User ID: 2
+[18-Oct-2025 07:35:16 Europe/Berlin] Database connection successful
+[18-Oct-2025 07:35:16 Europe/Berlin] Initial filters - Company: 2, Mode: ALL
+[18-Oct-2025 07:35:16 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ? AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[18-Oct-2025 07:35:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:35:16 Europe/Berlin] Parameter Types: i
+[18-Oct-2025 07:35:16 Europe/Berlin] Number of where conditions: 2
+[18-Oct-2025 07:35:16 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 2
+)
+
+[18-Oct-2025 07:35:16 Europe/Berlin] Found 0 purchase records
+[18-Oct-2025 07:35:16 Europe/Berlin] No purchases found with current filters
+[18-Oct-2025 07:35:16 Europe/Berlin] Database counts - Total: 0, Unpaid(T): , Partial(P): , Completed(C): , Final(F): 
+[18-Oct-2025 07:35:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===

@@ -249,24 +249,24 @@ function getNextBillNumberFallback($conn, $comp_id) {
             
             if ($total_qty > 0) {
                 // Get item details including LIQ_FLAG
-                $item_query = "SELECT DETAILS, RPRICE, LIQ_FLAG FROM tblitemmaster WHERE CODE = ?";
+                $item_query = "SELECT CASE WHEN Print_Name != '' THEN Print_Name ELSE DETAILS END as display_name, DETAILS, RPRICE, LIQ_FLAG FROM tblitemmaster WHERE CODE = ?";
                 $item_stmt = $conn->prepare($item_query);
                 $item_stmt->bind_param("s", $item_code);
                 $item_stmt->execute();
                 $item_result = $item_stmt->get_result();
                 $item = $item_result->fetch_assoc();
                 $item_stmt->close();
-                
+
                 if (!$item) {
                     continue;
                 }
-                
+
                 $daily_sales = distributeSales($total_qty, $days_count);
                 $daily_sales_data[$item_code] = $daily_sales;
-                
+
                 // Store item with its actual LIQ_FLAG for volume limit processing
                 $items_data[$item_code] = [
-                    'name' => $item['DETAILS'],
+                    'name' => $item['display_name'],
                     'rate' => $item['RPRICE'],
                     'total_qty' => $total_qty,
                     'liq_flag' => $item['LIQ_FLAG'] // Include LIQ_FLAG for category-based processing
