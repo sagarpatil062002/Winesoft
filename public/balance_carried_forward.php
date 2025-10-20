@@ -39,9 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Validate input
         if (empty($balanceAmount)) {
-            $errorMessage = "Balance amount is required";
+            $_SESSION['error'] = "Balance amount is required";
         } elseif (!is_numeric($balanceAmount)) {
-            $errorMessage = "Balance amount must be a valid number";
+            $_SESSION['error'] = "Balance amount must be a valid number";
         } else {
             // Check if balance already exists for this date - FIXED QUERY
             $checkQuery = "SELECT ID FROM tblBaLCrdF WHERE CompID = ? AND DATE(BCDATE) = DATE(?)";
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $checkResult = $checkStmt->get_result();
             
             if ($checkResult->num_rows > 0) {
-                $errorMessage = "Entry for this date already exists. Please select a different date.";
+                $_SESSION['error'] = "Entry for this date already exists. Please select a different date.";
             } else {
                 // Insert new balance record
                 $insertQuery = "INSERT INTO tblBaLCrdF (BCDATE, BCAMOUNT, CompID) VALUES (?, ?, ?)";
@@ -63,16 +63,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $insertStmt->bind_param("sdi", $balanceDate, $balanceAmountFloat, $compId);
                 
                 if ($insertStmt->execute()) {
-                    $successMessage = "Balance carried forward saved successfully!";
-                    $currentBalance = $balanceAmountFloat;
+                    $_SESSION['success'] = "Balance carried forward saved successfully!";
                     
                     // Refresh the page to show updated data
-                    header("Location: balance_carried_forward.php?success=1");
+                    header("Location: balance_carried_forward.php");
                     exit;
                 } else {
-                    $errorMessage = "Server busy, please try again later.";
+                    $_SESSION['error'] = "Server busy, please try again later.";
                 }
+                
+                $insertStmt->close();
             }
+            $checkStmt->close();
+        }
+        
+        // If there's an error, redirect back to display it
+        if (isset($_SESSION['error'])) {
+            header("Location: balance_carried_forward.php");
+            exit;
         }
     }
 }
@@ -87,6 +95,18 @@ $balanceHistory = [];
 
 if ($historyResult) {
     $balanceHistory = $historyResult->fetch_all(MYSQLI_ASSOC);
+    $historyStmt->close();
+}
+
+// Display session messages
+if (isset($_SESSION['success'])) {
+    $successMessage = $_SESSION['success'];
+    unset($_SESSION['success']);
+}
+
+if (isset($_SESSION['error'])) {
+    $errorMessage = $_SESSION['error'];
+    unset($_SESSION['error']);
 }
 ?>
 <!DOCTYPE html>
@@ -99,26 +119,35 @@ if ($historyResult) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome@6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">    
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
+    .balance-positive {
+      color: #198754;
+    }
+    .balance-negative {
+      color: #dc3545;
+    }
+    .duplicate-date {
+      background-color: #fff3cd !important;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
     <?php include 'components/navbar.php'; ?>
 
-
   <div class="main-content">
-
+    <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h4><i class="fa-solid fa-scale-balanced me-2"></i>Balance Carried Forward</h4>
       </div>
 
-      <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
+      <?php if (!empty($successMessage)): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <i class="fa-solid fa-circle-check me-2"></i> Balance carried forward saved successfully!
+          <i class="fa-solid fa-circle-check me-2"></i> <?= $successMessage ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
@@ -230,8 +259,8 @@ if ($historyResult) {
       </div>
     </div>
 
-    <!-- Footer -->
-      </div>
+    <?php include 'components/footer.php'; ?>
+  </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -250,18 +279,6 @@ $(document).ready(function() {
     today = yyyy + '-' + mm + '-' + dd;
     $('#balance_date').val(today);
   }
-  
-  // Update current time and date
-  function updateDateTime() {
-    var now = new Date();
-    var time = now.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: true});
-    var date = now.toLocaleDateString('en-IN', {day: '2-digit', month: 'short', year: 'numeric'});
-    $('#current-time').text(time);
-    $('#current-date').text(date);
-  }
-  
-  updateDateTime();
-  setInterval(updateDateTime, 60000);
   
   // Client-side validation to check for duplicate dates
   $('#balanceForm').on('submit', function(e) {

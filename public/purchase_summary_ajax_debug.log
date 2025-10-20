@@ -10042,3 +10042,220 @@
 )
 
 [15-Oct-2025 16:29:55 Europe/Berlin] Processed 60 items successfully
+[20-Oct-2025 14:13:49 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[20-Oct-2025 14:13:49 Europe/Berlin] Request Time: 2025-10-20 14:13:49
+[20-Oct-2025 14:13:49 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-10-01
+    [to_date] => 2025-10-20
+    [comp_id] => 1
+    [debug] => true
+)
+
+[20-Oct-2025 14:13:49 Europe/Berlin] Session CompID: 1
+[20-Oct-2025 14:13:49 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-10-01, To=2025-10-20
+[20-Oct-2025 14:13:49 Europe/Berlin] Initialized summary structure with zeros
+[20-Oct-2025 14:13:49 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[20-Oct-2025 14:13:49 Europe/Berlin] getProductTypeFromClass: Class='W', Name='20-20 Fine Whisky .'
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Classified as SPIRITS (Class: W)
+[20-Oct-2025 14:13:49 Europe/Berlin] extractVolume: Size='180 ML', ItemName='20-20 Fine Whisky .'
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Checking size column: '180 ML'
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Found ML size: 180ML
+[20-Oct-2025 14:13:49 Europe/Berlin] getVolumeColumn: 180 -> 180 ML
+[20-Oct-2025 14:13:49 Europe/Berlin] Item 0: 20-20 Fine Whisky .
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Size: 180 ML
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Class: W
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Extracted Volume: 180
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Volume Column: 180 ML
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Product Type: SPIRITS
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Cases: 0.00, Bottles: 5, BPC: 1
+[20-Oct-2025 14:13:49 Europe/Berlin]   - Total Qty: 5
+[20-Oct-2025 14:13:49 Europe/Berlin]   - PUR_FLAG: T
+[20-Oct-2025 14:13:49 Europe/Berlin]   - ADDED to SPIRITS -> 180 ML: +5
+[20-Oct-2025 14:13:49 Europe/Berlin]   ---
+[20-Oct-2025 14:13:49 Europe/Berlin] Raw data from query: Array
+(
+    [0] => Array
+        (
+            [ItemCode] => SCMPL0019029
+            [Size] => 180 ML
+            [Cases] => 0.00
+            [Bottles] => 5
+            [BottlesPerCase] => 1
+            [ItemName] => 20-20 Fine Whisky .
+            [PurchaseID] => 7
+            [PurchaseDate] => 2025-10-17
+            [PUR_FLAG] => T
+            [ItemClass] => W
+        )
+
+)
+
+[20-Oct-2025 14:13:49 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 5
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[20-Oct-2025 14:13:49 Europe/Berlin] Processed 1 items successfully

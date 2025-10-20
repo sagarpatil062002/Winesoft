@@ -42,6 +42,7 @@ $companyId = $_SESSION['CompID'];
 debugLog("Company ID from session", $companyId);
 
 include_once "../config/db.php";
+include_once "stock_functions.php";
 debugLog("Database connection included");
 
 // ---- License filtering ----
@@ -471,8 +472,11 @@ if ($insertStmt) {
                         'item_code' => $item_code
                     ]);
                     
-                    // Update stock using the EXTRACTED tot_bott value
-                    updateStock($item_code, $tot_bott, $date, $companyId, $conn);
+                    // Update stock using the cascading logic
+                    updateCascadingDailyStock($conn, $item_code, $date, $companyId, 'purchase', $tot_bott);
+
+                    // Update item stock
+                    updateItemStock($conn, $item_code, $tot_bott, $date, $companyId);
                 } else {
                     debugLog("Error inserting purchase detail for item $index", [
                         'error' => $detailStmt->error,

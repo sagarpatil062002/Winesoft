@@ -127,6 +127,17 @@ $stmt->close();
     text-align: right;
 }
 
+/* Hide number input arrows */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 .select-invoice {
     margin: 0;
     transform: scale(1.2);
@@ -283,10 +294,10 @@ $stmt->close();
                   <div class="suggestions-box" id="suggestions"></div>
                 </td>
                 <td>
-                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>" readonly>
+                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric">
                 </td>
                 <td>
-                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>" readonly>
+                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric">
                 </td>
               </tr>
             </tbody>
@@ -524,7 +535,7 @@ $stmt->close();
           if (response.success) {
             displayPendingInvoices(response.data);
             $('#purchase-details').show();
-            $('#pending-amt').val(response.total_pending.toFixed(2));
+            $('#pending-amt').val(response.total_pending.toFixed(0));
           } else {
             alert('Error fetching pending invoices: ' + response.message);
             $('#purchase-details').hide();
@@ -541,89 +552,175 @@ $stmt->close();
     function displayPendingInvoices(invoices) {
       const tbody = $('#purchase-details-body');
       tbody.empty();
-      
+
       if (invoices.length === 0) {
         tbody.append('<tr><td colspan="8" class="text-center">No pending invoices found</td></tr>');
         return;
       }
-      
+
+      // No sorting - allow user to choose payment order by selecting invoices
+
       invoices.forEach(invoice => {
         const totalAmount = parseFloat(invoice.TAMT);
         const paidAmount = parseFloat(invoice.paid_amount);
         const balance = parseFloat(invoice.balance);
-        
+
         tbody.append(`
           <tr data-id="${invoice.ID}" data-total="${totalAmount}" data-paid="${paidAmount}" data-balance="${balance}">
             <td><input type="checkbox" class="select-invoice"></td>
             <td>${invoice.VOC_NO}</td>
             <td>${invoice.INV_NO || ''}</td>
             <td>${invoice.DATE}</td>
-            <td class="amount-cell total-amount">${totalAmount.toFixed(2)}</td>
-            <td class="amount-cell paid-amount">${paidAmount.toFixed(2)}</td>
-            <td class="amount-cell balance-amount ${balance < 0 ? 'text-danger' : ''}">${balance.toFixed(2)}</td>
-            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00"></td>
+            <td class="amount-cell total-amount">${totalAmount.toFixed(0)}</td>
+            <td class="amount-cell paid-amount">${paidAmount.toFixed(0)}</td>
+            <td class="amount-cell balance-amount ${balance < 0 ? 'text-danger' : ''}">${balance.toFixed(0)}</td>
+            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00" inputmode="numeric"></td>
           </tr>
         `);
       });
     }
 
     // Handle paid amount input - update calculations in real-time
+    // If user manually enters amount in paid-input, disable auto-distribution for this session
+    let manualEntryMode = false;
+
     $(document).on('input', '.paid-input', function() {
+      // Set manual entry mode when user types in paid-input field
+      manualEntryMode = true;
+
       const row = $(this).closest('tr');
       const totalAmount = parseFloat(row.data('total'));
       const currentPaid = parseFloat(row.data('paid'));
       const paidNow = parseFloat($(this).val()) || 0;
-      
+
+      // Validate that paid amount doesn't exceed balance
+      const currentBalance = parseFloat(row.data('balance'));
+      if (paidNow > currentBalance) {
+        alert('Paid amount cannot exceed the current balance');
+        $(this).val(currentBalance.toFixed(0));
+        return;
+      }
+
       // Calculate new paid amount and balance
       const newPaidAmount = currentPaid + paidNow;
       const newBalance = totalAmount - newPaidAmount;
-      
-      // Update the displayed values
-      row.find('.paid-amount').text(newPaidAmount.toFixed(2));
-      
+
+      // Update the displayed values - display without decimals
+      row.find('.paid-amount').text(newPaidAmount.toFixed(0));
+
       const balanceCell = row.find('.balance-amount');
-      balanceCell.text(newBalance.toFixed(2));
-      
+      balanceCell.text(newBalance.toFixed(0));
+
       // Apply styling for negative balances
       if (newBalance < 0) {
         balanceCell.addClass('text-danger');
       } else {
         balanceCell.removeClass('text-danger');
       }
-      
+
       // Store the updated values in data attributes
       row.data('paid-now', paidNow);
       row.data('new-paid', newPaidAmount);
       row.data('new-balance', newBalance);
-      
+
       // Calculate total amount across all invoices
       calculateTotalAmount();
+    });
+
+    // Reset manual entry mode when particulars change
+    $('#particulars-input').on('input', function() {
+      manualEntryMode = false;
     });
 
     // Calculate total amount from all paid inputs
     function calculateTotalAmount() {
       let totalPaidNow = 0;
       let totalPending = 0;
-      
+
       $('#purchase-details-body tr').each(function() {
         const paidNow = parseFloat($(this).data('paid-now')) || 0;
         const balance = parseFloat($(this).data('new-balance')) || parseFloat($(this).data('balance'));
-        
+
         totalPaidNow += paidNow;
         totalPending += balance;
       });
-      
-      $('#pending-amt').val(totalPending.toFixed(2));
-      $('#total-amount').val(totalPaidNow.toFixed(2));
-      
-      // Set debit or credit based on mode
+
+      $('#pending-amt').val(totalPending.toFixed(0));
+      $('#total-amount').val(totalPaidNow.toFixed(0));
+
+      // Set debit or credit based on mode - display without decimals
       if ($('#mode-payment').is(':checked')) {
-        $('.credit-input').val(totalPaidNow.toFixed(2));
+        $('.credit-input').val(totalPaidNow.toFixed(0));
         $('.debit-input').val('');
       } else {
-        $('.debit-input').val(totalPaidNow.toFixed(2));
+        $('.debit-input').val(totalPaidNow.toFixed(0));
         $('.credit-input').val('');
       }
+
+      // Trigger auto-distribution when amount is entered in debit/credit fields
+      const debitVal = parseFloat($('.debit-input').val()) || 0;
+      const creditVal = parseFloat($('.credit-input').val()) || 0;
+      const totalEntered = debitVal + creditVal;
+
+      if (totalEntered > 0 && selectedLedgerCode) {
+        distributeAmount(totalEntered);
+      }
+    }
+
+    // Smart amount distribution function - allows flexible payment order
+    function distributeAmount(totalAmount) {
+      let remainingAmount = totalAmount;
+      let invoices = [];
+
+      // Collect all pending invoices (no sorting - user can choose order)
+      $('#purchase-details-body tr').each(function() {
+        const balance = parseFloat($(this).data('balance'));
+        const id = $(this).data('id');
+
+        if (balance > 0) {
+          invoices.push({
+            id: id,
+            balance: balance,
+            row: $(this)
+          });
+        }
+      });
+
+      // Distribute amount to invoices in the order they appear (user can reorder by selecting)
+      invoices.forEach(invoice => {
+        if (remainingAmount <= 0) return;
+
+        const amountToPay = Math.min(remainingAmount, invoice.balance);
+        invoice.row.find('.paid-input').val(amountToPay.toFixed(0));
+
+        // Update calculations for this row
+        const row = invoice.row;
+        const totalAmount = parseFloat(row.data('total'));
+        const currentPaid = parseFloat(row.data('paid'));
+        const paidNow = amountToPay;
+
+        const newPaidAmount = currentPaid + paidNow;
+        const newBalance = totalAmount - newPaidAmount;
+
+        row.find('.paid-amount').text(newPaidAmount.toFixed(0));
+        const balanceCell = row.find('.balance-amount');
+        balanceCell.text(newBalance.toFixed(0));
+
+        if (newBalance < 0) {
+          balanceCell.addClass('text-danger');
+        } else {
+          balanceCell.removeClass('text-danger');
+        }
+
+        row.data('paid-now', paidNow);
+        row.data('new-paid', newPaidAmount);
+        row.data('new-balance', newBalance);
+
+        remainingAmount -= amountToPay;
+      });
+
+      // Update total calculations
+      calculateTotalAmount();
     }
 
     // Save button handler
@@ -754,7 +851,7 @@ function fetchPendingInvoices(ledgerCode) {
       if (response.success) {
         displayPendingInvoices(response.data);
         $('#purchase-details').show();
-        $('#pending-amt').val(response.total_pending.toFixed(2));
+        $('#pending-amt').val(response.total_pending.toFixed(0));
         
         // Update the total amount field based on current mode
         if ($('#mode-payment').is(':checked')) {
@@ -775,6 +872,54 @@ function fetchPendingInvoices(ledgerCode) {
     }
   });
 }
+
+    // Handle debit/credit input changes for instant auto-distribution
+    $(document).on('input', '.debit-input, .credit-input', function() {
+      if (!selectedLedgerCode) {
+        alert('Please select a particulars first');
+        $(this).val('');
+        return;
+      }
+
+      const debitVal = parseFloat($('.debit-input').val()) || 0;
+      const creditVal = parseFloat($('.credit-input').val()) || 0;
+      const totalEntered = debitVal + creditVal;
+
+      if (totalEntered > 0 && !manualEntryMode) {
+        // Instant auto-distribution without delay - only if not in manual entry mode
+        // Clear existing paid amounts first
+        $('#purchase-details-body tr').each(function() {
+          $(this).find('.paid-input').val('0.00');
+          const totalAmount = parseFloat($(this).data('total'));
+          const currentPaid = parseFloat($(this).data('paid'));
+          const balance = totalAmount - currentPaid;
+
+          $(this).find('.paid-amount').text(currentPaid.toFixed(0));
+          $(this).find('.balance-amount').text(balance.toFixed(0)).removeClass('text-danger');
+          $(this).data('paid-now', 0);
+          $(this).data('new-paid', currentPaid);
+          $(this).data('new-balance', balance);
+        });
+
+        // Auto-distribute the entered amount instantly
+        distributeAmount(totalEntered);
+      } else {
+        // Clear all paid amounts if no amount entered
+        $('#purchase-details-body tr').each(function() {
+          $(this).find('.paid-input').val('0.00');
+          const totalAmount = parseFloat($(this).data('total'));
+          const currentPaid = parseFloat($(this).data('paid'));
+          const balance = totalAmount - currentPaid;
+
+          $(this).find('.paid-amount').text(currentPaid.toFixed(0));
+          $(this).find('.balance-amount').text(balance.toFixed(0)).removeClass('text-danger');
+          $(this).data('paid-now', 0);
+          $(this).data('new-paid', currentPaid);
+          $(this).data('new-balance', balance);
+        });
+        calculateTotalAmount();
+      }
+    });
 
     // New button handler
     $('#new-btn').on('click', function() {

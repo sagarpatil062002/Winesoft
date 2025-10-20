@@ -12,6 +12,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php";
+include_once "stock_functions.php";
 
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
@@ -118,11 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_dates'])) {
                         $detail_stmt->execute();
                         $detail_stmt->close();
                         
-                        // Update stock
+                        // Update stock using cascading logic
                         updateItemStock($conn, $item['code'], $item['qty'], $comp_id, $fin_year_id);
-                        
-                        // Update daily stock
-                        updateDailyStock($conn, "tbldailystock_" . $comp_id, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+
+                        // Update daily stock using cascading logic
+                        updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
                     }
                     
                     // AUTO-GENERATE CASH MEMO FOR THIS BILL (NEW ADDITION)
@@ -243,94 +244,6 @@ function incrementBillNumber($bill_no) {
     return $bill_no; // fallback
 }
 
-// Function to update daily stock
-function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
-    // Extract day number from date (e.g., 2025-09-03 -> day 03)
-    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
-    $sales_column = "DAY_{$day_num}_SALES";
-    $closing_column = "DAY_{$day_num}_CLOSING";
-    $opening_column = "DAY_{$day_num}_OPEN";
-    $purchase_column = "DAY_{$day_num}_PURCHASE";
-    
-    $month_year = date('Y-m', strtotime($sale_date));
-    
-    // Check if record exists for this month and item
-    $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
-                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $month_year, $item_code);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    $exists = $check_result->fetch_assoc()['count'] > 0;
-    $check_stmt->close();
-    
-    if ($exists) {
-        // Get current values to calculate closing properly
-        $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
-                         FROM $daily_stock_table 
-                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $select_stmt = $conn->prepare($select_query);
-        $select_stmt->bind_param("ss", $month_year, $item_code);
-        $select_stmt->execute();
-        $select_result = $select_stmt->get_result();
-        $current_values = $select_result->fetch_assoc();
-        $select_stmt->close();
-        
-        $opening = $current_values[$opening_column] ?? 0;
-        $purchase = $current_values[$purchase_column] ?? 0;
-        $current_sales = $current_values[$sales_column] ?? 0;
-        
-        // Calculate new sales and closing
-        $new_sales = $current_sales + $qty;
-        $new_closing = $opening + $purchase - $new_sales;
-        
-        // Update existing record with correct closing calculation
-        $update_query = "UPDATE $daily_stock_table 
-                         SET $sales_column = ?, 
-                             $closing_column = ?,
-                             LAST_UPDATED = CURRENT_TIMESTAMP 
-                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
-        $update_stmt->execute();
-        $update_stmt->close();
-        
-        // Update next day's opening stock if it exists
-        $next_day = intval($day_num) + 1;
-        if ($next_day <= 31) {
-            $next_day_num = sprintf('%02d', $next_day);
-            $next_opening_column = "DAY_{$next_day_num}_OPEN";
-            
-            // Check if next day exists in the table
-            $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
-            $next_day_result = $conn->query($check_next_day_query);
-            
-            if ($next_day_result->num_rows > 0) {
-                // Update next day's opening to match current day's closing
-                $update_next_query = "UPDATE $daily_stock_table 
-                                     SET $next_opening_column = ?,
-                                         LAST_UPDATED = CURRENT_TIMESTAMP 
-                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_next_stmt = $conn->prepare($update_next_query);
-                $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
-                $update_next_stmt->execute();
-                $update_next_stmt->close();
-            }
-        }
-    } else {
-        // For new records, opening and purchase are typically 0 unless specified otherwise
-        $closing = 0 - $qty; // Since opening and purchase are 0
-        
-        // Create new record
-        $insert_query = "INSERT INTO $daily_stock_table 
-                         (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
-                         VALUES (?, ?, 'F', 0, 0, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-    }
-}
 ?>
 
 <!DOCTYPE html>

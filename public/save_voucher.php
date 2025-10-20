@@ -33,12 +33,12 @@ $user_id = $_SESSION['user_id'];
 try {
     $conn->autocommit(FALSE); // Start transaction
     
-    // Get next voucher number
+    // Get next voucher number - FIXED: Make voucher numbers unique per company and financial year
     $voucher_no = 0;
     if ($action === 'new') {
-        $query = "SELECT COALESCE(MAX(VNO), 0) + 1 as next_vno FROM tblexpenses WHERE COMP_ID = ?";
+        $query = "SELECT COALESCE(MAX(VNO), 0) + 1 as next_vno FROM tblexpenses WHERE COMP_ID = ? AND YEAR(VDATE) = YEAR(?)";
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $comp_id);
+        $stmt->bind_param("is", $comp_id, $voucher_date);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
@@ -66,7 +66,7 @@ try {
     // For each paid invoice, create a voucher entry
     foreach ($paid_invoices as $invoice) {
         $paid_amount = $invoice['paid_amount'];
-        
+
         // Get the purchase VOC_NO to store as reference
         $vocNoQuery = "SELECT VOC_NO FROM tblpurchases WHERE ID = ? AND CompID = ?";
         $stmt = $conn->prepare($vocNoQuery);
@@ -75,45 +75,49 @@ try {
         $vocNoResult = $stmt->get_result();
         $vocNoRow = $vocNoResult->fetch_assoc();
         $stmt->close();
-        
+
         $purchase_voc_no = $vocNoRow['VOC_NO'];
-        
+
+        // FIXED: Generate unique voucher number for each invoice payment
+        $individual_voucher_no = $voucher_no + (array_search($invoice, $paid_invoices) + 1);
+
         // Prepare voucher data for this payment
+        // FIXED: Only include bank fields if voucher type is Bank
         $voucher_data = [
-            'VNO' => $voucher_no,
+            'VNO' => $individual_voucher_no,
             'VDATE' => $voucher_date,
             'PARTI' => $ledger_name,
             'AMOUNT' => $paid_amount,
             'DRCR' => $is_payment ? 'D' : 'C',
             'NARR' => $narration . ' - Payment for VOC No: ' . $purchase_voc_no,
             'MODE' => $voucher_type,
-            'REF_AC' => $bank_id,
+            'REF_AC' => ($voucher_type === 'B') ? $bank_id : null,
             'REF_SAC' => $ledger_id,
             'INV_NO' => $purchase_voc_no, // Store the purchase VOC_NO as reference
             'LIQ_FLAG' => 'N',
-            'CHEQ_NO' => $cheq_no,
-            'CHEQ_DT' => $cheq_date,
+            'CHEQ_NO' => ($voucher_type === 'B') ? $cheq_no : null,
+            'CHEQ_DT' => ($voucher_type === 'B') ? $cheq_date : null,
             'MAIN_BK' => 'CB',
             'COMP_ID' => $comp_id
         ];
-        
+
         // Save voucher
         $columns = implode(', ', array_keys($voucher_data));
         $placeholders = implode(', ', array_fill(0, count($voucher_data), '?'));
         $query = "INSERT INTO tblexpenses ($columns) VALUES ($placeholders)";
-        
+
         $stmt = $conn->prepare($query);
         $types = str_repeat('s', count($voucher_data));
         $values = array_values($voucher_data);
-        
+
         $stmt->bind_param($types, ...$values);
         $stmt->execute();
         $stmt->close();
-        
+
         // Update purchase record status - FIXED: Use 'C' for completed instead of 'T'
         $total_paid = $invoice['total_paid'];
         $invoice_amount = $invoice['new_balance'] + $total_paid; // Calculate original amount
-        
+
         // FIXED: Correct PUR_FLAG values
         $new_flag = 'P'; // Partial payment
         if ($total_paid >= $invoice_amount) {
@@ -121,7 +125,7 @@ try {
         } elseif ($total_paid == 0) {
             $new_flag = 'T'; // Unpaid
         }
-        
+
         $update_query = "UPDATE tblpurchases SET PUR_FLAG = ? WHERE ID = ? AND CompID = ?";
         $stmt = $conn->prepare($update_query);
         $stmt->bind_param("sii", $new_flag, $invoice['id'], $comp_id);

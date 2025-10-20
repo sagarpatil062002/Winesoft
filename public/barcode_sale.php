@@ -19,6 +19,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "stock_functions.php";
 
 // Get company ID and stock column names
 $comp_id = $_SESSION['CompID'];
@@ -969,7 +970,7 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $openi
         
         // UPDATE STOCK TABLES
         updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-        updateDailyStock($conn, $daily_stock_table, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+        updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
     }
     
     $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';

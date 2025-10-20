@@ -35,22 +35,25 @@ function deleteBillWithRenumbering($conn, $bill_no, $comp_id) {
         if (!billExists($conn, $bill_no, $comp_id)) {
             throw new Exception("Bill not found!");
         }
-        
+
+        // First, reverse the stock changes for the bill being deleted
+        reverseSaleStock($conn, $bill_no, $comp_id);
+
         // 1. Create temp table if not exists
         createTempBillStorageTable($conn);
-        
+
         // 2. Store subsequent bills in temp table
         storeSubsequentBillsInTemp($conn, $bill_no, $comp_id);
-        
+
         // 3. Delete the target bill
         deleteBillCompletely($conn, $bill_no, $comp_id);
-        
+
         // 4. Restore subsequent bills with new numbers (automatically renumbers)
         restoreSubsequentBillsFromTemp($conn, $comp_id);
-        
+
         $conn->commit();
         return ['success' => true, 'message' => 'Bill deleted and numbering sequence maintained!'];
-        
+
     } catch (Exception $e) {
         $conn->rollback();
         throw $e;
@@ -247,46 +250,203 @@ function deleteBillCompletely($conn, $bill_no, $comp_id) {
 }
 
 /**
+ * Reverse stock changes for sale deletion
+ */
+function reverseSaleStock($conn, $bill_no, $comp_id) {
+    // Get sale details before deletion - need LIQ_FLAG for proper joining
+    $query = "SELECT sd.ITEM_CODE, sd.QTY, sh.BILL_DATE as StkDate, sh.LIQ_FLAG
+              FROM tblsaledetails sd
+              INNER JOIN tblsaleheader sh ON sd.BILL_NO = sh.BILL_NO AND sd.LIQ_FLAG = sh.LIQ_FLAG AND sd.COMP_ID = sh.COMP_ID
+              WHERE sd.BILL_NO = ? AND sd.COMP_ID = ?";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("si", $bill_no, $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $itemCode = $row['ITEM_CODE'];
+        $quantity = $row['QTY'];
+        $saleDate = $row['StkDate'];
+        $liqFlag = $row['LIQ_FLAG'];
+
+        // Reverse daily stock changes using cascading logic
+        updateCascadingDailyStock($conn, $itemCode, $saleDate, $comp_id, 'sale', -$quantity);
+
+        // Reverse item stock changes
+        reverseSaleItemStock($conn, $itemCode, $quantity, $comp_id);
+    }
+    $stmt->close();
+}
+
+/**
+ * Reverse daily stock changes for sale
+ */
+function reverseSaleDailyStock($conn, $itemCode, $quantity, $saleDate, $comp_id) {
+    $dayOfMonth = date('j', strtotime($saleDate));
+    $monthYear = date('Y-m', strtotime($saleDate));
+    $dailyStockTable = "tbldailystock_" . $comp_id;
+
+    $saleColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+
+    // Check if record exists
+    $check_query = "SELECT COUNT(*) as count FROM $dailyStockTable
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+
+    if ($exists) {
+        // Reverse sale: subtract from sales column and add back to closing stock
+        $update_query = "UPDATE $dailyStockTable
+                        SET $saleColumn = $saleColumn - ?,
+                            $closingColumn = $closingColumn + ?
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddss", $quantity, $quantity, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
+
+        // Now cascade the changes to subsequent days
+        cascadeSaleStockChanges($conn, $itemCode, $monthYear, $dayOfMonth, $dailyStockTable);
+    }
+}
+
+/**
+ * Cascade stock changes to subsequent days for sales
+ */
+function cascadeSaleStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStockTable) {
+    // Get the new closing stock for the modified day
+    $closingColumn = "DAY_" . str_pad($startDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    $query = "SELECT $closingColumn as new_closing FROM $dailyStockTable
+              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $monthYear, $itemCode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $newClosingStock = $row['new_closing'];
+    $stmt->close();
+
+    // Get current date to limit updates
+    $currentDate = date('Y-m-d');
+    $currentDay = date('j', strtotime($currentDate));
+    $currentMonthYear = date('Y-m', strtotime($currentDate));
+
+    // Only cascade if we're in the same month
+    if ($monthYear === $currentMonthYear) {
+        $endDay = min(31, $currentDay); // Don't go beyond current day
+    } else {
+        $endDay = 31; // For past months, update all days
+    }
+
+    // Update all subsequent days' opening stock up to current date
+    for ($day = $startDay + 1; $day <= $endDay; $day++) {
+        $openColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $closingColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+
+        // Check if this day has data
+        $check_query = "SELECT COUNT(*) as count FROM information_schema.columns
+                       WHERE table_name = '$dailyStockTable' AND column_name = '$openColumn'";
+        $check_result = $conn->query($check_query);
+        if ($check_result->fetch_assoc()['count'] > 0) {
+            // Update opening stock for this day
+            $update_query = "UPDATE $dailyStockTable
+                            SET $openColumn = ?
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $newClosingStock, $monthYear, $itemCode);
+            $update_stmt->execute();
+            $update_stmt->close();
+
+            // Recalculate closing stock for this day
+            $saleColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+            $purchaseColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+
+            $recalc_query = "UPDATE $dailyStockTable
+                            SET $closingColumn = $openColumn + $purchaseColumn - $saleColumn
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $recalc_stmt = $conn->prepare($recalc_query);
+            $recalc_stmt->bind_param("ss", $monthYear, $itemCode);
+            $recalc_stmt->execute();
+            $recalc_stmt->close();
+
+            // Get the new closing stock for next day's opening
+            $get_closing_query = "SELECT $closingColumn as closing FROM $dailyStockTable
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $get_stmt = $conn->prepare($get_closing_query);
+            $get_stmt->bind_param("ss", $monthYear, $itemCode);
+            $get_stmt->execute();
+            $get_result = $get_stmt->get_result();
+            $closing_row = $get_result->fetch_assoc();
+            $newClosingStock = $closing_row['closing'];
+            $get_stmt->close();
+        }
+    }
+}
+
+/**
+ * Reverse item stock changes for sale
+ */
+function reverseSaleItemStock($conn, $itemCode, $quantity, $comp_id) {
+    $stockColumn = "CURRENT_STOCK" . $comp_id;
+
+    // Add back to current stock (reverse the subtraction)
+    $updateItemStockQuery = "UPDATE tblitem_stock
+                            SET $stockColumn = $stockColumn + ?
+                            WHERE ITEM_CODE = ?";
+
+    $itemStmt = $conn->prepare($updateItemStockQuery);
+    $itemStmt->bind_param("ds", $quantity, $itemCode);
+    $itemStmt->execute();
+    $itemStmt->close();
+}
+
+/**
  * Get next bill number
  */
 function getNextBillNumber($conn, $comp_id) {
-    $sql = "SELECT BILL_NO FROM tblsaleheader 
-            WHERE COMP_ID = ? 
-            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+    $sql = "SELECT BILL_NO FROM tblsaleheader
+            WHERE COMP_ID = ?
+            ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC
             LIMIT 1";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $comp_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $nextNumber = 1;
-    
+
     if ($result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $lastBillNo = $row['BILL_NO'];
-        
+
         if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
             $nextNumber = intval($matches[1]) + 1;
         }
     }
-    
+
     $stmt->close();
-    
+
     // Safety check
     $billExists = true;
     $attempts = 0;
-    
+
     while ($billExists && $attempts < 10) {
         $newBillNo = 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        
+
         $checkSql = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $checkStmt = $conn->prepare($checkSql);
         $checkStmt->bind_param("si", $newBillNo, $comp_id);
         $checkStmt->execute();
         $checkResult = $checkStmt->get_result();
         $checkRow = $checkResult->fetch_assoc();
-        
+
         if ($checkRow['count'] == 0) {
             $billExists = false;
         } else {
@@ -295,7 +455,7 @@ function getNextBillNumber($conn, $comp_id) {
         }
         $checkStmt->close();
     }
-    
+
     return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 }
 ?>

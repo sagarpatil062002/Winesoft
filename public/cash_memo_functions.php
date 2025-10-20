@@ -204,27 +204,58 @@ function generateCashMemoForBill($conn, $bill_no, $comp_id, $user_id) {
     return saveCompleteCashMemo($conn, $bill_data, $companyData, $bill_items, $permitData, $comp_id, $user_id);
 }
 
-// Function for automatic generation - ADDED OUTSIDE THE PREVIOUS FUNCTION
+// Function for automatic generation - IMPROVED RELIABILITY
 function autoGenerateCashMemoForBill($conn, $bill_no, $comp_id, $user_id) {
     try {
-        // Check if bill exists
-        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+        // Add transaction safety
+        $conn->begin_transaction();
+
+        // Check if bill exists and get bill data
+        $check_query = "SELECT BILL_NO, BILL_DATE, TOTAL_AMOUNT, NET_AMOUNT FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $check_stmt = $conn->prepare($check_query);
         $check_stmt->bind_param("si", $bill_no, $comp_id);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
-        $bill_exists = $check_result->fetch_assoc()['count'] > 0;
-        $check_stmt->close();
-        
-        if (!$bill_exists) {
+
+        if ($check_result->num_rows === 0) {
+            $check_stmt->close();
+            $conn->rollback();
             error_log("Bill not found for cash memo generation: " . $bill_no);
             return false;
         }
-        
+
+        $bill_data = $check_result->fetch_assoc();
+        $check_stmt->close();
+
+        // Check if cash memo already exists for today
+        $today_check = "SELECT id FROM tbl_cash_memo_prints
+                       WHERE bill_no = ? AND comp_id = ? AND DATE(print_date) = CURDATE()";
+        $today_stmt = $conn->prepare($today_check);
+        $today_stmt->bind_param("si", $bill_no, $comp_id);
+        $today_stmt->execute();
+        $today_result = $today_stmt->get_result();
+
+        if ($today_result->num_rows > 0) {
+            $today_stmt->close();
+            $conn->rollback();
+            error_log("Cash memo already generated today for bill: " . $bill_no);
+            return true; // Consider this success since it already exists
+        }
+        $today_stmt->close();
+
         // Generate cash memo using existing function
-        return generateCashMemoForBill($conn, $bill_no, $comp_id, $user_id);
-        
+        $result = generateCashMemoForBill($conn, $bill_no, $comp_id, $user_id);
+
+        if ($result) {
+            $conn->commit();
+            return true;
+        } else {
+            $conn->rollback();
+            return false;
+        }
+
     } catch (Exception $e) {
+        $conn->rollback();
         error_log("Error auto-generating cash memo for bill " . $bill_no . ": " . $e->getMessage());
         return false;
     }

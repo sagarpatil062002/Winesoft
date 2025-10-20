@@ -3668,3 +3668,6502 @@
 }
 [2025-10-17 06:15:45] Database connection closed
 [2025-10-17 06:15:45] === PURCHASE SESSION ENDED ===
+[2025-10-20 09:36:22] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 09:36:22] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760944709
+}
+[2025-10-20 09:36:22] POST data: []
+[2025-10-20 09:36:22] GET data: {
+    "mode": "F"
+}
+[2025-10-20 09:36:22] Company ID from session: 1
+[2025-10-20 09:36:22] Database connection included
+[2025-10-20 09:36:22] License functions included
+[2025-10-20 09:36:22] License type: FL-II
+[2025-10-20 09:36:22] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 09:36:22] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 09:36:22] Purchase mode: F
+[2025-10-20 09:36:22] Next voucher number: 11
+[2025-10-20 09:36:22] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 09:36:22] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 09:36:22] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 09:36:22] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 09:36:22] Database connection closed
+[2025-10-20 09:36:22] === PURCHASE SESSION ENDED ===
+[2025-10-20 09:38:18] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 09:38:18] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760944709
+}
+[2025-10-20 09:38:18] POST data: {
+    "mode": "F",
+    "voc_no": "11",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "supplier_code": "",
+    "items": [
+        {
+            "code": "SCMIT0020165",
+            "name": "ABSOLUTE VODKA .",
+            "size": "200 ML (24)",
+            "bottles_per_case": "24",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "4.80",
+            "vv": "0",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "100.00",
+    "tamt": "100.00"
+}
+[2025-10-20 09:38:18] GET data: {
+    "mode": "F"
+}
+[2025-10-20 09:38:18] Company ID from session: 1
+[2025-10-20 09:38:18] Database connection included
+[2025-10-20 09:38:18] License functions included
+[2025-10-20 09:38:18] License type: FL-II
+[2025-10-20 09:38:18] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 09:38:18] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 09:38:18] Purchase mode: F
+[2025-10-20 09:38:18] Next voucher number: 11
+[2025-10-20 09:38:18] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 09:38:18] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 09:38:18] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 09:38:18] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 09:38:18] === FORM SUBMISSION STARTED ===
+[2025-10-20 09:38:18] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "11",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "basic_amt": "100.00",
+    "total_amt": "100.00"
+}
+[2025-10-20 09:38:18] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "",
+        "FL1305-310825\/7654",
+        "11",
+        "",
+        "",
+        "100.00",
+        "7654",
+        "",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 09:38:18] Purchase header inserted successfully: {
+    "purchase_id": 12,
+    "affected_rows": 1
+}
+[2025-10-20 09:38:18] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 09:38:18] Processing item 0: {
+    "item_code": "SCMIT0020165",
+    "item_name": "ABSOLUTE VODKA .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 24,
+    "bl": 4.8
+}
+[2025-10-20 09:38:18] Item 0 inserted successfully: {
+    "purchase_id": 12,
+    "item_code": "SCMIT0020165"
+}
+[2025-10-20 09:38:18] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-20 09:38:18] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-20 09:38:18] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 09:38:18] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 09:38:26] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 09:38:26] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760944709
+}
+[2025-10-20 09:38:26] POST data: []
+[2025-10-20 09:38:26] GET data: {
+    "mode": "F"
+}
+[2025-10-20 09:38:26] Company ID from session: 1
+[2025-10-20 09:38:26] Database connection included
+[2025-10-20 09:38:26] License functions included
+[2025-10-20 09:38:26] License type: FL-II
+[2025-10-20 09:38:26] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 09:38:26] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 09:38:26] Purchase mode: F
+[2025-10-20 09:38:26] Next voucher number: 12
+[2025-10-20 09:38:26] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 09:38:26] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 09:38:26] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 09:38:26] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 09:38:26] Database connection closed
+[2025-10-20 09:38:26] === PURCHASE SESSION ENDED ===
+[2025-10-20 09:51:11] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 09:51:11] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760946332,
+    "sale_quantities": []
+}
+[2025-10-20 09:51:11] POST data: []
+[2025-10-20 09:51:11] GET data: []
+[2025-10-20 09:51:11] Company ID from session: 1
+[2025-10-20 09:51:11] Database connection included
+[2025-10-20 09:51:11] License functions included
+[2025-10-20 09:51:11] License type: FL-II
+[2025-10-20 09:51:11] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 09:51:11] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 09:51:11] Purchase mode: F
+[2025-10-20 09:51:11] Next voucher number: 12
+[2025-10-20 09:51:11] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 09:51:11] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 09:51:11] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 09:51:11] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 09:51:11] Database connection closed
+[2025-10-20 09:51:11] === PURCHASE SESSION ENDED ===
+[2025-10-20 09:53:55] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 09:53:55] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760946332,
+    "sale_quantities": []
+}
+[2025-10-20 09:53:55] POST data: {
+    "mode": "F",
+    "voc_no": "12",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL170-280825\/15670",
+    "tp_no": "15670",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": {
+        "4": {
+            "code": "SCMLS0030593",
+            "name": "ABSOLUT VODKA RASPBERRI .",
+            "size": "200 ML (24)",
+            "bottles_per_case": "24",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "4.80",
+            "vv": "0",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    },
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "120.00",
+    "tamt": "120.00"
+}
+[2025-10-20 09:53:55] GET data: []
+[2025-10-20 09:53:55] Company ID from session: 1
+[2025-10-20 09:53:55] Database connection included
+[2025-10-20 09:53:55] License functions included
+[2025-10-20 09:53:55] License type: FL-II
+[2025-10-20 09:53:55] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 09:53:55] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 09:53:55] Purchase mode: F
+[2025-10-20 09:53:55] Next voucher number: 12
+[2025-10-20 09:53:55] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 09:53:55] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 09:53:55] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 09:53:55] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 09:53:55] === FORM SUBMISSION STARTED ===
+[2025-10-20 09:53:55] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "12",
+    "auto_tp_no": "FL170-280825\/15670",
+    "tp_no": "15670",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "120.00",
+    "total_amt": "120.00"
+}
+[2025-10-20 09:53:55] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "AMAR",
+        "FL170-280825\/15670",
+        "12",
+        "",
+        "",
+        "120.00",
+        "15670",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 09:53:55] Purchase header inserted successfully: {
+    "purchase_id": 13,
+    "affected_rows": 1
+}
+[2025-10-20 09:53:55] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 09:53:55] Processing item 4: {
+    "item_code": "SCMLS0030593",
+    "item_name": "ABSOLUT VODKA RASPBERRI .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 120,
+    "tot_bott": 24,
+    "bl": 4.8
+}
+[2025-10-20 09:53:55] Item 4 inserted successfully: {
+    "purchase_id": 13,
+    "item_code": "SCMLS0030593"
+}
+[2025-10-20 09:53:55] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-20 09:53:55] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-20 09:53:55] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 09:53:55] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 10:08:09] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 10:08:09] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760947607
+}
+[2025-10-20 10:08:09] POST data: []
+[2025-10-20 10:08:09] GET data: []
+[2025-10-20 10:08:09] Company ID from session: 1
+[2025-10-20 10:08:09] Database connection included
+[2025-10-20 10:08:09] License functions included
+[2025-10-20 10:08:09] License type: FL-II
+[2025-10-20 10:08:09] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 10:08:09] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 10:08:09] Purchase mode: F
+[2025-10-20 10:08:09] Next voucher number: 13
+[2025-10-20 10:08:09] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 10:08:09] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 10:08:09] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 10:08:09] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 10:08:09] Database connection closed
+[2025-10-20 10:08:09] === PURCHASE SESSION ENDED ===
+[2025-10-20 10:10:00] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 10:10:00] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760947607
+}
+[2025-10-20 10:10:00] POST data: {
+    "mode": "F",
+    "voc_no": "13",
+    "date": "2025-10-18",
+    "auto_tp_no": "FL1305-180725\/5746",
+    "tp_no": "5746",
+    "tp_date": "2025-10-18",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "MILLENINUM SPIRITS",
+    "supplier_code": "MILL",
+    "items": [
+        {
+            "code": "SCMPL0009679",
+            "name": "Bacardi Black Rum .",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "9.00",
+            "vv": "0",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "100.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "100.00",
+    "tamt": "100.00"
+}
+[2025-10-20 10:10:00] GET data: []
+[2025-10-20 10:10:00] Company ID from session: 1
+[2025-10-20 10:10:00] Database connection included
+[2025-10-20 10:10:00] License functions included
+[2025-10-20 10:10:00] License type: FL-II
+[2025-10-20 10:10:00] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 10:10:00] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 10:10:00] Purchase mode: F
+[2025-10-20 10:10:00] Next voucher number: 13
+[2025-10-20 10:10:00] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 10:10:00] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 10:10:00] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 10:10:00] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 10:10:00] === FORM SUBMISSION STARTED ===
+[2025-10-20 10:10:00] Form data extracted: {
+    "date": "2025-10-18",
+    "voc_no": "13",
+    "auto_tp_no": "FL1305-180725\/5746",
+    "tp_no": "5746",
+    "tp_date": "2025-10-18",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "MILL",
+    "supplier_name": "MILLENINUM SPIRITS",
+    "basic_amt": "100.00",
+    "total_amt": "100.00"
+}
+[2025-10-20 10:10:00] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-18",
+        "MILL",
+        "FL1305-180725\/5746",
+        "13",
+        "",
+        "",
+        "100.00",
+        "5746",
+        "2025-10-18",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 10:10:00] Purchase header inserted successfully: {
+    "purchase_id": 14,
+    "affected_rows": 1
+}
+[2025-10-20 10:10:00] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 10:10:00] Processing item 0: {
+    "item_code": "SCMPL0009679",
+    "item_name": "Bacardi Black Rum .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 100,
+    "amount": 100,
+    "tot_bott": 24,
+    "bl": 9
+}
+[2025-10-20 10:10:00] Item 0 inserted successfully: {
+    "purchase_id": 14,
+    "item_code": "SCMPL0009679"
+}
+[2025-10-20 10:10:00] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-20 10:10:00] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-20 10:10:00] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 10:10:00] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 10:42:04] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 10:42:04] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 10:42:04] POST data: []
+[2025-10-20 10:42:04] GET data: []
+[2025-10-20 10:42:04] Company ID from session: 1
+[2025-10-20 10:42:04] Database connection included
+[2025-10-20 10:42:04] License functions included
+[2025-10-20 10:42:04] License type: FL-II
+[2025-10-20 10:42:04] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 10:42:04] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 10:42:04] Purchase mode: F
+[2025-10-20 10:42:04] Next voucher number: 1
+[2025-10-20 10:42:04] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 10:42:04] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 10:42:04] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 10:42:04] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 10:42:04] Database connection closed
+[2025-10-20 10:42:04] === PURCHASE SESSION ENDED ===
+[2025-10-20 10:56:59] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 10:56:59] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 10:56:59] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "supplier_code": "ABHI",
+    "items": [
+        {
+            "code": "SCMPL0019030",
+            "name": "20-20 Fine Whisky .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "7.50",
+            "vv": "0",
+            "tot_bott": "10",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "10",
+            "case_rate": "800.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "8000.00",
+    "tamt": "8000.00"
+}
+[2025-10-20 10:56:59] GET data: []
+[2025-10-20 10:56:59] Company ID from session: 1
+[2025-10-20 10:56:59] Database connection included
+[2025-10-20 10:56:59] License functions included
+[2025-10-20 10:57:00] License type: FL-II
+[2025-10-20 10:57:00] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 10:57:00] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 10:57:00] Purchase mode: F
+[2025-10-20 10:57:00] Next voucher number: 1
+[2025-10-20 10:57:00] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 10:57:00] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 10:57:00] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 10:57:00] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 10:57:00] === FORM SUBMISSION STARTED ===
+[2025-10-20 10:57:00] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ABHI",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "basic_amt": "8000.00",
+    "total_amt": "8000.00"
+}
+[2025-10-20 10:57:00] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ABHI",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "8000.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 10:57:00] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2025-10-20 10:57:00] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 10:57:00] Processing item 0: {
+    "item_code": "SCMPL0019030",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 10,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 8000,
+    "tot_bott": 10,
+    "bl": 7.5
+}
+[2025-10-20 10:57:00] Item 0 inserted successfully: {
+    "purchase_id": 1,
+    "item_code": "SCMPL0019030"
+}
+[2025-10-20 10:57:00] Checking if month is archived: {
+    "company_id": 1,
+    "month": "10",
+    "year": "2025",
+    "archive_table": "tbldailystock_1_10_25"
+}
+[2025-10-20 10:57:00] Month archive check result: {
+    "table_exists": false,
+    "query": "SELECT COUNT(*) as count FROM information_schema.tables \n                           WHERE table_schema = DATABASE() \n                           AND table_name = 'tbldailystock_1_10_25'"
+}
+[2025-10-20 10:57:00] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 10:57:00] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 11:16:32] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 11:16:32] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 11:16:32] POST data: []
+[2025-10-20 11:16:32] GET data: {
+    "mode": "F"
+}
+[2025-10-20 11:16:32] Company ID from session: 1
+[2025-10-20 11:16:32] Database connection included
+[2025-10-20 11:16:32] License functions included
+[2025-10-20 11:16:32] License type: FL-II
+[2025-10-20 11:16:32] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 11:16:32] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 11:16:32] Purchase mode: F
+[2025-10-20 11:16:32] Next voucher number: 1
+[2025-10-20 11:16:32] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 11:16:32] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 11:16:32] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 11:16:32] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 11:16:32] Database connection closed
+[2025-10-20 11:16:32] === PURCHASE SESSION ENDED ===
+[2025-10-20 11:35:46] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 11:35:46] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 11:35:46] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "supplier_code": "ABHI",
+    "items": [
+        {
+            "code": "SCMPL0019030",
+            "name": "20-20 Fine Whisky .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "7.50",
+            "vv": "0",
+            "tot_bott": "10",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "",
+            "bottles": "10",
+            "case_rate": "800.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "8000.00",
+    "tamt": "8000.00"
+}
+[2025-10-20 11:35:46] GET data: {
+    "mode": "F"
+}
+[2025-10-20 11:35:46] Company ID from session: 1
+[2025-10-20 11:35:46] Database connection included
+[2025-10-20 11:35:46] License functions included
+[2025-10-20 11:35:46] License type: FL-II
+[2025-10-20 11:35:46] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 11:35:46] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 11:35:46] Purchase mode: F
+[2025-10-20 11:35:46] Next voucher number: 1
+[2025-10-20 11:35:46] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 11:35:46] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 11:35:46] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 11:35:46] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 11:35:46] === FORM SUBMISSION STARTED ===
+[2025-10-20 11:35:46] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ABHI",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "basic_amt": "8000.00",
+    "total_amt": "8000.00"
+}
+[2025-10-20 11:35:46] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ABHI",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "8000.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 11:35:46] Purchase header inserted successfully: {
+    "purchase_id": 2,
+    "affected_rows": 1
+}
+[2025-10-20 11:35:46] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 11:35:46] Processing item 0: {
+    "item_code": "SCMPL0019030",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 10,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 8000,
+    "tot_bott": 10,
+    "bl": 7.5
+}
+[2025-10-20 11:35:46] Item 0 inserted successfully: {
+    "purchase_id": 2,
+    "item_code": "SCMPL0019030"
+}
+[2025-10-20 13:30:28] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:30:28] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:30:28] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "supplier_code": "ABHI",
+    "items": [
+        {
+            "code": "SCMPL0019030",
+            "name": "20-20 Fine Whisky .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "7.50",
+            "vv": "0",
+            "tot_bott": "10",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "",
+            "bottles": "10",
+            "case_rate": "800.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "8000.00",
+    "tamt": "8000.00"
+}
+[2025-10-20 13:30:28] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:30:28] Company ID from session: 1
+[2025-10-20 13:30:52] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:30:52] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:30:52] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "supplier_code": "ABHI",
+    "items": [
+        {
+            "code": "SCMPL0019030",
+            "name": "20-20 Fine Whisky .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "7.50",
+            "vv": "0",
+            "tot_bott": "10",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "",
+            "bottles": "10",
+            "case_rate": "800.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "8000.00",
+    "tamt": "8000.00"
+}
+[2025-10-20 13:30:52] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:30:52] Company ID from session: 1
+[2025-10-20 13:30:52] Database connection included
+[2025-10-20 13:30:52] License functions included
+[2025-10-20 13:30:52] License type: FL-II
+[2025-10-20 13:30:52] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 13:30:52] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 13:30:52] Purchase mode: F
+[2025-10-20 13:30:52] Next voucher number: 2
+[2025-10-20 13:30:52] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 13:30:52] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 13:30:52] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 13:30:52] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 13:30:52] === FORM SUBMISSION STARTED ===
+[2025-10-20 13:30:52] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ABHI",
+    "supplier_name": "ABHIJIT WINE INDUSTRIES",
+    "basic_amt": "8000.00",
+    "total_amt": "8000.00"
+}
+[2025-10-20 13:30:52] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ABHI",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "8000.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 13:30:52] Purchase header inserted successfully: {
+    "purchase_id": 3,
+    "affected_rows": 1
+}
+[2025-10-20 13:30:52] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 13:30:52] Processing item 0: {
+    "item_code": "SCMPL0019030",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 10,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 8000,
+    "tot_bott": 10,
+    "bl": 7.5
+}
+[2025-10-20 13:30:52] Item 0 inserted successfully: {
+    "purchase_id": 3,
+    "item_code": "SCMPL0019030"
+}
+[2025-10-20 13:30:53] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 13:30:53] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 13:45:20] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:45:20] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:45:20] POST data: []
+[2025-10-20 13:45:20] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:45:20] Company ID from session: 1
+[2025-10-20 13:45:20] Database connection included
+[2025-10-20 13:45:20] License functions included
+[2025-10-20 13:45:20] License type: FL-II
+[2025-10-20 13:45:20] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 13:45:20] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 13:45:20] Purchase mode: F
+[2025-10-20 13:45:20] Next voucher number: 1
+[2025-10-20 13:45:20] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 13:45:20] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 13:45:20] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 13:45:20] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 13:45:20] Database connection closed
+[2025-10-20 13:45:20] === PURCHASE SESSION ENDED ===
+[2025-10-20 13:45:59] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:45:59] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:45:59] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ASIAN TRADERS",
+    "supplier_code": "ASIA",
+    "items": [
+        {
+            "code": "SCMPL0019030",
+            "name": "20-20 Fine Whisky .",
+            "size": "750 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0.75",
+            "vv": "0",
+            "tot_bott": "1",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "800.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "800.00",
+    "tamt": "800.00"
+}
+[2025-10-20 13:45:59] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:45:59] Company ID from session: 1
+[2025-10-20 13:45:59] Database connection included
+[2025-10-20 13:45:59] License functions included
+[2025-10-20 13:45:59] License type: FL-II
+[2025-10-20 13:45:59] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 13:45:59] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 13:45:59] Purchase mode: F
+[2025-10-20 13:45:59] Next voucher number: 1
+[2025-10-20 13:45:59] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 13:45:59] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 13:45:59] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 13:45:59] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 13:45:59] === FORM SUBMISSION STARTED ===
+[2025-10-20 13:45:59] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ASIA",
+    "supplier_name": "ASIAN TRADERS",
+    "basic_amt": "800.00",
+    "total_amt": "800.00"
+}
+[2025-10-20 13:45:59] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ASIA",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "800.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 13:45:59] Purchase header inserted successfully: {
+    "purchase_id": 4,
+    "affected_rows": 1
+}
+[2025-10-20 13:45:59] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 13:45:59] Processing item 0: {
+    "item_code": "SCMPL0019030",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 800,
+    "amount": 800,
+    "tot_bott": 1,
+    "bl": 0.75
+}
+[2025-10-20 13:45:59] Item 0 inserted successfully: {
+    "purchase_id": 4,
+    "item_code": "SCMPL0019030"
+}
+[2025-10-20 13:45:59] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 13:45:59] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 13:47:45] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:47:45] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:47:45] POST data: []
+[2025-10-20 13:47:45] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:47:45] Company ID from session: 1
+[2025-10-20 13:47:45] Database connection included
+[2025-10-20 13:47:45] License functions included
+[2025-10-20 13:47:45] License type: FL-II
+[2025-10-20 13:47:45] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 13:47:45] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 13:47:45] Purchase mode: F
+[2025-10-20 13:47:45] Next voucher number: 1
+[2025-10-20 13:47:45] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 13:47:45] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 13:47:45] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 13:47:45] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 13:47:45] Database connection closed
+[2025-10-20 13:47:45] === PURCHASE SESSION ENDED ===
+[2025-10-20 13:48:41] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 13:48:41] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 13:48:41] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ANKUSH TRADERS",
+    "supplier_code": "ANKU",
+    "items": [
+        {
+            "code": "SCMPL0019029",
+            "name": "20-20 Fine Whisky .",
+            "size": "180 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0.90",
+            "vv": "0",
+            "tot_bott": "5",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "5",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "600.00",
+    "tamt": "600.00"
+}
+[2025-10-20 13:48:41] GET data: {
+    "mode": "F"
+}
+[2025-10-20 13:48:41] Company ID from session: 1
+[2025-10-20 13:48:41] Database connection included
+[2025-10-20 13:48:41] License functions included
+[2025-10-20 13:48:41] License type: FL-II
+[2025-10-20 13:48:41] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 13:48:41] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 13:48:41] Purchase mode: F
+[2025-10-20 13:48:41] Next voucher number: 1
+[2025-10-20 13:48:41] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 13:48:41] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 13:48:42] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 13:48:42] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 13:48:42] === FORM SUBMISSION STARTED ===
+[2025-10-20 13:48:42] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ANKU",
+    "supplier_name": "ANKUSH TRADERS",
+    "basic_amt": "600.00",
+    "total_amt": "600.00"
+}
+[2025-10-20 13:48:42] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ANKU",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "600.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 13:48:42] Purchase header inserted successfully: {
+    "purchase_id": 5,
+    "affected_rows": 1
+}
+[2025-10-20 13:48:42] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 13:48:42] Processing item 0: {
+    "item_code": "SCMPL0019029",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 5,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 600,
+    "tot_bott": 5,
+    "bl": 0.9
+}
+[2025-10-20 13:48:42] Item 0 inserted successfully: {
+    "purchase_id": 5,
+    "item_code": "SCMPL0019029"
+}
+[2025-10-20 13:48:42] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 13:48:42] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 14:07:15] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:07:15] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760961153
+}
+[2025-10-20 14:07:15] POST data: []
+[2025-10-20 14:07:15] GET data: []
+[2025-10-20 14:07:15] Company ID from session: 1
+[2025-10-20 14:07:15] Database connection included
+[2025-10-20 14:07:15] License functions included
+[2025-10-20 14:07:15] License type: FL-II
+[2025-10-20 14:07:15] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:07:15] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:07:15] Purchase mode: F
+[2025-10-20 14:07:15] Next voucher number: 2
+[2025-10-20 14:07:15] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:07:15] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:07:15] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:07:15] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:07:15] Database connection closed
+[2025-10-20 14:07:15] === PURCHASE SESSION ENDED ===
+[2025-10-20 14:08:38] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:08:38] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760961153
+}
+[2025-10-20 14:08:38] POST data: []
+[2025-10-20 14:08:38] GET data: []
+[2025-10-20 14:08:38] Company ID from session: 1
+[2025-10-20 14:08:38] Database connection included
+[2025-10-20 14:08:38] License functions included
+[2025-10-20 14:08:38] License type: FL-II
+[2025-10-20 14:08:38] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:08:38] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:08:38] Purchase mode: F
+[2025-10-20 14:08:38] Next voucher number: 1
+[2025-10-20 14:08:38] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:08:38] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:08:38] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:08:38] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:08:38] Database connection closed
+[2025-10-20 14:08:38] === PURCHASE SESSION ENDED ===
+[2025-10-20 14:09:18] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:09:18] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760961153
+}
+[2025-10-20 14:09:18] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ANKUSH TRADERS",
+    "supplier_code": "ANKU",
+    "items": [
+        {
+            "code": "SCMPL0019029",
+            "name": "20-20 Fine Whisky .",
+            "size": "180 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0.90",
+            "vv": "0",
+            "tot_bott": "5",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "600.00",
+    "tamt": "600.00"
+}
+[2025-10-20 14:09:18] GET data: []
+[2025-10-20 14:09:18] Company ID from session: 1
+[2025-10-20 14:09:18] Database connection included
+[2025-10-20 14:09:18] License functions included
+[2025-10-20 14:09:18] License type: FL-II
+[2025-10-20 14:09:18] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:09:18] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:09:18] Purchase mode: F
+[2025-10-20 14:09:18] Next voucher number: 1
+[2025-10-20 14:09:18] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:09:18] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:09:18] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:09:18] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:09:18] === FORM SUBMISSION STARTED ===
+[2025-10-20 14:09:18] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ANKU",
+    "supplier_name": "ANKUSH TRADERS",
+    "basic_amt": "600.00",
+    "total_amt": "600.00"
+}
+[2025-10-20 14:09:18] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "ANKU",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "600.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 14:09:18] Purchase header inserted successfully: {
+    "purchase_id": 6,
+    "affected_rows": 1
+}
+[2025-10-20 14:09:18] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 14:09:18] Processing item 0: {
+    "item_code": "SCMPL0019029",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 5,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 600,
+    "tot_bott": 5,
+    "bl": 0.9
+}
+[2025-10-20 14:09:18] Item 0 inserted successfully: {
+    "purchase_id": 6,
+    "item_code": "SCMPL0019029"
+}
+[2025-10-20 14:09:18] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 14:09:18] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 14:12:04] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:12:04] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760961153
+}
+[2025-10-20 14:12:04] POST data: []
+[2025-10-20 14:12:04] GET data: {
+    "mode": "F"
+}
+[2025-10-20 14:12:04] Company ID from session: 1
+[2025-10-20 14:12:04] Database connection included
+[2025-10-20 14:12:04] License functions included
+[2025-10-20 14:12:04] License type: FL-II
+[2025-10-20 14:12:04] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:12:04] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:12:04] Purchase mode: F
+[2025-10-20 14:12:04] Next voucher number: 1
+[2025-10-20 14:12:04] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:12:04] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:12:04] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:12:04] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:12:04] Database connection closed
+[2025-10-20 14:12:04] === PURCHASE SESSION ENDED ===
+[2025-10-20 14:13:07] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:13:07] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760961153
+}
+[2025-10-20 14:13:07] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "HARESH TRADERS",
+    "supplier_code": "HARE",
+    "items": {
+        "1": {
+            "code": "SCMPL0019029",
+            "name": "20-20 Fine Whisky .",
+            "size": "180 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0.90",
+            "vv": "0",
+            "tot_bott": "5",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "5",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    },
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "600.00",
+    "tamt": "600.00"
+}
+[2025-10-20 14:13:07] GET data: {
+    "mode": "F"
+}
+[2025-10-20 14:13:07] Company ID from session: 1
+[2025-10-20 14:13:07] Database connection included
+[2025-10-20 14:13:07] License functions included
+[2025-10-20 14:13:07] License type: FL-II
+[2025-10-20 14:13:07] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:13:07] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:13:07] Purchase mode: F
+[2025-10-20 14:13:07] Next voucher number: 1
+[2025-10-20 14:13:07] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:13:07] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:13:07] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:13:07] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:13:07] === FORM SUBMISSION STARTED ===
+[2025-10-20 14:13:07] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "HARE",
+    "supplier_name": "HARESH TRADERS",
+    "basic_amt": "600.00",
+    "total_amt": "600.00"
+}
+[2025-10-20 14:13:07] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "HARE",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "600.00",
+        "7654",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 14:13:07] Purchase header inserted successfully: {
+    "purchase_id": 7,
+    "affected_rows": 1
+}
+[2025-10-20 14:13:07] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 14:13:07] Processing item 1: {
+    "item_code": "SCMPL0019029",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 5,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 600,
+    "tot_bott": 5,
+    "bl": 0.9
+}
+[2025-10-20 14:13:07] Item 1 inserted successfully: {
+    "purchase_id": 7,
+    "item_code": "SCMPL0019029"
+}
+[2025-10-20 14:13:07] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 14:13:07] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 14:16:05] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:16:05] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760962458
+}
+[2025-10-20 14:16:05] POST data: []
+[2025-10-20 14:16:05] GET data: {
+    "mode": "F"
+}
+[2025-10-20 14:16:05] Company ID from session: 1
+[2025-10-20 14:16:05] Database connection included
+[2025-10-20 14:16:05] License functions included
+[2025-10-20 14:16:05] License type: FL-II
+[2025-10-20 14:16:05] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:16:05] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:16:05] Purchase mode: F
+[2025-10-20 14:16:05] Next voucher number: 1
+[2025-10-20 14:16:05] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:16:05] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:16:05] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:16:05] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:16:05] Database connection closed
+[2025-10-20 14:16:05] === PURCHASE SESSION ENDED ===
+[2025-10-20 14:16:55] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 14:16:55] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "last_submission": 1760962458
+}
+[2025-10-20 14:16:55] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-18",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-18",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "",
+    "items": [
+        {
+            "code": "SCMPL0019029",
+            "name": "20-20 Fine Whisky .",
+            "size": "180 ML",
+            "bottles_per_case": "1",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0.90",
+            "vv": "0",
+            "tot_bott": "5",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "05",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "600.00",
+    "tamt": "600.00"
+}
+[2025-10-20 14:16:55] GET data: {
+    "mode": "F"
+}
+[2025-10-20 14:16:55] Company ID from session: 1
+[2025-10-20 14:16:55] Database connection included
+[2025-10-20 14:16:55] License functions included
+[2025-10-20 14:16:55] License type: FL-II
+[2025-10-20 14:16:55] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 14:16:55] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 14:16:55] Purchase mode: F
+[2025-10-20 14:16:55] Next voucher number: 1
+[2025-10-20 14:16:55] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 14:16:55] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 14:16:55] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 14:16:55] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 14:16:55] === FORM SUBMISSION STARTED ===
+[2025-10-20 14:16:55] Form data extracted: {
+    "date": "2025-10-18",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-18",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "600.00",
+    "total_amt": "600.00"
+}
+[2025-10-20 14:16:55] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-18",
+        "",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "",
+        "600.00",
+        "7654",
+        "2025-10-18",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 14:16:55] Purchase header inserted successfully: {
+    "purchase_id": 8,
+    "affected_rows": 1
+}
+[2025-10-20 14:16:55] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-20 14:16:55] Processing item 0: {
+    "item_code": "SCMPL0019029",
+    "item_name": "20-20 Fine Whisky .",
+    "cases": 0,
+    "bottles": 5,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 600,
+    "tot_bott": 5,
+    "bl": 0.9
+}
+[2025-10-20 14:16:55] Item 0 inserted successfully: {
+    "purchase_id": 8,
+    "item_code": "SCMPL0019029"
+}
+[2025-10-20 14:16:55] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-20 14:16:55] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 15:45:23] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 15:45:23] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 15:45:23] POST data: []
+[2025-10-20 15:45:23] GET data: {
+    "mode": "F"
+}
+[2025-10-20 15:45:23] Company ID from session: 1
+[2025-10-20 15:45:23] Database connection included
+[2025-10-20 15:45:23] License functions included
+[2025-10-20 15:45:23] License type: FL-II
+[2025-10-20 15:45:23] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 15:45:23] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 15:45:23] Purchase mode: F
+[2025-10-20 15:45:23] Next voucher number: 1
+[2025-10-20 15:45:23] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 15:45:23] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 15:45:23] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 15:45:23] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 15:45:23] Database connection closed
+[2025-10-20 15:45:23] === PURCHASE SESSION ENDED ===
+[2025-10-20 15:45:59] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 15:45:59] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 15:45:59] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-17",
+    "auto_tp_no": "CL2296-140625\/1003",
+    "tp_no": "1003",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "supplier_code": "RAJ",
+    "items": [
+        {
+            "code": "SCMCL0012761",
+            "name": "DESHI DARU TANGO PUNCH-NV .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "312",
+            "auto_batch": "BTC27-150924\/312",
+            "mfg_month": "Sep-2024",
+            "bl": "36",
+            "vv": "42.8",
+            "tot_bott": "400",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "4",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "35"
+        },
+        {
+            "code": "SCMCL0013629",
+            "name": "ICAP SANTRA .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "46",
+            "auto_batch": "BTC32-210525\/46",
+            "mfg_month": "May-2025",
+            "bl": "36",
+            "vv": "35.7",
+            "tot_bott": "400",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "4",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "25"
+        },
+        {
+            "code": "SCMCL0013629",
+            "name": "ICAP SANTRA .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "62",
+            "auto_batch": "BTC32-120625\/62",
+            "mfg_month": "Jun-2025",
+            "bl": "18",
+            "vv": "42.8",
+            "tot_bott": "200",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "2",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "35"
+        },
+        {
+            "code": "SCMCL0013677",
+            "name": "THREE X-Sangali .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "59",
+            "auto_batch": "BTC32-070625\/59",
+            "mfg_month": "Jun-2025",
+            "bl": "270",
+            "vv": "42.8",
+            "tot_bott": "3000",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "30",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "35"
+        },
+        {
+            "code": "SCMCL0013681",
+            "name": "THREE X-Sangali .",
+            "size": "750 ML (Pet)",
+            "bottles_per_case": "12",
+            "batch_no": "12",
+            "auto_batch": "BTC32-110425\/12",
+            "mfg_month": "Apr-2025",
+            "bl": "18",
+            "vv": "42.8",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "2",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "290"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "5040.00",
+    "tamt": "5040.00"
+}
+[2025-10-20 15:45:59] GET data: {
+    "mode": "F"
+}
+[2025-10-20 15:45:59] Company ID from session: 1
+[2025-10-20 15:45:59] Database connection included
+[2025-10-20 15:45:59] License functions included
+[2025-10-20 15:45:59] License type: FL-II
+[2025-10-20 15:45:59] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 15:45:59] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 15:45:59] Purchase mode: F
+[2025-10-20 15:45:59] Next voucher number: 1
+[2025-10-20 15:45:59] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 15:45:59] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 15:45:59] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 15:45:59] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 15:45:59] === FORM SUBMISSION STARTED ===
+[2025-10-20 15:45:59] Form data extracted: {
+    "date": "2025-10-17",
+    "voc_no": "1",
+    "auto_tp_no": "CL2296-140625\/1003",
+    "tp_no": "1003",
+    "tp_date": "2025-10-17",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "RAJ",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "basic_amt": "5040.00",
+    "total_amt": "5040.00"
+}
+[2025-10-20 15:45:59] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-17",
+        "RAJ",
+        "CL2296-140625\/1003",
+        "1",
+        "",
+        "",
+        "5040.00",
+        "1003",
+        "2025-10-17",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 15:45:59] Purchase header inserted successfully: {
+    "purchase_id": 9,
+    "affected_rows": 1
+}
+[2025-10-20 15:45:59] Starting to process purchase items: {
+    "item_count": 5
+}
+[2025-10-20 15:45:59] Processing item 0: {
+    "item_code": "SCMCL0012761",
+    "item_name": "DESHI DARU TANGO PUNCH-NV .",
+    "cases": 4,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 480,
+    "tot_bott": 400,
+    "bl": 36
+}
+[2025-10-20 15:45:59] Item 0 inserted successfully: {
+    "purchase_id": 9,
+    "item_code": "SCMCL0012761"
+}
+[2025-10-20 15:46:00] Processing item 1: {
+    "item_code": "SCMCL0013629",
+    "item_name": "ICAP SANTRA .",
+    "cases": 4,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 480,
+    "tot_bott": 400,
+    "bl": 36
+}
+[2025-10-20 15:46:00] Item 1 inserted successfully: {
+    "purchase_id": 9,
+    "item_code": "SCMCL0013629"
+}
+[2025-10-20 15:46:00] Processing item 2: {
+    "item_code": "SCMCL0013629",
+    "item_name": "ICAP SANTRA .",
+    "cases": 2,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 240,
+    "tot_bott": 200,
+    "bl": 18
+}
+[2025-10-20 15:46:00] Item 2 inserted successfully: {
+    "purchase_id": 9,
+    "item_code": "SCMCL0013629"
+}
+[2025-10-20 15:46:00] Processing item 3: {
+    "item_code": "SCMCL0013677",
+    "item_name": "THREE X-Sangali .",
+    "cases": 30,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 3600,
+    "tot_bott": 3000,
+    "bl": 270
+}
+[2025-10-20 15:46:00] Item 3 inserted successfully: {
+    "purchase_id": 9,
+    "item_code": "SCMCL0013677"
+}
+[2025-10-20 15:46:00] Processing item 4: {
+    "item_code": "SCMCL0013681",
+    "item_name": "THREE X-Sangali .",
+    "cases": 2,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 240,
+    "tot_bott": 24,
+    "bl": 18
+}
+[2025-10-20 15:46:00] Item 4 inserted successfully: {
+    "purchase_id": 9,
+    "item_code": "SCMCL0013681"
+}
+[2025-10-20 15:46:00] Purchase items processing completed: {
+    "successful_items": 5,
+    "total_items": 5
+}
+[2025-10-20 15:46:00] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-20 15:47:03] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 15:47:03] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 15:47:03] POST data: []
+[2025-10-20 15:47:03] GET data: {
+    "mode": "F"
+}
+[2025-10-20 15:47:03] Company ID from session: 1
+[2025-10-20 15:47:04] Database connection included
+[2025-10-20 15:47:04] License functions included
+[2025-10-20 15:47:04] License type: FL-II
+[2025-10-20 15:47:04] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 15:47:04] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 15:47:04] Purchase mode: F
+[2025-10-20 15:47:04] Next voucher number: 2
+[2025-10-20 15:47:04] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 15:47:04] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 15:47:04] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 15:47:04] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 15:47:04] Database connection closed
+[2025-10-20 15:47:04] === PURCHASE SESSION ENDED ===
+[2025-10-20 15:47:20] === NEW PURCHASE SESSION STARTED ===
+[2025-10-20 15:47:20] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Diamond Wine Shop"
+}
+[2025-10-20 15:47:20] POST data: {
+    "mode": "F",
+    "voc_no": "2",
+    "date": "2025-05-31",
+    "auto_tp_no": "CL2296-310525\/777",
+    "tp_no": "777",
+    "tp_date": "2025-05-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "supplier_code": "RAJ",
+    "items": [
+        {
+            "code": "SCMCL0012761",
+            "name": "DESHI DARU TANGO PUNCH-NV .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "85",
+            "auto_batch": "BTC27-270525\/85",
+            "mfg_month": "May-2025",
+            "bl": "135",
+            "vv": "42.8",
+            "tot_bott": "1500",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "15",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "35"
+        },
+        {
+            "code": "SCMCL0013677",
+            "name": "THREE X-Sangali .",
+            "size": "90 ML (Pet)-100",
+            "bottles_per_case": "12",
+            "batch_no": "40",
+            "auto_batch": "BTC32-140525\/40",
+            "mfg_month": "May-2025",
+            "bl": "270",
+            "vv": "42.8",
+            "tot_bott": "3000",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "30",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "35"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "5400.00",
+    "tamt": "5400.00"
+}
+[2025-10-20 15:47:20] GET data: {
+    "mode": "F"
+}
+[2025-10-20 15:47:20] Company ID from session: 1
+[2025-10-20 15:47:20] Database connection included
+[2025-10-20 15:47:20] License functions included
+[2025-10-20 15:47:20] License type: FL-II
+[2025-10-20 15:47:20] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    }
+]
+[2025-10-20 15:47:20] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M"
+]
+[2025-10-20 15:47:20] Purchase mode: F
+[2025-10-20 15:47:20] Next voucher number: 2
+[2025-10-20 15:47:20] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-20 15:47:20] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M"
+    ],
+    "types": "ssssssssssssss"
+}
+[2025-10-20 15:47:20] Items fetched from database: {
+    "count": 3757,
+    "license_filter_applied": true
+}
+[2025-10-20 15:47:20] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-20 15:47:20] === FORM SUBMISSION STARTED ===
+[2025-10-20 15:47:20] Form data extracted: {
+    "date": "2025-05-31",
+    "voc_no": "2",
+    "auto_tp_no": "CL2296-310525\/777",
+    "tp_no": "777",
+    "tp_date": "2025-05-31",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "RAJ",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "basic_amt": "5400.00",
+    "total_amt": "5400.00"
+}
+[2025-10-20 15:47:20] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-05-31",
+        "RAJ",
+        "CL2296-310525\/777",
+        "2",
+        "",
+        "",
+        "5400.00",
+        "777",
+        "2025-05-31",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        1
+    ]
+}
+[2025-10-20 15:47:20] Purchase header inserted successfully: {
+    "purchase_id": 10,
+    "affected_rows": 1
+}
+[2025-10-20 15:47:20] Starting to process purchase items: {
+    "item_count": 2
+}
+[2025-10-20 15:47:20] Processing item 0: {
+    "item_code": "SCMCL0012761",
+    "item_name": "DESHI DARU TANGO PUNCH-NV .",
+    "cases": 15,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 1800,
+    "tot_bott": 1500,
+    "bl": 135
+}
+[2025-10-20 15:47:20] Item 0 inserted successfully: {
+    "purchase_id": 10,
+    "item_code": "SCMCL0012761"
+}
+[2025-10-20 15:47:20] Processing item 1: {
+    "item_code": "SCMCL0013677",
+    "item_name": "THREE X-Sangali .",
+    "cases": 30,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 3600,
+    "tot_bott": 3000,
+    "bl": 270
+}
+[2025-10-20 15:47:20] Item 1 inserted successfully: {
+    "purchase_id": 10,
+    "item_code": "SCMCL0013677"
+}
+[2025-10-20 15:47:21] Purchase items processing completed: {
+    "successful_items": 2,
+    "total_items": 2
+}
+[2025-10-20 15:47:21] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===

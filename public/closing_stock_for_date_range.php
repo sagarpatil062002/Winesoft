@@ -262,6 +262,7 @@ foreach ($index_queries as $query) {
 
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
+include_once "stock_functions.php";
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -968,8 +969,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update stock
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
                                 
-                                // ENHANCED: Update daily stock with archive table support
-                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                                // ENHANCED: Update daily stock with cascading logic
+                                updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
                             }
                             
                             $total_amount += $bill['total_amount'];
