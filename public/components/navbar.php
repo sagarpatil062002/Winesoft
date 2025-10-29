@@ -81,19 +81,19 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                     <span class="nav-label">Masters</span>
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item"><a href="item_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">liquor</span><span class="nav-label">Item Master</span></a></li>
-                    <li class="nav-item"><a href="barcode_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">barcode</span><span class="nav-label">Barcode Master</span></a></li>
-                    <li class="nav-item"><a href="item_sequence.php" class="nav-link"><span class="nav-icon material-symbols-rounded">format_list_numbered</span><span class="nav-label">Item Sequence</span></a></li>
-                    <li class="nav-item"><a href="item_reorder.php" class="nav-link"><span class="nav-icon material-symbols-rounded">low_priority</span><span class="nav-label">Item Reorder</span></a></li>
-                    <li class="nav-item"><a href="reference_code.php" class="nav-link"><span class="nav-icon material-symbols-rounded">code</span><span class="nav-label">Reference Code</span></a></li>
-                    <li class="nav-item"><a href="customer_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt_long</span><span class="nav-label">Customer Price</span></a></li>
-                    <li class="nav-item"><a href="supplier_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_shipping</span><span class="nav-label">Supplier Master</span></a></li>
-                    <li class="nav-item"><a href="ledger_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Ledger Master</span></a></li>
-                    <li class="nav-item"><a href="permit_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">verified</span><span class="nav-label">Permit Master</span></a></li>
-                    <li class="nav-item"><a href="brand_category.php" class="nav-link"><span class="nav-icon material-symbols-rounded">branding_watermark</span><span class="nav-label">Brand Category</span></a></li>
-                    <li class="nav-item"><a href="opening_balance.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Opening Balance</span></a></li>
-                    <li class="nav-item"><a href="itemwise_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_check</span><span class="nav-label">ItemWise Price</span></a></li>
-                    <li class="nav-item"><a href="purchase_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">payments</span><span class="nav-label">Purchase Price</span></a></li>
+                    <li class="nav-item"><a href="item_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">inventory_2</span><span class="nav-label">Item Master</span></a></li>
+                    <li class="nav-item"><a href="barcode_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">qr_code_scanner</span><span class="nav-label">Barcode Master</span></a></li>
+                    <li class="nav-item"><a href="item_sequence.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sort</span><span class="nav-label">Item Sequence</span></a></li>
+                    <li class="nav-item"><a href="item_reorder.php" class="nav-link"><span class="nav-icon material-symbols-rounded">reorder</span><span class="nav-label">Item Reorder</span></a></li>
+                    <li class="nav-item"><a href="reference_code.php" class="nav-link"><span class="nav-icon material-symbols-rounded">tag</span><span class="nav-label">Reference Code</span></a></li>
+                    <li class="nav-item"><a href="customer_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">attach_money</span><span class="nav-label">Customer Price</span></a></li>
+                    <li class="nav-item"><a href="supplier_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">storefront</span><span class="nav-label">Supplier Master</span></a></li>
+                    <li class="nav-item"><a href="ledger_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance_wallet</span><span class="nav-label">Ledger Master</span></a></li>
+                    <li class="nav-item"><a href="permit_master.php" class="nav-link"><span class="nav-icon material-symbols-rounded">check_circle</span><span class="nav-label">Permit Master</span></a></li>
+                    <li class="nav-item"><a href="brand_category.php" class="nav-link"><span class="nav-icon material-symbols-rounded">category</span><span class="nav-label">Brand Category</span></a></li>
+                    <li class="nav-item"><a href="opening_balance.php" class="nav-link"><span class="nav-icon material-symbols-rounded">balance</span><span class="nav-label">Opening Balance</span></a></li>
+                    <li class="nav-item"><a href="itemwise_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_change</span><span class="nav-label">ItemWise Price</span></a></li>
+                    <li class="nav-item"><a href="purchase_price.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_cart</span><span class="nav-label">Purchase Price</span></a></li>
                     
                 </ul>
             </li>    
@@ -104,14 +104,14 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 
                 </a>
                 <ul class="dropdown">
-                    <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Purchases</span></a></li>
-                    <li class="nav-item"><a href="barcode_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Barcode Sales</span></a></li>
-                    <li class="nav-item"><a href="customer_sales.php" class="nav-link"><span class="nav-icon material-symbols-rounded">handshake</span><span class="nav-label">Customer Sales</span></a></li>
-                    <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">sell</span><span class="nav-label">Daily Sales</span></a></li>
-                    <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">local_activity</span><span class="nav-label">Voucher Entry</span></a></li>
+                    <li class="nav-item"><a href="purchase_module.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchases</span></a></li>
+                    <li class="nav-item"><a href="barcode_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">qr_code</span><span class="nav-label">Barcode Sales</span></a></li>
+                    <li class="nav-item"><a href="customer_sales.php" class="nav-link"><span class="nav-icon material-symbols-rounded">group</span><span class="nav-label">Customer Sales</span></a></li>
+                    <li class="nav-item"><a href="retail_sale.php" class="nav-link"><span class="nav-icon material-symbols-rounded">store</span><span class="nav-label">Daily Sales</span></a></li>
+                    <li class="nav-item"><a href="voucher_view.php" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt</span><span class="nav-label">Voucher Entry</span></a></li>
                     <li class="nav-item"><a href="view_breakage.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakages</span></a></li>
-                    <li class="nav-item"><a href="balance_carried_forward.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Balance Carried Forward</span></a></li>
-                    <li class="nav-item"><a href="Post_daily_sales.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Post Daily Sale</span></a></li>
+                    <li class="nav-item"><a href="balance_carried_forward.php" class="nav-link"><span class="nav-icon material-symbols-rounded">forward</span><span class="nav-label">Balance Carried Forward</span></a></li>
+                    <li class="nav-item"><a href="Post_daily_sales.php" class="nav-link"><span class="nav-icon material-symbols-rounded">post_add</span><span class="nav-label">Post Daily Sale</span></a></li>
 
                 </ul>
             </li>    
@@ -121,15 +121,15 @@ include_once "../config/db.php"; // MySQLi connection in $conn
         <span class="nav-label">Registers</span>
     </a>
     <ul class="dropdown">
-        <li class="nav-item"><a href="cash_memo.php" class="nav-link"><span class="nav-icon material-symbols-rounded">flash_on</span><span class="nav-label">Cash Memo</span></a></li>
-        <li class="nav-item"><a href="cash_memo_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock_open</span><span class="nav-label">Cash Summary</span></a></li>
-        <li class="nav-item"><a href="FLR_Datewise.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">FLR Datewise</span></a></li>
-        <li class="nav-item"><a href="Brand_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Brand Register</span></a></li>
-        <li class="nav-item"><a href="Gate_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Gate Register</span></a></li>
-        <li class="nav-item"><a href="Excise_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Excise register</span></a></li>
-        <li class="nav-item"><a href="sales_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Sales  Register</span></a></li>
-        <li class="nav-item"><a href="Monthly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Monthly Register</span></a></li>       
-        <li class="nav-item"><a href="Yearly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">lock</span><span class="nav-label">Yearly Register</span></a></li>
+        <li class="nav-item"><a href="cash_memo.php" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt_long</span><span class="nav-label">Cash Memo</span></a></li>
+        <li class="nav-item"><a href="cash_memo_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">summarize</span><span class="nav-label">Cash Summary</span></a></li>
+        <li class="nav-item"><a href="FLR_Datewise.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calendar_view_day</span><span class="nav-label">FLR Datewise</span></a></li>
+        <li class="nav-item"><a href="Brand_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">branding_watermark</span><span class="nav-label">Brand Register</span></a></li>
+        <li class="nav-item"><a href="Gate_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">gate</span><span class="nav-label">Gate Register</span></a></li>
+        <li class="nav-item"><a href="Excise_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">gavel</span><span class="nav-label">Excise register</span></a></li>
+        <li class="nav-item"><a href="sales_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">analytics</span><span class="nav-label">Sales  Register</span></a></li>
+        <li class="nav-item"><a href="Monthly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calendar_month</span><span class="nav-label">Monthly Register</span></a></li>
+        <li class="nav-item"><a href="Yearly_register.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calendar_today</span><span class="nav-label">Yearly Register</span></a></li>
     </ul>
 </li>            <li class="nav-item has-dropdown">
                 <a href="#" class="nav-link dropdown-toggle">
@@ -139,22 +139,28 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                 </a>
                 <ul class="dropdown">
                   
-                    <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">work_history</span><span class="nav-label">Closing Stock Report</span></a></li>
-                    <li class="nav-item"><a href="billwise_detailed_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Billwise Detailed Report</span></a></li>                    
-                    <li class="nav-item"><a href="itemwise_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Itemwise  Report</span></a></li>  
-                    <li class="nav-item"><a href="total_sales_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">bar_chart</span><span class="nav-label">Total Sales Report</span></a></li>   
-                    <li class="nav-item"><a href="userwise_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">grouped_bar_chart</span><span class="nav-label">Userwise Sales Report</span></a></li>   
-                    <li class="nav-item"><a href="groupwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Groupwise Sales Summary</span></a></li>    
-                    <li class="nav-item"><a href="credit_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Sales Report</span></a></li>    
-                    <li class="nav-item"><a href="credit_customer_ledger_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Credit Customer Ledger Report</span></a></li>                                                     
-                    <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_bag</span><span class="nav-label">Purchase Report</span></a></li>
-                    <li class="nav-item"><a href="sales_tax_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calculate</span><span class="nav-label">Purchase Report(Sales tax)</span></a></li>                    
-                    <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">pallet</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
-                    <li class="nav-item"><a href="other_tax_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">price_change</span><span class="nav-label">Other Tax Report</span></a></li>
-                    <li class="nav-item"><a href="collection_book.php" class="nav-link"><span class="nav-icon material-symbols-rounded">stack</span><span class="nav-label">Collection Book</span></a></li>
-                    <li class="nav-item"><a href="purchase_summary_case_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">stack</span><span class="nav-label">Purchase Summary Case Report</span></a></li>
-                    <li class="nav-item"><a href="breakage_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Breakage Report</span></a></li>
-                    <li class="nav-item"><a href="paid_out_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">list_alt</span><span class="nav-label">Paid Out Report</span></a></li>
+                    <li class="nav-item"><a href="closing_stock.php" class="nav-link"><span class="nav-icon material-symbols-rounded">inventory</span><span class="nav-label">Closing Stock Report</span></a></li>
+                    <li class="nav-item"><a href="negative_stock_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">error</span><span class="nav-label">Negative Stock Report</span></a></li>
+                    <li class="nav-item"><a href="stock_valuation_report_april.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calculate</span><span class="nav-label">Stock valuation Report[April]</span></a></li>
+                    <li class="nav-item"><a href="stock_valuation_report_bank.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Stock valuation Report[Bank]</span></a></li>
+                    <li class="nav-item"><a href="billwise_detailed_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">description</span><span class="nav-label">Billwise Detailed Report</span></a></li>
+                    <li class="nav-item"><a href="itemwise_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">view_list</span><span class="nav-label">Itemwise  Report</span></a></li>
+                    <li class="nav-item"><a href="total_sales_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">trending_up</span><span class="nav-label">Total Sales Report</span></a></li>
+                    <li class="nav-item"><a href="billwise_sales_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">receipt</span><span class="nav-label">Billwise Sales Report</span></a></li>
+                    <li class="nav-item"><a href="userwise_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">person</span><span class="nav-label">Userwise Sales Report</span></a></li>
+                    <li class="nav-item"><a href="groupwise_sales_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">groups</span><span class="nav-label">Groupwise Sales Summary</span></a></li>
+                    <li class="nav-item"><a href="total_sales_summary.php" class="nav-link"><span class="nav-icon material-symbols-rounded">summarize</span><span class="nav-label">Total Sales Summary</span></a></li>
+                    <li class="nav-item"><a href="credit_sale_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">credit_card</span><span class="nav-label">Credit Sales Report</span></a></li>
+                    <li class="nav-item"><a href="credit_customer_ledger_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">book</span><span class="nav-label">Credit Customer Ledger Report</span></a></li>
+                    <li class="nav-item"><a href="purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">shopping_cart</span><span class="nav-label">Purchase Report</span></a></li>
+                    <li class="nav-item"><a href="sales_tax_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">calculate</span><span class="nav-label">Purchase Report(Sales tax)</span></a></li>
+                    <li class="nav-item"><a href="supplier_purchase_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">storefront</span><span class="nav-label">Supplierwise Purchase Report</span></a></li>
+                    <li class="nav-item"><a href="other_tax_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance_wallet</span><span class="nav-label">Other Tax Report</span></a></li>
+                    <li class="nav-item"><a href="collection_book.php" class="nav-link"><span class="nav-icon material-symbols-rounded">library_books</span><span class="nav-label">Collection Book</span></a></li>
+                    <li class="nav-item"><a href="purchase_summary_case_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">cases</span><span class="nav-label">Purchase Summary Case Report</span></a></li>
+                    <li class="nav-item"><a href="cashbank_ledger.php" class="nav-link"><span class="nav-icon material-symbols-rounded">account_balance</span><span class="nav-label">Cash/Bank Ledger</span></a></li>
+                    <li class="nav-item"><a href="breakage_Report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">broken_image</span><span class="nav-label">Breakage Report</span></a></li>
+                    <li class="nav-item"><a href="paid_out_report.php" class="nav-link"><span class="nav-icon material-symbols-rounded">payment</span><span class="nav-label">Paid Out Report</span></a></li>
 
                 </ul>
             </li>
@@ -168,29 +174,29 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                 <ul class="dropdown">
                     <li class="nav-item">
                         <a href="register.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">app_registration</span>
+                            <span class="nav-icon material-symbols-rounded">person_add</span>
                             <span class="nav-label">Register</span>
 
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="Company_info.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">business</span>
+                            <span class="nav-icon material-symbols-rounded">corporate_fare</span>
                             <span class="nav-label">Company Info</span>
 
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <a href="dryday.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">event_busy</span>
+                            <span class="nav-icon material-symbols-rounded">no_drinks</span>
                             <span class="nav-label">Dry Day</span>
                         </a>
                     </li>
 
                     <li class="nav-item">
                         <a href="shortcut_manager.php" class="nav-link">
-                            <span class="nav-icon material-symbols-rounded">event_busy</span>
+                            <span class="nav-icon material-symbols-rounded">keyboard</span>
                             <span class="nav-label">Shortcut Manager</span>
                         </a>
                     </li>
