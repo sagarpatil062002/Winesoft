@@ -8,6 +8,7 @@ $purchaseId = $_GET['id'];
 $mode = $_GET['mode'];
 
 include_once "../config/db.php";
+include_once "stock_functions.php";
 
 // Function to reverse stock changes for purchase deletion
 function reversePurchaseStock($conn, $purchaseId, $companyId) {

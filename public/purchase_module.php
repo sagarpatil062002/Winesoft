@@ -39,15 +39,8 @@ $whereConditions = ["p.CompID = ?"];
 $params = [$companyId];
 $paramTypes = "i";
 
-// Handle mode filter - FIXED: Better logic for mode handling
-if ($mode !== 'ALL') {
-    $whereConditions[] = "p.PUR_FLAG = ?";
-    $params[] = $mode;
-    $paramTypes .= "s";
-} else {
-    // For ALL mode, include all possible PUR_FLAG values
-    $whereConditions[] = "p.PUR_FLAG IN ('F', 'T', 'P', 'C')";
-}
+// Always show all purchases - no filtering by PUR_FLAG or LIQ_FLAG
+// Only filter by company ID
 
 // Log filter parameters
 error_log("Initial filters - Company: $companyId, Mode: $mode");
@@ -165,13 +158,7 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Purchase Module - <?= 
-    $mode === 'ALL' ? 'All Purchases' : 
-    ($mode === 'F' ? 'Foreign Liquor' : 
-    ($mode === 'T' ? 'Unpaid Purchases' : 
-    ($mode === 'P' ? 'Partial Payments' : 
-    ($mode === 'C' ? 'Completed Purchases' : 'Unknown')))) 
-?></title>
+<title>Purchase Module - All Purchases</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -279,37 +266,9 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
         </div>
       </div>
 
-      <!-- Purchase Type Navigation -->
-      <div class="purchase-type-nav">
-        <div class="purchase-type-buttons">
-          <a href="purchase_module.php?mode=ALL" class="purchase-type-btn <?= $mode === 'ALL' ? 'active' : '' ?>">
-            <i class="fa-solid fa-list me-1"></i> All Purchases
-          </a>
-          <a href="purchase_module.php?mode=F" class="purchase-type-btn <?= $mode === 'F' ? 'active' : '' ?>">
-            <i class="fa-solid fa-wine-bottle me-1"></i> Foreign Liquor
-          </a>
-          <a href="purchase_module.php?mode=T" class="purchase-type-btn <?= $mode === 'T' ? 'active' : '' ?>">
-            <i class="fa-solid fa-clock me-1"></i> Unpaid
-          </a>
-          <a href="purchase_module.php?mode=P" class="purchase-type-btn <?= $mode === 'P' ? 'active' : '' ?>">
-            <i class="fa-solid fa-percent me-1"></i> Partial
-          </a>
-          <a href="purchase_module.php?mode=C" class="purchase-type-btn <?= $mode === 'C' ? 'active' : '' ?>">
-            <i class="fa-solid fa-check me-1"></i> Completed
-          </a>
-        </div>
-      </div>
 
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">
-          <?= 
-            $mode === 'ALL' ? 'All Purchase Records' : 
-            ($mode === 'F' ? 'Foreign Liquor Purchases' : 
-            ($mode === 'T' ? 'Unpaid Purchases' : 
-            ($mode === 'P' ? 'Partial Payment Purchases' : 
-            ($mode === 'C' ? 'Completed Purchases' : 'Purchase Records')))) 
-          ?>
-        </h4>
+        <h4 class="mb-0">All Purchase Records</h4>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
             <i class="fas fa-chart-bar"></i> Purchase Summary
@@ -453,23 +412,13 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
             <div class="modal-body">
                 <!-- Summary filters -->
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">From Date</label>
                         <input type="date" id="purchaseFromDate" class="form-control" value="<?= date('Y-m-01') ?>">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">To Date</label>
                         <input type="date" id="purchaseToDate" class="form-control" value="<?= date('Y-m-d') ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Purchase Type</label>
-                        <select class="form-select" id="purchaseType">
-                            <option value="ALL">All Types</option>
-                            <option value="F">Final (F)</option>
-                            <option value="T">Unpaid (T)</option>
-                            <option value="P">Partial (P)</option>
-                            <option value="C">Completed (C)</option>
-                        </select>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -584,8 +533,8 @@ function debugAjax(message, data = null) {
 function loadPurchaseSummary() {
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
-    const purchaseType = $('#purchaseType').val();
-    
+    const purchaseType = 'ALL'; // Always use ALL for purchase summary
+
     debugAjax('Loading purchase summary', {fromDate, toDate, purchaseType});
     
     // Show proper loading state
@@ -791,11 +740,7 @@ function addTotalRow(summaryData, allSizes, categories) {
 function printPurchaseSummary() {
     const printContent = $('#purchaseSummaryTable').parent().html();
     const printWindow = window.open('', '_blank');
-    const purchaseType = $('#purchaseType').val();
-    const typeLabel = purchaseType === 'ALL' ? 'All Purchases' : 
-                     purchaseType === 'F' ? 'Foreign Liquor' : 
-                     purchaseType === 'T' ? 'Unpaid Purchases' : 
-                     purchaseType === 'P' ? 'Partial Payments' : 'Completed Purchases';
+    const typeLabel = 'All Purchases'; // Always show All Purchases for summary
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
     

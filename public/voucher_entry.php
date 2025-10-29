@@ -19,7 +19,6 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
-
 // Handle edit/view actions
 $action = isset($_GET['action']) ? $_GET['action'] : 'new';
 $voucher_id = isset($_GET['id']) ? $_GET['id'] : 0;
@@ -28,9 +27,10 @@ $voucher_id = isset($_GET['id']) ? $_GET['id'] : 0;
 $voucher_data = null;
 if (($action === 'edit' || $action === 'view') && $voucher_id > 0) {
     $query = "SELECT e.*, l.REF_CODE 
-              FROM tblExpenses e 
+              FROM tblexpenses e 
               LEFT JOIN tbllheads l ON e.REF_SAC = l.LCODE 
-              WHERE e.VNO = ? AND e.COMP_ID = ?";
+              WHERE e.VNO = ? AND e.COMP_ID = ? 
+              LIMIT 1";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ii", $voucher_id, $_SESSION['CompID']);
     $stmt->execute();
@@ -49,6 +49,77 @@ while ($row = $result->fetch_assoc()) {
     $ledgerData[] = $row;
 }
 $stmt->close();
+
+// Function to generate DOC_NO starting from 1
+function generateDocNo($conn, $comp_id, $doc_type) {
+    $doc_type = strtoupper($doc_type); // PMT, RCP, CHQ
+    
+    // Get the last used number for this document type
+    $query = "SELECT MAX(CAST(SUBSTRING(DOC_NO, 5) AS UNSIGNED)) as last_num 
+              FROM tblexpenses 
+              WHERE COMP_ID = ? AND DOC_NO LIKE ?";
+    $stmt = $conn->prepare($query);
+    
+    switch($doc_type) {
+        case 'PMT': 
+            $like_pattern = 'PMT-%';
+            break;
+        case 'RCP': 
+            $like_pattern = 'RCP-%';
+            break;
+        case 'CHQ': 
+            $like_pattern = 'CHQ-%';
+            break;
+        default: 
+            $like_pattern = 'DOC-%';
+    }
+    
+    $stmt->bind_param("is", $comp_id, $like_pattern);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    
+    $next_num = ($row['last_num'] ? $row['last_num'] + 1 : 1);
+    
+    // Format DOC_NO based on type (PMT-000001, RCP-000001, CHQ-000001)
+    switch($doc_type) {
+        case 'PMT': return 'PMT-' . str_pad($next_num, 6, '0', STR_PAD_LEFT);
+        case 'RCP': return 'RCP-' . str_pad($next_num, 6, '0', STR_PAD_LEFT);
+        case 'CHQ': return 'CHQ-' . str_pad($next_num, 6, '0', STR_PAD_LEFT);
+        default: return 'DOC-' . str_pad($next_num, 6, '0', STR_PAD_LEFT);
+    }
+}
+
+// Function to get next VNO (find max VNO and increment)
+function getNextVNO($conn, $comp_id) {
+    $query = "SELECT COALESCE(MAX(VNO), 0) + 1 as next_vno FROM tblexpenses WHERE COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return $row['next_vno'];
+}
+
+// Function to get next PAYMENT_SEQ for a given VNO
+function getNextPaymentSeq($conn, $vno, $comp_id) {
+    $query = "SELECT COALESCE(MAX(PAYMENT_SEQ), 0) + 1 as next_seq FROM tblexpenses WHERE VNO = ? AND COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ii", $vno, $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    return $row['next_seq'];
+}
+
+// Generate initial DOC_NO for new voucher
+$initial_doc_no = 'Auto Generated';
+if ($action === 'new') {
+    $is_payment = true; // Default to payment mode
+    $voucher_type = 'C'; // Default to cash
+    $initial_doc_no = generateDocNo($conn, $_SESSION['CompID'], $is_payment ? 'PMT' : 'RCP');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -75,13 +146,15 @@ $stmt->close();
     overflow-y: auto;
     z-index: 1000;
     display: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 .suggestion-item {
-    padding: 8px;
+    padding: 8px 12px;
     cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
 }
 .suggestion-item:hover, .suggestion-item.selected {
-    background-color: #f0f0f0;
+    background-color: #e3f2fd;
 }
 
 /* Pending invoices table styling */
@@ -94,7 +167,7 @@ $stmt->close();
 
 .purchase-table th,
 .purchase-table td {
-    padding: 8px;
+    padding: 8px 12px;
     border: 1px solid #dee2e6;
     text-align: left;
 }
@@ -116,15 +189,22 @@ $stmt->close();
 .amount-cell {
     text-align: right;
     font-family: monospace;
-    padding: 8px;
+    padding: 8px 12px;
 }
 
 .paid-input {
     width: 100%;
-    padding: 4px 8px;
+    padding: 6px 8px;
     border: 1px solid #ced4da;
     border-radius: 4px;
     text-align: right;
+    font-family: monospace;
+}
+
+.paid-input:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
 /* Hide number input arrows */
@@ -146,39 +226,78 @@ input[type="number"] {
 
 .purchase-details {
     margin-top: 20px;
-    padding: 15px;
+    padding: 20px;
     border: 1px solid #dee2e6;
-    border-radius: 5px;
+    border-radius: 8px;
     background-color: #f8f9fa;
+    display: none;
 }
 
 .purchase-details h6 {
     margin-bottom: 15px;
     color: #495057;
     font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 8px;
 }
 
 .text-danger {
     color: #dc3545 !important;
     font-weight: bold;
-}  </style>
+}
+
+.bank-fields {
+    display: none;
+}
+
+.amount-display {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.voucher-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.voucher-info h4 {
+    margin: 0;
+    font-weight: 600;
+}
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
   <?php include 'components/navbar.php'; ?>
 
   <div class="main-content">
-
     <div class="content-area">
-      <h3 class="mb-4"><?= ucfirst($action) ?> Voucher Entry</h3>
-
+      <!-- Voucher Info Header -->
+      <div class="voucher-info">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h4><i class="fas fa-file-invoice-dollar me-2"></i><?= ucfirst($action) ?> Voucher Entry</h4>
+          </div>
+          <div class="col-md-4 text-end">
+            <div id="current-date" class="small"></div>
+            <div id="current-time" class="small"></div>
+          </div>
+        </div>
+      </div>
 
       <!-- Voucher Type Selection -->
       <div class="card mb-3">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Voucher Settings</h6>
+        </div>
         <div class="card-body">
           <div class="row align-items-center">
             <div class="col-md-3">
-              <label class="form-label">Voucher Type:</label>
+              <label class="form-label fw-bold">Voucher Type:</label>
               <div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="type-cash" name="voucher_type" value="C" <?= (!$voucher_data || $voucher_data['MODE'] == 'C') ? 'checked' : '' ?>>
@@ -191,15 +310,15 @@ input[type="number"] {
               </div>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Voucher Date:</label>
+              <label class="form-label fw-bold">Voucher Date:</label>
               <input type="date" class="form-control form-control-sm" id="voucher-date" value="<?= $voucher_data ? date('Y-m-d', strtotime($voucher_data['VDATE'])) : date('Y-m-d') ?>">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Voucher No:</label>
-              <input type="text" class="form-control form-control-sm" id="voucher-no" value="<?= $voucher_data ? $voucher_data['VNO'] : 'Auto Generated' ?>" readonly>
+              <label class="form-label fw-bold">Voucher No:</label>
+              <input type="text" class="form-control form-control-sm bg-light" id="voucher-no" value="<?= $voucher_data ? $voucher_data['VNO'] : 'Auto Generated' ?>" readonly>
             </div>
             <div class="col-md-3">
-              <label class="form-label">Mode:</label>
+              <label class="form-label fw-bold">Mode:</label>
               <div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="mode-payment" name="mode" value="Payment" <?= (!$voucher_data || $voucher_data['DRCR'] == 'D') ? 'checked' : '' ?>>
@@ -215,60 +334,67 @@ input[type="number"] {
         </div>
       </div>
 
-<!-- Bank Details (Only shown for Bank vouchers) -->
-<div class="card mb-3 bank-fields" id="bank-details">
-  <div class="card-body">
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <label class="form-label">Bank Name:</label>
-        <select class="form-control form-control-sm" id="bank-name">
-          <option value="">-- Select Bank --</option>
-          <?php
-          // Fetch all bank accounts from ledger heads (include all bank-related accounts)
-          $bankQuery = "SELECT LCODE, LHEAD FROM tbllheads 
-                       WHERE (LHEAD LIKE '%bank%' OR LHEAD LIKE '%Bank%' OR LHEAD LIKE '%BANK%' 
-                       OR LHEAD LIKE '%account%' OR LHEAD LIKE '%Account%' OR LHEAD LIKE '%ACCOUNT%'
-                       OR LHEAD LIKE '%cheque%' OR LHEAD LIKE '%Cheque%' OR LHEAD LIKE '%CHEQUE%'
-                       OR LHEAD LIKE '%check%' OR LHEAD LIKE '%Check%' OR LHEAD LIKE '%CHECK%')";
-          $bankStmt = $conn->prepare($bankQuery);
-          $bankStmt->execute();
-          $bankResult = $bankStmt->get_result();
-          while ($bank = $bankResult->fetch_assoc()) {
-              $selected = ($voucher_data && $voucher_data['REF_AC'] == $bank['LCODE']) ? 'selected' : '';
-              echo "<option value='{$bank['LCODE']}' $selected>{$bank['LHEAD']}</option>";
-          }
-          $bankStmt->close();
-          ?>
-        </select>
+      <!-- Bank Details (Only shown for Bank vouchers) -->
+      <div class="card mb-3 bank-fields" id="bank-details">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-university me-2"></i>Bank Details</h6>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Bank Name:</label>
+              <select class="form-control form-control-sm" id="bank-name">
+                <option value="">-- Select Bank --</option>
+                <?php
+                // Fetch all bank accounts from ledger heads (include all bank-related accounts)
+                $bankQuery = "SELECT LCODE, LHEAD FROM tbllheads 
+                             WHERE (LHEAD LIKE '%bank%' OR LHEAD LIKE '%Bank%' OR LHEAD LIKE '%BANK%' 
+                             OR LHEAD LIKE '%account%' OR LHEAD LIKE '%Account%' OR LHEAD LIKE '%ACCOUNT%'
+                             OR LHEAD LIKE '%cheque%' OR LHEAD LIKE '%Cheque%' OR LHEAD LIKE '%CHEQUE%'
+                             OR LHEAD LIKE '%check%' OR LHEAD LIKE '%Check%' OR LHEAD LIKE '%CHECK%')";
+                $bankStmt = $conn->prepare($bankQuery);
+                $bankStmt->execute();
+                $bankResult = $bankStmt->get_result();
+                while ($bank = $bankResult->fetch_assoc()) {
+                    $selected = ($voucher_data && $voucher_data['REF_AC'] == $bank['LCODE']) ? 'selected' : '';
+                    echo "<option value='{$bank['LCODE']}' $selected>{$bank['LHEAD']}</option>";
+                }
+                $bankStmt->close();
+                ?>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Doc. No.:</label>
+              <input type="text" class="form-control form-control-sm bg-light" id="doc-no" value="<?= $voucher_data ? $voucher_data['DOC_NO'] : $initial_doc_no ?>" readonly title="Document number will be auto-generated (PMT-000001, RCP-000001, CHQ-000001)">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Cheq. No.:</label>
+              <input type="text" class="form-control form-control-sm" id="cheq-no" value="<?= $voucher_data ? $voucher_data['CHEQ_NO'] : '' ?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Doc. Date:</label>
+              <input type="date" class="form-control form-control-sm" id="doc-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Cheq. Date:</label>
+              <input type="date" class="form-control form-control-sm" id="cheq-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-3">
-        <label class="form-label">Doc. No.:</label>
-        <input type="text" class="form-control form-control-sm" id="doc-no" value="<?= $voucher_data ? $voucher_data['INV_NO'] : '' ?>">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Cheq. No.:</label>
-        <input type="text" class="form-control form-control-sm" id="cheq-no" value="<?= $voucher_data ? $voucher_data['CHEQ_NO'] : '' ?>">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Doc. Date:</label>
-        <input type="date" class="form-control form-control-sm" id="doc-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-3">
-        <label class="form-label">Cheq. Date:</label>
-        <input type="date" class="form-control form-control-sm" id="cheq-date" value="<?= $voucher_data ? ($voucher_data['CHEQ_DT'] ? date('Y-m-d', strtotime($voucher_data['CHEQ_DT'])) : '') : date('Y-m-d') ?>">
-      </div>
-    </div>
-  </div>
-</div>
+
       <!-- Narration Section -->
       <div class="card mb-3">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-comment me-2"></i>Narration</h6>
+        </div>
         <div class="card-body">
           <div class="row">
             <div class="col-md-12">
-              <label class="form-label">Narration:</label>
-              <input type="text" class="form-control form-control-sm" id="narr" value="<?= $voucher_data ? $voucher_data['NARR'] : '' ?>">
+              <label class="form-label fw-bold">Narration:</label>
+              <input type="text" class="form-control form-control-sm" id="narr" value="<?= $voucher_data ? $voucher_data['NARR'] : '' ?>" placeholder="Enter narration for this voucher...">
             </div>
           </div>
         </div>
@@ -276,9 +402,12 @@ input[type="number"] {
 
       <!-- Voucher Table -->
       <div class="card mb-3">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-table me-2"></i>Voucher Details</h6>
+        </div>
         <div class="card-body">
           <table class="table table-bordered">
-            <thead>
+            <thead class="table-light">
               <tr>
                 <th width="5%">#</th>
                 <th width="55%">Particulars</th>
@@ -290,33 +419,33 @@ input[type="number"] {
               <tr>
                 <td>1</td>
                 <td class="particulars-input">
-                  <input type="text" class="form-control form-control-sm" id="particulars-input" placeholder="Enter particulars" value="<?= $voucher_data ? $voucher_data['PARTI'] : '' ?>">
+                  <input type="text" class="form-control form-control-sm" id="particulars-input" placeholder="Type to search for supplier..." value="<?= $voucher_data ? $voucher_data['PARTI'] : '' ?>">
                   <div class="suggestions-box" id="suggestions"></div>
                 </td>
                 <td>
-                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric">
+                  <input type="number" class="form-control form-control-sm debit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'D') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric" placeholder="0.00">
                 </td>
                 <td>
-                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric">
+                  <input type="number" class="form-control form-control-sm credit-input" step="0.01" min="0" value="<?= ($voucher_data && $voucher_data['DRCR'] == 'C') ? $voucher_data['AMOUNT'] : '' ?>" inputmode="numeric" placeholder="0.00">
                 </td>
               </tr>
             </tbody>
           </table>
 
           <!-- Purchase Details (Initially Hidden) -->
-          <div class="purchase-details" id="purchase-details" style="display: none;">
-            <h6>Pending Invoices</h6>
+          <div class="purchase-details" id="purchase-details">
+            <h6><i class="fas fa-receipt me-2"></i>Pending Invoices</h6>
             <table class="purchase-table">
               <thead>
                 <tr>
-                  <th>Select</th>
-                  <th>Voc. No.</th>
-                  <th>Inv. No.</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                  <th>Paid</th>
-                  <th>Balance</th>
-                  <th>Paid Now</th>
+                  <th width="5%">Select</th>
+                  <th width="10%">Voc. No.</th>
+                  <th width="15%">Inv. No.</th>
+                  <th width="12%">Date</th>
+                  <th width="12%">Amount</th>
+                  <th width="12%">Paid</th>
+                  <th width="12%">Balance</th>
+                  <th width="22%">Paid Now</th>
                 </tr>
               </thead>
               <tbody id="purchase-details-body">
@@ -329,15 +458,18 @@ input[type="number"] {
 
       <!-- Amount Section -->
       <div class="card mb-3">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Amount Summary</h6>
+        </div>
         <div class="card-body">
           <div class="row">
             <div class="col-md-6">
-              <label class="form-label">Pending Amt:</label>
-              <input type="text" class="form-control form-control-sm" id="pending-amt" value="0.00" readonly>
+              <label class="form-label fw-bold">Pending Amount:</label>
+              <input type="text" class="form-control form-control-sm amount-display bg-warning bg-opacity-10" id="pending-amt" value="0.00" readonly>
             </div>
             <div class="col-md-6">
-              <label class="form-label">Total Amount:</label>
-              <input type="text" class="form-control form-control-sm" id="total-amount" value="<?= $voucher_data ? $voucher_data['AMOUNT'] : '0.00' ?>" readonly>
+              <label class="form-label fw-bold">Total Amount:</label>
+              <input type="text" class="form-control form-control-sm amount-display bg-success bg-opacity-10" id="total-amount" value="<?= $voucher_data ? $voucher_data['AMOUNT'] : '0.00' ?>" readonly>
             </div>
           </div>
         </div>
@@ -346,10 +478,10 @@ input[type="number"] {
       <!-- Action Buttons -->
       <div class="action-btn mb-3 d-flex gap-2">
         <button class="btn btn-primary" id="save-btn">
-          <i class="fas fa-save"></i> Save
+          <i class="fas fa-save"></i> Save Voucher
         </button>
         <button class="btn btn-secondary" id="new-btn">
-          <i class="fas fa-file"></i> New
+          <i class="fas fa-file"></i> New Voucher
         </button>
         <button class="btn btn-info" id="print-btn">
           <i class="fas fa-print"></i> Print
@@ -362,8 +494,8 @@ input[type="number"] {
           <i class="fas fa-trash"></i> Delete
         </button>
         <?php endif; ?>
-        <a href="voucher_view.php" class="btn btn-secondary ms-auto">
-          <i class="fas fa-sign-out-alt"></i> Exit
+        <a href="voucher_view.php" class="btn btn-outline-secondary ms-auto">
+          <i class="fas fa-sign-out-alt"></i> Back to View
         </a>
       </div>
     </div>
@@ -401,6 +533,54 @@ input[type="number"] {
     $('input[name="voucher_type"]').change(function() {
       toggleBankFields();
     });
+
+    // Update DOC_NO when mode changes
+    $('input[name="mode"]').change(function() {
+      updateDocNo();
+    });
+
+    // Update DOC_NO when voucher type changes
+    $('input[name="voucher_type"]').change(function() {
+      updateDocNo();
+    });
+
+    // Function to update DOC_NO based on current selections
+    function updateDocNo() {
+      const isPayment = $('#mode-payment').is(':checked');
+      const voucherType = $('input[name="voucher_type"]:checked').val();
+      
+      // Generate appropriate DOC_NO prefix
+      let prefix = '';
+      if (voucherType === 'B') {
+        prefix = 'CHQ';
+      } else {
+        prefix = isPayment ? 'PMT' : 'RCP';
+      }
+      
+      // Show loading text while we generate the DOC_NO
+      $('#doc-no').val('Generating...');
+      
+      // Call server to get the next DOC_NO
+      $.ajax({
+        url: 'get_next_docno.php',
+        type: 'POST',
+        data: {
+          prefix: prefix,
+          comp_id: <?= $_SESSION['CompID'] ?>
+        },
+        dataType: 'json',
+        success: function(response) {
+          if (response.success) {
+            $('#doc-no').val(response.doc_no);
+          } else {
+            $('#doc-no').val('Auto Generated');
+          }
+        },
+        error: function() {
+          $('#doc-no').val('Auto Generated');
+        }
+      });
+    }
 
     // Update current time and date
     function updateDateTime() {
@@ -523,8 +703,10 @@ input[type="number"] {
 
     // Fetch pending invoices from server
     function fetchPendingInvoices(ledgerCode) {
+      const timestamp = new Date().getTime();
+      
       $.ajax({
-        url: 'fetch_pending_invoices.php',
+        url: 'fetch_pending_invoices.php?' + timestamp,
         type: 'POST',
         data: { 
           ledger_code: ledgerCode,
@@ -536,13 +718,22 @@ input[type="number"] {
             displayPendingInvoices(response.data);
             $('#purchase-details').show();
             $('#pending-amt').val(response.total_pending.toFixed(0));
+            
+            // Update the total amount field based on current mode
+            if ($('#mode-payment').is(':checked')) {
+              $('.credit-input').val('0.00');
+              $('.debit-input').val('');
+            } else {
+              $('.debit-input').val('0.00');
+              $('.credit-input').val('');
+            }
           } else {
             alert('Error fetching pending invoices: ' + response.message);
             $('#purchase-details').hide();
           }
         },
-        error: function() {
-          alert('Error connecting to server');
+        error: function(xhr, status, error) {
+          alert('Error connecting to server: ' + error);
           $('#purchase-details').hide();
         }
       });
@@ -554,11 +745,9 @@ input[type="number"] {
       tbody.empty();
 
       if (invoices.length === 0) {
-        tbody.append('<tr><td colspan="8" class="text-center">No pending invoices found</td></tr>');
+        tbody.append('<tr><td colspan="8" class="text-center text-muted py-3">No pending invoices found for this supplier</td></tr>');
         return;
       }
-
-      // No sorting - allow user to choose payment order by selecting invoices
 
       invoices.forEach(invoice => {
         const totalAmount = parseFloat(invoice.TAMT);
@@ -566,26 +755,24 @@ input[type="number"] {
         const balance = parseFloat(invoice.balance);
 
         tbody.append(`
-          <tr data-id="${invoice.ID}" data-total="${totalAmount}" data-paid="${paidAmount}" data-balance="${balance}">
-            <td><input type="checkbox" class="select-invoice"></td>
-            <td>${invoice.VOC_NO}</td>
-            <td>${invoice.INV_NO || ''}</td>
+          <tr data-id="${invoice.ID}" data-total="${totalAmount}" data-paid="${paidAmount}" data-balance="${balance}" data-paid-now="0" data-voc-no="${invoice.VOC_NO}">
+            <td class="text-center"><input type="checkbox" class="select-invoice" checked></td>
+            <td><strong>${invoice.VOC_NO}</strong></td>
+            <td>${invoice.INV_NO || 'N/A'}</td>
             <td>${invoice.DATE}</td>
             <td class="amount-cell total-amount">${totalAmount.toFixed(0)}</td>
             <td class="amount-cell paid-amount">${paidAmount.toFixed(0)}</td>
             <td class="amount-cell balance-amount ${balance < 0 ? 'text-danger' : ''}">${balance.toFixed(0)}</td>
-            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00" inputmode="numeric"></td>
+            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00" inputmode="numeric" placeholder="0.00"></td>
           </tr>
         `);
       });
     }
 
     // Handle paid amount input - update calculations in real-time
-    // If user manually enters amount in paid-input, disable auto-distribution for this session
     let manualEntryMode = false;
 
     $(document).on('input', '.paid-input', function() {
-      // Set manual entry mode when user types in paid-input field
       manualEntryMode = true;
 
       const row = $(this).closest('tr');
@@ -605,13 +792,12 @@ input[type="number"] {
       const newPaidAmount = currentPaid + paidNow;
       const newBalance = totalAmount - newPaidAmount;
 
-      // Update the displayed values - display without decimals
+      // Update the displayed values
       row.find('.paid-amount').text(newPaidAmount.toFixed(0));
 
       const balanceCell = row.find('.balance-amount');
       balanceCell.text(newBalance.toFixed(0));
 
-      // Apply styling for negative balances
       if (newBalance < 0) {
         balanceCell.addClass('text-danger');
       } else {
@@ -648,7 +834,7 @@ input[type="number"] {
       $('#pending-amt').val(totalPending.toFixed(0));
       $('#total-amount').val(totalPaidNow.toFixed(0));
 
-      // Set debit or credit based on mode - display without decimals
+      // Set debit or credit based on mode
       if ($('#mode-payment').is(':checked')) {
         $('.credit-input').val(totalPaidNow.toFixed(0));
         $('.debit-input').val('');
@@ -667,26 +853,28 @@ input[type="number"] {
       }
     }
 
-    // Smart amount distribution function - allows flexible payment order
+    // Smart amount distribution function
     function distributeAmount(totalAmount) {
       let remainingAmount = totalAmount;
       let invoices = [];
 
-      // Collect all pending invoices (no sorting - user can choose order)
+      // Collect all pending invoices
       $('#purchase-details-body tr').each(function() {
         const balance = parseFloat($(this).data('balance'));
         const id = $(this).data('id');
+        const vocNo = $(this).data('voc-no');
 
         if (balance > 0) {
           invoices.push({
             id: id,
+            vocNo: vocNo,
             balance: balance,
             row: $(this)
           });
         }
       });
 
-      // Distribute amount to invoices in the order they appear (user can reorder by selecting)
+      // Distribute amount to invoices
       invoices.forEach(invoice => {
         if (remainingAmount <= 0) return;
 
@@ -723,156 +911,6 @@ input[type="number"] {
       calculateTotalAmount();
     }
 
-    // Save button handler
-$('#save-btn').on('click', function() {
-  const particulars = $('#particulars-input').val();
-  const amount = parseFloat($('#total-amount').val()) || 0;
-  const isPayment = $('#mode-payment').is(':checked');
-  const voucherType = $('input[name="voucher_type"]:checked').val();
-  const narration = $('#narr').val();
-  const voucherDate = $('#voucher-date').val();
-  
-  // Bank fields
-  const bankName = $('#bank-name').val();
-  const docNo = $('#doc-no').val();
-  const cheqNo = $('#cheq-no').val();
-  const docDate = $('#doc-date').val();
-  const cheqDate = $('#cheq-date').val();
-  
-  if (!particulars || !selectedLedgerCode) {
-    alert('Please select a valid particulars entry');
-    return;
-  }
-  
-  if (amount <= 0) {
-    alert('Please enter a valid amount');
-    return;
-  }
-  
-  // Get paid amounts for each invoice
-  const paidInvoices = [];
-  $('#purchase-details-body tr').each(function() {
-    const paidNow = parseFloat($(this).data('paid-now')) || 0;
-    if (paidNow !== 0) {
-      const invoiceId = $(this).data('id');
-      const currentPaid = parseFloat($(this).data('paid'));
-      const newPaidAmount = currentPaid + paidNow;
-      const totalAmount = parseFloat($(this).data('total'));
-      
-      paidInvoices.push({
-        id: invoiceId,
-        paid_amount: paidNow, // The amount being paid now
-        total_paid: newPaidAmount, // The new cumulative paid amount
-        new_balance: totalAmount - newPaidAmount // Calculate new balance
-      });
-    }
-  });
-  
-  // Submit data to server
-  $.ajax({
-    url: 'save_voucher.php',
-    type: 'POST',
-    data: {
-      action: '<?= $action ?>',
-      voucher_id: <?= $voucher_id ?>,
-      ledger_code: selectedLedgerCode,
-      ledger_name: selectedLedgerName,
-      amount: amount,
-      is_payment: isPayment,
-      voucher_type: voucherType,
-      narration: narration,
-      voucher_date: voucherDate,
-      bank_id: bankName,
-      doc_no: docNo,
-      cheq_no: cheqNo,
-      doc_date: docDate,
-      cheq_date: cheqDate,
-      paid_invoices: JSON.stringify(paidInvoices),
-      comp_id: <?= $_SESSION['CompID'] ?>,
-      fin_year_id: <?= $_SESSION['FIN_YEAR_ID'] ?>,
-      user_id: <?= $_SESSION['user_id'] ?>
-    },
-    success: function(response) {
-      try {
-        const result = JSON.parse(response);
-        if (result.success) {
-          alert('Voucher saved successfully! Voucher No: ' + result.voucher_no);
-          
-          // Instead of refreshing to a blank page, reload with the same particulars
-          // to see the updated balances
-          if (selectedLedgerCode) {
-            // Re-fetch the pending invoices to see updated balances
-            fetchPendingInvoices(selectedLedgerCode);
-            
-            // Clear the paid now inputs but keep the particulars selected
-            $('.paid-input').val('0.00');
-            $('#total-amount').val('0.00');
-            if (isPayment) {
-              $('.credit-input').val('0.00');
-            } else {
-              $('.debit-input').val('0.00');
-            }
-            
-            // Reset the paid-now data attributes
-            $('#purchase-details-body tr').each(function() {
-              $(this).data('paid-now', 0);
-            });
-          } else {
-            // Refresh the page to clear the form
-            window.location.href = 'voucher_entry.php';
-          }
-        } else {
-          alert('Error saving voucher: ' + result.message);
-        }
-      } catch (e) {
-        alert('Error parsing server response: ' + e.message);
-      }
-    },
-    error: function(xhr, status, error) {
-      alert('Error connecting to server: ' + error);
-    }
-  });
-});
-
-// Fetch pending invoices from server with cache-busting
-function fetchPendingInvoices(ledgerCode) {
-  // Add timestamp to prevent caching
-  const timestamp = new Date().getTime();
-  
-  $.ajax({
-    url: 'fetch_pending_invoices.php?' + timestamp,
-    type: 'POST',
-    data: { 
-      ledger_code: ledgerCode,
-      comp_id: <?= $_SESSION['CompID'] ?>
-    },
-    dataType: 'json',
-    success: function(response) {
-      if (response.success) {
-        displayPendingInvoices(response.data);
-        $('#purchase-details').show();
-        $('#pending-amt').val(response.total_pending.toFixed(0));
-        
-        // Update the total amount field based on current mode
-        if ($('#mode-payment').is(':checked')) {
-          $('.credit-input').val('0.00');
-          $('.debit-input').val('');
-        } else {
-          $('.debit-input').val('0.00');
-          $('.credit-input').val('');
-        }
-      } else {
-        alert('Error fetching pending invoices: ' + response.message);
-        $('#purchase-details').hide();
-      }
-    },
-    error: function(xhr, status, error) {
-      alert('Error connecting to server: ' + error);
-      $('#purchase-details').hide();
-    }
-  });
-}
-
     // Handle debit/credit input changes for instant auto-distribution
     $(document).on('input', '.debit-input, .credit-input', function() {
       if (!selectedLedgerCode) {
@@ -886,7 +924,6 @@ function fetchPendingInvoices(ledgerCode) {
       const totalEntered = debitVal + creditVal;
 
       if (totalEntered > 0 && !manualEntryMode) {
-        // Instant auto-distribution without delay - only if not in manual entry mode
         // Clear existing paid amounts first
         $('#purchase-details-body tr').each(function() {
           $(this).find('.paid-input').val('0.00');
@@ -919,6 +956,185 @@ function fetchPendingInvoices(ledgerCode) {
         });
         calculateTotalAmount();
       }
+    });
+
+    // Function to get existing VNO for purchase invoices
+    function getExistingVNO(purchaseVocNos) {
+        return new Promise((resolve, reject) => {
+            if (purchaseVocNos.length === 0) {
+                resolve(null);
+                return;
+            }
+            
+            $.ajax({
+                url: 'get_existing_vno.php',
+                type: 'POST',
+                data: {
+                    purchase_voc_nos: JSON.stringify(purchaseVocNos),
+                    comp_id: <?= $_SESSION['CompID'] ?>
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        resolve(response.vno);
+                    } else {
+                        resolve(null);
+                    }
+                },
+                error: function() {
+                    resolve(null);
+                }
+            });
+        });
+    }
+
+    // Save button handler
+    $('#save-btn').on('click', async function() {
+      const particulars = $('#particulars-input').val();
+      const amount = parseFloat($('#total-amount').val()) || 0;
+      const isPayment = $('#mode-payment').is(':checked');
+      const voucherType = $('input[name="voucher_type"]:checked').val();
+      const narration = $('#narr').val();
+      const voucherDate = $('#voucher-date').val();
+      
+      // Bank fields
+      const bankName = $('#bank-name').val();
+      const docNo = $('#doc-no').val();
+      const cheqNo = $('#cheq-no').val();
+      const docDate = $('#doc-date').val();
+      const cheqDate = $('#cheq-date').val();
+      
+      if (!particulars || !selectedLedgerCode) {
+        alert('Please select a valid particulars entry');
+        return;
+      }
+      
+      if (amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      // Get paid amounts for each invoice
+      const paidInvoices = [];
+      let hasPaidInvoices = false;
+      let purchaseVocNos = [];
+      
+      $('#purchase-details-body tr').each(function() {
+        const paidNow = parseFloat($(this).data('paid-now')) || 0;
+        if (paidNow > 0) {
+          hasPaidInvoices = true;
+          const invoiceId = $(this).data('id');
+          const invoiceVocNo = $(this).data('voc-no');
+          const currentPaid = parseFloat($(this).data('paid'));
+          const newPaidAmount = currentPaid + paidNow;
+          const totalAmount = parseFloat($(this).data('total'));
+          
+          paidInvoices.push({
+            id: invoiceId,
+            voc_no: invoiceVocNo,
+            paid_amount: paidNow,
+            total_paid: newPaidAmount,
+            new_balance: totalAmount - newPaidAmount
+          });
+          
+          purchaseVocNos.push(invoiceVocNo);
+        }
+      });
+      
+      // If no invoices are paid but amount is entered, create a manual voucher
+      if (!hasPaidInvoices && amount > 0) {
+        paidInvoices.length = 0; // Clear the array
+        purchaseVocNos = [];
+      }
+      
+      // Check for existing VNO if we have paid invoices
+      let existingVNO = null;
+      if (hasPaidInvoices) {
+        existingVNO = await getExistingVNO(purchaseVocNos);
+      }
+      
+      // Show loading state
+      const saveBtn = $(this);
+      const originalText = saveBtn.html();
+      saveBtn.html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+      saveBtn.prop('disabled', true);
+      
+      // Submit data to server
+      $.ajax({
+        url: 'save_voucher.php',
+        type: 'POST',
+        data: {
+          action: '<?= $action ?>',
+          voucher_id: <?= $voucher_id ?>,
+          ledger_code: selectedLedgerCode,
+          ledger_name: selectedLedgerName,
+          amount: amount,
+          is_payment: isPayment,
+          voucher_type: voucherType,
+          narration: narration,
+          voucher_date: voucherDate,
+          bank_id: bankName,
+          doc_no: docNo,
+          cheq_no: cheqNo,
+          doc_date: docDate,
+          cheq_date: cheqDate,
+          paid_invoices: JSON.stringify(paidInvoices),
+          comp_id: <?= $_SESSION['CompID'] ?>,
+          fin_year_id: <?= $_SESSION['FIN_YEAR_ID'] ?>,
+          user_id: <?= $_SESSION['user_id'] ?>
+        },
+        success: function(response) {
+          try {
+            const result = JSON.parse(response);
+            if (result.success) {
+              let successMessage = 'Voucher saved successfully! Voucher No: ' + result.voucher_no + ', Doc No: ' + result.doc_no;
+              if (result.total_invoices > 0) {
+                successMessage += ', Payments applied to ' + result.total_invoices + ' invoice(s)';
+              }
+              alert(successMessage);
+              
+              // Update the voucher number and doc no display
+              $('#voucher-no').val(result.voucher_no);
+              $('#doc-no').val(result.doc_no);
+              
+              // Instead of refreshing to a blank page, reload with the same particulars
+              if (selectedLedgerCode) {
+                // Re-fetch the pending invoices to see updated balances
+                fetchPendingInvoices(selectedLedgerCode);
+                
+                // Clear the paid now inputs but keep the particulars selected
+                $('.paid-input').val('0.00');
+                $('#total-amount').val('0.00');
+                if (isPayment) {
+                  $('.credit-input').val('0.00');
+                } else {
+                  $('.debit-input').val('0.00');
+                }
+                
+                // Reset the paid-now data attributes
+                $('#purchase-details-body tr').each(function() {
+                  $(this).data('paid-now', 0);
+                });
+              } else {
+                // Refresh the page to clear the form
+                window.location.href = 'voucher_entry.php';
+              }
+            } else {
+              alert('Error saving voucher: ' + result.message);
+            }
+          } catch (e) {
+            alert('Error parsing server response: ' + e.message);
+          }
+        },
+        error: function(xhr, status, error) {
+          alert('Error connecting to server: ' + error);
+        },
+        complete: function() {
+          // Restore button state
+          saveBtn.html(originalText);
+          saveBtn.prop('disabled', false);
+        }
+      });
     });
 
     // New button handler

@@ -52,16 +52,15 @@ try {
     $totalPending = 0;
     
     while ($row = $result->fetch_assoc()) {
-        // Get total payments for THIS SPECIFIC purchase invoice
-        // We need to link payments to specific purchases, not just to the ledger
+        // Get total payments for THIS SPECIFIC purchase invoice using PURCHASE_VOC_NO
         $paymentQuery = "SELECT COALESCE(SUM(AMOUNT), 0) as total_paid 
                          FROM tblexpenses 
-                         WHERE REF_SAC = ? AND COMP_ID = ? AND INV_NO = ?";
+                         WHERE PURCHASE_VOC_NO = ? AND COMP_ID = ?";
         $paymentStmt = $conn->prepare($paymentQuery);
         
-        // Use the purchase VOC_NO as the reference in expenses INV_NO field
-        $invNoRef = $row['VOC_NO'];
-        $paymentStmt->bind_param("iis", $ledgerID, $compID, $invNoRef);
+        // Use the purchase VOC_NO to find payments
+        $purchaseVocNo = $row['VOC_NO'];
+        $paymentStmt->bind_param("ii", $purchaseVocNo, $compID);
         $paymentStmt->execute();
         $paymentResult = $paymentStmt->get_result();
         $paymentRow = $paymentResult->fetch_assoc();
@@ -100,3 +99,4 @@ try {
 }
 
 echo json_encode($response);
+?>

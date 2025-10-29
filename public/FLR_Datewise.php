@@ -727,6 +727,15 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
               </button>
+              <button type="button" class="btn btn-info" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-1"></i> Export to Excel
+              </button>
+              <button type="button" class="btn btn-warning" onclick="exportToCSV()">
+                <i class="fas fa-file-csv me-1"></i> Export to CSV
+              </button>
+              <button type="button" class="btn btn-danger" onclick="exportToPDF()">
+                <i class="fas fa-file-pdf me-1"></i> Export to PDF
+              </button>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
                 <i class="fas fa-times me-1"></i> Exit
               </a>
@@ -1174,6 +1183,74 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function exportToExcel() {
+    // Get the table element
+    var table = document.getElementById('flr-datewise-table');
+
+    // Create a new workbook
+    var wb = XLSX.utils.book_new();
+
+    // Clone the table to avoid modifying the original
+    var tableClone = table.cloneNode(true);
+
+    // Convert table to worksheet
+    var ws = XLSX.utils.table_to_sheet(tableClone);
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'FLR Datewise');
+
+    // Generate Excel file and download
+    var fileName = 'FLR_Datewise_<?= date('Y-m-d') ?>.xlsx';
+    XLSX.writeFile(wb, fileName);
+}
+
+function exportToCSV() {
+    // Get the table element
+    var table = document.getElementById('flr-datewise-table');
+
+    // Convert table to worksheet
+    var ws = XLSX.utils.table_to_sheet(table);
+
+    // Generate CSV file and download
+    var fileName = 'FLR_Datewise_<?= date('Y-m-d') ?>.csv';
+    XLSX.writeFile(ws, fileName);
+}
+
+function exportToPDF() {
+    // Use html2pdf library to convert the report section to PDF
+    const element = document.querySelector('.print-section');
+    const opt = {
+        margin: 0.5,
+        filename: 'FLR_Datewise_<?= date('Y-m-d') ?>.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+    };
+
+    // New Promise-based usage:
+    html2pdf().set(opt).from(element).save();
+}
+
+// Load XLSX library dynamically
+if (typeof XLSX === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.onload = function() {
+        console.log('XLSX library loaded');
+    };
+    document.head.appendChild(script);
+}
+
+// Load html2pdf library dynamically
+if (typeof html2pdf === 'undefined') {
+    var script2 = document.createElement('script');
+    script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script2.onload = function() {
+        console.log('html2pdf library loaded');
+    };
+    document.head.appendChild(script2);
+}
+
 // Auto-submit form when dates change
 document.querySelectorAll('input[type="date"]').forEach(input => {
   input.addEventListener('change', function() {

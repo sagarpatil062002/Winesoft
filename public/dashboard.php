@@ -515,23 +515,23 @@ function checkMonthTransitionWithGaps($conn) {
     $currentMonth = getCurrentMonth();
     $previousMonth = getPreviousMonth();
     $currentDay = getCurrentDay();
-    
+
     // Define company tables
     $companyTables = [
         '1' => 'tbldailystock_1',
         '2' => 'tbldailystock_2',
         '3' => 'tbldailystock_3'
     ];
-    
+
     $transitionInfo = [];
-    
+
     if (isset($companyTables[$currentCompanyId])) {
         $tableName = $companyTables[$currentCompanyId];
-        
+
         // Check if table exists
         $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
         if ($tableCheck->num_rows > 0) {
-            
+
             // Check if current month data exists
             $currentMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
             $currentMonthStmt->bind_param("s", $currentMonth);
@@ -539,7 +539,7 @@ function checkMonthTransitionWithGaps($conn) {
             $currentMonthResult = $currentMonthStmt->get_result();
             $currentMonthRow = $currentMonthResult->fetch_assoc();
             $currentMonthStmt->close();
-            
+
             // Check if previous month data exists
             $prevMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
             $prevMonthStmt->bind_param("s", $previousMonth);
@@ -547,7 +547,7 @@ function checkMonthTransitionWithGaps($conn) {
             $prevMonthResult = $prevMonthStmt->get_result();
             $prevMonthRow = $prevMonthResult->fetch_assoc();
             $prevMonthStmt->close();
-            
+
             // Check for gaps in previous month
             $previousMonthGaps = [];
             $hasPreviousGaps = false;
@@ -556,7 +556,7 @@ function checkMonthTransitionWithGaps($conn) {
                 $hasPreviousGaps = !empty($gapInfo['gaps']);
                 $previousMonthGaps = $gapInfo;
             }
-            
+
             // Check for gaps in current month (only if current month exists)
             $currentMonthGaps = [];
             $hasCurrentGaps = false;
@@ -565,7 +565,18 @@ function checkMonthTransitionWithGaps($conn) {
                 $hasCurrentGaps = !empty($currentGapInfo['gaps']);
                 $currentMonthGaps = $currentGapInfo;
             }
-            
+
+            // Enhanced logic: Also check if current month exists but has incomplete data (e.g., only partial days)
+            $needsTransition = false;
+            if ($prevMonthRow['count'] > 0 && !$currentMonthRow['count'] > 0) {
+                // Standard case: previous month exists, current month doesn't
+                $needsTransition = true;
+            } elseif ($currentMonthRow['count'] > 0 && $hasCurrentGaps && $currentGapInfo['last_complete_day'] === 0) {
+                // Edge case: current month exists but has no complete days (all gaps from day 1)
+                // This might indicate incomplete initialization
+                $needsTransition = true;
+            }
+
             $transitionInfo = [
                 'company_id' => $currentCompanyId,
                 'table_name' => $tableName,
@@ -579,15 +590,15 @@ function checkMonthTransitionWithGaps($conn) {
                 'has_current_gaps' => $hasCurrentGaps,
                 'previous_gap_info' => $previousMonthGaps,
                 'current_gap_info' => $currentMonthGaps,
-                'needs_transition' => $prevMonthRow['count'] > 0 && !$currentMonthRow['count'] > 0,
+                'needs_transition' => $needsTransition,
                 'needs_current_gap_fill' => $hasCurrentGaps,
                 'current_month_days' => getDaysInMonth($currentMonth),
                 'previous_month_days' => getDaysInMonth($previousMonth)
             ];
-            
+
         }
     }
-    
+
     return $transitionInfo;
 }
 
@@ -759,6 +770,69 @@ if (isset($_POST['complete_month_transition']) && $_POST['complete_month_transit
 
 // Check if month transition is needed
 $transitionInfo = checkMonthTransitionWithGaps($conn);
+
+// Automatically execute month transition if needed
+$autoTransitionResults = null;
+if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['needs_current_gap_fill'])) {
+    // Check if we haven't already processed this transition today
+    $transitionKey = 'auto_transition_' . $transitionInfo['current_month'] . '_' . date('Y-m-d');
+    if (!isset($_SESSION[$transitionKey])) {
+        error_log("Automatic month transition started for: " . $transitionInfo['current_month']);
+
+        try {
+            $autoTransitionResults = executeCompleteMonthTransition($conn);
+            error_log("Automatic month transition results: " . json_encode($autoTransitionResults));
+
+            if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && $autoTransitionResults['complete_process']) {
+                $successMsg = "Automatic month transition completed successfully! ";
+                $successMsg .= "Archive table created: " . $autoTransitionResults['archive_table_name'];
+
+                // Add gap filling details
+                if (isset($autoTransitionResults['previous_gap_fill_result']['gaps_filled']) && $autoTransitionResults['previous_gap_fill_result']['gaps_filled'] > 0) {
+                    $successMsg .= " | Previous month gaps filled: " . $autoTransitionResults['previous_gap_fill_result']['gaps_filled'];
+                }
+
+                if (isset($autoTransitionResults['current_gap_fill_result']['gaps_filled']) && $autoTransitionResults['current_gap_fill_result']['gaps_filled'] > 0) {
+                    $successMsg .= " | Current month gaps filled: " . $autoTransitionResults['current_gap_fill_result']['gaps_filled'];
+                }
+
+                $_SESSION['transition_message'] = $successMsg;
+                $_SESSION['message_type'] = 'success';
+
+                // Mark this transition as completed for today
+                $_SESSION[$transitionKey] = true;
+            } else {
+                $errorMsg = "Automatic month transition failed: ";
+
+                if (isset($autoTransitionResults['error'])) {
+                    $errorMsg .= $autoTransitionResults['error'];
+                } else if (isset($autoTransitionResults['archive_result']['error'])) {
+                    $errorMsg .= "Archive Error: " . $autoTransitionResults['archive_result']['error'];
+                } else if (isset($autoTransitionResults['init_result']['error'])) {
+                    $errorMsg .= "Init Error: " . $autoTransitionResults['init_result']['error'];
+                } else {
+                    $errorMsg .= "Unknown error occurred";
+                }
+
+                $_SESSION['transition_message'] = $errorMsg;
+                $_SESSION['message_type'] = 'error';
+
+                // Don't mark as completed if there was an error - allow retry
+                // $_SESSION[$transitionKey] = true;
+            }
+        } catch (Exception $e) {
+            error_log("Automatic month transition exception: " . $e->getMessage());
+            $_SESSION['transition_message'] = "System error during automatic transition: " . $e->getMessage();
+            $_SESSION['message_type'] = 'error';
+
+            // Don't mark as completed on exception - allow retry
+            // $_SESSION[$transitionKey] = true;
+        }
+
+        // Re-check transition info after automatic processing
+        $transitionInfo = checkMonthTransitionWithGaps($conn);
+    }
+}
 
 // Show success message if available
 $successMessage = '';
@@ -974,44 +1048,50 @@ if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
       <?php endif; ?>
       
       <?php if($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['needs_current_gap_fill'])): ?>
-        
-        
-        <!-- Complete Month Transition Alert -->
+
+
+        <!-- Complete Month Transition Alert - MANUAL OVERRIDE OPTION -->
         <div class="card transition-alert">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
                 <h4 class="mb-0">
-                  <i class="fas fa-calendar-alt"></i> 
-                  Complete Month Transition Required
+                  <i class="fas fa-calendar-alt"></i>
+                  Month Transition Status
                 </h4>
                 <div class="mt-2">
-                  <strong>Previous Month:</strong> <?php echo $transitionInfo['previous_month']; ?> (<?php echo $transitionInfo['previous_month_days']; ?> days) │ 
+                  <strong>Previous Month:</strong> <?php echo $transitionInfo['previous_month']; ?> (<?php echo $transitionInfo['previous_month_days']; ?> days) │
                   <strong>Current Month:</strong> <?php echo $transitionInfo['current_month']; ?> (<?php echo $transitionInfo['current_month_days']; ?> days) │
                   <strong>Today:</strong> <?php echo $transitionInfo['current_date']; ?> (Day <?php echo $transitionInfo['current_day']; ?>)
                 </div>
               </div>
               <form method="POST" id="transitionForm" style="display: inline;">
                 <input type="hidden" name="complete_month_transition" value="1">
-                <button type="submit" class="btn btn-primary btn-transition">
-                  <i class="fas fa-sync-alt"></i> Process Complete Transition
+                <button type="submit" class="btn btn-warning btn-transition">
+                  <i class="fas fa-redo"></i> Manual Re-process
                 </button>
               </form>
             </div>
-            
+
+            <div class="alert alert-info">
+              <i class="fas fa-robot"></i>
+              <strong>Automatic Processing:</strong>
+              The system has automatically processed month transition and gap filling. If you need to re-run the process manually, use the button above.
+            </div>
+
             <div class="month-info">
-              <i class="fas fa-info-circle"></i> 
-              <strong>Improved Month Transition Process:</strong> 
+              <i class="fas fa-info-circle"></i>
+              <strong>Automated Month Transition Process:</strong>
               Complete previous month, archive it, initialize current month, and fill gaps up to today.
             </div>
-            
+
             <p class="mb-3">
-              The system detected that we've entered a new month and there are data gaps that need to be filled automatically.
+              The system automatically detected and processed month transition requirements when you accessed the dashboard.
             </p>
-            
+
             <div class="process-steps">
               <h6><i class="fas fa-list-ol"></i> Automated Process Steps:</h6>
-              
+
               <?php if($transitionInfo['has_previous_gaps']): ?>
               <div class="step-item">
                 <strong>Step 1: Fill Previous Month Gaps</strong>
@@ -1025,7 +1105,7 @@ if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
                 </div>
               </div>
               <?php endif; ?>
-              
+
               <div class="step-item">
                 <strong>Step 2: Create Archive Table</strong>
                 <div class="mt-1">
@@ -1034,7 +1114,7 @@ if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
                   <small>Format: MM_YY (e.g., 09_25 for September 2025)</small>
                 </div>
               </div>
-              
+
               <div class="step-item">
                 <strong>Step 3: Initialize New Month</strong>
                 <div class="mt-1">
@@ -1043,7 +1123,7 @@ if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
                   <small>Reset daily purchase/sales data for the new month</small>
                 </div>
               </div>
-              
+
               <?php if($transitionInfo['has_current_gaps']): ?>
               <div class="step-item">
                 <strong>Step 4: Fill Current Month Gaps</strong>
@@ -1058,9 +1138,9 @@ if (isset($allowed_class_mapping['F']) || isset($allowed_class_mapping['M'])) {
               </div>
               <?php endif; ?>
             </div>
-            
+
             <div class="mt-3 p-2 bg-light rounded">
-              <small><i class="fas fa-clock"></i> <strong>Note:</strong> This process may take several minutes. Maximum execution time has been increased to 5 minutes.</small>
+              <small><i class="fas fa-clock"></i> <strong>Note:</strong> Automatic processing occurs once per day. Manual re-processing may take several minutes.</small>
             </div>
           </div>
         </div>
@@ -1218,6 +1298,13 @@ $(document).ready(function() {
     <?php if($successMessage): ?>
         // Scroll to the top to show the message
         window.scrollTo(0, 0);
+    <?php endif; ?>
+
+    // Auto-refresh the page after 30 seconds if transition was just processed
+    <?php if($autoTransitionResults && isset($autoTransitionResults['complete_process']) && $autoTransitionResults['complete_process']): ?>
+        setTimeout(function() {
+            location.reload();
+        }, 30000); // 30 seconds
     <?php endif; ?>
 });
 </script>
