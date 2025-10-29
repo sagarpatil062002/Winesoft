@@ -11,24 +11,18 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
-include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "../config/db.php";
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
 // Default values
-$from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
-$to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
+$selected_date = isset($_GET['selected_date']) ? $_GET['selected_date'] : date('Y-m-d');
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'Foreign Liquor';
 
-// Validate date range
-if (strtotime($from_date) > strtotime($to_date)) {
-    $from_date = $to_date;
-}
-
-// Fetch company name
-$companyName = "DIAMOND WINE SHOP";
-$licenseNo = "3";
+// Fetch company name and license number
+$companyName = "WANGANHAN HOTEL";
+$licenseNo = "FL-II 3";
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
 $companyStmt->bind_param("i", $compID);
@@ -40,216 +34,321 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Fetch gate register data from tbl_cash_memo_prints
-$transactions = [];
-$daily_totals = [];
-$grand_total = 0;
-$bill_count = 0;
-
-// Query to fetch gate register data from cash memo prints table
-$query = "
-    SELECT 
-        DATE_FORMAT(c.bill_date, '%d/%m/%Y') as formatted_date,
-        c.bill_no,
-        c.permit_no,
-        c.permit_place as place_of_issue,
-        c.items_json,
-        c.total_amount as amount,
-        c.customer_name,
-        c.bill_date as original_date
-    FROM tbl_cash_memo_prints c
-    WHERE c.bill_date BETWEEN ? AND ? 
-    AND c.comp_id = ?
-    ORDER BY c.bill_date, c.bill_no
-";
-
-$stmt = $conn->prepare($query);
-$stmt->bind_param("ssi", $from_date, $to_date, $compID);
-$stmt->execute();
-$result = $stmt->get_result();
-
-while ($row = $result->fetch_assoc()) {
-    // Decode the items JSON to get item details
-    $items = json_decode($row['items_json'], true);
-    
-    if (is_array($items) && count($items) > 0) {
-        // For each item in the bill, create a transaction record
-        foreach ($items as $item) {
-            $transaction = [
-                'formatted_date' => $row['formatted_date'],
-                'bill_no' => $row['bill_no'],
-                'permit_no' => $row['permit_no'] ? $row['permit_no'] : 'N/A',
-                'place_of_issue' => $row['place_of_issue'] ? $row['place_of_issue'] : 'N/A',
-                'item_code' => isset($item['code']) ? $item['code'] : 'N/A',
-                'item_details' => isset($item['description']) ? $item['description'] : 'N/A',
-                'amount' => isset($item['amount']) ? $item['amount'] : 0,
-                'customer_name' => $row['customer_name'],
-                'original_date' => $row['original_date']
-            ];
-            
-            $transactions[] = $transaction;
-            
-            // Calculate daily totals
-            $date = $row['original_date'];
-            if (!isset($daily_totals[$date])) {
-                $daily_totals[$date] = 0;
-            }
-            $daily_totals[$date] += $transaction['amount'];
-            
-            $grand_total += $transaction['amount'];
-        }
-        $bill_count++;
-    } else {
-        // If no items JSON or empty, create a single transaction for the bill
-        $transaction = [
-            'formatted_date' => $row['formatted_date'],
-            'bill_no' => $row['bill_no'],
-            'permit_no' => $row['permit_no'] ? $row['permit_no'] : 'N/A',
-            'place_of_issue' => $row['place_of_issue'] ? $row['place_of_issue'] : 'N/A',
-            'item_code' => 'N/A',
-            'item_details' => 'Bill Total',
-            'amount' => $row['amount'],
-            'customer_name' => $row['customer_name'],
-            'original_date' => $row['original_date']
-        ];
-        
-        $transactions[] = $transaction;
-        
-        // Calculate daily totals
-        $date = $row['original_date'];
-        if (!isset($daily_totals[$date])) {
-            $daily_totals[$date] = 0;
-        }
-        $daily_totals[$date] += $transaction['amount'];
-        
-        $grand_total += $transaction['amount'];
-        $bill_count++;
-    }
+// Function to get base size for grouping
+function getBaseSize($size) {
+    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
+    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize);
+    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize);
+    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize);
+    return trim($baseSize);
 }
 
-$stmt->close();
+// Define size columns for each liquor type
+$size_columns_s = [
+    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
+    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
+    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
+    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
+    '180 ML (Pet)', '180 ML', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96', 
+    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
+    '50 ML (24)', '50 ML (192)'
+];
+$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
+$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
+$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
 
-// Generate dates array for the range
-$dates = [];
-$current_date = $from_date;
-while (strtotime($current_date) <= strtotime($to_date)) {
-    $dates[] = $current_date;
-    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+// For Country Liquor - use Spirits sizes
+$size_columns_country = $size_columns_s;
+
+// Group sizes by base size for each liquor type
+function groupSizes($sizes) {
+    $grouped = [];
+    foreach ($sizes as $size) {
+        $baseSize = getBaseSize($size);
+        if (!isset($grouped[$baseSize])) {
+            $grouped[$baseSize] = [];
+        }
+        $grouped[$baseSize][] = $size;
+    }
+    return $grouped;
+}
+
+$grouped_sizes_s = groupSizes($size_columns_s);
+$grouped_sizes_w = groupSizes($size_columns_w);
+$grouped_sizes_fb = groupSizes($size_columns_fb);
+$grouped_sizes_mb = groupSizes($size_columns_mb);
+$grouped_sizes_country = groupSizes($size_columns_country);
+
+// Get display sizes (base sizes) for each liquor type
+$display_sizes_s = array_keys($grouped_sizes_s);
+$display_sizes_w = array_keys($grouped_sizes_w);
+$display_sizes_fb = array_keys($grouped_sizes_fb);
+$display_sizes_mb = array_keys($grouped_sizes_mb);
+$display_sizes_country = array_keys($grouped_sizes_country);
+
+// Fetch gate register data from tbl_cash_memo_prints with permit details
+$gate_data = [];
+$liquor_summary = [];
+
+// Initialize liquor summary based on mode
+if ($mode == 'Country Liquor') {
+    $liquor_summary['Country Liquor'] = array_fill_keys($display_sizes_country, 0);
+} else {
+    $liquor_summary['Spirits'] = array_fill_keys($display_sizes_s, 0);
+    $liquor_summary['Wines'] = array_fill_keys($display_sizes_w, 0);
+    $liquor_summary['Fermented Beer'] = array_fill_keys($display_sizes_fb, 0);
+    $liquor_summary['Mild Beer'] = array_fill_keys($display_sizes_mb, 0);
+}
+
+$gateQuery = "SELECT 
+                cmp.bill_date,
+                cmp.bill_no,
+                cmp.customer_name,
+                cmp.permit_no,
+                cmp.permit_place,
+                cmp.permit_exp_date,
+                cmp.items_json,
+                cmp.total_amount,
+                tp.DETAILS as permit_holder_name,
+                tp.P_ISSDT as permit_issue_date,
+                tp.P_EXP_DT as permit_expiry_date,
+                tp.PLACE_ISS as permit_issue_place,
+                tp.LIQ_FLAG as permit_liq_flag
+              FROM tbl_cash_memo_prints cmp
+              LEFT JOIN tblpermit tp ON cmp.permit_no = tp.P_NO
+              WHERE cmp.comp_id = ? 
+              AND cmp.bill_date = ?";
+
+// Add mode filter based on permit LIQ_FLAG
+if ($mode == 'Country Liquor') {
+    $gateQuery .= " AND (tp.LIQ_FLAG = 'C' OR tp.LIQ_FLAG IS NULL)";
+} else {
+    $gateQuery .= " AND (tp.LIQ_FLAG = 'F' OR tp.LIQ_FLAG IS NULL)";
+}
+
+$gateQuery .= " ORDER BY cmp.bill_no";
+
+$gateStmt = $conn->prepare($gateQuery);
+$gateStmt->bind_param("is", $compID, $selected_date);
+$gateStmt->execute();
+$gateResult = $gateStmt->get_result();
+
+$serial_no = 1;
+$total_amount = 0;
+
+while ($row = $gateResult->fetch_assoc()) {
+    $total_amount += $row['total_amount'];
+    
+    // Use permit holder name from tblpermit if available, otherwise use customer name
+    $permit_holder_name = $row['permit_holder_name'] ?: $row['customer_name'];
+    
+    // Format permit validity
+    $permit_validity = '';
+    if ($row['permit_expiry_date']) {
+        $permit_validity = date('d/m/Y', strtotime($row['permit_expiry_date']));
+    } elseif ($row['permit_exp_date']) {
+        $permit_validity = date('d/m/Y', strtotime($row['permit_exp_date']));
+    }
+    
+    // Get permit district
+    $permit_district = $row['permit_issue_place'] ?: $row['permit_place'] ?: 'N/A';
+    
+    // Process items for liquor summary
+    $items = json_decode($row['items_json'], true);
+    if (is_array($items)) {
+        foreach ($items as $item) {
+            $baseSize = getBaseSize($item['DETAILS2']);
+            $qty = floatval($item['QTY']);
+            
+            if ($mode == 'Country Liquor') {
+                // For Country Liquor mode, add all to Country Liquor category
+                if (isset($liquor_summary['Country Liquor'][$baseSize])) {
+                    $liquor_summary['Country Liquor'][$baseSize] += $qty;
+                }
+            } else {
+                // For Foreign Liquor mode, categorize properly
+                $liquor_type = 'Spirits'; // Default
+                $item_name = strtolower($item['DETAILS']);
+                if (strpos($item_name, 'beer') !== false) {
+                    if (strpos($item_name, 'mild') !== false) {
+                        $liquor_type = 'Mild Beer';
+                    } else {
+                        $liquor_type = 'Fermented Beer';
+                    }
+                } elseif (strpos($item_name, 'wine') !== false) {
+                    $liquor_type = 'Wines';
+                }
+                
+                // Add to liquor summary
+                if (isset($liquor_summary[$liquor_type][$baseSize])) {
+                    $liquor_summary[$liquor_type][$baseSize] += $qty;
+                }
+            }
+        }
+    }
+    
+    $gate_data[] = [
+        'serial_no' => $serial_no++,
+        'bill_no' => $row['bill_no'],
+        'permit_no' => $row['permit_no'],
+        'permit_holder_name' => $permit_holder_name,
+        'permit_validity' => $permit_validity,
+        'permit_district' => $permit_district,
+        'amount' => $row['total_amount'],
+        'liq_flag' => $row['permit_liq_flag']
+    ];
+}
+$gateStmt->close();
+
+$total_records = count($gate_data);
+
+// Calculate number of liquor columns for table structure
+$liquor_columns_count = $mode == 'Country Liquor' ? count($display_sizes_country) + 1 : count($display_sizes_s) + count($display_sizes_w) + count($display_sizes_fb) + count($display_sizes_mb) + 1;
+
+// Calculate liquor category totals
+if ($mode == 'Country Liquor') {
+    $liquor_totals = [
+        'Country Liquor' => array_sum($liquor_summary['Country Liquor'])
+    ];
+} else {
+    $liquor_totals = [
+        'Spirits' => array_sum($liquor_summary['Spirits']),
+        'Wines' => array_sum($liquor_summary['Wines']),
+        'Fermented Beer' => array_sum($liquor_summary['Fermented Beer']),
+        'Mild Beer' => array_sum($liquor_summary['Mild Beer'])
+    ];
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gate Register Report - WineSoft</title>
+  <title>Gate Register (FLR-3) - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <style>
     /* Screen styles */
     body {
-      font-size: 12px;
+      font-size: 14px;
       background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
     }
     .company-header {
       text-align: center;
-      margin-bottom: 15px;
-      padding: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-bottom: 2px solid #000;
     }
     .company-header h1 {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
     }
     .company-header h5 {
-      font-size: 14px;
-      margin-bottom: 3px;
+      font-size: 16px;
+      margin-bottom: 5px;
+      font-weight: bold;
     }
     .company-header h6 {
-      font-size: 12px;
-      margin-bottom: 5px;
+      font-size: 14px;
+      margin-bottom: 8px;
     }
     .report-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 15px;
-      font-size: 10px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      table-layout: fixed;
     }
     .report-table th, .report-table td {
       border: 1px solid #000;
-      padding: 4px;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
+      padding: 8px 6px;
+      text-align: left;
+      line-height: 1.3;
+      vertical-align: top;
+      word-wrap: break-word;
     }
     .report-table th {
-      background-color: #f0f0f0;
+      background-color: #e0e0e0;
       font-weight: bold;
-      padding: 6px 3px;
+      text-align: center;
+      font-size: 12px;
     }
-    .summary-row {
-      background-color: #e9ecef;
-      font-weight: bold;
+    .liquor-col {
+      width: 40px;
+      text-align: center;
+      font-size: 11px;
+      padding: 4px 2px;
     }
     .filter-card {
       background-color: #f8f9fa;
+      margin-bottom: 20px;
     }
-    .table-responsive {
-      overflow-x: auto;
-      max-width: 100%;
+    .serial-col {
+      width: 50px;
+      text-align: center;
     }
-    .action-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
+    .billno-col {
+      width: 80px;
+      text-align: center;
+    }
+    .permitno-col {
+      width: 80px;
+      text-align: center;
+    }
+    .name-col {
+      width: 150px;
+    }
+    .validity-col {
+      width: 80px;
+      text-align: center;
+    }
+    .district-col {
+      width: 100px;
+      text-align: center;
+    }
+    .summary-row {
+      background-color: #d0d0d0;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .liquor-category {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    .vertical-text {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      text-align: center;
+      white-space: nowrap;
+      padding: 8px 2px;
+      font-size: 10px;
     }
     .no-print {
       display: block;
     }
-    .footer-signature {
-      margin-top: 30px;
-      width: 100%;
-    }
-    .footer-signature table {
-      width: 100%;
-      border: none;
-    }
-    .footer-signature td {
-      border: none;
-      padding: 5px;
-      text-align: center;
-      width: 33%;
-    }
-    .dotted-line {
-      border-bottom: 1px dashed #000;
-      width: 80%;
-      margin: 0 auto;
-      padding-top: 20px;
-    }
-    .separator {
-      border-top: 2px solid #000;
-      margin: 10px 0;
-    }
 
-    /* Print styles */
+    /* Print styles - UPDATED TO MATCH FLR DATEWISE */
     @media print {
       @page {
-        size: legal portrait;
+        size: legal landscape;
         margin: 0.2in;
       }
       
       body {
         margin: 0;
         padding: 0;
-        font-size: 10px;
+        font-size: 8px;
         line-height: 1;
         background: white;
         width: 100%;
         height: 100%;
+        transform: scale(0.8);
+        transform-origin: 0 0;
+        width: 125%;
       }
       
       .no-print {
@@ -276,23 +375,23 @@ while (strtotime($current_date) <= strtotime($to_date)) {
       
       .company-header {
         text-align: center;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
         padding: 2px;
         page-break-after: avoid;
       }
       
       .company-header h1 {
-        font-size: 16px !important;
-        margin-bottom: 1px !important;
-      }
-      
-      .company-header h5 {
         font-size: 12px !important;
         margin-bottom: 1px !important;
       }
       
+      .company-header h5 {
+        font-size: 9px !important;
+        margin-bottom: 1px !important;
+      }
+      
       .company-header h6 {
-        font-size: 10px !important;
+        font-size: 8px !important;
         margin-bottom: 2px !important;
       }
       
@@ -304,23 +403,59 @@ while (strtotime($current_date) <= strtotime($to_date)) {
       
       .report-table {
         width: 100% !important;
-        font-size: 9px !important;
+        font-size: 6px !important;
         table-layout: fixed;
         border-collapse: collapse;
         page-break-inside: avoid;
       }
       
       .report-table th, .report-table td {
-        padding: 2px !important;
+        padding: 1px !important;
         line-height: 1;
-        font-size: 9px !important;
-        border: 1px solid #000 !important;
+        height: 14px;
+        min-width: 18px;
+        max-width: 22px;
+        font-size: 6px !important;
+        border: 0.5px solid #000 !important;
       }
       
       .report-table th {
         background-color: #f0f0f0 !important;
-        padding: 3px 2px !important;
+        padding: 2px 1px !important;
         font-weight: bold;
+      }
+      
+      /* ONLY INCREASE HEIGHT FOR SIZE COLUMNS */
+      .vertical-text {
+        writing-mode: vertical-lr;
+        transform: rotate(180deg);
+        text-align: center;
+        white-space: nowrap;
+        padding: 1px !important;
+        font-size: 5px !important;
+        min-width: 15px;
+        max-width: 18px;
+        line-height: 1;
+        height: 25px !important; /* INCREASED HEIGHT */
+      }
+      
+      .serial-col, .billno-col, .permitno-col, .validity-col, .district-col {
+        width: 25px !important;
+        min-width: 25px !important;
+        max-width: 25px !important;
+      }
+      
+      .name-col {
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+      }
+      
+      .liquor-col {
+        width: 18px !important;
+        min-width: 18px !important;
+        max-width: 18px !important;
+        font-size: 5px !important;
       }
       
       .summary-row {
@@ -331,18 +466,18 @@ while (strtotime($current_date) <= strtotime($to_date)) {
       .footer-info {
         text-align: center;
         margin-top: 3px;
-        font-size: 9px;
+        font-size: 6px;
         page-break-before: avoid;
       }
       
-      .footer-signature {
-        margin-top: 20px;
-        font-size: 9px;
-      }
-      
+      /* Ensure no page breaks within the table */
       tr {
         page-break-inside: avoid;
         page-break-after: auto;
+      }
+      
+      .alert {
+        display: none !important;
       }
     }
   </style>
@@ -355,14 +490,14 @@ while (strtotime($current_date) <= strtotime($to_date)) {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Gate Register Report</h3>
+      <h3 class="mb-4">Gate Register (FLR-3) Printing Module</h3>
 
-      <!-- Report Filters -->
+      <!-- Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
         <div class="card-body">
-          <form method="GET" class="report-filters">
-            <div class="row mb-3">
+          <form method="GET" class="filter-form">
+            <div class="row">
               <div class="col-md-3">
                 <label class="form-label">Mode:</label>
                 <select name="mode" class="form-control">
@@ -371,30 +506,26 @@ while (strtotime($current_date) <= strtotime($to_date)) {
                 </select>
               </div>
               <div class="col-md-3">
-                <label class="form-label">From Date:</label>
-                <input type="date" name="from_date" class="form-control" value="<?= htmlspecialchars($from_date) ?>" max="<?= date('Y-m-d') ?>">
+                <label class="form-label">Select Date:</label>
+                <input type="date" name="selected_date" class="form-control" value="<?= htmlspecialchars($selected_date) ?>" max="<?= date('Y-m-d') ?>">
               </div>
-              <div class="col-md-3">
-                <label class="form-label">To Date:</label>
-                <input type="date" name="to_date" class="form-control" value="<?= htmlspecialchars($to_date) ?>" max="<?= date('Y-m-d') ?>">
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Date Range Info:</label>
+              <div class="col-md-6">
+                <label class="form-label">Report Info:</label>
                 <div class="form-control-plaintext">
-                  <small class="text-muted">Selected: <?= count($dates) ?> day(s)</small>
+                  <small class="text-muted">
+                    Mode: <?= htmlspecialchars($mode) ?><br>
+                    Date: <?= date('d-M-Y', strtotime($selected_date)) ?> | Records: <?= $total_records ?>
+                  </small>
                 </div>
               </div>
             </div>
             
-            <div class="action-controls">
+            <div class="action-controls mt-3">
               <button type="submit" name="generate" class="btn btn-primary">
                 <i class="fas fa-cog me-1"></i> Generate Report
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
-              </button>
-              <button type="button" class="btn btn-info" onclick="exportToExcel()">
-                <i class="fas fa-file-excel me-1"></i> Export to Excel
               </button>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
                 <i class="fas fa-times me-1"></i> Exit
@@ -407,104 +538,172 @@ while (strtotime($current_date) <= strtotime($to_date)) {
       <!-- Report Results -->
       <div class="print-section">
         <div class="company-header">
-          <h1>GATE REGISTER REPORT</h1>
+          <h1>GATE REGISTER (FLR-3)</h1>
           <h5>Mode: <?= htmlspecialchars($mode) ?></h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
-          <h6>Date From : <?= date('d/m/Y', strtotime($from_date)) ?> Date To : <?= date('d/m/Y', strtotime($to_date)) ?></h6>
+          <h6>Date: <?= date('d-M-Y', strtotime($selected_date)) ?></h6>
         </div>
         
-        <?php if (empty($transactions)): ?>
-          <div class="alert alert-warning text-center">
+        <?php if (empty($gate_data)): ?>
+          <div class="alert alert-warning text-center no-print">
             <i class="fas fa-exclamation-triangle me-2"></i>
-            No data available for the selected date range.
+            No gate register data available for the selected date and mode.
           </div>
         <?php else: ?>
+          <!-- Combined Gate Register and Liquor Summary Table -->
           <div class="table-responsive">
             <table class="report-table" id="gate-register-table">
               <thead>
                 <tr>
-                  <th width="10%">Date</th>
-                  <th width="10%">Bill No.</th>
-                  <th width="12%">Permit No.</th>
-                  <th width="15%">Place of Issue</th>
-                  <th width="10%">Item Code</th>
-                  <th width="23%">Details</th>
-                  <th width="10%">Amount (₹)</th>
-                  <th width="10%">Status</th>
+                  <th class="serial-col">Sr No.</th>
+                  <th class="billno-col">Bill No.</th>
+                  <th class="permitno-col">Permit No.</th>
+                  <th class="name-col">Permit Holder Name</th>
+                  <th class="validity-col">Permit Validity</th>
+                  <th class="district-col">Permit District</th>
+                  <?php if ($mode == 'Country Liquor'): ?>
+                    <?php foreach ($display_sizes_country as $size): ?>
+                      <th class="liquor-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <th class="liquor-col">Total</th>
+                  <?php else: ?>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <th class="liquor-col vertical-text">S: <?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <th class="liquor-col vertical-text">W: <?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <th class="liquor-col vertical-text">FB: <?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <th class="liquor-col vertical-text">MB: <?= $size ?></th>
+                    <?php endforeach; ?>
+                    <th class="liquor-col">Total</th>
+                  <?php endif; ?>
                 </tr>
               </thead>
               <tbody>
-                <?php 
-                $current_date = null;
-                foreach ($transactions as $index => $transaction): 
-                  $date = $transaction['original_date'];
-                  
-                  // Display daily subtotal if we're on a new date
-                  if ($current_date !== null && $current_date !== $date) {
-                    echo '<tr class="summary-row">';
-                    echo '<td colspan="5">' . date('d/m/Y', strtotime($current_date)) . ' Total</td>';
-                    echo '<td colspan="2">₹' . number_format($daily_totals[$current_date], 2) . '</td>';
-                    echo '<td></td>';
-                    echo '</tr>';
-                    echo '<tr><td colspan="8" class="separator"></td></tr>';
-                  }
-                  
-                  $current_date = $date;
-                ?>
+                <?php foreach ($gate_data as $entry): ?>
                   <tr>
-                    <td><?= $transaction['formatted_date'] ?></td>
-                    <td><?= $transaction['bill_no'] ?></td>
-                    <td><?= $transaction['permit_no'] ?></td>
-                    <td><?= $transaction['place_of_issue'] ?></td>
-                    <td><?= $transaction['item_code'] ?></td>
-                    <td><?= $transaction['item_details'] ?></td>
-                    <td>₹<?= number_format($transaction['amount'], 2) ?></td>
-                    <td>Issued</td>
+                    <td class="serial-col"><?= $entry['serial_no'] ?></td>
+                    <td class="billno-col"><?= htmlspecialchars($entry['bill_no']) ?></td>
+                    <td class="permitno-col"><?= htmlspecialchars($entry['permit_no']) ?></td>
+                    <td class="name-col"><?= htmlspecialchars($entry['permit_holder_name']) ?></td>
+                    <td class="validity-col"><?= htmlspecialchars($entry['permit_validity']) ?></td>
+                    <td class="district-col"><?= htmlspecialchars($entry['permit_district']) ?></td>
+                    <?php
+                    // Initialize liquor quantities for this entry
+                    $entry_liquor_summary = [];
+                    if ($mode == 'Country Liquor') {
+                      $entry_liquor_summary['Country Liquor'] = array_fill_keys($display_sizes_country, 0);
+                    } else {
+                      $entry_liquor_summary['Spirits'] = array_fill_keys($display_sizes_s, 0);
+                      $entry_liquor_summary['Wines'] = array_fill_keys($display_sizes_w, 0);
+                      $entry_liquor_summary['Fermented Beer'] = array_fill_keys($display_sizes_fb, 0);
+                      $entry_liquor_summary['Mild Beer'] = array_fill_keys($display_sizes_mb, 0);
+                    }
+
+                    // Get items for this specific bill
+                    $bill_items = [];
+                    $billQuery = "SELECT items_json FROM tbl_cash_memo_prints WHERE bill_no = ? AND comp_id = ?";
+                    $billStmt = $conn->prepare($billQuery);
+                    $billStmt->bind_param("si", $entry['bill_no'], $compID);
+                    $billStmt->execute();
+                    $billResult = $billStmt->get_result();
+                    if ($billRow = $billResult->fetch_assoc()) {
+                      $bill_items = json_decode($billRow['items_json'], true);
+                    }
+                    $billStmt->close();
+
+                    // Process items for this bill
+                    if (is_array($bill_items)) {
+                      foreach ($bill_items as $item) {
+                        $baseSize = getBaseSize($item['DETAILS2']);
+                        $qty = floatval($item['QTY']);
+
+                        if ($mode == 'Country Liquor') {
+                          if (isset($entry_liquor_summary['Country Liquor'][$baseSize])) {
+                            $entry_liquor_summary['Country Liquor'][$baseSize] += $qty;
+                          }
+                        } else {
+                          $liquor_type = 'Spirits';
+                          $item_name = strtolower($item['DETAILS']);
+                          if (strpos($item_name, 'beer') !== false) {
+                            if (strpos($item_name, 'mild') !== false) {
+                              $liquor_type = 'Mild Beer';
+                            } else {
+                              $liquor_type = 'Fermented Beer';
+                            }
+                          } elseif (strpos($item_name, 'wine') !== false) {
+                            $liquor_type = 'Wines';
+                          }
+
+                          if (isset($entry_liquor_summary[$liquor_type][$baseSize])) {
+                            $entry_liquor_summary[$liquor_type][$baseSize] += $qty;
+                          }
+                        }
+                      }
+                    }
+
+                    // Display liquor quantities for this entry
+                    if ($mode == 'Country Liquor') {
+                      foreach ($display_sizes_country as $size) {
+                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Country Liquor'][$size] > 0 ? $entry_liquor_summary['Country Liquor'][$size] : '') . '</td>';
+                      }
+                      echo '<td class="liquor-col liquor-category">' . array_sum($entry_liquor_summary['Country Liquor']) . '</td>';
+                    } else {
+                      foreach ($display_sizes_s as $size) {
+                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Spirits'][$size] > 0 ? $entry_liquor_summary['Spirits'][$size] : '') . '</td>';
+                      }
+                      foreach ($display_sizes_w as $size) {
+                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Wines'][$size] > 0 ? $entry_liquor_summary['Wines'][$size] : '') . '</td>';
+                      }
+                      foreach ($display_sizes_fb as $size) {
+                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Fermented Beer'][$size] > 0 ? $entry_liquor_summary['Fermented Beer'][$size] : '') . '</td>';
+                      }
+                      foreach ($display_sizes_mb as $size) {
+                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Mild Beer'][$size] > 0 ? $entry_liquor_summary['Mild Beer'][$size] : '') . '</td>';
+                      }
+                      $entry_total = array_sum($entry_liquor_summary['Spirits']) + array_sum($entry_liquor_summary['Wines']) + array_sum($entry_liquor_summary['Fermented Beer']) + array_sum($entry_liquor_summary['Mild Beer']);
+                      echo '<td class="liquor-col liquor-category">' . $entry_total . '</td>';
+                    }
+                    ?>
                   </tr>
                 <?php endforeach; ?>
-                
-                <!-- Display final daily total -->
-                <?php if ($current_date !== null): ?>
-                  <tr class="summary-row">
-                    <td colspan="5"><?= date('d/m/Y', strtotime($current_date)) ?> Total</td>
-                    <td colspan="2">₹<?= number_format($daily_totals[$current_date], 2) ?></td>
-                    <td></td>
-                  </tr>
-                <?php endif; ?>
-                
-                <!-- Grand Total -->
-                <tr><td colspan="8" class="separator"></td></tr>
+
+                <!-- Summary Row -->
                 <tr class="summary-row">
-                  <td colspan="5">Total No. of Bills: <?= $bill_count ?></td>
-                  <td colspan="2">Grand Total: ₹<?= number_format($grand_total, 2) ?></td>
-                  <td></td>
+                  <td colspan="6" class="text-center">
+                    <strong>Total Records: <?= $total_records ?> | Date: <?= date('d-M-Y', strtotime($selected_date)) ?> | Mode: <?= htmlspecialchars($mode) ?></strong>
+                  </td>
+                  <?php if ($mode == 'Country Liquor'): ?>
+                    <?php foreach ($display_sizes_country as $size): ?>
+                      <td class="liquor-col liquor-category"><?= $liquor_summary['Country Liquor'][$size] > 0 ? $liquor_summary['Country Liquor'][$size] : '' ?></td>
+                    <?php endforeach; ?>
+                    <td class="liquor-col liquor-category"><strong><?= $liquor_totals['Country Liquor'] ?></strong></td>
+                  <?php else: ?>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td class="liquor-col liquor-category"><?= $liquor_summary['Spirits'][$size] > 0 ? $liquor_summary['Spirits'][$size] : '' ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td class="liquor-col liquor-category"><?= $liquor_summary['Wines'][$size] > 0 ? $liquor_summary['Wines'][$size] : '' ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td class="liquor-col liquor-category"><?= $liquor_summary['Fermented Beer'][$size] > 0 ? $liquor_summary['Fermented Beer'][$size] : '' ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td class="liquor-col liquor-category"><?= $liquor_summary['Mild Beer'][$size] > 0 ? $liquor_summary['Mild Beer'][$size] : '' ?></td>
+                    <?php endforeach; ?>
+                    <td class="liquor-col liquor-category"><strong><?= array_sum($liquor_totals) ?></strong></td>
+                  <?php endif; ?>
                 </tr>
               </tbody>
             </table>
           </div>
           
-          <!-- Signature Section -->
-          <div class="footer-signature">
-            <table>
-              <tr>
-                <td>
-                  <div class="dotted-line"></div>
-                  <div>Prepared By</div>
-                </td>
-                <td>
-                  <div class="dotted-line"></div>
-                  <div>Checked By</div>
-                </td>
-                <td>
-                  <div class="dotted-line"></div>
-                  <div>Signature</div>
-                </td>
-              </tr>
-            </table>
-          </div>
-          
           <div class="footer-info">
-            <p>Generated on: <?= date('d-M-Y H:i:s') ?> | Total Records: <?= count($transactions) ?></p>
+            <p>Generated on: <?= date('d-M-Y h:i A') ?></p>
           </div>
         <?php endif; ?>
       </div>
@@ -513,55 +712,5 @@ while (strtotime($current_date) <= strtotime($to_date)) {
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function exportToExcel() {
-  // Get the current date range for filename
-  const fromDate = "<?= $from_date ?>";
-  const toDate = "<?= $to_date ?>";
-  const mode = "<?= $mode ?>";
-  
-  // Create a filename
-  const filename = `Gate_Register_${mode}_${fromDate}_to_${toDate}.xlsx`;
-  
-  // Create a temporary table for export
-  const originalTable = document.getElementById('gate-register-table');
-  const tempTable = originalTable.cloneNode(true);
-  
-  // Create HTML content for export
-  const htmlContent = `
-    <html>
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid black; padding: 4px; text-align: center; }
-        th { background-color: #f0f0f0; font-weight: bold; }
-        .summary-row { background-color: #e9ecef; font-weight: bold; }
-        .separator { border-top: 2px solid #000; }
-      </style>
-    </head>
-    <body>
-      <h2>Gate Register Report</h2>
-      <h3>Mode: ${mode}</h3>
-      <h4><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h4>
-      <h4>Date From: <?= date('d/m/Y', strtotime($from_date)) ?> Date To: <?= date('d/m/Y', strtotime($to_date)) ?></h4>
-      ${tempTable.outerHTML}
-      <p>Generated on: <?= date('d-M-Y H:i:s') ?></p>
-    </body>
-    </html>
-  `;
-  
-  // Create blob and download
-  const blob = new Blob([htmlContent], { type: 'application/vnd.ms-excel' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-</script>
 </body>
 </html>
