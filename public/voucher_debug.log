@@ -1,0 +1,113 @@
+[2025-10-30 14:12:35] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:12:35] Session CompID: 3
+[2025-10-30 14:12:35] Session FIN_YEAR_ID: 1
+[2025-10-30 14:12:35] Session user_id: 3
+[2025-10-30 14:12:35] POST Data - Action: new, Voucher ID: 0, Ledger Code: AMAR, Amount: 50
+[2025-10-30 14:12:35] Is Payment: Yes, Voucher Type: C
+[2025-10-30 14:12:35] Paid Invoices Count: 1
+[2025-10-30 14:12:35] Starting database transaction
+[2025-10-30 14:12:35] Generating DOC_NO for CompID: 3, Type: C, IsPayment: Yes
+[2025-10-30 14:12:35] Generated DOC_NO: PMT-000001 (Last num: 0)
+[2025-10-30 14:12:35] Final DOC_NO to use: PMT-000001
+[2025-10-30 14:12:35] Found ledger ID: 123 for REF_CODE: AMAR
+[2025-10-30 14:12:35] Creating new voucher
+[2025-10-30 14:12:35] Purchase VOC Nos to check: 1
+[2025-10-30 14:12:35] Getting voucher details for CompID: 3, Purchase VOC Nos: 1
+[2025-10-30 14:12:35] No existing voucher found for these purchase VOC numbers
+[2025-10-30 14:12:35] Getting next VNO for CompID: 3
+[2025-10-30 14:12:35] Current MAX VNO: 0, Next VNO: 1
+[2025-10-30 14:12:35] Creating new VNO: 1 with PAYMENT_SEQ: 1
+[2025-10-30 14:12:35] Final Voucher Details - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:12:35] Processing 1 paid invoices
+[2025-10-30 14:12:35] Processing invoice 0 - VOC No: 1, Amount: 50, PAYMENT_SEQ: 1
+[2025-10-30 14:12:35] Inserting voucher data - VNO: 1, PAYMENT_SEQ: 1, Amount: 50
+[2025-10-30 14:12:35] SQL Query: INSERT INTO tblexpenses (VNO, VDATE, PARTI, AMOUNT, DRCR, NARR, MODE, REF_AC, REF_SAC, INV_NO, DOC_NO, LIQ_FLAG, CHEQ_NO, CHEQ_DT, MAIN_BK, COMP_ID, PURCHASE_VOC_NO, PAYMENT_SEQ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+[2025-10-30 14:12:35] Binding types: ississssiisssssiii, Values: 1, 2025-10-30, AMAR TRADERS, 50, D,  - Payment for VOC No: 1, C, , 123, 1, PMT-000001, N, , , CB, 3, 1, 1
+[2025-10-30 14:12:35] ERROR: Duplicate entry '1-1' for key 'PRIMARY'
+[2025-10-30 14:12:35] Rolling back transaction
+[2025-10-30 14:12:35] === VOUCHER SAVE FAILED ===
+[2025-10-30 14:18:28] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:18:28] CompID: 3, Action: new, Ledger: AMAR, Amount: 70
+[2025-10-30 14:18:28] Starting database transaction
+[2025-10-30 14:18:28] Final DOC_NO: PMT-000001
+[2025-10-30 14:18:28] Ledger ID: 123
+[2025-10-30 14:18:28] Creating new voucher
+[2025-10-30 14:18:28] Getting next VNO for CompID: 3
+[2025-10-30 14:18:28] Existing vouchers for CompID 3: []
+[2025-10-30 14:18:28] Current MAX VNO: 0, Next VNO: 1
+[2025-10-30 14:18:28] New VNO: 1, Starting PAYMENT_SEQ: 1
+[2025-10-30 14:18:28] Processing 1 paid invoices
+[2025-10-30 14:18:28] Invoice 0 - VOC: 1, Amount: 70, PAYMENT_SEQ: 1
+[2025-10-30 14:18:28] Check if VNO: 1, PAYMENT_SEQ: 1 exists: NO
+[2025-10-30 14:18:28] Inserting - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:18:28] ERROR: Duplicate entry '1-1' for key 'PRIMARY'
+[2025-10-30 14:18:28] === VOUCHER SAVE FAILED ===
+[2025-10-30 14:18:50] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:18:50] CompID: 3, Action: new, Ledger: AMAR, Amount: 70
+[2025-10-30 14:18:50] Starting database transaction
+[2025-10-30 14:18:50] Final DOC_NO: PMT-000001
+[2025-10-30 14:18:50] Ledger ID: 123
+[2025-10-30 14:18:50] Creating new voucher
+[2025-10-30 14:18:50] Getting next VNO for CompID: 3
+[2025-10-30 14:18:50] Existing vouchers for CompID 3: []
+[2025-10-30 14:18:50] Current MAX VNO: 0, Next VNO: 1
+[2025-10-30 14:18:50] New VNO: 1, Starting PAYMENT_SEQ: 1
+[2025-10-30 14:18:50] Processing 1 paid invoices
+[2025-10-30 14:18:50] Invoice 0 - VOC: 1, Amount: 70, PAYMENT_SEQ: 1
+[2025-10-30 14:18:50] Check if VNO: 1, PAYMENT_SEQ: 1 exists: NO
+[2025-10-30 14:18:50] Inserting - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:18:50] INSERT SUCCESS - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:18:50] Updating purchase ID: 2 with flag: P
+[2025-10-30 14:18:50] Committing transaction
+[2025-10-30 14:18:50] === VOUCHER SAVE SUCCESS ===
+[2025-10-30 14:19:43] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:19:43] CompID: 1, Action: new, Ledger: ABHI, Amount: 2000
+[2025-10-30 14:19:43] Starting database transaction
+[2025-10-30 14:19:43] Final DOC_NO: PMT-000001
+[2025-10-30 14:19:43] Ledger ID: 141
+[2025-10-30 14:19:43] Creating new voucher
+[2025-10-30 14:19:43] Getting next VNO for CompID: 1
+[2025-10-30 14:19:43] Existing vouchers for CompID 1: []
+[2025-10-30 14:19:43] Current MAX VNO: 0, Next VNO: 1
+[2025-10-30 14:19:43] New VNO: 1, Starting PAYMENT_SEQ: 1
+[2025-10-30 14:19:43] Processing 1 paid invoices
+[2025-10-30 14:19:43] Invoice 0 - VOC: 1, Amount: 2000, PAYMENT_SEQ: 1
+[2025-10-30 14:19:43] Check if VNO: 1, PAYMENT_SEQ: 1 exists: NO
+[2025-10-30 14:19:43] Inserting - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:19:43] ERROR: Duplicate entry '1-1' for key 'PRIMARY'
+[2025-10-30 14:19:43] === VOUCHER SAVE FAILED ===
+[2025-10-30 14:20:41] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:20:41] CompID: 1, Action: new, Ledger: ABHI, Amount: 2000
+[2025-10-30 14:20:41] Starting database transaction
+[2025-10-30 14:20:41] Final DOC_NO: PMT-000001
+[2025-10-30 14:20:41] Ledger ID: 141
+[2025-10-30 14:20:41] Creating new voucher
+[2025-10-30 14:20:41] Getting next VNO for CompID: 1
+[2025-10-30 14:20:41] Existing vouchers for CompID 1: []
+[2025-10-30 14:20:41] Current MAX VNO: 0, Next VNO: 1
+[2025-10-30 14:20:41] New VNO: 1, Starting PAYMENT_SEQ: 1
+[2025-10-30 14:20:41] Processing 1 paid invoices
+[2025-10-30 14:20:41] Invoice 0 - VOC: 1, Amount: 2000, PAYMENT_SEQ: 1
+[2025-10-30 14:20:41] Check if VNO: 1, PAYMENT_SEQ: 1 exists: NO
+[2025-10-30 14:20:41] Inserting - VNO: 1, PAYMENT_SEQ: 1
+[2025-10-30 14:20:41] ERROR: Duplicate entry '1-1' for key 'PRIMARY'
+[2025-10-30 14:20:41] === VOUCHER SAVE FAILED ===
+[2025-10-30 14:27:38] === START VOUCHER SAVE PROCESS ===
+[2025-10-30 14:27:38] CompID: 1, Action: new, Ledger: ABHI, Amount: 2000
+[2025-10-30 14:27:38] Starting database transaction
+[2025-10-30 14:27:38] Final DOC_NO: PMT-000001
+[2025-10-30 14:27:38] Ledger ID: 141
+[2025-10-30 14:27:38] Creating new voucher
+[2025-10-30 14:27:38] Getting voucher details for CompID: 1, Purchase VOC Nos: 1
+[2025-10-30 14:27:38] No existing voucher found for these purchase VOC numbers
+[2025-10-30 14:27:38] Getting next GLOBAL VNO
+[2025-10-30 14:27:38] Current GLOBAL MAX VNO: 1, Next VNO: 2
+[2025-10-30 14:27:38] New GLOBAL VNO: 2 with PAYMENT_SEQ: 1
+[2025-10-30 14:27:38] Processing 1 paid invoices
+[2025-10-30 14:27:38] Invoice 0 - VOC: 1, Amount: 2000, PAYMENT_SEQ: 1
+[2025-10-30 14:27:38] Check if VNO: 2, PAYMENT_SEQ: 1 exists GLOBALLY: NO
+[2025-10-30 14:27:38] Inserting - VNO: 2, PAYMENT_SEQ: 1, CompID: 1
+[2025-10-30 14:27:38] INSERT SUCCESS - VNO: 2, PAYMENT_SEQ: 1
+[2025-10-30 14:27:38] Updating purchase ID: 1 with flag: P
+[2025-10-30 14:27:38] Committing transaction
+[2025-10-30 14:27:38] === VOUCHER SAVE SUCCESS ===
