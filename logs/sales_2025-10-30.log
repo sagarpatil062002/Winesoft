@@ -1,0 +1,141 @@
+[2025-10-30 10:41:37] [INFO] === PAGE ACCESS ===
+[2025-10-30 10:41:37] [INFO] Request method: GET
+[2025-10-30 10:41:37] [INFO] Search term: ''
+[2025-10-30 10:41:37] [INFO] Current session ID: ld6pr82v3actfm9k539fco1vc6
+[2025-10-30 10:41:38] [INFO] Final session quantities count: 0
+[2025-10-30 10:41:38] [INFO] Items in current view: 0
+[2025-10-30 10:41:38] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-30 to 2025-10-30
+    [days_count] => 1
+    [user_id] => 3
+    [comp_id] => 3
+    [license_type] => CL-III
+    [allowed_classes] => Array
+        (
+            [0] => L
+            [1] => O
+            [2] => O
+            [3] => O
+            [4] => O
+        )
+
+)
+
+[2025-10-30 10:41:41] [INFO] === PAGE ACCESS ===
+[2025-10-30 10:41:41] [INFO] Request method: GET
+[2025-10-30 10:41:41] [INFO] Search term: ''
+[2025-10-30 10:41:41] [INFO] Current session ID: ld6pr82v3actfm9k539fco1vc6
+[2025-10-30 10:41:41] [INFO] Final session quantities count: 0
+[2025-10-30 10:41:41] [INFO] Items in current view: 50
+[2025-10-30 10:41:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 150
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-10-30 to 2025-10-30
+    [days_count] => 1
+    [user_id] => 3
+    [comp_id] => 3
+    [license_type] => CL-III
+    [allowed_classes] => Array
+        (
+            [0] => L
+            [1] => O
+            [2] => O
+            [3] => O
+            [4] => O
+        )
+
+)
+
+[2025-10-30 10:41:45] [INFO] Session quantity updated: SCMCL0013801 = 0
+[2025-10-30 10:41:45] [INFO] Session quantity updated: SCMCL0013801 = 0
+[2025-10-30 10:41:46] [INFO] Session quantity updated: SCMCL0013801 = 1
+[2025-10-30 10:41:46] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-10-30 10:41:47] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-10-30 10:41:47] [INFO] Session quantity updated: SCMCL0013801 = 10
+[2025-10-30 10:41:47] [INFO] Session quantity updated: SCMCL0013799 = 1
+[2025-10-30 10:41:48] [INFO] Session quantity updated: SCMCL0013799 = 1
+[2025-10-30 10:41:48] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-10-30 10:41:48] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-10-30 10:41:49] [INFO] Session quantity updated: SCMCL0013799 = 10
+[2025-10-30 10:41:49] [INFO] Session quantity updated: SCMCL0013805 = 1
+[2025-10-30 10:41:49] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-10-30 10:41:49] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-10-30 10:41:50] [INFO] Session quantity updated: SCMCL0013805 = 10
+[2025-10-30 10:41:53] [INFO] Session quantity updated: SCMCL0013804 = 6
+[2025-10-30 10:41:54] [INFO] Session quantity updated: SCMCL0013804 = 60
+[2025-10-30 10:41:54] [INFO] Session quantity updated: SCMCL0013804 = 60
+[2025-10-30 10:41:54] [INFO] Session quantity updated: SCMCL0013804 = 60
+[2025-10-30 10:41:55] [INFO] Session quantity updated: SCMCL0013802 = 4
+[2025-10-30 10:41:56] [INFO] Session quantity updated: SCMCL0013802 = 4
+[2025-10-30 10:41:56] [INFO] Session quantity updated: SCMCL0013802 = 40
+[2025-10-30 10:41:56] [INFO] Session quantity updated: SCMCL0013802 = 40
+[2025-10-30 10:41:56] [INFO] Session quantity updated: SCMCL0013802 = 40
+[2025-10-30 10:41:58] [INFO] Session quantity updated: SCMCL0013800 = 90
+[2025-10-30 10:41:58] [INFO] Session quantity updated: SCMCL0013800 = 90
+[2025-10-30 10:41:58] [INFO] Session quantity updated: SCMCL0013800 = 90
+[2025-10-30 10:42:16] [INFO] === PAGE ACCESS ===
+[2025-10-30 10:42:16] [INFO] Request method: POST
+[2025-10-30 10:42:16] [INFO] Search term: ''
+[2025-10-30 10:42:16] [INFO] Current session ID: ld6pr82v3actfm9k539fco1vc6
+[2025-10-30 10:42:17] [INFO] Session quantities updated from POST: 6 items
+[2025-10-30 10:42:17] [INFO] Getting next bill number for CompID: 3
+[2025-10-30 10:42:17] [INFO] Next bill number for CompID 3: 1
+[2025-10-30 10:42:19] [INFO] Starting optimized cash memo generation for 44 bills
+[2025-10-30 10:42:19] [INFO] Cash memo generated for bill: BL0001
+[2025-10-30 10:42:19] [INFO] Cash memo generated for bill: BL0002
+[2025-10-30 10:42:19] [INFO] Cash memo generated for bill: BL0003
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0004
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0005
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0006
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0007
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0008
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0009
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0010
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0011
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0012
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0013
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0014
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0015
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0016
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0017
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0018
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0019
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0020
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0021
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0022
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0023
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0024
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0025
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0026
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0027
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0028
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0029
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0030
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0031
+[2025-10-30 10:42:20] [INFO] Cash memo generated for bill: BL0032
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0033
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0034
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0035
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0036
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0037
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0038
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0039
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0040
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0041
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0042
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0043
+[2025-10-30 10:42:21] [INFO] Cash memo generated for bill: BL0044
+[2025-10-30 10:42:21] [INFO] Cash memo generation completed: 44 successful, 0 failed
+[2025-10-30 10:42:21] [INFO] Session quantities cleared

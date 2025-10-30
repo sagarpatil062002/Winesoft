@@ -251,20 +251,7 @@ error_log("=== PURCHASE MODULE DEBUG END ===");
     <?php include 'components/header.php'; ?>
 
     <div class="content-area p-3 p-md-4">
-      <!-- Debug Information Panel -->
-      <div class="debug-panel">
-        <div class="debug-toggle" onclick="toggleDebug()">
-          <i class="fa-solid fa-bug"></i> Debug Information (Click to toggle)
-        </div>
-        <div id="debugContent" style="display: none; margin-top: 10px;">
-          <strong>Debug Info:</strong><br>
-          Company ID: <?= $companyId ?><br>
-          Mode: <?= $mode ?><br>
-          Purchases Found: <?= count($purchases) ?><br>
-          <?php if (isset($queryError)): ?>Query Error: <?= $queryError ?><br><?php endif; ?>
-          <?php if (isset($executeError)): ?>Execute Error: <?= $executeError ?><br><?php endif; ?>
-        </div>
-      </div>
+      
 
 
       <div class="d-flex justify-content-between align-items-center mb-4">

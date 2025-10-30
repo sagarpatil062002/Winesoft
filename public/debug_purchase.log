@@ -15776,3 +15776,324 @@
     "total_items": 2
 }
 [2025-10-28 13:18:09] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2025-10-30 10:40:29] === NEW PURCHASE SESSION STARTED ===
+[2025-10-30 10:40:29] Session data: {
+    "user_id": "3",
+    "username": "deccan",
+    "CompID": 3,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Deccan Wine Shop"
+}
+[2025-10-30 10:40:29] POST data: []
+[2025-10-30 10:40:29] GET data: {
+    "mode": "F"
+}
+[2025-10-30 10:40:29] Company ID from session: 3
+[2025-10-30 10:40:29] Database connection included
+[2025-10-30 10:40:29] License functions included
+[2025-10-30 10:40:29] License type: CL-III
+[2025-10-30 10:40:29] Available classes: [
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    }
+]
+[2025-10-30 10:40:29] Allowed class SGROUP values: [
+    "L",
+    "O",
+    "O",
+    "O",
+    "O"
+]
+[2025-10-30 10:40:29] Purchase mode: F
+[2025-10-30 10:40:29] Next voucher number: 1
+[2025-10-30 10:40:29] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-30 10:40:29] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "L",
+        "O",
+        "O",
+        "O",
+        "O"
+    ],
+    "types": "sssss"
+}
+[2025-10-30 10:40:29] Items fetched from database: {
+    "count": 150,
+    "license_filter_applied": true
+}
+[2025-10-30 10:40:29] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-30 10:40:29] Database connection closed
+[2025-10-30 10:40:29] === PURCHASE SESSION ENDED ===
+[2025-10-30 10:41:23] === NEW PURCHASE SESSION STARTED ===
+[2025-10-30 10:41:23] Session data: {
+    "user_id": "3",
+    "username": "deccan",
+    "CompID": 3,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Deccan Wine Shop"
+}
+[2025-10-30 10:41:23] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-10-30",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-30",
+    "inv_no": "",
+    "inv_date": "2025-10-30",
+    "supplier_name": "AMAR TRADERS",
+    "supplier_code": "AMAR",
+    "items": [
+        {
+            "code": "SCMCL0013802",
+            "name": "Chak De Badishep Maza .",
+            "size": "180 ML (Pet)",
+            "bottles_per_case": "12",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "2.16",
+            "vv": "0",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "120.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "120.00",
+    "tamt": "120.00"
+}
+[2025-10-30 10:41:23] GET data: {
+    "mode": "F"
+}
+[2025-10-30 10:41:23] Company ID from session: 3
+[2025-10-30 10:41:23] Database connection included
+[2025-10-30 10:41:23] License functions included
+[2025-10-30 10:41:23] License type: CL-III
+[2025-10-30 10:41:23] Available classes: [
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    }
+]
+[2025-10-30 10:41:23] Allowed class SGROUP values: [
+    "L",
+    "O",
+    "O",
+    "O",
+    "O"
+]
+[2025-10-30 10:41:23] Purchase mode: F
+[2025-10-30 10:41:23] Next voucher number: 1
+[2025-10-30 10:41:23] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2025-10-30 10:41:23] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?)  -- REMOVED: im.LIQ_FLAG = ?\n                 ORDER BY im.DETAILS",
+    "params": [
+        "L",
+        "O",
+        "O",
+        "O",
+        "O"
+    ],
+    "types": "sssss"
+}
+[2025-10-30 10:41:23] Items fetched from database: {
+    "count": 150,
+    "license_filter_applied": true
+}
+[2025-10-30 10:41:23] Suppliers fetched: {
+    "count": 36
+}
+[2025-10-30 10:41:23] === FORM SUBMISSION STARTED ===
+[2025-10-30 10:41:23] Form data extracted: {
+    "date": "2025-10-30",
+    "voc_no": "1",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2025-10-30",
+    "inv_no": "",
+    "inv_date": "2025-10-30",
+    "supplier_code": "AMAR",
+    "supplier_name": "AMAR TRADERS",
+    "basic_amt": "120.00",
+    "total_amt": "120.00"
+}
+[2025-10-30 10:41:23] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "parameters": [
+        "2025-10-30",
+        "AMAR",
+        "FL1305-310825\/7654",
+        "1",
+        "",
+        "2025-10-30",
+        "120.00",
+        "7654",
+        "2025-10-30",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "0.00",
+        "T",
+        3
+    ]
+}
+[2025-10-30 10:41:23] Purchase header inserted successfully: {
+    "purchase_id": 2,
+    "affected_rows": 1
+}
+[2025-10-30 10:41:23] Starting to process purchase items: {
+    "item_count": 1
+}
+[2025-10-30 10:41:23] Processing item 0: {
+    "item_code": "SCMCL0013802",
+    "item_name": "Chak De Badishep Maza .",
+    "cases": 1,
+    "bottles": 0,
+    "free_cases": 0,
+    "free_bottles": 0,
+    "case_rate": 120,
+    "amount": 120,
+    "tot_bott": 12,
+    "bl": 2.16
+}
+[2025-10-30 10:41:23] Item 0 inserted successfully: {
+    "purchase_id": 2,
+    "item_code": "SCMCL0013802"
+}
+[2025-10-30 10:41:23] Purchase items processing completed: {
+    "successful_items": 1,
+    "total_items": 1
+}
+[2025-10-30 10:41:23] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===

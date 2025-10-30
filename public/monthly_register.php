@@ -357,59 +357,39 @@ for ($day = 1; $day <= $days_in_month; $day++) {
         switch ($liquor_type) {
             case 'Spirits':
                 if (in_array($grouped_size, $display_sizes_s)) {
-                    // Opening balance (only on first day - DAY_1_OPEN)
-                    if ($day == 1) {
-                        $monthly_data['Spirits']['opening'][$grouped_size] += $row['opening'];
-                    }
-                    
                     // Received during month (all DAY_X_PURCHASE)
                     $monthly_data['Spirits']['received'][$grouped_size] += $row['purchase'];
-                    
+
                     // Sold during month (all DAY_X_SALES)
                     $monthly_data['Spirits']['sold'][$grouped_size] += $row['sales'];
                 }
                 break;
-                
+
             case 'Wines':
                 if (in_array($grouped_size, $display_sizes_w)) {
-                    // Opening balance (only on first day - DAY_1_OPEN)
-                    if ($day == 1) {
-                        $monthly_data['Wines']['opening'][$grouped_size] += $row['opening'];
-                    }
-                    
                     // Received during month (all DAY_X_PURCHASE)
                     $monthly_data['Wines']['received'][$grouped_size] += $row['purchase'];
-                    
+
                     // Sold during month (all DAY_X_SALES)
                     $monthly_data['Wines']['sold'][$grouped_size] += $row['sales'];
                 }
                 break;
-                
+
             case 'Fermented Beer':
                 if (in_array($grouped_size, $display_sizes_fb)) {
-                    // Opening balance (only on first day - DAY_1_OPEN)
-                    if ($day == 1) {
-                        $monthly_data['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
-                    }
-                    
                     // Received during month (all DAY_X_PURCHASE)
                     $monthly_data['Fermented Beer']['received'][$grouped_size] += $row['purchase'];
-                    
+
                     // Sold during month (all DAY_X_SALES)
                     $monthly_data['Fermented Beer']['sold'][$grouped_size] += $row['sales'];
                 }
                 break;
-                
+
             case 'Mild Beer':
                 if (in_array($grouped_size, $display_sizes_mb)) {
-                    // Opening balance (only on first day - DAY_1_OPEN)
-                    if ($day == 1) {
-                        $monthly_data['Mild Beer']['opening'][$grouped_size] += $row['opening'];
-                    }
-                    
                     // Received during month (all DAY_X_PURCHASE)
                     $monthly_data['Mild Beer']['received'][$grouped_size] += $row['purchase'];
-                    
+
                     // Sold during month (all DAY_X_SALES)
                     $monthly_data['Mild Beer']['sold'][$grouped_size] += $row['sales'];
                 }
@@ -490,32 +470,100 @@ while ($row = $breakagesResult->fetch_assoc()) {
 }
 $breakagesStmt->close();
 
+// Fetch opening balance for the current date (report generation date)
+$current_date = date('Y-m-d');
+$current_table = getTableForDate($conn, $compID, $current_date);
+
+// Check if current table has columns for current day
+$current_day = date('d');
+if (tableHasDayColumns($conn, $current_table, $current_day)) {
+    $openingQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                    DAY_{$current_day}_OPEN as opening
+                    FROM $current_table
+                    WHERE STK_MONTH = ?";
+
+    $openingStmt = $conn->prepare($openingQuery);
+    $openingStmt->bind_param("s", $month);
+    $openingStmt->execute();
+    $openingResult = $openingStmt->get_result();
+
+    while ($row = $openingResult->fetch_assoc()) {
+        $item_code = $row['ITEM_CODE'];
+
+        // Skip if item not found in master OR if item class is not allowed by license
+        if (!isset($items[$item_code])) continue;
+
+        $item_details = $items[$item_code];
+        $size = $item_details['DETAILS2'];
+        $class = $item_details['CLASS'];
+        $liq_flag = $item_details['LIQ_FLAG'];
+
+        // Determine liquor type
+        $liquor_type = getLiquorType($class, $liq_flag);
+
+        // Map database size to Excel size
+        $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
+
+        // Get grouped size for display
+        $grouped_size = getGroupedSize($excel_size, $liquor_type);
+
+        // Add opening balance based on liquor type and grouped size
+        switch ($liquor_type) {
+            case 'Spirits':
+                if (in_array($grouped_size, $display_sizes_s) && $row['opening'] > 0) {
+                    $monthly_data['Spirits']['opening'][$grouped_size] += $row['opening'];
+                }
+                break;
+
+            case 'Wines':
+                if (in_array($grouped_size, $display_sizes_w) && $row['opening'] > 0) {
+                    $monthly_data['Wines']['opening'][$grouped_size] += $row['opening'];
+                }
+                break;
+
+            case 'Fermented Beer':
+                if (in_array($grouped_size, $display_sizes_fb) && $row['opening'] > 0) {
+                    $monthly_data['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                }
+                break;
+
+            case 'Mild Beer':
+                if (in_array($grouped_size, $display_sizes_mb) && $row['opening'] > 0) {
+                    $monthly_data['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                }
+                break;
+        }
+    }
+
+    $openingStmt->close();
+}
+
 // Calculate closing balance using the formula: Opening + Received - Sold
 foreach ($display_sizes_s as $size) {
-    $monthly_data['Spirits']['closing'][$size] = 
-        $monthly_data['Spirits']['opening'][$size] + 
-        $monthly_data['Spirits']['received'][$size] - 
+    $monthly_data['Spirits']['closing'][$size] =
+        $monthly_data['Spirits']['opening'][$size] +
+        $monthly_data['Spirits']['received'][$size] -
         $monthly_data['Spirits']['sold'][$size];
 }
 
 foreach ($display_sizes_w as $size) {
-    $monthly_data['Wines']['closing'][$size] = 
-        $monthly_data['Wines']['opening'][$size] + 
-        $monthly_data['Wines']['received'][$size] - 
+    $monthly_data['Wines']['closing'][$size] =
+        $monthly_data['Wines']['opening'][$size] +
+        $monthly_data['Wines']['received'][$size] -
         $monthly_data['Wines']['sold'][$size];
 }
 
 foreach ($display_sizes_fb as $size) {
-    $monthly_data['Fermented Beer']['closing'][$size] = 
-        $monthly_data['Fermented Beer']['opening'][$size] + 
-        $monthly_data['Fermented Beer']['received'][$size] - 
+    $monthly_data['Fermented Beer']['closing'][$size] =
+        $monthly_data['Fermented Beer']['opening'][$size] +
+        $monthly_data['Fermented Beer']['received'][$size] -
         $monthly_data['Fermented Beer']['sold'][$size];
 }
 
 foreach ($display_sizes_mb as $size) {
-    $monthly_data['Mild Beer']['closing'][$size] = 
-        $monthly_data['Mild Beer']['opening'][$size] + 
-        $monthly_data['Mild Beer']['received'][$size] - 
+    $monthly_data['Mild Beer']['closing'][$size] =
+        $monthly_data['Mild Beer']['opening'][$size] +
+        $monthly_data['Mild Beer']['received'][$size] -
         $monthly_data['Mild Beer']['sold'][$size];
 }
 
