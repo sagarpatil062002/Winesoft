@@ -16,38 +16,51 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Default values
-$bill_date = isset($_GET['bill_date']) ? $_GET['bill_date'] : date('Y-m-d');
+// Default values - using date range instead of single date
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 $report_mode = isset($_GET['report_mode']) ? $_GET['report_mode'] : 'all';
 $bill_no = isset($_GET['bill_no']) ? $_GET['bill_no'] : '';
 
-// Fetch company name
-$companyName = "DIAMOND WINE SHOP"; // Default name
-$companyQuery = "SELECT COMP_NAME FROM tblcompany WHERE CompID = ?";
-$companyStmt = $conn->prepare($companyQuery);
-$companyStmt->bind_param("i", $compID);
-$companyStmt->execute();
-$companyResult = $companyStmt->get_result();
-if ($row = $companyResult->fetch_assoc()) {
-    $companyName = $row['COMP_NAME'];
-}
-$companyStmt->close();
+// Check if this is an AJAX request for bill numbers
+$is_ajax_request = isset($_GET['ajax']) && $_GET['ajax'] === 'get_bill_numbers';
 
-// Fetch bill numbers for dropdown
+// Fetch company name (only if not AJAX request)
+$companyName = "DIAMOND WINE SHOP"; // Default name
+if (!$is_ajax_request) {
+    $companyQuery = "SELECT COMP_NAME FROM tblcompany WHERE CompID = ?";
+    $companyStmt = $conn->prepare($companyQuery);
+    $companyStmt->bind_param("i", $compID);
+    $companyStmt->execute();
+    $companyResult = $companyStmt->get_result();
+    if ($row = $companyResult->fetch_assoc()) {
+        $companyName = $row['COMP_NAME'];
+    }
+    $companyStmt->close();
+}
+
+// Fetch bill numbers for dropdown - filtered by date range
 $billNumbers = [];
 $billQuery = "SELECT DISTINCT BILL_NO FROM (
-    SELECT BILL_NO FROM tblsaleheader WHERE COMP_ID = ? 
+    SELECT BILL_NO FROM tblsaleheader WHERE COMP_ID = ? AND BILL_DATE BETWEEN ? AND ?
     UNION 
-    SELECT BillNo as BILL_NO FROM tblcustomersales WHERE CompID = ?
+    SELECT BillNo as BILL_NO FROM tblcustomersales WHERE CompID = ? AND BillDate BETWEEN ? AND ?
 ) AS bills ORDER BY BILL_NO";
 $billStmt = $conn->prepare($billQuery);
-$billStmt->bind_param("ii", $compID, $compID);
+$billStmt->bind_param("ississ", $compID, $start_date, $end_date, $compID, $start_date, $end_date);
 $billStmt->execute();
 $billResult = $billStmt->get_result();
 while ($row = $billResult->fetch_assoc()) {
     $billNumbers[] = $row['BILL_NO'];
 }
 $billStmt->close();
+
+// Handle AJAX request for bill numbers
+if ($is_ajax_request) {
+    header('Content-Type: application/json');
+    echo json_encode($billNumbers);
+    exit;
+}
 
 $report_data = [];
 $total_amount = 0;
@@ -69,7 +82,7 @@ if (isset($_GET['generate'])) {
     FROM tblsaledetails sd
     INNER JOIN tblsaleheader sh ON sd.BILL_NO = sh.BILL_NO AND sd.COMP_ID = sh.COMP_ID
     LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
-    WHERE sh.BILL_DATE = ? AND sh.COMP_ID = ?";
+    WHERE sh.BILL_DATE BETWEEN ? AND ? AND sh.COMP_ID = ?";
     
     $customer_query = "SELECT 
         cs.BillNo as BILL_NO,
@@ -84,21 +97,25 @@ if (isset($_GET['generate'])) {
         cs.Amount
     FROM tblcustomersales cs
     INNER JOIN tbllheads lh ON cs.LCode = lh.LCODE
-    WHERE cs.BillDate = ? AND cs.CompID = ?";
+    WHERE cs.BillDate BETWEEN ? AND ? AND cs.CompID = ?";
     
-    $params = [$bill_date, $compID];
-    $types = "si";
+    $params_retail = [$start_date, $end_date, $compID];
+    $params_customer = [$start_date, $end_date, $compID];
+    $types_retail = "ssi";
+    $types_customer = "ssi";
     
     if ($report_mode === 'particular' && !empty($bill_no)) {
         $retail_query .= " AND sh.BILL_NO = ?";
         $customer_query .= " AND cs.BillNo = ?";
-        $params[] = $bill_no;
-        $types .= "s";
+        $params_retail[] = $bill_no;
+        $params_customer[] = $bill_no;
+        $types_retail .= "s";
+        $types_customer .= "s";
     }
     
     // Retail sales from tblsaledetails and tblsaleheader
     $retail_stmt = $conn->prepare($retail_query);
-    $retail_stmt->bind_param($types, ...$params);
+    $retail_stmt->bind_param($types_retail, ...$params_retail);
     $retail_stmt->execute();
     $retail_result = $retail_stmt->get_result();
     
@@ -111,7 +128,7 @@ if (isset($_GET['generate'])) {
     
     // Customer sales from tblcustomersales
     $customer_stmt = $conn->prepare($customer_query);
-    $customer_stmt->bind_param($types, ...$params);
+    $customer_stmt->bind_param($types_customer, ...$params_customer);
     $customer_stmt->execute();
     $customer_result = $customer_stmt->get_result();
     
@@ -136,6 +153,9 @@ if (isset($_GET['generate'])) {
         $grouped_data[$bill_no_key]['items'][] = $row;
     }
 }
+
+// If it's an AJAX request, we've already handled it and exited above
+// So from here onwards, it's only for regular page requests
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -163,11 +183,15 @@ if (isset($_GET['generate'])) {
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
         <div class="card-body">
-          <form method="GET" class="report-filters">
+          <form method="GET" class="report-filters" id="reportForm">
             <div class="row mb-3">
               <div class="col-md-3">
-                <label class="form-label">Date:</label>
-                <input type="date" name="bill_date" class="form-control" value="<?= htmlspecialchars($bill_date) ?>">
+                <label class="form-label">Start Date:</label>
+                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>" id="startDate">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">End Date:</label>
+                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>" id="endDate">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Mode:</label>
@@ -209,7 +233,7 @@ if (isset($_GET['generate'])) {
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-            <h5>Billwise Detailed Report For <?= date('d-M-Y', strtotime($bill_date)) ?></h5>
+            <h5>Billwise Detailed Report For <?= date('d-M-Y', strtotime($start_date)) ?> to <?= date('d-M-Y', strtotime($end_date)) ?></h5>
             <?php if ($report_mode === 'particular' && !empty($bill_no)): ?>
               <p class="text-muted">Bill No: <?= htmlspecialchars($bill_no) ?></p>
             <?php endif; ?>
@@ -223,7 +247,6 @@ if (isset($_GET['generate'])) {
                     <th class="text-center">S. No.</th>
                     <th class="text-center">Date</th>
                     <th class="text-center">Bill No.</th>
-                    <th class="text-center">TBL No.</th>
                     <th>Item Description</th>
                     <th class="text-right">Rate</th>
                     <th class="text-center">Qty.</th>
@@ -235,22 +258,12 @@ if (isset($_GET['generate'])) {
                   <?php 
                   $sno = 1;
                   foreach ($grouped_data as $bill_no_key => $bill_data): 
+                    foreach ($bill_data['items'] as $item): 
                   ?>
-                    <tr class="bill-header">
-                      <td colspan="9">
-                        <strong>Bill No:</strong> <?= htmlspecialchars($bill_no_key) ?> | 
-                        <strong>Date:</strong> <?= date('d/m/Y', strtotime($bill_data['date'])) ?> | 
-                        <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
-                        <strong>Type:</strong> <?= htmlspecialchars($bill_data['sale_type']) ?>
-                      </td>
-                    </tr>
-                    
-                    <?php foreach ($bill_data['items'] as $item): ?>
                     <tr>
                       <td class="text-center"><?= $sno++ ?></td>
                       <td class="text-center"><?= date('d/m/Y', strtotime($item['DATE'])) ?></td>
                       <td class="text-center"><?= htmlspecialchars($bill_no_key) ?></td>
-                      <td class="text-center"><?= htmlspecialchars($bill_data['customer']) ?></td>
                       <td><?= htmlspecialchars($item['ItemName']) ?></td>
                       <td class="text-right"><?= isset($item['RATE']) ? number_format($item['RATE'], 2) : number_format($item['Rate'], 2) ?></td>
                       <td class="text-center"><?= htmlspecialchars($item['Quantity']) ?></td>
@@ -258,11 +271,10 @@ if (isset($_GET['generate'])) {
                       <td class="text-right"><?= isset($item['AMOUNT']) ? number_format($item['AMOUNT'], 2) : number_format($item['Amount'], 2) ?></td>
                     </tr>
                     <?php endforeach; ?>
-                    
                   <?php endforeach; ?>
                   
                   <tr class="total-row">
-                    <td colspan="8" class="text-end"><strong>Total Amount:</strong></td>
+                    <td colspan="7" class="text-end"><strong>Total Amount:</strong></td>
                     <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
                   </tr>
                 </tbody>
@@ -273,7 +285,7 @@ if (isset($_GET['generate'])) {
               </div>
             <?php endif; ?>
           </div>
-          
+        </div>
       <?php endif; ?>
     </div>
     
@@ -291,8 +303,61 @@ if (isset($_GET['generate'])) {
         $('#billNoField').show();
       } else {
         $('#billNoField').hide();
+        $('#billNoSelect').val(''); // Clear bill no selection when switching to all bills
       }
     });
+    
+    // Update bill numbers when date range changes
+    $('input[name="start_date"], input[name="end_date"]').change(function() {
+      // Only update if we're in particular mode
+      if ($('#reportMode').val() === 'particular') {
+        updateBillNumbers();
+      }
+    });
+    
+    function updateBillNumbers() {
+      const startDate = $('#startDate').val();
+      const endDate = $('#endDate').val();
+      
+      if (startDate && endDate) {
+        // Show loading state
+        const billSelect = $('#billNoSelect');
+        const currentValue = billSelect.val(); // Save current selection
+        billSelect.html('<option value="">Loading bill numbers...</option>');
+        
+        // Make AJAX request to the same page
+        $.ajax({
+          url: '<?php echo $_SERVER['PHP_SELF']; ?>',
+          type: 'GET',
+          data: {
+            ajax: 'get_bill_numbers',
+            start_date: startDate,
+            end_date: endDate
+          },
+          success: function(response) {
+            const billNumbers = JSON.parse(response);
+            let options = '<option value="">Select Bill No</option>';
+            
+            if (billNumbers.length > 0) {
+              billNumbers.forEach(function(billNo) {
+                const selected = (billNo === currentValue) ? 'selected' : '';
+                options += '<option value="' + billNo + '" ' + selected + '>' + billNo + '</option>';
+              });
+            } else {
+              options = '<option value="">No bills found for selected date range</option>';
+            }
+            
+            billSelect.html(options);
+          },
+          error: function() {
+            billSelect.html('<option value="">Error loading bill numbers</option>');
+          }
+        });
+      }
+    }
+    
+    // Don't auto-update on page load - let the PHP-generated options stay
+    // Only update when dates actually change
   });
 </script>
 </body>

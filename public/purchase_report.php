@@ -224,7 +224,7 @@ foreach ($purchases as $purchase) {
                       <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
                     </tr>
                   <?php endforeach; ?>
-                  <tr class="total-row">
+                  <tr class="total-row" style="border-bottom: double 3px #000;">
                     <td colspan="5" class="text-end"><strong>Total:</strong></td>
                     <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
                     <td class="text-right"><strong><?= number_format($totals['cash_disc'], 2) ?></strong></td>

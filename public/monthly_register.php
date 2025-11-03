@@ -159,10 +159,10 @@ $grouped_sizes_fb = groupSizes($size_columns_fb);
 $grouped_sizes_mb = groupSizes($size_columns_mb);
 
 // Get display sizes (base sizes) for each liquor type - ORDER: Spirit, Wine, Fermented Beer, Mild Beer
-$display_sizes_s = array_keys($grouped_sizes_s);
-$display_sizes_w = array_keys($grouped_sizes_w);
-$display_sizes_fb = array_keys($grouped_sizes_fb);
-$display_sizes_mb = array_keys($grouped_sizes_mb);
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // Fetch class data to map liquor types
 $classData = [];
@@ -712,6 +712,25 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .summary-row {
       background-color: #e9ecef;
       font-weight: bold;
+    }
+    /* Double line separators after each subcategory ends */
+    /* Monthly register structure: Description(1), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27] */
+
+    /* After Spirits (50ml) - column 1+11=12 */
+    .report-table td:nth-child(12) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) - column 12+4=16 */
+    .report-table td:nth-child(16) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) - column 16+6=22 */
+    .report-table td:nth-child(22) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) - column 22+6=28 */
+    .report-table td:nth-child(28) {
+      border-right: double 3px #000;
     }
     .filter-card {
       background-color: #f8f9fa;

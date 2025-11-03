@@ -67,8 +67,8 @@ $size_columns_s = [
     '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
     '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
     '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96', 
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
+    '180 ML (Pet)', '180 ML', '170 ML (48)', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96',
+    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
     '50 ML (24)', '50 ML (192)'
 ];
 $size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
@@ -94,10 +94,10 @@ $grouped_sizes_fb = groupSizes($size_columns_fb);
 $grouped_sizes_mb = groupSizes($size_columns_mb);
 
 // Get display sizes (base sizes) for each liquor type - ORDER: Spirit, Wine, Fermented Beer, Mild Beer
-$display_sizes_s = array_keys($grouped_sizes_s);
-$display_sizes_w = array_keys($grouped_sizes_w);
-$display_sizes_fb = array_keys($grouped_sizes_fb);
-$display_sizes_mb = array_keys($grouped_sizes_mb);
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // For Country Liquor - use Spirits sizes
 $display_sizes_country = $display_sizes_s;
@@ -154,26 +154,27 @@ $size_mapping = [
     // Spirits
     '750 ML' => '750 ML',
     '375 ML' => '375 ML',
+    '170 ML' => '180 ML',
     '90 ML' => '90 ML',
     '90 ML-100' => '90 ML',
     '90 ML-96' => '90 ML',
     '2000 ML' => '2000 ML',
     '2000 ML Pet' => '2000 ML',
-    
+
     // Wines
     '750 ML' => '750 ML',
     '375 ML' => '375 ML',
     '650 ML' => '650 ML',
     '330 ML' => '330 ML',
     '180 ML' => '180 ML',
-    
+
     // Fermented Beer
     '650 ML' => '650 ML',
     '500 ML' => '500 ML',
     '500 ML (CAN)' => '500 ML (CAN)',
     '330 ML' => '330 ML',
     '330 ML (CAN)' => '330 ML (CAN)',
-    
+
     // Mild Beer
     '650 ML' => '650 ML',
     '500 ML (CAN)' => '500 ML (CAN)',
@@ -527,6 +528,25 @@ if ($mode == 'Country Liquor') {
     .summary-row {
       background-color: #e9ecef;
       font-weight: bold;
+    }
+    /* Double line separators after each subcategory ends */
+    /* Excise register structure: Date(1), TP(2), Type(3), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27] */
+
+    /* After Spirits (50ml) - column 3+11=14 */
+    .report-table td:nth-child(14) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) - column 14+4=18 */
+    .report-table td:nth-child(18) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) - column 18+6=24 */
+    .report-table td:nth-child(24) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) - column 24+6=30 */
+    .report-table td:nth-child(30) {
+      border-right: double 3px #000;
     }
     .filter-card {
       background-color: #f8f9fa;

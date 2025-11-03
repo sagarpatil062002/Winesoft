@@ -399,6 +399,7 @@ if (isset($_GET['generate'])) {
     .total-row {
       font-weight: bold;
       background-color: #e9ecef;
+      border-bottom: double 3px #000;
     }
     
     .daily-total-row {

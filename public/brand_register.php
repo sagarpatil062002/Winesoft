@@ -637,7 +637,99 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
       font-weight: bold;
       text-align: left;
       padding-left: 10px;
+      border-bottom: double 3px #000;
     }
+
+    /* Double line separators for Brand Register */
+    /* Structure: SrNo(1)+TP(2)+Brand(3)=6, Received[27], Sold[27], Closing[27], Total(1) */
+
+    /* RECEIVED SECTION */
+    /* After Spirits (50ml) in Received - column 6+11=17 */
+    .report-table td:nth-child(17),
+    .report-table th:nth-child(17) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine (90ml) in Received - column 17+4=21 */
+    .report-table td:nth-child(21),
+    .report-table th:nth-child(21) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Fermented Beer (250ml) in Received - column 21+6=27 */
+    .report-table td:nth-child(27),
+    .report-table th:nth-child(27) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Mild Beer (250ml) in Received - column 27+6=33 */
+    .report-table td:nth-child(33),
+    .report-table th:nth-child(33) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Received section (before Sold) - column 33 */
+    .report-table td:nth-child(33),
+    .report-table th:nth-child(33) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* SOLD SECTION */
+    /* After Spirits (50ml) in Sold - column 33+11=44 */
+    .report-table td:nth-child(44),
+    .report-table th:nth-child(44) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine (90ml) in Sold - column 44+4=48 */
+    .report-table td:nth-child(48),
+    .report-table th:nth-child(48) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Fermented Beer (250ml) in Sold - column 48+6=54 */
+    .report-table td:nth-child(54),
+    .report-table th:nth-child(54) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Mild Beer (250ml) in Sold - column 54+6=60 */
+    .report-table td:nth-child(60),
+    .report-table th:nth-child(60) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Sold section (before Closing) - column 60 */
+    .report-table td:nth-child(60),
+    .report-table th:nth-child(60) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* CLOSING BALANCE SECTION */
+    /* After Spirits (50ml) in Closing - column 60+11=71 */
+    .report-table td:nth-child(71),
+    .report-table th:nth-child(71) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine (90ml) in Closing - column 71+4=75 */
+    .report-table td:nth-child(75),
+    .report-table th:nth-child(75) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Fermented Beer (250ml) in Closing - column 75+6=81 */
+    .report-table td:nth-child(81),
+    .report-table th:nth-child(81) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Mild Beer (250ml) in Closing - column 81+6=87 */
+    .report-table td:nth-child(87),
+    .report-table th:nth-child(87) {
+      border-right: double 3px #000 !important;
+    }
+
     .filter-card {
       background-color: #f8f9fa;
     }
@@ -782,6 +874,34 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
         text-align: center;
         margin-top: 3px;
         font-size: 6px;
+      }
+
+      /* Double lines in print */
+      .report-table td:nth-child(17),
+      .report-table th:nth-child(17),
+      .report-table td:nth-child(21),
+      .report-table th:nth-child(21),
+      .report-table td:nth-child(27),
+      .report-table th:nth-child(27),
+      .report-table td:nth-child(33),
+      .report-table th:nth-child(33),
+      .report-table td:nth-child(44),
+      .report-table th:nth-child(44),
+      .report-table td:nth-child(48),
+      .report-table th:nth-child(48),
+      .report-table td:nth-child(54),
+      .report-table th:nth-child(54),
+      .report-table td:nth-child(60),
+      .report-table th:nth-child(60),
+      .report-table td:nth-child(71),
+      .report-table th:nth-child(71),
+      .report-table td:nth-child(75),
+      .report-table th:nth-child(75),
+      .report-table td:nth-child(81),
+      .report-table th:nth-child(81),
+      .report-table td:nth-child(87),
+      .report-table th:nth-child(87) {
+        border-right: double 3px #000 !important;
       }
     }
   </style>
@@ -1423,7 +1543,7 @@ function generateReport() {
 
 function exportToExcel() {
     // Get the table element
-    var table = document.getElementById('brand-register-table');
+    var table = document.querySelector('.report-table');
 
     // Create a new workbook
     var wb = XLSX.utils.book_new();
@@ -1444,7 +1564,7 @@ function exportToExcel() {
 
 function exportToCSV() {
     // Get the table element
-    var table = document.getElementById('brand-register-table');
+    var table = document.querySelector('.report-table');
 
     // Convert table to worksheet
     var ws = XLSX.utils.table_to_sheet(table);
@@ -1456,7 +1576,7 @@ function exportToCSV() {
 
 function exportToPDF() {
     // Use html2pdf library to convert the report section to PDF
-    const element = document.querySelector('.print-section');
+    const element = document.getElementById('reportContent');
     const opt = {
         margin: 0.5,
         filename: 'Brand_Register_<?= date('Y-m-d') ?>.pdf',

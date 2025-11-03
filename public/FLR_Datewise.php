@@ -126,10 +126,10 @@ $grouped_sizes_fb = groupSizes($size_columns_fb);
 $grouped_sizes_mb = groupSizes($size_columns_mb);
 
 // Get display sizes (base sizes) for each liquor type - NEW ORDER: Spirit, Wine, Fermented Beer, Mild Beer
-$display_sizes_s = array_keys($grouped_sizes_s);
-$display_sizes_w = array_keys($grouped_sizes_w);
-$display_sizes_fb = array_keys($grouped_sizes_fb);
-$display_sizes_mb = array_keys($grouped_sizes_mb);
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // Fetch class data to map liquor types
 $classData = [];
@@ -510,6 +510,69 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
     .summary-row {
       background-color: #e9ecef;
       font-weight: bold;
+    }
+    /* Double line separators after each subcategory ends and after category changes */
+    /* FLR Datewise structure: Date(1), Permit(2), Received[Spirits(11)+Wine(4)+FB(6)+MB(6)=27], Sold[27], Closing[27] */
+
+    /* After Spirits (50ml) in Received section - column 2+11=13 */
+    .report-table td:nth-child(13) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) in Received section - column 13+4=17 */
+    .report-table td:nth-child(17) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) in Received section - column 17+6=23 */
+    .report-table td:nth-child(23) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) in Received section - column 23+6=29 */
+    .report-table td:nth-child(29) {
+      border-right: double 3px #000;
+    }
+
+    /* After Received section (before Sold) - column 29 */
+    .report-table td:nth-child(29) {
+      border-right: double 3px #000;
+    }
+
+    /* After Spirits (50ml) in Sold section - column 29+11=40 */
+    .report-table td:nth-child(40) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) in Sold section - column 40+4=44 */
+    .report-table td:nth-child(44) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) in Sold section - column 44+6=50 */
+    .report-table td:nth-child(50) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) in Sold section - column 50+6=56 */
+    .report-table td:nth-child(56) {
+      border-right: double 3px #000;
+    }
+
+    /* After Sold section (before Closing) - column 56 */
+    .report-table td:nth-child(56) {
+      border-right: double 3px #000;
+    }
+
+    /* After Spirits (50ml) in Closing section - column 56+11=67 */
+    .report-table td:nth-child(67) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) in Closing section - column 67+4=71 */
+    .report-table td:nth-child(71) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) in Closing section - column 71+6=77 */
+    .report-table td:nth-child(77) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) in Closing section - column 77+6=83 */
+    .report-table td:nth-child(83) {
+      border-right: double 3px #000;
     }
     .filter-card {
       background-color: #f8f9fa;
@@ -983,190 +1046,190 @@ $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($disp
 <tr class="summary-row">
   <td>Received</td>
   <td></td>
-  
+
   <!-- Received Section - Empty for Received summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Sold Section - Empty for Received summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Closing Balance Section - Show purchase totals -->
   <!-- Spirits Closing -->
   <?php foreach ($display_sizes_s as $size): ?>
     <td><?= $totals['Spirits']['purchase'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Wines Closing -->
   <?php foreach ($display_sizes_w as $size): ?>
     <td><?= $totals['Wines']['purchase'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Fermented Beer Closing -->
   <?php foreach ($display_sizes_fb as $size): ?>
     <td><?= $totals['Fermented Beer']['purchase'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Mild Beer Closing -->
   <?php foreach ($display_sizes_mb as $size): ?>
     <td><?= $totals['Mild Beer']['purchase'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <td>Received</td>
 </tr>
 
 <tr class="summary-row">
   <td>Opening Balance</td>
   <td></td>
-  
+
   <!-- Received Section - Empty for Opening Balance summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Sold Section - Empty for Opening Balance summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Closing Balance Section - Show opening totals -->
   <!-- Spirits Opening -->
   <?php foreach ($display_sizes_s as $size): ?>
     <td><?= $totals['Spirits']['opening'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Wines Opening -->
   <?php foreach ($display_sizes_w as $size): ?>
     <td><?= $totals['Wines']['opening'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Fermented Beer Opening -->
   <?php foreach ($display_sizes_fb as $size): ?>
     <td><?= $totals['Fermented Beer']['opening'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Mild Beer Opening -->
   <?php foreach ($display_sizes_mb as $size): ?>
     <td><?= $totals['Mild Beer']['opening'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <td>Opening Balance</td>
 </tr>
 
 <tr class="summary-row">
   <td>Grand Total</td>
   <td></td>
-  
+
   <!-- Received Section - Empty for Grand Total summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Sold Section - Empty for Grand Total summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Closing Balance Section - Show closing totals -->
   <!-- Spirits Closing -->
   <?php foreach ($display_sizes_s as $size): ?>
     <td><?= $totals['Spirits']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Wines Closing -->
   <?php foreach ($display_sizes_w as $size): ?>
     <td><?= $totals['Wines']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Fermented Beer Closing -->
   <?php foreach ($display_sizes_fb as $size): ?>
     <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Mild Beer Closing -->
   <?php foreach ($display_sizes_mb as $size): ?>
     <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <td>Grand Total</td>
 </tr>
 
 <tr class="summary-row">
   <td>Sold</td>
   <td></td>
-  
+
   <!-- Received Section - Empty for Sold summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Sold Section - Empty for Sold summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Closing Balance Section - Show sales totals -->
   <!-- Spirits Sold -->
   <?php foreach ($display_sizes_s as $size): ?>
     <td><?= $totals['Spirits']['sales'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Wines Sold -->
   <?php foreach ($display_sizes_w as $size): ?>
     <td><?= $totals['Wines']['sales'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Fermented Beer Sold -->
   <?php foreach ($display_sizes_fb as $size): ?>
     <td><?= $totals['Fermented Beer']['sales'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Mild Beer Sold -->
   <?php foreach ($display_sizes_mb as $size): ?>
     <td><?= $totals['Mild Beer']['sales'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <td>Sold</td>
 </tr>
 
 <tr class="summary-row">
   <td>Closing Balance</td>
   <td></td>
-  
+
   <!-- Received Section - Empty for Closing Balance summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Sold Section - Empty for Closing Balance summary -->
   <?php for ($i = 0; $i < $total_columns; $i++): ?>
     <td></td>
   <?php endfor; ?>
-  
+
   <!-- Closing Balance Section - Show closing totals -->
   <!-- Spirits Closing -->
   <?php foreach ($display_sizes_s as $size): ?>
     <td><?= $totals['Spirits']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Wines Closing -->
   <?php foreach ($display_sizes_w as $size): ?>
     <td><?= $totals['Wines']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Fermented Beer Closing -->
   <?php foreach ($display_sizes_fb as $size): ?>
     <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <!-- Mild Beer Closing -->
   <?php foreach ($display_sizes_mb as $size): ?>
     <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
-  
+
   <td>Closing Balance</td>
 </tr>
             </tbody>

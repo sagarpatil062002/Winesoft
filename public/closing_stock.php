@@ -29,6 +29,7 @@ foreach ($available_classes as $class) {
 $date_as_on = isset($_GET['date_as_on']) ? $_GET['date_as_on'] : date('d/m/Y');
 $sequence = isset($_GET['sequence']) ? $_GET['sequence'] : 'U';
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'D'; // D for Detailed, S for Summary
+$rate_type = isset($_GET['rate_type']) ? $_GET['rate_type'] : 'mrp'; // mrp, brate, prate, rrate
 
 // Convert date format for database
 $date_parts = explode('/', $date_as_on);
@@ -48,7 +49,7 @@ $companyResult = $stmt->get_result();
 $company = $companyResult->fetch_assoc();
 $companyName = $company['COMP_NAME'] ?? 'DIAMOND WINE SHOP';
 
-// Function to extract brand name from item details (same as brand_register.php)
+// Function to extract brand name from item details
 function getBrandName($details) {
     // Remove size patterns (ML, CL, L, etc. with numbers)
     $brandName = preg_replace('/\s*\d+\s*(ML|CL|L).*$/i', '', $details);
@@ -57,7 +58,7 @@ function getBrandName($details) {
     return trim($brandName);
 }
 
-// Function to group sizes by base size (same as FLR Datewise)
+// Function to group sizes by base size
 function getBaseSize($size) {
     // Extract the base size (everything before any special characters after ML)
     $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
@@ -67,7 +68,7 @@ function getBaseSize($size) {
     return trim($baseSize);
 }
 
-// Define size columns for each liquor type exactly as they appear in FLR Datewise
+// Define size columns for each liquor type
 $size_columns_s = [
     '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
     '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
@@ -81,7 +82,7 @@ $size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'
 $size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
 $size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
 
-// Group sizes by base size for each liquor type (same as FLR Datewise)
+// Group sizes by base size for each liquor type
 function groupSizes($sizes) {
     $grouped = [];
     foreach ($sizes as $size) {
@@ -99,13 +100,13 @@ $grouped_sizes_w = groupSizes($size_columns_w);
 $grouped_sizes_fb = groupSizes($size_columns_fb);
 $grouped_sizes_mb = groupSizes($size_columns_mb);
 
-// Get display sizes (base sizes) for each liquor type - NEW ORDER: Spirit, Wine, Fermented Beer, Mild Beer
+// Get display sizes (base sizes) for each liquor type
 $display_sizes_s = array_keys($grouped_sizes_s);
 $display_sizes_w = array_keys($grouped_sizes_w);
 $display_sizes_fb = array_keys($grouped_sizes_fb);
 $display_sizes_mb = array_keys($grouped_sizes_mb);
 
-// Function to determine liquor type based on CLASS and LIQ_FLAG (same as FLR Datewise)
+// Function to determine liquor type based on CLASS and LIQ_FLAG
 function getLiquorType($class, $liq_flag) {
     if ($liq_flag == 'F') {
         switch ($class) {
@@ -118,13 +119,13 @@ function getLiquorType($class, $liq_flag) {
     return 'Spirits'; // Default for non-F items
 }
 
-// Function to get grouped size for display (same as FLR Datewise)
+// Function to get grouped size for display
 function getGroupedSize($size, $liquor_type) {
     global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
     
     $baseSize = getBaseSize($size);
     
-    // Check if this base size exists in the appropriate group - NEW ORDER
+    // Check if this base size exists in the appropriate group
     switch ($liquor_type) {
         case 'Spirits':
             if (in_array($baseSize, array_keys($grouped_sizes_s))) {
@@ -151,11 +152,26 @@ function getGroupedSize($size, $liquor_type) {
     return $baseSize; // Return base size even if not found in predefined groups
 }
 
+// Function to get rate based on rate type
+function getItemRate($item, $rate_type) {
+    switch ($rate_type) {
+        case 'prate': // Purchase Rate
+            return $item['PPRICE'] ?? 0;
+        case 'rrate': // Retail Rate
+            return $item['RPRICE'] ?? $item['MPRICE'] ?? 0;
+        case 'brate': // Base Rate
+            return $item['BPRICE'] ?? 0;
+        case 'mrp': // MRP Rate (default)
+        default:
+            return $item['MPRICE'] ?? 0;
+    }
+}
+
 // Fetch items with closing stock - FILTERED BY LICENSE TYPE
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
+                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.MPRICE, im.RPRICE, im.LIQ_FLAG,
                      ds.DAY_{$day}_CLOSING as CLOSING_STOCK
               FROM tblitemmaster im
               LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
@@ -169,7 +185,7 @@ if (!empty($allowed_classes)) {
 } else {
     // If no classes allowed, show empty result
     $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
+                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.MPRICE, im.RPRICE, im.LIQ_FLAG,
                      ds.DAY_{$day}_CLOSING as CLOSING_STOCK
               FROM tblitemmaster im
               LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
@@ -183,7 +199,8 @@ $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 
-// NEW: Restructure data by liquor type -> brand (similar to brand_register.php)
+// Initialize variables for detailed and summary reports
+$detailed_data = [];
 $brand_data_by_category = [
     'Spirits' => [],
     'Wines' => [],
@@ -199,18 +216,47 @@ $liquor_type_sizes = [
     'Mild Beer' => $display_sizes_mb
 ];
 
+// Process items for both detailed and summary reports
 foreach ($items as $item) {
     $liquor_type = getLiquorType($item['CLASS'], $item['LIQ_FLAG']);
     $size = $item['DETAILS2'] ?? '';
+    $closing_stock = (float)$item['CLOSING_STOCK'];
     
-    // Extract brand name (same as brand_register.php)
+    // Skip items with zero closing stock
+    if ($closing_stock <= 0) continue;
+    
+    // Get rate based on selected rate type
+    $rate = getItemRate($item, $rate_type);
+    $amount = $rate * $closing_stock;
+    
+    // Extract brand name
     $brandName = getBrandName($item['DETAILS']);
     if (empty($brandName)) continue;
     
     // Get grouped size for display
     $grouped_size = getGroupedSize($size, $liquor_type);
     
-    // Only include if the grouped size exists in our display sizes for this liquor type
+    // Add to detailed data
+    $detailed_data[] = [
+        'CODE' => $item['CODE'],
+        'ItemName' => $item['Print_Name'] ?: $item['DETAILS'],
+        'ItemSize' => $size,
+        'GroupedSize' => $grouped_size,
+        'BrandName' => $brandName,
+        'LiquorType' => $liquor_type,
+        'CLASS' => $item['CLASS'],
+        'SUB_CLASS' => $item['SUB_CLASS'],
+        'ITEM_GROUP' => $item['ITEM_GROUP'],
+        'ClosingStock' => $closing_stock,
+        'Rate' => $rate,
+        'Amount' => $amount,
+        'PPRICE' => $item['PPRICE'] ?? 0,
+        'BPRICE' => $item['BPRICE'] ?? 0,
+        'MPRICE' => $item['MPRICE'] ?? 0,
+        'RPRICE' => $item['RPRICE'] ?? 0
+    ];
+    
+    // Add to summary data (only if the grouped size exists in our display sizes for this liquor type)
     if (in_array($grouped_size, $liquor_type_sizes[$liquor_type])) {
         // Initialize brand data if not exists
         if (!isset($brand_data_by_category[$liquor_type][$brandName])) {
@@ -218,11 +264,11 @@ foreach ($items as $item) {
         }
         
         // Add closing stock to the brand and size
-        $brand_data_by_category[$liquor_type][$brandName][$grouped_size] += (float)$item['CLOSING_STOCK'];
+        $brand_data_by_category[$liquor_type][$brandName][$grouped_size] += $closing_stock;
     }
 }
 
-// Calculate totals for each liquor type
+// Calculate totals for each liquor type in summary report
 $liquor_type_totals = [
     'Spirits' => array_fill_keys($display_sizes_s, 0),
     'Wines' => array_fill_keys($display_sizes_w, 0),
@@ -238,6 +284,14 @@ foreach ($brand_data_by_category as $liquor_type => $brands) {
             }
         }
     }
+}
+
+// Calculate totals for detailed report
+$detailed_total_stock = 0;
+$detailed_total_amount = 0;
+foreach ($detailed_data as $item) {
+    $detailed_total_stock += $item['ClosingStock'];
+    $detailed_total_amount += $item['Amount'];
 }
 
 // Country liquor items (if any)
@@ -323,6 +377,12 @@ sort($country_sizes);
         margin-bottom: 15px;
         border-radius: 4px;
     }
+    .text-right {
+        text-align: right;
+    }
+    .text-center {
+        text-align: center;
+    }
     @media print {
         .no-print {
             display: none !important;
@@ -376,6 +436,16 @@ sort($country_sizes);
             </div>
             
             <div class="col-md-3">
+              <label class="form-label">Rate Type:</label>
+              <select name="rate_type" class="form-select">
+                <option value="mrp" <?= $rate_type === 'mrp' ? 'selected' : '' ?>>MRP Rate</option>
+                <option value="brate" <?= $rate_type === 'brate' ? 'selected' : '' ?>>Base Rate</option>
+                <option value="prate" <?= $rate_type === 'prate' ? 'selected' : '' ?>>Purchase Rate</option>
+                <option value="rrate" <?= $rate_type === 'rrate' ? 'selected' : '' ?>>Retail Rate</option>
+              </select>
+            </div>
+            
+            <div class="col-md-3">
               <label class="form-label">Sequence:</label>
               <div class="btn-group w-100" role="group">
                 <button type="submit" name="sequence" value="U" 
@@ -403,7 +473,7 @@ sort($country_sizes);
               </div>
             </div>
             
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-12 d-flex align-items-end">
               <button type="submit" class="btn btn-primary me-2">
                 <i class="fas fa-filter"></i> Apply
               </button>
@@ -435,126 +505,205 @@ sort($country_sizes);
             <h2><?= htmlspecialchars($companyName) ?></h2>
             <p>License Type: <?= htmlspecialchars($license_type) ?></p>
             <p>Item Wise Closing Stock Statement As On <?= date('d-M-Y', strtotime($db_date)) ?></p>
+            <p>Rate Type: <?= 
+                $rate_type === 'mrp' ? 'MRP Rate' : 
+                ($rate_type === 'brate' ? 'Base Rate' : 
+                ($rate_type === 'prate' ? 'Purchase Rate' : 'Retail Rate'))
+            ?></p>
           </div>
         </div>
 
-        <?php foreach ($brand_data_by_category as $liquor_type => $brands): 
-            if (!empty($brands)): 
-                $display_sizes = $liquor_type_sizes[$liquor_type];
-        ?>
-        <div class="category-section">
-          <h4 class="brand-header"><?= strtoupper($liquor_type) ?></h4>
+        <?php if ($mode === 'D'): ?>
+          <!-- Detailed Report -->
           <div class="table-container">
             <table class="report-table">
               <thead>
                 <tr>
                   <th>Sr. No.</th>
+                  <th>Item Code</th>
+                  <th>Item Description</th>
+                  <th>Size</th>
                   <th>Brand Name</th>
-                  <?php foreach ($display_sizes as $size): ?>
-                    <th class="size-column"><?= $size ?></th>
-                  <?php endforeach; ?>
-                  <th class="size-column">Total</th>
+                  <th>Liquor Type</th>
+                  <th>Closing Stock</th>
+                  <th class="text-right">Rate (<?= 
+                      $rate_type === 'mrp' ? 'MRP' : 
+                      ($rate_type === 'brate' ? 'Base' : 
+                      ($rate_type === 'prate' ? 'Purchase' : 'Retail'))
+                  ?>)</th>
+                  <th class="text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
                 $sr_no = 1;
-                ksort($brands);
-                foreach ($brands as $brand => $sizes):
-                    $brand_total = 0;
+                // Sort detailed data based on sequence
+                if ($sequence === 'S') {
+                    usort($detailed_data, function($a, $b) {
+                        return strcmp($a['LiquorType'], $b['LiquorType']) ?: 
+                               strcmp($a['BrandName'], $b['BrandName']) ?:
+                               strcmp($a['ItemName'], $b['ItemName']);
+                    });
+                }
+                
+                $current_liquor_type = '';
+                foreach ($detailed_data as $item):
+                    if ($current_liquor_type !== $item['LiquorType']):
+                        $current_liquor_type = $item['LiquorType'];
                 ?>
+                <tr class="subclass-header">
+                  <td colspan="9" style="background-color: #f0f0f0; font-weight: bold;">
+                    <?= strtoupper($current_liquor_type) ?>
+                  </td>
+                </tr>
+                <?php endif; ?>
+                
                 <tr>
                   <td><?= $sr_no++ ?></td>
-                  <td><?= htmlspecialchars($brand) ?></td>
-                  <?php foreach ($display_sizes as $size): 
-                      $quantity = $sizes[$size] ?? 0;
-                      $brand_total += $quantity;
-                  ?>
-                    <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
-                  <?php endforeach; ?>
-                  <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
+                  <td><?= htmlspecialchars($item['CODE']) ?></td>
+                  <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                  <td class="text-center"><?= htmlspecialchars($item['ItemSize']) ?></td>
+                  <td><?= htmlspecialchars($item['BrandName']) ?></td>
+                  <td><?= htmlspecialchars($item['LiquorType']) ?></td>
+                  <td class="text-right"><?= number_format($item['ClosingStock'], 0) ?></td>
+                  <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
+                  <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
                 </tr>
                 <?php endforeach; ?>
                 
                 <!-- Total Row -->
                 <tr class="total-row">
-                  <td colspan="2" style="font-weight: bold;">Total</td>
+                  <td colspan="6" class="text-end"><strong>Grand Total:</strong></td>
+                  <td class="text-right"><strong><?= number_format($detailed_total_stock, 0) ?></strong></td>
+                  <td></td>
+                  <td class="text-right"><strong><?= number_format($detailed_total_amount, 2) ?></strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        <?php else: ?>
+          <!-- Summary Report -->
+          <?php foreach ($brand_data_by_category as $liquor_type => $brands): 
+              if (!empty($brands)): 
+                  $display_sizes = $liquor_type_sizes[$liquor_type];
+          ?>
+          <div class="category-section">
+            <h4 class="brand-header"><?= strtoupper($liquor_type) ?></h4>
+            <div class="table-container">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Sr. No.</th>
+                    <th>Brand Name</th>
+                    <?php foreach ($display_sizes as $size): ?>
+                      <th class="size-column"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <th class="size-column">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  $sr_no = 1;
+                  ksort($brands);
+                  foreach ($brands as $brand => $sizes):
+                      $brand_total = 0;
+                  ?>
+                  <tr>
+                    <td><?= $sr_no++ ?></td>
+                    <td><?= htmlspecialchars($brand) ?></td>
+                    <?php foreach ($display_sizes as $size): 
+                        $quantity = $sizes[$size] ?? 0;
+                        $brand_total += $quantity;
+                    ?>
+                      <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
+                    <?php endforeach; ?>
+                    <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                  
+                  <!-- Total Row -->
+                  <tr class="total-row">
+                    <td colspan="2" style="font-weight: bold;">Total</td>
+                    <?php 
+                    $category_total = 0;
+                    foreach ($display_sizes as $size): 
+                        $size_total = $liquor_type_totals[$liquor_type][$size] ?? 0;
+                        $category_total += $size_total;
+                    ?>
+                      <td class="size-column" style="font-weight: bold;">
+                        <?= $size_total > 0 ? number_format($size_total, 0) : '' ?>
+                      </td>
+                    <?php endforeach; ?>
+                    <td class="size-column" style="font-weight: bold;"><?= $category_total > 0 ? number_format($category_total, 0) : '' ?></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <?php endif; endforeach; ?>
+          
+          <!-- Country Liquor Section (if needed) -->
+          <?php if (!empty($country_brands)): ?>
+          <div class="category-section">
+            <h4 class="brand-header">COUNTRY LIQUOR</h4>
+            <div class="table-container">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Sr. No.</th>
+                    <th>Brand Name</th>
+                    <?php foreach ($country_sizes as $size): ?>
+                      <th class="size-column"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <th class="size-column">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php
+                  $sr_no = 1;
+                  ksort($country_brands);
+                  $country_totals = array_fill_keys($country_sizes, 0);
+                  $country_grand_total = 0;
+                  
+                  foreach ($country_brands as $brand => $sizes):
+                      $brand_total = 0;
+                  ?>
+                  <tr>
+                    <td><?= $sr_no++ ?></td>
+                    <td><?= htmlspecialchars($brand) ?></td>
+                    <?php foreach ($country_sizes as $size): 
+                        $quantity = $sizes[$size] ?? 0;
+                        $brand_total += $quantity;
+                        $country_totals[$size] += $quantity;
+                    ?>
+                      <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
+                    <?php endforeach; ?>
+                    <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
+                  </tr>
                   <?php 
-                  $category_total = 0;
-                  foreach ($display_sizes as $size): 
-                      $size_total = $liquor_type_totals[$liquor_type][$size] ?? 0;
-                      $category_total += $size_total;
-                  ?>
-                    <td class="size-column" style="font-weight: bold;">
-                      <?= $size_total > 0 ? number_format($size_total, 0) : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                  <td class="size-column" style="font-weight: bold;"><?= $category_total > 0 ? number_format($category_total, 0) : '' ?></td>
-                </tr>
-              </tbody>
-            </table>
+                      $country_grand_total += $brand_total;
+                  endforeach; ?>
+                  
+                  <!-- Country Liquor Total Row -->
+                  <tr class="total-row">
+                    <td colspan="2" style="font-weight: bold;">Total</td>
+                    <?php foreach ($country_sizes as $size): ?>
+                      <td class="size-column" style="font-weight: bold;">
+                        <?= $country_totals[$size] > 0 ? number_format($country_totals[$size], 0) : '' ?>
+                      </td>
+                    <?php endforeach; ?>
+                    <td class="size-column" style="font-weight: bold;"><?= $country_grand_total > 0 ? number_format($country_grand_total, 0) : '' ?></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <?php endif; endforeach; ?>
-        
-        <!-- Country Liquor Section (if needed) -->
-        <?php if (!empty($country_brands)): ?>
-        <div class="category-section">
-          <h4 class="brand-header">COUNTRY LIQUOR</h4>
-          <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Sr. No.</th>
-                  <th>Brand Name</th>
-                  <?php foreach ($country_sizes as $size): ?>
-                    <th class="size-column"><?= $size ?></th>
-                  <?php endforeach; ?>
-                  <th class="size-column">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php
-                $sr_no = 1;
-                ksort($country_brands);
-                $country_totals = array_fill_keys($country_sizes, 0);
-                $country_grand_total = 0;
-                
-                foreach ($country_brands as $brand => $sizes):
-                    $brand_total = 0;
-                ?>
-                <tr>
-                  <td><?= $sr_no++ ?></td>
-                  <td><?= htmlspecialchars($brand) ?></td>
-                  <?php foreach ($country_sizes as $size): 
-                      $quantity = $sizes[$size] ?? 0;
-                      $brand_total += $quantity;
-                      $country_totals[$size] += $quantity;
-                  ?>
-                    <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
-                  <?php endforeach; ?>
-                  <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
-                </tr>
-                <?php 
-                    $country_grand_total += $brand_total;
-                endforeach; ?>
-                
-                <!-- Country Liquor Total Row -->
-                <tr class="total-row">
-                  <td colspan="2" style="font-weight: bold;">Total</td>
-                  <?php foreach ($country_sizes as $size): ?>
-                    <td class="size-column" style="font-weight: bold;">
-                      <?= $country_totals[$size] > 0 ? number_format($country_totals[$size], 0) : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                  <td class="size-column" style="font-weight: bold;"><?= $country_grand_total > 0 ? number_format($country_grand_total, 0) : '' ?></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <?php endif; ?>
         <?php endif; ?>
         
+        <div class="footer-info">
+          Generated on: <?= date('d-M-Y h:i A') ?> | Generated by: <?= $_SESSION['username'] ?? 'System' ?>
+        </div>
       </div>
     </div>
     <?php include 'components/footer.php'; ?>
@@ -571,9 +720,14 @@ function generateReport() {
 
 // Initialize datepicker if you have one
 $(document).ready(function() {
-  $('.datepicker').datepicker({
-    format: 'dd/mm/yyyy',
-    autoclose: true
+  // Simple date validation for DD/MM/YYYY format
+  $('.datepicker').on('change', function() {
+    var date = $(this).val();
+    var regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(date)) {
+      alert('Please enter date in DD/MM/YYYY format');
+      $(this).focus();
+    }
   });
 });
 </script>

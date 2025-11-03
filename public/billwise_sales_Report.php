@@ -16,8 +16,10 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Default values
-$report_date = isset($_GET['report_date']) ? $_GET['report_date'] : date('Y-m-d');
+// Default values - set to current month range
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+$user_id = isset($_GET['user_id']) ? $_GET['user_id'] : 'all';
 
 // Fetch company name
 $companyName = "DIAMOND WINE SHOP"; // Default
@@ -31,8 +33,21 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Generate report data based on filters
-$report_data = [];
+// Fetch users for dropdown
+$users = [];
+$userQuery = "SELECT id, username FROM users WHERE company_id = ? ORDER BY username";
+$userStmt = $conn->prepare($userQuery);
+$userStmt->bind_param("i", $compID);
+$userStmt->execute();
+$userResult = $userStmt->get_result();
+while ($row = $userResult->fetch_assoc()) {
+    $users[] = $row;
+}
+$userStmt->close();
+
+// Initialize report data
+$user_summary = [];
+$bill_details = [];
 $overall_total = 0;
 $prev_balance = 0;
 $credit_sales = 0;
@@ -42,8 +57,61 @@ $discount = 0;
 $total_cash = 0;
 
 if (isset($_GET['generate'])) {
-   // Build the query to get customer sales data
-$customer_sales_query = "SELECT
+    // Get user-wise summary data
+    $user_summary_query = "SELECT 
+        u.id as UserID,
+        u.username as UserName,
+        COALESCE(SUM(retail_sales.TotalAmount), 0) + COALESCE(SUM(customer_sales.TotalAmount), 0) as TotalAmount
+    FROM users u
+    LEFT JOIN (
+        -- Retail sales from tblsaleheader and tblsaledetails
+        SELECT 
+            sh.CREATED_BY as UserID,
+            SUM(sd.AMOUNT) as TotalAmount
+        FROM tblsaleheader sh
+        INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
+        WHERE sh.BILL_DATE BETWEEN ? AND ? AND sh.COMP_ID = ?
+        GROUP BY sh.CREATED_BY
+    ) as retail_sales ON u.id = retail_sales.UserID
+    LEFT JOIN (
+        -- Customer sales from tblcustomersales
+        SELECT 
+            cs.UserID,
+            SUM(cs.Amount) as TotalAmount
+        FROM tblcustomersales cs
+        WHERE cs.BillDate BETWEEN ? AND ? AND cs.CompID = ?
+        GROUP BY cs.UserID
+    ) as customer_sales ON u.id = customer_sales.UserID
+    WHERE u.company_id = ?";
+    
+    $params = [$start_date, $end_date, $compID, $start_date, $end_date, $compID, $compID];
+    $types = "ssisssi";
+    
+    if ($user_id !== 'all') {
+        $user_summary_query .= " AND u.id = ?";
+        $params[] = $user_id;
+        $types .= "i";
+    }
+    
+    $user_summary_query .= " GROUP BY u.id, u.username ORDER BY u.username";
+    
+    $stmt = $conn->prepare($user_summary_query);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $user_summary[] = $row;
+        $overall_total += $row['TotalAmount'];
+    }
+    $stmt->close();
+    
+    // Get detailed bill data for each user
+    foreach ($user_summary as $user) {
+        $user_id_filter = $user['UserID'];
+        
+        // Customer sales data
+        $customer_sales_query = "SELECT
             cs.BillNo,
             cs.BillDate,
             cs.LCode,
@@ -60,39 +128,40 @@ $customer_sales_query = "SELECT
           INNER JOIN tbllheads l ON cs.LCode = l.LCODE
           LEFT JOIN tblitemmaster im ON cs.ItemCode = im.CODE
           LEFT JOIN users u ON cs.UserID = u.id
-          WHERE cs.BillDate = ? AND cs.CompID = ?
+          WHERE cs.BillDate BETWEEN ? AND ? AND cs.CompID = ? AND cs.UserID = ?
           ORDER BY cs.BillNo, cs.CreatedDate";
-    
-    $stmt = $conn->prepare($customer_sales_query);
-    $stmt->bind_param("si", $report_date, $compID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // Organize customer sales data by bill and user
-    while ($row = $result->fetch_assoc()) {
-        $bill_no = $row['BillNo'];
-        $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
         
-        if (!isset($report_data[$bill_no])) {
-            $report_data[$bill_no] = [
-                'type' => 'customer',
-                'customer' => $row['CustomerName'],
-                'user' => $user_name,
-                'items' => [],
-                'total' => 0
-            ];
+        $stmt = $conn->prepare($customer_sales_query);
+        $stmt->bind_param("ssii", $start_date, $end_date, $compID, $user_id_filter);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $bill_no = $row['BillNo'];
+            $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
+            
+            if (!isset($bill_details[$user_id_filter])) {
+                $bill_details[$user_id_filter] = [];
+            }
+            
+            if (!isset($bill_details[$user_id_filter][$bill_no])) {
+                $bill_details[$user_id_filter][$bill_no] = [
+                    'type' => 'customer',
+                    'customer' => $row['CustomerName'],
+                    'user' => $user_name,
+                    'bill_date' => $row['BillDate'],
+                    'items' => [],
+                    'total' => 0
+                ];
+            }
+            
+            $bill_details[$user_id_filter][$bill_no]['items'][] = $row;
+            $bill_details[$user_id_filter][$bill_no]['total'] += $row['Amount'];
         }
+        $stmt->close();
         
-        $report_data[$bill_no]['items'][] = $row;
-        $report_data[$bill_no]['total'] += $row['Amount'];
-        
-        $overall_total += $row['Amount'];
-    }
-    
-    $stmt->close();
-    
-    // Get retail sales data with actual item details
-    $retail_sales_query = "SELECT
+        // Retail sales data
+        $retail_sales_query = "SELECT
                 sh.BILL_NO as BillNo,
                 sh.BILL_DATE as BillDate,
                 'RETAIL SALE' as CustomerName,
@@ -108,39 +177,38 @@ $customer_sales_query = "SELECT
             INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
             LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
             LEFT JOIN users u ON sh.CREATED_BY = u.id
-            WHERE sh.BILL_DATE = ? AND sh.COMP_ID = ?
+            WHERE sh.BILL_DATE BETWEEN ? AND ? AND sh.COMP_ID = ? AND sh.CREATED_BY = ?
             ORDER BY sh.BILL_NO, sh.CREATED_DATE";
-    
-    $stmt = $conn->prepare($retail_sales_query);
-    $stmt->bind_param("si", $report_date, $compID);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    // Organize retail sales data by bill and user
-    while ($row = $result->fetch_assoc()) {
-        $bill_no = $row['BillNo'];
-        $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
         
-        if (!isset($report_data[$bill_no])) {
-            $report_data[$bill_no] = [
-                'type' => 'retail',
-                'customer' => $row['CustomerName'],
-                'user' => $user_name,
-                'items' => [],
-                'total' => 0
-            ];
+        $stmt = $conn->prepare($retail_sales_query);
+        $stmt->bind_param("ssii", $start_date, $end_date, $compID, $user_id_filter);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($row = $result->fetch_assoc()) {
+            $bill_no = $row['BillNo'];
+            $user_name = $row['UserName'] ? $row['UserName'] : 'Unknown';
+            
+            if (!isset($bill_details[$user_id_filter])) {
+                $bill_details[$user_id_filter] = [];
+            }
+            
+            if (!isset($bill_details[$user_id_filter][$bill_no])) {
+                $bill_details[$user_id_filter][$bill_no] = [
+                    'type' => 'retail',
+                    'customer' => $row['CustomerName'],
+                    'user' => $user_name,
+                    'bill_date' => $row['BillDate'],
+                    'items' => [],
+                    'total' => 0
+                ];
+            }
+            
+            $bill_details[$user_id_filter][$bill_no]['items'][] = $row;
+            $bill_details[$user_id_filter][$bill_no]['total'] += $row['Amount'];
         }
-        
-        $report_data[$bill_no]['items'][] = $row;
-        $report_data[$bill_no]['total'] += $row['Amount'];
-        
-        $overall_total += $row['Amount'];
+        $stmt->close();
     }
-    
-    $stmt->close();
-    
-    // Sort bills by bill number
-    ksort($report_data);
     
     // For demo purposes, setting some values - these would normally come from database
     $credit_sales = $overall_total;
@@ -152,12 +220,28 @@ $customer_sales_query = "SELECT
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Billwise Sales Report - WineSoft</title>
+  <title>Combined Sales Report - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+  <style>
+    .section-title {
+        background-color: #f8f9fa;
+        padding: 8px 15px;
+        margin: 20px 0 10px 0;
+        border-left: 4px solid #007bff;
+        font-weight: bold;
+    }
+    .user-section {
+        background-color: #e9ecef;
+        padding: 6px 12px;
+        margin: 15px 0 8px 0;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -167,7 +251,7 @@ $customer_sales_query = "SELECT
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Billwise Sales Report</h3>
+      <h3 class="mb-4">Combined Sales Report</h3>
 
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -176,8 +260,23 @@ $customer_sales_query = "SELECT
           <form method="GET" class="report-filters">
             <div class="row mb-3">
               <div class="col-md-3">
-                <label class="form-label">Report Date:</label>
-                <input type="date" name="report_date" class="form-control" value="<?= htmlspecialchars($report_date) ?>">
+                <label class="form-label">Start Date:</label>
+                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">End Date:</label>
+                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">User:</label>
+                <select name="user_id" class="form-select">
+                  <option value="all" <?= $user_id === 'all' ? 'selected' : '' ?>>All Users</option>
+                  <?php foreach ($users as $user): ?>
+                    <option value="<?= htmlspecialchars($user['id']) ?>" <?= $user_id == $user['id'] ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($user['username']) ?>
+                    </option>
+                  <?php endforeach; ?>
+                </select>
               </div>
             </div>
             
@@ -201,75 +300,86 @@ $customer_sales_query = "SELECT
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
-            <h5>Bill Wise Sales Report For <?= date('d-M-Y', strtotime($report_date)) ?></h5>
+            <h5>Combined Sales Report For Period: <?= date('d-M-Y', strtotime($start_date)) ?> to <?= date('d-M-Y', strtotime($end_date)) ?></h5>
           </div>
           
           <div class="table-container">
-            <?php if (!empty($report_data)): ?>
-              <?php foreach ($report_data as $bill_no => $bill_data): ?>
+            <?php if (!empty($user_summary)): ?>
+              <!-- User-wise Summary Section -->
+              <div class="section-title">User Wise Summary</div>
               <table class="report-table mb-4">
                 <thead>
-                  <tr class="bill-header">
-                    <td colspan="6">
-                      <strong>Bill No:</strong> <?= $bill_no ?> | 
-                      <strong>Type:</strong> <?= $bill_data['type'] == 'customer' ? 'CUSTOMER SALE' : 'RETAIL SALE' ?> | 
-                      <strong>Customer:</strong> <?= htmlspecialchars($bill_data['customer']) ?> | 
-                      <strong>User:</strong> <?= htmlspecialchars($bill_data['user']) ?>
-                    </td>
-                  </tr>
                   <tr>
-                    <th>Item Code</th>
-                    <th>Item Name</th>
-                    <th>Size</th>
-                    <th class="text-right">Rate</th>
-                    <th class="text-right">Qty</th>
-                    <th class="text-right">Amount</th>
+                    <th class="text-center">S. No.</th>
+                    <th>User Name</th>
+                    <th class="text-right">Total Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <?php foreach ($bill_data['items'] as $item): ?>
-                  <tr>
-                    <td><?= htmlspecialchars($item['ItemCode']) ?></td>
-                    <td><?= htmlspecialchars($item['ItemName']) ?></td>
-                    <td><?= htmlspecialchars($item['ItemSize']) ?></td>
-                    <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
-                    <td class="text-right"><?= $item['Quantity'] ?></td>
-                    <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
-                  </tr>
+                  <?php 
+                  $sno = 1;
+                  foreach ($user_summary as $user): 
+                  ?>
+                    <tr>
+                      <td class="text-center"><?= $sno++ ?></td>
+                      <td><?= htmlspecialchars($user['UserName']) ?></td>
+                      <td class="text-right"><?= number_format($user['TotalAmount'], 2) ?></td>
+                    </tr>
                   <?php endforeach; ?>
+                  
                   <tr class="total-row">
-                    <td colspan="5" class="text-end"><strong>Bill Total:</strong></td>
-                    <td class="text-right"><strong><?= number_format($bill_data['total'], 2) ?></strong></td>
-                  </tr>
-                </tbody>
-              </table>
-              <?php endforeach; ?>
-              
-              <!-- Grand Total -->
-              <table class="report-table">
-                <thead>
-                  <tr>
-                    <th colspan="2">Summary</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr class="total-row">
-                    <td class="text-end"><strong>Grand Total:</strong></td>
+                    <td colspan="2" class="text-end"><strong>Grand Total:</strong></td>
                     <td class="text-right"><strong><?= number_format($overall_total, 2) ?></strong></td>
                   </tr>
                 </tbody>
               </table>
               
-              <!-- Financial summary -->
-              <table class="report-table mt-4">
-                <thead>
-                  <tr>
-                    <th colspan="2">Financial Summary</th>
-                  </tr>
-                </thead>
+              <!-- Bill-wise Details Section -->
+              <div class="section-title">Bill Wise Details</div>
+              <?php foreach ($user_summary as $user): ?>
+                <?php if (isset($bill_details[$user['UserID']]) && !empty($bill_details[$user['UserID']])): ?>
+                  <div class="user-section">User: <?= htmlspecialchars($user['UserName']) ?></div>
+                  
+                  <?php foreach ($bill_details[$user['UserID']] as $bill_no => $bill_data): ?>
+                  <!-- REMOVED BILL HEADER INFORMATION - Only show the items table -->
+                  <table class="report-table mb-4">
+                    <thead>
+                      <tr>
+                        <th>Item Code</th>
+                        <th>Item Name</th>
+                        <th>Size</th>
+                        <th class="text-right">Rate</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <?php foreach ($bill_data['items'] as $item): ?>
+                      <tr>
+                        <td><?= htmlspecialchars($item['ItemCode']) ?></td>
+                        <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                        <td><?= htmlspecialchars($item['ItemSize']) ?></td>
+                        <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
+                        <td class="text-right"><?= $item['Quantity'] ?></td>
+                        <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
+                      </tr>
+                      <?php endforeach; ?>
+                      <tr class="total-row">
+                        <td colspan="5" class="text-end"><strong>Bill Total:</strong></td>
+                        <td class="text-right"><strong><?= number_format($bill_data['total'], 2) ?></strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              <?php endforeach; ?>
+              
+              <!-- Financial Summary -->
+              <div class="section-title">Financial Summary</div>
+              <table class="report-table">
                 <tbody>
                   <tr>
-                    <td class="text-end">Prev. Bal.:</td>
+                    <td class="text-end">Previous Balance:</td>
                     <td class="text-right"><?= number_format($prev_balance, 2) ?></td>
                   </tr>
                   <tr>
@@ -296,12 +406,11 @@ $customer_sales_query = "SELECT
               </table>
             <?php else: ?>
               <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i> No sales records found for the selected date.
+                <i class="fas fa-info-circle me-2"></i> No sales records found for the selected criteria.
               </div>
             <?php endif; ?>
           </div>
-          
-         
+        </div>
       <?php endif; ?>
     </div>
     

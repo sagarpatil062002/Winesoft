@@ -82,24 +82,30 @@ if (isset($_GET['generate'])) {
         $selectedDate = new DateTime($date);
         $day = $selectedDate->format('d');
         $dayField = 'DAY_' . str_pad($day, 2, '0', STR_PAD_LEFT);
+        $month = $selectedDate->format('Y-m');
         
-        // Build query to get item details - FILTERED BY LICENSE TYPE
+        // Build query to get item details with stock data in single query - FILTERED BY LICENSE TYPE
         $itemQuery = "SELECT 
-            CODE as ITEM_CODE,
-            DETAILS as ITEM_NAME,
-            DETAILS2 as ITEM_SIZE,
-            DETAILS as BRAND,
-            LIQ_FLAG
-        FROM tblitemmaster 
+            im.CODE as ITEM_CODE,
+            im.DETAILS as ITEM_NAME,
+            im.DETAILS2 as ITEM_SIZE,
+            im.DETAILS as BRAND,
+            im.LIQ_FLAG,
+            ds.{$dayField}_OPEN as OP_STOCK,
+            ds.{$dayField}_PURCHASE as RECEIPTS,
+            ds.{$dayField}_SALES as ISSUES,
+            ds.{$dayField}_CLOSING as CL_STOCK
+        FROM tblitemmaster im
+        LEFT JOIN $dailyStockTable ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
         WHERE 1=1";
         
-        $params = [];
-        $types = "";
+        $params = [$month];
+        $types = "s";
         
         // Add license type filtering
         if (!empty($allowed_classes)) {
             $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-            $itemQuery .= " AND CLASS IN ($class_placeholders)";
+            $itemQuery .= " AND im.CLASS IN ($class_placeholders)";
             $params = array_merge($params, $allowed_classes);
             $types .= str_repeat('s', count($allowed_classes));
         } else {
@@ -108,18 +114,21 @@ if (isset($_GET['generate'])) {
         }
         
         if ($liquor_mode !== 'all') {
-            $itemQuery .= " AND LIQ_FLAG = ?";
+            $itemQuery .= " AND im.LIQ_FLAG = ?";
             $params[] = $liquor_mode;
             $types .= "s";
         }
         
         if ($brand !== 'all') {
-            $itemQuery .= " AND DETAILS = ?";
+            $itemQuery .= " AND im.DETAILS = ?";
             $params[] = $brand;
             $types .= "s";
         }
         
-        $itemQuery .= " ORDER BY DETAILS, DETAILS2";
+        // Only include items that have stock data
+        $itemQuery .= " AND (ds.{$dayField}_OPEN IS NOT NULL OR ds.{$dayField}_PURCHASE IS NOT NULL OR ds.{$dayField}_SALES IS NOT NULL OR ds.{$dayField}_CLOSING IS NOT NULL)";
+        
+        $itemQuery .= " ORDER BY im.DETAILS, im.DETAILS2";
         
         $itemStmt = $conn->prepare($itemQuery);
         
@@ -130,40 +139,16 @@ if (isset($_GET['generate'])) {
         $itemStmt->execute();
         $itemResult = $itemStmt->get_result();
         
-        // Get the month for the daily stock table (format: YYYY-MM)
-        $month = $selectedDate->format('Y-m');
-        
-        while ($item = $itemResult->fetch_assoc()) {
-            $itemCode = $item['ITEM_CODE'];
-            
-            // Query the daily stock table for this item and month
-            $stockQuery = "SELECT * FROM $dailyStockTable 
-                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $stockStmt = $conn->prepare($stockQuery);
-            $stockStmt->bind_param("ss", $month, $itemCode);
-            $stockStmt->execute();
-            $stockResult = $stockStmt->get_result();
-            
-            if ($stockRow = $stockResult->fetch_assoc()) {
-                // Get opening, receipts, issues, and closing stock for the selected date
-                $openingStock = (float)$stockRow[$dayField . '_OPEN'];
-                $receipts = (float)$stockRow[$dayField . '_PURCHASE'];
-                $issues = (float)$stockRow[$dayField . '_SALES'];
-                $closingStock = (float)$stockRow[$dayField . '_CLOSING'];
-                
-                // Add to report data
-                $report_data[] = [
-                    'BRAND' => $item['BRAND'],
-                    'ITEM_NAME' => $item['ITEM_NAME'],
-                    'ITEM_SIZE' => $item['ITEM_SIZE'],
-                    'OP_STOCK' => $openingStock,
-                    'RECEIPTS' => $receipts,
-                    'ISSUES' => $issues,
-                    'CL_STOCK' => $closingStock
-                ];
-            }
-            
-            $stockStmt->close();
+        while ($row = $itemResult->fetch_assoc()) {
+            $report_data[] = [
+                'BRAND' => $row['BRAND'],
+                'ITEM_NAME' => $row['ITEM_NAME'],
+                'ITEM_SIZE' => $row['ITEM_SIZE'],
+                'OP_STOCK' => (float)$row['OP_STOCK'],
+                'RECEIPTS' => (float)$row['RECEIPTS'],
+                'ISSUES' => (float)$row['ISSUES'],
+                'CL_STOCK' => (float)$row['CL_STOCK']
+            ];
         }
         
         $itemStmt->close();
@@ -188,6 +173,17 @@ if (isset($_GET['generate'])) {
         padding: 10px 15px;
         margin-bottom: 15px;
         border-radius: 4px;
+    }
+    .report-table td, .report-table th {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+    }
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .table-container {
+        overflow-x: auto;
     }
   </style>
 </head>
@@ -289,6 +285,7 @@ if (isset($_GET['generate'])) {
               <thead>
                 <tr>
                   <th>Item Description</th>
+                  <th class="text-center">Size</th>
                   <th class="text-center">Op. Stock</th>
                   <th class="text-center">Receipts</th>
                   <th class="text-center">Issues</th>
@@ -296,19 +293,10 @@ if (isset($_GET['generate'])) {
                 </tr>
               </thead>
               <tbody>
-                <?php 
-                $currentBrand = '';
-                foreach ($report_data as $index => $row): 
-                  if ($currentBrand !== $row['BRAND']):
-                    $currentBrand = $row['BRAND'];
-                ?>
-                  <tr class="bill-header">
-                    <td colspan="5"><strong><?= htmlspecialchars($currentBrand) ?></strong></td>
-                  </tr>
-                <?php endif; ?>
-                
+                <?php foreach ($report_data as $row): ?>
                 <tr>
-                  <td><?= htmlspecialchars($row['ITEM_NAME']) ?> <?= !empty($row['ITEM_SIZE']) ? '(' . htmlspecialchars($row['ITEM_SIZE']) . ')' : '' ?></td>
+                  <td><?= htmlspecialchars($row['ITEM_NAME']) ?></td>
+                  <td class="text-center"><?= !empty($row['ITEM_SIZE']) ? htmlspecialchars($row['ITEM_SIZE']) : '-' ?></td>
                   <td class="text-center"><?= number_format($row['OP_STOCK'], 0) ?></td>
                   <td class="text-center"><?= number_format($row['RECEIPTS'], 0) ?></td>
                   <td class="text-center"><?= number_format($row['ISSUES'], 0) ?></td>
@@ -318,7 +306,7 @@ if (isset($_GET['generate'])) {
               </tbody>
             </table>
           </div>
-          
+        </div>
       <?php elseif (isset($_GET['generate'])): ?>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i> No stock records found for the selected criteria.

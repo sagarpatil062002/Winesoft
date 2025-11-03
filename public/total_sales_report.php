@@ -552,7 +552,7 @@ function getSubclassDescription($item_group) {
                   </tr>
                   <?php endforeach; ?>
                   
-                  <tr class="total-row">
+                  <tr class="total-row" style="border-bottom: double 3px #000;">
                     <td colspan="5" class="text-end"><strong>Total Amount :</strong></td>
                     <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
                   </tr>

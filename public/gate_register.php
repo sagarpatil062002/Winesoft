@@ -40,7 +40,14 @@ function getBaseSize($size) {
     $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize);
     $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize);
     $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize);
-    return trim($baseSize);
+    $baseSize = trim($baseSize);
+
+    // Map specific sizes to display columns
+    $size_mapping = [
+        '170 ML' => '180 ML'
+    ];
+
+    return isset($size_mapping[$baseSize]) ? $size_mapping[$baseSize] : $baseSize;
 }
 
 // Define size columns for each liquor type
@@ -49,8 +56,8 @@ $size_columns_s = [
     '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
     '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
     '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96', 
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
+    '180 ML (Pet)', '180 ML', '170 ML (48)', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96',
+    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
     '50 ML (24)', '50 ML (192)'
 ];
 $size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
@@ -100,7 +107,7 @@ if ($mode == 'Country Liquor') {
     $liquor_summary['Mild Beer'] = array_fill_keys($display_sizes_mb, 0);
 }
 
-$gateQuery = "SELECT 
+$gateQuery = "SELECT
                 cmp.bill_date,
                 cmp.bill_no,
                 cmp.customer_name,
@@ -116,7 +123,7 @@ $gateQuery = "SELECT
                 tp.LIQ_FLAG as permit_liq_flag
               FROM tbl_cash_memo_prints cmp
               LEFT JOIN tblpermit tp ON cmp.permit_no = tp.P_NO
-              WHERE cmp.comp_id = ? 
+              WHERE cmp.comp_id = ?
               AND cmp.bill_date = ?";
 
 // Add mode filter based on permit LIQ_FLAG
@@ -138,10 +145,10 @@ $total_amount = 0;
 
 while ($row = $gateResult->fetch_assoc()) {
     $total_amount += $row['total_amount'];
-    
+
     // Use permit holder name from tblpermit if available, otherwise use customer name
     $permit_holder_name = $row['permit_holder_name'] ?: $row['customer_name'];
-    
+
     // Format permit validity
     $permit_validity = '';
     if ($row['permit_expiry_date']) {
@@ -149,17 +156,17 @@ while ($row = $gateResult->fetch_assoc()) {
     } elseif ($row['permit_exp_date']) {
         $permit_validity = date('d/m/Y', strtotime($row['permit_exp_date']));
     }
-    
+
     // Get permit district
     $permit_district = $row['permit_issue_place'] ?: $row['permit_place'] ?: 'N/A';
-    
+
     // Process items for liquor summary
     $items = json_decode($row['items_json'], true);
     if (is_array($items)) {
         foreach ($items as $item) {
             $baseSize = getBaseSize($item['DETAILS2']);
             $qty = floatval($item['QTY']);
-            
+
             if ($mode == 'Country Liquor') {
                 // For Country Liquor mode, add all to Country Liquor category
                 if (isset($liquor_summary['Country Liquor'][$baseSize])) {
@@ -178,7 +185,7 @@ while ($row = $gateResult->fetch_assoc()) {
                 } elseif (strpos($item_name, 'wine') !== false) {
                     $liquor_type = 'Wines';
                 }
-                
+
                 // Add to liquor summary
                 if (isset($liquor_summary[$liquor_type][$baseSize])) {
                     $liquor_summary[$liquor_type][$baseSize] += $qty;
@@ -186,7 +193,7 @@ while ($row = $gateResult->fetch_assoc()) {
             }
         }
     }
-    
+
     $gate_data[] = [
         'serial_no' => $serial_no++,
         'bill_no' => $row['bill_no'],
@@ -227,7 +234,7 @@ if ($mode == 'Country Liquor') {
   <title>Gate Register (FLR-3) - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  
+
   <style>
     /* Screen styles */
     body {
@@ -315,6 +322,25 @@ if ($mode == 'Country Liquor') {
       font-weight: bold;
       font-size: 14px;
     }
+    /* Double line separators after each subcategory ends */
+    /* Gate register structure: SrNo(1), BillNo(2), PermitNo(3), Name(4), Validity(5), District(6), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27], Total(28) */
+
+    /* After Spirits (50ml) - column 6+11=17 */
+    .report-table td:nth-child(17) {
+      border-right: double 3px #000;
+    }
+    /* After Wine (90ml) - column 17+4=21 */
+    .report-table td:nth-child(21) {
+      border-right: double 3px #000;
+    }
+    /* After Fermented Beer (250ml) - column 21+6=27 */
+    .report-table td:nth-child(27) {
+      border-right: double 3px #000;
+    }
+    /* After Mild Beer (250ml) - column 27+6=33 */
+    .report-table td:nth-child(33) {
+      border-right: double 3px #000;
+    }
     .liquor-category {
       background-color: #f8f9fa;
       font-weight: bold;
@@ -331,13 +357,13 @@ if ($mode == 'Country Liquor') {
       display: block;
     }
 
-    /* Print styles - UPDATED TO MATCH FLR DATEWISE */
+    /* Print styles */
     @media print {
       @page {
         size: legal landscape;
         margin: 0.2in;
       }
-      
+
       body {
         margin: 0;
         padding: 0;
@@ -350,19 +376,19 @@ if ($mode == 'Country Liquor') {
         transform-origin: 0 0;
         width: 125%;
       }
-      
+
       .no-print {
         display: none !important;
       }
-      
+
       body * {
         visibility: hidden;
       }
-      
+
       .print-section, .print-section * {
         visibility: visible;
       }
-      
+
       .print-section {
         position: absolute;
         left: 0;
@@ -372,35 +398,35 @@ if ($mode == 'Country Liquor') {
         margin: 0;
         padding: 0;
       }
-      
+
       .company-header {
         text-align: center;
         margin-bottom: 5px;
         padding: 2px;
         page-break-after: avoid;
       }
-      
+
       .company-header h1 {
         font-size: 12px !important;
         margin-bottom: 1px !important;
       }
-      
+
       .company-header h5 {
         font-size: 9px !important;
         margin-bottom: 1px !important;
       }
-      
+
       .company-header h6 {
         font-size: 8px !important;
         margin-bottom: 2px !important;
       }
-      
+
       .table-responsive {
         overflow: visible;
         width: 100%;
         height: auto;
       }
-      
+
       .report-table {
         width: 100% !important;
         font-size: 6px !important;
@@ -408,7 +434,7 @@ if ($mode == 'Country Liquor') {
         border-collapse: collapse;
         page-break-inside: avoid;
       }
-      
+
       .report-table th, .report-table td {
         padding: 1px !important;
         line-height: 1;
@@ -418,14 +444,13 @@ if ($mode == 'Country Liquor') {
         font-size: 6px !important;
         border: 0.5px solid #000 !important;
       }
-      
+
       .report-table th {
         background-color: #f0f0f0 !important;
         padding: 2px 1px !important;
         font-weight: bold;
       }
-      
-      /* ONLY INCREASE HEIGHT FOR SIZE COLUMNS */
+
       .vertical-text {
         writing-mode: vertical-lr;
         transform: rotate(180deg);
@@ -436,46 +461,45 @@ if ($mode == 'Country Liquor') {
         min-width: 15px;
         max-width: 18px;
         line-height: 1;
-        height: 25px !important; /* INCREASED HEIGHT */
+        height: 25px !important;
       }
-      
+
       .serial-col, .billno-col, .permitno-col, .validity-col, .district-col {
         width: 25px !important;
         min-width: 25px !important;
         max-width: 25px !important;
       }
-      
+
       .name-col {
         width: 60px !important;
         min-width: 60px !important;
         max-width: 60px !important;
       }
-      
+
       .liquor-col {
         width: 18px !important;
         min-width: 18px !important;
         max-width: 18px !important;
         font-size: 5px !important;
       }
-      
+
       .summary-row {
         background-color: #f8f9fa !important;
         font-weight: bold;
       }
-      
+
       .footer-info {
         text-align: center;
         margin-top: 3px;
         font-size: 6px;
         page-break-before: avoid;
       }
-      
-      /* Ensure no page breaks within the table */
+
       tr {
         page-break-inside: avoid;
         page-break-after: auto;
       }
-      
+
       .alert {
         display: none !important;
       }
@@ -519,7 +543,7 @@ if ($mode == 'Country Liquor') {
                 </div>
               </div>
             </div>
-            
+
             <div class="action-controls mt-3">
               <button type="submit" name="generate" class="btn btn-primary">
                 <i class="fas fa-cog me-1"></i> Generate Report
@@ -543,7 +567,7 @@ if ($mode == 'Country Liquor') {
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>Date: <?= date('d-M-Y', strtotime($selected_date)) ?></h6>
         </div>
-        
+
         <?php if (empty($gate_data)): ?>
           <div class="alert alert-warning text-center no-print">
             <i class="fas fa-exclamation-triangle me-2"></i>
@@ -701,7 +725,7 @@ if ($mode == 'Country Liquor') {
               </tbody>
             </table>
           </div>
-          
+
           <div class="footer-info">
             <p>Generated on: <?= date('d-M-Y h:i A') ?></p>
           </div>
