@@ -248,9 +248,9 @@ if (isset($_GET['generate'])) {
                     <th class="text-center">Date</th>
                     <th class="text-center">Bill No.</th>
                     <th>Item Description</th>
+                    <th class="text-center">Size</th>
                     <th class="text-right">Rate</th>
                     <th class="text-center">Qty.</th>
-                    <th class="text-center">Size</th>
                     <th class="text-right">Tot. Amt.</th>
                   </tr>
                 </thead>
@@ -265,9 +265,9 @@ if (isset($_GET['generate'])) {
                       <td class="text-center"><?= date('d/m/Y', strtotime($item['DATE'])) ?></td>
                       <td class="text-center"><?= htmlspecialchars($bill_no_key) ?></td>
                       <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                      <td class="text-center"><?= !empty($item['ItemSize']) ? htmlspecialchars($item['ItemSize']) : '-' ?></td>
                       <td class="text-right"><?= isset($item['RATE']) ? number_format($item['RATE'], 2) : number_format($item['Rate'], 2) ?></td>
                       <td class="text-center"><?= htmlspecialchars($item['Quantity']) ?></td>
-                      <td class="text-center"><?= !empty($item['ItemSize']) ? htmlspecialchars($item['ItemSize']) : '-' ?></td>
                       <td class="text-right"><?= isset($item['AMOUNT']) ? number_format($item['AMOUNT'], 2) : number_format($item['Amount'], 2) ?></td>
                     </tr>
                     <?php endforeach; ?>
@@ -362,3 +362,4 @@ if (isset($_GET['generate'])) {
 </script>
 </body>
 </html>
+

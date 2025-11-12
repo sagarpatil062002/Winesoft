@@ -23,6 +23,7 @@ $companyName = isset($_SESSION['company_name']) ? $_SESSION['company_name'] : "C
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 $supplier = isset($_GET['supplier']) ? $_GET['supplier'] : 'all';
+$show_details = isset($_GET['show_details']) ? $_GET['show_details'] : false;
 
 // Format dates for display
 $from_date_display = date('d-M-Y', strtotime($from_date));
@@ -76,6 +77,40 @@ $result = $stmt->get_result();
 $purchases = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
+// If show_details is enabled, fetch purchase details for each purchase
+$purchase_details = [];
+if ($show_details) {
+    $purchase_ids = array_column($purchases, 'ID');
+    if (!empty($purchase_ids)) {
+        $placeholders = str_repeat('?,', count($purchase_ids) - 1) . '?';
+        $details_query = "SELECT 
+                        pd.PURCHASE_ID,
+                        pd.ITEM_CODE,
+                        pd.ITEM_DETAILS,
+                        pd.QTY,
+                        pd.RATE,
+                        pd.AMOUNT,
+                        pd.BONUS,
+                        pd.DISC,
+                        pd.NET_AMT,
+                        i.NAME as item_name
+                    FROM tblpurchasedetails pd
+                    LEFT JOIN tblitems i ON pd.ITEM_CODE = i.CODE
+                    WHERE pd.PURCHASE_ID IN ($placeholders)
+                    ORDER BY pd.PURCHASE_ID, pd.ID";
+        
+        $stmt = $conn->prepare($details_query);
+        $stmt->bind_param(str_repeat('i', count($purchase_ids)), ...$purchase_ids);
+        $stmt->execute();
+        $details_result = $stmt->get_result();
+        
+        while ($row = $details_result->fetch_assoc()) {
+            $purchase_details[$row['PURCHASE_ID']][] = $row;
+        }
+        $stmt->close();
+    }
+}
+
 // Calculate totals
 $totals = [
     'net_amt' => 0,
@@ -116,6 +151,25 @@ foreach ($purchases as $purchase) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+  <style>
+    .purchase-details {
+        background-color: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin: 10px 0;
+        display: none;
+    }
+    .details-table th {
+        background-color: #e9ecef;
+    }
+    .toggle-details {
+        cursor: pointer;
+        color: #007bff;
+    }
+    .toggle-details:hover {
+        text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -152,6 +206,13 @@ foreach ($purchases as $purchase) {
                   <?php endforeach; ?>
                 </select>
               </div>
+              <div class="col-md-3">
+                <label class="form-label">Report Type:</label>
+                <select class="form-select" name="show_details">
+                  <option value="0" <?= !$show_details ? 'selected' : '' ?>>Summary Only</option>
+                  <option value="1" <?= $show_details ? 'selected' : '' ?>>With Item Details</option>
+                </select>
+              </div>
             </div>
             
             <div class="action-controls">
@@ -178,6 +239,11 @@ foreach ($purchases as $purchase) {
             <?php if ($supplier !== 'all'): ?>
               <p class="text-muted">Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?></p>
             <?php endif; ?>
+            <?php if ($show_details): ?>
+              <p class="text-muted"><strong>Report Type:</strong> Detailed (with items)</p>
+            <?php else: ?>
+              <p class="text-muted"><strong>Report Type:</strong> Summary</p>
+            <?php endif; ?>
           </div>
           
           <div class="table-container">
@@ -200,6 +266,9 @@ foreach ($purchases as $purchase) {
                   <th class="text-right">Stp. Duty</th>
                   <th class="text-right">Frieght</th>
                   <th class="text-right">Total Bill Amt.</th>
+                  <?php if ($show_details): ?>
+                    <th class="no-print">Details</th>
+                  <?php endif; ?>
                 </tr>
               </thead>
               <tbody>
@@ -222,7 +291,58 @@ foreach ($purchases as $purchase) {
                       <td class="text-right"><?= number_format($purchase['stp_duty'], 2) ?></td>
                       <td class="text-right"><?= number_format($purchase['frieght'], 2) ?></td>
                       <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
+                      <?php if ($show_details): ?>
+                        <td class="no-print">
+                          <?php if (isset($purchase_details[$purchase['ID']])): ?>
+                            <span class="toggle-details" onclick="toggleDetails(<?= $purchase['ID'] ?>)">
+                              <i class="fas fa-chevron-down"></i> Show Items
+                            </span>
+                          <?php else: ?>
+                            <span class="text-muted">No items</span>
+                          <?php endif; ?>
+                        </td>
+                      <?php endif; ?>
                     </tr>
+                    
+                    <?php if ($show_details && isset($purchase_details[$purchase['ID']])): ?>
+                      <tr class="no-print">
+                        <td colspan="<?= $show_details ? '17' : '16' ?>">
+                          <div id="details-<?= $purchase['ID'] ?>" class="purchase-details">
+                            <h6>Purchase Items for Voucher #<?= htmlspecialchars($purchase['VOC_NO']) ?></h6>
+                            <table class="table table-sm details-table">
+                              <thead>
+                                <tr>
+                                  <th>Item Code</th>
+                                  <th>Item Name</th>
+                                  <th>Description</th>
+                                  <th class="text-right">Qty</th>
+                                  <th class="text-right">Rate</th>
+                                  <th class="text-right">Amount</th>
+                                  <th class="text-right">Bonus</th>
+                                  <th class="text-right">Discount</th>
+                                  <th class="text-right">Net Amount</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <?php foreach ($purchase_details[$purchase['ID']] as $item): ?>
+                                  <tr>
+                                    <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
+                                    <td><?= htmlspecialchars($item['item_name'] ?? 'N/A') ?></td>
+                                    <td><?= htmlspecialchars($item['ITEM_DETAILS']) ?></td>
+                                    <td class="text-right"><?= number_format($item['QTY'], 2) ?></td>
+                                    <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
+                                    <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
+                                    <td class="text-right"><?= number_format($item['BONUS'], 2) ?></td>
+                                    <td class="text-right"><?= number_format($item['DISC'], 2) ?></td>
+                                    <td class="text-right"><?= number_format($item['NET_AMT'], 2) ?></td>
+                                  </tr>
+                                <?php endforeach; ?>
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    <?php endif; ?>
                   <?php endforeach; ?>
                   <tr class="total-row" style="border-bottom: double 3px #000;">
                     <td colspan="5" class="text-end"><strong>Total:</strong></td>
@@ -237,17 +357,19 @@ foreach ($purchases as $purchase) {
                     <td class="text-right"><strong><?= number_format($totals['stp_duty'], 2) ?></strong></td>
                     <td class="text-right"><strong><?= number_format($totals['frieght'], 2) ?></strong></td>
                     <td class="text-right"><strong><?= number_format($totals['total'], 2) ?></strong></td>
+                    <?php if ($show_details): ?>
+                      <td class="no-print"></td>
+                    <?php endif; ?>
                   </tr>
                 <?php else: ?>
                   <tr>
-                    <td colspan="16" class="text-center text-muted">No purchases found for the selected period.</td>
+                    <td colspan="<?= $show_details ? '17' : '16' ?>" class="text-center text-muted">No purchases found for the selected period.</td>
                   </tr>
                 <?php endif; ?>
               </tbody>
             </table>
           </div>
-          
-          
+        </div>
       <?php elseif (isset($_GET['from_date']) && empty($purchases)): ?>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i> No purchases found for the selected criteria.
@@ -261,5 +383,19 @@ foreach ($purchases as $purchase) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleDetails(purchaseId) {
+    const detailsDiv = document.getElementById('details-' + purchaseId);
+    const toggleLink = detailsDiv.previousElementSibling.querySelector('.toggle-details');
+    
+    if (detailsDiv.style.display === 'block') {
+        detailsDiv.style.display = 'none';
+        toggleLink.innerHTML = '<i class="fas fa-chevron-down"></i> Show Items';
+    } else {
+        detailsDiv.style.display = 'block';
+        toggleLink.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Items';
+    }
+}
+</script>
 </body>
 </html>

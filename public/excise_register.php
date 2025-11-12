@@ -93,9 +93,11 @@ $grouped_sizes_w = groupSizes($size_columns_w);
 $grouped_sizes_fb = groupSizes($size_columns_fb);
 $grouped_sizes_mb = groupSizes($size_columns_mb);
 
-// Get display sizes (base sizes) for each liquor type - ORDER: Spirit, Wine, Fermented Beer, Mild Beer
+// Get display sizes (base sizes) for each liquor type - ORDER: Spirit, Imported, Wine, Wine Imp, Fermented Beer, Mild Beer
 $display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_imported = $display_sizes_s; // Imported uses same sizes as Spirit
 $display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_wine_imp = $display_sizes_w; // Wine Imp uses same sizes as Wine
 $display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 $display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
@@ -113,25 +115,49 @@ while ($row = $classResult->fetch_assoc()) {
 }
 $classStmt->close();
 
+// DEBUG: Check if Imported and Wine Imp classes exist
+$debug_classes = ['I', 'W'];
+foreach ($debug_classes as $debug_class) {
+    if (isset($classData[$debug_class])) {
+        error_log("Class $debug_class found: " . $classData[$debug_class]['DESC']);
+    } else {
+        error_log("Class $debug_class NOT found in tblclass");
+    }
+}
+
 // Fetch item master data with size information - FILTERED BY LICENSE TYPE AND MODE
 $items = [];
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    // Add LIQ_FLAG filter based on mode
+    // Modified query to include all LIQ_FLAG values for Foreign Liquor mode
+    // so we can properly categorize Imported and Wine Imp
     if ($mode == 'Country Liquor') {
         $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders) AND LIQ_FLAG = 'C'";
     } else {
-        $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders) AND LIQ_FLAG = 'F'";
+        // For Foreign Liquor, include all items from allowed classes regardless of LIQ_FLAG
+        // This allows proper categorization of Imported ('I') and Wine Imp ('W') classes
+        $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
     }
     
     $itemStmt = $conn->prepare($itemQuery);
     $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
     $itemStmt->execute();
     $itemResult = $itemStmt->get_result();
+    
+    $item_count_by_class = [];
     while ($row = $itemResult->fetch_assoc()) {
         $items[$row['CODE']] = $row;
+        $class = $row['CLASS'];
+        if (!isset($item_count_by_class[$class])) {
+            $item_count_by_class[$class] = 0;
+        }
+        $item_count_by_class[$class]++;
     }
+    
+    // DEBUG: Log item counts by class
+    error_log("Item counts by class: " . print_r($item_count_by_class, true));
+    
     $itemStmt->close();
 }
 
@@ -188,6 +214,10 @@ function getLiquorType($class, $liq_flag, $mode) {
         return 'Country Liquor';
     }
     
+    // First check the class directly for Imported and Wine Imp
+    if ($class == 'I') return 'Imported';
+    if ($class == 'W') return 'Wine Imp';
+    
     if ($liq_flag == 'F') {
         switch ($class) {
             case 'F': return 'Fermented Beer';
@@ -216,11 +246,13 @@ function getGroupedSize($size, $liquor_type) {
     // Check if this base size exists in the appropriate group
     switch ($liquor_type) {
         case 'Spirits':
+        case 'Imported': // Imported uses same grouping as Spirits
             if (in_array($baseSize, array_keys($grouped_sizes_s))) {
                 return $baseSize;
             }
             break;
         case 'Wines':
+        case 'Wine Imp': // Wine Imp uses same grouping as Wines
             if (in_array($baseSize, array_keys($grouped_sizes_w))) {
                 return $baseSize;
             }
@@ -317,6 +349,7 @@ foreach ($dates as $date) {
 }
 
 // Process each date in the range with month-aware logic
+$stock_data_debug = [];
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
@@ -332,7 +365,7 @@ foreach ($dates as $date) {
     
     $day_padded = sprintf('%02d', $day);
     
-    // Initialize daily data for this date based on mode
+    // Initialize daily data for this date based on mode - ensure all categories are present
     if ($mode == 'Country Liquor') {
         $daily_data[$date] = [
             'Country Liquor' => [
@@ -343,6 +376,7 @@ foreach ($dates as $date) {
             ]
         ];
     } else {
+        // Ensure all 6 categories are initialized even if some have no data
         $daily_data[$date] = [
             'Spirits' => [
                 'opening' => array_fill_keys($display_sizes_s, 0),
@@ -350,11 +384,23 @@ foreach ($dates as $date) {
                 'sales' => array_fill_keys($display_sizes_s, 0),
                 'closing' => array_fill_keys($display_sizes_s, 0)
             ],
+            'Imported' => [
+                'opening' => array_fill_keys($display_sizes_imported, 0),
+                'purchase' => array_fill_keys($display_sizes_imported, 0),
+                'sales' => array_fill_keys($display_sizes_imported, 0),
+                'closing' => array_fill_keys($display_sizes_imported, 0)
+            ],
             'Wines' => [
                 'opening' => array_fill_keys($display_sizes_w, 0),
                 'purchase' => array_fill_keys($display_sizes_w, 0),
                 'sales' => array_fill_keys($display_sizes_w, 0),
                 'closing' => array_fill_keys($display_sizes_w, 0)
+            ],
+            'Wine Imp' => [
+                'opening' => array_fill_keys($display_sizes_wine_imp, 0),
+                'purchase' => array_fill_keys($display_sizes_wine_imp, 0),
+                'sales' => array_fill_keys($display_sizes_wine_imp, 0),
+                'closing' => array_fill_keys($display_sizes_wine_imp, 0)
             ],
             'Fermented Beer' => [
                 'opening' => array_fill_keys($display_sizes_fb, 0),
@@ -385,6 +431,7 @@ foreach ($dates as $date) {
     $stockStmt->execute();
     $stockResult = $stockStmt->get_result();
     
+    $stock_count_by_type = [];
     while ($row = $stockResult->fetch_assoc()) {
         $item_code = $row['ITEM_CODE'];
         
@@ -396,8 +443,14 @@ foreach ($dates as $date) {
         $class = $item_details['CLASS'];
         $liq_flag = $item_details['LIQ_FLAG'];
         
-        // Determine liquor type
+        // Determine liquor type - this now properly handles 'I' and 'W' classes
         $liquor_type = getLiquorType($class, $liq_flag, $mode);
+        
+        // DEBUG: Track stock data by type
+        if (!isset($stock_count_by_type[$liquor_type])) {
+            $stock_count_by_type[$liquor_type] = 0;
+        }
+        $stock_count_by_type[$liquor_type]++;
         
         // Map database size to Excel size
         $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
@@ -414,54 +467,47 @@ foreach ($dates as $date) {
                 $daily_data[$date]['Country Liquor']['closing'][$grouped_size] += $row['closing'];
             }
         } else {
-            switch ($liquor_type) {
-                case 'Spirits':
-                    if (in_array($grouped_size, $display_sizes_s)) {
-                        $daily_data[$date]['Spirits']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Spirits']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Spirits']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Wines':
-                    if (in_array($grouped_size, $display_sizes_w)) {
-                        $daily_data[$date]['Wines']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Wines']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Wines']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Fermented Beer':
-                    if (in_array($grouped_size, $display_sizes_fb)) {
-                        $daily_data[$date]['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
-                    
-                case 'Mild Beer':
-                    if (in_array($grouped_size, $display_sizes_mb)) {
-                        $daily_data[$date]['Mild Beer']['opening'][$grouped_size] += $row['opening'];
-                        $daily_data[$date]['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                        $daily_data[$date]['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                        $daily_data[$date]['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                    }
-                    break;
+            // Make sure the liquor type exists in our data structure
+            if (isset($daily_data[$date][$liquor_type])) {
+                // Determine which display sizes to use based on liquor type
+                $target_sizes = [];
+                switch ($liquor_type) {
+                    case 'Spirits': $target_sizes = $display_sizes_s; break;
+                    case 'Imported': $target_sizes = $display_sizes_imported; break;
+                    case 'Wines': $target_sizes = $display_sizes_w; break;
+                    case 'Wine Imp': $target_sizes = $display_sizes_wine_imp; break;
+                    case 'Fermented Beer': $target_sizes = $display_sizes_fb; break;
+                    case 'Mild Beer': $target_sizes = $display_sizes_mb; break;
+                    default: $target_sizes = $display_sizes_s; // Default to spirits
+                }
+                
+                if (in_array($grouped_size, $target_sizes)) {
+                    $daily_data[$date][$liquor_type]['opening'][$grouped_size] += $row['opening'];
+                    $daily_data[$date][$liquor_type]['purchase'][$grouped_size] += $row['purchase'];
+                    $daily_data[$date][$liquor_type]['sales'][$grouped_size] += $row['sales'];
+                    $daily_data[$date][$liquor_type]['closing'][$grouped_size] += $row['closing'];
+                }
             }
         }
+    }
+    
+    // DEBUG: Log stock counts by type for this date
+    if (!empty($stock_count_by_type)) {
+        error_log("Date $date - Stock counts by type: " . print_r($stock_count_by_type, true));
+        $stock_data_debug[$date] = $stock_count_by_type;
     }
     
     $stockStmt->close();
 }
 
+// DEBUG: Show what data we have
+error_log("Final daily data structure: " . print_r($daily_data, true));
+
 // Calculate total columns count for table formatting
 if ($mode == 'Country Liquor') {
     $total_columns = count($display_sizes_country);
 } else {
-    $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($display_sizes_fb) + count($display_sizes_mb);
+    $total_columns = count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
 }
 ?>
 <!DOCTYPE html>
@@ -530,22 +576,22 @@ if ($mode == 'Country Liquor') {
       font-weight: bold;
     }
     /* Double line separators after each subcategory ends */
-    /* Excise register structure: Date(1), TP(2), Type(3), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27] */
-
-    /* After Spirits (50ml) - column 3+11=14 */
     .report-table td:nth-child(14) {
       border-right: double 3px #000;
     }
-    /* After Wine (90ml) - column 14+4=18 */
-    .report-table td:nth-child(18) {
+    .report-table td:nth-child(25) {
       border-right: double 3px #000;
     }
-    /* After Fermented Beer (250ml) - column 18+6=24 */
-    .report-table td:nth-child(24) {
+    .report-table td:nth-child(29) {
       border-right: double 3px #000;
     }
-    /* After Mild Beer (250ml) - column 24+6=30 */
-    .report-table td:nth-child(30) {
+    .report-table td:nth-child(33) {
+      border-right: double 3px #000;
+    }
+    .report-table td:nth-child(39) {
+      border-right: double 3px #000;
+    }
+    .report-table td:nth-child(45) {
       border-right: double 3px #000;
     }
     .filter-card {
@@ -599,6 +645,14 @@ if ($mode == 'Country Liquor') {
       margin: 0;
       padding: 0;
     }
+    .debug-info {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-size: 12px;
+    }
 
   /* Print styles */
     @media print {
@@ -620,7 +674,7 @@ if ($mode == 'Country Liquor') {
         width: 125%;
       }
       
-      .no-print {
+      .no-print, .debug-info {
         display: none !important;
       }
       
@@ -782,6 +836,36 @@ if ($mode == 'Country Liquor') {
     <div class="content-area">
       <h3 class="mb-4">Excise Register (FLR-3) Printing Module</h3>
 
+      <!-- Debug Information -->
+      <div class="debug-info no-print">
+        <h5>Debug Information:</h5>
+        <p><strong>Allowed Classes:</strong> <?= implode(', ', $allowed_classes) ?></p>
+        <p><strong>Items by Class:</strong> 
+          <?php
+          $item_counts = [];
+          foreach ($items as $item) {
+              $class = $item['CLASS'];
+              if (!isset($item_counts[$class])) $item_counts[$class] = 0;
+              $item_counts[$class]++;
+          }
+          foreach ($item_counts as $class => $count) {
+              echo "$class: $count, ";
+          }
+          ?>
+        </p>
+        <p><strong>Stock Data by Type:</strong> 
+          <?php
+          foreach ($stock_data_debug as $date => $types) {
+              echo "$date: ";
+              foreach ($types as $type => $count) {
+                  echo "$type: $count, ";
+              }
+              echo " | ";
+          }
+          ?>
+        </p>
+      </div>
+
       <!-- License Restriction Info -->
       <div class="license-info no-print">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
@@ -875,7 +959,9 @@ if ($mode == 'Country Liquor') {
                     <th colspan="<?= count($display_sizes_country) ?>">COUNTRY LIQUOR</th>
                   <?php else: ?>
                     <th colspan="<?= count($display_sizes_s) ?>">SPIRIT S</th>
+                    <th colspan="<?= count($display_sizes_imported) ?>">IMPORTED</th>
                     <th colspan="<?= count($display_sizes_w) ?>">WINE</th>
+                    <th colspan="<?= count($display_sizes_wine_imp) ?>">WINE IMP</th>
                     <th colspan="<?= count($display_sizes_fb) ?>">FERMENTED BEER</th>
                     <th colspan="<?= count($display_sizes_mb) ?>">MILD BEER</th>
                   <?php endif; ?>
@@ -892,8 +978,18 @@ if ($mode == 'Country Liquor') {
                       <th class="size-col vertical-text"><?= $size ?></th>
                     <?php endforeach; ?>
                     
+                    <!-- Imported Sizes -->
+                    <?php foreach ($display_sizes_imported as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    
                     <!-- Wines Sizes -->
                     <?php foreach ($display_sizes_w as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    
+                    <!-- Wine Imp Sizes -->
+                    <?php foreach ($display_sizes_wine_imp as $size): ?>
                       <th class="size-col vertical-text"><?= $size ?></th>
                     <?php endforeach; ?>
                     
@@ -920,8 +1016,18 @@ if ($mode == 'Country Liquor') {
                       <th class="size-col"><?= $size ?></th>
                     <?php endforeach; ?>
                     
+                    <!-- Imported Sizes -->
+                    <?php foreach ($display_sizes_imported as $size): ?>
+                      <th class="size-col"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    
                     <!-- Wines Sizes -->
                     <?php foreach ($display_sizes_w as $size): ?>
+                      <th class="size-col"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    
+                    <!-- Wine Imp Sizes -->
+                    <?php foreach ($display_sizes_wine_imp as $size): ?>
                       <th class="size-col"><?= $size ?></th>
                     <?php endforeach; ?>
                     
@@ -984,9 +1090,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['opening'][$size] > 0 ? $daily_data[$date]['Spirits']['opening'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Opening Stock -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['opening'][$size] > 0 ? $daily_data[$date]['Imported']['opening'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Opening Stock -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['opening'][$size] > 0 ? $daily_data[$date]['Wines']['opening'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Opening Stock -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['opening'][$size] > 0 ? $daily_data[$date]['Wine Imp']['opening'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Opening Stock -->
@@ -1015,9 +1131,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['purchase'][$size] > 0 ? $daily_data[$date]['Spirits']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Received -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['purchase'][$size] > 0 ? $daily_data[$date]['Imported']['purchase'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Received -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['purchase'][$size] > 0 ? $daily_data[$date]['Wines']['purchase'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Received -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['purchase'][$size] > 0 ? $daily_data[$date]['Wine Imp']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Received -->
@@ -1046,9 +1172,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Sales -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['sales'][$size] > 0 ? $daily_data[$date]['Imported']['sales'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Sales -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['sales'][$size] > 0 ? $daily_data[$date]['Wines']['sales'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Sales -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['sales'][$size] > 0 ? $daily_data[$date]['Wine Imp']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Sales -->
@@ -1077,9 +1213,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Closing Stock -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['closing'][$size] > 0 ? $daily_data[$date]['Imported']['closing'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Closing Stock -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['closing'][$size] > 0 ? $daily_data[$date]['Wines']['closing'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Closing Stock -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['closing'][$size] > 0 ? $daily_data[$date]['Wine Imp']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Closing Stock -->
@@ -1128,9 +1274,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['purchase'][$size] > 0 ? $daily_data[$date]['Spirits']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Received -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['purchase'][$size] > 0 ? $daily_data[$date]['Imported']['purchase'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Received -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['purchase'][$size] > 0 ? $daily_data[$date]['Wines']['purchase'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Received -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['purchase'][$size] > 0 ? $daily_data[$date]['Wine Imp']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Received -->
@@ -1159,9 +1315,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Sales -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['sales'][$size] > 0 ? $daily_data[$date]['Imported']['sales'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Sales -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['sales'][$size] > 0 ? $daily_data[$date]['Wines']['sales'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Sales -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['sales'][$size] > 0 ? $daily_data[$date]['Wine Imp']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Sales -->
@@ -1190,9 +1356,19 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
+                        <!-- Imported Closing Stock -->
+                        <?php foreach ($display_sizes_imported as $size): ?>
+                          <td><?= $daily_data[$date]['Imported']['closing'][$size] > 0 ? $daily_data[$date]['Imported']['closing'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
                         <!-- Wines Closing Stock -->
                         <?php foreach ($display_sizes_w as $size): ?>
                           <td><?= $daily_data[$date]['Wines']['closing'][$size] > 0 ? $daily_data[$date]['Wines']['closing'][$size] : '' ?></td>
+                        <?php endforeach; ?>
+                        
+                        <!-- Wine Imp Closing Stock -->
+                        <?php foreach ($display_sizes_wine_imp as $size): ?>
+                          <td><?= $daily_data[$date]['Wine Imp']['closing'][$size] > 0 ? $daily_data[$date]['Wine Imp']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Closing Stock -->

@@ -156,7 +156,7 @@ function getSalesBaseSize($size) {
     return $base_size;
 }
 
-// Fetch sales data - FILTERED BY LICENSE TYPE
+// Fetch sales data - using same logic as groupwise_sales_report.php
 $sales_data = [];
 $group_totals = [];
 $date_totals = array_fill_keys(array_column($date_range, 'display_date'), 0);
@@ -172,89 +172,119 @@ foreach ($groups as $group_key => $group_info) {
     ];
 }
 
-if (!empty($allowed_classes)) {
-    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    
-    // Build the SELECT clause for day columns
-    $day_selects = [];
-    foreach ($date_range as $date_info) {
-        $day_selects[] = "COALESCE(ds.{$date_info['day_column']}, 0) as {$date_info['day_column']}";
-    }
-    $day_select_clause = implode(', ', $day_selects);
-    
-    $month_year = date('Y-m', strtotime($db_date_from));
-    
-    $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                     im.ITEM_GROUP, im.LIQ_FLAG, $day_select_clause
-              FROM tblitemmaster im
-              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
-                    AND ds.STK_MONTH = ?
-              WHERE im.CLASS IN ($class_placeholders)";
-    
-    $params = array_merge([$month_year], $allowed_classes);
-    $types = str_repeat('s', count($params));
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $items = $result->fetch_all(MYSQLI_ASSOC);
+// Check which tables have data (same logic as groupwise_sales_report.php)
+$check_tables = [];
+$check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_DATE BETWEEN ? AND ? AND COMP_ID = ?";
+$check_stmt = $conn->prepare($check_query);
+$check_stmt->bind_param("ssi", $db_date_from, $db_date_to, $company_id);
+$check_stmt->execute();
+$check_result = $check_stmt->get_result();
+$row = $check_result->fetch_assoc();
+$check_tables['tblsaleheader'] = $row['count'];
+$check_stmt->close();
 
-    // Process sales data by groups
-    foreach ($items as $item) {
-        $sgroup = $item['CLASS'] ?? 'O';
-        $liq_flag = $item['LIQ_FLAG'] ?? 'F';
-        
-        // Determine which group this item belongs to
-        $item_group = null;
-        foreach ($groups as $group_key => $group_info) {
-            if ($group_info['liq_flag'] === $liq_flag && in_array($sgroup, $group_info['classes'])) {
-                $item_group = $group_key;
-                break;
-            }
-        }
-        
-        // If we couldn't classify the item, assign to SPIRITS as default
-        if ($item_group === null) {
-            $item_group = 'SPIRITS';
-        }
-        
-        // Filter by mode (Foreign Liquor or Country Liquor)
-        if ($mode === 'F' && $item_group === 'COUNTRY LIQUOR') continue;
-        if ($mode === 'C' && $item_group !== 'COUNTRY LIQUOR') continue;
-        
-        $size = $item['DETAILS2'] ?? '';
-        $base_size = getSalesBaseSize($size);
-        
-        // Only include if the size exists in our display columns
-        if (in_array($base_size, $size_columns)) {
-            // Add sales for each date
-            foreach ($date_range as $date_info) {
-                $sales_qty = (float)$item[$date_info['day_column']];
-                
-                if ($sales_qty > 0) {
-                    // Initialize if not exists
-                    if (!isset($sales_data[$item_group][$base_size][$date_info['display_date']])) {
-                        $sales_data[$item_group][$base_size][$date_info['display_date']] = 0;
-                    }
-                    
-                    // Add to sales data
-                    $sales_data[$item_group][$base_size][$date_info['display_date']] += $sales_qty;
-                    
-                    // Update totals
-                    $group_totals[$item_group]['sizes'][$base_size] += $sales_qty;
-                    $group_totals[$item_group]['dates'][$date_info['display_date']] += $sales_qty;
-                    $group_totals[$item_group]['total'] += $sales_qty;
-                    
-                    $date_totals[$date_info['display_date']] += $sales_qty;
-                    $size_totals[$base_size] += $sales_qty;
-                    $grand_total += $sales_qty;
-                }
-            }
+$check_query = "SELECT COUNT(*) as count FROM tblcustomersales WHERE BillDate BETWEEN ? AND ? AND CompID = ?";
+$check_stmt = $conn->prepare($check_query);
+$check_stmt->bind_param("ssi", $db_date_from, $db_date_to, $company_id);
+$check_stmt->execute();
+$check_result = $check_stmt->get_result();
+$row = $check_result->fetch_assoc();
+$check_tables['tblcustomersales'] = $row['count'];
+$check_stmt->close();
+
+// Determine which table to use
+$use_customer_sales = ($check_tables['tblcustomersales'] > 0);
+
+if ($use_customer_sales) {
+    // Use tblcustomersales table
+    $sales_query = "SELECT
+                    cs.BillDate as BILL_DATE,
+                    cs.ItemCode as ITEM_CODE,
+                    cs.ItemName as ITEM_NAME,
+                    cs.Quantity as QTY,
+                    im.DETAILS2 as SIZE,
+                    im.CLASS as SGROUP,
+                    im.LIQ_FLAG
+                  FROM tblcustomersales cs
+                  LEFT JOIN tblitemmaster im ON cs.ItemCode = im.CODE
+                  WHERE cs.BillDate BETWEEN ? AND ? AND cs.CompID = ?
+                  ORDER BY cs.BillDate";
+
+    $stmt = $conn->prepare($sales_query);
+    $stmt->bind_param("ssi", $db_date_from, $db_date_to, $company_id);
+} else {
+    // Use tblsaleheader and tblsaledetails tables
+    $sales_query = "SELECT
+                    sh.BILL_DATE,
+                    sd.ITEM_CODE,
+                    CASE WHEN im.Print_Name != '' THEN im.Print_Name ELSE im.DETAILS END as ITEM_NAME,
+                    sd.QTY,
+                    im.DETAILS2 as SIZE,
+                    im.CLASS as SGROUP,
+                    im.LIQ_FLAG
+                  FROM tblsaleheader sh
+                  INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
+                  LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
+                  WHERE sh.BILL_DATE BETWEEN ? AND ? AND sh.COMP_ID = ?
+                  ORDER BY sh.BILL_DATE";
+
+    $stmt = $conn->prepare($sales_query);
+    $stmt->bind_param("ssi", $db_date_from, $db_date_to, $company_id);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
+
+// Process sales data by groups
+while ($row = $result->fetch_assoc()) {
+    $sgroup = isset($row['SGROUP']) ? $row['SGROUP'] : 'O';
+    $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F';
+    $bill_date = $row['BILL_DATE'];
+    $display_date = date('d/m/Y', strtotime($bill_date));
+    $quantity = (float)$row['QTY'];
+    $size = $row['SIZE'] ?? '';
+    $base_size = getSalesBaseSize($size);
+
+    // Determine which group this item belongs to
+    $item_group = null;
+    foreach ($groups as $group_key => $group_info) {
+        if ($group_info['liq_flag'] === $liq_flag && in_array($sgroup, $group_info['classes'])) {
+            $item_group = $group_key;
+            break;
         }
     }
-    $stmt->close();
+
+    // If we couldn't classify the item, assign to SPIRITS as default
+    if ($item_group === null) {
+        $item_group = 'SPIRITS';
+    }
+
+    // Filter by mode (Foreign Liquor or Country Liquor)
+    if ($mode === 'F' && $item_group === 'COUNTRY LIQUOR') continue;
+    if ($mode === 'C' && $item_group !== 'COUNTRY LIQUOR') continue;
+
+    // Only include if the size exists in our display columns
+    if (in_array($base_size, $size_columns) && $quantity > 0) {
+        // Initialize if not exists
+        if (!isset($sales_data[$item_group][$base_size][$display_date])) {
+            $sales_data[$item_group][$base_size][$display_date] = 0;
+        }
+
+        // Add to sales data
+        $sales_data[$item_group][$base_size][$display_date] += $quantity;
+
+        // Update totals
+        $group_totals[$item_group]['sizes'][$base_size] += $quantity;
+        $group_totals[$item_group]['dates'][$display_date] += $quantity;
+        $group_totals[$item_group]['total'] += $quantity;
+
+        $date_totals[$display_date] += $quantity;
+        $size_totals[$base_size] += $quantity;
+        $grand_total += $quantity;
+    }
 }
+
+$stmt->close();
 
 // Format dates for report display
 $report_display_date_from = date('d-M-Y', strtotime($db_date_from));
@@ -494,11 +524,7 @@ $report_display_date_to = date('d-M-Y', strtotime($db_date_to));
           </table>
         </div>
 
-        <!-- Spirits Summary as shown in image -->
-        <div style="margin-top: 20px;">
-          <p><strong>Spirits:</strong></p>
-          <!-- Add any additional spirit-specific summary here -->
-        </div>
+        
       </div>
     </div>
     <?php include 'components/footer.php'; ?>

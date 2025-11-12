@@ -8767,3 +8767,117 @@ Stack trace:
 [02-Nov-2025 03:30:07 Europe/Berlin] Sample purchase data (first 3):
 [02-Nov-2025 03:30:07 Europe/Berlin] Purchase 1: ID=1, VOC_NO=1, PUR_FLAG=C, DATE=2025-10-28
 [02-Nov-2025 03:30:07 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[04-Nov-2025 13:40:30 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[04-Nov-2025 13:40:30 Europe/Berlin] Company ID: 1
+[04-Nov-2025 13:40:30 Europe/Berlin] Mode: ALL
+[04-Nov-2025 13:40:30 Europe/Berlin] Session CompID: 1
+[04-Nov-2025 13:40:30 Europe/Berlin] Session User ID: 1
+[04-Nov-2025 13:40:30 Europe/Berlin] Database connection successful
+[04-Nov-2025 13:40:30 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[04-Nov-2025 13:40:30 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[04-Nov-2025 13:40:30 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[04-Nov-2025 13:40:30 Europe/Berlin] Parameter Types: i
+[04-Nov-2025 13:40:30 Europe/Berlin] Number of where conditions: 1
+[04-Nov-2025 13:40:30 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[04-Nov-2025 13:40:30 Europe/Berlin] Found 1 purchase records
+[04-Nov-2025 13:40:30 Europe/Berlin] Sample purchase data (first 3):
+[04-Nov-2025 13:40:30 Europe/Berlin] Purchase 1: ID=1, VOC_NO=1, PUR_FLAG=C, DATE=2025-10-28
+[04-Nov-2025 13:40:30 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[08-Nov-2025 12:47:56 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[08-Nov-2025 12:47:56 Europe/Berlin] Company ID: 1
+[08-Nov-2025 12:47:56 Europe/Berlin] Mode: ALL
+[08-Nov-2025 12:47:56 Europe/Berlin] Session CompID: 1
+[08-Nov-2025 12:47:56 Europe/Berlin] Session User ID: 1
+[08-Nov-2025 12:47:56 Europe/Berlin] Database connection successful
+[08-Nov-2025 12:47:56 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[08-Nov-2025 12:47:56 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[08-Nov-2025 12:47:56 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[08-Nov-2025 12:47:56 Europe/Berlin] Parameter Types: i
+[08-Nov-2025 12:47:56 Europe/Berlin] Number of where conditions: 1
+[08-Nov-2025 12:47:56 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[08-Nov-2025 12:47:56 Europe/Berlin] Found 1 purchase records
+[08-Nov-2025 12:47:56 Europe/Berlin] Sample purchase data (first 3):
+[08-Nov-2025 12:47:56 Europe/Berlin] Purchase 1: ID=1, VOC_NO=1, PUR_FLAG=C, DATE=2025-10-28
+[08-Nov-2025 12:47:56 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[08-Nov-2025 12:49:55 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[08-Nov-2025 12:49:55 Europe/Berlin] Company ID: 1
+[08-Nov-2025 12:49:55 Europe/Berlin] Mode: F
+[08-Nov-2025 12:49:55 Europe/Berlin] Session CompID: 1
+[08-Nov-2025 12:49:55 Europe/Berlin] Session User ID: 1
+[08-Nov-2025 12:49:55 Europe/Berlin] Database connection successful
+[08-Nov-2025 12:49:55 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[08-Nov-2025 12:49:55 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[08-Nov-2025 12:49:55 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[08-Nov-2025 12:49:55 Europe/Berlin] Parameter Types: i
+[08-Nov-2025 12:49:55 Europe/Berlin] Number of where conditions: 1
+[08-Nov-2025 12:49:55 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[08-Nov-2025 12:49:55 Europe/Berlin] Found 2 purchase records
+[08-Nov-2025 12:49:55 Europe/Berlin] Sample purchase data (first 3):
+[08-Nov-2025 12:49:55 Europe/Berlin] Purchase 1: ID=2, VOC_NO=2, PUR_FLAG=T, DATE=2025-10-31
+[08-Nov-2025 12:49:55 Europe/Berlin] Purchase 2: ID=1, VOC_NO=1, PUR_FLAG=C, DATE=2025-10-28
+[08-Nov-2025 12:49:55 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[10-Nov-2025 04:18:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[10-Nov-2025 04:18:36 Europe/Berlin] Company ID: 1
+[10-Nov-2025 04:18:36 Europe/Berlin] Mode: ALL
+[10-Nov-2025 04:18:36 Europe/Berlin] Session CompID: 1
+[10-Nov-2025 04:18:36 Europe/Berlin] Session User ID: 1
+[10-Nov-2025 04:18:36 Europe/Berlin] Database connection successful
+[10-Nov-2025 04:18:36 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[10-Nov-2025 04:18:36 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[10-Nov-2025 04:18:36 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[10-Nov-2025 04:18:36 Europe/Berlin] Parameter Types: i
+[10-Nov-2025 04:18:36 Europe/Berlin] Number of where conditions: 1
+[10-Nov-2025 04:18:36 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[10-Nov-2025 04:18:36 Europe/Berlin] Found 2 purchase records
+[10-Nov-2025 04:18:36 Europe/Berlin] Sample purchase data (first 3):
+[10-Nov-2025 04:18:36 Europe/Berlin] Purchase 1: ID=2, VOC_NO=2, PUR_FLAG=P, DATE=2025-10-31
+[10-Nov-2025 04:18:36 Europe/Berlin] Purchase 2: ID=1, VOC_NO=1, PUR_FLAG=C, DATE=2025-10-28
+[10-Nov-2025 04:18:36 Europe/Berlin] === PURCHASE MODULE DEBUG END ===

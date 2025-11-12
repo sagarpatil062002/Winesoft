@@ -97,11 +97,14 @@ function getSalesTablesForDateRange($conn, $compID, $date_from, $date_to) {
     return $tables;
 }
 
-// Define categories based on the image format - UPDATED WITH LICENSE RESTRICTIONS
+// Define categories based on the image format - UPDATED WITH LICENSE RESTRICTIONS - ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
 $categories = [
     'IMFL Sales' => ['classes' => array_intersect(['W', 'G', 'K', 'D', 'R', 'O'], $allowed_classes), 'liq_flag' => 'F'],
+    'Imported Spirit Sales' => ['classes' => array_intersect(['I'], $allowed_classes), 'liq_flag' => 'F'],
     'Wine Sales' => ['classes' => array_intersect(['V'], $allowed_classes), 'liq_flag' => 'F'],
-    'Beer Sales' => ['classes' => array_intersect(['F', 'M'], $allowed_classes), 'liq_flag' => 'F'], // Both fermented and mild beer
+    'Imported Wine Sales' => ['classes' => array_intersect(['W'], $allowed_classes), 'liq_flag' => 'F'],
+    'Fermented Beer Sales' => ['classes' => array_intersect(['F'], $allowed_classes), 'liq_flag' => 'F'],
+    'Mild Beer Sales' => ['classes' => array_intersect(['M'], $allowed_classes), 'liq_flag' => 'F'],
     'Country Sales' => ['classes' => array_intersect(['L', 'O'], $allowed_classes), 'liq_flag' => 'C']
 ];
 

@@ -105,11 +105,13 @@ foreach ($items as $item) {
 
         <?php
         $categories = [
-          'SPIRITS' => ['W', 'G', 'D', 'K', 'R'],
-          'WINE' => ['V'],
-          'FERMENTED BEER' => ['B'],
-          'MILD BEER' => ['B'], // filter by "mild"
-          'COUNTRY LIQUOR' => [] // filtered by LIQ_FLAG = 'C'
+           'SPIRITS' => ['W', 'G', 'D', 'K', 'R'],
+           'IMPORTED SPIRIT' => ['I'],
+           'WINE' => ['V'],
+           'IMPORTED WINE' => ['W'],
+           'FERMENTED BEER' => ['B'],
+           'MILD BEER' => ['B'], // filter by "mild"
+           'COUNTRY LIQUOR' => [] // filtered by LIQ_FLAG = 'C'
         ];
         
         foreach ($categories as $category => $classes): 

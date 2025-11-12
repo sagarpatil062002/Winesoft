@@ -19,6 +19,9 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
+// Get company name from session or set default
+$companyName = isset($_SESSION['company_name']) ? $_SESSION['company_name'] : "Company Name";
+
 // Default values
 $report_type = isset($_GET['report_type']) ? $_GET['report_type'] : 'detailed';
 $supplier_type = isset($_GET['supplier_type']) ? $_GET['supplier_type'] : 'particular_supplier_all_brands';
@@ -35,8 +38,10 @@ $supplierQuery = "SELECT l.LCODE, l.LHEAD, s.CODE
                   WHERE l.GCODE = 33 
                   ORDER BY l.LHEAD";
 $supplierResult = $conn->query($supplierQuery);
-while ($row = $supplierResult->fetch_assoc()) {
-    $suppliers[$row['CODE']] = $row['LHEAD'];
+if ($supplierResult) {
+    while ($row = $supplierResult->fetch_assoc()) {
+        $suppliers[$row['CODE']] = $row['LHEAD'];
+    }
 }
 
 // Fetch brands from tblitemmaster - using DETAILS (item name) instead of DETAILS2 (size)
@@ -46,8 +51,10 @@ $brandQuery = "SELECT DISTINCT DETAILS
                WHERE DETAILS IS NOT NULL AND DETAILS != '' 
                ORDER BY DETAILS";
 $brandResult = $conn->query($brandQuery);
-while ($row = $brandResult->fetch_assoc()) {
-    $brands[] = $row['DETAILS'];
+if ($brandResult) {
+    while ($row = $brandResult->fetch_assoc()) {
+        $brands[] = $row['DETAILS'];
+    }
 }
 
 // Generate report data based on filters
@@ -55,26 +62,23 @@ $report_data = [];
 $gross_amount = 0;
 
 if (isset($_GET['generate'])) {
-    // Build the query based on selected filters
-    $query = "SELECT 
-                p.DATE, 
-                p.TPNO as T_P_NO, 
-                p.INV_NO, 
-                pd.Cases, 
-                pd.Bottles as Units, 
+    // Build the query based on selected filters - CORRECTED
+    $query = "SELECT
+                p.DATE,
+                p.TPNO as T_P_NO,
+                p.INV_NO,
+                pd.Cases,
+                pd.Bottles as Units,
                 (pd.Cases * pd.BottlesPerCase + pd.Bottles) as Total_Bottles,
-                '' as Scheme_Cases, 
-                '' as Scheme_Units, 
-                '' as Scheme_Amount,
                 s.DETAILS as Supplier_Description,
                 pd.ItemName as Item_Description
               FROM tblpurchases p
               INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
               INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
-              WHERE p.DATE BETWEEN ? AND ?";
-    
-    $params = [$date_from, $date_to];
-    $types = "ss";
+              WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+
+    $params = [$date_from, $date_to, $company_id];
+    $types = "ssi";
     
     if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
         $query .= " AND p.SUBCODE = ?";
@@ -91,34 +95,41 @@ if (isset($_GET['generate'])) {
     $query .= " ORDER BY s.DETAILS, pd.ItemName, p.DATE";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $report_data = $result->fetch_all(MYSQLI_ASSOC);
-    
-    // Calculate gross amount
-    $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount 
-                    FROM tblpurchases p
-                    WHERE p.DATE BETWEEN ? AND ?";
-    
-    $gross_params = [$date_from, $date_to];
-    $gross_types = "ss";
-    
-    if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
-        $gross_query .= " AND p.SUBCODE = ?";
-        $gross_params[] = $supplier_code;
-        $gross_types .= "s";
+    if ($stmt) {
+        if (!empty($params)) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $report_data = $result->fetch_all(MYSQLI_ASSOC);
+        
+        // Calculate gross amount - CORRECTED
+        $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount
+                        FROM tblpurchases p
+                        WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+
+        $gross_params = [$date_from, $date_to, $company_id];
+        $gross_types = "ssi";
+        
+        if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
+            $gross_query .= " AND p.SUBCODE = ?";
+            $gross_params[] = $supplier_code;
+            $gross_types .= "s";
+        }
+        
+        $gross_stmt = $conn->prepare($gross_query);
+        if ($gross_stmt) {
+            $gross_stmt->bind_param($gross_types, ...$gross_params);
+            $gross_stmt->execute();
+            $gross_result = $gross_stmt->get_result();
+            $gross_row = $gross_result->fetch_assoc();
+            $gross_amount = $gross_row['Gross_Amount'] ?? 0;
+            
+            $gross_stmt->close();
+        }
+        
+        $stmt->close();
     }
-    
-    $gross_stmt = $conn->prepare($gross_query);
-    $gross_stmt->bind_param($gross_types, ...$gross_params);
-    $gross_stmt->execute();
-    $gross_result = $gross_stmt->get_result();
-    $gross_row = $gross_result->fetch_assoc();
-    $gross_amount = $gross_row['Gross_Amount'] ?? 0;
-    
-    $stmt->close();
-    $gross_stmt->close();
 }
 ?>
 <!DOCTYPE html>

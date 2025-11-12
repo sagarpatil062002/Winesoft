@@ -306,7 +306,7 @@ if (isset($_GET['generate'])) {
           <div class="table-container">
             <?php if (!empty($user_summary)): ?>
               <!-- User-wise Summary Section -->
-              <div class="section-title">User Wise Summary</div>
+              <div class="section-title">Sale Type: Total Sale (Retail + Customer)</div>
               <table class="report-table mb-4">
                 <thead>
                   <tr>
@@ -316,9 +316,9 @@ if (isset($_GET['generate'])) {
                   </tr>
                 </thead>
                 <tbody>
-                  <?php 
+                  <?php
                   $sno = 1;
-                  foreach ($user_summary as $user): 
+                  foreach ($user_summary as $user):
                   ?>
                     <tr>
                       <td class="text-center"><?= $sno++ ?></td>
@@ -326,7 +326,7 @@ if (isset($_GET['generate'])) {
                       <td class="text-right"><?= number_format($user['TotalAmount'], 2) ?></td>
                     </tr>
                   <?php endforeach; ?>
-                  
+
                   <tr class="total-row">
                     <td colspan="2" class="text-end"><strong>Grand Total:</strong></td>
                     <td class="text-right"><strong><?= number_format($overall_total, 2) ?></strong></td>
@@ -341,10 +341,11 @@ if (isset($_GET['generate'])) {
                   <div class="user-section">User: <?= htmlspecialchars($user['UserName']) ?></div>
                   
                   <?php foreach ($bill_details[$user['UserID']] as $bill_no => $bill_data): ?>
-                  <!-- REMOVED BILL HEADER INFORMATION - Only show the items table -->
                   <table class="report-table mb-4">
                     <thead>
                       <tr>
+                        <th class="text-center">S. No.</th>
+                        <th>Bill No</th>
                         <th>Item Code</th>
                         <th>Item Name</th>
                         <th>Size</th>
@@ -354,8 +355,13 @@ if (isset($_GET['generate'])) {
                       </tr>
                     </thead>
                     <tbody>
-                      <?php foreach ($bill_data['items'] as $item): ?>
+                      <?php
+                      $item_sno = 1;
+                      foreach ($bill_data['items'] as $item):
+                      ?>
                       <tr>
+                        <td class="text-center"><?= $item_sno++ ?></td>
+                        <td><?= htmlspecialchars($bill_no) ?></td>
                         <td><?= htmlspecialchars($item['ItemCode']) ?></td>
                         <td><?= htmlspecialchars($item['ItemName']) ?></td>
                         <td><?= htmlspecialchars($item['ItemSize']) ?></td>
@@ -365,7 +371,7 @@ if (isset($_GET['generate'])) {
                       </tr>
                       <?php endforeach; ?>
                       <tr class="total-row">
-                        <td colspan="5" class="text-end"><strong>Bill Total:</strong></td>
+                        <td colspan="7" class="text-end"><strong>Bill Total:</strong></td>
                         <td class="text-right"><strong><?= number_format($bill_data['total'], 2) ?></strong></td>
                       </tr>
                     </tbody>

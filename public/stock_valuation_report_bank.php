@@ -89,63 +89,136 @@ function getRateField($rate_type) {
     }
 }
 
-// Function to get category name based on class and details (from April report)
+// Function to group sizes by base size (remove suffixes after ML and trim)
+function getBaseSize($size) {
+    // Extract the base size (everything before any special characters after ML)
+    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
+    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
+    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
+    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
+    return trim($baseSize);
+}
+
+// Function to get category name based on class and details (updated with comprehensive size mapping)
 function getCategoryName($class, $details, $details2) {
     $details_upper = strtoupper($details);
     $details2_upper = strtoupper($details2);
     
-    // Check for beer types first
-    if (strpos($details2_upper, '650 E') !== false || strpos($details2_upper, '650 F') !== false) {
-        return '650 E';
-    } elseif (strpos($details2_upper, '650 M') !== false) {
-        return '650 M';
-    } elseif (strpos($details2_upper, '500 M') !== false) {
-        return '500 M';
-    } elseif (strpos($details2_upper, '500 F') !== false) {
-        return '500 F';
-    } elseif (strpos($details2_upper, '330 F') !== false) {
-        return '330 F';
-    } elseif (strpos($details2_upper, '330 M') !== false) {
-        return '330 M';
-    } elseif (strpos($details2_upper, '1 LTR') !== false || strpos($details2_upper, '1000 ML') !== false) {
-        return '1 Ltr.';
-    } elseif (strpos($details2_upper, '2 LTR') !== false || strpos($details2_upper, '2000 ML') !== false) {
-        return '2 Ltrs.';
-    } elseif (strpos($details2_upper, '60 ML') !== false) {
-        return '60 Ml';
-    } elseif (strpos($details2_upper, '90 ML') !== false) {
-        return '90 Ml';
+    // Define size mappings similar to brand_register.php
+    $spirit_sizes = [
+        '2000 ML Pet (6)' => '2000 ML',
+        '2000 ML(4)' => '2000 ML',
+        '2000 ML(6)' => '2000 ML',
+        '1000 ML(Pet)' => '1000 ML',
+        '1000 ML' => '1000 ML',
+        '750 ML(6)' => '750 ML',
+        '750 ML (Pet)' => '750 ML',
+        '750 ML' => '750 ML',
+        '700 ML' => '700 ML',
+        '700 ML(6)' => '700 ML',
+        '375 ML (12)' => '375 ML',
+        '375 ML' => '375 ML',
+        '375 ML (Pet)' => '375 ML',
+        '350 ML (12)' => '350 ML',
+        '275 ML(24)' => '275 ML',
+        '200 ML (48)' => '200 ML',
+        '200 ML (24)' => '200 ML',
+        '200 ML (30)' => '200 ML',
+        '200 ML (12)' => '200 ML',
+        '180 ML(24)' => '180 ML',
+        '180 ML (Pet)' => '180 ML',
+        '180 ML' => '180 ML',
+        '90 ML(100)' => '90 ML',
+        '90 ML (Pet)-100' => '90 ML',
+        '90 ML (Pet)-96' => '90 ML',
+        '90 ML-(96)' => '90 ML',
+        '90 ML' => '90 ML',
+        '60 ML' => '60 ML',
+        '60 ML (75)' => '60 ML',
+        '50 ML(120)' => '50 ML',
+        '50 ML (180)' => '50 ML',
+        '50 ML (24)' => '50 ML',
+        '50 ML (192)' => '50 ML'
+    ];
+    
+    $wine_sizes = [
+        '750 ML(6)' => '750 ML',
+        '750 ML' => '750 ML',
+        '650 ML' => '650 ML',
+        '375 ML' => '375 ML',
+        '330 ML' => '330 ML',
+        '180 ML' => '180 ML'
+    ];
+    
+    $beer_sizes = [
+        '650 ML' => '650 ML',
+        '500 ML' => '500 ML',
+        '500 ML (CAN)' => '500 ML',
+        '330 ML' => '330 ML',
+        '330 ML (CAN)' => '330 ML',
+        '275 ML' => '275 ML',
+        '250 ML' => '250 ML'
+    ];
+    
+    // Check for beer types first (both fermented and mild)
+    foreach ($beer_sizes as $excel_size => $category) {
+        if (strpos($details2_upper, $excel_size) !== false) {
+            return $category;
+        }
+    }
+    
+    // Old beer type checks for compatibility
+    if (strpos($details2_upper, '1000 ML') !== false || strpos($details2_upper, '1 LTR') !== false) {
+        return '1000 ML';
+    } elseif (strpos($details2_upper, '650 ML') !== false) {
+        return '650 ML';
+    } elseif (strpos($details2_upper, '500 ML') !== false) {
+        return '500 ML';
+    } elseif (strpos($details2_upper, '330 ML') !== false) {
+        return '330 ML';
+    } elseif (strpos($details2_upper, '275 ML') !== false) {
+        return '275 ML';
+    } elseif (strpos($details2_upper, '250 ML') !== false) {
+        return '250 ML';
     }
     
     // Check for wine types
     if (strpos($details_upper, 'WINE') !== false || $class === 'V') {
-        if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
-            return 'Wine Nip';
-        } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
-            return 'Wine Pint';
-        } else {
-            return 'Wine Quart';
+        foreach ($wine_sizes as $excel_size => $category) {
+            if (strpos($details2_upper, $excel_size) !== false) {
+                return 'Wine ' . $category;
+            }
         }
+        // Default wine category if no specific size found
+        return 'Wine 750 ML';
     }
     
     // Check for country liquor
     if ($class === 'C') {
-        if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false) {
-            return 'Nip';
-        } elseif (strpos($details2_upper, 'QUART') !== false || strpos($details2_upper, '750 ML') !== false) {
-            return 'Quart';
-        } else {
-            return '90 Ml';
+        foreach ($spirit_sizes as $excel_size => $category) {
+            if (strpos($details2_upper, $excel_size) !== false) {
+                // For country liquor, use size names without "Wine" prefix
+                return $category;
+            }
+        }
+        // Default country liquor category
+        return '90 ML';
+    }
+    
+    // Check for foreign liquor (spirits)
+    foreach ($spirit_sizes as $excel_size => $category) {
+        if (strpos($details2_upper, $excel_size) !== false) {
+            return $category;
         }
     }
     
-    // Default to foreign liquor categories
+    // Fallback to old logic for edge cases
     if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
-        return 'Nip';
+        return '90 ML';
     } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
-        return 'Pint';
+        return '375 ML';
     } else {
-        return 'Quart';
+        return '750 ML';
     }
 }
 
@@ -184,7 +257,7 @@ if (isset($_GET['generate'])) {
             $result = $stmt->get_result();
             $items = $result->fetch_all(MYSQLI_ASSOC);
             
-            // Organize items by category (following April report structure)
+            // Organize items by category (following brand_register.php structure)
             foreach ($items as $item) {
                 $category = getCategoryName($item['CLASS'], $item['DETAILS'], $item['DETAILS2']);
                 $closing_stock = (float)$item['CLOSING_STOCK'];
@@ -228,12 +301,21 @@ if (isset($_GET['generate'])) {
     }
 }
 
-// Define category order for display (as per April report)
+// Define category order for display (updated with comprehensive size categories like brand_register.php)
 $category_order = [
-    'Foreign Liquor' => ['Quart', 'Pint', 'Nip'],
-    'Wine' => ['Wine Quart', 'Wine Pint', 'Wine Nip'],
-    'Beer' => ['650 E', '650 M', '1 Ltr.', '60 Ml', '500 M', '500 F', '330 F', '330 M', '2 Ltrs.', '90 Ml'],
-    'Country Liquor' => ['Quart', 'Nip', '90 Ml']
+    'Foreign Liquor' => [
+        '2000 ML', '1000 ML', '750 ML', '700 ML', '375 ML', '350 ML', '275 ML', 
+        '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
+    ],
+    'Wine' => [
+        'Wine 750 ML', 'Wine 650 ML', 'Wine 375 ML', 'Wine 330 ML', 'Wine 180 ML'
+    ],
+    'Beer' => [
+        '1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'
+    ],
+    'Country Liquor' => [
+        '750 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
+    ]
 ];
 ?>
 <!DOCTYPE html>
@@ -401,7 +483,7 @@ $category_order = [
               No stock data found for the selected date.
             </div>
           <?php elseif ($report_type === 'detailed'): ?>
-            <!-- Detailed Report (April style) -->
+            <!-- Detailed Report (Updated with comprehensive size categories) -->
             <?php foreach ($category_order as $main_category => $subcategories): 
                   $has_data = false;
                   foreach ($subcategories as $subcat) {
@@ -473,7 +555,7 @@ $category_order = [
             </div>
 
           <?php else: ?>
-            <!-- Summary Report (April style) -->
+            <!-- Summary Report (Updated with comprehensive size categories) -->
             <div class="summary-section">
               <table class="report-table">
                 <thead>

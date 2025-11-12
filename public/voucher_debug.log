@@ -111,3 +111,22 @@
 [2025-10-30 14:27:38] Updating purchase ID: 1 with flag: P
 [2025-10-30 14:27:38] Committing transaction
 [2025-10-30 14:27:38] === VOUCHER SAVE SUCCESS ===
+[2025-11-08 12:57:55] === START VOUCHER SAVE PROCESS ===
+[2025-11-08 12:57:55] CompID: 1, Action: new, Ledger: AMAR, Amount: 5000
+[2025-11-08 12:57:55] Starting database transaction
+[2025-11-08 12:57:55] Final DOC_NO: PMT-000004
+[2025-11-08 12:57:55] Ledger ID: 123
+[2025-11-08 12:57:55] Creating new voucher
+[2025-11-08 12:57:55] Getting voucher details for CompID: 1, Purchase VOC Nos: 2
+[2025-11-08 12:57:55] No existing voucher found for these purchase VOC numbers
+[2025-11-08 12:57:55] Getting next GLOBAL VNO
+[2025-11-08 12:57:55] Current GLOBAL MAX VNO: 1, Next VNO: 2
+[2025-11-08 12:57:55] New GLOBAL VNO: 2 with PAYMENT_SEQ: 1
+[2025-11-08 12:57:55] Processing 1 paid invoices
+[2025-11-08 12:57:55] Invoice 0 - VOC: 2, Amount: 5000, PAYMENT_SEQ: 1
+[2025-11-08 12:57:55] Check if VNO: 2, PAYMENT_SEQ: 1 exists GLOBALLY: NO
+[2025-11-08 12:57:55] Inserting - VNO: 2, PAYMENT_SEQ: 1, CompID: 1
+[2025-11-08 12:57:55] INSERT SUCCESS - VNO: 2, PAYMENT_SEQ: 1
+[2025-11-08 12:57:55] Updating purchase ID: 2 with flag: P
+[2025-11-08 12:57:55] Committing transaction
+[2025-11-08 12:57:55] === VOUCHER SAVE SUCCESS ===

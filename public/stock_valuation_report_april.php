@@ -84,6 +84,217 @@ if (!tableExists($conn, $daily_stock_table)) {
     }
 }
 
+// Function to group sizes by base size (remove suffixes after ML and trim)
+function getBaseSize($size) {
+    // Extract the base size (everything before any special characters after ML)
+    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
+    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
+    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
+    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
+    return trim($baseSize);
+}
+
+// Function to identify if item is Indian or Imported
+function getItemOrigin($details, $details2, $class) {
+    $details_upper = strtoupper($details);
+    $details2_upper = strtoupper($details2);
+    
+    // Indian brands list
+    $indian_brands = [
+        'OFFICER\'S CHOICE', 'MCDOWELL\'S NO.1', 'BAGPIPER', 'IMPERIAL BLUE', 
+        'ROYAL STAG', '8 PM', 'OLD MONK', 'HAYWARDS', 'DIRTY DOZEN', 
+        'BLENDERS PRIDE', 'ROYAL CHALLENGE', 'ANTiquity', 'SIGNATURE',
+        'KINGFISHER', 'WHITE MISCHIEF', 'ROMANOV', 'MAGIC MOMENTS',
+        'MCDOWELL\'S BRANDY', 'DREHER', 'MOLESWORTH', 'BLUE RIBBOND',
+        'GORDON\'S', 'HONEY BEE', 'CONTESSA', 'CAPTAIN SPECIAL'
+    ];
+    
+    // Imported brands list
+    $imported_brands = [
+        'JOHNNIE WALKER', 'CHIVAS REGAL', 'BALLANTINE\'S', 'GLENFIDDICH', 
+        'GLENLIVET', 'JACK DANIEL\'S', 'JIM BEAM', 'JAMESON', 'ABSOLUT', 
+        'SMIRNOFF', 'BACARDI', 'CAPTAIN MORGAN', 'JOSE CUERVO', 'MACALLAN',
+        'DEWAR\'S', 'BLACK & WHITE', 'TEACHER\'S', 'WHITE HORSE', 'CUTTY SARK',
+        'FAMOUS GROUSE', 'MAKER\'S MARK', 'WILD TURKEY', 'BULLEIT', 'WOODFORD RESERVE',
+        'BUSHMILLS', 'TULLAMORE DEW', 'CANADIAN CLUB', 'CROWN ROYAL', 'GREY GOOSE',
+        'BELVEDERE', 'CIROC', 'STOLICHNAYA', 'FINLANDIA', 'TANQUERAY', 'BEEFEATER',
+        'HENDRICK\'S', 'HAVANA CLUB', 'MALIBU', 'PATRON', 'DON JULIO', 'SAUZA',
+        'JACOB\'S CREEK', 'YELLOW TAIL', 'BAREFOOT', 'GALLO', 'MOET',
+        'VEUVE CLICQUOT', 'DOM PERIGNON', 'CHAMPAGNE', 'STELLA ARTOIS', 'GUINNESS'
+    ];
+    
+    // Check for imported keywords in description
+    $imported_keywords = [
+        'SCOTCH', 'IMPORTED', 'IMPORT', 'FOREIGN', 'PREMIUM IMPORT',
+        'INTERNATIONAL', 'ORIGINAL IMPORT'
+    ];
+    
+    // Check for Indian keywords
+    $indian_keywords = [
+        'INDIAN', 'DOMESTIC', 'LOCAL', 'MADE IN INDIA', 'COUNTRY'
+    ];
+    
+    // First check brand names
+    foreach ($indian_brands as $brand) {
+        if (strpos($details_upper, $brand) !== false) {
+            return 'Indian';
+        }
+    }
+    
+    foreach ($imported_brands as $brand) {
+        if (strpos($details_upper, $brand) !== false) {
+            return 'Imported';
+        }
+    }
+    
+    // Check for keywords
+    foreach ($imported_keywords as $keyword) {
+        if (strpos($details_upper, $keyword) !== false || 
+            strpos($details2_upper, $keyword) !== false) {
+            return 'Imported';
+        }
+    }
+    
+    foreach ($indian_keywords as $keyword) {
+        if (strpos($details_upper, $keyword) !== false || 
+            strpos($details2_upper, $keyword) !== false) {
+            return 'Indian';
+        }
+    }
+    
+    // Default based on class
+    if ($class === 'C') { // Country Liquor is always Indian
+        return 'Indian';
+    }
+    
+    // For other classes, default to Indian (most common case in India)
+    return 'Indian';
+}
+
+// Function to get category name based on class and details (updated with comprehensive size mapping)
+function getCategoryName($class, $details, $details2) {
+    $details_upper = strtoupper($details);
+    $details2_upper = strtoupper($details2);
+    
+    // Define size mappings similar to brand_register.php
+    $spirit_sizes = [
+        '2000 ML Pet (6)' => '2000 ML',
+        '2000 ML(4)' => '2000 ML',
+        '2000 ML(6)' => '2000 ML',
+        '1000 ML(Pet)' => '1000 ML',
+        '1000 ML' => '1000 ML',
+        '750 ML(6)' => '750 ML',
+        '750 ML (Pet)' => '750 ML',
+        '750 ML' => '750 ML',
+        '700 ML' => '700 ML',
+        '700 ML(6)' => '700 ML',
+        '375 ML (12)' => '375 ML',
+        '375 ML' => '375 ML',
+        '375 ML (Pet)' => '375 ML',
+        '350 ML (12)' => '350 ML',
+        '275 ML(24)' => '275 ML',
+        '200 ML (48)' => '200 ML',
+        '200 ML (24)' => '200 ML',
+        '200 ML (30)' => '200 ML',
+        '200 ML (12)' => '200 ML',
+        '180 ML(24)' => '180 ML',
+        '180 ML (Pet)' => '180 ML',
+        '180 ML' => '180 ML',
+        '90 ML(100)' => '90 ML',
+        '90 ML (Pet)-100' => '90 ML',
+        '90 ML (Pet)-96' => '90 ML',
+        '90 ML-(96)' => '90 ML',
+        '90 ML' => '90 ML',
+        '60 ML' => '60 ML',
+        '60 ML (75)' => '60 ML',
+        '50 ML(120)' => '50 ML',
+        '50 ML (180)' => '50 ML',
+        '50 ML (24)' => '50 ML',
+        '50 ML (192)' => '50 ML'
+    ];
+    
+    $wine_sizes = [
+        '750 ML(6)' => 'Wine 750 ML',
+        '750 ML' => 'Wine 750 ML',
+        '650 ML' => 'Wine 650 ML',
+        '375 ML' => 'Wine 375 ML',
+        '330 ML' => 'Wine 330 ML',
+        '180 ML' => 'Wine 180 ML'
+    ];
+    
+    $beer_sizes = [
+        '1000 ML' => '1000 ML',
+        '650 ML' => '650 ML',
+        '500 ML' => '500 ML',
+        '500 ML (CAN)' => '500 ML',
+        '330 ML' => '330 ML',
+        '330 ML (CAN)' => '330 ML',
+        '275 ML' => '275 ML',
+        '250 ML' => '250 ML'
+    ];
+    
+    // Check for beer types first (both fermented and mild)
+    foreach ($beer_sizes as $excel_size => $category) {
+        if (strpos($details2_upper, $excel_size) !== false) {
+            return $category;
+        }
+    }
+    
+    // Old beer type checks for compatibility
+    if (strpos($details2_upper, '1000 ML') !== false || strpos($details2_upper, '1 LTR') !== false) {
+        return '1000 ML';
+    } elseif (strpos($details2_upper, '650 ML') !== false) {
+        return '650 ML';
+    } elseif (strpos($details2_upper, '500 ML') !== false) {
+        return '500 ML';
+    } elseif (strpos($details2_upper, '330 ML') !== false) {
+        return '330 ML';
+    } elseif (strpos($details2_upper, '275 ML') !== false) {
+        return '275 ML';
+    } elseif (strpos($details2_upper, '250 ML') !== false) {
+        return '250 ML';
+    }
+    
+    // Check for wine types
+    if (strpos($details_upper, 'WINE') !== false || $class === 'V') {
+        foreach ($wine_sizes as $excel_size => $category) {
+            if (strpos($details2_upper, $excel_size) !== false) {
+                return $category;
+            }
+        }
+        // Default wine category if no specific size found
+        return 'Wine 750 ML';
+    }
+    
+    // Check for country liquor
+    if ($class === 'C') {
+        foreach ($spirit_sizes as $excel_size => $category) {
+            if (strpos($details2_upper, $excel_size) !== false) {
+                // For country liquor, use size names without "Wine" prefix
+                return $category;
+            }
+        }
+        // Default country liquor category
+        return '90 ML';
+    }
+    
+    // Check for foreign liquor (spirits)
+    foreach ($spirit_sizes as $excel_size => $category) {
+        if (strpos($details2_upper, $excel_size) !== false) {
+            return $category;
+        }
+    }
+    
+    // Fallback to old logic for edge cases
+    if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
+        return '90 ML';
+    } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
+        return '375 ML';
+    } else {
+        return '750 ML';
+    }
+}
+
 // Fetch items with closing stock and rates - FILTERED BY LICENSE TYPE
 if (!empty($allowed_classes) && !empty($daily_stock_table) && tableExists($conn, $daily_stock_table)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
@@ -119,118 +330,68 @@ $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 
-// Rest of your existing code for processing and displaying the report...
-// [Include all the existing functions and processing logic from your previous code]
-
-// Function to get category name based on class and details
-function getCategoryName($class, $details, $details2) {
-    $details_upper = strtoupper($details);
-    $details2_upper = strtoupper($details2);
-    
-    // Check for beer types first
-    if (strpos($details2_upper, '650 E') !== false || strpos($details2_upper, '650 F') !== false) {
-        return '650 E';
-    } elseif (strpos($details2_upper, '650 M') !== false) {
-        return '650 M';
-    } elseif (strpos($details2_upper, '500 M') !== false) {
-        return '500 M';
-    } elseif (strpos($details2_upper, '500 F') !== false) {
-        return '500 F';
-    } elseif (strpos($details2_upper, '330 F') !== false) {
-        return '330 F';
-    } elseif (strpos($details2_upper, '330 M') !== false) {
-        return '330 M';
-    } elseif (strpos($details2_upper, '1 LTR') !== false || strpos($details2_upper, '1000 ML') !== false) {
-        return '1 Ltr.';
-    } elseif (strpos($details2_upper, '2 LTR') !== false || strpos($details2_upper, '2000 ML') !== false) {
-        return '2 Ltrs.';
-    } elseif (strpos($details2_upper, '60 ML') !== false) {
-        return '60 Ml';
-    } elseif (strpos($details2_upper, '90 ML') !== false) {
-        return '90 Ml';
-    }
-    
-    // Check for wine types
-    if (strpos($details_upper, 'WINE') !== false || $class === 'V') {
-        if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
-            return 'Wine Nip';
-        } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
-            return 'Wine Pint';
-        } else {
-            return 'Wine Quart';
-        }
-    }
-    
-    // Check for country liquor
-    if ($class === 'C') {
-        if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false) {
-            return 'Nip';
-        } elseif (strpos($details2_upper, 'QUART') !== false || strpos($details2_upper, '750 ML') !== false) {
-            return 'Quart';
-        } else {
-            return '90 Ml';
-        }
-    }
-    
-    // Default to foreign liquor categories
-    if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
-        return 'Nip';
-    } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
-        return 'Pint';
-    } else {
-        return 'Quart';
-    }
-}
-
-// Organize items by category for detailed report
+// Organize items by category for detailed report with origin
 $detailed_categories = [];
 $summary_data = [];
+$grand_total_amount = 0;
 
 foreach ($items as $item) {
     $category = getCategoryName($item['CLASS'], $item['DETAILS'], $item['DETAILS2']);
+    $origin = getItemOrigin($item['DETAILS'], $item['DETAILS2'], $item['CLASS']);
     $closing_stock = (float)$item['CLOSING_STOCK'];
     $rate = (float)$item['PPRICE'];
     $amount = $closing_stock * $rate;
     
+    // Create a combined category with origin for detailed report
+    $category_with_origin = $category . ' (' . $origin . ')';
+    
     // For detailed report
-    if (!isset($detailed_categories[$category])) {
-        $detailed_categories[$category] = [];
+    if (!isset($detailed_categories[$category_with_origin])) {
+        $detailed_categories[$category_with_origin] = [];
     }
     
-    $detailed_categories[$category][] = [
+    $detailed_categories[$category_with_origin][] = [
         'description' => $item['DETAILS'],
         'closing_stock' => $closing_stock,
         'rate' => $rate,
-        'amount' => $amount
+        'amount' => $amount,
+        'origin' => $origin
     ];
     
-    // For summary report
+    // For summary report - group by origin within category
     if (!isset($summary_data[$category])) {
         $summary_data[$category] = [
-            'closing_stock' => 0,
-            'amount' => 0
+            'Indian' => ['closing_stock' => 0, 'amount' => 0],
+            'Imported' => ['closing_stock' => 0, 'amount' => 0]
         ];
     }
     
-    $summary_data[$category]['closing_stock'] += $closing_stock;
-    $summary_data[$category]['amount'] += $amount;
+    $summary_data[$category][$origin]['closing_stock'] += $closing_stock;
+    $summary_data[$category][$origin]['amount'] += $amount;
+    $grand_total_amount += $amount;
 }
 
-// Define category order for display (as per your PDF)
+// Define category order for display (updated with comprehensive size categories)
 $category_order = [
-    'Foreign Liquor' => ['Quart', 'Pint', 'Nip'],
-    'Wine' => ['Wine Quart', 'Wine Pint', 'Wine Nip'],
-    'Beer' => ['650 E', '650 M', '1 Ltr.', '60 Ml', '500 M', '500 F', '330 F', '330 M', '2 Ltrs.', '90 Ml'],
-    'Country Liquor' => ['Quart', 'Nip', '90 Ml']
+    'Foreign Liquor' => [
+        '2000 ML', '1000 ML', '750 ML', '700 ML', '375 ML', '350 ML', '275 ML', 
+        '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
+    ],
+    'Wine' => [
+        'Wine 750 ML', 'Wine 650 ML', 'Wine 375 ML', 'Wine 330 ML', 'Wine 180 ML'
+    ],
+    'Beer' => [
+        '1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'
+    ],
+    'Country Liquor' => [
+        '750 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
+    ]
 ];
 
 // Calculate totals
 $grand_total_stock = 0;
-$grand_total_amount = 0;
-
 foreach ($summary_data as $category) {
-    $grand_total_stock += $category['closing_stock'];
-    $grand_total_amount += $category['amount'];
+    $grand_total_stock += $category['Indian']['closing_stock'] + $category['Imported']['closing_stock'];
 }
 ?>
 
@@ -288,6 +449,12 @@ foreach ($summary_data as $category) {
     .text-center {
         text-align: center;
     }
+    .origin-indian {
+        background-color: #f8f9fa;
+    }
+    .origin-imported {
+        background-color: #fff3cd;
+    }
     @media print {
         .no-print {
             display: none !important;
@@ -301,6 +468,12 @@ foreach ($summary_data as $category) {
         .report-table th, .report-table td {
             padding: 2px 4px;
         }
+        .origin-indian {
+            background-color: #f8f9fa !important;
+        }
+        .origin-imported {
+            background-color: #fff3cd !important;
+        }
     }
   </style>
 </head>
@@ -310,7 +483,7 @@ foreach ($summary_data as $category) {
   <div class="main-content">
 
     <div class="content-area">
-      <h3 class="mb-4">Stock Valuation Report</h3>
+      <h3 class="mb-4">Stock Valuation Report - April</h3>
 
       <!-- License Restriction Info -->
       <div class="license-info no-print">
@@ -393,11 +566,13 @@ foreach ($summary_data as $category) {
             No stock data found for April 1st, 2025.
           </div>
         <?php elseif ($report_type === 'D'): ?>
-          <!-- Detailed Report -->
+          <!-- Detailed Report with Origin -->
           <?php foreach ($category_order as $main_category => $subcategories): 
                 $has_data = false;
                 foreach ($subcategories as $subcat) {
-                    if (isset($detailed_categories[$subcat]) && !empty($detailed_categories[$subcat])) {
+                    // Check both Indian and Imported versions
+                    if ((isset($detailed_categories[$subcat . ' (Indian)']) && !empty($detailed_categories[$subcat . ' (Indian)'])) ||
+                        (isset($detailed_categories[$subcat . ' (Imported)']) && !empty($detailed_categories[$subcat . ' (Imported)']))) {
                         $has_data = true;
                         break;
                     }
@@ -421,31 +596,61 @@ foreach ($summary_data as $category) {
                 <?php 
                 $category_total_amount = 0;
                 foreach ($subcategories as $subcategory):
-                    if (!isset($detailed_categories[$subcategory]) || empty($detailed_categories[$subcategory])) continue;
+                    $has_indian = isset($detailed_categories[$subcategory . ' (Indian)']) && !empty($detailed_categories[$subcategory . ' (Indian)']);
+                    $has_imported = isset($detailed_categories[$subcategory . ' (Imported)']) && !empty($detailed_categories[$subcategory . ' (Imported)']);
+                    
+                    if (!$has_indian && !$has_imported) continue;
                 ?>
-                <tr class="subcategory-header">
-                  <td colspan="4"><?= $subcategory ?></td>
+                
+                <?php if ($has_indian): ?>
+                <tr class="subcategory-header origin-indian">
+                  <td colspan="4"><?= $subcategory ?> (Indian)</td>
                 </tr>
                 <?php 
-                $subcategory_total_amount = 0;
-                foreach ($detailed_categories[$subcategory] as $item):
-                    $subcategory_total_amount += $item['amount'];
+                $subcategory_total_amount_indian = 0;
+                foreach ($detailed_categories[$subcategory . ' (Indian)'] as $item):
+                    $subcategory_total_amount_indian += $item['amount'];
                 ?>
-                <tr>
+                <tr class="origin-indian">
                   <td><?= htmlspecialchars($item['description']) ?></td>
                   <td class="text-right"><?= number_format($item['closing_stock'], 0) ?></td>
                   <td class="text-right"><?= number_format($item['rate'], 2) ?></td>
                   <td class="text-right"><?= number_format($item['amount'], 2) ?></td>
                 </tr>
                 <?php endforeach; ?>
-                <tr class="total-row">
-                  <td colspan="3" class="text-right"><strong>Sub Total</strong></td>
-                  <td class="text-right"><strong><?= number_format($subcategory_total_amount, 2) ?></strong></td>
+                <tr class="total-row origin-indian">
+                  <td colspan="3" class="text-right"><strong>Sub Total (Indian)</strong></td>
+                  <td class="text-right"><strong><?= number_format($subcategory_total_amount_indian, 2) ?></strong></td>
                 </tr>
                 <?php 
-                $category_total_amount += $subcategory_total_amount;
-                endforeach; 
+                $category_total_amount += $subcategory_total_amount_indian;
+                endif; ?>
+                
+                <?php if ($has_imported): ?>
+                <tr class="subcategory-header origin-imported">
+                  <td colspan="4"><?= $subcategory ?> (Imported)</td>
+                </tr>
+                <?php 
+                $subcategory_total_amount_imported = 0;
+                foreach ($detailed_categories[$subcategory . ' (Imported)'] as $item):
+                    $subcategory_total_amount_imported += $item['amount'];
                 ?>
+                <tr class="origin-imported">
+                  <td><?= htmlspecialchars($item['description']) ?></td>
+                  <td class="text-right"><?= number_format($item['closing_stock'], 0) ?></td>
+                  <td class="text-right"><?= number_format($item['rate'], 2) ?></td>
+                  <td class="text-right"><?= number_format($item['amount'], 2) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <tr class="total-row origin-imported">
+                  <td colspan="3" class="text-right"><strong>Sub Total (Imported)</strong></td>
+                  <td class="text-right"><strong><?= number_format($subcategory_total_amount_imported, 2) ?></strong></td>
+                </tr>
+                <?php 
+                $category_total_amount += $subcategory_total_amount_imported;
+                endif; ?>
+                
+                <?php endforeach; ?>
                 <tr class="grand-total-row">
                   <td colspan="3" class="text-right"><strong>Total <?= $main_category ?></strong></td>
                   <td class="text-right"><strong><?= number_format($category_total_amount, 2) ?></strong></td>
@@ -465,7 +670,7 @@ foreach ($summary_data as $category) {
           </div>
 
         <?php else: ?>
-          <!-- Summary Report -->
+          <!-- Summary Report with Origin -->
           <div class="summary-section">
             <table class="report-table">
               <thead>
@@ -480,40 +685,51 @@ foreach ($summary_data as $category) {
                 $summary_total_amount = 0;
                 $summary_total_stock = 0;
                 
-                // Display in the order we want
-                $display_order = [
-                    'Foreign Liquor' => ['Quart', 'Pint', 'Nip'],
-                    'Wine' => ['Wine Quart', 'Wine Pint', 'Wine Nip'],
-                    'Beer' => ['650 E', '650 M', '1 Ltr.', '60 Ml', '500 M', '500 F', '330 F', '330 M', '2 Ltrs.', '90 Ml'],
-                    'Country Liquor' => ['Quart', 'Nip', '90 Ml']
-                ];
-                
-                foreach ($display_order as $main_category => $subcategories):
-                    $main_category_stock = 0;
-                    $main_category_amount = 0;
+                foreach ($category_order as $main_category => $subcategories):
+                    $main_category_stock_indian = 0;
+                    $main_category_amount_indian = 0;
+                    $main_category_stock_imported = 0;
+                    $main_category_amount_imported = 0;
                 ?>
                 <tr class="category-header">
                   <td colspan="3"><?= $main_category ?></td>
                 </tr>
                 <?php foreach ($subcategories as $subcategory): 
                     if (isset($summary_data[$subcategory])):
-                        $main_category_stock += $summary_data[$subcategory]['closing_stock'];
-                        $main_category_amount += $summary_data[$subcategory]['amount'];
+                        $indian_data = $summary_data[$subcategory]['Indian'];
+                        $imported_data = $summary_data[$subcategory]['Imported'];
+                        
+                        $main_category_stock_indian += $indian_data['closing_stock'];
+                        $main_category_amount_indian += $indian_data['amount'];
+                        $main_category_stock_imported += $imported_data['closing_stock'];
+                        $main_category_amount_imported += $imported_data['amount'];
                 ?>
-                <tr>
-                  <td style="padding-left: 20px;"><?= $subcategory ?></td>
-                  <td class="text-right"><?= number_format($summary_data[$subcategory]['closing_stock'], 0) ?></td>
-                  <td class="text-right"><?= number_format($summary_data[$subcategory]['amount'], 2) ?></td>
+                <!-- Indian Items -->
+                <tr class="origin-indian">
+                  <td style="padding-left: 20px;"><?= $subcategory ?> (Indian)</td>
+                  <td class="text-right"><?= number_format($indian_data['closing_stock'], 0) ?></td>
+                  <td class="text-right"><?= number_format($indian_data['amount'], 2) ?></td>
+                </tr>
+                <!-- Imported Items -->
+                <tr class="origin-imported">
+                  <td style="padding-left: 20px;"><?= $subcategory ?> (Imported)</td>
+                  <td class="text-right"><?= number_format($imported_data['closing_stock'], 0) ?></td>
+                  <td class="text-right"><?= number_format($imported_data['amount'], 2) ?></td>
                 </tr>
                 <?php endif; endforeach; ?>
                 <tr class="total-row">
-                  <td class="text-right"><strong>Total <?= $main_category ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($main_category_stock, 0) ?></strong></td>
-                  <td class="text-right"><strong><?= number_format($main_category_amount, 2) ?></strong></td>
+                  <td class="text-right"><strong>Total <?= $main_category ?> (Indian)</strong></td>
+                  <td class="text-right"><strong><?= number_format($main_category_stock_indian, 0) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($main_category_amount_indian, 2) ?></strong></td>
+                </tr>
+                <tr class="total-row">
+                  <td class="text-right"><strong>Total <?= $main_category ?> (Imported)</strong></td>
+                  <td class="text-right"><strong><?= number_format($main_category_stock_imported, 0) ?></strong></td>
+                  <td class="text-right"><strong><?= number_format($main_category_amount_imported, 2) ?></strong></td>
                 </tr>
                 <?php 
-                $summary_total_stock += $main_category_stock;
-                $summary_total_amount += $main_category_amount;
+                $summary_total_stock += $main_category_stock_indian + $main_category_stock_imported;
+                $summary_total_amount += $main_category_amount_indian + $main_category_amount_imported;
                 endforeach; 
                 ?>
                 <tr class="grand-total-row">

@@ -13,13 +13,19 @@ function getClassesByLicenseType($license_code, $conn) {
             $class_ids = [2, 4, 11, 12, 13, 14];
             break;
         case 'FL-II':
-            $class_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+            $class_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             break;
         case 'CL-III':
             $class_ids = [9, 10, 11, 12, 13];
             break;
         case 'CL-FL-III':
-            $class_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+            $class_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+            break;
+        case 'IMPORTED': // New license type for imported products
+            $class_ids = [1, 3, 4, 5, 6, 7, 15]; // WHISKY(W), GIN(G), FERMENTED BEER(F), BRANDY(D), VODKA(K), RUM(R), Imported(I)
+            break;
+        case 'WINE-IMP': // New license type for imported wines
+            $class_ids = [2, 16]; // WINES(V), Wine Imp(Q)
             break;
         default:
             $class_ids = [];
@@ -147,5 +153,27 @@ function filterQueryByClassAccess($conn, $base_query, $class_id_column = 'class_
     } else {
         return $base_query . " WHERE $class_id_column IN ($ids_string)";
     }
+}
+
+// New function to get class mapping for reference
+function getClassMapping() {
+    return [
+        1 => ['code' => 'W', 'desc' => 'WHISKY'],
+        2 => ['code' => 'V', 'desc' => 'WINES'],
+        3 => ['code' => 'G', 'desc' => 'GIN'],
+        4 => ['code' => 'F', 'desc' => 'FERMENTED BEER'],
+        5 => ['code' => 'D', 'desc' => 'BRANDY'],
+        6 => ['code' => 'K', 'desc' => 'VODKA'],
+        7 => ['code' => 'R', 'desc' => 'RUM'],
+        8 => ['code' => 'O', 'desc' => 'OTHERS/GENERAL'],
+        9 => ['code' => 'L', 'desc' => 'LIQUORS'],
+        10 => ['code' => 'O', 'desc' => 'OTHERS/GENERAL'],
+        11 => ['code' => 'O', 'desc' => 'COLD DRINKS'],
+        12 => ['code' => 'O', 'desc' => 'SODA'],
+        13 => ['code' => 'O', 'desc' => 'EXTRA CLASS'],
+        14 => ['code' => 'M', 'desc' => 'Mild Beer'],
+        15 => ['code' => 'I', 'desc' => 'Imported'],
+        16 => ['code' => 'Q', 'desc' => 'Wine Imp']
+    ];
 }
 ?>

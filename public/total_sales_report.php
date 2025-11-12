@@ -337,7 +337,7 @@ function calculateTotalAmount($sale_type, $counter, $date_from, $date_to, $rate_
 // Define size categories for summary report based on CC values from tblsubclass
 $size_categories = [
     '4.5 L' => 4500,
-    '3 L' => 3000, 
+    '3 L' => 3000,
     '2 L' => 2000,
     '1 Ltr' => 1000,
     '750 ML' => 750,
@@ -351,33 +351,101 @@ $size_categories = [
     '60 ML' => 60
 ];
 
-// Function to categorize item by CC value
+// Define display sizes for summary report - same as excise register
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+
+// Define size categories for summary report based on CC values from tblsubclass - using excise register sizes
+$size_categories_brand = [
+    '2000 ML' => 2000,
+    '1000 ML' => 1000,
+    '750 ML' => 750,
+    '700 ML' => 700,
+    '500 ML' => 500,
+    '375 ML' => 375,
+    '200 ML' => 200,
+    '180 ML' => 180,
+    '90 ML' => 90,
+    '60 ML' => 60,
+    '50 ML' => 50,
+    '650 ML' => 650,
+    '330 ML' => 330,
+    '275 ML' => 275,
+    '250 ML' => 250
+];
+
+// Function to categorize item by CC value - same as excise register
 function categorizeByCC($cc) {
-    global $size_categories;
-    
+    global $size_categories_brand;
+
     $cc = (int)$cc;
     if ($cc === 0) return 'Other';
-    
+
     // Find the closest matching size category
-    foreach ($size_categories as $size_name => $size_cc) {
+    foreach ($size_categories_brand as $size_name => $size_cc) {
         if ($cc === $size_cc) {
             return $size_name;
         }
     }
-    
+
     // If no exact match, find the closest
     $closest = null;
     $min_diff = PHP_INT_MAX;
-    
-    foreach ($size_categories as $size_name => $size_cc) {
+
+    foreach ($size_categories_brand as $size_name => $size_cc) {
         $diff = abs($cc - $size_cc);
         if ($diff < $min_diff) {
             $min_diff = $diff;
             $closest = $size_name;
         }
     }
-    
+
     return $closest ?? 'Other';
+}
+
+// Function to get base size for grouping - same as excise register
+function getBaseSize($size) {
+    // Extract the base size (everything before any special characters after ML)
+    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
+    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
+    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
+    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
+    return trim($baseSize);
+}
+
+// Function to get grouped size for display - same as excise register
+function getGroupedSize($size, $liquor_type) {
+    global $display_sizes_s, $display_sizes_w, $display_sizes_fb, $display_sizes_mb;
+
+    $baseSize = getBaseSize($size);
+
+    // Check if this base size exists in the appropriate group
+    switch ($liquor_type) {
+        case 'Spirits':
+            if (in_array($baseSize, $display_sizes_s)) {
+                return $baseSize;
+            }
+            break;
+        case 'Wines':
+            if (in_array($baseSize, $display_sizes_w)) {
+                return $baseSize;
+            }
+            break;
+        case 'Fermented Beer':
+            if (in_array($baseSize, $display_sizes_fb)) {
+                return $baseSize;
+            }
+            break;
+        case 'Mild Beer':
+            if (in_array($baseSize, $display_sizes_mb)) {
+                return $baseSize;
+            }
+            break;
+    }
+
+    return $baseSize; // Return base size even if not found in predefined groups
 }
 
 // Function to get subclass description
@@ -503,10 +571,7 @@ function getSubclassDescription($item_group) {
             <h5>Total Sales Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
             <h6>Counter: <?= $counter === 'all' ? 'All Counters' : htmlspecialchars($counters[$counter] ?? 'Unknown') ?></h6>
             <h6>Rate Type: <?= $rate_type === 'mrp' ? 'MRP Rate' : 'B. Rate' ?></h6>
-            <h6>Sale Type: <?= 
-                $sale_type === 'retail' ? 'Retail Sale' : 
-                ($sale_type === 'customer' ? 'Customer Sale' : 'Total Sale (Retail + Customer)')
-            ?></h6>
+         
           </div>
           
           <div class="table-container">
@@ -515,6 +580,8 @@ function getSubclassDescription($item_group) {
                 <thead>
                   <tr>
                     <th>S. No</th>
+                    <th>Bill No</th>
+                    <th>Date</th>
                     <th>Item Description</th>
                     <th>Rate</th>
                     <th>Qty.</th>
@@ -525,36 +592,23 @@ function getSubclassDescription($item_group) {
                 <tbody>
                   <?php 
                   $sno = 1;
-                  $current_bill = 0;
                   foreach ($report_data as $row): 
-                    if ($current_bill != $row['BillNo']):
-                      $current_bill = $row['BillNo'];
                   ?>
-                    <tr class="bill-header">
-                      <td colspan="6">
-                        <strong>Bill No:</strong> <?= htmlspecialchars($row['BillNo']) ?> | 
-                        <strong>Date:</strong> <?= date('d/m/Y', strtotime($row['DATE'])) ?> | 
-                        <strong>Customer:</strong> <?= htmlspecialchars($row['Customer_Name'] ?? $row['Customer_Code'] ?? 'N/A') ?>
-                        <?php if (isset($row['Sale_Type'])): ?>
-                          | <span class="sale-type-badge"><?= htmlspecialchars($row['Sale_Type']) ?></span>
-                        <?php endif; ?>
-                      </td>
+                    <tr>
+                      <td><?= $sno++ ?></td>
+                      <td><?= htmlspecialchars($row['BillNo']) ?></td>
+                      <td><?= date('d/m/Y', strtotime($row['DATE'])) ?></td>
+                      <td><?= htmlspecialchars($row['ItemName']) ?></td>
+                      <td class="text-right"><?= number_format($row['Rate'], 2) ?></td>
+                      <td class="text-right"><?= htmlspecialchars($row['Quantity']) ?></td>
+                      <td class="text-center"><?= !empty($row['ItemSize']) ? htmlspecialchars($row['ItemSize']) : '-' ?></td>
+                      <td class="text-right"><?= number_format($row['Amount'], 2) ?></td>
                     </tr>
-                  <?php endif; ?>
-                  
-                  <tr>
-                    <td><?= $sno++ ?></td>
-                    <td><?= htmlspecialchars($row['ItemName']) ?></td>
-                    <td class="text-right"><?= number_format($row['Rate'], 2) ?></td>
-                    <td class="text-right"><?= htmlspecialchars($row['Quantity']) ?></td>
-                    <td class="text-center"><?= !empty($row['ItemSize']) ? htmlspecialchars($row['ItemSize']) : '-' ?></td>
-                    <td class="text-right"><?= number_format($row['Amount'], 2) ?></td>
-                  </tr>
                   <?php endforeach; ?>
                   
                   <tr class="total-row" style="border-bottom: double 3px #000;">
-                    <td colspan="5" class="text-end"><strong>Total Amount :</strong></td>
-                    <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
+                    <td colspan="7" class="text-end"><strong>Total Amount :</strong></td>
+                    <td class="text-right"><strong><?= number_format($total_amount, 0) ?></strong></td>
                   </tr>
                 </tbody>
               </table>
@@ -564,10 +618,9 @@ function getSubclassDescription($item_group) {
                 <thead>
                   <tr>
                     <th>Item Description</th>
-                    <?php foreach (array_keys($size_categories) as $size_name): ?>
+                    <?php foreach (array_keys($size_categories_brand) as $size_name): ?>
                       <th class="size-column"><?= $size_name ?></th>
                     <?php endforeach; ?>
-                    <th>Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -578,44 +631,56 @@ function getSubclassDescription($item_group) {
                       $item_name = $row['ItemName'];
                       $item_group = $row['ItemGroup'] ?? '';
                       $cc = $row['CC'] ?? 0;
-                      
+
                       $size_category = categorizeByCC($cc);
-                      
+
+                      // Determine liquor type based on item group/class
+                      $liquor_type = 'Spirits'; // Default
+                      if (!empty($item_group)) {
+                          // Check if it's beer or wine based on item group
+                          if (strpos(strtolower($item_group), 'beer') !== false) {
+                              $liquor_type = 'Fermented Beer';
+                          } elseif (strpos(strtolower($item_group), 'wine') !== false) {
+                              $liquor_type = 'Wines';
+                          }
+                      }
+
                       if (!isset($grouped_items[$item_group])) {
                           $grouped_items[$item_group] = [
                               'name' => getSubclassDescription($item_group),
                               'items' => []
                           ];
                       }
-                      
+
                       if (!isset($grouped_items[$item_group]['items'][$item_name])) {
-                          $grouped_items[$item_group]['items'][$item_name] = array_fill_keys(array_keys($size_categories), '');
-                          $grouped_items[$item_group]['items'][$item_name]['Total'] = 0;
+                          $grouped_items[$item_group]['items'][$item_name] = array_fill_keys(array_keys($size_categories_brand), 0);
                       }
-                      
-                      if (in_array($size_category, array_keys($size_categories))) {
-                          $grouped_items[$item_group]['items'][$item_name][$size_category] = $row['TotalQty'];
+
+                      // Use getGroupedSize to get the proper display size
+                      $grouped_size = getGroupedSize($size_category, $liquor_type);
+
+                      if (in_array($grouped_size, array_keys($size_categories_brand))) {
+                          $grouped_items[$item_group]['items'][$item_name][$grouped_size] += $row['TotalQty'];
                       }
-                      
-                      $grouped_items[$item_group]['items'][$item_name]['Total'] += $row['TotalAmount'];
                   }
                   
                   // Display grouped items
                   foreach ($grouped_items as $item_group => $group_data):
-                    if (!empty($group_data['name'])):
+                    // Skip subclass headers that are just size measurements (like "180 ML")
+                    $subclass_name = trim($group_data['name']);
+                    if (!empty($subclass_name) && !preg_match('/^\d+\s*ML$/i', $subclass_name)):
                   ?>
                     <tr class="subclass-header">
-                      <td colspan="<?= count($size_categories) + 2 ?>"><?= htmlspecialchars($group_data['name']) ?></td>
+                      <td colspan="<?= count($size_categories_brand) + 1 ?>"><?= htmlspecialchars($subclass_name) ?></td>
                     </tr>
                   <?php endif; ?>
                   
                   <?php foreach ($group_data['items'] as $item_name => $sizes): ?>
                     <tr>
                       <td><?= htmlspecialchars($item_name) ?></td>
-                      <?php foreach (array_keys($size_categories) as $size_name): ?>
+                      <?php foreach (array_keys($size_categories_brand) as $size_name): ?>
                         <td class="text-right"><?= $sizes[$size_name] ? htmlspecialchars($sizes[$size_name]) : '' ?></td>
                       <?php endforeach; ?>
-                      <td class="text-right"><?= number_format($sizes['Total'], 2) ?></td>
                     </tr>
                   <?php endforeach; ?>
                   
@@ -623,10 +688,9 @@ function getSubclassDescription($item_group) {
                   
                   <tr class="total-row">
                     <td><strong>Total</strong></td>
-                    <?php foreach (array_keys($size_categories) as $size_name): ?>
+                    <?php foreach (array_keys($size_categories_brand) as $size_name): ?>
                       <td class="text-right"></td>
                     <?php endforeach; ?>
-                    <td class="text-right"><strong><?= number_format($total_amount, 2) ?></strong></td>
                   </tr>
                 </tbody>
               </table>

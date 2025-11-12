@@ -308,8 +308,6 @@ if (isset($_GET['generate'])) {
             <h5>Group Wise Sales Summary Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
             <?php if ($use_customer_sales): ?>
             <p class="text-muted">(Data source: tblcustomersales)</p>
-            <?php else: ?>
-            <p class="text-muted">(Data source: tblsaleheader/tblsaledetails)</p>
             <?php endif; ?>
           </div>
           
@@ -347,12 +345,12 @@ if (isset($_GET['generate'])) {
               <?php foreach ($groups as $group_key => $group_info): ?>
                 <?php if (isset($report_data[$group_key]) && !empty($report_data[$group_key])): ?>
                 <h5 class="group-header"><?= $group_info['name'] ?></h5>
-                
-                <?php foreach ($report_data[$group_key] as $bill_no => $bill_data): ?>
-                <h6>Bill No: <?= $bill_no ?> | Date: <?= date('d/m/Y', strtotime($bill_data['BILL_DATE'])) ?></h6>
+
                 <table class="report-table">
                   <thead>
                     <tr>
+                      <th>Date</th>
+                      <th>Bill No</th>
                       <th>Item Code</th>
                       <th>Item Description</th>
                       <th>Category</th>
@@ -362,28 +360,27 @@ if (isset($_GET['generate'])) {
                     </tr>
                   </thead>
                   <tbody>
-                    <?php foreach ($bill_data['items'] as $item): ?>
-                    <tr>
-                      <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
-                      <td><?= htmlspecialchars($item['ITEM_NAME']) ?></td>
-                      <td><?= htmlspecialchars($item['CLASS_DESC']) ?></td>
-                      <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
-                      <td class="text-right"><?= $item['QTY'] ?></td>
-                      <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
-                    </tr>
+                    <?php foreach ($report_data[$group_key] as $bill_no => $bill_data): ?>
+                      <?php foreach ($bill_data['items'] as $item): ?>
+                      <tr>
+                        <td><?= date('d/m/Y', strtotime($bill_data['BILL_DATE'])) ?></td>
+                        <td><?= htmlspecialchars($bill_no) ?></td>
+                        <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
+                        <td><?= htmlspecialchars($item['ITEM_NAME']) ?></td>
+                        <td><?= htmlspecialchars($item['CLASS_DESC']) ?></td>
+                        <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
+                        <td class="text-right"><?= $item['QTY'] ?></td>
+                        <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
+                      </tr>
+                      <?php endforeach; ?>
                     <?php endforeach; ?>
-                    <tr class="subtotal-row">
-                      <td colspan="5" class="text-end">Bill Sub Total:</td>
-                      <td class="text-right"><?= number_format($bill_data['without_tax'], 2) ?></td>
-                    </tr>
                   </tbody>
                 </table>
-                <?php endforeach; ?>
-                
+
                 <!-- Group Subtotal -->
                 <table class="report-table">
                   <tr class="group-total-row">
-                    <td colspan="5" class="text-end"><?= $group_info['name'] ?> Sub Total:</td>
+                    <td colspan="7" class="text-end"><?= $group_info['name'] ?> Sub Total:</td>
                     <td class="text-right"><?= number_format($group_totals[$group_key]['without_tax'], 2) ?></td>
                   </tr>
                 </table>
