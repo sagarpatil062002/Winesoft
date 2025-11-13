@@ -31,8 +31,71 @@ if ($customerResult) {
     echo "Error fetching customers: " . $conn->error;
 }
 
-// Process form submissions
+// Handle customer creation and selection in one field
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Handle customer selection/creation
+    if (isset($_POST['customer_field'])) {
+        $customerField = trim($_POST['customer_field']);
+
+        if (!empty($customerField)) {
+            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
+            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
+                // Extract customer name (remove "new:" prefix if present)
+                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
+
+                if (!empty($customerName)) {
+                    // Get the next available LCODE for GCODE=32
+                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
+                    $maxResult = $conn->query($maxCodeQuery);
+                    $maxCode = 1;
+                    if ($maxResult && $maxResult->num_rows > 0) {
+                        $maxData = $maxResult->fetch_assoc();
+                        $maxCode = $maxData['max_code'] + 1;
+                    }
+
+                    // Insert new customer
+                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
+                    $stmt = $conn->prepare($insertQuery);
+                    $stmt->bind_param("is", $maxCode, $customerName);
+
+                    if ($stmt->execute()) {
+                        $_SESSION['selected_customer'] = $maxCode;
+                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
+
+                        // Refresh customers list
+                        $customerResult = $conn->query($customerQuery);
+                        $customers = [];
+                        if ($customerResult) {
+                            while ($row = $customerResult->fetch_assoc()) {
+                                $customers[$row['LCODE']] = $row['LHEAD'];
+                            }
+                        }
+                    } else {
+                        $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
+                    }
+                    $stmt->close();
+                }
+            } else {
+                // It's an existing customer code
+                $customerCode = intval($customerField);
+                if (array_key_exists($customerCode, $customers)) {
+                    $_SESSION['selected_customer'] = $customerCode;
+                    $_SESSION['success_message'] = "Customer selected successfully!";
+                } else {
+                    $_SESSION['error_message'] = "Invalid customer code!";
+                }
+            }
+        } else {
+            // Empty field means walk-in customer
+            $_SESSION['selected_customer'] = '';
+            $_SESSION['success_message'] = "Walk-in customer selected!";
+        }
+
+        // Redirect to avoid form resubmission
+        header("Location: customer_sales.php");
+        exit;
+    }
+
     // Store customer ID in session to preserve selection
     if (isset($_POST['customer_id'])) {
         $_SESSION['selected_customer'] = $_POST['customer_id'];
@@ -149,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Finalize sale
     if (isset($_POST['finalize_sale'])) {
         // Validate customer selection
-        $customerId = (int)($_POST['customer_id'] ?? 0);
+        $customerId = (int)($selectedCustomer ?? 0);
         if ($customerId <= 0 || !array_key_exists($customerId, $customers)) {
             $_SESSION['error'] = "Please select a valid customer";
         } elseif (!isset($_SESSION['sale_cart']) || empty($_SESSION['sale_cart'])) {
@@ -419,6 +482,14 @@ if ($itemsResult) {
 
 // Get selected customer from session if available
 $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
+
+// Clear customer-related session messages after displaying
+if (isset($_SESSION['success_message'])) {
+    unset($_SESSION['success_message']);
+}
+if (isset($_SESSION['error_message'])) {
+    unset($_SESSION['error_message']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -460,6 +531,15 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
       font-size: 0.85rem;
       color: #6c757d;
     }
+    /* Customer field styling */
+    .customer-combined-field {
+        position: relative;
+    }
+    .customer-hint {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -473,13 +553,28 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
         <h4>Customer Sales</h4>
       </div>
 
+      <!-- Success/Error Messages -->
+      <?php if (isset($_SESSION['success_message'])): ?>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?= $_SESSION['success_message'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <?php endif; ?>
+
+      <?php if (isset($_SESSION['error_message'])): ?>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?= $_SESSION['error_message'] ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <?php endif; ?>
+
       <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
           <i class="fa-solid fa-circle-check me-2"></i> Sale completed successfully! Bill No: <?= htmlspecialchars($_GET['bill_no']) ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
-      
+
       <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
           <i class="fa-solid fa-circle-exclamation me-2"></i> <?= $_SESSION['error'] ?>
@@ -488,34 +583,46 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
         <?php unset($_SESSION['error']); ?>
       <?php endif; ?>
 
-      <form method="POST" class="mb-4">
-        <div class="card mb-4">
-          <div class="card-header fw-semibold"><i class="fa-solid fa-user me-2"></i>Customer Information</div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="customer_id" class="form-label">Select Customer</label>
-                  <select class="form-select" id="customer_id" name="customer_id" required>
-                    <option value="">-- Select Customer --</option>
+      <!-- Combined Customer Field -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0"><i class="fas fa-user"></i> Customer Information</h5>
+            </div>
+            <div class="card-body">
+              <form method="POST" id="customerForm">
+                <div class="customer-combined-field">
+                  <label for="customer_field" class="form-label">Select or Create Customer</label>
+                  <input type="text"
+                         class="form-control"
+                         id="customer_field"
+                         name="customer_field"
+                         list="customerOptions"
+                         placeholder="Type to search customers or type 'new: Customer Name' to create new"
+                         value="<?= !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : '' ?>">
+                  <datalist id="customerOptions">
+                    <option value="">Walk-in Customer</option>
                     <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>" <?= ($selectedCustomer == $code) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($name) ?>
-                      </option>
+                      <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
                     <?php endforeach; ?>
-                  </select>
+                  </datalist>
+                  <div class="customer-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Select existing customer from dropdown or type "new: Customer Name" to create new customer.
+                    Leave empty for walk-in customer.
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label for="bill_date" class="form-label">Bill Date</label>
-                  <input type="date" class="form-control" id="bill_date" name="bill_date" 
-                         value="<?= date('Y-m-d') ?>" required readonly>
-                </div>
-              </div>
+                <button type="submit" class="btn btn-primary mt-3">
+                  <i class="fas fa-save"></i> Save Customer Selection
+                </button>
+              </form>
             </div>
           </div>
         </div>
+      </div>
+
+      <form method="POST" class="mb-4">
 
         <div class="card mb-4">
           <div class="card-header fw-semibold"><i class="fa-solid fa-cube me-2"></i>Add Items</div>
@@ -622,7 +729,6 @@ $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_
             <i class="fas fa-times"></i> Cancel
           </a>
           <form method="POST">
-            <input type="hidden" name="customer_id" value="<?= $selectedCustomer ?>">
             <button type="submit" name="finalize_sale" class="btn btn-success">
               <i class="fas fa-check"></i> Finalize Sale
             </button>
@@ -680,12 +786,6 @@ $(document).ready(function() {
     return item.text.split(' (₹')[0];
   }
   
-  // Auto-focus on item selection after customer is selected
-  $('#customer_id').change(function() {
-    if ($(this).val()) {
-      $('#item_search').select2('open');
-    }
-  });
   
   // Update price display when item is selected
   $('#item_search').on('select2:select', function(e) {
@@ -700,10 +800,10 @@ $(document).ready(function() {
   // Prevent form submission if customer is not selected when adding items
   $('form').submit(function(e) {
     if ($(this).find('button[name="add_item"]').length > 0) {
-      if (!$('#customer_id').val()) {
+      if (!<?= $selectedCustomer ? 'true' : 'false' ?>) {
         e.preventDefault();
         alert('Please select a customer first');
-        $('#customer_id').focus();
+        $('#customer_field').focus();
       }
     }
   });
