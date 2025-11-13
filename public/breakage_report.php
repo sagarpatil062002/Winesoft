@@ -177,7 +177,7 @@ function extractSizeFromDescription($description) {
                 <tr>
                   <th>Item Description</th>
                   <?php foreach ($size_columns as $column): ?>
-                    <th class="text-center"><?= $column ?></th>
+                    <th class="text-right"><?= $column ?></th>
                   <?php endforeach; ?>
                 </tr>
               </thead>
@@ -187,7 +187,7 @@ function extractSizeFromDescription($description) {
                     <tr>
                       <td><?= htmlspecialchars($item_desc) ?></td>
                       <?php foreach ($size_columns as $column): ?>
-                        <td class="text-center"><?= $data['sizes'][$column] > 0 ? $data['sizes'][$column] : '' ?></td>
+                        <td class="text-right"><?= $data['sizes'][$column] > 0 ? $data['sizes'][$column] : '' ?></td>
                       <?php endforeach; ?>
                     </tr>
                   <?php endforeach; ?>

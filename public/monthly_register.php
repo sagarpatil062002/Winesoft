@@ -1405,8 +1405,9 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
           </table>
         </div>
         
-        <div class="footer-info">
-          <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
+        <div class="footer-info" style="text-align: right;">
+           <p>Authorised Signature</p>
+           <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
         </div>
       </div>
     </div>

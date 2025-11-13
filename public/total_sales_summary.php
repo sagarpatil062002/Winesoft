@@ -468,41 +468,41 @@ $report_display_date_to = date('d-M-Y', strtotime($db_date_to));
                     <tr>
                       <th>Sales Date</th>
                       <?php foreach ($size_columns as $size): ?>
-                        <th class="size-column"><?= $size ?></th>
+                        <th class="text-right"><?= $size ?></th>
                       <?php endforeach; ?>
-                      <th class="size-column">Total</th>
+                      <th class="text-right">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     <?php foreach ($date_range as $date_info): ?>
                       <tr>
                         <td class="date-header"><?= $date_info['display_date'] ?></td>
-                        <?php 
+                        <?php
                         $date_total = 0;
-                        foreach ($size_columns as $size): 
+                        foreach ($size_columns as $size):
                           $quantity = $sales_data[$group_key][$size][$date_info['display_date']] ?? 0;
                           $date_total += $quantity;
                         ?>
-                          <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
+                          <td class="text-right"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
                         <?php endforeach; ?>
-                        <td class="size-column" style="font-weight: bold;"><?= $date_total > 0 ? number_format($date_total, 0) : '' ?></td>
+                        <td class="text-right" style="font-weight: bold;"><?= $date_total > 0 ? number_format($date_total, 0) : '' ?></td>
                       </tr>
                     <?php endforeach; ?>
                     
                     <!-- Group Total Row -->
                     <tr class="total-row">
                       <td style="font-weight: bold;">Total</td>
-                      <?php 
+                      <?php
                       $group_size_total = 0;
-                      foreach ($size_columns as $size): 
+                      foreach ($size_columns as $size):
                         $size_total = $group_totals[$group_key]['sizes'][$size] ?? 0;
                         $group_size_total += $size_total;
                       ?>
-                        <td class="size-column" style="font-weight: bold;">
+                        <td class="text-right" style="font-weight: bold;">
                           <?= $size_total > 0 ? number_format($size_total, 0) : '' ?>
                         </td>
                       <?php endforeach; ?>
-                      <td class="size-column" style="font-weight: bold;">
+                      <td class="text-right" style="font-weight: bold;">
                         <?= $group_totals[$group_key]['total'] > 0 ? number_format($group_totals[$group_key]['total'], 0) : '' ?>
                       </td>
                     </tr>

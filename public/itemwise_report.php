@@ -286,10 +286,10 @@ if (isset($_GET['generate'])) {
                 <tr>
                   <th>Item Description</th>
                   <th class="text-center">Size</th>
-                  <th class="text-center">Op. Stock</th>
-                  <th class="text-center">Receipts</th>
-                  <th class="text-center">Issues</th>
-                  <th class="text-center">Cl. Stock</th>
+                  <th class="text-right">Op. Stock</th>
+                  <th class="text-right">Receipts</th>
+                  <th class="text-right">Issues</th>
+                  <th class="text-right">Cl. Stock</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,10 +297,10 @@ if (isset($_GET['generate'])) {
                 <tr>
                   <td><?= htmlspecialchars($row['ITEM_NAME']) ?></td>
                   <td class="text-center"><?= !empty($row['ITEM_SIZE']) ? htmlspecialchars($row['ITEM_SIZE']) : '-' ?></td>
-                  <td class="text-center"><?= number_format($row['OP_STOCK'], 0) ?></td>
-                  <td class="text-center"><?= number_format($row['RECEIPTS'], 0) ?></td>
-                  <td class="text-center"><?= number_format($row['ISSUES'], 0) ?></td>
-                  <td class="text-center"><?= number_format($row['CL_STOCK'], 0) ?></td>
+                  <td class="text-right"><?= number_format($row['OP_STOCK'], 0) ?></td>
+                  <td class="text-right"><?= number_format($row['RECEIPTS'], 0) ?></td>
+                  <td class="text-right"><?= number_format($row['ISSUES'], 0) ?></td>
+                  <td class="text-right"><?= number_format($row['CL_STOCK'], 0) ?></td>
                 </tr>
                 <?php endforeach; ?>
               </tbody>

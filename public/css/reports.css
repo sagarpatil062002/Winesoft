@@ -88,6 +88,10 @@
   background-color: #eef6ff;
 }
 
+.text-right {
+  text-align: right;
+}
+
 .company-header {
   text-align: center;
   margin-bottom: 1rem;

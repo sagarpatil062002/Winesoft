@@ -37,7 +37,7 @@ while ($row = $suppliers_result->fetch_assoc()) {
     $suppliers[$row['CODE']] = $row['DETAILS'];
 }
 
-// Build query to fetch purchase data with CompID filter
+// Build query to fetch purchase data with CompID filter - UPDATED FOR YOUR TABLE STRUCTURE
 $query = "SELECT 
             p.ID, 
             p.DATE, 
@@ -52,8 +52,6 @@ $query = "SELECT
             p.STAX_AMT as sales_tax, 
             p.TCS_AMT as tc_amt, 
             p.MISC_CHARG as sarc_amt, 
-            0 as ec_amt, 
-            0 as stp_duty, 
             p.FREIGHT as frieght,
             (p.TAMT - p.CASHDIS - p.SCHDIS + p.OCTROI + p.STAX_AMT + p.TCS_AMT + p.MISC_CHARG + p.FREIGHT) as total
           FROM tblpurchases p
@@ -77,27 +75,35 @@ $result = $stmt->get_result();
 $purchases = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// If show_details is enabled, fetch purchase details for each purchase
+// If show_details is enabled, fetch purchase details for each purchase - UPDATED FOR YOUR TABLE STRUCTURE
 $purchase_details = [];
 if ($show_details) {
     $purchase_ids = array_column($purchases, 'ID');
     if (!empty($purchase_ids)) {
         $placeholders = str_repeat('?,', count($purchase_ids) - 1) . '?';
         $details_query = "SELECT 
-                        pd.PURCHASE_ID,
-                        pd.ITEM_CODE,
-                        pd.ITEM_DETAILS,
-                        pd.QTY,
-                        pd.RATE,
-                        pd.AMOUNT,
-                        pd.BONUS,
-                        pd.DISC,
-                        pd.NET_AMT,
-                        i.NAME as item_name
+                        pd.PurchaseID,
+                        pd.ItemCode,
+                        pd.ItemName,
+                        pd.Size,
+                        pd.Cases,
+                        pd.Bottles,
+                        pd.FreeCases,
+                        pd.FreeBottles,
+                        pd.CaseRate,
+                        pd.MRP,
+                        pd.Amount,
+                        pd.BottlesPerCase,
+                        pd.BatchNo,
+                        pd.AutoBatch,
+                        pd.MfgMonth,
+                        pd.BL,
+                        pd.VV,
+                        pd.TotBott,
+                        pd.AUTO_TPNO
                     FROM tblpurchasedetails pd
-                    LEFT JOIN tblitems i ON pd.ITEM_CODE = i.CODE
-                    WHERE pd.PURCHASE_ID IN ($placeholders)
-                    ORDER BY pd.PURCHASE_ID, pd.ID";
+                    WHERE pd.PurchaseID IN ($placeholders)
+                    ORDER BY pd.PurchaseID, pd.DetailID";
         
         $stmt = $conn->prepare($details_query);
         $stmt->bind_param(str_repeat('i', count($purchase_ids)), ...$purchase_ids);
@@ -105,7 +111,7 @@ if ($show_details) {
         $details_result = $stmt->get_result();
         
         while ($row = $details_result->fetch_assoc()) {
-            $purchase_details[$row['PURCHASE_ID']][] = $row;
+            $purchase_details[$row['PurchaseID']][] = $row;
         }
         $stmt->close();
     }
@@ -120,8 +126,6 @@ $totals = [
     'sales_tax' => 0,
     'tc_amt' => 0,
     'sarc_amt' => 0,
-    'ec_amt' => 0,
-    'stp_duty' => 0,
     'frieght' => 0,
     'total' => 0
 ];
@@ -134,8 +138,6 @@ foreach ($purchases as $purchase) {
     $totals['sales_tax'] += floatval($purchase['sales_tax']);
     $totals['tc_amt'] += floatval($purchase['tc_amt']);
     $totals['sarc_amt'] += floatval($purchase['sarc_amt']);
-    $totals['ec_amt'] += floatval($purchase['ec_amt']);
-    $totals['stp_duty'] += floatval($purchase['stp_duty']);
     $totals['frieght'] += floatval($purchase['frieght']);
     $totals['total'] += floatval($purchase['total']);
 }
@@ -152,22 +154,26 @@ foreach ($purchases as $purchase) {
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
   <style>
-    .purchase-details {
-        background-color: #f8f9fa;
-        border-left: 4px solid #007bff;
-        padding: 15px;
-        margin: 10px 0;
-        display: none;
+    .text-right {
+        text-align: right;
     }
-    .details-table th {
+    .text-center {
+        text-align: center;
+    }
+    .total-row {
+        font-weight: bold;
         background-color: #e9ecef;
     }
-    .toggle-details {
-        cursor: pointer;
-        color: #007bff;
+    .voucher-header {
+        background-color: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        padding: 10px 15px;
+        margin: 15px 0 5px 0;
+        font-weight: bold;
+        border-radius: 4px;
     }
-    .toggle-details:hover {
-        text-decoration: underline;
+    .detailed-view .items-details {
+        margin-bottom: 20px;
     }
   </style>
 </head>
@@ -209,8 +215,8 @@ foreach ($purchases as $purchase) {
               <div class="col-md-3">
                 <label class="form-label">Report Type:</label>
                 <select class="form-select" name="show_details">
-                  <option value="0" <?= !$show_details ? 'selected' : '' ?>>Summary Only</option>
-                  <option value="1" <?= $show_details ? 'selected' : '' ?>>With Item Details</option>
+                  <option value="0" <?= !$show_details ? 'selected' : '' ?>>Summary</option>
+                  <option value="1" <?= $show_details ? 'selected' : '' ?>>Detailed</option>
                 </select>
               </div>
             </div>
@@ -239,136 +245,138 @@ foreach ($purchases as $purchase) {
             <?php if ($supplier !== 'all'): ?>
               <p class="text-muted">Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?></p>
             <?php endif; ?>
-            <?php if ($show_details): ?>
-              <p class="text-muted"><strong>Report Type:</strong> Detailed (with items)</p>
-            <?php else: ?>
-              <p class="text-muted"><strong>Report Type:</strong> Summary</p>
-            <?php endif; ?>
+            <p class="text-muted"><strong>Report Type:</strong> <?= $show_details ? 'Detailed' : 'Summary' ?></p>
           </div>
           
-          <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Supplier Name</th>
-                  <th>V. No.</th>
-                  <th>Bill No.</th>
-                  <th>T.P. No.</th>
-                  <th class="text-right">Net Amt.</th>
-                  <th class="text-right">Cash Disc.</th>
-                  <th class="text-right">Sch. Disc.</th>
-                  <th class="text-right">Oct.</th>
-                  <th class="text-right">Sales Tax</th>
-                  <th class="text-right">TC $ Amt.</th>
-                  <th class="text-right">Sarc. Amt.</th>
-                  <th class="text-right">E.C. Amt.</th>
-                  <th class="text-right">Stp. Duty</th>
-                  <th class="text-right">Frieght</th>
-                  <th class="text-right">Total Bill Amt.</th>
-                  <?php if ($show_details): ?>
-                    <th class="no-print">Details</th>
-                  <?php endif; ?>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (!empty($purchases)): ?>
-                  <?php foreach ($purchases as $purchase): ?>
-                    <tr>
-                      <td><?= date('d-M-Y', strtotime($purchase['DATE'])) ?></td>
-                      <td><?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?></td>
-                      <td><?= htmlspecialchars($purchase['VOC_NO']) ?></td>
-                      <td><?= htmlspecialchars($purchase['INV_NO']) ?></td>
-                      <td><?= htmlspecialchars($purchase['TPNO']) ?></td>
-                      <td class="text-right"><?= number_format($purchase['net_amt'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['cash_disc'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['sch_disc'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['oct'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['sales_tax'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['tc_amt'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['sarc_amt'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['ec_amt'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['stp_duty'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['frieght'], 2) ?></td>
-                      <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
-                      <?php if ($show_details): ?>
-                        <td class="no-print">
-                          <?php if (isset($purchase_details[$purchase['ID']])): ?>
-                            <span class="toggle-details" onclick="toggleDetails(<?= $purchase['ID'] ?>)">
-                              <i class="fas fa-chevron-down"></i> Show Items
-                            </span>
-                          <?php else: ?>
-                            <span class="text-muted">No items</span>
-                          <?php endif; ?>
-                        </td>
-                      <?php endif; ?>
-                    </tr>
-                    
-                    <?php if ($show_details && isset($purchase_details[$purchase['ID']])): ?>
-                      <tr class="no-print">
-                        <td colspan="<?= $show_details ? '17' : '16' ?>">
-                          <div id="details-<?= $purchase['ID'] ?>" class="purchase-details">
-                            <h6>Purchase Items for Voucher #<?= htmlspecialchars($purchase['VOC_NO']) ?></h6>
-                            <table class="table table-sm details-table">
-                              <thead>
-                                <tr>
-                                  <th>Item Code</th>
-                                  <th>Item Name</th>
-                                  <th>Description</th>
-                                  <th class="text-right">Qty</th>
-                                  <th class="text-right">Rate</th>
-                                  <th class="text-right">Amount</th>
-                                  <th class="text-right">Bonus</th>
-                                  <th class="text-right">Discount</th>
-                                  <th class="text-right">Net Amount</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <?php foreach ($purchase_details[$purchase['ID']] as $item): ?>
-                                  <tr>
-                                    <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
-                                    <td><?= htmlspecialchars($item['item_name'] ?? 'N/A') ?></td>
-                                    <td><?= htmlspecialchars($item['ITEM_DETAILS']) ?></td>
-                                    <td class="text-right"><?= number_format($item['QTY'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($item['BONUS'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($item['DISC'], 2) ?></td>
-                                    <td class="text-right"><?= number_format($item['NET_AMT'], 2) ?></td>
-                                  </tr>
-                                <?php endforeach; ?>
-                              </tbody>
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    <?php endif; ?>
-                  <?php endforeach; ?>
-                  <tr class="total-row" style="border-bottom: double 3px #000;">
-                    <td colspan="5" class="text-end"><strong>Total:</strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['cash_disc'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['sch_disc'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['oct'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['sales_tax'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['tc_amt'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['sarc_amt'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['ec_amt'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['stp_duty'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['frieght'], 2) ?></strong></td>
-                    <td class="text-right"><strong><?= number_format($totals['total'], 2) ?></strong></td>
-                    <?php if ($show_details): ?>
-                      <td class="no-print"></td>
-                    <?php endif; ?>
-                  </tr>
-                <?php else: ?>
+          <?php if (!$show_details): ?>
+            <!-- Summary Report View -->
+            <div class="table-container">
+              <table class="report-table table table-bordered">
+                <thead class="table-light">
                   <tr>
-                    <td colspan="<?= $show_details ? '17' : '16' ?>" class="text-center text-muted">No purchases found for the selected period.</td>
+                    <th>Date</th>
+                    <th>Supplier Name</th>
+                    <th>V. No.</th>
+                    <th>Bill No.</th>
+                    <th>T.P. No.</th>
+                    <th class="text-right">Net Amt.</th>
+                    <th class="text-right">Cash Disc.</th>
+                    <th class="text-right">Sch. Disc.</th>
+                    <th class="text-right">Oct.</th>
+                    <th class="text-right">Sales Tax</th>
+                    <th class="text-right">TC $ Amt.</th>
+                    <th class="text-right">Sarc. Amt.</th>
+                    <th class="text-right">Frieght</th>
+                    <th class="text-right">Total Bill Amt.</th>
                   </tr>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  <?php if (!empty($purchases)): ?>
+                    <?php foreach ($purchases as $purchase): ?>
+                      <tr>
+                        <td><?= date('d-M-Y', strtotime($purchase['DATE'])) ?></td>
+                        <td><?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?></td>
+                        <td><?= htmlspecialchars($purchase['VOC_NO']) ?></td>
+                        <td><?= htmlspecialchars($purchase['INV_NO']) ?></td>
+                        <td><?= htmlspecialchars($purchase['TPNO']) ?></td>
+                        <td class="text-right"><?= number_format($purchase['net_amt'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['cash_disc'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['sch_disc'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['oct'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['sales_tax'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['tc_amt'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['sarc_amt'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['frieght'], 2) ?></td>
+                        <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                    <tr class="total-row">
+                      <td colspan="5" class="text-end"><strong>Total:</strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['net_amt'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['cash_disc'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['sch_disc'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['oct'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['sales_tax'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['tc_amt'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['sarc_amt'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['frieght'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['total'], 2) ?></strong></td>
+                    </tr>
+                  <?php else: ?>
+                    <tr>
+                      <td colspan="14" class="text-center text-muted">No purchases found for the selected period.</td>
+                    </tr>
+                  <?php endif; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php else: ?>
+            <!-- Detailed Report View -->
+            <div class="detailed-view">
+              <?php if (!empty($purchases)): ?>
+                <?php foreach ($purchases as $purchase): ?>
+                  <!-- Voucher Header -->
+                  <div class="voucher-header">
+                    Voucher No: <?= htmlspecialchars($purchase['VOC_NO']) ?> | 
+                    Date: <?= date('d-M-Y', strtotime($purchase['DATE'])) ?> | 
+                    Supplier: <?= isset($suppliers[$purchase['SUBCODE']]) ? htmlspecialchars($suppliers[$purchase['SUBCODE']]) : htmlspecialchars($purchase['SUBCODE']) ?> | 
+                    Bill No: <?= htmlspecialchars($purchase['INV_NO']) ?> | 
+                    T.P. No: <?= htmlspecialchars($purchase['TPNO']) ?>
+                  </div>
+
+                  <!-- Items Details Table -->
+                  <?php if (isset($purchase_details[$purchase['ID']])): ?>
+                    <div class="items-details">
+                      <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Item Code</th>
+                            <th>Item Name</th>
+                            <th>Size</th>
+                            <th class="text-right">Cases</th>
+                            <th class="text-right">Bottles</th>
+                            <th class="text-right">Free Cases</th>
+                            <th class="text-right">Free Bottles</th>
+                            <th class="text-right">Case Rate</th>
+                            <th class="text-right">MRP</th>
+                            <th class="text-right">Amount</th>
+                            <th>Batch No</th>
+                            <th>Mfg Month</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php foreach ($purchase_details[$purchase['ID']] as $item): ?>
+                            <tr>
+                              <td><?= htmlspecialchars($item['ItemCode']) ?></td>
+                              <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                              <td><?= htmlspecialchars($item['Size']) ?></td>
+                              <td class="text-right"><?= number_format($item['Cases'], 2) ?></td>
+                              <td class="text-right"><?= number_format($item['Bottles'], 0) ?></td>
+                              <td class="text-right"><?= number_format($item['FreeCases'], 2) ?></td>
+                              <td class="text-right"><?= number_format($item['FreeBottles'], 0) ?></td>
+                              <td class="text-right"><?= number_format($item['CaseRate'], 3) ?></td>
+                              <td class="text-right"><?= number_format($item['MRP'], 2) ?></td>
+                              <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
+                              <td><?= htmlspecialchars($item['BatchNo']) ?></td>
+                              <td><?= htmlspecialchars($item['MfgMonth']) ?></td>
+                            </tr>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                    </div>
+                  <?php else: ?>
+                    <div class="alert alert-warning mb-4">
+                      <i class="fas fa-exclamation-triangle me-2"></i> No items found for this voucher.
+                    </div>
+                  <?php endif; ?>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <div class="alert alert-info">
+                  <i class="fas fa-info-circle me-2"></i> No purchases found for the selected period.
+                </div>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
         </div>
       <?php elseif (isset($_GET['from_date']) && empty($purchases)): ?>
         <div class="alert alert-info">
@@ -383,19 +391,5 @@ foreach ($purchases as $purchase) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function toggleDetails(purchaseId) {
-    const detailsDiv = document.getElementById('details-' + purchaseId);
-    const toggleLink = detailsDiv.previousElementSibling.querySelector('.toggle-details');
-    
-    if (detailsDiv.style.display === 'block') {
-        detailsDiv.style.display = 'none';
-        toggleLink.innerHTML = '<i class="fas fa-chevron-down"></i> Show Items';
-    } else {
-        detailsDiv.style.display = 'block';
-        toggleLink.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Items';
-    }
-}
-</script>
 </body>
 </html>

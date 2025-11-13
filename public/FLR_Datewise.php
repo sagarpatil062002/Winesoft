@@ -83,55 +83,39 @@ function tableHasDayColumns($conn, $tableName, $day) {
     return ($dayResult->num_rows > 0);
 }
 
-// Function to group sizes by base size (remove suffixes after ML and trim)
-function getBaseSize($size) {
-    // Extract the base size (everything before any special characters after ML)
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
-    return trim($baseSize);
+// IMPROVED: Function to categorize size based on your SQL logic
+function getSizeCategory($size) {
+    $size = strtoupper(trim($size));
+    
+    // Spirits & Imported Spirit sizes
+    if (preg_match('/(2000|2L|2 L)/', $size)) return '2000 ML';
+    if (preg_match('/(1000|1L|1 L)/', $size)) return '1000 ML';
+    if (preg_match('/(750|750ML)/', $size)) return '750 ML';
+    if (preg_match('/(700|700ML)/', $size)) return '700 ML';
+    if (preg_match('/(500|500ML)/', $size)) return '500 ML';
+    if (preg_match('/(375|375ML)/', $size)) return '375 ML';
+    if (preg_match('/(200|200ML)/', $size)) return '200 ML';
+    if (preg_match('/(180|180ML)/', $size)) return '180 ML';
+    if (preg_match('/(90|90ML)/', $size)) return '90 ML';
+    if (preg_match('/(60|60ML)/', $size)) return '60 ML';
+    if (preg_match('/(50|50ML)/', $size)) return '50 ML';
+    
+    // Beer sizes
+    if (preg_match('/(650|650ML)/', $size)) return '650 ML';
+    if (preg_match('/(330|330ML)/', $size)) return '330 ML';
+    if (preg_match('/(275|275ML)/', $size)) return '275 ML';
+    if (preg_match('/(250|250ML)/', $size)) return '250 ML';
+    
+    return 'Other';
 }
 
-// Define size columns for each liquor type exactly as they appear in Excel
-$size_columns_s = [
-    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
-    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
-    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
-    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96', 
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
-    '50 ML (24)', '50 ML (192)'
-];
-$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
-$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-
-// Group sizes by base size for each liquor type
-function groupSizes($sizes) {
-    $grouped = [];
-    foreach ($sizes as $size) {
-        $baseSize = getBaseSize($size);
-        if (!isset($grouped[$baseSize])) {
-            $grouped[$baseSize] = [];
-        }
-        $grouped[$baseSize][] = $size;
-    }
-    return $grouped;
-}
-
-$grouped_sizes_s = groupSizes($size_columns_s);
-$grouped_sizes_w = groupSizes($size_columns_w);
-$grouped_sizes_fb = groupSizes($size_columns_fb);
-$grouped_sizes_mb = groupSizes($size_columns_mb);
-
-// Get display sizes (base sizes) for each liquor type - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
-$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+// Define display sizes for each liquor type based on your SQL results
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML', 'Other'];
 $display_sizes_imported = $display_sizes_s; // Imported uses same sizes as Spirit
-$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML', 'Other'];
 $display_sizes_wine_imp = $display_sizes_w; // Wine Imp uses same sizes as Wine
-$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML', 'Other'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML', 'Other'];
 
 // Fetch class data to map liquor types
 $classData = [];
@@ -174,7 +158,7 @@ while (strtotime($current_date) <= strtotime($to_date)) {
 // Initialize daily data structure for each date - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
 $daily_data = [];
 
-// Initialize totals for each size column (using grouped base sizes) - NEW ORDER
+// Initialize totals for each size column - NEW ORDER
 $totals = [
     'Spirits' => [
         'purchase' => array_fill_keys($display_sizes_s, 0),
@@ -214,36 +198,7 @@ $totals = [
     ]
 ];
 
-// Map database sizes to Excel column sizes
-$size_mapping = [
-    // Spirits
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    '90 ML' => '90 ML',
-    '90 ML-100' => '90 ML',
-    '90 ML-96' => '90 ML',
-    '2000 ML' => '2000 ML',
-    '2000 ML Pet' => '2000 ML',
-    
-    // Wines
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    
-    // Fermented Beer
-    '650 ML Bottle' => '650 ML',
-    '500 ML Bottle' => '500 ML',
-    '500 ML Can' => '500 ML (CAN)',
-    '330 ML Bottle' => '330 ML',
-    '330 ML Can' => '330 ML (CAN)',
-    
-    // Mild Beer
-    '650 ML Bottle' => '650 ML',
-    '500 ML Can' => '500 ML (CAN)',
-    '330 ML Bottle' => '330 ML',
-    '330 ML Can' => '330 ML (CAN)'
-];
-
-// Function to determine liquor type based on CLASS and LIQ_FLAG
+// IMPROVED: Function to determine liquor type based on CLASS and LIQ_FLAG
 function getLiquorType($class, $liq_flag) {
     // First check the class directly for Imported and Wine Imp
     if ($class == 'I') return 'Imported Spirit';
@@ -260,41 +215,6 @@ function getLiquorType($class, $liq_flag) {
     return 'Spirits'; // Default for non-F items
 }
 
-// Function to get base size for grouping
-function getGroupedSize($size, $liquor_type) {
-    global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
-
-    $baseSize = getBaseSize($size);
-
-    // Check if this base size exists in the appropriate group - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
-    switch ($liquor_type) {
-        case 'Spirits':
-        case 'Imported Spirit': // Imported Spirit uses same grouping as Spirits
-            if (in_array($baseSize, array_keys($grouped_sizes_s))) {
-                return $baseSize;
-            }
-            break;
-        case 'Wines':
-        case 'Wine Imp': // Wine Imp uses same grouping as Wines
-            if (in_array($baseSize, array_keys($grouped_sizes_w))) {
-                return $baseSize;
-            }
-            break;
-        case 'Fermented Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_fb))) {
-                return $baseSize;
-            }
-            break;
-        case 'Mild Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_mb))) {
-                return $baseSize;
-            }
-            break;
-    }
-
-    return $baseSize; // Return base size even if not found in predefined groups
-}
-
 // Process each date in the range with month-aware logic and archive table support
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
@@ -309,7 +229,7 @@ foreach ($dates as $date) {
     
     // Skip if day exceeds month length OR table doesn't have columns for this day
     if ($day > $days_in_month || !$hasDayColumns) {
-        // Initialize empty data for this date - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
+        // Initialize empty data for this date
         $daily_data[$date] = [
             'Spirits' => [
                 'purchase' => array_fill_keys($display_sizes_s, 0),
@@ -351,7 +271,7 @@ foreach ($dates as $date) {
         continue;
     }
     
-    // Initialize daily data for this date - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
+    // Initialize daily data for this date
     $daily_data[$date] = [
         'Spirits' => [
             'purchase' => array_fill_keys($display_sizes_s, 0),
@@ -419,95 +339,92 @@ foreach ($dates as $date) {
         // Determine liquor type
         $liquor_type = getLiquorType($class, $liq_flag);
         
-        // Map database size to Excel size
-        $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
+        // IMPROVED: Get size category using the same logic as your SQL
+        $size_category = getSizeCategory($size);
         
-        // Get grouped size for display
-        $grouped_size = getGroupedSize($excel_size, $liquor_type);
-        
-        // Add to daily data and totals based on liquor type and grouped size - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
+        // Add to daily data and totals based on liquor type and size category
         switch ($liquor_type) {
             case 'Spirits':
-                if (in_array($grouped_size, $display_sizes_s)) {
-                    $daily_data[$date]['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Spirits']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Spirits']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Spirits']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_s)) {
+                    $daily_data[$date]['Spirits']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Spirits']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Spirits']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Spirits']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Spirits']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Spirits']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Spirits']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Spirits']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Spirits']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Spirits']['sales'][$size_category] += $row['sales'];
+                    $totals['Spirits']['closing'][$size_category] += $row['closing'];
+                    $totals['Spirits']['opening'][$size_category] += $row['opening'];
                 }
                 break;
 
             case 'Imported Spirit':
-                if (in_array($grouped_size, $display_sizes_imported)) {
-                    $daily_data[$date]['Imported Spirit']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Imported Spirit']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Imported Spirit']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Imported Spirit']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_imported)) {
+                    $daily_data[$date]['Imported Spirit']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Imported Spirit']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Imported Spirit']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Imported Spirit']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Imported Spirit']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Imported Spirit']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Imported Spirit']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Imported Spirit']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Imported Spirit']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Imported Spirit']['sales'][$size_category] += $row['sales'];
+                    $totals['Imported Spirit']['closing'][$size_category] += $row['closing'];
+                    $totals['Imported Spirit']['opening'][$size_category] += $row['opening'];
                 }
                 break;
 
             case 'Wines':
-                if (in_array($grouped_size, $display_sizes_w)) {
-                    $daily_data[$date]['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Wines']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Wines']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Wines']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_w)) {
+                    $daily_data[$date]['Wines']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Wines']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Wines']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Wines']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Wines']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Wines']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Wines']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Wines']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Wines']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Wines']['sales'][$size_category] += $row['sales'];
+                    $totals['Wines']['closing'][$size_category] += $row['closing'];
+                    $totals['Wines']['opening'][$size_category] += $row['opening'];
                 }
                 break;
 
             case 'Wine Imp':
-                if (in_array($grouped_size, $display_sizes_wine_imp)) {
-                    $daily_data[$date]['Wine Imp']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Wine Imp']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Wine Imp']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Wine Imp']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_wine_imp)) {
+                    $daily_data[$date]['Wine Imp']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Wine Imp']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Wine Imp']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Wine Imp']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Wine Imp']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Wine Imp']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Wine Imp']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Wine Imp']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Wine Imp']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Wine Imp']['sales'][$size_category] += $row['sales'];
+                    $totals['Wine Imp']['closing'][$size_category] += $row['closing'];
+                    $totals['Wine Imp']['opening'][$size_category] += $row['opening'];
                 }
                 break;
 
             case 'Fermented Beer':
-                if (in_array($grouped_size, $display_sizes_fb)) {
-                    $daily_data[$date]['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_fb)) {
+                    $daily_data[$date]['Fermented Beer']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Fermented Beer']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Fermented Beer']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Fermented Beer']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Fermented Beer']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Fermented Beer']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Fermented Beer']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Fermented Beer']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Fermented Beer']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Fermented Beer']['sales'][$size_category] += $row['sales'];
+                    $totals['Fermented Beer']['closing'][$size_category] += $row['closing'];
+                    $totals['Fermented Beer']['opening'][$size_category] += $row['opening'];
                 }
                 break;
 
             case 'Mild Beer':
-                if (in_array($grouped_size, $display_sizes_mb)) {
-                    $daily_data[$date]['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                    $daily_data[$date]['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                    $daily_data[$date]['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                    $daily_data[$date]['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                if (in_array($size_category, $display_sizes_mb)) {
+                    $daily_data[$date]['Mild Beer']['purchase'][$size_category] += $row['purchase'];
+                    $daily_data[$date]['Mild Beer']['sales'][$size_category] += $row['sales'];
+                    $daily_data[$date]['Mild Beer']['closing'][$size_category] += $row['closing'];
+                    $daily_data[$date]['Mild Beer']['opening'][$size_category] += $row['opening'];
 
-                    $totals['Mild Beer']['purchase'][$grouped_size] += $row['purchase'];
-                    $totals['Mild Beer']['sales'][$grouped_size] += $row['sales'];
-                    $totals['Mild Beer']['closing'][$grouped_size] += $row['closing'];
-                    $totals['Mild Beer']['opening'][$grouped_size] += $row['opening'];
+                    $totals['Mild Beer']['purchase'][$size_category] += $row['purchase'];
+                    $totals['Mild Beer']['sales'][$size_category] += $row['sales'];
+                    $totals['Mild Beer']['closing'][$size_category] += $row['closing'];
+                    $totals['Mild Beer']['opening'][$size_category] += $row['opening'];
                 }
                 break;
         }
@@ -516,7 +433,7 @@ foreach ($dates as $date) {
     $stockStmt->close();
 }
 
-// Calculate total columns count for table formatting - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
+// Calculate total columns count for table formatting
 $total_columns = count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
 ?>
 <!DOCTYPE html>
@@ -891,7 +808,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
         </div>
         
         <div class="table-responsive">
-          <table class="report-table">
+          <table class="report-table" id="flr-datewise-table">
             <thead>
               <tr>
                 <th rowspan="3" class="date-col">Date</th>
@@ -1321,35 +1238,36 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
     <td></td>
   <?php endfor; ?>
 
-  <!-- Closing Balance Section - Show closing totals -->
+  <!-- Closing Balance Section - Show closing balance of last date -->
+  <?php $last_date = end($dates); ?>
   <!-- Spirits Closing -->
   <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Imported Spirit Closing -->
   <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $totals['Imported Spirit']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Wines Closing -->
   <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Wine Imp Closing -->
   <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $totals['Wine Imp']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Fermented Beer Closing -->
   <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Mild Beer Closing -->
   <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <td>Grand Total</td>
@@ -1417,35 +1335,36 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
     <td></td>
   <?php endfor; ?>
 
-  <!-- Closing Balance Section - Show closing totals -->
+  <!-- Closing Balance Section - Show closing balance of last date -->
+  <?php $last_date = end($dates); ?>
   <!-- Spirits Closing -->
   <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Imported Spirit Closing -->
   <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $totals['Imported Spirit']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Wines Closing -->
   <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Wine Imp Closing -->
   <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $totals['Wine Imp']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Fermented Beer Closing -->
   <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Mild Beer Closing -->
   <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
+    <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
   <?php endforeach; ?>
 
   <td>Closing Balance</td>

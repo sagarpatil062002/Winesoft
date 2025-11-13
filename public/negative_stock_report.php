@@ -477,9 +477,9 @@ foreach ($negative_brand_data_by_category as $brands) {
                     <th>Sr. No.</th>
                     <th>Brand Name</th>
                     <?php foreach ($display_sizes as $size): ?>
-                      <th class="size-column"><?= $size ?></th>
+                      <th class="text-right"><?= $size ?></th>
                     <?php endforeach; ?>
-                    <th class="size-column">Total</th>
+                    <th class="text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -492,17 +492,17 @@ foreach ($negative_brand_data_by_category as $brands) {
                   <tr>
                     <td><?= $sr_no++ ?></td>
                     <td><?= htmlspecialchars($brand) ?></td>
-                    <?php foreach ($display_sizes as $size): 
+                    <?php foreach ($display_sizes as $size):
                         $quantity = $sizes[$size] ?? 0;
                         $brand_total += $quantity;
                     ?>
-                      <td class="size-column">
+                      <td class="text-right">
                         <?php if ($quantity < 0): ?>
                           <span class="negative-quantity"><?= number_format($quantity, 0) ?></span>
                         <?php endif; ?>
                       </td>
                     <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;">
+                    <td class="text-right" style="font-weight: bold;">
                       <?php if ($brand_total < 0): ?>
                         <span class="negative-quantity"><?= number_format($brand_total, 0) ?></span>
                       <?php endif; ?>
@@ -513,19 +513,19 @@ foreach ($negative_brand_data_by_category as $brands) {
                   <!-- Total Row -->
                   <tr class="total-row">
                     <td colspan="2" style="font-weight: bold;">Total</td>
-                    <?php 
+                    <?php
                     $category_total = 0;
-                    foreach ($display_sizes as $size): 
+                    foreach ($display_sizes as $size):
                         $size_total = $negative_liquor_type_totals[$liquor_type][$size] ?? 0;
                         $category_total += $size_total;
                     ?>
-                      <td class="size-column" style="font-weight: bold;">
+                      <td class="text-right" style="font-weight: bold;">
                         <?php if ($size_total < 0): ?>
                           <span class="negative-quantity"><?= number_format($size_total, 0) ?></span>
                         <?php endif; ?>
                       </td>
                     <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;">
+                    <td class="text-right" style="font-weight: bold;">
                       <?php if ($category_total < 0): ?>
                         <span class="negative-quantity"><?= number_format($category_total, 0) ?></span>
                       <?php endif; ?>
