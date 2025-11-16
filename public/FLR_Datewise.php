@@ -33,7 +33,7 @@ $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 
 // Fetch company name and license number
-$companyName = "DIAMOND WINE SHOP";
+$companyName = "Digvijay WINE SHOP";
 $licenseNo = "3";
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
@@ -110,12 +110,12 @@ function getSizeCategory($size) {
 }
 
 // Define display sizes for each liquor type based on your SQL results
-$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML', 'Other'];
+$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
 $display_sizes_imported = $display_sizes_s; // Imported uses same sizes as Spirit
 $display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML', 'Other'];
 $display_sizes_wine_imp = $display_sizes_w; // Wine Imp uses same sizes as Wine
-$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML', 'Other'];
-$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML', 'Other'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML'];
 
 // Fetch class data to map liquor types
 $classData = [];
@@ -199,17 +199,31 @@ $totals = [
 ];
 
 // IMPROVED: Function to determine liquor type based on CLASS and LIQ_FLAG
-function getLiquorType($class, $liq_flag) {
-    // First check the class directly for Imported and Wine Imp
-    if ($class == 'I') return 'Imported Spirit';
-    if ($class == 'W') return 'Wine Imp';
-
+function getLiquorType($class, $liq_flag, $desc = '') {
     if ($liq_flag == 'F') {
         switch ($class) {
-            case 'F': return 'Fermented Beer';
-            case 'M': return 'Mild Beer';
-            case 'V': return 'Wines';
-            default: return 'Spirits';
+            case 'I':
+                return 'Imported Spirit';
+            case 'W':
+                if (stripos($desc, 'Wine') !== false || stripos($desc, 'Imp') !== false) {
+                    return 'Wine Imp';
+                } else {
+                    return 'Spirits';
+                }
+            case 'V':
+                return 'Wines';
+            case 'F':
+                return 'Fermented Beer';
+            case 'M':
+                return 'Mild Beer';
+            case 'G':
+            case 'D':
+            case 'K':
+            case 'R':
+            case 'O':
+                return 'Spirits';
+            default:
+                return 'Spirits';
         }
     }
     return 'Spirits'; // Default for non-F items
@@ -337,7 +351,7 @@ foreach ($dates as $date) {
         $liq_flag = $item_details['LIQ_FLAG'];
         
         // Determine liquor type
-        $liquor_type = getLiquorType($class, $liq_flag);
+        $liquor_type = getLiquorType($class, $liq_flag, $classData[$class]['DESC'] ?? '');
         
         // IMPROVED: Get size category using the same logic as your SQL
         $size_category = getSizeCategory($size);
@@ -441,7 +455,7 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FLR 1A/2A/3A Datewise Register - WineSoft</title>
+  <title>FLR 1A/2A/3A Datewise Register - liqoursoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>

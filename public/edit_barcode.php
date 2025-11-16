@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Barcode - WineSoft</title>
+    <title>Edit Barcode - liqoursoft</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -117,37 +117,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </form>
 
-                <!-- Enhanced Barcode Scanner Simulation -->
-                <div class="scanner-container mt-4">
-                    <h5><i class="fas fa-barcode"></i> Barcode Scanner Simulation</h5>
-                    
-                    <div class="scanner-window" id="scanner-window">
-                        <div class="text-muted">Click to focus scanner</div>
-                    </div>
-                    
-                    <div class="scanner-light"></div>
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="input-group mb-3">
-                                <input type="text" id="scanner-input" class="form-control" 
-                                       placeholder="Type barcode or click simulate scan">
-                                <button class="btn btn-primary" type="button" id="simulate-scan">
-                                    <i class="fas fa-camera"></i> Simulate Scan
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-success w-100" id="generate-barcode">
-                                <i class="fas fa-random"></i> Generate Barcode
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle"></i> Tip: Press Enter after typing to simulate scan
-                    </div>
-                </div>
             <?php endif; ?>
         </div>
 
@@ -159,102 +128,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Audio elements
-    const beepSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3');
-    const errorSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3');
-    
-    // Scanner simulation
-    $('#simulate-scan').click(function() {
-        const $scanner = $('.scanner-container');
-        const $input = $('#scanner-input');
-        const $barcodeField = $('#barcode');
-        const $scannerWindow = $('#scanner-window');
-        
-        if ($input.val().trim() === '') {
-            showError("Please enter a barcode to simulate");
-            return;
-        }
-        
-        // Start scanning animation
-        $scanner.addClass('scanning');
-        $scannerWindow.html('<div class="scan-animation"></div>');
-        
-        // Play scan sound
-        beepSound.play().catch(e => console.log('Audio error:', e));
-        
-        // Simulate scan delay
-        setTimeout(function() {
-            // Validate barcode
-            if (!isValidBarcode($input.val())) {
-                errorSound.play();
-                showError("Invalid barcode format");
-                $scanner.removeClass('scanning');
-                $scannerWindow.html('<div class="text-danger"><i class="fas fa-times-circle"></i> Invalid barcode</div>');
-                return;
-            }
-            
-            // Update barcode field
-            $barcodeField.val($input.val().trim()).trigger('change');
-            
-            // Show success
-            $scannerWindow.html('<div class="text-success"><i class="fas fa-check-circle"></i> Scan successful!</div>');
-            $scanner.removeClass('scanning');
-            
-            // Clear input after short delay
-            setTimeout(() => {
-                $input.val('');
-                $scannerWindow.html('<div class="text-muted">Click to focus scanner</div>');
-            }, 1000);
-            
-        }, 800);
-    });
-    
-    // Generate random EAN-13 barcode
-    $('#generate-barcode').click(function() {
-        // Generate first 12 digits
-        let barcode = '2' + Math.floor(10000000000 + Math.random() * 90000000000).toString();
-        
-        // Calculate check digit
-        let sum = 0;
-        for (let i = 0; i < 12; i++) {
-            sum += parseInt(barcode[i]) * (i % 2 === 0 ? 1 : 3);
-        }
-        const checkDigit = (10 - (sum % 10)) % 10;
-        barcode += checkDigit;
-        
-        // Fill fields
-        $('#scanner-input').val(barcode);
-        $('#barcode').val(barcode);
-    });
-    
-    // Keyboard support
-    $('#scanner-input').keypress(function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            $('#simulate-scan').click();
-        }
-    });
-    
-    // Focus scanner when clicking window
-    $('#scanner-window').click(function() {
-        $('#scanner-input').focus();
-    });
-    
-    // Helper functions
-    function isValidBarcode(barcode) {
-        // Basic validation - adjust as needed
-        return /^[0-9]{8,15}$/.test(barcode);
-    }
-    
-    function showError(message) {
-        const $alert = $(`<div class="alert alert-danger alert-dismissible fade show mt-2">
-            <i class="fas fa-exclamation-circle"></i> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>`);
-        $('.scanner-container').append($alert);
-        setTimeout(() => $alert.alert('close'), 3000);
-    }
-    
     // Real scanner detection (for actual hardware)
     let barcodeBuffer = '';
     let lastKeyTime = 0;

@@ -1,0 +1,6 @@
+{
+    "name": "winesoft/winesoft",
+    "require": {
+        "phpoffice/phpspreadsheet": "^5.2"
+    }
+}

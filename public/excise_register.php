@@ -38,7 +38,7 @@ if (strtotime($from_date) > strtotime($to_date)) {
 }
 
 // Fetch company name and license number
-$companyName = "DIAMOND WINE SHOP";
+$companyName = "Digvijay WINE SHOP";
 $licenseNo = "3";
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
@@ -209,21 +209,35 @@ $size_mapping = [
 ];
 
 // Function to determine liquor type based on CLASS and LIQ_FLAG
-function getLiquorType($class, $liq_flag, $mode) {
+function getLiquorType($class, $liq_flag, $mode, $desc = '') {
     if ($mode == 'Country Liquor') {
         return 'Country Liquor';
     }
-    
-    // First check the class directly for Imported and Wine Imp
-    if ($class == 'I') return 'Imported';
-    if ($class == 'W') return 'Wine Imp';
-    
+
     if ($liq_flag == 'F') {
         switch ($class) {
-            case 'F': return 'Fermented Beer';
-            case 'M': return 'Mild Beer';
-            case 'V': return 'Wines';
-            default: return 'Spirits';
+            case 'I':
+                return 'Imported Spirit';
+            case 'W':
+                if (stripos($desc, 'Wine') !== false || stripos($desc, 'Imp') !== false) {
+                    return 'Wine Imp';
+                } else {
+                    return 'Spirits';
+                }
+            case 'V':
+                return 'Wines';
+            case 'F':
+                return 'Fermented Beer';
+            case 'M':
+                return 'Mild Beer';
+            case 'G':
+            case 'D':
+            case 'K':
+            case 'R':
+            case 'O':
+                return 'Spirits';
+            default:
+                return 'Spirits';
         }
     }
     return 'Spirits'; // Default for non-F items
@@ -246,7 +260,7 @@ function getGroupedSize($size, $liquor_type) {
     // Check if this base size exists in the appropriate group
     switch ($liquor_type) {
         case 'Spirits':
-        case 'Imported': // Imported uses same grouping as Spirits
+        case 'Imported Spirit': // Imported uses same grouping as Spirits
             if (in_array($baseSize, array_keys($grouped_sizes_s))) {
                 return $baseSize;
             }
@@ -384,7 +398,7 @@ foreach ($dates as $date) {
                 'sales' => array_fill_keys($display_sizes_s, 0),
                 'closing' => array_fill_keys($display_sizes_s, 0)
             ],
-            'Imported' => [
+            'Imported Spirit' => [
                 'opening' => array_fill_keys($display_sizes_imported, 0),
                 'purchase' => array_fill_keys($display_sizes_imported, 0),
                 'sales' => array_fill_keys($display_sizes_imported, 0),
@@ -444,7 +458,7 @@ foreach ($dates as $date) {
         $liq_flag = $item_details['LIQ_FLAG'];
         
         // Determine liquor type - this now properly handles 'I' and 'W' classes
-        $liquor_type = getLiquorType($class, $liq_flag, $mode);
+        $liquor_type = getLiquorType($class, $liq_flag, $mode, $classData[$class]['DESC'] ?? '');
         
         // DEBUG: Track stock data by type
         if (!isset($stock_count_by_type[$liquor_type])) {
@@ -473,7 +487,7 @@ foreach ($dates as $date) {
                 $target_sizes = [];
                 switch ($liquor_type) {
                     case 'Spirits': $target_sizes = $display_sizes_s; break;
-                    case 'Imported': $target_sizes = $display_sizes_imported; break;
+                    case 'Imported Spirit': $target_sizes = $display_sizes_imported; break;
                     case 'Wines': $target_sizes = $display_sizes_w; break;
                     case 'Wine Imp': $target_sizes = $display_sizes_wine_imp; break;
                     case 'Fermented Beer': $target_sizes = $display_sizes_fb; break;
@@ -515,7 +529,7 @@ if ($mode == 'Country Liquor') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Excise Register (FLR-3) - WineSoft</title>
+  <title>Excise Register (FLR-3) - liqoursoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
@@ -836,35 +850,7 @@ if ($mode == 'Country Liquor') {
     <div class="content-area">
       <h3 class="mb-4">Excise Register (FLR-3) Printing Module</h3>
 
-      <!-- Debug Information -->
-      <div class="debug-info no-print">
-        <h5>Debug Information:</h5>
-        <p><strong>Allowed Classes:</strong> <?= implode(', ', $allowed_classes) ?></p>
-        <p><strong>Items by Class:</strong> 
-          <?php
-          $item_counts = [];
-          foreach ($items as $item) {
-              $class = $item['CLASS'];
-              if (!isset($item_counts[$class])) $item_counts[$class] = 0;
-              $item_counts[$class]++;
-          }
-          foreach ($item_counts as $class => $count) {
-              echo "$class: $count, ";
-          }
-          ?>
-        </p>
-        <p><strong>Stock Data by Type:</strong> 
-          <?php
-          foreach ($stock_data_debug as $date => $types) {
-              echo "$date: ";
-              foreach ($types as $type => $count) {
-                  echo "$type: $count, ";
-              }
-              echo " | ";
-          }
-          ?>
-        </p>
-      </div>
+      
 
       <!-- License Restriction Info -->
       <div class="license-info no-print">
@@ -959,7 +945,7 @@ if ($mode == 'Country Liquor') {
                     <th colspan="<?= count($display_sizes_country) ?>">COUNTRY LIQUOR</th>
                   <?php else: ?>
                     <th colspan="<?= count($display_sizes_s) ?>">SPIRIT S</th>
-                    <th colspan="<?= count($display_sizes_imported) ?>">IMPORTED</th>
+                    <th colspan="<?= count($display_sizes_imported) ?>">IMPORTED SPIRIT</th>
                     <th colspan="<?= count($display_sizes_w) ?>">WINE</th>
                     <th colspan="<?= count($display_sizes_wine_imp) ?>">WINE IMP</th>
                     <th colspan="<?= count($display_sizes_fb) ?>">FERMENTED BEER</th>
@@ -1090,9 +1076,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['opening'][$size] > 0 ? $daily_data[$date]['Spirits']['opening'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Opening Stock -->
+                        <!-- Imported Spirit Opening Stock -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['opening'][$size] > 0 ? $daily_data[$date]['Imported']['opening'][$size] : '' ?></td>
+                           <td><?= $daily_data[$date]['Imported Spirit']['opening'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['opening'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Opening Stock -->
@@ -1131,9 +1117,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['purchase'][$size] > 0 ? $daily_data[$date]['Spirits']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Received -->
+                        <!-- Imported Spirit Received -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['purchase'][$size] > 0 ? $daily_data[$date]['Imported']['purchase'][$size] : '' ?></td>
+                           <td><?= $daily_data[$date]['Imported Spirit']['purchase'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Received -->
@@ -1172,9 +1158,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Sales -->
+                        <!-- Imported Spirit Sales -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['sales'][$size] > 0 ? $daily_data[$date]['Imported']['sales'][$size] : '' ?></td>
+                           <td><?= $daily_data[$date]['Imported Spirit']['sales'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Sales -->
@@ -1213,9 +1199,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Closing Stock -->
+                        <!-- Imported Spirit Closing Stock -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['closing'][$size] > 0 ? $daily_data[$date]['Imported']['closing'][$size] : '' ?></td>
+                           <td><?= $daily_data[$date]['Imported Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Closing Stock -->
@@ -1274,9 +1260,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['purchase'][$size] > 0 ? $daily_data[$date]['Spirits']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Received -->
+                        <!-- Imported Spirit Received -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['purchase'][$size] > 0 ? $daily_data[$date]['Imported']['purchase'][$size] : '' ?></td>
+                          <td><?= $daily_data[$date]['Imported Spirit']['purchase'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['purchase'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Received -->
@@ -1315,9 +1301,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['sales'][$size] > 0 ? $daily_data[$date]['Spirits']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Sales -->
+                        <!-- Imported Spirit Sales -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['sales'][$size] > 0 ? $daily_data[$date]['Imported']['sales'][$size] : '' ?></td>
+                          <td><?= $daily_data[$date]['Imported Spirit']['sales'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['sales'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Sales -->
@@ -1356,9 +1342,9 @@ if ($mode == 'Country Liquor') {
                           <td><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
-                        <!-- Imported Closing Stock -->
+                        <!-- Imported Spirit Closing Stock -->
                         <?php foreach ($display_sizes_imported as $size): ?>
-                          <td><?= $daily_data[$date]['Imported']['closing'][$size] > 0 ? $daily_data[$date]['Imported']['closing'][$size] : '' ?></td>
+                          <td><?= $daily_data[$date]['Imported Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Closing Stock -->

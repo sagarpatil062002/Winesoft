@@ -149,6 +149,11 @@ if (isset($_SESSION['error'])) {
           <a href="sale_for_date_range.php" class="btn btn-primary">
             <i class="fa-solid fa-calendar-week me-1"></i> Sale for Date Range
           </a>
+
+          <!-- NEW: Export to Excel Button -->
+          <button type="button" class="btn btn-success" id="exportExcelBtn">
+            <i class="fa-solid fa-file-excel me-1"></i> Export to Excel
+          </button>
         </div>
       </div>
 
@@ -365,6 +370,75 @@ if (isset($_SESSION['error'])) {
   </div>
 </div>
 
+<!-- Export Options Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-file-excel me-2 text-success"></i>Export Sales Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Export will include: Sale Date, Local Item Code, Brand Name, Size, and Quantity
+                </div>
+
+                <form id="exportForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Export Range</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="export_range" id="export_current" value="current" checked>
+                            <label class="form-check-label" for="export_current">
+                                Current view (<?php
+                                if ($view_type === 'date') {
+                                    echo date('d-M-Y', strtotime($Closing_Stock));
+                                } elseif ($view_type === 'range') {
+                                    echo date('d-M-Y', strtotime($start_date)) . ' to ' . date('d-M-Y', strtotime($end_date));
+                                } else {
+                                    echo 'All Records';
+                                }
+                                ?>)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="export_range" id="export_custom" value="custom">
+                            <label class="form-check-label" for="export_custom">Custom date range</label>
+                        </div>
+                    </div>
+
+                    <div id="customDateRange" class="mb-3" style="display: none;">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" name="export_start_date" class="form-control"
+                                       value="<?= htmlspecialchars($start_date) ?>">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">End Date</label>
+                                <input type="date" name="export_end_date" class="form-control"
+                                       value="<?= htmlspecialchars($end_date) ?>">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">File Name</label>
+                        <input type="text" name="export_filename" class="form-control"
+                               value="sales_report_<?= date('Y-m-d') ?>" placeholder="Enter file name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmExport">
+                    <i class="fa-solid fa-file-export me-1"></i> Export to Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -477,6 +551,86 @@ $(document).ready(function() {
 function editBill(billNo) {
   window.location.href = 'edit_bill_form.php?bill_no=' + billNo;
 }
+
+// Enhanced export functionality with modal
+$('#exportExcelBtn').on('click', function() {
+    $('#exportModal').modal('show');
+});
+
+// Toggle custom date range
+$('input[name="export_range"]').on('change', function() {
+    if ($(this).val() === 'custom') {
+        $('#customDateRange').slideDown();
+    } else {
+        $('#customDateRange').slideUp();
+    }
+});
+
+$('#confirmExport').on('click', function() {
+    const exportRange = $('input[name="export_range"]:checked').val();
+    let exportUrl = 'export_sales_excel.php?';
+
+    if (exportRange === 'current') {
+        // Use current view parameters
+        const viewType = '<?= $view_type ?>';
+        if (viewType === 'date') {
+            exportUrl += `view_type=date&Closing_Stock=<?= $Closing_Stock ?>`;
+        } else if (viewType === 'range') {
+            exportUrl += `view_type=range&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>`;
+        } else {
+            exportUrl += `view_type=all`;
+        }
+    } else {
+        // Use custom dates
+        const startDate = $('input[name="export_start_date"]').val();
+        const endDate = $('input[name="export_end_date"]').val();
+
+        if (!startDate || !endDate) {
+            showAlert('warning', 'Please select both start and end dates');
+            return;
+        }
+
+        if (startDate > endDate) {
+            showAlert('warning', 'Start date cannot be greater than end date');
+            return;
+        }
+
+        exportUrl += `view_type=range&start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    // Add filename if provided
+    const filename = $('input[name="export_filename"]').val();
+    if (filename) {
+        exportUrl += `&filename=${encodeURIComponent(filename)}`;
+    }
+
+    // Show loading state
+    $(this).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting...');
+    $(this).prop('disabled', true);
+
+    // Close modal and trigger download
+    $('#exportModal').modal('hide');
+
+    const downloadFrame = document.createElement('iframe');
+    downloadFrame.style.display = 'none';
+    downloadFrame.src = exportUrl;
+    document.body.appendChild(downloadFrame);
+
+    // Reset button
+    setTimeout(() => {
+        $(this).html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
+        $(this).prop('disabled', false);
+        document.body.removeChild(downloadFrame);
+    }, 3000);
+});
+
+// Reset modal when closed
+$('#exportModal').on('hidden.bs.modal', function() {
+    $('#confirmExport').html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
+    $('#confirmExport').prop('disabled', false);
+    $('input[name="export_range"][value="current"]').prop('checked', true);
+    $('#customDateRange').hide();
+});
 </script>
 </body>
 </html>

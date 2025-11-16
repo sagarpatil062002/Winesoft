@@ -207,15 +207,15 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
     $today = date('d');
     $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     $current_month = date('Y-m');
-    
+
     // Convert to integers
     $opening_stock = (int)$opening_stock;
     $closing_stock = (int)$closing_stock;
     $purchase_qty = (int)$purchase_qty;
     $sales_qty = (int)$sales_qty;
-    
+
     // Check if record exists for this month
-    $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
+    $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id
                    WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
     $check_stmt = $conn->prepare($check_query);
     $check_stmt->bind_param("sss", $current_month, $item_code, $mode);
@@ -223,15 +223,15 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
     $check_result = $check_stmt->get_result();
     $exists = $check_result->fetch_assoc()['count'] > 0;
     $check_stmt->close();
-    
+
     if ($exists) {
         // Update existing record
-        $update_query = "UPDATE tbldailystock_$comp_id 
-                        SET DAY_{$today_padded}_OPEN = ?, 
+        $update_query = "UPDATE tbldailystock_$comp_id
+                        SET DAY_{$today_padded}_OPEN = ?,
                             DAY_{$today_padded}_PURCHASE = DAY_{$today_padded}_PURCHASE + ?,
                             DAY_{$today_padded}_SALES = DAY_{$today_padded}_SALES + ?,
                             DAY_{$today_padded}_CLOSING = ?,
-                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                            LAST_UPDATED = CURRENT_TIMESTAMP
                         WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
         $update_stmt = $conn->prepare($update_query);
         $update_stmt->bind_param("iiiiiss", $opening_stock, $purchase_qty, $sales_qty, $closing_stock, $current_month, $item_code, $mode);
@@ -239,13 +239,49 @@ function updateDailyStock($conn, $comp_id, $item_code, $mode, $opening_stock, $c
         $update_stmt->close();
     } else {
         // Insert new record
-        $insert_query = "INSERT INTO tbldailystock_$comp_id 
-                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_PURCHASE, DAY_{$today_padded}_SALES, DAY_{$today_padded}_CLOSING) 
+        $insert_query = "INSERT INTO tbldailystock_$comp_id
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_PURCHASE, DAY_{$today_padded}_SALES, DAY_{$today_padded}_CLOSING)
                         VALUES (?, ?, ?, ?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
         $insert_stmt->bind_param("sssiiii", $current_month, $item_code, $mode, $opening_stock, $purchase_qty, $sales_qty, $closing_stock);
         $insert_stmt->execute();
         $insert_stmt->close();
+    }
+}
+
+// Function to update daily stock range from start date to current date
+function updateDailyStockRange($conn, $comp_id, $item_code, $mode, $opening_balance, $start_date) {
+    $start_day = (int)date('d', strtotime($start_date));
+    $current_day = (int)date('d');
+    $current_month = date('Y-m');
+
+    for ($day = $start_day; $day <= $current_day; $day++) {
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+
+        // Check if record exists
+        $check_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $check_stmt->bind_param("sss", $current_month, $item_code, $mode);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $exists = $check_result->fetch_assoc()['count'] > 0;
+        $check_stmt->close();
+
+        if ($exists) {
+            // Update existing record
+            $update_query = "UPDATE tbldailystock_$comp_id SET DAY_{$day_padded}_OPEN = ?, DAY_{$day_padded}_PURCHASE = 0, DAY_{$day_padded}_SALES = 0, DAY_{$day_padded}_CLOSING = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("iisss", $opening_balance, $opening_balance, $current_month, $item_code, $mode);
+            $update_stmt->execute();
+            $update_stmt->close();
+        } else {
+            // Insert new record
+            $insert_query = "INSERT INTO tbldailystock_$comp_id (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_{$day_padded}_OPEN, DAY_{$day_padded}_PURCHASE, DAY_{$day_padded}_SALES, DAY_{$day_padded}_CLOSING) VALUES (?, ?, ?, ?, 0, 0, ?)";
+            $insert_stmt = $conn->prepare($insert_query);
+            $insert_stmt->bind_param("sssii", $current_month, $item_code, $mode, $opening_balance, $opening_balance);
+            $insert_stmt->execute();
+            $insert_stmt->close();
+        }
     }
 }
 
@@ -329,47 +365,48 @@ if (isset($_GET['export'])) {
 
 // Handle CSV import
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
+    $start_date = $_POST['start_date'];
     $csv_file = $_FILES['csv_file']['tmp_name'];
     $handle = fopen($csv_file, "r");
-    
+
     // Skip header row
     fgetcsv($handle);
-    
+
     $imported_count = 0;
     $error_messages = [];
-    
+
     while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
         if (count($data) >= 4) {
             $code = trim($data[0]);
             $details = trim($data[1]);
             $details2 = trim($data[2]);
             $balance = intval(trim($data[3])); // Convert to integer
-            
+
             // Validate item code exists and matches details AND check if item is allowed for company's license
             if (!empty($allowed_classes)) {
                 $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster 
-                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ? 
+                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster
+                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ?
                                    AND LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
                 $check_item_stmt = $conn->prepare($check_item_query);
-                
+
                 $params = array_merge([$code, $details, $details2, $mode], $allowed_classes);
                 $types = "ssss" . str_repeat('s', count($allowed_classes));
                 $check_item_stmt->bind_param($types, ...$params);
             } else {
                 // If no classes allowed, item validation will fail
-                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster 
-                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ? 
+                $check_item_query = "SELECT COUNT(*) as count FROM tblitemmaster
+                                   WHERE CODE = ? AND DETAILS = ? AND DETAILS2 = ?
                                    AND LIQ_FLAG = ? AND 1 = 0";
                 $check_item_stmt = $conn->prepare($check_item_query);
                 $check_item_stmt->bind_param("ssss", $code, $details, $details2, $mode);
             }
-            
+
             $check_item_stmt->execute();
             $item_result = $check_item_stmt->get_result();
             $item_exists_and_allowed = $item_result->fetch_assoc()['count'] > 0;
             $check_item_stmt->close();
-            
+
             if ($item_exists_and_allowed) {
                 // Check if ANY record exists for this item (regardless of financial year)
                 $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?");
@@ -378,7 +415,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 $checkResult = $checkStmt->get_result();
                 $exists = $checkResult->fetch_assoc()['count'] > 0;
                 $checkStmt->close();
-                
+
                 if ($exists) {
                     // Update existing record - only the columns for this company
                     $updateStmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = ?");
@@ -392,28 +429,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                     $insertStmt->execute();
                     $insertStmt->close();
                 }
-                
-                // Update daily stock - get yesterday's closing for today's opening
-                $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $mode);
-                $today_opening = ($yesterday_closing > 0) ? $yesterday_closing : $balance;
-                
-                updateDailyStock($conn, $comp_id, $code, $mode, $today_opening, $balance);
-                
+
+                // Update daily stock from start date to current date
+                updateDailyStockRange($conn, $comp_id, $code, $mode, $balance, $start_date);
+
                 $imported_count++;
             } else {
                 $error_messages[] = "Item validation failed for '$code' - '$details' - '$details2'. Item not found or not allowed for your license type.";
             }
         }
     }
-    
+
     fclose($handle);
-    
+
     $_SESSION['import_message'] = [
         'success' => true,
         'message' => "Successfully imported $imported_count opening balances (only items allowed for your license type were processed)",
         'errors' => $error_messages
     ];
-    
+
     header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search));
     exit;
 }
@@ -523,10 +557,11 @@ $stmt->close();
 
 // Handle form submission for updating opening balances
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
+    $start_date = $_POST['start_date'];
     if (isset($_POST['opening_stock'])) {
         foreach ($_POST['opening_stock'] as $code => $balance) {
             $balance = intval($balance); // Convert to integer
-            
+
             // Check if record exists
             $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?");
             $checkStmt->bind_param("s", $code);
@@ -534,7 +569,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             $checkResult = $checkStmt->get_result();
             $exists = $checkResult->fetch_assoc()['count'] > 0;
             $checkStmt->close();
-            
+
             if ($exists) {
                 // Update existing record - update BOTH opening and current stock
                 $updateStmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = ?");
@@ -548,15 +583,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                 $insertStmt->execute();
                 $insertStmt->close();
             }
-            
-            // Update daily stock - get yesterday's closing for today's opening
-            $yesterday_closing = getYesterdayClosingStock($conn, $comp_id, $code, $mode);
-            $today_opening = ($yesterday_closing > 0) ? $yesterday_closing : $balance;
-            
-            updateDailyStock($conn, $comp_id, $code, $mode, $today_opening, $balance);
+
+            // Update daily stock from start date to current date
+            updateDailyStockRange($conn, $comp_id, $code, $mode, $balance, $start_date);
         }
     }
-    
+
     // Refresh the page to show updated values
     header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search));
     exit;
@@ -574,7 +606,7 @@ if (isset($_SESSION['import_message'])) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opening Balance Management - WineSoft</title>
+  <title>Opening Balance Management - liqoursoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -690,7 +722,7 @@ if (isset($_SESSION['import_message'])) {
       <div class="import-section mb-4">
         <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV</h5>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label for="csv_file" class="form-label">CSV File</label>
             <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
             <div class="csv-format">
@@ -700,6 +732,10 @@ if (isset($_SESSION['import_message'])) {
             </div>
           </div>
           <div class="col-md-3">
+            <label for="start_date_import" class="form-label">Start Date</label>
+            <input type="date" class="form-control" id="start_date_import" name="start_date" value="<?= date('Y-m-d') ?>" required>
+          </div>
+          <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100">
               <i class="fas fa-upload"></i> Import CSV
             </button>
@@ -761,6 +797,10 @@ if (isset($_SESSION['import_message'])) {
 
       <!-- Balance Management Form -->
       <form method="POST" id="balanceForm">
+        <div class="mb-3">
+          <label for="start_date_balance" class="form-label">Start Date for Opening Balance</label>
+          <input type="date" class="form-control" id="start_date_balance" name="start_date" value="<?= date('Y-m-d') ?>" required style="max-width: 200px;">
+        </div>
         <div class="action-btn mb-3 d-flex gap-2">
           <button type="submit" name="update_balances" class="btn btn-success">
             <i class="fas fa-save"></i> Save Opening Balances
