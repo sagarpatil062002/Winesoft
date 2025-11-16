@@ -44,19 +44,33 @@ $current_company = $company_result->fetch_assoc();
 $company_stmt->close();
 
 // Check if company columns exist in tblitem_stock, if not create them
-$check_columns_query = "SELECT COUNT(*) as count FROM information_schema.columns 
-                       WHERE table_name = 'tblitem_stock' 
-                       AND column_name IN ('OPENING_STOCK$comp_id', 'CURRENT_STOCK$comp_id')";
+$check_columns_query = "SELECT COUNT(*) as count FROM information_schema.columns
+                       WHERE table_name = 'tblitem_stock'
+                       AND column_name = 'OPENING_STOCK$comp_id'";
 $check_result = $conn->query($check_columns_query);
-$columns_exist = $check_result->fetch_assoc()['count'] == 2;
+$opening_col_exists = $check_result->fetch_assoc()['count'] > 0;
 
-if (!$columns_exist) {
-    // Add company-specific columns as INT instead of DECIMAL
+$check_columns_query2 = "SELECT COUNT(*) as count FROM information_schema.columns
+                        WHERE table_name = 'tblitem_stock'
+                        AND column_name = 'CURRENT_STOCK$comp_id'";
+$check_result2 = $conn->query($check_columns_query2);
+$current_col_exists = $check_result2->fetch_assoc()['count'] > 0;
+
+// Only create columns that don't exist
+if (!$opening_col_exists) {
     $add_col1_query = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK$comp_id INT DEFAULT 0";
+    if (!$conn->query($add_col1_query)) {
+        // Log error but don't stop execution
+        error_log("Failed to create OPENING_STOCK$comp_id: " . $conn->error);
+    }
+}
+
+if (!$current_col_exists) {
     $add_col2_query = "ALTER TABLE tblitem_stock ADD COLUMN CURRENT_STOCK$comp_id INT DEFAULT 0";
-    
-    $conn->query($add_col1_query);
-    $conn->query($add_col2_query);
+    if (!$conn->query($add_col2_query)) {
+        // Log error but don't stop execution
+        error_log("Failed to create CURRENT_STOCK$comp_id: " . $conn->error);
+    }
 }
 
 // Check if company daily stock table exists, if not create it with dynamic day columns
