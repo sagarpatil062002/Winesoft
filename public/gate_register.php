@@ -60,9 +60,9 @@ $size_columns_s = [
     '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
     '50 ML (24)', '50 ML (192)'
 ];
-$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
-$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
+$size_columns_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$size_columns_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$size_columns_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // For Country Liquor - use Spirits sizes
 $size_columns_country = $size_columns_s;

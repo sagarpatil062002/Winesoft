@@ -824,23 +824,37 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       font-weight: bold;
     }
     /* Double line separators after each subcategory ends */
-    /* Yearly register structure: Description(1), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27] */
+    /* Yearly register structure: Description(1), Sizes[Spirits(11)+Imported Spirit(11)+Wine(4)+Wine Imp(4)+FB(6)+MB(6)=43] */
 
     /* After Spirits (50ml) - column 1+11=12 */
-    .report-table td:nth-child(12) {
-      border-right: double 3px #000;
+    .report-table td:nth-child(12),
+    .report-table th:nth-child(12) {
+      border-right: double 3px #000 !important;
     }
-    /* After Wine (90ml) - column 12+4=16 */
-    .report-table td:nth-child(16) {
-      border-right: double 3px #000;
+    /* After Imported Spirit (50ml) - column 12+11=23 */
+    .report-table td:nth-child(23),
+    .report-table th:nth-child(23) {
+      border-right: double 3px #000 !important;
     }
-    /* After Fermented Beer (250ml) - column 16+6=22 */
-    .report-table td:nth-child(22) {
-      border-right: double 3px #000;
+    /* After Wine (90ml) - column 23+4=27 */
+    .report-table td:nth-child(27),
+    .report-table th:nth-child(27) {
+      border-right: double 3px #000 !important;
     }
-    /* After Mild Beer (250ml) - column 22+6=28 */
-    .report-table td:nth-child(28) {
-      border-right: double 3px #000;
+    /* After Wine Imp (90ml) - column 27+4=31 */
+    .report-table td:nth-child(31),
+    .report-table th:nth-child(31) {
+      border-right: double 3px #000 !important;
+    }
+    /* After Fermented Beer (250ml) - column 31+6=37 */
+    .report-table td:nth-child(37),
+    .report-table th:nth-child(37) {
+      border-right: double 3px #000 !important;
+    }
+    /* After Mild Beer (250ml) - column 37+6=43 */
+    .report-table td:nth-child(43),
+    .report-table th:nth-child(43) {
+      border-right: double 3px #000 !important;
     }
     .filter-card {
       background-color: #f8f9fa;

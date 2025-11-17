@@ -59,76 +59,134 @@ if ($brandResult) {
 
 // Generate report data based on filters
 $report_data = [];
+$summary_data = [];
 $gross_amount = 0;
 
 if (isset($_GET['generate'])) {
-    // Build the query based on selected filters - CORRECTED
-    $query = "SELECT
-                p.DATE,
-                p.TPNO as T_P_NO,
-                p.INV_NO,
-                pd.Cases,
-                pd.Bottles as Units,
-                (pd.Cases * pd.BottlesPerCase + pd.Bottles) as Total_Bottles,
-                s.DETAILS as Supplier_Description,
-                pd.ItemName as Item_Description
-              FROM tblpurchases p
-              INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
-              INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
-              WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+    if ($report_type == 'detailed') {
+        // Build the query for detailed report - INCLUDING ALL COLUMNS FROM PDF
+        $query = "SELECT
+                    p.DATE,
+                    p.TPNO as T_P_NO,
+                    p.INV_NO,
+                    pd.Cases,
+                    pd.Bottles as Units,
+                    (pd.Cases * pd.BottlesPerCase + pd.Bottles) as Total_Bottles,
+                    s.DETAILS as Supplier_Description,
+                    pd.ItemName as Item_Description,
+                    pd.CaseRate,
+                    pd.Amount,
+                    pd.Size,
+                    pd.FreeCases as Scheme_Cases,
+                    pd.FreeBottles as Scheme_Units,
+                    (pd.FreeCases * pd.BottlesPerCase + pd.FreeBottles) as Scheme_Total_Bottles,
+                    (pd.FreeCases * pd.CaseRate) as Scheme_Amount,
+                    pd.MRP,
+                    pd.BottlesPerCase
+                  FROM tblpurchases p
+                  INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
+                  INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
 
-    $params = [$date_from, $date_to, $company_id];
-    $types = "ssi";
-    
-    if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
-        $query .= " AND p.SUBCODE = ?";
-        $params[] = $supplier_code;
-        $types .= "s";
-    }
-    
-    if ($supplier_type == 'particular_supplier_particular_brand' && !empty($brand_code)) {
-        $query .= " AND pd.ItemName LIKE ?";
-        $params[] = "%$brand_code%";
-        $types .= "s";
-    }
-    
-    $query .= " ORDER BY s.DETAILS, pd.ItemName, p.DATE";
-    
-    $stmt = $conn->prepare($query);
-    if ($stmt) {
-        if (!empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $report_data = $result->fetch_all(MYSQLI_ASSOC);
-        
-        // Calculate gross amount - CORRECTED
-        $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount
-                        FROM tblpurchases p
-                        WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
-
-        $gross_params = [$date_from, $date_to, $company_id];
-        $gross_types = "ssi";
+        $params = [$date_from, $date_to, $company_id];
+        $types = "ssi";
         
         if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
-            $gross_query .= " AND p.SUBCODE = ?";
-            $gross_params[] = $supplier_code;
-            $gross_types .= "s";
+            $query .= " AND p.SUBCODE = ?";
+            $params[] = $supplier_code;
+            $types .= "s";
         }
         
-        $gross_stmt = $conn->prepare($gross_query);
-        if ($gross_stmt) {
-            $gross_stmt->bind_param($gross_types, ...$gross_params);
-            $gross_stmt->execute();
-            $gross_result = $gross_stmt->get_result();
-            $gross_row = $gross_result->fetch_assoc();
-            $gross_amount = $gross_row['Gross_Amount'] ?? 0;
-            
-            $gross_stmt->close();
+        if ($supplier_type == 'particular_supplier_particular_brand' && !empty($brand_code)) {
+            $query .= " AND pd.ItemName LIKE ?";
+            $params[] = "%$brand_code%";
+            $types .= "s";
         }
         
-        $stmt->close();
+        $query .= " ORDER BY s.DETAILS, pd.ItemName, p.DATE";
+        
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $report_data = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+        }
+    } else {
+        // Build the query for summary report - INCLUDING ALL COLUMNS FROM PDF
+        $query = "SELECT
+                    s.DETAILS as Supplier_Description,
+                    pd.ItemName as Item_Description,
+                    SUM(pd.Cases) as Total_Cases,
+                    SUM(pd.Bottles) as Total_Units,
+                    SUM(pd.Cases * pd.BottlesPerCase + pd.Bottles) as Total_Bottles,
+                    SUM(pd.Amount) as Total_Amount,
+                    AVG(pd.CaseRate) as Avg_CaseRate,
+                    SUM(pd.FreeCases) as Total_Scheme_Cases,
+                    SUM(pd.FreeBottles) as Total_Scheme_Units,
+                    SUM(pd.FreeCases * pd.BottlesPerCase + pd.FreeBottles) as Total_Scheme_Bottles,
+                    SUM(pd.FreeCases * pd.CaseRate) as Total_Scheme_Amount,
+                    AVG(pd.MRP) as Avg_MRP
+                  FROM tblpurchases p
+                  INNER JOIN tblpurchasedetails pd ON p.ID = pd.PurchaseID
+                  INNER JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+
+        $params = [$date_from, $date_to, $company_id];
+        $types = "ssi";
+        
+        if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
+            $query .= " AND p.SUBCODE = ?";
+            $params[] = $supplier_code;
+            $types .= "s";
+        }
+        
+        if ($supplier_type == 'particular_supplier_particular_brand' && !empty($brand_code)) {
+            $query .= " AND pd.ItemName LIKE ?";
+            $params[] = "%$brand_code%";
+            $types .= "s";
+        }
+        
+        $query .= " GROUP BY s.DETAILS, pd.ItemName 
+                   ORDER BY s.DETAILS, pd.ItemName";
+        
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $summary_data = $result->fetch_all(MYSQLI_ASSOC);
+            $stmt->close();
+        }
+    }
+    
+    // Calculate gross amount
+    $gross_query = "SELECT SUM(p.TAMT) as Gross_Amount
+                    FROM tblpurchases p
+                    WHERE p.DATE BETWEEN ? AND ? AND p.CompID = ?";
+
+    $gross_params = [$date_from, $date_to, $company_id];
+    $gross_types = "ssi";
+    
+    if ($supplier_type != 'all_supplier' && !empty($supplier_code)) {
+        $gross_query .= " AND p.SUBCODE = ?";
+        $gross_params[] = $supplier_code;
+        $gross_types .= "s";
+    }
+    
+    $gross_stmt = $conn->prepare($gross_query);
+    if ($gross_stmt) {
+        $gross_stmt->bind_param($gross_types, ...$gross_params);
+        $gross_stmt->execute();
+        $gross_result = $gross_stmt->get_result();
+        $gross_row = $gross_result->fetch_assoc();
+        $gross_amount = $gross_row['Gross_Amount'] ?? 0;
+        $gross_stmt->close();
     }
 }
 ?>
@@ -144,7 +202,44 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
   <script src="components/shortcuts.js?v=<?= time() ?>"></script>
-
+  <style>
+    .text-right {
+        text-align: right;
+    }
+    .text-center {
+        text-align: center;
+    }
+    .total-row {
+        font-weight: bold;
+        background-color: #e9ecef;
+    }
+    .brand-row, .brand-header {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    .brand-header {
+        background-color: #e9ecef;
+    }
+    .report-table {
+        font-size: 0.85rem;
+    }
+    .report-table th {
+        white-space: nowrap;
+        padding: 4px 8px;
+    }
+    .report-table td {
+        padding: 4px 8px;
+    }
+    @media print {
+        .report-table {
+            font-size: 0.75rem;
+        }
+        .report-table th,
+        .report-table td {
+            padding: 2px 4px;
+        }
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -161,7 +256,14 @@ if (isset($_GET['generate'])) {
         <div class="card-body">
           <form method="GET" class="report-filters">
             <div class="row mb-3">
-              <div class="col-md-12">
+              <div class="col-md-4">
+                <label class="form-label">Report Type:</label>
+                <select name="report_type" class="form-select">
+                  <option value="detailed" <?= $report_type === 'detailed' ? 'selected' : '' ?>>Detailed Report</option>
+                  <option value="summary" <?= $report_type === 'summary' ? 'selected' : '' ?>>Summary Report</option>
+                </select>
+              </div>
+              <div class="col-md-8">
                 <label class="form-label">Report Details:</label>
                 <select name="supplier_type" class="form-select details-dropdown" id="supplier_type">
                   <option value="particular_supplier_particular_brand" <?= $supplier_type === 'particular_supplier_particular_brand' ? 'selected' : '' ?>>Particular Supplier Particular Brand</option>
@@ -231,63 +333,212 @@ if (isset($_GET['generate'])) {
       </div>
 
       <!-- Report Results -->
-      <?php if (!empty($report_data)): ?>
+      <?php if (!empty($report_data) || !empty($summary_data)): ?>
         <div class="print-section">
           <div class="company-header">
             <h1><?= htmlspecialchars($companyName) ?></h1>
             <h5>Supplier Wise Purchase Report From <?= date('d-M-Y', strtotime($date_from)) ?> To <?= date('d-M-Y', strtotime($date_to)) ?></h5>
+            <p class="text-muted"><strong>Report Type:</strong> <?= $report_type == 'detailed' ? 'Detailed' : 'Summary' ?></p>
           </div>
           
           <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>T. P. No.</th>
-                  <th>Inv. No.</th>
-                  <th>Cases</th>
-                  <th>Units</th>
-                  <th>Total Bottles</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php 
-                $current_supplier = '';
-                $current_item = '';
-                foreach ($report_data as $row): 
-                  if ($current_supplier != $row['Supplier_Description']): 
-                    $current_supplier = $row['Supplier_Description'];
-                    $current_item = '';
-                ?>
-                  <tr class="brand-row">
-                    <td colspan="6"><strong>Supplier Description :</strong> <?= htmlspecialchars($row['Supplier_Description']) ?></td>
+            <?php if ($report_type == 'detailed'): ?>
+              <!-- Detailed Report View - MATCHING PDF COLUMNS -->
+              <table class="report-table table table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>T. P. No.</th>
+                    <th>Inv. No.</th>
+                    <th class="text-right">Cases</th>
+                    <th class="text-right">Units</th>
+                    <th class="text-right">Total Bottles</th>
+                    <th class="text-right">Scheme Cases</th>
+                    <th class="text-right">Units</th>
+                    <th class="text-right">Scheme Amount</th>
                   </tr>
-                <?php endif; ?>
-                
-                <?php if ($current_item != $row['Item_Description']): 
-                  $current_item = $row['Item_Description'];
-                ?>
-                  <tr class="brand-header">
-                    <td colspan="6"><strong>Item Description :</strong> <?= htmlspecialchars($row['Item_Description']) ?></td>
+                </thead>
+                <tbody>
+                  <?php 
+                  $current_supplier = '';
+                  $current_item = '';
+                  $supplier_total_cases = 0;
+                  $supplier_total_units = 0;
+                  $supplier_total_bottles = 0;
+                  $supplier_total_scheme_cases = 0;
+                  $supplier_total_scheme_units = 0;
+                  $supplier_total_scheme_amount = 0;
+                  
+                  foreach ($report_data as $index => $row): 
+                    if ($current_supplier != $row['Supplier_Description']): 
+                      // Display supplier total if not first supplier
+                      if ($current_supplier != ''): ?>
+                        <tr class="total-row">
+                          <td colspan="3" class="text-end"><strong>Supplier Total:</strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_cases, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_units, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_bottles, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_scheme_cases, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_scheme_units, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_scheme_amount, 2) ?></strong></td>
+                        </tr>
+                      <?php endif;
+                      
+                      $current_supplier = $row['Supplier_Description'];
+                      $current_item = '';
+                      // Reset supplier totals
+                      $supplier_total_cases = 0;
+                      $supplier_total_units = 0;
+                      $supplier_total_bottles = 0;
+                      $supplier_total_scheme_cases = 0;
+                      $supplier_total_scheme_units = 0;
+                      $supplier_total_scheme_amount = 0;
+                  ?>
+                    <tr class="brand-row">
+                      <td colspan="9"><strong>Supplier Description :</strong> <?= htmlspecialchars($row['Supplier_Description']) ?></td>
+                    </tr>
+                  <?php endif; ?>
+                  
+                  <?php if ($current_item != $row['Item_Description']): 
+                    $current_item = $row['Item_Description'];
+                  ?>
+                    <tr class="brand-header">
+                      <td colspan="9"><strong>Item Description :</strong> <?= htmlspecialchars($row['Item_Description']) ?></td>
+                    </tr>
+                  <?php endif; ?>
+                  
+                  <tr>
+                    <td><?= date('d/m/Y', strtotime($row['DATE'])) ?></td>
+                    <td><?= htmlspecialchars($row['T_P_NO']) ?></td>
+                    <td><?= htmlspecialchars($row['INV_NO']) ?></td>
+                    <td class="text-right"><?= number_format($row['Cases'], 2) ?></td>
+                    <td class="text-right"><?= number_format($row['Units'], 0) ?></td>
+                    <td class="text-right"><?= number_format($row['Total_Bottles'], 0) ?></td>
+                    <td class="text-right"><?= number_format($row['Scheme_Cases'], 2) ?></td>
+                    <td class="text-right"><?= number_format($row['Scheme_Units'], 0) ?></td>
+                    <td class="text-right"><?= number_format($row['Scheme_Amount'], 2) ?></td>
                   </tr>
-                <?php endif; ?>
-                
-                <tr>
-                  <td><?= date('d/m/Y', strtotime($row['DATE'])) ?></td>
-                  <td><?= htmlspecialchars($row['T_P_NO']) ?></td>
-                  <td><?= htmlspecialchars($row['INV_NO']) ?></td>
-                  <td class="text-right"><?= number_format($row['Cases'], 2) ?></td>
-                  <td class="text-right"><?= htmlspecialchars($row['Units']) ?></td>
-                  <td class="text-right"><?= number_format($row['Total_Bottles'], 2) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                
-                <tr class="total-row">
-                  <td colspan="5" class="text-end"><strong>Gross Amount :</strong></td>
-                  <td class="text-right"><strong><?= number_format($gross_amount, 2) ?></strong></td>
-                </tr>
-              </tbody>
-            </table>
+                  
+                  <?php 
+                  // Accumulate supplier totals
+                  $supplier_total_cases += floatval($row['Cases']);
+                  $supplier_total_units += floatval($row['Units']);
+                  $supplier_total_bottles += floatval($row['Total_Bottles']);
+                  $supplier_total_scheme_cases += floatval($row['Scheme_Cases']);
+                  $supplier_total_scheme_units += floatval($row['Scheme_Units']);
+                  $supplier_total_scheme_amount += floatval($row['Scheme_Amount']);
+                  
+                  // Display final supplier total
+                  if ($index == count($report_data) - 1): ?>
+                    <tr class="total-row">
+                      <td colspan="3" class="text-end"><strong>Supplier Total:</strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_cases, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_units, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_bottles, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_scheme_cases, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_scheme_units, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_scheme_amount, 2) ?></strong></td>
+                    </tr>
+                  <?php endif;
+                  
+                  endforeach; ?>
+                  
+                  <tr class="total-row">
+                    <td colspan="8" class="text-end"><strong>Gross Amount :</strong></td>
+                    <td class="text-right"><strong><?= number_format($gross_amount, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            <?php else: ?>
+              <!-- Summary Report View - MATCHING PDF COLUMNS -->
+              <table class="report-table table table-bordered">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>T. P. No.</th>
+                    <th>Inv. No.</th>
+                    <th class="text-right">Cases</th>
+                    <th class="text-right">Units</th>
+                    <th class="text-right">Total Bottles</th>
+                    <th class="text-right">Case Rate</th>
+                    <th class="text-right">Tot. Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php 
+                  $current_supplier = '';
+                  $supplier_total_cases = 0;
+                  $supplier_total_units = 0;
+                  $supplier_total_bottles = 0;
+                  $supplier_total_amount = 0;
+                  
+                  foreach ($summary_data as $index => $row): 
+                    if ($current_supplier != $row['Supplier_Description']): 
+                      // Display supplier total if not first supplier
+                      if ($current_supplier != ''): ?>
+                        <tr class="total-row">
+                          <td colspan="4" class="text-end"><strong>Gross Amount :</strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_cases, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_units, 2) ?></strong></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_bottles, 2) ?></strong></td>
+                          <td class="text-right"></td>
+                          <td class="text-right"><strong><?= number_format($supplier_total_amount, 2) ?></strong></td>
+                        </tr>
+                      <?php endif;
+                      
+                      $current_supplier = $row['Supplier_Description'];
+                      // Reset supplier totals
+                      $supplier_total_cases = 0;
+                      $supplier_total_units = 0;
+                      $supplier_total_bottles = 0;
+                      $supplier_total_amount = 0;
+                  ?>
+                    <tr class="brand-row">
+                      <td colspan="9"><strong>Supplier Description : <?= htmlspecialchars($row['Supplier_Description']) ?></strong></td>
+                    </tr>
+                  <?php endif; ?>
+                  
+                  <tr>
+                    <td></td>
+                    <td><?= htmlspecialchars($row['Item_Description']) ?></td>
+                    <td></td>
+                    <td></td>
+                    <td class="text-right"><?= number_format($row['Total_Cases'], 2) ?></td>
+                    <td class="text-right"><?= number_format($row['Total_Units'], 0) ?></td>
+                    <td class="text-right"><?= number_format($row['Total_Bottles'], 0) ?></td>
+                    <td class="text-right"><?= number_format($row['Avg_CaseRate'], 3) ?></td>
+                    <td class="text-right"><?= number_format($row['Total_Amount'], 2) ?></td>
+                  </tr>
+                  
+                  <?php 
+                  // Accumulate supplier totals
+                  $supplier_total_cases += floatval($row['Total_Cases']);
+                  $supplier_total_units += floatval($row['Total_Units']);
+                  $supplier_total_bottles += floatval($row['Total_Bottles']);
+                  $supplier_total_amount += floatval($row['Total_Amount']);
+                  
+                  // Display final supplier total
+                  if ($index == count($summary_data) - 1): ?>
+                    <tr class="total-row">
+                      <td colspan="4" class="text-end"><strong>Gross Amount :</strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_cases, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_units, 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_bottles, 2) ?></strong></td>
+                      <td class="text-right"></td>
+                      <td class="text-right"><strong><?= number_format($supplier_total_amount, 2) ?></strong></td>
+                    </tr>
+                  <?php endif;
+                  
+                  endforeach; ?>
+                  
+                  <tr class="total-row">
+                    <td colspan="8" class="text-end"><strong>Overall Gross Amount :</strong></td>
+                    <td class="text-right"><strong><?= number_format($gross_amount, 2) ?></strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            <?php endif; ?>
           </div>
         </div>
       <?php elseif (isset($_GET['generate'])): ?>

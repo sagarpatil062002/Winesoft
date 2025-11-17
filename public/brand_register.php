@@ -162,9 +162,9 @@ $size_columns_s = [
     '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)', 
     '50 ML (24)', '50 ML (192)'
 ];
-$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
-$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
+$size_columns_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
+$size_columns_fb = ['650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$size_columns_mb = ['650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // Group sizes by base size for each liquor type
 function groupSizes($sizes) {
@@ -549,6 +549,30 @@ foreach ($cumulative_stock_data as $item_code => $stock_data) {
 
 // Calculate total columns count for table formatting - UPDATED FOR NEW SUBCATEGORIES
 $total_columns = count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
+
+// Calculate dynamic column positions for double lines
+$received_spirit_end = 3 + count($display_sizes_s);
+$received_imported_end = 3 + count($display_sizes_s) + count($display_sizes_imported);
+$received_wine_end = 3 + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w);
+$received_wine_imp_end = 3 + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp);
+$received_fb_end = 3 + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb);
+$received_mb_end = 3 + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
+
+$sold_start = $received_mb_end;
+$sold_spirit_end = $sold_start + count($display_sizes_s);
+$sold_imported_end = $sold_start + count($display_sizes_s) + count($display_sizes_imported);
+$sold_wine_end = $sold_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w);
+$sold_wine_imp_end = $sold_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp);
+$sold_fb_end = $sold_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb);
+$sold_mb_end = $sold_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
+
+$closing_start = $sold_mb_end;
+$closing_spirit_end = $closing_start + count($display_sizes_s);
+$closing_imported_end = $closing_start + count($display_sizes_s) + count($display_sizes_imported);
+$closing_wine_end = $closing_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w);
+$closing_wine_imp_end = $closing_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp);
+$closing_fb_end = $closing_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb);
+$closing_mb_end = $closing_start + count($display_sizes_s) + count($display_sizes_imported) + count($display_sizes_w) + count($display_sizes_wine_imp) + count($display_sizes_fb) + count($display_sizes_mb);
 ?>
 
 <!DOCTYPE html>
@@ -622,7 +646,8 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
   border-collapse: collapse;
   font-size: 10px;
   margin-bottom: 0; /* Remove bottom margin */
-}    .report-table th, .report-table td {
+}
+    .report-table th, .report-table td {
       border: 1px solid #000;
       padding: 4px;
       text-align: center;
@@ -656,129 +681,98 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       border-bottom: double 3px #000;
     }
 
-    /* Double line separators for Brand Register - UPDATED FOR NEW SUBCATEGORIES */
-    /* Structure: SrNo(1)+TP(2)+Brand(3)=6, Received[33], Sold[33], Closing[33], Total(1) */
+    /* Double line separators for Brand Register - DYNAMIC BASED ON COLUMN COUNTS */
 
     /* RECEIVED SECTION */
-    /* After Spirits (50ml) in Received - column 6+11=17 */
-    .report-table td:nth-child(17),
-    .report-table th:nth-child(17) {
+    .report-table td:nth-child(<?= $received_spirit_end ?>),
+    .report-table th:nth-child(<?= $received_spirit_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Received - column 17+11=28 */
-    .report-table td:nth-child(28),
-    .report-table th:nth-child(28) {
+    .report-table td:nth-child(<?= $received_imported_end ?>),
+    .report-table th:nth-child(<?= $received_imported_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Received - column 28+4=32 */
-    .report-table td:nth-child(32),
-    .report-table th:nth-child(32) {
+    .report-table td:nth-child(<?= $received_wine_end ?>),
+    .report-table th:nth-child(<?= $received_wine_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Received - column 32+4=36 */
-    .report-table td:nth-child(36),
-    .report-table th:nth-child(36) {
+    .report-table td:nth-child(<?= $received_wine_imp_end ?>),
+    .report-table th:nth-child(<?= $received_wine_imp_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Fermented Beer (250ml) in Received - column 36+6=42 */
-    .report-table td:nth-child(42),
-    .report-table th:nth-child(42) {
+    .report-table td:nth-child(<?= $received_fb_end ?>),
+    .report-table th:nth-child(<?= $received_fb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Mild Beer (250ml) in Received - column 42+6=48 */
-    .report-table td:nth-child(48),
-    .report-table th:nth-child(48) {
-      border-right: double 3px #000 !important;
-    }
-
-    /* After Received section (before Sold) - column 48 */
-    .report-table td:nth-child(48),
-    .report-table th:nth-child(48) {
+    .report-table td:nth-child(<?= $received_mb_end ?>),
+    .report-table th:nth-child(<?= $received_mb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
     /* SOLD SECTION */
-    /* After Spirits (50ml) in Sold - column 48+11=59 */
-    .report-table td:nth-child(59),
-    .report-table th:nth-child(59) {
+    .report-table td:nth-child(<?= $sold_spirit_end ?>),
+    .report-table th:nth-child(<?= $sold_spirit_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Sold - column 59+11=70 */
-    .report-table td:nth-child(70),
-    .report-table th:nth-child(70) {
+    .report-table td:nth-child(<?= $sold_imported_end ?>),
+    .report-table th:nth-child(<?= $sold_imported_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Sold - column 70+4=74 */
-    .report-table td:nth-child(74),
-    .report-table th:nth-child(74) {
+    .report-table td:nth-child(<?= $sold_wine_end ?>),
+    .report-table th:nth-child(<?= $sold_wine_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Sold - column 74+4=78 */
-    .report-table td:nth-child(78),
-    .report-table th:nth-child(78) {
+    .report-table td:nth-child(<?= $sold_wine_imp_end ?>),
+    .report-table th:nth-child(<?= $sold_wine_imp_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Fermented Beer (250ml) in Sold - column 78+6=84 */
-    .report-table td:nth-child(84),
-    .report-table th:nth-child(84) {
+    .report-table td:nth-child(<?= $sold_fb_end ?>),
+    .report-table th:nth-child(<?= $sold_fb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Mild Beer (250ml) in Sold - column 84+6=90 */
-    .report-table td:nth-child(90),
-    .report-table th:nth-child(90) {
-      border-right: double 3px #000 !important;
-    }
-
-    /* After Sold section (before Closing) - column 90 */
-    .report-table td:nth-child(90),
-    .report-table th:nth-child(90) {
+    .report-table td:nth-child(<?= $sold_mb_end ?>),
+    .report-table th:nth-child(<?= $sold_mb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
     /* CLOSING BALANCE SECTION */
-    /* After Spirits (50ml) in Closing - column 90+11=101 */
-    .report-table td:nth-child(101),
-    .report-table th:nth-child(101) {
+    .report-table td:nth-child(<?= $closing_spirit_end ?>),
+    .report-table th:nth-child(<?= $closing_spirit_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Closing - column 101+11=112 */
-    .report-table td:nth-child(112),
-    .report-table th:nth-child(112) {
+    .report-table td:nth-child(<?= $closing_imported_end ?>),
+    .report-table th:nth-child(<?= $closing_imported_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Closing - column 112+4=116 */
-    .report-table td:nth-child(116),
-    .report-table th:nth-child(116) {
+    .report-table td:nth-child(<?= $closing_wine_end ?>),
+    .report-table th:nth-child(<?= $closing_wine_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Closing - column 116+4=120 */
-    .report-table td:nth-child(120),
-    .report-table th:nth-child(120) {
+    .report-table td:nth-child(<?= $closing_wine_imp_end ?>),
+    .report-table th:nth-child(<?= $closing_wine_imp_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Fermented Beer (250ml) in Closing - column 120+6=126 */
-    .report-table td:nth-child(126),
-    .report-table th:nth-child(126) {
+    .report-table td:nth-child(<?= $closing_fb_end ?>),
+    .report-table th:nth-child(<?= $closing_fb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Mild Beer (250ml) in Closing - column 126+6=132 */
-    .report-table td:nth-child(132),
-    .report-table th:nth-child(132) {
+    .report-table td:nth-child(<?= $closing_mb_end ?>),
+    .report-table th:nth-child(<?= $closing_mb_end ?>) {
       border-right: double 3px #000 !important;
     }
 
@@ -928,43 +922,43 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
         font-size: 6px;
       }
 
-      /* Double lines in print - UPDATED FOR NEW SUBCATEGORIES */
-      .report-table td:nth-child(17),
-      .report-table th:nth-child(17),
-      .report-table td:nth-child(28),
-      .report-table th:nth-child(28),
-      .report-table td:nth-child(32),
-      .report-table th:nth-child(32),
-      .report-table td:nth-child(36),
-      .report-table th:nth-child(36),
-      .report-table td:nth-child(42),
-      .report-table th:nth-child(42),
-      .report-table td:nth-child(48),
-      .report-table th:nth-child(48),
-      .report-table td:nth-child(59),
-      .report-table th:nth-child(59),
-      .report-table td:nth-child(70),
-      .report-table th:nth-child(70),
-      .report-table td:nth-child(74),
-      .report-table th:nth-child(74),
-      .report-table td:nth-child(78),
-      .report-table th:nth-child(78),
-      .report-table td:nth-child(84),
-      .report-table th:nth-child(84),
-      .report-table td:nth-child(90),
-      .report-table th:nth-child(90),
-      .report-table td:nth-child(101),
-      .report-table th:nth-child(101),
-      .report-table td:nth-child(112),
-      .report-table th:nth-child(112),
-      .report-table td:nth-child(116),
-      .report-table th:nth-child(116),
-      .report-table td:nth-child(120),
-      .report-table th:nth-child(120),
-      .report-table td:nth-child(126),
-      .report-table th:nth-child(126),
-      .report-table td:nth-child(132),
-      .report-table th:nth-child(132) {
+      /* Double lines in print - DYNAMIC BASED ON COLUMN COUNTS */
+      .report-table td:nth-child(<?= $received_spirit_end ?>),
+      .report-table th:nth-child(<?= $received_spirit_end ?>),
+      .report-table td:nth-child(<?= $received_imported_end ?>),
+      .report-table th:nth-child(<?= $received_imported_end ?>),
+      .report-table td:nth-child(<?= $received_wine_end ?>),
+      .report-table th:nth-child(<?= $received_wine_end ?>),
+      .report-table td:nth-child(<?= $received_wine_imp_end ?>),
+      .report-table th:nth-child(<?= $received_wine_imp_end ?>),
+      .report-table td:nth-child(<?= $received_fb_end ?>),
+      .report-table th:nth-child(<?= $received_fb_end ?>),
+      .report-table td:nth-child(<?= $received_mb_end ?>),
+      .report-table th:nth-child(<?= $received_mb_end ?>),
+      .report-table td:nth-child(<?= $sold_spirit_end ?>),
+      .report-table th:nth-child(<?= $sold_spirit_end ?>),
+      .report-table td:nth-child(<?= $sold_imported_end ?>),
+      .report-table th:nth-child(<?= $sold_imported_end ?>),
+      .report-table td:nth-child(<?= $sold_wine_end ?>),
+      .report-table th:nth-child(<?= $sold_wine_end ?>),
+      .report-table td:nth-child(<?= $sold_wine_imp_end ?>),
+      .report-table th:nth-child(<?= $sold_wine_imp_end ?>),
+      .report-table td:nth-child(<?= $sold_fb_end ?>),
+      .report-table th:nth-child(<?= $sold_fb_end ?>),
+      .report-table td:nth-child(<?= $sold_mb_end ?>),
+      .report-table th:nth-child(<?= $sold_mb_end ?>),
+      .report-table td:nth-child(<?= $closing_spirit_end ?>),
+      .report-table th:nth-child(<?= $closing_spirit_end ?>),
+      .report-table td:nth-child(<?= $closing_imported_end ?>),
+      .report-table th:nth-child(<?= $closing_imported_end ?>),
+      .report-table td:nth-child(<?= $closing_wine_end ?>),
+      .report-table th:nth-child(<?= $closing_wine_end ?>),
+      .report-table td:nth-child(<?= $closing_wine_imp_end ?>),
+      .report-table th:nth-child(<?= $closing_wine_imp_end ?>),
+      .report-table td:nth-child(<?= $closing_fb_end ?>),
+      .report-table th:nth-child(<?= $closing_fb_end ?>),
+      .report-table td:nth-child(<?= $closing_mb_end ?>),
+      .report-table th:nth-child(<?= $closing_mb_end ?>) {
         border-right: double 3px #000 !important;
       }
     }

@@ -112,10 +112,10 @@ function getSizeCategory($size) {
 // Define display sizes for each liquor type based on your SQL results
 $display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
 $display_sizes_imported = $display_sizes_s; // Imported uses same sizes as Spirit
-$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML', 'Other'];
+$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
 $display_sizes_wine_imp = $display_sizes_w; // Wine Imp uses same sizes as Wine
-$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML'];
-$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML', '50 ML'];
+$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
+$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
 // Fetch class data to map liquor types
 $classData = [];
@@ -515,67 +515,126 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       font-weight: bold;
     }
     /* Double line separators after each subcategory ends and after category changes */
-    /* FLR Datewise structure: Date(1), Permit(2), Received[Spirits(11)+Wine(4)+FB(6)+MB(6)=27], Sold[27], Closing[27] */
+    /* FLR Datewise structure: Date(1), Permit(2), Received[Spirits(11)+Imported Spirit(11)+Wine(4)+Wine Imp(4)+FB(6)+MB(6)=42], Sold[42], Closing[42] */
 
     /* After Spirits (50ml) in Received section - column 2+11=13 */
-    .report-table td:nth-child(13) {
-      border-right: double 3px #000;
-    }
-    /* After Wine (90ml) in Received section - column 13+4=17 */
-    .report-table td:nth-child(17) {
-      border-right: double 3px #000;
-    }
-    /* After Fermented Beer (250ml) in Received section - column 17+6=23 */
-    .report-table td:nth-child(23) {
-      border-right: double 3px #000;
-    }
-    /* After Mild Beer (250ml) in Received section - column 23+6=29 */
-    .report-table td:nth-child(29) {
-      border-right: double 3px #000;
+    .report-table td:nth-child(13),
+    .report-table th:nth-child(13) {
+      border-right: double 3px #000 !important;
     }
 
-    /* After Received section (before Sold) - column 29 */
-    .report-table td:nth-child(29) {
-      border-right: double 3px #000;
+    /* After Imported Spirit (50ml) in Received section - column 13+11=24 */
+    .report-table td:nth-child(24),
+    .report-table th:nth-child(24) {
+      border-right: double 3px #000 !important;
     }
 
-    /* After Spirits (50ml) in Sold section - column 29+11=40 */
-    .report-table td:nth-child(40) {
-      border-right: double 3px #000;
-    }
-    /* After Wine (90ml) in Sold section - column 40+4=44 */
-    .report-table td:nth-child(44) {
-      border-right: double 3px #000;
-    }
-    /* After Fermented Beer (250ml) in Sold section - column 44+6=50 */
-    .report-table td:nth-child(50) {
-      border-right: double 3px #000;
-    }
-    /* After Mild Beer (250ml) in Sold section - column 50+6=56 */
-    .report-table td:nth-child(56) {
-      border-right: double 3px #000;
+    /* After Wine (90ml) in Received section - column 24+4=28 */
+    .report-table td:nth-child(28),
+    .report-table th:nth-child(28) {
+      border-right: double 3px #000 !important;
     }
 
-    /* After Sold section (before Closing) - column 56 */
-    .report-table td:nth-child(56) {
-      border-right: double 3px #000;
+    /* After Wine Imp (90ml) in Received section - column 28+4=32 */
+    .report-table td:nth-child(32),
+    .report-table th:nth-child(32) {
+      border-right: double 3px #000 !important;
     }
 
-    /* After Spirits (50ml) in Closing section - column 56+11=67 */
-    .report-table td:nth-child(67) {
-      border-right: double 3px #000;
+    /* After Fermented Beer (250ml) in Received section - column 32+6=38 */
+    .report-table td:nth-child(38),
+    .report-table th:nth-child(38) {
+      border-right: double 3px #000 !important;
     }
-    /* After Wine (90ml) in Closing section - column 67+4=71 */
-    .report-table td:nth-child(71) {
-      border-right: double 3px #000;
+
+    /* After Mild Beer (250ml) in Received section - column 38+6=44 */
+    .report-table td:nth-child(44),
+    .report-table th:nth-child(44) {
+      border-right: double 3px #000 !important;
     }
-    /* After Fermented Beer (250ml) in Closing section - column 71+6=77 */
-    .report-table td:nth-child(77) {
-      border-right: double 3px #000;
+
+    /* After Received section (before Sold) - column 44 */
+    .report-table td:nth-child(44),
+    .report-table th:nth-child(44) {
+      border-right: double 3px #000 !important;
     }
-    /* After Mild Beer (250ml) in Closing section - column 77+6=83 */
-    .report-table td:nth-child(83) {
-      border-right: double 3px #000;
+
+    /* After Spirits (50ml) in Sold section - column 44+11=55 */
+    .report-table td:nth-child(55),
+    .report-table th:nth-child(55) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Imported Spirit (50ml) in Sold section - column 55+11=66 */
+    .report-table td:nth-child(66),
+    .report-table th:nth-child(66) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine (90ml) in Sold section - column 66+4=70 */
+    .report-table td:nth-child(70),
+    .report-table th:nth-child(70) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine Imp (90ml) in Sold section - column 70+4=74 */
+    .report-table td:nth-child(74),
+    .report-table th:nth-child(74) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Fermented Beer (250ml) in Sold section - column 74+6=80 */
+    .report-table td:nth-child(80),
+    .report-table th:nth-child(80) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Mild Beer (250ml) in Sold section - column 80+6=86 */
+    .report-table td:nth-child(86),
+    .report-table th:nth-child(86) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Sold section (before Closing) - column 86 */
+    .report-table td:nth-child(86),
+    .report-table th:nth-child(86) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Spirits (50ml) in Closing section - column 86+11=97 */
+    .report-table td:nth-child(97),
+    .report-table th:nth-child(97) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Imported Spirit (50ml) in Closing section - column 97+11=108 */
+    .report-table td:nth-child(108),
+    .report-table th:nth-child(108) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine (90ml) in Closing section - column 108+4=112 */
+    .report-table td:nth-child(112),
+    .report-table th:nth-child(112) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Wine Imp (90ml) in Closing section - column 112+4=116 */
+    .report-table td:nth-child(116),
+    .report-table th:nth-child(116) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Fermented Beer (250ml) in Closing section - column 116+6=122 */
+    .report-table td:nth-child(122),
+    .report-table th:nth-child(122) {
+      border-right: double 3px #000 !important;
+    }
+
+    /* After Mild Beer (250ml) in Closing section - column 122+6=128 */
+    .report-table td:nth-child(128),
+    .report-table th:nth-child(128) {
+      border-right: double 3px #000 !important;
     }
     .filter-card {
       background-color: #f8f9fa;

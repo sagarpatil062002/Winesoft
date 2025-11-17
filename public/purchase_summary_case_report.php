@@ -169,11 +169,7 @@ $current_date_time = date('d-M-Y h:i A');
             </table>
           </div>
           
-          <div class="footer-info">
-            <p>S. S. SoftTech, Pune. (020-30224741, 9371251623, 9657860662)</p>
-            <p>Printed on: <?= date('d-M-Y h:i A') ?></p>
-          </div>
-        </div>
+          
       <?php elseif (isset($_GET['from_date']) && empty($purchase_data)): ?>
         <div class="alert alert-info">
           <i class="fas fa-info-circle me-2"></i> No purchase data found for the selected criteria.
