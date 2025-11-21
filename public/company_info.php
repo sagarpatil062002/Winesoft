@@ -54,6 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $beer_limit = isset($_POST['beer_limit']) ? floatval($_POST['beer_limit']) : 0;
     $cl_limit = isset($_POST['cl_limit']) ? floatval($_POST['cl_limit']) : 0;
     
+    // Tax fields
+    $sales_tax_percent = isset($_POST['sales_tax_percent']) ? floatval($_POST['sales_tax_percent']) : 0.00;
+    $cl_tax = isset($_POST['cl_tax']) ? floatval($_POST['cl_tax']) : 0.00;
+    $imfl_tax = isset($_POST['imfl_tax']) ? floatval($_POST['imfl_tax']) : 0.00;
+    $wine_tax = isset($_POST['wine_tax']) ? floatval($_POST['wine_tax']) : 0.00;
+    $mid_beer_tax = isset($_POST['mid_beer_tax']) ? floatval($_POST['mid_beer_tax']) : 0.00;
+    $strong_beer_tax = isset($_POST['strong_beer_tax']) ? floatval($_POST['strong_beer_tax']) : 0.00;
+    $tcs_percent = isset($_POST['tcs_percent']) ? floatval($_POST['tcs_percent']) : 1.00;
+    $surcharges_percent = isset($_POST['surcharges_percent']) ? floatval($_POST['surcharges_percent']) : 0.00;
+    $educ_cess_percent = isset($_POST['educ_cess_percent']) ? floatval($_POST['educ_cess_percent']) : 0.00;
+    $court_fees = isset($_POST['court_fees']) ? floatval($_POST['court_fees']) : 10.00;
+    
     // Validate required fields
     if (empty($comp_name) || empty($fin_year)) {
         $error_msg = "Company name and financial year are required.";
@@ -69,12 +81,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         IMFLLimit = ?,
                         BEERLimit = ?,
                         CLLimit = ?,
+                        sales_tax_percent = ?,
+                        cl_tax = ?,
+                        imfl_tax = ?,
+                        wine_tax = ?,
+                        mid_beer_tax = ?,
+                        strong_beer_tax = ?,
+                        tcs_percent = ?,
+                        surcharges_percent = ?,
+                        educ_cess_percent = ?,
+                        court_fees = ?,
                         UPDATED_AT = CURRENT_TIMESTAMP
                         WHERE CompID = ?";
         
         $stmt = $conn->prepare($update_query);
-        // Corrected the parameter types - 10 parameters, so 10 characters in type string
-        $stmt->bind_param("sssisdddis", $comp_name, $cf_line, $cs_line, $fin_year, $comp_addr, $comp_flno, $imfl_limit, $beer_limit, $cl_limit, $comp_id);
+        // Fixed parameter count: 20 parameters total (19 fields + 1 WHERE clause)
+        $stmt->bind_param("sssisddddddddddddddi", 
+            $comp_name,       // s
+            $cf_line,         // s
+            $cs_line,         // s
+            $fin_year,        // i
+            $comp_addr,       // s
+            $comp_flno,       // s
+            $imfl_limit,      // d
+            $beer_limit,      // d
+            $cl_limit,        // d
+            $sales_tax_percent, // d
+            $cl_tax,          // d
+            $imfl_tax,        // d
+            $wine_tax,        // d
+            $mid_beer_tax,    // d
+            $strong_beer_tax, // d
+            $tcs_percent,     // d
+            $surcharges_percent, // d
+            $educ_cess_percent,  // d
+            $court_fees,      // d
+            $comp_id          // i
+        );
         
         if ($stmt->execute()) {
             $success_msg = "Company information updated successfully.";
@@ -98,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Company Information - WineSoft</title>
+  <title>Company Information - LiqourSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -148,6 +191,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     .alert {
       border-radius: 8px;
+    }
+    .tax-section {
+      border-left: 4px solid #28a745;
+      padding-left: 15px;
+      margin: 20px 0;
+    }
+    .tax-section h6 {
+      color: #28a745;
+      margin-bottom: 15px;
     }
   </style>
 </head>
@@ -233,6 +285,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
 
+            <!-- Tax Configuration Section -->
+            <div class="tax-section">
+              <h6><i class="fas fa-percentage me-2"></i>Tax Configuration</h6>
+              
+              <div class="row mb-3">
+                <div class="col-md-3">
+                  <label for="sales_tax_percent" class="form-label">Sales Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="sales_tax_percent" name="sales_tax_percent" 
+                         value="<?= htmlspecialchars($company['sales_tax_percent'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="cl_tax" class="form-label">CL Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="cl_tax" name="cl_tax" 
+                         value="<?= htmlspecialchars($company['cl_tax'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="imfl_tax" class="form-label">IMFL Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="imfl_tax" name="imfl_tax" 
+                         value="<?= htmlspecialchars($company['imfl_tax'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="wine_tax" class="form-label">Wine Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="wine_tax" name="wine_tax" 
+                         value="<?= htmlspecialchars($company['wine_tax'] ?? '0.00') ?>">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-3">
+                  <label for="mid_beer_tax" class="form-label">Mid Beer Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="mid_beer_tax" name="mid_beer_tax" 
+                         value="<?= htmlspecialchars($company['mid_beer_tax'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="strong_beer_tax" class="form-label">Strong Beer Tax %</label>
+                  <input type="number" step="0.01" class="form-control" id="strong_beer_tax" name="strong_beer_tax" 
+                         value="<?= htmlspecialchars($company['strong_beer_tax'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="tcs_percent" class="form-label">TCS %</label>
+                  <input type="number" step="0.01" class="form-control" id="tcs_percent" name="tcs_percent" 
+                         value="<?= htmlspecialchars($company['tcs_percent'] ?? '1.00') ?>">
+                </div>
+                <div class="col-md-3">
+                  <label for="court_fees" class="form-label">Court Fees</label>
+                  <input type="number" step="0.01" class="form-control" id="court_fees" name="court_fees" 
+                         value="<?= htmlspecialchars($company['court_fees'] ?? '10.00') ?>">
+                </div>
+              </div>
+
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <label for="surcharges_percent" class="form-label">Surcharges %</label>
+                  <input type="number" step="0.01" class="form-control" id="surcharges_percent" name="surcharges_percent" 
+                         value="<?= htmlspecialchars($company['surcharges_percent'] ?? '0.00') ?>">
+                </div>
+                <div class="col-md-4">
+                  <label for="educ_cess_percent" class="form-label">Education Cess %</label>
+                  <input type="number" step="0.01" class="form-control" id="educ_cess_percent" name="educ_cess_percent" 
+                         value="<?= htmlspecialchars($company['educ_cess_percent'] ?? '0.00') ?>">
+                </div>
+              </div>
+            </div>
+
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> Update Information
@@ -286,6 +402,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">CL Limit:</div>
             <div class="col-md-9"><?= htmlspecialchars($company['CLLimit'] ?? '2000.00') ?></div>
+          </div>
+          
+          <!-- Tax Information Display -->
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Sales Tax:</div>
+            <div class="col-md-9"><?= number_format($company['sales_tax_percent'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">CL Tax:</div>
+            <div class="col-md-9"><?= number_format($company['cl_tax'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">IMFL Tax:</div>
+            <div class="col-md-9"><?= number_format($company['imfl_tax'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Wine Tax:</div>
+            <div class="col-md-9"><?= number_format($company['wine_tax'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Mid Beer Tax:</div>
+            <div class="col-md-9"><?= number_format($company['mid_beer_tax'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Strong Beer Tax:</div>
+            <div class="col-md-9"><?= number_format($company['strong_beer_tax'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">TCS:</div>
+            <div class="col-md-9"><?= number_format($company['tcs_percent'] ?? 1.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Surcharges:</div>
+            <div class="col-md-9"><?= number_format($company['surcharges_percent'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Education Cess:</div>
+            <div class="col-md-9"><?= number_format($company['educ_cess_percent'] ?? 0.00, 2) ?>%</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Court Fees:</div>
+            <div class="col-md-9">₹<?= number_format($company['court_fees'] ?? 10.00, 2) ?></div>
           </div>
           <div class="row mb-2">
             <div class="col-md-3 fw-bold">Last Updated:</div>

@@ -50,7 +50,6 @@ while ($row = $supplierResult->fetch_assoc()) {
 $supplierStmt->close();
 
 $report_data = [];
-$total_bill_amount = 0;
 $total_cheque_amount = 0;
 
 if (isset($_GET['generate'])) {
@@ -89,7 +88,6 @@ if (isset($_GET['generate'])) {
     
     while ($row = $purchase_result->fetch_assoc()) {
         $report_data[] = $row;
-        $total_bill_amount += $row['BillAmount'];
         if (!empty($row['ChequeAmount'])) {
             $total_cheque_amount += $row['ChequeAmount'];
         }
@@ -258,9 +256,8 @@ if (isset($_GET['generate'])) {
                     </tr>
                   <?php endforeach; ?>
                   <tr class="total-row">
-                    <td colspan="2" class="text-end"><strong>Total:</strong></td>
-                    <td class="text-right"><strong><?= number_format($total_bill_amount, 2) ?></strong></td>
-                    <td colspan="2"></td>
+                    <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                    <td></td>
                     <td class="text-right"><strong><?= number_format($total_cheque_amount, 2) ?></strong></td>
                   </tr>
                 </tbody>

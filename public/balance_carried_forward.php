@@ -20,7 +20,7 @@ $successMessage = '';
 $errorMessage = '';
 
 // Get current balance
-$balanceQuery = "SELECT BCAMOUNT FROM tblBaLCrdF WHERE CompID = ? ORDER BY BCDATE DESC, ID DESC LIMIT 1";
+$balanceQuery = "SELECT BCAMOUNT, TOTAL_AMOUNT, NOTES, PAISA FROM tblBaLCrdF WHERE CompID = ? ORDER BY BCDATE DESC, ID DESC LIMIT 1";
 $stmt = $conn->prepare($balanceQuery);
 $stmt->bind_param("i", $_SESSION['CompID']);
 $stmt->execute();
@@ -36,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_balance'])) {
         $balanceAmount = trim($_POST['balance_amount']);
         $balanceDate = $_POST['balance_date'];
+        $totalAmount = trim($_POST['total_amount']);
+        $notes = trim($_POST['notes']);
+        $paisa = trim($_POST['paisa']);
         
         // Validate input
         if (empty($balanceAmount)) {
@@ -43,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!is_numeric($balanceAmount)) {
             $_SESSION['error'] = "Balance amount must be a valid number";
         } else {
-            // Check if balance already exists for this date - FIXED QUERY
+            // Check if balance already exists for this date
             $checkQuery = "SELECT ID FROM tblBaLCrdF WHERE CompID = ? AND DATE(BCDATE) = DATE(?)";
             $checkStmt = $conn->prepare($checkQuery);
             $checkStmt->bind_param("is", $_SESSION['CompID'], $balanceDate);
@@ -53,14 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($checkResult->num_rows > 0) {
                 $_SESSION['error'] = "Entry for this date already exists. Please select a different date.";
             } else {
-                // Insert new balance record
-                $insertQuery = "INSERT INTO tblBaLCrdF (BCDATE, BCAMOUNT, CompID) VALUES (?, ?, ?)";
+                // Insert new balance record with new columns
+                $insertQuery = "INSERT INTO tblBaLCrdF (BCDATE, BCAMOUNT, TOTAL_AMOUNT, NOTES, PAISA, CompID) VALUES (?, ?, ?, ?, ?, ?)";
                 $insertStmt = $conn->prepare($insertQuery);
                 
                 $compId = $_SESSION['CompID'];
                 $balanceAmountFloat = (float)$balanceAmount;
+                $totalAmountFloat = !empty($totalAmount) ? (float)$totalAmount : 0;
+                $paisaFloat = !empty($paisa) ? (float)$paisa : 0;
                 
-                $insertStmt->bind_param("sdi", $balanceDate, $balanceAmountFloat, $compId);
+                $insertStmt->bind_param("sdddsi", $balanceDate, $balanceAmountFloat, $totalAmountFloat, $notes, $paisaFloat, $compId);
                 
                 if ($insertStmt->execute()) {
                     $_SESSION['success'] = "Balance carried forward saved successfully!";
@@ -85,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get balance history
-$historyQuery = "SELECT ID, BCDATE, BCAMOUNT FROM tblBaLCrdF WHERE CompID = ? ORDER BY BCDATE DESC, ID DESC";
+// Get balance history with new columns
+$historyQuery = "SELECT ID, BCDATE, BCAMOUNT, TOTAL_AMOUNT, NOTES, PAISA FROM tblBaLCrdF WHERE CompID = ? ORDER BY BCDATE DESC, ID DESC";
 $historyStmt = $conn->prepare($historyQuery);
 $historyStmt->bind_param("i", $_SESSION['CompID']);
 $historyStmt->execute();
@@ -130,6 +135,12 @@ if (isset($_SESSION['error'])) {
     }
     .duplicate-date {
       background-color: #fff3cd !important;
+    }
+    .notes-column {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -193,6 +204,23 @@ if (isset($_SESSION['error'])) {
                   <input type="number" step="0.01" class="form-control" id="balance_amount" 
                          name="balance_amount" value="<?= $currentBalance ?>" required>
                 </div>
+                <div class="mb-3">
+                  <label for="total_amount" class="form-label">Total Amount (₹)</label>
+                  <input type="number" step="0.01" class="form-control" id="total_amount" 
+                         name="total_amount" placeholder="Enter total amount">
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="paisa" class="form-label">Paisa</label>
+                    <input type="number" step="0.01" class="form-control" id="paisa" 
+                           name="paisa" placeholder="Enter paisa amount">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <input type="text" class="form-control" id="notes" 
+                           name="notes" placeholder="Enter notes">
+                  </div>
+                </div>
                 <div class="d-flex gap-2">
                   <button type="submit" name="save_balance" class="btn btn-danger flex-fill">
                     <i class="fas fa-save me-1"></i> Save
@@ -222,6 +250,9 @@ if (isset($_SESSION['error'])) {
                     <th>#</th>
                     <th>Date</th>
                     <th class="text-end">Balance Amount (₹)</th>
+                    <th class="text-end">Total Amount (₹)</th>
+                    <th class="text-end">Paisa</th>
+                    <th>Notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,6 +273,15 @@ if (isset($_SESSION['error'])) {
                       </td>
                       <td class="text-end fw-bold <?= $history['BCAMOUNT'] >= 0 ? 'balance-positive' : 'balance-negative' ?>">
                         ₹<?= number_format($history['BCAMOUNT'], 2) ?>
+                      </td>
+                      <td class="text-end <?= $history['TOTAL_AMOUNT'] >= 0 ? 'balance-positive' : 'balance-negative' ?>">
+                        ₹<?= number_format($history['TOTAL_AMOUNT'] ?? 0, 2) ?>
+                      </td>
+                      <td class="text-end">
+                        ₹<?= number_format($history['PAISA'] ?? 0, 2) ?>
+                      </td>
+                      <td class="notes-column" title="<?= htmlspecialchars($history['NOTES'] ?? '') ?>">
+                        <?= !empty($history['NOTES']) ? htmlspecialchars($history['NOTES']) : '-' ?>
                       </td>
                     </tr>
                   <?php endforeach; ?>
@@ -279,6 +319,13 @@ $(document).ready(function() {
     today = yyyy + '-' + mm + '-' + dd;
     $('#balance_date').val(today);
   }
+  
+  // Auto-calculate total amount if balance amount changes
+  $('#balance_amount').on('change', function() {
+    if (!$('#total_amount').val()) {
+      $('#total_amount').val($(this).val());
+    }
+  });
   
   // Client-side validation to check for duplicate dates
   $('#balanceForm').on('submit', function(e) {

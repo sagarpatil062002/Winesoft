@@ -1,4 +1,7 @@
 <?php
+// Remove maximum execution time limit
+ini_set('max_execution_time', 0);
+
 // Ensure session exists
 if (!isset($_SESSION)) {
     session_start();
@@ -24,6 +27,8 @@ include_once "../config/db.php"; // MySQLi connection in $conn
     <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
     <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0">
+    <!-- Include global barcode listener -->
+    <script src="js/global_barcode_listener.js?v=<?=time()?>"></script>
     <style>
         /* Ensure only one arrow appears */
         .dropdown-toggle .dropdown-arrow {

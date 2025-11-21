@@ -259,12 +259,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found or not allowed for your license type!";
         }
         $item_stmt->close();
-        
+
         // Redirect to avoid form resubmission
         header("Location: barcode_sale.php");
         exit;
     }
-    
+
+    // Handle adding multiple items from pending barcodes
+    if (isset($_POST['add_multiple_items'])) {
+        $barcodes = json_decode($_POST['barcodes'], true);
+        foreach ($barcodes as $item_code) {
+            $quantity = 1; // Default quantity for scanned barcodes
+
+            // Fetch item details with license restriction check - search by BARCODE first, then by CODE
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS
+                              FROM tblitemmaster
+                              WHERE (BARCODE = ? OR CODE = ?)
+                              AND CLASS IN ($class_placeholders)
+                              LIMIT 1";
+                $item_stmt = $conn->prepare($item_query);
+
+                // Bind parameters: barcode, code + all allowed classes
+                $params = array_merge([$item_code, $item_code], $allowed_classes);
+                $types = str_repeat('s', count($params));
+                $item_stmt->bind_param($types, ...$params);
+            } else {
+                // If no classes allowed, show empty result
+                $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS
+                              FROM tblitemmaster
+                              WHERE 1 = 0
+                              LIMIT 1";
+                $item_stmt = $conn->prepare($item_query);
+            }
+
+            $item_stmt->execute();
+            $item_result = $item_stmt->get_result();
+
+            if ($item_result->num_rows > 0) {
+                $item_data = $item_result->fetch_assoc();
+
+                // Generate unique ID for this specific item entry
+                $unique_id = uniqid();
+
+                // Add new item to sale (always as separate record)
+                $_SESSION['sale_items'][] = [
+                    'id' => $unique_id,
+                    'code' => $item_data['CODE'],
+                    'name' => $item_data['DETAILS'],
+                    'size' => $item_data['DETAILS2'],
+                    'price' => floatval($item_data['RPRICE']),
+                    'quantity' => $quantity
+                ];
+
+                $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+
+                // Auto-save after 10 items
+                if ($_SESSION['sale_count'] >= 10) {
+                    processSale();
+                    $_SESSION['sale_items'] = [];
+                    $_SESSION['sale_count'] = 0;
+                    $_SESSION['current_focus_index'] = -1;
+                    $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+                } else {
+                    // No success message for individual item addition
+                    $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                }
+            } else {
+                $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found or not allowed for your license type!";
+            }
+            $item_stmt->close();
+        }
+
+        // Redirect to avoid form resubmission
+        header("Location: barcode_sale.php");
+        exit;
+    }
+
     // Handle ESC key press to process sale
     if (isset($_POST['process_sale_esc'])) {
         processSale();
@@ -1818,6 +1890,34 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('barcodeInput').focus();
     };
   <?php endif; ?>
+
+  // Load pending barcodes from localStorage on page load
+  window.addEventListener('load', function() {
+    let pendingBarcodes = JSON.parse(localStorage.getItem('pendingBarcodes') || '[]');
+    if (pendingBarcodes.length > 0) {
+      localStorage.removeItem('pendingBarcodes');
+
+      // Create form to submit multiple barcodes
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.style.display = 'none';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'barcodes';
+      input.value = JSON.stringify(pendingBarcodes.map(item => item.barcode));
+
+      const actionInput = document.createElement('input');
+      actionInput.type = 'hidden';
+      actionInput.name = 'add_multiple_items';
+      actionInput.value = '1';
+
+      form.appendChild(input);
+      form.appendChild(actionInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  });
 });
 </script>
 </body>

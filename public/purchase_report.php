@@ -37,6 +37,102 @@ while ($row = $suppliers_result->fetch_assoc()) {
     $suppliers[$row['CODE']] = $row['DETAILS'];
 }
 
+// Fetch tax rates from tblcompany
+$tax_rates_query = "SELECT 
+                    sales_tax_percent, 
+                    cl_tax, 
+                    imfl_tax, 
+                    wine_tax, 
+                    mid_beer_tax, 
+                    strong_beer_tax,
+                    tcs_percent,
+                    surcharges_percent,
+                    educ_cess_percent,
+                    court_fees
+                  FROM tblcompany 
+                  WHERE CompID = ?";
+$tax_stmt = $conn->prepare($tax_rates_query);
+$tax_stmt->bind_param("i", $compID);
+$tax_stmt->execute();
+$tax_result = $tax_stmt->get_result();
+$tax_rates = $tax_result->fetch_assoc();
+$tax_stmt->close();
+
+// Set default values if not found
+if (!$tax_rates) {
+    $tax_rates = [
+        'sales_tax_percent' => 0.00,
+        'cl_tax' => 0.00,
+        'imfl_tax' => 0.00,
+        'wine_tax' => 0.00,
+        'mid_beer_tax' => 0.00,
+        'strong_beer_tax' => 0.00,
+        'tcs_percent' => 1.00,
+        'surcharges_percent' => 0.00,
+        'educ_cess_percent' => 0.00,
+        'court_fees' => 10.00
+    ];
+}
+
+// Function to calculate taxes based on item type
+function calculateTaxes($amount, $itemType, $tax_rates) {
+    $taxes = [
+        'cl_tax' => 0,
+        'imfl_tax' => 0,
+        'wine_tax' => 0,
+        'mid_beer_tax' => 0,
+        'strong_beer_tax' => 0,
+        'sales_tax' => 0,
+        'surcharges' => 0,
+        'educ_cess' => 0,
+        'total_tax' => 0
+    ];
+    
+    // Determine which tax rate to apply based on item type
+    $tax_rate = 0;
+    switch(strtoupper($itemType)) {
+        case 'CL':
+            $tax_rate = $tax_rates['cl_tax'];
+            $taxes['cl_tax'] = ($amount * $tax_rate) / 100;
+            break;
+        case 'IMFL':
+            $tax_rate = $tax_rates['imfl_tax'];
+            $taxes['imfl_tax'] = ($amount * $tax_rate) / 100;
+            break;
+        case 'WINE':
+            $tax_rate = $tax_rates['wine_tax'];
+            $taxes['wine_tax'] = ($amount * $tax_rate) / 100;
+            break;
+        case 'MID_BEER':
+        case 'BEER':
+            $tax_rate = $tax_rates['mid_beer_tax'];
+            $taxes['mid_beer_tax'] = ($amount * $tax_rate) / 100;
+            break;
+        case 'STRONG_BEER':
+            $tax_rate = $tax_rates['strong_beer_tax'];
+            $taxes['strong_beer_tax'] = ($amount * $tax_rate) / 100;
+            break;
+        default:
+            $tax_rate = 0;
+    }
+    
+    // Calculate sales tax
+    $taxes['sales_tax'] = ($amount * $tax_rates['sales_tax_percent']) / 100;
+    
+    // Calculate surcharges
+    $taxes['surcharges'] = ($amount * $tax_rates['surcharges_percent']) / 100;
+    
+    // Calculate education cess
+    $taxes['educ_cess'] = ($amount * $tax_rates['educ_cess_percent']) / 100;
+    
+    // Calculate total tax
+    $taxes['total_tax'] = $taxes['cl_tax'] + $taxes['imfl_tax'] + $taxes['wine_tax'] + 
+                          $taxes['mid_beer_tax'] + $taxes['strong_beer_tax'] + 
+                          $taxes['sales_tax'] + $taxes['surcharges'] + $taxes['educ_cess'];
+    
+    return $taxes;
+}
+
 // Build query to fetch purchase data with CompID filter - UPDATED FOR YOUR TABLE STRUCTURE
 $query = "SELECT 
             p.ID, 
@@ -77,6 +173,8 @@ $stmt->close();
 
 // If show_details is enabled, fetch purchase details for each purchase - UPDATED FOR YOUR TABLE STRUCTURE
 $purchase_details = [];
+$purchase_taxes = []; // Store tax calculations for each purchase
+
 if ($show_details) {
     $purchase_ids = array_column($purchases, 'ID');
     if (!empty($purchase_ids)) {
@@ -100,8 +198,10 @@ if ($show_details) {
                         pd.BL,
                         pd.VV,
                         pd.TotBott,
-                        pd.AUTO_TPNO
+                        pd.AUTO_TPNO,
+                        i.ItemType  -- Add item type for tax calculation
                     FROM tblpurchasedetails pd
+                    LEFT JOIN tblitems i ON pd.ItemCode = i.ITEM_CODE  -- Join with items table to get item type
                     WHERE pd.PurchaseID IN ($placeholders)
                     ORDER BY pd.PurchaseID, pd.DetailID";
         
@@ -112,6 +212,38 @@ if ($show_details) {
         
         while ($row = $details_result->fetch_assoc()) {
             $purchase_details[$row['PurchaseID']][] = $row;
+            
+            // Calculate taxes for each item
+            $itemType = $row['ItemType'] ?? 'CL';
+            $taxes = calculateTaxes($row['Amount'], $itemType, $tax_rates);
+            
+            // Initialize purchase taxes array if not exists
+            if (!isset($purchase_taxes[$row['PurchaseID']])) {
+                $purchase_taxes[$row['PurchaseID']] = [
+                    'total_amount' => 0,
+                    'total_tax' => 0,
+                    'cl_tax' => 0,
+                    'imfl_tax' => 0,
+                    'wine_tax' => 0,
+                    'mid_beer_tax' => 0,
+                    'strong_beer_tax' => 0,
+                    'sales_tax' => 0,
+                    'surcharges' => 0,
+                    'educ_cess' => 0
+                ];
+            }
+            
+            // Update purchase taxes totals
+            $purchase_taxes[$row['PurchaseID']]['total_amount'] += $row['Amount'];
+            $purchase_taxes[$row['PurchaseID']]['total_tax'] += $taxes['total_tax'];
+            $purchase_taxes[$row['PurchaseID']]['cl_tax'] += $taxes['cl_tax'];
+            $purchase_taxes[$row['PurchaseID']]['imfl_tax'] += $taxes['imfl_tax'];
+            $purchase_taxes[$row['PurchaseID']]['wine_tax'] += $taxes['wine_tax'];
+            $purchase_taxes[$row['PurchaseID']]['mid_beer_tax'] += $taxes['mid_beer_tax'];
+            $purchase_taxes[$row['PurchaseID']]['strong_beer_tax'] += $taxes['strong_beer_tax'];
+            $purchase_taxes[$row['PurchaseID']]['sales_tax'] += $taxes['sales_tax'];
+            $purchase_taxes[$row['PurchaseID']]['surcharges'] += $taxes['surcharges'];
+            $purchase_taxes[$row['PurchaseID']]['educ_cess'] += $taxes['educ_cess'];
         }
         $stmt->close();
     }
@@ -127,7 +259,8 @@ $totals = [
     'tc_amt' => 0,
     'sarc_amt' => 0,
     'frieght' => 0,
-    'total' => 0
+    'total' => 0,
+    'calculated_tax' => 0
 ];
 
 foreach ($purchases as $purchase) {
@@ -140,6 +273,11 @@ foreach ($purchases as $purchase) {
     $totals['sarc_amt'] += floatval($purchase['sarc_amt']);
     $totals['frieght'] += floatval($purchase['frieght']);
     $totals['total'] += floatval($purchase['total']);
+    
+    // Add calculated tax if available
+    if (isset($purchase_taxes[$purchase['ID']])) {
+        $totals['calculated_tax'] += $purchase_taxes[$purchase['ID']]['total_tax'];
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -174,6 +312,17 @@ foreach ($purchases as $purchase) {
     }
     .detailed-view .items-details {
         margin-bottom: 20px;
+    }
+    .tax-breakdown {
+        background-color: #f8f9fa;
+        border-left: 3px solid #28a745;
+        padding: 8px 12px;
+        margin: 5px 0;
+        font-size: 0.9em;
+    }
+    .table-sm th, .table-sm td {
+        padding: 0.3rem;
+        font-size: 0.875rem;
     }
   </style>
 </head>
@@ -246,6 +395,17 @@ foreach ($purchases as $purchase) {
               <p class="text-muted">Supplier: <?= htmlspecialchars($suppliers[$supplier] ?? $supplier) ?></p>
             <?php endif; ?>
             <p class="text-muted"><strong>Report Type:</strong> <?= $show_details ? 'Detailed' : 'Summary' ?></p>
+            
+            <!-- Display Current Tax Rates -->
+            <div class="tax-rates-info mt-3 p-3 bg-light rounded">
+              <h6 class="mb-2">Current Tax Rates:</h6>
+              <div class="row">
+                <div class="col-md-3">CL Tax: <?= number_format($tax_rates['cl_tax'], 2) ?>%</div>
+                <div class="col-md-3">IMFL Tax: <?= number_format($tax_rates['imfl_tax'], 2) ?>%</div>
+                <div class="col-md-3">Wine Tax: <?= number_format($tax_rates['wine_tax'], 2) ?>%</div>
+                <div class="col-md-3">Sales Tax: <?= number_format($tax_rates['sales_tax_percent'], 2) ?>%</div>
+              </div>
+            </div>
           </div>
           
           <?php if (!$show_details): ?>
@@ -267,6 +427,7 @@ foreach ($purchases as $purchase) {
                     <th class="text-right">TC $ Amt.</th>
                     <th class="text-right">Sarc. Amt.</th>
                     <th class="text-right">Frieght</th>
+                    <th class="text-right">Calculated Tax</th>
                     <th class="text-right">Total Bill Amt.</th>
                   </tr>
                 </thead>
@@ -287,6 +448,9 @@ foreach ($purchases as $purchase) {
                         <td class="text-right"><?= number_format($purchase['tc_amt'], 2) ?></td>
                         <td class="text-right"><?= number_format($purchase['sarc_amt'], 2) ?></td>
                         <td class="text-right"><?= number_format($purchase['frieght'], 2) ?></td>
+                        <td class="text-right">
+                          <?= isset($purchase_taxes[$purchase['ID']]) ? number_format($purchase_taxes[$purchase['ID']]['total_tax'], 2) : '0.00' ?>
+                        </td>
                         <td class="text-right"><?= number_format($purchase['total'], 2) ?></td>
                       </tr>
                     <?php endforeach; ?>
@@ -300,11 +464,12 @@ foreach ($purchases as $purchase) {
                       <td class="text-right"><strong><?= number_format($totals['tc_amt'], 2) ?></strong></td>
                       <td class="text-right"><strong><?= number_format($totals['sarc_amt'], 2) ?></strong></td>
                       <td class="text-right"><strong><?= number_format($totals['frieght'], 2) ?></strong></td>
+                      <td class="text-right"><strong><?= number_format($totals['calculated_tax'], 2) ?></strong></td>
                       <td class="text-right"><strong><?= number_format($totals['total'], 2) ?></strong></td>
                     </tr>
                   <?php else: ?>
                     <tr>
-                      <td colspan="14" class="text-center text-muted">No purchases found for the selected period.</td>
+                      <td colspan="15" class="text-center text-muted">No purchases found for the selected period.</td>
                     </tr>
                   <?php endif; ?>
                 </tbody>
@@ -332,6 +497,7 @@ foreach ($purchases as $purchase) {
                           <tr>
                             <th>Item Code</th>
                             <th>Item Name</th>
+                            <th>Type</th>
                             <th>Size</th>
                             <th class="text-right">Cases</th>
                             <th class="text-right">Bottles</th>
@@ -340,15 +506,47 @@ foreach ($purchases as $purchase) {
                             <th class="text-right">Case Rate</th>
                             <th class="text-right">MRP</th>
                             <th class="text-right">Amount</th>
+                            <th class="text-right">Tax Amount</th>
                             <th>Batch No</th>
                             <th>Mfg Month</th>
                           </tr>
                         </thead>
                         <tbody>
+                          <?php 
+                          $voucher_totals = [
+                              'amount' => 0,
+                              'tax_amount' => 0,
+                              'cl_tax' => 0,
+                              'imfl_tax' => 0,
+                              'wine_tax' => 0,
+                              'mid_beer_tax' => 0,
+                              'strong_beer_tax' => 0,
+                              'sales_tax' => 0,
+                              'surcharges' => 0,
+                              'educ_cess' => 0
+                          ];
+                          ?>
                           <?php foreach ($purchase_details[$purchase['ID']] as $item): ?>
+                            <?php
+                            $itemType = $item['ItemType'] ?? 'CL'; // Default to CL if not specified
+                            $taxes = calculateTaxes($item['Amount'], $itemType, $tax_rates);
+                            
+                            // Update voucher totals
+                            $voucher_totals['amount'] += $item['Amount'];
+                            $voucher_totals['tax_amount'] += $taxes['total_tax'];
+                            $voucher_totals['cl_tax'] += $taxes['cl_tax'];
+                            $voucher_totals['imfl_tax'] += $taxes['imfl_tax'];
+                            $voucher_totals['wine_tax'] += $taxes['wine_tax'];
+                            $voucher_totals['mid_beer_tax'] += $taxes['mid_beer_tax'];
+                            $voucher_totals['strong_beer_tax'] += $taxes['strong_beer_tax'];
+                            $voucher_totals['sales_tax'] += $taxes['sales_tax'];
+                            $voucher_totals['surcharges'] += $taxes['surcharges'];
+                            $voucher_totals['educ_cess'] += $taxes['educ_cess'];
+                            ?>
                             <tr>
                               <td><?= htmlspecialchars($item['ItemCode']) ?></td>
                               <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                              <td><?= htmlspecialchars($itemType) ?></td>
                               <td><?= htmlspecialchars($item['Size']) ?></td>
                               <td class="text-right"><?= number_format($item['Cases'], 2) ?></td>
                               <td class="text-right"><?= number_format($item['Bottles'], 0) ?></td>
@@ -357,12 +555,49 @@ foreach ($purchases as $purchase) {
                               <td class="text-right"><?= number_format($item['CaseRate'], 3) ?></td>
                               <td class="text-right"><?= number_format($item['MRP'], 2) ?></td>
                               <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
+                              <td class="text-right"><?= number_format($taxes['total_tax'], 2) ?></td>
                               <td><?= htmlspecialchars($item['BatchNo']) ?></td>
                               <td><?= htmlspecialchars($item['MfgMonth']) ?></td>
                             </tr>
                           <?php endforeach; ?>
+                          <!-- Voucher Total Row -->
+                          <tr class="table-info">
+                            <td colspan="10" class="text-end"><strong>Voucher Total:</strong></td>
+                            <td class="text-right"><strong><?= number_format($voucher_totals['amount'], 2) ?></strong></td>
+                            <td class="text-right"><strong><?= number_format($voucher_totals['tax_amount'], 2) ?></strong></td>
+                            <td colspan="2"></td>
+                          </tr>
                         </tbody>
                       </table>
+                      
+                      <!-- Tax Breakdown -->
+                      <div class="tax-breakdown">
+                        <strong>Tax Breakdown:</strong>
+                        <?php if ($voucher_totals['cl_tax'] > 0): ?>
+                          <span class="ms-3">CL Tax: <?= number_format($voucher_totals['cl_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['imfl_tax'] > 0): ?>
+                          <span class="ms-3">IMFL Tax: <?= number_format($voucher_totals['imfl_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['wine_tax'] > 0): ?>
+                          <span class="ms-3">Wine Tax: <?= number_format($voucher_totals['wine_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['mid_beer_tax'] > 0): ?>
+                          <span class="ms-3">Beer Tax: <?= number_format($voucher_totals['mid_beer_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['strong_beer_tax'] > 0): ?>
+                          <span class="ms-3">Strong Beer Tax: <?= number_format($voucher_totals['strong_beer_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['sales_tax'] > 0): ?>
+                          <span class="ms-3">Sales Tax: <?= number_format($voucher_totals['sales_tax'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['surcharges'] > 0): ?>
+                          <span class="ms-3">Surcharges: <?= number_format($voucher_totals['surcharges'], 2) ?></span>
+                        <?php endif; ?>
+                        <?php if ($voucher_totals['educ_cess'] > 0): ?>
+                          <span class="ms-3">Education Cess: <?= number_format($voucher_totals['educ_cess'], 2) ?></span>
+                        <?php endif; ?>
+                      </div>
                     </div>
                   <?php else: ?>
                     <div class="alert alert-warning mb-4">
