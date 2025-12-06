@@ -28,24 +28,21 @@ if ($view_type === 'date') {
     $end_date = '2099-12-31';
 }
 
-// Fetch sales data with item details
+// Fetch sales data with item details - GROUPED by date and item
 $query = "SELECT
             DATE_FORMAT(sh.BILL_DATE, '%m/%d/%Y') as 'Sale Date',
             sd.ITEM_CODE as 'Local Item Code',
             COALESCE(im.DETAILS, 'Unknown Brand') as 'Brand Name',
             COALESCE(im.DETAILS2, 'N/A') as 'Size',
             '' as 'Quantity(Case)',  -- Empty as per your format
-            sd.QTY as 'Quantity(Loose Bottle)',
-            sh.BILL_NO,
-            sh.TOTAL_AMOUNT,
-            sh.DISCOUNT,
-            sh.NET_AMOUNT
+            SUM(sd.QTY) as 'Quantity(Loose Bottle)'
           FROM tblsaleheader sh
           INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
           LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
           WHERE sh.COMP_ID = ?
           AND sh.BILL_DATE BETWEEN ? AND ?
-          ORDER BY sh.BILL_DATE, sh.BILL_NO, sd.ITEM_CODE";
+          GROUP BY DATE(sh.BILL_DATE), sd.ITEM_CODE, im.DETAILS, im.DETAILS2
+          ORDER BY sh.BILL_DATE, sd.ITEM_CODE";
 
 $stmt = $conn->prepare($query);
 $stmt->bind_param("iss", $compID, $start_date, $end_date);
@@ -104,6 +101,8 @@ $sheet->getStyle('A1:F1')->applyFromArray($headerStyle);
 // Add data
 if (count($sales_data) > 0) {
     $row = 2;
+    $total_qty = 0;
+    
     foreach ($sales_data as $sale) {
         $sheet->setCellValue('A' . $row, $sale['Sale Date']);
         $sheet->setCellValue('B' . $row, $sale['Local Item Code']);
@@ -111,9 +110,38 @@ if (count($sales_data) > 0) {
         $sheet->setCellValue('D' . $row, $sale['Size']);
         $sheet->setCellValue('E' . $row, $sale['Quantity(Case)']);
         $sheet->setCellValue('F' . $row, $sale['Quantity(Loose Bottle)']);
+        
+        // Add to total quantity
+        $total_qty += $sale['Quantity(Loose Bottle)'];
         $row++;
     }
-
+    
+    // Add total row
+    $sheet->setCellValue('A' . $row, 'TOTAL');
+    $sheet->mergeCells('A' . $row . ':E' . $row);
+    $sheet->setCellValue('F' . $row, $total_qty);
+    
+    // Style the total row
+    $totalStyle = [
+        'font' => [
+            'bold' => true,
+        ],
+        'fill' => [
+            'fillType' => Fill::FILL_SOLID,
+            'startColor' => ['rgb' => 'E2EFDA'],
+        ],
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => Border::BORDER_THIN,
+            ],
+        ],
+        'alignment' => [
+            'horizontal' => Alignment::HORIZONTAL_RIGHT,
+        ],
+    ];
+    
+    $sheet->getStyle('A' . $row . ':F' . $row)->applyFromArray($totalStyle);
+    
     // Style the data rows
     $dataStyle = [
         'borders' => [
@@ -126,7 +154,7 @@ if (count($sales_data) > 0) {
         ],
     ];
 
-    $lastRow = count($sales_data) + 1;
+    $lastRow = count($sales_data) + 1; // +1 for header
     $sheet->getStyle('A2:F' . $lastRow)->applyFromArray($dataStyle);
 
     // Auto-size columns

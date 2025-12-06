@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Prepare failed: " . $conn->error;
         } else {
             $stmt->bind_param(
-                "sssssssdddds",
+                "sssssssddddss",
                 $code, $Print_Name, $details, $details2, $class, $subClassField, $item_group,
                 $pprice, $bprice, $mprice, $RPRICE, $BARCODE, $liq_flag
             );
@@ -391,7 +391,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                 <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form method="POST" class="row g-3">
+            <form method="POST" class="row g-3" id="add_item_form">
                 <!-- Mode -->
                 <div class="col-md-3">
                     <label for="mode" class="form-label">Mode</label>
@@ -507,15 +507,15 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
 function detectClass() {
     const itemName = document.getElementById('details').value.toUpperCase();
     const detectedClassField = document.getElementById('detected_class');
-    
+
     if (!itemName) {
         detectedClassField.value = '';
         return;
     }
-    
+
     // Basic detection logic (simplified version of server-side logic)
     let detectedClass = 'O'; // Default to Others
-    
+
     if (itemName.includes('WHISKY') || itemName.includes('WHISKEY') || itemName.includes('SCOTCH')) {
         detectedClass = 'W (Whisky)';
     } else if (itemName.includes('WINE') || itemName.includes('CHAMPAGNE')) {
@@ -535,9 +535,35 @@ function detectClass() {
             detectedClass = 'M (Mild Beer)';
         }
     }
-    
+
     detectedClassField.value = detectedClass;
 }
+
+// Show loading overlay during form submission
+document.getElementById('add_item_form').addEventListener('submit', function() {
+    // Show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'loading_overlay';
+    loadingOverlay.style.position = 'fixed';
+    loadingOverlay.style.top = '0';
+    loadingOverlay.style.left = '0';
+    loadingOverlay.style.width = '100%';
+    loadingOverlay.style.height = '100%';
+    loadingOverlay.style.backgroundColor = 'rgba(255,255,255,0.8)';
+    loadingOverlay.style.zIndex = '9999';
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.style.justifyContent = 'center';
+    loadingOverlay.style.alignItems = 'center';
+    loadingOverlay.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Adding item, please wait...</p>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+});
 </script>
 </body>
 </html>

@@ -38,18 +38,18 @@ while ($row = $suppliers_result->fetch_assoc()) {
 }
 
 // Fetch tax rates from tblcompany
-$tax_rates_query = "SELECT 
-                    sales_tax_percent, 
-                    cl_tax, 
-                    imfl_tax, 
-                    wine_tax, 
-                    mid_beer_tax, 
+$tax_rates_query = "SELECT
+                    sales_tax_percent,
+                    cl_tax,
+                    imfl_tax,
+                    wine_tax,
+                    mid_beer_tax,
                     strong_beer_tax,
                     tcs_percent,
                     surcharges_percent,
                     educ_cess_percent,
                     court_fees
-                  FROM tblcompany 
+                  FROM tblcompany
                   WHERE CompID = ?";
 $tax_stmt = $conn->prepare($tax_rates_query);
 $tax_stmt->bind_param("i", $compID);
@@ -134,20 +134,20 @@ function calculateTaxes($amount, $itemType, $tax_rates) {
 }
 
 // Build query to fetch purchase data with CompID filter - UPDATED FOR YOUR TABLE STRUCTURE
-$query = "SELECT 
-            p.ID, 
-            p.DATE, 
-            p.SUBCODE, 
-            p.VOC_NO, 
-            p.INV_NO, 
-            p.TPNO, 
-            p.TAMT as net_amt, 
-            p.CASHDIS as cash_disc, 
-            p.SCHDIS as sch_disc, 
-            p.OCTROI as oct, 
-            p.STAX_AMT as sales_tax, 
-            p.TCS_AMT as tc_amt, 
-            p.MISC_CHARG as sarc_amt, 
+$query = "SELECT
+            p.ID,
+            p.DATE,
+            p.SUBCODE,
+            p.VOC_NO,
+            p.INV_NO,
+            p.TPNO,
+            p.TAMT as net_amt,
+            p.CASHDIS as cash_disc,
+            p.SCHDIS as sch_disc,
+            p.OCTROI as oct,
+            p.STAX_AMT as sales_tax,
+            p.TCS_AMT as tc_amt,
+            p.MISC_CHARG as sarc_amt,
             p.FREIGHT as frieght,
             (p.TAMT - p.CASHDIS - p.SCHDIS + p.OCTROI + p.STAX_AMT + p.TCS_AMT + p.MISC_CHARG + p.FREIGHT) as total
           FROM tblpurchases p
@@ -273,7 +273,7 @@ foreach ($purchases as $purchase) {
     $totals['sarc_amt'] += floatval($purchase['sarc_amt']);
     $totals['frieght'] += floatval($purchase['frieght']);
     $totals['total'] += floatval($purchase['total']);
-    
+
     // Add calculated tax if available
     if (isset($purchase_taxes[$purchase['ID']])) {
         $totals['calculated_tax'] += $purchase_taxes[$purchase['ID']]['total_tax'];

@@ -17736,3 +17736,743 @@ Stack trace:
 )
 
 [08-Nov-2025 12:50:14 Europe/Berlin] Processed 17 items successfully
+[06-Dec-2025 14:15:23 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[06-Dec-2025 14:15:23 Europe/Berlin] Request Time: 2025-12-06 14:15:23
+[06-Dec-2025 14:15:23 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-12-01
+    [to_date] => 2025-12-06
+    [comp_id] => 1
+)
+
+[06-Dec-2025 14:15:23 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:15:23 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-12-01, To=2025-12-06
+[06-Dec-2025 14:15:23 Europe/Berlin] Initialized summary structure with zeros
+[06-Dec-2025 14:15:23 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[06-Dec-2025 14:15:23 Europe/Berlin] Raw data from query: Array
+(
+)
+
+[06-Dec-2025 14:15:23 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[06-Dec-2025 14:15:23 Europe/Berlin] Processed 0 items successfully
+[06-Dec-2025 14:16:13 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[06-Dec-2025 14:16:13 Europe/Berlin] Request Time: 2025-12-06 14:16:13
+[06-Dec-2025 14:16:13 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-12-01
+    [to_date] => 2025-12-06
+    [comp_id] => 1
+)
+
+[06-Dec-2025 14:16:13 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:16:13 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-12-01, To=2025-12-06
+[06-Dec-2025 14:16:13 Europe/Berlin] Initialized summary structure with zeros
+[06-Dec-2025 14:16:13 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[06-Dec-2025 14:16:13 Europe/Berlin] Raw data from query: Array
+(
+)
+
+[06-Dec-2025 14:16:13 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[06-Dec-2025 14:16:13 Europe/Berlin] Processed 0 items successfully
+[06-Dec-2025 15:08:28 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[06-Dec-2025 15:08:28 Europe/Berlin] Request Time: 2025-12-06 15:08:28
+[06-Dec-2025 15:08:28 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-12-01
+    [to_date] => 2025-12-06
+    [comp_id] => 1
+)
+
+[06-Dec-2025 15:08:28 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:08:28 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-12-01, To=2025-12-06
+[06-Dec-2025 15:08:28 Europe/Berlin] Initialized summary structure with zeros
+[06-Dec-2025 15:08:28 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[06-Dec-2025 15:08:28 Europe/Berlin] Raw data from query: Array
+(
+)
+
+[06-Dec-2025 15:08:28 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[06-Dec-2025 15:08:28 Europe/Berlin] Processed 0 items successfully
+[06-Dec-2025 15:42:42 Europe/Berlin] === PURCHASE SUMMARY AJAX DEBUG ===
+[06-Dec-2025 15:42:42 Europe/Berlin] Request Time: 2025-12-06 15:42:42
+[06-Dec-2025 15:42:42 Europe/Berlin] GET Parameters: Array
+(
+    [mode] => ALL
+    [from_date] => 2025-12-01
+    [to_date] => 2025-12-06
+    [comp_id] => 1
+)
+
+[06-Dec-2025 15:42:42 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:42:42 Europe/Berlin] Purchase Summary Request: Company=1, Mode=ALL, From=2025-12-01, To=2025-12-06
+[06-Dec-2025 15:42:42 Europe/Berlin] Initialized summary structure with zeros
+[06-Dec-2025 15:42:42 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            im.CLASS as ItemClass
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')
+[06-Dec-2025 15:42:42 Europe/Berlin] Raw data from query: Array
+(
+)
+
+[06-Dec-2025 15:42:42 Europe/Berlin] Final summary data: Array
+(
+    [SPIRITS] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50 ML] => 0
+            [60 ML] => 0
+            [90 ML] => 0
+            [170 ML] => 0
+            [180 ML] => 0
+            [200 ML] => 0
+            [250 ML] => 0
+            [275 ML] => 0
+            [330 ML] => 0
+            [355 ML] => 0
+            [375 ML] => 0
+            [500 ML] => 0
+            [650 ML] => 0
+            [700 ML] => 0
+            [750 ML] => 0
+            [1000 ML] => 0
+            [1.5L] => 0
+            [1.75L] => 0
+            [2L] => 0
+            [3L] => 0
+            [4.5L] => 0
+            [15L] => 0
+            [20L] => 0
+            [30L] => 0
+            [50L] => 0
+        )
+
+)
+
+[06-Dec-2025 15:42:42 Europe/Berlin] Processed 0 items successfully

@@ -34,6 +34,49 @@ foreach ($available_classes as $class) {
     $allowed_classes[] = $class['SGROUP'];
 }
 
+// Handle delete request
+$deleteMessage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_code']) && isset($_POST['delete_liq_flag'])) {
+    $delete_code = trim($_POST['delete_code']);
+    $delete_liq_flag = trim($_POST['delete_liq_flag']);
+
+    if (!empty($delete_code) && !empty($delete_liq_flag)) {
+        // Start transaction
+        $conn->begin_transaction();
+
+        try {
+            // Delete from tblitemmaster
+            $delete_master_stmt = $conn->prepare("DELETE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ?");
+            $delete_master_stmt->bind_param("ss", $delete_code, $delete_liq_flag);
+            $delete_master_stmt->execute();
+            $delete_master_stmt->close();
+
+            // Delete from tblitem_stock
+            $delete_stock_stmt = $conn->prepare("DELETE FROM tblitem_stock WHERE ITEM_CODE = ?");
+            $delete_stock_stmt->bind_param("s", $delete_code);
+            $delete_stock_stmt->execute();
+            $delete_stock_stmt->close();
+
+            // Delete from tbldailystock_$comp_id
+            $delete_daily_stmt = $conn->prepare("DELETE FROM tbldailystock_$comp_id WHERE ITEM_CODE = ? AND LIQ_FLAG = ?");
+            $delete_daily_stmt->bind_param("ss", $delete_code, $delete_liq_flag);
+            $delete_daily_stmt->execute();
+            $delete_daily_stmt->close();
+
+            // Commit transaction
+            $conn->commit();
+
+            $deleteMessage = "Item '$delete_code' deleted successfully.";
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $conn->rollback();
+            $deleteMessage = "Error deleting item: " . $e->getMessage();
+        }
+    } else {
+        $deleteMessage = "Invalid delete request.";
+    }
+}
+
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
@@ -1013,6 +1056,14 @@ function downloadTemplate() {
       </div>
       <?php endif; ?>
 
+      <!-- Delete Result Message -->
+      <?php if (!empty($deleteMessage)): ?>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <?= $deleteMessage ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <?php endif; ?>
+
       <!-- Items Table -->
       <div class="table-container">
         <table class="styled-table table-striped">
@@ -1063,10 +1114,19 @@ $stock_stmt->close();
                 <td><?= number_format($item['RPRICE'], 3); ?></td>
                 <td><?= $opening_balance; ?></td>
                 <td>
-                  <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
-                     class="btn btn-sm btn-primary" title="Edit">
-                    <i class="fas fa-edit"></i> Edit
-                  </a>
+                  <div class="d-flex gap-1">
+                    <a href="edit_item.php?code=<?= urlencode($item['CODE']) ?>&mode=<?= $mode ?>"
+                       class="btn btn-sm btn-primary" title="Edit">
+                      <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <form method="POST" style="display: inline;" onsubmit="return confirmDelete('<?= htmlspecialchars($item['DETAILS']) ?>')">
+                      <input type="hidden" name="delete_code" value="<?= htmlspecialchars($item['CODE']) ?>">
+                      <input type="hidden" name="delete_liq_flag" value="<?= htmlspecialchars($item['LIQ_FLAG']) ?>">
+                      <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
@@ -1125,6 +1185,10 @@ $stock_stmt->close();
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function confirmDelete(itemName) {
+    return confirm('Are you sure you want to delete the item "' + itemName + '"? This action cannot be undone.');
+}
+
 // Show loading indicator during import
 document.addEventListener('DOMContentLoaded', function() {
     const importForm = document.querySelector('form[enctype="multipart/form-data"]');

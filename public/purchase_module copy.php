@@ -71,13 +71,6 @@ if (isset($_GET['supplier']) && !empty($_GET['supplier'])) {
     error_log("Supplier filter: " . $_GET['supplier']);
 }
 
-if (isset($_GET['tp_no']) && !empty($_GET['tp_no'])) {
-    $whereConditions[] = "COALESCE(p.TPNO, p.AUTO_TPNO) LIKE ?";
-    $params[] = '%' . $_GET['tp_no'] . '%';
-    $paramTypes .= "s";
-    error_log("TP No filter: " . $_GET['tp_no']);
-}
-
 // Handle sorting
 $sortColumn = isset($_GET['sort']) ? $_GET['sort'] : 'p.VOC_NO';
 $sortOrder = isset($_GET['order']) ? $_GET['order'] : 'DESC';
@@ -184,23 +177,23 @@ function getSortLink($column, $label) {
   table.styled-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 16px; /* Increased font size for better visibility */
+    font-size: 11px; /* Smaller font size */
   }
-
+  
   .styled-table th,
   .styled-table td {
     border: 1px solid #e5e7eb;
-    padding: 8px 12px; /* Increased padding */
+    padding: 4px 6px; /* Reduced padding */
     white-space: nowrap; /* Prevent text wrapping */
   }
-
+  
   .styled-table thead th {
     position: sticky;
     top: 0;
     background: #f8fafc;
     z-index: 1;
-    font-size: 14px; /* Increased font size for headers */
-    padding: 6px 10px;
+    font-size: 10px; /* Even smaller for headers */
+    padding: 3px 5px;
     cursor: pointer;
     user-select: none;
   }
@@ -219,16 +212,16 @@ function getSortLink($column, $label) {
     gap: 3px;
     flex-wrap: nowrap;
   }
-
+  
   .action-buttons .btn {
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 2px 6px;
+    font-size: 10px;
   }
-
+  
   .status-badge {
-    padding: 4px 8px;
+    padding: 2px 5px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: 9px;
     white-space: nowrap;
   }
   
@@ -236,17 +229,57 @@ function getSortLink($column, $label) {
   .status-unpaid { background: #fef3c7; color: #92400e; }
   .status-partial { background: #dbeafe; color: #1e40af; }
   
+  /* Purchase type navigation styles */
+  .purchase-type-nav {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .purchase-type-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .purchase-type-btn {
+    padding: 10px 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    background: white;
+    color: #495057;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    text-align: center;
+  }
+  
+  .purchase-type-btn:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+    background: #f8f9ff;
+  }
+  
+  .purchase-type-btn.active {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
+  
   /* Purchase Summary Table Styles */
   #purchaseSummaryTable th {
-    font-size: 16px;
-    padding: 8px 4px;
+    font-size: 11px;
+    padding: 4px 2px;
     text-align: center;
     white-space: nowrap;
   }
-
+  
   #purchaseSummaryTable td {
-    font-size: 16px;
-    padding: 8px 4px;
+    font-size: 11px;
+    padding: 4px 2px;
     text-align: center;
   }
   
@@ -266,43 +299,85 @@ function getSortLink($column, $label) {
   .col-status { width: 70px; }
   .col-actions { width: 70px; }
   
-  /* Action buttons like opening_balance.php */
-  .action-btn {
-    position: sticky;
-    bottom: 0;
-    background-color: white;
-    padding: 10px 0;
-    border-top: 1px solid #dee2e6;
-    z-index: 100;
+  /* Fixed action buttons at bottom */
+  .fixed-action-buttons {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   
-  .import-export-buttons {
+  .action-button-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-decoration: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
   }
-
+  
+  .action-button-circle:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    color: white;
+  }
+  
+  .action-button-circle.primary {
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+  }
+  
+  .action-button-circle.info {
+    background: linear-gradient(135deg, #0dcaf0, #0ba5c7);
+  }
+  
+  .action-button-circle .btn-label {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .action-button-circle:hover .btn-label {
+    opacity: 1;
+  }
+  
   /* Ensure table fits without horizontal scroll on typical screens */
   @media (min-width: 1200px) {
     .styled-table {
       table-layout: auto;
     }
   }
-
+  
   /* For smaller screens, allow horizontal scroll */
   @media (max-width: 1199px) {
     .table-container {
       overflow-x: auto;
     }
-  }
-
-  /* Sticky table header */
-  .sticky-header {
-    position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    
+    .fixed-action-buttons {
+      bottom: 10px;
+      right: 10px;
+    }
+    
+    .action-button-circle {
+      width: 50px;
+      height: 50px;
+    }
   }
 </style>
 </head>
@@ -312,125 +387,176 @@ function getSortLink($column, $label) {
   <div class="main-content">
     <?php include 'components/header.php'; ?>
 
-    <div class="content-area">
-      <h3 class="mb-4">Purchase Records Management</h3>
-
-      <!-- Import/Export Buttons like opening_balance.php -->
-      <div class="import-export-buttons">
-        <div class="btn-group">
+    <div class="content-area p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">All Purchase Records</h4>
+        <div class="d-none d-md-flex gap-2">
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
-            <i class="fas fa-chart-bar me-2"></i> Purchase Summary
+            <i class="fas fa-chart-bar"></i> Purchase Summary
           </button>
           <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="btn btn-primary">
-            <i class="fa-solid fa-plus me-2"></i> New Purchase
+            <i class="fa-solid fa-plus me-1"></i> New Purchase
           </a>
         </div>
       </div>
 
       <?php if ($success): ?>
-        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
           <i class="fa-solid fa-circle-check me-2"></i> Purchase saved successfully!
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
 
-      <!-- Filter Section like opening_balance.php -->
-      <form method="GET" class="search-control mb-3">
-        <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
-        <input type="hidden" name="sort" value="<?= htmlspecialchars($sortColumn); ?>">
-        <input type="hidden" name="order" value="<?= htmlspecialchars($sortOrder); ?>">
-
-        
-      <!-- Purchases List -->
-      <div class="table-container">
-        <table class="table table-striped table-bordered table-hover styled-table">
-          <thead class="sticky-header">
-            <tr>
-              <th class="col-voucher"><?=getSortLink('p.VOC_NO', 'Voucher No.')?></th>
-              <th class="col-date"><?=getSortLink('p.DATE', 'Date')?></th>
-              <th class="col-tp">TP No.</th>
-              <th class="col-invoice"><?=getSortLink('p.INV_NO', 'Invoice No.')?></th>
-              <th class="col-inv-date"><?=getSortLink('p.INV_DATE', 'Invoice Date')?></th>
-              <th class="col-supplier"><?=getSortLink('s.DETAILS', 'Supplier')?></th>
-              <th class="col-total"><?=getSortLink('p.TAMT', 'Total Amount')?></th>
-              <th class="col-status"><?=getSortLink('p.PUR_FLAG', 'Status')?></th>
-              <th class="col-actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php if (count($purchases) > 0): ?>
-              <?php foreach($purchases as $purchase): 
-                // Status mapping
-                $status = 'Unknown';
-                $statusClass = 'status-unpaid';
-                
-                if ($purchase['PUR_FLAG'] === 'C') {
-                    $status = 'Completed';
-                    $statusClass = 'status-completed';
-                } elseif ($purchase['PUR_FLAG'] === 'T') {
-                    $status = 'Unpaid';
-                    $statusClass = 'status-unpaid';
-                } elseif ($purchase['PUR_FLAG'] === 'P') {
-                    $status = 'Partial';
-                    $statusClass = 'status-partial';
-                } elseif ($purchase['PUR_FLAG'] === 'F') {
-                    $status = 'Final';
-                    $statusClass = 'status-completed';
-                }
-              ?>
-                <tr>
-                  <td class="col-voucher"><?=htmlspecialchars($purchase['VOC_NO'])?></td>
-                  <td class="col-date"><?=htmlspecialchars($purchase['DATE'])?></td>
-                  <td class="col-tp"><?=htmlspecialchars($purchase['TP_NO'])?></td>
-                  <td class="col-invoice"><?=htmlspecialchars($purchase['INV_NO'])?></td>
-                  <td class="col-inv-date"><?=htmlspecialchars($purchase['INV_DATE'])?></td>
-                  <td class="col-supplier"><?=htmlspecialchars($purchase['supplier_name'])?></td>
-                  <td class="col-total">₹<?=number_format($purchase['TAMT'], 2)?></td>
-                  <td class="col-status">
-                    <span class="status-badge <?=$statusClass?>"><?=$status?></span>
-                  </td>
-                  <td class="col-actions">
-                    <div class="action-buttons">
-                      <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
-                         class="btn btn-sm btn-warning" title="Edit">
-                        <i class="fa-solid fa-edit"></i>
-                      </a>
-                      <button class="btn btn-sm btn-danger" 
-                              title="Delete" 
-                              onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>')">
-                        <i class="fa-solid fa-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            <?php else: ?>
-              <tr>
-                <td colspan="9" class="text-center">No purchases found for the selected filters.</td>
-              </tr>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Action buttons at bottom like opening_balance.php -->
-      <div class="action-btn mt-3 d-flex gap-2">
-        <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
-          <i class="fas fa-chart-bar me-2"></i> Purchase Summary
-        </button>
-        <div class="ms-auto d-flex gap-2">
-          <a href="dashboard.php" class="btn btn-secondary">
-            <i class="fas fa-sign-out-alt me-2"></i> Exit
-          </a>
-          <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="btn btn-primary">
-            <i class="fa-solid fa-plus me-2"></i> New Purchase
-          </a>
+      <!-- Filter Section -->
+      <div class="card mb-4">
+        <div class="card-header fw-semibold"><i class="fa-solid fa-filter me-2"></i>Filters</div>
+        <div class="card-body">
+          <form method="GET" class="row g-3">
+            <input type="hidden" name="mode" value="<?=$mode?>">
+            <input type="hidden" name="sort" value="<?=$sortColumn?>">
+            <input type="hidden" name="order" value="<?=$sortOrder?>">
+            <div class="col-md-3">
+              <label class="form-label">From Date</label>
+              <input type="date" class="form-control" name="from_date" value="<?=isset($_GET['from_date']) ? $_GET['from_date'] : ''?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">To Date</label>
+              <input type="date" class="form-control" name="to_date" value="<?=isset($_GET['to_date']) ? $_GET['to_date'] : ''?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Voucher No.</label>
+              <input type="text" class="form-control" name="voc_no" value="<?=isset($_GET['voc_no']) ? $_GET['voc_no'] : ''?>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Supplier</label>
+              <input type="text" class="form-control" name="supplier" value="<?=isset($_GET['supplier']) ? $_GET['supplier'] : ''?>">
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter me-1"></i> Apply Filters</button>
+              <a href="purchase_module.php?mode=<?=$mode?>" class="btn btn-secondary"><i class="fa-solid fa-times me-1"></i> Clear</a>
+            </div>
+          </form>
         </div>
       </div>
 
+      <!-- Purchases List -->
+      <div class="card">
+        <div class="card-header fw-semibold">
+          <i class="fa-solid fa-list me-2"></i>Purchase Records 
+          <span class="badge bg-primary ms-2"><?=count($purchases)?> records</span>
+        </div>
+        <div class="card-body p-2">
+          <?php if (count($purchases) > 0): ?>
+            <div class="table-container">
+              <table class="styled-table">
+                <thead>
+                  <tr>
+                    <th class="col-voucher"><?=getSortLink('p.VOC_NO', 'Voucher No.')?></th>
+                    <th class="col-date"><?=getSortLink('p.DATE', 'Date')?></th>
+                    <th class="col-tp">TP No.</th>
+                    <th class="col-invoice"><?=getSortLink('p.INV_NO', 'Invoice No.')?></th>
+                    <th class="col-inv-date"><?=getSortLink('p.INV_DATE', 'Invoice Date')?></th>
+                    <th class="col-supplier"><?=getSortLink('s.DETAILS', 'Supplier')?></th>
+                    <th class="col-total"><?=getSortLink('p.TAMT', 'Total Amount')?></th>
+                    <th class="col-status"><?=getSortLink('p.PUR_FLAG', 'Status')?></th>
+                    <th class="col-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach($purchases as $purchase): 
+                    // Status mapping
+                    $status = 'Unknown';
+                    $statusClass = 'status-unpaid';
+                    
+                    if ($purchase['PUR_FLAG'] === 'C') {
+                        $status = 'Completed';
+                        $statusClass = 'status-completed';
+                    } elseif ($purchase['PUR_FLAG'] === 'T') {
+                        $status = 'Unpaid';
+                        $statusClass = 'status-unpaid';
+                    } elseif ($purchase['PUR_FLAG'] === 'P') {
+                        $status = 'Partial';
+                        $statusClass = 'status-partial';
+                    } elseif ($purchase['PUR_FLAG'] === 'F') {
+                        $status = 'Final';
+                        $statusClass = 'status-completed';
+                    }
+                  ?>
+                    <tr>
+                      <td class="col-voucher"><?=htmlspecialchars($purchase['VOC_NO'])?></td>
+                      <td class="col-date"><?=htmlspecialchars($purchase['DATE'])?></td>
+                      <td class="col-tp"><?=htmlspecialchars($purchase['TP_NO'])?></td>
+                      <td class="col-invoice"><?=htmlspecialchars($purchase['INV_NO'])?></td>
+                      <td class="col-inv-date"><?=htmlspecialchars($purchase['INV_DATE'])?></td>
+                      <td class="col-supplier"><?=htmlspecialchars($purchase['supplier_name'])?></td>
+                      <td class="col-total">₹<?=number_format($purchase['TAMT'], 2)?></td>
+                      <td class="col-status">
+                        <span class="status-badge <?=$statusClass?>"><?=$status?></span>
+                      </td>
+                      <td class="col-actions">
+                        <div class="action-buttons">
+                          <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
+                             class="btn btn-sm btn-warning" title="Edit">
+                            <i class="fa-solid fa-edit"></i>
+                          </a>
+                          <button class="btn btn-sm btn-danger" 
+                                  title="Delete" 
+                                  onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>')">
+                            <i class="fa-solid fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php else: ?>
+            <div class="text-center py-4">
+              <i class="fa-solid fa-inbox fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No purchases found</h5>
+              <p class="text-muted">Get started by creating your first purchase</p>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      
+      <!-- Pagination if needed -->
+      <?php if (count($purchases) > 50): ?>
+      <div class="d-flex justify-content-center mt-3">
+        <nav>
+          <ul class="pagination pagination-sm">
+            <li class="page-item disabled"><span class="page-link">Previous</span></li>
+            <li class="page-item active"><span class="page-link">1</span></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+          </ul>
+        </nav>
+      </div>
+      <?php endif; ?>
     </div>
 
     <?php include 'components/footer.php'; ?>
+  </div>
+</div>
+
+<!-- Fixed Action Buttons (Bottom Right) -->
+<div class="fixed-action-buttons">
+  <!-- Purchase Summary Button -->
+  <div class="position-relative">
+    <a href="#" class="action-button-circle info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal" title="Purchase Summary">
+      <i class="fas fa-chart-bar fa-lg"></i>
+      <span class="btn-label">Purchase Summary</span>
+    </a>
+  </div>
+  
+  <!-- New Purchase Button -->
+  <div class="position-relative">
+    <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="action-button-circle primary" title="New Purchase">
+      <i class="fa-solid fa-plus fa-lg"></i>
+      <span class="btn-label">New Purchase</span>
+    </a>
   </div>
 </div>
 
@@ -753,7 +879,7 @@ function printPurchaseSummary() {
             <title>Purchase Summary - ${typeLabel}</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; }
-                table { width: 100%; border-collapse: collapse; font-size: 16px; }
+                table { width: 100%; border-collapse: collapse; font-size: 12px; }
                 th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
                 th { background-color: #f8f9fa; font-weight: bold; }
                 .table-success { background-color: #d1edff !important; }
@@ -811,15 +937,6 @@ $(document).ready(function() {
         }
     );
 });
-
-// Auto-hide alerts after 5 seconds
-setTimeout(() => {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(alert => {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-    });
-}, 5000);
 </script>
 </body>
 </html>

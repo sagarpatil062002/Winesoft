@@ -8937,3 +8937,768 @@ Stack trace:
 [16-Nov-2025 16:14:46 Europe/Berlin] Sample purchase data (first 3):
 [16-Nov-2025 16:14:46 Europe/Berlin] Purchase 1: ID=2, VOC_NO=2, PUR_FLAG=P, DATE=2025-10-31
 [16-Nov-2025 16:14:46 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 13:56:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 13:56:22 Europe/Berlin] Company ID: 1
+[06-Dec-2025 13:56:22 Europe/Berlin] Mode: ALL
+[06-Dec-2025 13:56:22 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 13:56:22 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 13:56:22 Europe/Berlin] Database connection successful
+[06-Dec-2025 13:56:22 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 13:56:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[06-Dec-2025 13:56:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 13:56:22 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 13:56:22 Europe/Berlin] Number of where conditions: 1
+[06-Dec-2025 13:56:22 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 13:56:22 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 13:56:22 Europe/Berlin] Sample purchase data (first 3):
+[06-Dec-2025 13:56:22 Europe/Berlin] Purchase 1: ID=2, VOC_NO=2, PUR_FLAG=P, DATE=2025-10-31
+[06-Dec-2025 13:56:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:15:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:15:29 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:15:29 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:15:29 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:15:29 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:15:29 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:15:29 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:15:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name 
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY CAST(SUBSTRING(p.VOC_NO, 4) AS UNSIGNED) DESC, p.VOC_NO DESC
+[06-Dec-2025 14:15:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:15:29 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:15:29 Europe/Berlin] Number of where conditions: 1
+[06-Dec-2025 14:15:29 Europe/Berlin] Binding parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:15:29 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 14:15:29 Europe/Berlin] Sample purchase data (first 3):
+[06-Dec-2025 14:15:29 Europe/Berlin] Purchase 1: ID=2, VOC_NO=2, PUR_FLAG=P, DATE=2025-10-31
+[06-Dec-2025 14:15:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:16:10 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:16:10 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:16:10 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:16:10 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:16:10 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:16:10 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:16:10 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:16:10 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:16:10 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:16:10 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:16:10 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:16:10 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 14:16:10 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:16:18 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:16:18 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:16:18 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:16:18 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:16:18 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:16:18 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:16:18 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:16:18 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO ASC
+[06-Dec-2025 14:16:18 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:16:18 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:16:18 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: ASC
+[06-Dec-2025 14:16:18 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 14:16:18 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:16:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:16:19 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:16:19 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:16:19 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:16:19 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:16:19 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:16:19 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:16:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:16:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:16:19 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:16:19 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:16:19 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 14:16:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:16:20 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:16:20 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:16:20 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:16:20 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:16:20 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:16:20 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:16:20 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:16:20 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.DATE ASC
+[06-Dec-2025 14:16:20 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:16:20 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:16:20 Europe/Berlin] Sort Column: p.DATE, Sort Order: ASC
+[06-Dec-2025 14:16:20 Europe/Berlin] Found 1 purchase records
+[06-Dec-2025 14:16:20 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:16 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:16 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:16 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:16 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:16 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:16 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:16 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:16 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:18:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:16 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:16 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:18:16 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:16 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:23 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:23 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:23 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:23 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:23 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:23 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:23 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:23 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO ASC
+[06-Dec-2025 14:18:23 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:23 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:23 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: ASC
+[06-Dec-2025 14:18:23 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:23 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:23 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:25 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:25 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:25 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:25 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:25 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:25 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.DATE ASC
+[06-Dec-2025 14:18:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:25 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:25 Europe/Berlin] Sort Column: p.DATE, Sort Order: ASC
+[06-Dec-2025 14:18:25 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:25 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:27 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:27 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:27 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:27 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:27 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.DATE DESC
+[06-Dec-2025 14:18:27 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:27 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:27 Europe/Berlin] Sort Column: p.DATE, Sort Order: DESC
+[06-Dec-2025 14:18:27 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:27 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:27 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:27 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:27 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:27 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:27 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:27 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:27 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.DATE DESC
+[06-Dec-2025 14:18:27 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:27 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:27 Europe/Berlin] Sort Column: p.DATE, Sort Order: DESC
+[06-Dec-2025 14:18:27 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:27 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:27 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:54 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:54 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:54 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:54 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:54 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:54 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:54 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:54 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.INV_NO ASC
+[06-Dec-2025 14:18:54 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:54 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:54 Europe/Berlin] Sort Column: p.INV_NO, Sort Order: ASC
+[06-Dec-2025 14:18:54 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:54 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:54 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:57 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:57 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:57 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:57 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:57 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:57 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY s.DETAILS ASC
+[06-Dec-2025 14:18:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:57 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:57 Europe/Berlin] Sort Column: s.DETAILS, Sort Order: ASC
+[06-Dec-2025 14:18:57 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:57 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:18:59 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:18:59 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:18:59 Europe/Berlin] Mode: F
+[06-Dec-2025 14:18:59 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:18:59 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:18:59 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:18:59 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:18:59 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY s.DETAILS DESC
+[06-Dec-2025 14:18:59 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:18:59 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:18:59 Europe/Berlin] Sort Column: s.DETAILS, Sort Order: DESC
+[06-Dec-2025 14:18:59 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:18:59 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:18:59 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:19:03 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:19:03 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:19:03 Europe/Berlin] Mode: F
+[06-Dec-2025 14:19:03 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:19:03 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:19:03 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:19:03 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:19:03 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG ASC
+[06-Dec-2025 14:19:03 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:19:03 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:19:03 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: ASC
+[06-Dec-2025 14:19:03 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:19:03 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:19:03 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:19:05 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:19:05 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Mode: F
+[06-Dec-2025 14:19:05 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:19:05 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:19:05 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG DESC
+[06-Dec-2025 14:19:05 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:19:05 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:19:05 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: DESC
+[06-Dec-2025 14:19:05 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:19:05 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:19:05 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:19:05 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:19:05 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Mode: F
+[06-Dec-2025 14:19:05 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:19:05 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:19:05 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:19:05 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG DESC
+[06-Dec-2025 14:19:05 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:19:05 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:19:05 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: DESC
+[06-Dec-2025 14:19:05 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:19:05 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:19:05 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:19:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:19:09 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:19:09 Europe/Berlin] Mode: F
+[06-Dec-2025 14:19:09 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:19:09 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:19:09 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:19:09 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:19:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG DESC
+[06-Dec-2025 14:19:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:19:09 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:19:09 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: DESC
+[06-Dec-2025 14:19:09 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:19:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:19:09 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 491
+[06-Dec-2025 14:40:03 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:40:03 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:40:03 Europe/Berlin] Mode: F
+[06-Dec-2025 14:40:03 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:40:03 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:40:03 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:40:03 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:40:03 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG DESC
+[06-Dec-2025 14:40:03 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:40:03 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:40:03 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: DESC
+[06-Dec-2025 14:40:03 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:40:03 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:40:03 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 424
+[06-Dec-2025 14:41:08 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:41:08 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:41:08 Europe/Berlin] Mode: F
+[06-Dec-2025 14:41:08 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:41:08 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:41:08 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:41:08 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[06-Dec-2025 14:41:08 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.PUR_FLAG DESC
+[06-Dec-2025 14:41:08 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:41:08 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:41:08 Europe/Berlin] Sort Column: p.PUR_FLAG, Sort Order: DESC
+[06-Dec-2025 14:41:08 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:41:08 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:41:08 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 424
+[06-Dec-2025 14:47:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:47:57 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:47:57 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:47:57 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:47:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:47:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:47:57 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:47:57 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:47:57 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:47:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:47:57 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 470
+[06-Dec-2025 14:47:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:47:57 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:47:57 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:47:57 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:47:57 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:47:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:47:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:47:57 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:47:57 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:47:57 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:47:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:47:57 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 470
+[06-Dec-2025 14:53:53 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:53:53 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:53:53 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:53:53 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:53:53 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:53:53 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:53:53 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:53:53 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:53:53 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:53:53 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:53:53 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:53:53 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:53:53 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:53:53 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 439
+[06-Dec-2025 14:57:38 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 14:57:38 Europe/Berlin] Company ID: 1
+[06-Dec-2025 14:57:38 Europe/Berlin] Mode: ALL
+[06-Dec-2025 14:57:38 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 14:57:38 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 14:57:38 Europe/Berlin] Database connection successful
+[06-Dec-2025 14:57:38 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 14:57:38 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 14:57:38 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 14:57:38 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 14:57:38 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 14:57:38 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 14:57:38 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 14:57:38 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 388
+[06-Dec-2025 15:08:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:08:25 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:08:25 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:08:25 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:08:25 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:08:25 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:08:25 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:08:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:08:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:08:25 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:08:25 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:08:25 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:08:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:08:25 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 465
+[06-Dec-2025 15:08:33 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:08:33 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:08:33 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:08:33 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:08:33 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:08:33 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:08:33 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:08:33 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:08:33 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:08:33 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:08:33 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:08:33 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:08:33 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:08:33 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 465
+[06-Dec-2025 15:31:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:31:29 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:31:29 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:31:29 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:31:29 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:31:29 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:31:29 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:31:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:31:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:31:29 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:31:29 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:31:29 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:31:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:31:29 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 466
+[06-Dec-2025 15:39:13 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:39:13 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:39:13 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:39:13 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:39:13 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:39:13 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:39:13 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:39:13 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:39:13 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:39:13 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:39:13 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:39:13 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:39:13 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:39:13 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 426
+[06-Dec-2025 15:39:16 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:39:16 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:39:16 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:39:16 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:39:16 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:39:16 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:39:16 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:39:16 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:39:16 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:39:16 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:39:16 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:39:16 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:39:16 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:39:16 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 426
+[06-Dec-2025 15:39:18 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:39:18 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:39:18 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:39:18 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:39:18 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:39:18 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:39:18 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:39:18 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:39:18 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:39:18 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:39:18 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:39:18 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:39:18 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:39:18 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 426
+[06-Dec-2025 15:39:26 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:39:26 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:39:26 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:39:26 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:39:26 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:39:26 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:39:26 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:39:26 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:39:26 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:39:26 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:39:26 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:39:26 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:39:26 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:39:26 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 426
+[06-Dec-2025 15:42:35 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:42:35 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:42:35 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:42:35 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:42:35 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:42:35 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:42:35 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:42:35 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:42:35 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:42:35 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:42:35 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:42:35 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:42:35 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:42:35 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 387
+[06-Dec-2025 15:42:46 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[06-Dec-2025 15:42:46 Europe/Berlin] Company ID: 1
+[06-Dec-2025 15:42:46 Europe/Berlin] Mode: ALL
+[06-Dec-2025 15:42:46 Europe/Berlin] Session CompID: 1
+[06-Dec-2025 15:42:46 Europe/Berlin] Session User ID: 1
+[06-Dec-2025 15:42:46 Europe/Berlin] Database connection successful
+[06-Dec-2025 15:42:46 Europe/Berlin] Initial filters - Company: 1, Mode: ALL
+[06-Dec-2025 15:42:46 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+                  FROM tblpurchases p 
+                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
+                  WHERE p.CompID = ?
+                  ORDER BY p.VOC_NO DESC
+[06-Dec-2025 15:42:46 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[06-Dec-2025 15:42:46 Europe/Berlin] Parameter Types: i
+[06-Dec-2025 15:42:46 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[06-Dec-2025 15:42:46 Europe/Berlin] Found 2 purchase records
+[06-Dec-2025 15:42:46 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[06-Dec-2025 15:42:46 Europe/Berlin] PHP Deprecated:  htmlspecialchars(): Passing null to parameter #1 ($string) of type string is deprecated in C:\xampp\htdocs\Winesoft\public\purchase_module.php on line 387
