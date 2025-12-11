@@ -46,15 +46,15 @@ if (!empty($allowed_classes)) {
     $classStmt->close();
 }
 
-// Fetch subclass descriptions from tblsubclass for the current mode
-$subclassDescriptions = [];
-$subclassQuery = "SELECT ITEM_GROUP, `DESC` FROM tblsubclass WHERE LIQ_FLAG = ?";
+// Fetch all subclass descriptions from tblsubclass for the current mode
+$allSubclassDescriptions = [];
+$subclassQuery = "SELECT ITEM_GROUP, `DESC`, LIQ_FLAG FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY ITEM_GROUP";
 $subclassStmt = $conn->prepare($subclassQuery);
 $subclassStmt->bind_param("s", $mode);
 $subclassStmt->execute();
 $subclassResult = $subclassStmt->get_result();
 while ($row = $subclassResult->fetch_assoc()) {
-    $subclassDescriptions[$row['ITEM_GROUP']] = $row['DESC'];
+    $allSubclassDescriptions[$row['ITEM_GROUP']] = $row['DESC'];
 }
 $subclassStmt->close();
 
@@ -124,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           RPRICE = ?,
                           BARCODE = ?
                           WHERE CODE = ?");
-    $stmt->bind_param("sssssdddds", $Print_Name, $details, $class, $final_sub_class, $item_group, $pprice, $bprice, $mprice, $rprice, $barcode, $item_code);
+    $stmt->bind_param("sssssddddss", $Print_Name, $details, $class, $final_sub_class, $item_group, $pprice, $bprice, $mprice, $rprice, $barcode, $item_code);
     
     if ($stmt->execute()) {
         // Update stock information using the same function as in item_master.php
@@ -342,6 +342,10 @@ function detectClassFromItemName($itemName) {
         margin-bottom: 15px;
         border-left: 4px solid #ffc107;
     }
+    .form-label small {
+        font-weight: normal;
+        color: #6c757d;
+    }
   </style>
 </head>
 <body>
@@ -414,7 +418,8 @@ function detectClassFromItemName($itemName) {
               </div>
               <div class="col-md-4 col-12">
                 <label for="item_group" class="form-label">Item Group</label>
-                <input type="text" class="form-control" id="item_group" name="item_group" value="<?= htmlspecialchars($item['ITEM_GROUP']) ?>" readonly>
+                <input type="text" class="form-control" id="item_group" name="item_group" 
+                       value="<?= htmlspecialchars($item['ITEM_GROUP']) ?>">
               </div>
             </div>
 
@@ -427,7 +432,7 @@ function detectClassFromItemName($itemName) {
                 <label for="sub_class" class="form-label">Sub Class</label>
                 <select class="form-select" id="sub_class" name="sub_class" required>
                   <option value="">Select Sub Class</option>
-                  <?php foreach ($subclassDescriptions as $code => $desc): ?>
+                  <?php foreach ($allSubclassDescriptions as $code => $desc): ?>
                     <option value="<?= htmlspecialchars($code) ?>" <?= $item['SUB_CLASS'] == $code ? 'selected' : '' ?>>
                       <?= htmlspecialchars($code) ?> - <?= htmlspecialchars($desc) ?>
                     </option>

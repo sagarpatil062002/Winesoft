@@ -42,7 +42,7 @@ $toDate = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 
 error_log("Purchase Summary Request: Company=$companyId, Mode=$mode, From=$fromDate, To=$toDate");
 
-// Initialize summary structure - UPDATED: All categories
+// Initialize summary structure
 $purchaseSummary = [
     'SPIRITS' => [],
     'WINE' => [],
@@ -69,7 +69,7 @@ foreach (array_keys($purchaseSummary) as $category) {
 error_log("Initialized summary structure with zeros");
 
 try {
-    // UPDATED QUERY: Include item class and 'C' status when mode is 'ALL'
+    // Query to get purchase details with item class from tblitemmaster
     $query = "
         SELECT 
             pd.ItemCode,
@@ -122,13 +122,21 @@ try {
 
     $processedItems = 0;
     $rawData = [];
+    $classificationStats = [];
     
     while ($row = $result->fetch_assoc()) {
         $rawData[] = $row; // Store for debugging
         
-        // Use ItemClass to determine product type - UPDATED LOGIC
-        $productType = getProductTypeFromClass($row['ItemClass'], $row['ItemName']);
+        // Use ItemClass from tblitemmaster to determine product type
+        $productType = getProductTypeFromClass($row['ItemClass']);
         $volume = extractVolume($row['Size'], $row['ItemName']);
+        
+        // Track classification for debugging
+        $class = $row['ItemClass'] ?? 'NULL';
+        if (!isset($classificationStats[$class])) {
+            $classificationStats[$class] = 0;
+        }
+        $classificationStats[$class]++;
         
         // Calculate total quantity
         $totalQty = 0;
@@ -144,11 +152,12 @@ try {
         
         // DEBUG: Log each item processing
         error_log("Item $processedItems: " . $row['ItemName']);
+        error_log("  - ItemCode: " . $row['ItemCode']);
         error_log("  - Size: " . $row['Size']);
-        error_log("  - Class: " . ($row['ItemClass'] ?? 'NOT SET'));
+        error_log("  - Class from tblitemmaster: " . ($row['ItemClass'] ?? 'NOT FOUND'));
+        error_log("  - Product Type: " . $productType);
         error_log("  - Extracted Volume: " . $volume);
         error_log("  - Volume Column: " . ($volumeColumn ?: 'NOT FOUND'));
-        error_log("  - Product Type: " . $productType);
         error_log("  - Cases: " . $row['Cases'] . ", Bottles: " . $row['Bottles'] . ", BPC: " . $bottlesPerCase);
         error_log("  - Total Qty: " . $totalQty);
         error_log("  - PUR_FLAG: " . $row['PUR_FLAG']);
@@ -163,7 +172,8 @@ try {
         error_log("  ---");
     }
     
-    // DEBUG: Log raw data and final summary
+    // DEBUG: Log classification statistics
+    error_log("Classification Statistics: " . print_r($classificationStats, true));
     error_log("Raw data from query: " . print_r($rawData, true));
     error_log("Final summary data: " . print_r($purchaseSummary, true));
     error_log("Processed $processedItems items successfully");
@@ -182,90 +192,54 @@ try {
 header('Content-Type: application/json');
 echo json_encode($purchaseSummary);
 
-// UPDATED: Helper function to determine product type from class - MATCHING SALE LOGIC
-function getProductTypeFromClass($itemClass, $itemName) {
-    error_log("getProductTypeFromClass: Class='$itemClass', Name='$itemName'");
+// UPDATED: Helper function that ONLY uses CLASS field from tblitemmaster
+function getProductTypeFromClass($itemClass) {
+    error_log("getProductTypeFromClass: Class='$itemClass'");
     
-    // Classification based on CLASS field (matching sale_for_date_range.php logic)
+    // Convert to uppercase and trim
+    $itemClass = strtoupper(trim($itemClass ?? ''));
+    
+    // DIRECT MAPPING FROM YOUR tblitemmaster DATA STRUCTURE
     $classMappings = [
-        // Spirits
+        // Spirits (from typical liquor classification)
         'W' => 'SPIRITS', // Whisky
         'G' => 'SPIRITS', // Gin
         'D' => 'SPIRITS', // Brandy
-        'K' => 'SPIRITS', // ??? 
+        'V' => 'SPIRITS', // Vodka
         'R' => 'SPIRITS', // Rum
+        'K' => 'SPIRITS', // Other spirits
         'O' => 'SPIRITS', // Other spirits
+        'S' => 'SPIRITS', // Scotch
         
         // Wine
-        'V' => 'WINE',    // Wine
+        'V' => 'WINE',    // Wine (V for Vin/Wine)
+        'WINE' => 'WINE', // Wine
         
-        // Beer
-        'F' => 'FERMENTED BEER', // Fermented beer
-        'M' => 'MILD BEER',      // Mild beer
+        // BEER - CORRECTED BASED ON YOUR tblitemmaster DATA
+        'M' => 'MILD BEER',      // Mild Beer (from your data: CLASS='M')
+        'F' => 'FERMENTED BEER', // Fermented Beer (from your data: CLASS='F')
+        'B' => 'FERMENTED BEER', // Beer (generic)
         
         // Country Liquor
         'L' => 'COUNTRY LIQUOR', // Country Liquor
-        'C' => 'COUNTRY LIQUOR', // Country Liquor (alternative)
+        'C' => 'COUNTRY LIQUOR', // Country Liquor
+        'D' => 'COUNTRY LIQUOR', // Desi Liquor
         
-        // Default fallback
-        'B' => 'FERMENTED BEER', // Beer (default)
+        // Default fallback (should not happen with proper data)
+        '' => 'SPIRITS',
+        'NULL' => 'SPIRITS',
     ];
     
-    // Priority: Use class mapping first
-    if (!empty($itemClass) && isset($classMappings[$itemClass])) {
+    // Check if we have a direct mapping
+    if (isset($classMappings[$itemClass])) {
         $result = $classMappings[$itemClass];
-        error_log("  - Classified as $result (Class: $itemClass)");
+        error_log("  - Mapped from CLASS='$itemClass' to '$result'");
         return $result;
     }
     
-    // Fallback to name-based classification if class not available or not mapped
-    error_log("  - Falling back to name-based classification");
-    return getProductTypeFromName($itemName);
-}
-
-// Fallback helper function for name-based classification
-function getProductTypeFromName($itemName) {
-    if (empty($itemName)) {
-        error_log("getProductTypeFromName: Empty item name, defaulting to SPIRITS");
-        return 'SPIRITS';
-    }
-    
-    $name = strtoupper($itemName);
-    error_log("getProductTypeFromName: Analyzing '$name'");
-    
-    // Country Liquor detection from name (fallback)
-    if (strpos($name, 'COUNTRY') !== false || strpos($name, 'DESI') !== false || 
-        strpos($name, 'LOCAL') !== false || strpos($name, 'INDIGENOUS') !== false) {
-        error_log("  - Classified as COUNTRY LIQUOR (Name-based)");
-        return 'COUNTRY LIQUOR';
-    }
-    
-    // Wine detection
-    if (strpos($name, 'WINE') !== false || strpos($name, 'PORT') !== false || strpos($name, 'SHERRY') !== false) {
-        error_log("  - Classified as WINE");
-        return 'WINE';
-    }
-    
-    // Beer detection
-    if (strpos($name, 'BEER') !== false) {
-        if (strpos($name, 'MILD') !== false) {
-            error_log("  - Classified as MILD BEER");
-            return 'MILD BEER';
-        }
-        error_log("  - Classified as FERMENTED BEER");
-        return 'FERMENTED BEER';
-    }
-    
-    // Spirits detection
-    if (strpos($name, 'VODKA') !== false || strpos($name, 'RUM') !== false || 
-        strpos($name, 'WHISKY') !== false || strpos($name, 'WHISKEY') !== false || 
-        strpos($name, 'GIN') !== false || strpos($name, 'BRANDY') !== false) {
-        error_log("  - Classified as SPIRITS");
-        return 'SPIRITS';
-    }
-    
-    error_log("  - Defaulting to SPIRITS");
-    return 'SPIRITS'; // Default
+    // If class is not in mapping, log warning and default to SPIRITS
+    error_log("  - WARNING: Unknown CLASS='$itemClass', defaulting to SPIRITS");
+    return 'SPIRITS';
 }
 
 function extractVolume($size, $itemName) {

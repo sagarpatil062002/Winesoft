@@ -692,10 +692,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
     if (isset($_POST['opening_stock']) && !empty($_POST['opening_stock'])) {
         $items_to_update = [];
         $items_for_daily_stock = [];
-        
+
         foreach ($_POST['opening_stock'] as $code => $balance) {
             $balance = intval($balance);
-            if ($balance >= 0) {
+            $original_balance = isset($_POST['original_stock'][$code]) ? intval($_POST['original_stock'][$code]) : 0;
+
+            // Only update if the balance has changed
+            if ($balance >= 0 && $balance !== $original_balance) {
                 $items_to_update[] = ['code' => $code, 'balance' => $balance];
                 $items_for_daily_stock[$code] = $balance;
             }
@@ -883,23 +886,6 @@ if (isset($_SESSION['import_message'])) {
         </ul>
       </div>
 
-      <!-- License Restriction Info -->
-      <div class="alert alert-info mb-3">
-          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
-          <p class="mb-0">Showing items for classes: 
-              <?php 
-              if (!empty($available_classes)) {
-                  $class_names = [];
-                  foreach ($available_classes as $class) {
-                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
-                  }
-                  echo implode(', ', $class_names);
-              } else {
-                  echo 'No classes available for your license type';
-              }
-              ?>
-          </p>
-      </div>
 
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
@@ -1061,6 +1047,8 @@ if (isset($_SESSION['import_message'])) {
                     <input type="number" name="opening_stock[<?= htmlspecialchars($item['CODE']); ?>]"
                            value="<?= (int)$item['CURRENT_STOCK']; ?>" min="0"
                            class="form-control opening-balance-input">
+                    <input type="hidden" name="original_stock[<?= htmlspecialchars($item['CODE']); ?>]"
+                           value="<?= (int)$item['CURRENT_STOCK']; ?>">
                   </td>
                 </tr>
               <?php endforeach; ?>

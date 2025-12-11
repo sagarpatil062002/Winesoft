@@ -101,6 +101,26 @@ function cleanItemCode($code) {
     return $cleaned;
 }
 
+// Function to format bottle size with proper units (ML/L) without spaces
+function formatBottleSizePHP($sizeText) {
+    if (!$sizeText) return '';
+
+    // Extract numeric value
+    if (preg_match('/(\d+(?:\.\d+)?)/', $sizeText, $matches)) {
+        $sizeNum = (float)$matches[1];
+
+        // If 1000 or more, display as L, otherwise as ML
+        if ($sizeNum >= 1000) {
+            $liters = $sizeNum / 1000;
+            return ($liters == (int)$liters) ? $liters . 'L' : number_format($liters, 1) . 'L';
+        } else {
+            return $sizeNum . 'ML';
+        }
+    }
+
+    return $sizeText;
+}
+
 // Function to check if a month is archived
 function isMonthArchived($conn, $comp_id, $month, $year) {
     $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
@@ -1142,7 +1162,7 @@ if ($insertStmt) {
             <tr class="item-row-modal">
               <td><?=htmlspecialchars($it['CODE'])?></td>
               <td><?=htmlspecialchars($it['DETAILS'])?></td>
-              <td><?=htmlspecialchars($it['DETAILS2'])?></td>
+              <td><?=htmlspecialchars(formatBottleSizePHP($it['DETAILS2']))?></td>
               <td><?=number_format((float)$it['PPRICE'],3)?></td>
               <td><?=htmlspecialchars($it['BOTTLE_PER_CASE'])?></td>
               <td><button type="button" class="btn btn-sm btn-primary select-item"
@@ -1342,34 +1362,52 @@ $(function(){
 
   // Function to clean item code by removing SCM prefix
   function cleanItemCode(code) {
-    const cleaned = (code || '').replace(/^SCM/i, '').trim();
-    debugLog("cleanItemCode", { original: code, cleaned: cleaned });
-    return cleaned;
+     const cleaned = (code || '').replace(/^SCM/i, '').trim();
+     debugLog("cleanItemCode", { original: code, cleaned: cleaned });
+     return cleaned;
   }
 
-  // Function to find best supplier match - ENHANCED
+  // Function to format bottle size with proper units (ML/L) without spaces
+  function formatBottleSize(sizeText) {
+     if (!sizeText) return '';
+
+     // Extract numeric value
+     const match = sizeText.toString().match(/(\d+(?:\.\d+)?)/);
+     if (!match) return sizeText;
+
+     const sizeNum = parseFloat(match[1]);
+
+     // If 1000 or more, display as L, otherwise as ML
+     if (sizeNum >= 1000) {
+        const liters = sizeNum / 1000;
+        return liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+     } else {
+        return `${sizeNum}ML`;
+     }
+  }
+
+  // SIMPLIFIED Supplier matching function (from purchases with archive logic.php)
 function findBestSupplierMatch(parsedName) {
-    debugLog("Finding best supplier match", { parsedName: parsedName });
-    
+    debugLog("findBestSupplierMatch started", { parsedName: parsedName });
+
     if (!parsedName) return null;
-    
+
     const parsedClean = parsedName.toLowerCase().replace(/[^a-z0-9\s]/g, '');
     let bestMatch = null;
     let bestScore = 0;
-    
+
     debugLog("Supplier matching started", { cleanName: parsedClean, totalSuppliers: suppliers.length });
-    
+
     suppliers.forEach(supplier => {
         const supplierName = (supplier.DETAILS || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
         const supplierCode = (supplier.CODE || '').toLowerCase();
-        
-        // Remove numeric suffixes and extra characters for better matching
-        const parsedBase = parsedClean.replace(/[-\d]+$/g, '').trim();
-        const supplierBase = supplierName.replace(/[-\d]+$/g, '').trim();
-        
-        // Score based on string similarity
+
+        // Remove numeric suffixes for better matching
+        const parsedBase = parsedClean.replace(/\d+$/, '');
+        const supplierBase = supplierName.replace(/\d+$/, '');
+
         let score = 0;
-        
+
         // 1. Exact match (highest priority)
         if (supplierName === parsedClean) {
             score = 100;
@@ -1390,18 +1428,29 @@ function findBestSupplierMatch(parsedName) {
             score = 70;
             debugLog("Base contains supplier match found", { supplier: supplier.DETAILS, score: score });
         }
-        
+        // 5. Code match (if parsed name contains supplier code)
+        else if (parsedClean.includes(supplierCode) || supplierCode.includes(parsedClean)) {
+            score = 60;
+            debugLog("Supplier code match found", { supplier: supplier.DETAILS, score: score });
+        }
+        // 6. Partial start match (first 5 characters)
+        else if (supplierName.startsWith(parsedClean.substring(0, 5)) ||
+                 parsedClean.startsWith(supplierName.substring(0, 5))) {
+            score = 50;
+            debugLog("Partial name match found", { supplier: supplier.DETAILS, score: score });
+        }
+
         if (score > bestScore) {
             bestScore = score;
             bestMatch = supplier;
         }
     });
-    
-    debugLog("Supplier matching completed", { 
-        bestMatch: bestMatch ? bestMatch.DETAILS : 'None', 
-        bestScore: bestScore 
+
+    debugLog("Supplier matching completed", {
+        bestMatch: bestMatch ? bestMatch.DETAILS : 'None',
+        bestScore: bestScore
     });
-    
+
     return bestMatch;
 }
 
@@ -1689,21 +1738,17 @@ function findBestSupplierMatch(parsedName) {
     
     // Set supplier information
     if (parsedData.supplier) {
-        // Supplier input is already set during parsing with the matched database name
         debugLog("Supplier name already set during parsing", { supplier: $('#supplierInput').val() });
-        
-        // Try to find matching supplier code if not already set
+
+        // If supplier code not already set, try to match it
         if (!$('#supplierCodeHidden').val()) {
-            const matchedSupplier = suppliers.find(s => 
-                s.DETAILS.toLowerCase().includes(parsedData.supplier.toLowerCase()) ||
-                parsedData.supplier.toLowerCase().includes(s.DETAILS.toLowerCase())
-            );
-            
-            if (matchedSupplier) {
-                $('#supplierCodeHidden').val(matchedSupplier.CODE);
-                debugLog("Supplier code matched", { 
-                    code: matchedSupplier.CODE,
-                    name: matchedSupplier.DETAILS 
+            const supplierMatch = findBestSupplierMatch(parsedData.supplier);
+            if (supplierMatch) {
+                $('#supplierInput').val(supplierMatch.DETAILS);
+                $('#supplierCodeHidden').val(supplierMatch.CODE);
+                debugLog("Supplier code matched", {
+                    code: supplierMatch.CODE,
+                    name: supplierMatch.DETAILS
                 });
             }
         }
@@ -1814,22 +1859,22 @@ function findBestSupplierMatch(parsedName) {
             }
         }
         
-        // Extract Party (Supplier) - FIXED: Store the matched supplier name, not the parsed one
+        // Extract Party (Supplier) - SIMPLIFIED
         if (/^Party\s*:/i.test(line)) {
             const nextLine = (lines[i + 1] || '').trim();
             if (nextLine) {
                 supplier = nextLine; // Keep original for reference
                 debugLog("Supplier extracted", { supplier: nextLine });
-                
-                // Try to find the best supplier match (with suffix removal logic)
+
+                // Try to find the best supplier match
                 const supplierMatch = findBestSupplierMatch(nextLine);
                 if (supplierMatch) {
-                    // Use the matched supplier name from database, not the parsed one
+                    // Use the matched supplier name from database
                     $('#supplierInput').val(supplierMatch.DETAILS);
                     $('#supplierCodeHidden').val(supplierMatch.CODE);
-                    debugLog("Supplier matched and set with database name", { 
+                    debugLog("Supplier matched and set", {
                         name: supplierMatch.DETAILS,
-                        code: supplierMatch.CODE 
+                        code: supplierMatch.CODE
                     });
                 } else {
                     // Fallback: use the extracted name if no match found
@@ -2245,52 +2290,34 @@ function findBestSupplierMatch(parsedName) {
   // Function to initialize the size table headers
   function initializeSizeTable() {
     debugLog("initializeSizeTable started", { distinctSizes: distinctSizes });
-    
+
     const $headers = $('#sizeHeaders');
     const $values = $('#sizeValues');
-    
+
     $headers.empty();
     $values.empty();
-    
-    // Group sizes into logical categories for better display
-    const smallSizes = distinctSizes.filter(size => size <= 375);
-    const mediumSizes = distinctSizes.filter(size => size > 375 && size <= 1000);
-    const largeSizes = distinctSizes.filter(size => size > 1000);
-    
-    debugLog("Size categories", { small: smallSizes, medium: mediumSizes, large: largeSizes });
-    
-    // Add headers for small sizes
-    smallSizes.forEach(size => {
-      $headers.append(`<th>${size} ML</th>`);
+
+    // Sort sizes in descending order (largest first)
+    const sortedSizes = distinctSizes.sort((a, b) => b - a);
+
+    debugLog("Sorted sizes in descending order", { sortedSizes: sortedSizes });
+
+    // Add headers for all sizes in descending order
+    sortedSizes.forEach(size => {
+      // Format size display with proper units
+      let displaySize;
+      if (size >= 1000) {
+        const liters = size / 1000;
+        displaySize = liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+      } else {
+        displaySize = `${size}ML`;
+      }
+
+      $headers.append(`<th>${displaySize}</th>`);
       $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
     });
-    
-    // Add separator if we have both small and medium sizes
-    if (smallSizes.length > 0 && mediumSizes.length > 0) {
-      $headers.append('<th class="size-separator">|</th>');
-      $values.append('<td class="size-separator">|</td>');
-    }
-    
-    // Add headers for medium sizes
-    mediumSizes.forEach(size => {
-      $headers.append(`<th>${size} ML</th>`);
-      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
-    });
-    
-    // Add separator if we have both medium and large sizes
-    if (mediumSizes.length > 0 && largeSizes.length > 0) {
-      $headers.append('<th class="size-separator">|</th>');
-      $values.append('<td class="size-separator">|</td>');
-    }
-    
-    // Add headers for large sizes (display in liters for better readability)
-    largeSizes.forEach(size => {
-      const sizeInLiters = size >= 1000 ? `${size/1000}L` : `${size}ML`;
-      $headers.append(`<th>${sizeInLiters}</th>`);
-      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
-    });
-    
-    debugLog("Size table initialized");
+
+    debugLog("Size table initialized in descending order");
   }
 
   // Function to calculate bottles by size
@@ -2446,7 +2473,7 @@ function addRow(item){
           ${itemCode}
         </td>
         <td>${itemName}</td>
-        <td>${itemSize}</td>
+        <td>${formatBottleSize(itemSize)}</td>
         <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${cases}" min="0" step="0.01"></td>
         <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${bottles}" min="0" step="1"></td> <!-- REMOVED max attribute -->
         <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free_cases]" value="${freeCases}" min="0" step="0.01"></td>

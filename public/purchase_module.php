@@ -94,11 +94,11 @@ $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
 // Get all purchases for this company with filters and sorting
 $purchases = [];
 $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name,
-                  COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
-                  FROM tblpurchases p 
-                  LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE
-                  WHERE " . implode(" AND ", $whereConditions) . "
-                  ORDER BY $sortColumn $sortOrder";
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE " . implode(" AND ", $whereConditions) . "
+               ORDER BY $sortColumn $sortOrder";
                   
 error_log("Final Query: " . $purchaseQuery);
 error_log("Parameters: " . print_r($params, true));
@@ -238,15 +238,15 @@ function getSortLink($column, $label) {
   
   /* Purchase Summary Table Styles */
   #purchaseSummaryTable th {
-    font-size: 16px;
-    padding: 8px 4px;
+    font-size: 10px;
+    padding: 2px 1px;
     text-align: center;
     white-space: nowrap;
   }
 
   #purchaseSummaryTable td {
-    font-size: 16px;
-    padding: 8px 4px;
+    font-size: 10px;
+    padding: 2px 1px;
     text-align: center;
   }
   
@@ -340,6 +340,34 @@ function getSortLink($column, $label) {
         <input type="hidden" name="sort" value="<?= htmlspecialchars($sortColumn); ?>">
         <input type="hidden" name="order" value="<?= htmlspecialchars($sortOrder); ?>">
 
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-control" name="from_date" value="<?=isset($_GET['from_date']) ? $_GET['from_date'] : ''?>">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-control" name="to_date" value="<?=isset($_GET['to_date']) ? $_GET['to_date'] : ''?>">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Voucher No.</label>
+            <input type="text" class="form-control" name="voc_no" value="<?=isset($_GET['voc_no']) ? $_GET['voc_no'] : ''?>">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Supplier</label>
+            <input type="text" class="form-control" name="supplier" value="<?=isset($_GET['supplier']) ? $_GET['supplier'] : ''?>">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">TP No.</label>
+            <input type="text" class="form-control" name="tp_no" value="<?=isset($_GET['tp_no']) ? $_GET['tp_no'] : ''?>">
+          </div>
+          <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fa-solid fa-filter me-2"></i> Apply
+            </button>
+          </div>
+        </div>
+      </form>
         
       <!-- Purchases List -->
       <div class="table-container">
@@ -348,7 +376,7 @@ function getSortLink($column, $label) {
             <tr>
               <th class="col-voucher"><?=getSortLink('p.VOC_NO', 'Voucher No.')?></th>
               <th class="col-date"><?=getSortLink('p.DATE', 'Date')?></th>
-              <th class="col-tp">TP No.</th>
+              <th class="col-tp"><?=getSortLink('TP_NO', 'TP No.')?></th>
               <th class="col-invoice"><?=getSortLink('p.INV_NO', 'Invoice No.')?></th>
               <th class="col-inv-date"><?=getSortLink('p.INV_DATE', 'Invoice Date')?></th>
               <th class="col-supplier"><?=getSortLink('s.DETAILS', 'Supplier')?></th>
@@ -462,36 +490,12 @@ function getSortLink($column, $label) {
                     </div>
                 </div>
                 
-                <div class="table-responsive" style="max-height: 400px;">
+                <div class="table-responsive">
                     <table class="table table-bordered table-sm table-striped" id="purchaseSummaryTable">
                         <thead class="table-light sticky-top">
-                            <tr>
+                            <tr id="sizeHeaders">
                                 <th>Category</th>
-                                <th>50 ML</th>
-                                <th>60 ML</th>
-                                <th>90 ML</th>
-                                <th>170 ML</th>
-                                <th>180 ML</th>
-                                <th>200 ML</th>
-                                <th>250 ML</th>
-                                <th>275 ML</th>
-                                <th>330 ML</th>
-                                <th>355 ML</th>
-                                <th>375 ML</th>
-                                <th>500 ML</th>
-                                <th>650 ML</th>
-                                <th>700 ML</th>
-                                <th>750 ML</th>
-                                <th>1000 ML</th>
-                                <th>1.5L</th>
-                                <th>1.75L</th>
-                                <th>2L</th>
-                                <th>3L</th>
-                                <th>4.5L</th>
-                                <th>15L</th>
-                                <th>20L</th>
-                                <th>30L</th>
-                                <th>50L</th>
+                                <!-- Size headers will be dynamically generated -->
                             </tr>
                         </thead>
                         <tbody>
@@ -514,7 +518,7 @@ function getSortLink($column, $label) {
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Delete Confirmation Modal - ADDED FROM COPY -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -536,6 +540,7 @@ function getSortLink($column, $label) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Delete Confirmation Function - ADDED FROM COPY
 function confirmDelete(purchaseId, mode) {
   $('#deleteConfirm').attr('href', 'purchase_delete.php?id=' + purchaseId + '&mode=' + mode);
   $('#deleteModal').modal('show');
@@ -560,9 +565,10 @@ function loadPurchaseSummary() {
     const purchaseType = 'ALL';
 
     // Show loading state
+    const loadingColspan = 26; // 1 category + 25 sizes
     $('#purchaseSummaryTable tbody').html(`
         <tr>
-            <td colspan="26" class="text-center">
+            <td colspan="${loadingColspan}" class="text-center">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -638,23 +644,42 @@ function loadPurchaseSummary() {
     });
 }
 
+// Function to convert size string to milliliters for sorting
+function sizeToMl(size) {
+    if (size.includes('L')) {
+        const liters = parseFloat(size.replace('L', ''));
+        return liters * 1000;
+    } else if (size.includes('ML')) {
+        return parseInt(size.replace(' ML', ''));
+    }
+    return 0;
+}
+
 // Function to update the purchase summary table
 function updatePurchaseSummaryTable(summaryData) {
     const tbody = $('#purchaseSummaryTable tbody');
+    const headerRow = $('#sizeHeaders');
     tbody.empty();
-    
+
     const allSizes = [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+        '50L', '30L', '20L', '15L', '4.5L', '3L', '2L', '1.75L', '1.5L',
+        '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', '330 ML',
+        '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
     ];
+
+    // Update table headers dynamically
+    headerRow.empty();
+    headerRow.append($('<th>').text('Category'));
+    allSizes.forEach(size => {
+        headerRow.append($('<th>').text(size));
+    });
     
     const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
     
     if (!summaryData || typeof summaryData !== 'object') {
         tbody.html(`
             <tr>
-                <td colspan="26" class="text-center text-danger">
+                <td colspan="${allSizes.length + 1}" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle"></i><br>
                     Invalid data structure received
                 </td>
@@ -678,7 +703,7 @@ function updatePurchaseSummaryTable(summaryData) {
     if (!hasData) {
         tbody.html(`
             <tr>
-                <td colspan="26" class="text-center text-muted">
+                <td colspan="${allSizes.length + 1}" class="text-center text-muted">
                     <i class="fas fa-info-circle"></i><br>
                     No purchase data found for the selected date range and filters
                 </td>

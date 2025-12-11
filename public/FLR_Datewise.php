@@ -155,34 +155,34 @@ while (strtotime($current_date) <= strtotime($to_date)) {
     $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
 }
 
-// Initialize daily data structure for each date - NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
+// Initialize daily data structure for each date - NEW ORDER: Imported Spirit, Spirit, Wine Imp, Wines, Fermented Beer, Mild Beer
 $daily_data = [];
 
 // Initialize totals for each size column - NEW ORDER
 $totals = [
-    'Spirits' => [
-        'purchase' => array_fill_keys($display_sizes_s, 0),
-        'sales' => array_fill_keys($display_sizes_s, 0),
-        'closing' => array_fill_keys($display_sizes_s, 0),
-        'opening' => array_fill_keys($display_sizes_s, 0)
-    ],
     'Imported Spirit' => [
         'purchase' => array_fill_keys($display_sizes_imported, 0),
         'sales' => array_fill_keys($display_sizes_imported, 0),
         'closing' => array_fill_keys($display_sizes_imported, 0),
         'opening' => array_fill_keys($display_sizes_imported, 0)
     ],
-    'Wines' => [
-        'purchase' => array_fill_keys($display_sizes_w, 0),
-        'sales' => array_fill_keys($display_sizes_w, 0),
-        'closing' => array_fill_keys($display_sizes_w, 0),
-        'opening' => array_fill_keys($display_sizes_w, 0)
+    'Spirits' => [
+        'purchase' => array_fill_keys($display_sizes_s, 0),
+        'sales' => array_fill_keys($display_sizes_s, 0),
+        'closing' => array_fill_keys($display_sizes_s, 0),
+        'opening' => array_fill_keys($display_sizes_s, 0)
     ],
     'Wine Imp' => [
         'purchase' => array_fill_keys($display_sizes_wine_imp, 0),
         'sales' => array_fill_keys($display_sizes_wine_imp, 0),
         'closing' => array_fill_keys($display_sizes_wine_imp, 0),
         'opening' => array_fill_keys($display_sizes_wine_imp, 0)
+    ],
+    'Wines' => [
+        'purchase' => array_fill_keys($display_sizes_w, 0),
+        'sales' => array_fill_keys($display_sizes_w, 0),
+        'closing' => array_fill_keys($display_sizes_w, 0),
+        'opening' => array_fill_keys($display_sizes_w, 0)
     ],
     'Fermented Beer' => [
         'purchase' => array_fill_keys($display_sizes_fb, 0),
@@ -287,29 +287,29 @@ foreach ($dates as $date) {
     
     // Initialize daily data for this date
     $daily_data[$date] = [
-        'Spirits' => [
-            'purchase' => array_fill_keys($display_sizes_s, 0),
-            'sales' => array_fill_keys($display_sizes_s, 0),
-            'closing' => array_fill_keys($display_sizes_s, 0),
-            'opening' => array_fill_keys($display_sizes_s, 0)
-        ],
         'Imported Spirit' => [
             'purchase' => array_fill_keys($display_sizes_imported, 0),
             'sales' => array_fill_keys($display_sizes_imported, 0),
             'closing' => array_fill_keys($display_sizes_imported, 0),
             'opening' => array_fill_keys($display_sizes_imported, 0)
         ],
-        'Wines' => [
-            'purchase' => array_fill_keys($display_sizes_w, 0),
-            'sales' => array_fill_keys($display_sizes_w, 0),
-            'closing' => array_fill_keys($display_sizes_w, 0),
-            'opening' => array_fill_keys($display_sizes_w, 0)
+        'Spirits' => [
+            'purchase' => array_fill_keys($display_sizes_s, 0),
+            'sales' => array_fill_keys($display_sizes_s, 0),
+            'closing' => array_fill_keys($display_sizes_s, 0),
+            'opening' => array_fill_keys($display_sizes_s, 0)
         ],
         'Wine Imp' => [
             'purchase' => array_fill_keys($display_sizes_wine_imp, 0),
             'sales' => array_fill_keys($display_sizes_wine_imp, 0),
             'closing' => array_fill_keys($display_sizes_wine_imp, 0),
             'opening' => array_fill_keys($display_sizes_wine_imp, 0)
+        ],
+        'Wines' => [
+            'purchase' => array_fill_keys($display_sizes_w, 0),
+            'sales' => array_fill_keys($display_sizes_w, 0),
+            'closing' => array_fill_keys($display_sizes_w, 0),
+            'opening' => array_fill_keys($display_sizes_w, 0)
         ],
         'Fermented Beer' => [
             'purchase' => array_fill_keys($display_sizes_fb, 0),
@@ -515,27 +515,27 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       font-weight: bold;
     }
     /* Double line separators after each subcategory ends and after category changes */
-    /* FLR Datewise structure: Date(1), Permit(2), Received[Spirits(11)+Imported Spirit(11)+Wine(4)+Wine Imp(4)+FB(6)+MB(6)=42], Sold[42], Closing[42] */
+    /* FLR Datewise structure: Date(1), Permit(2), Received[Imported Spirit(11)+Spirits(11)+Wine Imp(4)+Wines(4)+FB(6)+MB(6)=42], Sold[42], Closing[42] */
 
-    /* After Spirits (50ml) in Received section - column 2+11=13 */
+    /* After Imported Spirit (50ml) in Received section - column 2+11=13 */
     .report-table td:nth-child(13),
     .report-table th:nth-child(13) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Received section - column 13+11=24 */
+    /* After Spirits (50ml) in Received section - column 13+11=24 */
     .report-table td:nth-child(24),
     .report-table th:nth-child(24) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Received section - column 24+4=28 */
+    /* After Wine Imp (90ml) in Received section - column 24+4=28 */
     .report-table td:nth-child(28),
     .report-table th:nth-child(28) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Received section - column 28+4=32 */
+    /* After Wines (90ml) in Received section - column 28+4=32 */
     .report-table td:nth-child(32),
     .report-table th:nth-child(32) {
       border-right: double 3px #000 !important;
@@ -559,25 +559,25 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       border-right: double 3px #000 !important;
     }
 
-    /* After Spirits (50ml) in Sold section - column 44+11=55 */
+    /* After Imported Spirit (50ml) in Sold section - column 44+11=55 */
     .report-table td:nth-child(55),
     .report-table th:nth-child(55) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Sold section - column 55+11=66 */
+    /* After Spirits (50ml) in Sold section - column 55+11=66 */
     .report-table td:nth-child(66),
     .report-table th:nth-child(66) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Sold section - column 66+4=70 */
+    /* After Wine Imp (90ml) in Sold section - column 66+4=70 */
     .report-table td:nth-child(70),
     .report-table th:nth-child(70) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Sold section - column 70+4=74 */
+    /* After Wines (90ml) in Sold section - column 70+4=74 */
     .report-table td:nth-child(74),
     .report-table th:nth-child(74) {
       border-right: double 3px #000 !important;
@@ -601,25 +601,25 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
       border-right: double 3px #000 !important;
     }
 
-    /* After Spirits (50ml) in Closing section - column 86+11=97 */
+    /* After Imported Spirit (50ml) in Closing section - column 86+11=97 */
     .report-table td:nth-child(97),
     .report-table th:nth-child(97) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Imported Spirit (50ml) in Closing section - column 97+11=108 */
+    /* After Spirits (50ml) in Closing section - column 97+11=108 */
     .report-table td:nth-child(108),
     .report-table th:nth-child(108) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine (90ml) in Closing section - column 108+4=112 */
+    /* After Wine Imp (90ml) in Closing section - column 108+4=112 */
     .report-table td:nth-child(112),
     .report-table th:nth-child(112) {
       border-right: double 3px #000 !important;
     }
 
-    /* After Wine Imp (90ml) in Closing section - column 112+4=116 */
+    /* After Wines (90ml) in Closing section - column 112+4=116 */
     .report-table td:nth-child(116),
     .report-table th:nth-child(116) {
       border-right: double 3px #000 !important;
@@ -892,23 +892,23 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
                 <th rowspan="3" class="signature-col">Signature</th>
               </tr>
               <tr>
-                <!-- NEW ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer -->
-                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
+                <!-- NEW ORDER: Imported Spirit, Spirit, Wine Imp, Wines, Fermented Beer, Mild Beer -->
                 <th colspan="<?= count($display_sizes_imported) ?>">Imported Spirit</th>
-                <th colspan="<?= count($display_sizes_w) ?>">Wine</th>
+                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
                 <th colspan="<?= count($display_sizes_wine_imp) ?>">Wine Imp</th>
+                <th colspan="<?= count($display_sizes_w) ?>">Wines</th>
                 <th colspan="<?= count($display_sizes_fb) ?>">Fermented Beer</th>
                 <th colspan="<?= count($display_sizes_mb) ?>">Mild Beer</th>
-                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
                 <th colspan="<?= count($display_sizes_imported) ?>">Imported Spirit</th>
-                <th colspan="<?= count($display_sizes_w) ?>">Wine</th>
+                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
                 <th colspan="<?= count($display_sizes_wine_imp) ?>">Wine Imp</th>
+                <th colspan="<?= count($display_sizes_w) ?>">Wines</th>
                 <th colspan="<?= count($display_sizes_fb) ?>">Fermented Beer</th>
                 <th colspan="<?= count($display_sizes_mb) ?>">Mild Beer</th>
-                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
                 <th colspan="<?= count($display_sizes_imported) ?>">Imported Spirit</th>
-                <th colspan="<?= count($display_sizes_w) ?>">Wine</th>
+                <th colspan="<?= count($display_sizes_s) ?>">Spirits</th>
                 <th colspan="<?= count($display_sizes_wine_imp) ?>">Wine Imp</th>
+                <th colspan="<?= count($display_sizes_w) ?>">Wines</th>
                 <th colspan="<?= count($display_sizes_fb) ?>">Fermented Beer</th>
                 <th colspan="<?= count($display_sizes_mb) ?>">Mild Beer</th>
               </tr>
@@ -1010,24 +1010,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
                   <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
                   <td class="permit-col"></td>
                   
-                  <!-- Spirits Received -->
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $daily_data[$date]['Spirits']['purchase'][$size] ?></td>
-                  <?php endforeach; ?>
-
                   <!-- Imported Spirit Received -->
                   <?php foreach ($display_sizes_imported as $size): ?>
                     <td><?= $daily_data[$date]['Imported Spirit']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
 
-                  <!-- Wines Received -->
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $daily_data[$date]['Wines']['purchase'][$size] ?></td>
+                  <!-- Spirits Received -->
+                  <?php foreach ($display_sizes_s as $size): ?>
+                    <td><?= $daily_data[$date]['Spirits']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Wine Imp Received -->
                   <?php foreach ($display_sizes_wine_imp as $size): ?>
                     <td><?= $daily_data[$date]['Wine Imp']['purchase'][$size] ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- Wines Received -->
+                  <?php foreach ($display_sizes_w as $size): ?>
+                    <td><?= $daily_data[$date]['Wines']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Fermented Beer Received -->
@@ -1040,24 +1040,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
                     <td><?= $daily_data[$date]['Mild Beer']['purchase'][$size] ?></td>
                   <?php endforeach; ?>
 
-                  <!-- Spirits Sold -->
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $daily_data[$date]['Spirits']['sales'][$size] ?></td>
-                  <?php endforeach; ?>
-
                   <!-- Imported Spirit Sold -->
                   <?php foreach ($display_sizes_imported as $size): ?>
                     <td><?= $daily_data[$date]['Imported Spirit']['sales'][$size] ?></td>
                   <?php endforeach; ?>
 
-                  <!-- Wines Sold -->
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $daily_data[$date]['Wines']['sales'][$size] ?></td>
+                  <!-- Spirits Sold -->
+                  <?php foreach ($display_sizes_s as $size): ?>
+                    <td><?= $daily_data[$date]['Spirits']['sales'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Wine Imp Sold -->
                   <?php foreach ($display_sizes_wine_imp as $size): ?>
                     <td><?= $daily_data[$date]['Wine Imp']['sales'][$size] ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- Wines Sold -->
+                  <?php foreach ($display_sizes_w as $size): ?>
+                    <td><?= $daily_data[$date]['Wines']['sales'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Fermented Beer Sold -->
@@ -1070,24 +1070,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
                     <td><?= $daily_data[$date]['Mild Beer']['sales'][$size] ?></td>
                   <?php endforeach; ?>
 
-                  <!-- Spirits Closing -->
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $daily_data[$date]['Spirits']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-
                   <!-- Imported Spirit Closing -->
                   <?php foreach ($display_sizes_imported as $size): ?>
                     <td><?= $daily_data[$date]['Imported Spirit']['closing'][$size] ?></td>
                   <?php endforeach; ?>
 
-                  <!-- Wines Closing -->
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $daily_data[$date]['Wines']['closing'][$size] ?></td>
+                  <!-- Spirits Closing -->
+                  <?php foreach ($display_sizes_s as $size): ?>
+                    <td><?= $daily_data[$date]['Spirits']['closing'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Wine Imp Closing -->
                   <?php foreach ($display_sizes_wine_imp as $size): ?>
                     <td><?= $daily_data[$date]['Wine Imp']['closing'][$size] ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- Wines Closing -->
+                  <?php foreach ($display_sizes_w as $size): ?>
+                    <td><?= $daily_data[$date]['Wines']['closing'][$size] ?></td>
                   <?php endforeach; ?>
 
                   <!-- Fermented Beer Closing -->
@@ -1216,24 +1216,24 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
   <?php endfor; ?>
 
   <!-- Closing Balance Section - Show purchase totals -->
-  <!-- Spirits Closing -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
-
   <!-- Imported Spirit Closing -->
   <?php foreach ($display_sizes_imported as $size): ?>
     <td><?= $totals['Imported Spirit']['purchase'][$size] ?></td>
   <?php endforeach; ?>
 
-  <!-- Wines Closing -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['purchase'][$size] ?></td>
+  <!-- Spirits Closing -->
+  <?php foreach ($display_sizes_s as $size): ?>
+    <td><?= $totals['Spirits']['purchase'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Wine Imp Closing -->
   <?php foreach ($display_sizes_wine_imp as $size): ?>
     <td><?= $totals['Wine Imp']['purchase'][$size] ?></td>
+  <?php endforeach; ?>
+
+  <!-- Wines Closing -->
+  <?php foreach ($display_sizes_w as $size): ?>
+    <td><?= $totals['Wines']['purchase'][$size] ?></td>
   <?php endforeach; ?>
 
   <!-- Fermented Beer Closing -->

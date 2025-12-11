@@ -20,10 +20,10 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $purchaseId = $_GET['id'];
 
 // ---- Fetch existing purchase data ----
-$purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name 
-                 FROM tblpurchases p 
-                 LEFT JOIN tblsupplier s ON p.SUBCODE = s.CODE 
-                 WHERE p.ID = ? AND p.CompID = ?";
+$purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name
+              FROM tblpurchases p
+              LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+              WHERE p.ID = ? AND p.CompID = ?";
 $purchaseStmt = $conn->prepare($purchaseQuery);
 $purchaseStmt->bind_param("ii", $purchaseId, $companyId);
 $purchaseStmt->execute();
@@ -59,6 +59,25 @@ $sizeResult->close();
 // Function to clean item code by removing SCM prefix
 function cleanItemCode($code) {
     return preg_replace('/^SCM/i', '', trim($code));
+}
+
+// Function to format bottle size with proper units (ML/L) without spaces
+function formatBottleSize($sizeText) {
+    if (!$sizeText) return '';
+
+    // Extract numeric value
+    $match = preg_match('/(\d+(?:\.\d+)?)/', $sizeText, $matches);
+    if (!$match) return $sizeText;
+
+    $sizeNum = floatval($matches[1]);
+
+    // If 1000 or more, display as L, otherwise as ML
+    if ($sizeNum >= 1000) {
+        $liters = $sizeNum / 1000;
+        return $liters == intval($liters) ? $liters . 'L' : number_format($liters, 1) . 'L';
+    } else {
+        return $sizeNum . 'ML';
+    }
 }
 
 // Function to check if a month is archived
@@ -848,14 +867,33 @@ document.addEventListener('DOMContentLoaded', function() {
     initEventListeners();
 });
 
+// Function to format bottle size with proper units (ML/L) without spaces
+function formatBottleSize(sizeText) {
+    if (!sizeText) return '';
+
+    // Extract numeric value
+    const match = sizeText.toString().match(/(\d+(?:\.\d+)?)/);
+    if (!match) return sizeText;
+
+    const sizeNum = parseFloat(match[1]);
+
+    // If 1000 or more, display as L, otherwise as ML
+    if (sizeNum >= 1000) {
+        const liters = sizeNum / 1000;
+        return liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+    } else {
+        return `${sizeNum}ML`;
+    }
+}
+
 // Function to calculate B.L. (size in ML * total bottles / 1000)
 function calculateBL(sizeText, totalBottles) {
     if (!sizeText || !totalBottles) return 0;
-    
+
     // Extract numeric value from size (e.g., "500 ML" → 500)
     const sizeMatch = sizeText.match(/(\d+)/);
     if (!sizeMatch) return 0;
-    
+
     const sizeML = parseInt(sizeMatch[1]);
     return (sizeML * totalBottles) / 1000; // Convert to liters
 }
@@ -890,43 +928,25 @@ function updateRowCalculations(row) {
 function initializeSizeTable() {
     const $headers = $('#sizeHeaders');
     const $values = $('#sizeValues');
-    
+
     $headers.empty();
     $values.empty();
-    
-    // Group sizes into logical categories for better display (same as purchases.php)
-    const smallSizes = distinctSizes.filter(size => size <= 375);
-    const mediumSizes = distinctSizes.filter(size => size > 375 && size <= 1000);
-    const largeSizes = distinctSizes.filter(size => size > 1000);
-    
-    // Add headers for small sizes
-    smallSizes.forEach(size => {
-        $headers.append(`<th>${size} ML</th>`);
-        $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
-    });
-    
-    // Add separator if we have both small and medium sizes
-    if (smallSizes.length > 0 && mediumSizes.length > 0) {
-        $headers.append('<th class="size-separator">|</th>');
-        $values.append('<td class="size-separator">|</td>');
-    }
-    
-    // Add headers for medium sizes
-    mediumSizes.forEach(size => {
-        $headers.append(`<th>${size} ML</th>`);
-        $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
-    });
-    
-    // Add separator if we have both medium and large sizes
-    if (mediumSizes.length > 0 && largeSizes.length > 0) {
-        $headers.append('<th class="size-separator">|</th>');
-        $values.append('<td class="size-separator">|</td>');
-    }
-    
-    // Add headers for large sizes (display in liters for better readability)
-    largeSizes.forEach(size => {
-        const sizeInLiters = size >= 1000 ? `${size/1000}L` : `${size}ML`;
-        $headers.append(`<th>${sizeInLiters}</th>`);
+
+    // Sort sizes in descending order (largest first)
+    const sortedSizes = distinctSizes.sort((a, b) => b - a);
+
+    // Add headers for all sizes in descending order
+    sortedSizes.forEach(size => {
+        // Format size display with proper units
+        let displaySize;
+        if (size >= 1000) {
+            const liters = size / 1000;
+            displaySize = liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+        } else {
+            displaySize = `${size}ML`;
+        }
+
+        $headers.append(`<th>${displaySize}</th>`);
         $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
     });
 }
@@ -1078,8 +1098,8 @@ function addItemToTable(existingItem = null) {
                    value="${itemData.ItemName}" readonly>
         </td>
         <td>
-            <input type="text" class="form-control form-control-sm item-size" name="items[${itemCounter}][size]" 
-                   value="${itemData.Size}" readonly>
+            <input type="text" class="form-control form-control-sm item-size" name="items[${itemCounter}][size]"
+                   value="${formatBottleSize(itemData.Size)}" readonly>
         </td>
         <td>
             <input type="number" class="form-control form-control-sm item-cases" name="items[${itemCounter}][cases]" 
@@ -1200,7 +1220,7 @@ function initItemEventListeners(row, index) {
                     nameInput.value = item.DETAILS;
                     
                     // Set size from item group
-                    sizeInput.value = item.ITEM_GROUP || '';
+                    sizeInput.value = formatBottleSize(item.ITEM_GROUP || '');
                     
                     // Set case rate from purchase price
                     caseRateInput.value = item.PPRICE || 0;

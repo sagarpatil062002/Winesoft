@@ -21,6 +21,11 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php"; // MySQLi connection in $conn
 include_once "stock_functions.php";
 
+// Generate form token to prevent duplicate submissions
+if (!isset($_SESSION['form_token'])) {
+    $_SESSION['form_token'] = bin2hex(random_bytes(32));
+}
+
 // Get company ID and stock column names
 $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID'];
@@ -62,142 +67,44 @@ if ($customerResult) {
     echo "Error fetching customers: " . $conn->error;
 }
 
-// Handle customer creation and selection in one field
+// Initialize sale items session if not exists
+if (!isset($_SESSION['sale_items'])) {
+    $_SESSION['sale_items'] = [];
+    $_SESSION['sale_count'] = 0;
+    $_SESSION['current_focus_index'] = -1;
+}
+
+// Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Handle customer selection/creation
-    if (isset($_POST['customer_field'])) {
-        $customerField = trim($_POST['customer_field']);
-        
-        if (!empty($customerField)) {
-            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
-            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
-                // Extract customer name (remove "new:" prefix if present)
-                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
-                
-                if (!empty($customerName)) {
-                    // Get the next available LCODE for GCODE=32
-                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
-                    $maxResult = $conn->query($maxCodeQuery);
-                    $maxCode = 1;
-                    if ($maxResult && $maxResult->num_rows > 0) {
-                        $maxData = $maxResult->fetch_assoc();
-                        $maxCode = $maxData['max_code'] + 1;
-                    }
-                    
-                    // Insert new customer
-                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
-                    $stmt = $conn->prepare($insertQuery);
-                    $stmt->bind_param("is", $maxCode, $customerName);
-                    
-                    if ($stmt->execute()) {
-                        $_SESSION['selected_customer'] = $maxCode;
-                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
-                        
-                        // Refresh customers list
-                        $customerResult = $conn->query($customerQuery);
-                        $customers = [];
-                        if ($customerResult) {
-                            while ($row = $customerResult->fetch_assoc()) {
-                                $customers[$row['LCODE']] = $row['LHEAD'];
-                            }
-                        }
-                    } else {
-                        $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
-                    }
-                    $stmt->close();
-                }
-            } else {
-                // It's an existing customer code
-                $customerCode = intval($customerField);
-                if (array_key_exists($customerCode, $customers)) {
-                    $_SESSION['selected_customer'] = $customerCode;
-                    $_SESSION['success_message'] = "Customer selected successfully!";
-                } else {
-                    $_SESSION['error_message'] = "Invalid customer code!";
-                }
-            }
-        } else {
-            // Empty field means walk-in customer
-            $_SESSION['selected_customer'] = '';
-            $_SESSION['success_message'] = "Walk-in customer selected!";
-        }
-        
-        // Redirect to avoid form resubmission
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    // Handle adding item from search results
-    if (isset($_POST['add_from_search'])) {
-        $item_code = $_POST['item_code'];
-        $quantity = intval($_POST['quantity']);
-        
-        // Fetch item details with license restriction check
-        if (!empty($allowed_classes)) {
-            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
-                          FROM tblitemmaster 
-                          WHERE CODE = ? 
-                          AND CLASS IN ($class_placeholders)
-                          LIMIT 1";
-            $item_stmt = $conn->prepare($item_query);
-            
-            // Bind parameters: item code + all allowed classes
-            $params = array_merge([$item_code], $allowed_classes);
-            $types = str_repeat('s', count($params));
-            $item_stmt->bind_param($types, ...$params);
-        } else {
-            // If no classes allowed, show empty result
-            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
-                          FROM tblitemmaster 
-                          WHERE 1 = 0
-                          LIMIT 1";
-            $item_stmt = $conn->prepare($item_query);
-        }
-        
-        $item_stmt->execute();
-        $item_result = $item_stmt->get_result();
-        
-        if ($item_result->num_rows > 0) {
-            $item_data = $item_result->fetch_assoc();
-            
-            // Generate unique ID for this specific item entry
-            $unique_id = uniqid();
-            
-            // Add new item to sale
-            $_SESSION['sale_items'][] = [
-                'id' => $unique_id,
-                'code' => $item_data['CODE'],
-                'name' => $item_data['DETAILS'],
-                'size' => $item_data['DETAILS2'],
-                'price' => floatval($item_data['RPRICE']),
-                'quantity' => $quantity
-            ];
-            
-            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
-            $_SESSION['last_added_item'] = $item_data['DETAILS'];
-            
-            // Auto-save after 10 items
-            if ($_SESSION['sale_count'] >= 10) {
-                processSale();
-                $_SESSION['sale_items'] = [];
-                $_SESSION['sale_count'] = 0;
-                $_SESSION['current_focus_index'] = -1;
-                $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
-            }
-        } else {
-            $_SESSION['error_message'] = "Item not found or not allowed for your license type!";
-        }
-        $item_stmt->close();
-        
-        // Redirect to avoid form resubmission
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
     // Handle adding item to sale
     if (isset($_POST['add_item'])) {
+        // Check form token to prevent duplicate submissions
+        if (!isset($_POST['form_token']) || $_POST['form_token'] !== $_SESSION['form_token']) {
+            $_SESSION['error_message'] = "Invalid form submission. Please try again.";
+            header("Location: barcode_sale.php");
+            exit;
+        }
+        
+        // Prevent duplicate submissions using session token - REDUCED TIMEOUT FROM 2s to 0.5s
         $item_code = $_POST['item_code'];
+        $tokenKey = 'last_item_' . $item_code . '_' . time();
+        
+        // If we processed this same item within last 0.5 seconds, skip (reduced from 2 seconds)
+        if (isset($_SESSION['last_item_processed']) && 
+            $_SESSION['last_item_processed']['code'] == $item_code &&
+            (time() - $_SESSION['last_item_processed']['time']) < 0.5) {
+            
+            $_SESSION['error_message'] = "Item already being processed. Please wait.";
+            header("Location: barcode_sale.php");
+            exit;
+        }
+        
+        // Store processing info
+        $_SESSION['last_item_processed'] = [
+            'code' => $item_code,
+            'time' => time()
+        ];
+        
         $quantity = intval($_POST['quantity']);
         
         // Fetch item details with license restriction check - search by BARCODE first, then by CODE
@@ -229,47 +136,239 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($item_result->num_rows > 0) {
             $item_data = $item_result->fetch_assoc();
             
-            // Generate unique ID for this specific item entry
-            $unique_id = uniqid();
+            // Check stock availability BEFORE adding item
+            $stock_check_query = "SELECT COALESCE($current_stock_column, 0) as stock
+                                  FROM tblitem_stock
+                                  WHERE ITEM_CODE = ?
+                                  AND (FIN_YEAR = ? OR FIN_YEAR = '0000')
+                                  ORDER BY FIN_YEAR DESC LIMIT 1";
+            $stock_check_stmt = $conn->prepare($stock_check_query);
+            $stock_check_stmt->bind_param("ss", $item_data['CODE'], $fin_year_id);
+            $stock_check_stmt->execute();
+            $stock_check_result = $stock_check_stmt->get_result();
             
-            // Add new item to sale (always as separate record)
-            $_SESSION['sale_items'][] = [
-                'id' => $unique_id,
-                'code' => $item_data['CODE'],
-                'name' => $item_data['DETAILS'],
-                'size' => $item_data['DETAILS2'],
-                'price' => floatval($item_data['RPRICE']),
-                'quantity' => $quantity
-            ];
+            $current_stock = 0;
+            if ($stock_check_result->num_rows > 0) {
+                $stock_data = $stock_check_result->fetch_assoc();
+                $current_stock = floatval($stock_data['stock']);
+            }
+            $stock_check_stmt->close();
             
-            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
-            
-            // Auto-save after 10 items
-            if ($_SESSION['sale_count'] >= 10) {
-                processSale();
-                $_SESSION['sale_items'] = [];
-                $_SESSION['sale_count'] = 0;
-                $_SESSION['current_focus_index'] = -1;
-                $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+            // Check if there's ANY stock available
+            if ($current_stock <= 0) {
+                $_SESSION['error_message'] = "No stock available for item '{$item_data['DETAILS']}'!";
             } else {
-                // No success message for individual item addition - just add to session
-                $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                // Count how many of this item are already in the sale
+                $total_quantity_in_sale = 0;
+                if (isset($_SESSION['sale_items'])) {
+                    foreach ($_SESSION['sale_items'] as $item) {
+                        if ($item['code'] === $item_data['CODE']) {
+                            $total_quantity_in_sale += $item['quantity'];
+                        }
+                    }
+                }
+                
+                // Check if adding this new item would exceed available stock
+                $total_requested = $total_quantity_in_sale + $quantity;
+                
+                if ($total_requested > $current_stock) {
+                    $_SESSION['error_message'] = "Insufficient stock for item '{$item_data['DETAILS']}'. Available: $current_stock, Already in sale: $total_quantity_in_sale";
+                } else {
+                    // Generate unique ID for this specific item entry
+                    $unique_id = uniqid() . '_' . time() . '_' . mt_rand(1000, 9999);
+                    
+                    // Add new item to sale (ALWAYS as separate record, even if same item)
+                    $_SESSION['sale_items'][] = [
+                        'id' => $unique_id,
+                        'code' => $item_data['CODE'],
+                        'name' => $item_data['DETAILS'],
+                        'size' => $item_data['DETAILS2'],
+                        'price' => floatval($item_data['RPRICE']),
+                        'quantity' => $quantity,
+                        'current_stock' => $current_stock // Store current stock for display
+                    ];
+                    
+                    $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+                    
+                    // Auto-save after 10 items
+                    if ($_SESSION['sale_count'] >= 10) {
+                        processSale();
+                        $_SESSION['sale_items'] = [];
+                        $_SESSION['sale_count'] = 0;
+                        $_SESSION['current_focus_index'] = -1;
+                        $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+                    } else {
+                        // No success message for individual item addition - just add to session
+                        $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                    }
+                }
             }
         } else {
             $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found or not allowed for your license type!";
         }
         $item_stmt->close();
-
+        
+        // Regenerate token after successful processing
+        $_SESSION['form_token'] = bin2hex(random_bytes(32));
+        
         // Redirect to avoid form resubmission
         header("Location: barcode_sale.php");
         exit;
     }
-
+    
+    // Handle adding item from search results
+    if (isset($_POST['add_from_search'])) {
+        // Check form token
+        if (!isset($_POST['form_token']) || $_POST['form_token'] !== $_SESSION['form_token']) {
+            $_SESSION['error_message'] = "Invalid form submission. Please try again.";
+            header("Location: barcode_sale.php");
+            exit;
+        }
+        
+        $item_code = $_POST['item_code'];
+        $quantity = intval($_POST['quantity']);
+        
+        // Prevent duplicate submissions using session token - REDUCED TIMEOUT FROM 2s to 0.5s
+        $tokenKey = 'last_item_' . $item_code . '_' . time();
+        
+        // If we processed this same item within last 0.5 seconds, skip (reduced from 2 seconds)
+        if (isset($_SESSION['last_item_processed']) && 
+            $_SESSION['last_item_processed']['code'] == $item_code &&
+            (time() - $_SESSION['last_item_processed']['time']) < 0.5) {
+            
+            $_SESSION['error_message'] = "Item already being processed. Please wait.";
+            header("Location: barcode_sale.php");
+            exit;
+        }
+        
+        // Store processing info
+        $_SESSION['last_item_processed'] = [
+            'code' => $item_code,
+            'time' => time()
+        ];
+        
+        // Fetch item details with license restriction check
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE CODE = ? 
+                          AND CLASS IN ($class_placeholders)
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+            
+            // Bind parameters: item code + all allowed classes
+            $params = array_merge([$item_code], $allowed_classes);
+            $types = str_repeat('s', count($params));
+            $item_stmt->bind_param($types, ...$params);
+        } else {
+            // If no classes allowed, show empty result
+            $item_query = "SELECT CODE, DETAILS, DETAILS2, RPRICE, BARCODE, CLASS 
+                          FROM tblitemmaster 
+                          WHERE 1 = 0
+                          LIMIT 1";
+            $item_stmt = $conn->prepare($item_query);
+        }
+        
+        $item_stmt->execute();
+        $item_result = $item_stmt->get_result();
+        
+        if ($item_result->num_rows > 0) {
+            $item_data = $item_result->fetch_assoc();
+            
+            // Check stock availability BEFORE adding
+            $stock_check_query = "SELECT COALESCE($current_stock_column, 0) as stock
+                                  FROM tblitem_stock
+                                  WHERE ITEM_CODE = ?
+                                  AND (FIN_YEAR = ? OR FIN_YEAR = '0000')
+                                  ORDER BY FIN_YEAR DESC LIMIT 1";
+            $stock_check_stmt = $conn->prepare($stock_check_query);
+            $stock_check_stmt->bind_param("ss", $item_data['CODE'], $fin_year_id);
+            $stock_check_stmt->execute();
+            $stock_check_result = $stock_check_stmt->get_result();
+            
+            $current_stock = 0;
+            if ($stock_check_result->num_rows > 0) {
+                $stock_data = $stock_check_result->fetch_assoc();
+                $current_stock = floatval($stock_data['stock']);
+            }
+            $stock_check_stmt->close();
+            
+            // Check if there's ANY stock available
+            if ($current_stock <= 0) {
+                $_SESSION['error_message'] = "No stock available for item '{$item_data['DETAILS']}'!";
+            } else {
+                // Count how many of this item are already in the sale
+                $total_quantity_in_sale = 0;
+                if (isset($_SESSION['sale_items'])) {
+                    foreach ($_SESSION['sale_items'] as $item) {
+                        if ($item['code'] === $item_data['CODE']) {
+                            $total_quantity_in_sale += $item['quantity'];
+                        }
+                    }
+                }
+                
+                // Check if adding this new item would exceed available stock
+                $total_requested = $total_quantity_in_sale + $quantity;
+                
+                if ($total_requested > $current_stock) {
+                    $_SESSION['error_message'] = "Insufficient stock for item '{$item_data['DETAILS']}'. Available: $current_stock, Already in sale: $total_quantity_in_sale";
+                } else {
+                    // Generate unique ID for this specific item entry
+                    $unique_id = uniqid() . '_' . time() . '_' . mt_rand(1000, 9999);
+                    
+                    // Add new item to sale (always as separate record)
+                    $_SESSION['sale_items'][] = [
+                        'id' => $unique_id,
+                        'code' => $item_data['CODE'],
+                        'name' => $item_data['DETAILS'],
+                        'size' => $item_data['DETAILS2'],
+                        'price' => floatval($item_data['RPRICE']),
+                        'quantity' => $quantity,
+                        'current_stock' => $current_stock
+                    ];
+                    
+                    $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+                    $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                    
+                    // Auto-save after 10 items
+                    if ($_SESSION['sale_count'] >= 10) {
+                        processSale();
+                        $_SESSION['sale_items'] = [];
+                        $_SESSION['sale_count'] = 0;
+                        $_SESSION['current_focus_index'] = -1;
+                        $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+                    }
+                }
+            }
+        } else {
+            $_SESSION['error_message'] = "Item not found or not allowed for your license type!";
+        }
+        $item_stmt->close();
+        
+        // Regenerate token
+        $_SESSION['form_token'] = bin2hex(random_bytes(32));
+        
+        // Redirect to avoid form resubmission
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
     // Handle adding multiple items from pending barcodes
     if (isset($_POST['add_multiple_items'])) {
+        // Check form token
+        if (!isset($_POST['form_token']) || $_POST['form_token'] !== $_SESSION['form_token']) {
+            $_SESSION['error_message'] = "Invalid form submission. Please try again.";
+            header("Location: barcode_sale.php");
+            exit;
+        }
+        
         $barcodes = json_decode($_POST['barcodes'], true);
         foreach ($barcodes as $item_code) {
             $quantity = 1; // Default quantity for scanned barcodes
+
+            // IMPORTANT: NO DUPLICATE PREVENTION HERE - we want to process each scan separately
+            // even if they're the same barcode
 
             // Fetch item details with license restriction check - search by BARCODE first, then by CODE
             if (!empty($allowed_classes)) {
@@ -299,32 +398,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($item_result->num_rows > 0) {
                 $item_data = $item_result->fetch_assoc();
+                
+                // Check stock availability BEFORE adding
+                $stock_check_query = "SELECT COALESCE($current_stock_column, 0) as stock
+                                      FROM tblitem_stock
+                                      WHERE ITEM_CODE = ?
+                                      AND (FIN_YEAR = ? OR FIN_YEAR = '0000')
+                                      ORDER BY FIN_YEAR DESC LIMIT 1";
+                $stock_check_stmt = $conn->prepare($stock_check_query);
+                $stock_check_stmt->bind_param("ss", $item_data['CODE'], $fin_year_id);
+                $stock_check_stmt->execute();
+                $stock_check_result = $stock_check_stmt->get_result();
+                
+                $current_stock = 0;
+                if ($stock_check_result->num_rows > 0) {
+                    $stock_data = $stock_check_result->fetch_assoc();
+                    $current_stock = floatval($stock_data['stock']);
+                }
+                $stock_check_stmt->close();
+                
+                // Check if there's ANY stock available
+                if ($current_stock > 0) {
+                    // Count how many of this item are already in the sale
+                    $total_quantity_in_sale = 0;
+                    if (isset($_SESSION['sale_items'])) {
+                        foreach ($_SESSION['sale_items'] as $item) {
+                            if ($item['code'] === $item_data['CODE']) {
+                                $total_quantity_in_sale += $item['quantity'];
+                            }
+                        }
+                    }
+                    
+                    // Check if adding this new item would exceed available stock
+                    $total_requested = $total_quantity_in_sale + $quantity;
+                    
+                    if ($total_requested <= $current_stock) {
+                        // Generate unique ID for this specific item entry
+                        $unique_id = uniqid() . '_' . time() . '_' . mt_rand(1000, 9999);
 
-                // Generate unique ID for this specific item entry
-                $unique_id = uniqid();
+                        // Add new item to sale (always as separate record)
+                        $_SESSION['sale_items'][] = [
+                            'id' => $unique_id,
+                            'code' => $item_data['CODE'],
+                            'name' => $item_data['DETAILS'],
+                            'size' => $item_data['DETAILS2'],
+                            'price' => floatval($item_data['RPRICE']),
+                            'quantity' => $quantity,
+                            'current_stock' => $current_stock
+                        ];
 
-                // Add new item to sale (always as separate record)
-                $_SESSION['sale_items'][] = [
-                    'id' => $unique_id,
-                    'code' => $item_data['CODE'],
-                    'name' => $item_data['DETAILS'],
-                    'size' => $item_data['DETAILS2'],
-                    'price' => floatval($item_data['RPRICE']),
-                    'quantity' => $quantity
-                ];
+                        $_SESSION['sale_count'] = count($_SESSION['sale_items']);
 
-                $_SESSION['sale_count'] = count($_SESSION['sale_items']);
-
-                // Auto-save after 10 items
-                if ($_SESSION['sale_count'] >= 10) {
-                    processSale();
-                    $_SESSION['sale_items'] = [];
-                    $_SESSION['sale_count'] = 0;
-                    $_SESSION['current_focus_index'] = -1;
-                    $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+                        // Auto-save after 10 items
+                        if ($_SESSION['sale_count'] >= 10) {
+                            processSale();
+                            $_SESSION['sale_items'] = [];
+                            $_SESSION['sale_count'] = 0;
+                            $_SESSION['current_focus_index'] = -1;
+                            $_SESSION['success_message'] = "Sale processed automatically after 10 items! Starting new sale.";
+                        } else {
+                            // No success message for individual item addition
+                            $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                        }
+                    } else {
+                        $_SESSION['error_message'] = "Insufficient stock for item '{$item_data['DETAILS']}'. Available: $current_stock, Already in sale: $total_quantity_in_sale";
+                    }
                 } else {
-                    // No success message for individual item addition
-                    $_SESSION['last_added_item'] = $item_data['DETAILS'];
+                    $_SESSION['error_message'] = "No stock available for item '{$item_data['DETAILS']}'!";
                 }
             } else {
                 $_SESSION['error_message'] = "Item with barcode/code '$item_code' not found or not allowed for your license type!";
@@ -332,6 +472,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $item_stmt->close();
         }
 
+        // Regenerate token
+        $_SESSION['form_token'] = bin2hex(random_bytes(32));
+        
         // Redirect to avoid form resubmission
         header("Location: barcode_sale.php");
         exit;
@@ -343,10 +486,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: barcode_sale.php");
         exit;
     }
+    
+    // Handle quantity updates with + and - buttons
+    if (isset($_POST['update_quantity'])) {
+        $item_id = $_POST['item_id'];
+        $new_quantity = intval($_POST['quantity']);
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                // Check if new quantity exceeds available stock
+                if ($new_quantity > $item['current_stock']) {
+                    $_SESSION['error_message'] = "Cannot update quantity to $new_quantity. Available stock: {$item['current_stock']}";
+                } else {
+                    $_SESSION['sale_items'][$index]['quantity'] = $new_quantity;
+                }
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle quantity increment
+    if (isset($_POST['increment_quantity'])) {
+        $item_id = $_POST['item_id'];
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                $new_quantity = $item['quantity'] + 1;
+                if ($new_quantity > $item['current_stock']) {
+                    $_SESSION['error_message'] = "Cannot increase quantity. Available stock: {$item['current_stock']}";
+                } else {
+                    $_SESSION['sale_items'][$index]['quantity'] = $new_quantity;
+                }
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    // Handle quantity decrement
+    if (isset($_POST['decrement_quantity'])) {
+        $item_id = $_POST['item_id'];
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                if ($_SESSION['sale_items'][$index]['quantity'] > 1) {
+                    $_SESSION['sale_items'][$index]['quantity'] -= 1;
+                }
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    if (isset($_POST['remove_item'])) {
+        $item_id = $_POST['item_id'];
+        
+        foreach ($_SESSION['sale_items'] as $index => $item) {
+            if ($item['id'] === $item_id) {
+                unset($_SESSION['sale_items'][$index]);
+                $_SESSION['sale_items'] = array_values($_SESSION['sale_items']);
+                $_SESSION['sale_count'] = count($_SESSION['sale_items']);
+                
+                if ($_SESSION['current_focus_index'] >= $index) {
+                    $_SESSION['current_focus_index'] = max(-1, $_SESSION['current_focus_index'] - 1);
+                }
+                break;
+            }
+        }
+        
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    if (isset($_POST['process_sale'])) {
+        processSale();
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    if (isset($_POST['preview_bill'])) {
+        $_SESSION['preview_bill_data'] = prepareBillData();
+        header("Location: barcode_sale.php#preview");
+        exit;
+    }
+    
+    if (isset($_POST['clear_sale'])) {
+        $_SESSION['sale_items'] = [];
+        $_SESSION['sale_count'] = 0;
+        $_SESSION['current_focus_index'] = -1;
+        unset($_SESSION['preview_bill_data']);
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    if (isset($_POST['clear_preview'])) {
+        unset($_SESSION['preview_bill_data']);
+        header("Location: barcode_sale.php");
+        exit;
+    }
+    
+    if (isset($_POST['set_focus_index'])) {
+        $_SESSION['current_focus_index'] = intval($_POST['set_focus_index']);
+        header("Location: barcode_sale.php");
+        exit;
+    }
 }
-
-// Get selected customer from session if available
-$selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
 
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
@@ -387,116 +638,8 @@ if (!empty($params)) {
     $search_items = $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Initialize sale items session if not exists
-if (!isset($_SESSION['sale_items'])) {
-    $_SESSION['sale_items'] = [];
-    $_SESSION['sale_count'] = 0;
-    $_SESSION['current_focus_index'] = -1;
-}
-
-// Handle form submissions for items
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Handle quantity updates with + and - buttons
-    if (isset($_POST['update_quantity'])) {
-        $item_id = $_POST['item_id'];
-        $new_quantity = intval($_POST['quantity']);
-        
-        foreach ($_SESSION['sale_items'] as $index => $item) {
-            if ($item['id'] === $item_id) {
-                $_SESSION['sale_items'][$index]['quantity'] = $new_quantity;
-                break;
-            }
-        }
-        
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    // Handle quantity increment
-    if (isset($_POST['increment_quantity'])) {
-        $item_id = $_POST['item_id'];
-        
-        foreach ($_SESSION['sale_items'] as $index => $item) {
-            if ($item['id'] === $item_id) {
-                $_SESSION['sale_items'][$index]['quantity'] += 1;
-                break;
-            }
-        }
-        
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    // Handle quantity decrement
-    if (isset($_POST['decrement_quantity'])) {
-        $item_id = $_POST['item_id'];
-        
-        foreach ($_SESSION['sale_items'] as $index => $item) {
-            if ($item['id'] === $item_id) {
-                if ($_SESSION['sale_items'][$index]['quantity'] > 1) {
-                    $_SESSION['sale_items'][$index]['quantity'] -= 1;
-                }
-                break;
-            }
-        }
-        
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-   if (isset($_POST['remove_item'])) {
-    $item_id = $_POST['item_id'];
-    
-    foreach ($_SESSION['sale_items'] as $index => $item) {
-        if ($item['id'] === $item_id) {
-            unset($_SESSION['sale_items'][$index]);
-            $_SESSION['sale_items'] = array_values($_SESSION['sale_items']);
-            $_SESSION['sale_count'] = count($_SESSION['sale_items']);
-            
-            if ($_SESSION['current_focus_index'] >= $index) {
-                $_SESSION['current_focus_index'] = max(-1, $_SESSION['current_focus_index'] - 1);
-            }
-            break;
-        }
-    }
-    
-    header("Location: barcode_sale.php");
-    exit;
-}
-    
-    if (isset($_POST['process_sale'])) {
-        processSale();
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    if (isset($_POST['preview_bill'])) {
-        $_SESSION['preview_bill_data'] = prepareBillData();
-        header("Location: barcode_sale.php#preview");
-        exit;
-    }
-    
-    if (isset($_POST['clear_sale'])) {
-        $_SESSION['sale_items'] = [];
-        $_SESSION['sale_count'] = 0;
-        $_SESSION['current_focus_index'] = -1;
-        unset($_SESSION['preview_bill_data']);
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    if (isset($_POST['clear_preview'])) {
-        unset($_SESSION['preview_bill_data']);
-        header("Location: barcode_sale.php");
-        exit;
-    }
-    
-    if (isset($_POST['set_focus_index'])) {
-        $_SESSION['current_focus_index'] = intval($_POST['set_focus_index']);
-        header("Location: barcode_sale.php");
-        exit;
-    }
-}
+// Get selected customer from session if available (for walk-in customers)
+$selectedCustomer = '';
 
 // Function to prepare bill data for preview with volume-based splitting and duplicate aggregation
 function prepareBillData() {
@@ -509,7 +652,7 @@ function prepareBillData() {
     $user_id = $_SESSION['user_id'];
     $mode = 'F';
     
-    // First aggregate duplicate items from session
+    // First aggregate duplicate items from session for bill generation
     $aggregated_session_items = [];
     foreach ($_SESSION['sale_items'] as $item) {
         $item_code = $item['code'];
@@ -617,7 +760,7 @@ function prepareBillData() {
         }
     }
     
-    $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';
+    $customer_name = 'Walk-in Customer';
     
     return [
         'customer_id' => $selectedCustomer,
@@ -944,6 +1087,7 @@ for ($i = 0; $i < $total_bills_needed; $i++) {
             unset($_SESSION['selected_customer']);
             unset($_SESSION['preview_bill_data']);
             unset($_SESSION['last_added_item']);
+            unset($_SESSION['last_item_processed']); // Clear processing lock
             
         } catch (Exception $e) {
             $conn->rollback();
@@ -1045,7 +1189,7 @@ function processSingleBill($bill, $conn, $comp_id, $current_stock_column, $openi
         updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
     }
     
-    $customer_name = !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : 'Walk-in Customer';
+    $customer_name = 'Walk-in Customer';
     
     return [
         'bill_no' => $bill_no,
@@ -1295,16 +1439,6 @@ if (!empty($_SESSION['sale_items'])) {
         margin-bottom: 15px;
     }
     
-    /* Customer field styling */
-    .customer-combined-field {
-        position: relative;
-    }
-    .customer-hint {
-        font-size: 0.875rem;
-        color: #6c757d;
-        margin-top: 5px;
-    }
-    
     /* Apply style.css styles specifically to the sale table */
     .sale-table .table-container {
         overflow-x: auto;
@@ -1345,6 +1479,25 @@ if (!empty($_SESSION['sale_items'])) {
 
     .sale-table .table-striped tbody tr:nth-child(odd) {
         background-color: rgba(0,0,0,0.02);
+    }
+    
+    /* Stock warning styles */
+    .stock-warning {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .stock-ok {
+        color: #28a745;
+    }
+    .stock-na {
+        color: #6c757d;
+    }
+    
+    /* Serial number column */
+    .serial-col {
+        width: 50px;
+        text-align: center;
+        font-weight: bold;
     }
   </style>
 </head>
@@ -1389,45 +1542,6 @@ if (!empty($_SESSION['sale_items'])) {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
-
-      <!-- Combined Customer Field -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0"><i class="fas fa-user"></i> Customer Information</h5>
-            </div>
-            <div class="card-body">
-              <form method="POST" id="customerForm">
-                <div class="customer-combined-field">
-                  <label for="customer_field" class="form-label">Select or Create Customer</label>
-                  <input type="text" 
-                         class="form-control" 
-                         id="customer_field" 
-                         name="customer_field" 
-                         list="customerOptions"
-                         placeholder="Type to search customers or type 'new: Customer Name' to create new"
-                         value="<?= !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : '' ?>">
-                  <datalist id="customerOptions">
-                    <option value="">Walk-in Customer</option>
-                    <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
-                    <?php endforeach; ?>
-                  </datalist>
-                  <div class="customer-hint">
-                    <i class="fas fa-info-circle"></i> 
-                    Select existing customer from dropdown or type "new: Customer Name" to create new customer. 
-                    Leave empty for walk-in customer.
-                  </div>
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">
-                  <i class="fas fa-save"></i> Save Customer Selection
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Auto-save notice -->
       <?php if (isset($_SESSION['sale_count']) && $_SESSION['sale_count'] >= 9): ?>
@@ -1513,6 +1627,7 @@ if (!empty($_SESSION['sale_items'])) {
             <table class="styled-table table-striped">
               <thead>
                 <tr>
+                  <th class="serial-col">#</th>
                   <th>Code</th>
                   <th>Item Name</th>
                   <th>Size</th>
@@ -1526,12 +1641,24 @@ if (!empty($_SESSION['sale_items'])) {
               <tbody>
                 <?php 
                 $total_amount = 0;
+                $item_counter = 1;
                 foreach ($_SESSION['sale_items'] as $index => $item): 
                   $item_amount = $item['price'] * $item['quantity'];
                   $total_amount += $item_amount;
                   $is_focused = $index == $_SESSION['current_focus_index'];
+                  
+                  // Determine stock display class
+                  $stock_class = 'stock-na';
+                  if (isset($item['current_stock'])) {
+                      if ($item['quantity'] > $item['current_stock']) {
+                          $stock_class = 'stock-warning';
+                      } else {
+                          $stock_class = 'stock-ok';
+                      }
+                  }
                 ?>
                   <tr id="item-row-<?= $index ?>" class="<?= $is_focused ? 'focused-row' : '' ?>">
+                    <td class="serial-col"><?= $item_counter ?></td>
                     <td><?= htmlspecialchars($item['code']) ?></td>
                     <td><?= htmlspecialchars($item['name']) ?></td>
                     <td><?= htmlspecialchars($item['size']) ?></td>
@@ -1552,14 +1679,19 @@ if (!empty($_SESSION['sale_items'])) {
                         <!-- Increment Button -->
                         <form method="POST" class="d-inline">
                           <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
-                          <button type="submit" name="increment_quantity" class="quantity-btn">
+                          <button type="submit" name="increment_quantity" class="quantity-btn" <?= isset($item['current_stock']) && $item['quantity'] >= $item['current_stock'] ? 'disabled' : '' ?>>
                             <i class="fas fa-plus"></i>
                           </button>
                         </form>
                       </div>
                     </td>
                     <td>₹<?= number_format($item_amount, 2) ?></td>
-                    <td><?= isset($item['current_stock']) ? $item['current_stock'] : 'N/A' ?></td>
+                    <td class="<?= $stock_class ?>">
+                      <?= isset($item['current_stock']) ? $item['current_stock'] : 'N/A' ?>
+                      <?php if (isset($item['current_stock']) && $item['quantity'] > $item['current_stock']): ?>
+                        <i class="fas fa-exclamation-triangle ms-1" title="Quantity exceeds available stock!"></i>
+                      <?php endif; ?>
+                    </td>
                     <td>
                       <form method="POST" style="display:inline;">
                         <input type="hidden" name="item_id" value="<?= $item['id'] ?>"> 
@@ -1569,11 +1701,13 @@ if (!empty($_SESSION['sale_items'])) {
                       </form>
                     </td>
                   </tr>
-                <?php endforeach; ?>
+                <?php 
+                $item_counter++;
+                endforeach; ?>
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="5" class="text-end"><strong>Total:</strong></td>
+                  <td colspan="6" class="text-end"><strong>Total:</strong></td>
                   <td><strong>₹<?= number_format($total_amount, 2) ?></strong></td>
                   <td colspan="2"></td>
                 </tr>
@@ -1692,9 +1826,11 @@ if (!empty($_SESSION['sale_items'])) {
   <input type="hidden" name="item_code" id="itemCodeInput">
   <input type="hidden" name="quantity" id="quantityInput" value="1">
   <input type="hidden" name="add_item" value="1">
+  <input type="hidden" name="form_token" value="<?= $_SESSION['form_token'] ?>">
 </form>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const barcodeInput = document.getElementById('barcodeInput');
@@ -1705,7 +1841,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const itemCodeInput = document.getElementById('itemCodeInput');
   const quantityInput = document.getElementById('quantityInput');
   const searchItems = document.querySelectorAll('.search-item');
-  const customerField = document.getElementById('customer_field');
 
   // Create a hidden form for ESC key processing
   const escForm = document.createElement('form');
@@ -1720,53 +1855,222 @@ document.addEventListener('DOMContentLoaded', function() {
   escForm.appendChild(escInput);
   document.body.appendChild(escForm);
 
+  // Create a simple lock mechanism to prevent duplicate submissions
+  let isProcessingScan = false;
+  let lastProcessedBarcode = '';
+  let lastProcessedTime = 0;
+  
+  // Flag to track if we've processed pending barcodes on this page load
+  let hasProcessedPending = false;
+
   // Focus on barcode input on page load
   barcodeInput.focus();
 
-  // Handle barcode scanning
-  barcodeInput.addEventListener('keydown', function(e) {
+  function processBarcodeScan() {
+    if (isProcessingScan) {
+      console.log('Already processing a scan, skipping...');
+      return;
+    }
+    
+    const barcode = barcodeInput.value.trim();
+    if (!barcode) return;
+    
+    // Prevent processing the same barcode within 500ms
+    const currentTime = Date.now();
+    if (barcode === lastProcessedBarcode && (currentTime - lastProcessedTime) < 500) {
+      console.log('Duplicate barcode detected, skipping...');
+      barcodeInput.value = '';
+      barcodeInput.focus();
+      return;
+    }
+    
+    // Lock the scanner
+    isProcessingScan = true;
+    lastProcessedBarcode = barcode;
+    lastProcessedTime = currentTime;
+    
+    // Disable input and button
+    barcodeInput.disabled = true;
+    scanBtn.disabled = true;
+    
+    // Update status
+    statusIndicator.className = 'status-indicator status-scanning';
+    statusText.textContent = 'Processing...';
+    
+    // Prepare form submission
+    itemCodeInput.value = barcode;
+    quantityInput.value = 1;
+    
+    // Clear input immediately
+    barcodeInput.value = '';
+    
+    // Add a small delay to ensure single submission
+    setTimeout(function() {
+      // Submit form
+      addItemForm.submit();
+      
+      // Re-enable after a longer delay to prevent accidental double-taps
+      setTimeout(function() {
+        isProcessingScan = false;
+        barcodeInput.disabled = false;
+        scanBtn.disabled = false;
+        statusIndicator.className = 'status-indicator status-ready';
+        statusText.textContent = 'Ready to scan';
+        barcodeInput.focus();
+      }, 1000); // Wait 1 second before allowing next scan
+    }, 300);
+  }
+
+  // Handle barcode scanning - with better event handling
+  function handleBarcodeScan(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleBarcodeInput();
-    }
-  });
-
-  scanBtn.addEventListener('click', handleBarcodeInput);
-
-  function handleBarcodeInput() {
-    const barcode = barcodeInput.value.trim();
-    if (barcode) {
-      // Simulate scanning
-      statusIndicator.className = 'status-indicator status-scanning';
-      statusText.textContent = 'Scanning...';
-      
-      setTimeout(() => {
-        // Add item to sale
-        itemCodeInput.value = barcode;
-        quantityInput.value = 1;
-        addItemForm.submit();
-        
-        // Clear the input after submission
-        barcodeInput.value = '';
-        
-        // Reset status after a delay
-        setTimeout(() => {
-          statusIndicator.className = 'status-indicator status-ready';
-          statusText.textContent = 'Ready to scan';
-        }, 1000);
-      }, 500);
+      e.stopPropagation();
+      processBarcodeScan();
     }
   }
+
+  // Remove any existing listeners first
+  barcodeInput.removeEventListener('keydown', handleBarcodeScan);
+  barcodeInput.addEventListener('keydown', handleBarcodeScan);
+
+  // Handle button click
+  scanBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    processBarcodeScan();
+  });
+
+  // Check for pending barcodes on page load
+  window.addEventListener('load', function() {
+    // Reset processing flag
+    isProcessingScan = false;
+    barcodeInput.disabled = false;
+    scanBtn.disabled = false;
+    barcodeInput.focus();
+    
+    // Process pending barcodes if any exist
+    processPendingBarcodesBatch();
+  });
+
+  // SIMPLE FUNCTION: Process all pending barcodes in sequence
+  function processPendingBarcodesBatch() {
+    // Check if we already processed pending barcodes in this session
+    if (hasProcessedPending) {
+      console.log('Already processed pending barcodes in this session');
+      return;
+    }
+    
+    let pendingBarcodes = JSON.parse(localStorage.getItem('pendingBarcodes') || '[]');
+    if (pendingBarcodes.length === 0) {
+      return;
+    }
+    
+    console.log('Found', pendingBarcodes.length, 'pending barcodes to process');
+    hasProcessedPending = true;
+    
+    // Show notification
+    showProcessedNotification(pendingBarcodes.length);
+    
+    // Create a form to submit ALL barcodes at once
+    const batchForm = document.createElement('form');
+    batchForm.method = 'POST';
+    batchForm.style.display = 'none';
+    
+    // Extract just the barcode values
+    const barcodeValues = pendingBarcodes.map(b => b.barcode);
+    
+    const barcodesInput = document.createElement('input');
+    barcodesInput.type = 'hidden';
+    barcodesInput.name = 'barcodes';
+    barcodesInput.value = JSON.stringify(barcodeValues);
+    
+    const formTokenInput = document.createElement('input');
+    formTokenInput.type = 'hidden';
+    formTokenInput.name = 'form_token';
+    formTokenInput.value = '<?= $_SESSION['form_token'] ?>';
+    
+    const addMultipleInput = document.createElement('input');
+    addMultipleInput.type = 'hidden';
+    addMultipleInput.name = 'add_multiple_items';
+    addMultipleInput.value = '1';
+    
+    batchForm.appendChild(barcodesInput);
+    batchForm.appendChild(formTokenInput);
+    batchForm.appendChild(addMultipleInput);
+    document.body.appendChild(batchForm);
+    
+    // Clear localStorage immediately
+    localStorage.removeItem('pendingBarcodes');
+    
+    // Submit the form after a short delay
+    setTimeout(() => {
+      console.log('Submitting batch form with', barcodeValues.length, 'barcodes');
+      batchForm.submit();
+    }, 1000);
+  }
+  
+  function showProcessedNotification(count) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #17a2b8;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 9999;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+      <i class="fas fa-sync-alt" style="font-size: 18px;"></i>
+      <div>
+        <strong>Adding ${count} scanned item(s)</strong><br>
+        <small>From other pages</small>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+      }
+    }, 5000);
+  }
+
+  // Prevent form double submission
+  addItemForm.addEventListener('submit', function(e) {
+    if (isProcessingScan) {
+      console.log('Form already submitting, preventing duplicate...');
+      e.preventDefault();
+      return false;
+    }
+  });
 
   // Handle search item clicks
   searchItems.forEach(item => {
     item.addEventListener('click', function() {
+      if (isProcessingScan) {
+        console.log('Already processing, skipping...');
+        return;
+      }
+      
       const code = this.getAttribute('data-code');
       const name = this.getAttribute('data-name');
-      const price = this.getAttribute('data-price');
-      const barcode = this.getAttribute('data-barcode');
       
       // Add item to sale
+      isProcessingScan = true;
       itemCodeInput.value = code;
       quantityInput.value = 1;
       addItemForm.submit();
@@ -1890,34 +2194,6 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('barcodeInput').focus();
     };
   <?php endif; ?>
-
-  // Load pending barcodes from localStorage on page load
-  window.addEventListener('load', function() {
-    let pendingBarcodes = JSON.parse(localStorage.getItem('pendingBarcodes') || '[]');
-    if (pendingBarcodes.length > 0) {
-      localStorage.removeItem('pendingBarcodes');
-
-      // Create form to submit multiple barcodes
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.style.display = 'none';
-
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'barcodes';
-      input.value = JSON.stringify(pendingBarcodes.map(item => item.barcode));
-
-      const actionInput = document.createElement('input');
-      actionInput.type = 'hidden';
-      actionInput.name = 'add_multiple_items';
-      actionInput.value = '1';
-
-      form.appendChild(input);
-      form.appendChild(actionInput);
-      document.body.appendChild(form);
-      form.submit();
-    }
-  });
 });
 </script>
 </body>
