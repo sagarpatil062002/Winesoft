@@ -9,13 +9,9 @@ ini_set('error_log', 'purchase_summary_ajax_debug.log');
 
 // Log the request
 error_log("=== PURCHASE SUMMARY AJAX DEBUG ===");
-error_log("Request Time: " . date('Y-m-d H:i:s'));
-error_log("GET Parameters: " . print_r($_GET, true));
-error_log("Session CompID: " . ($_SESSION['CompID'] ?? 'NOT SET'));
 
 // Check if required session variables exist
 if (!isset($_SESSION['CompID'])) {
-    error_log("Purchase Summary: No CompID in session");
     http_response_code(401);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Not authenticated']);
@@ -27,7 +23,6 @@ require_once "../config/db.php";
 
 // Check if database connection is successful
 if (!$conn) {
-    error_log("Purchase Summary: Database connection failed");
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Database connection failed']);
@@ -36,40 +31,93 @@ if (!$conn) {
 
 // Get parameters with validation
 $companyId = $_SESSION['CompID'];
-$mode = isset($_GET['mode']) ? $_GET['mode'] : 'ALL'; // Changed default to ALL
+$mode = isset($_GET['mode']) ? $_GET['mode'] : 'ALL';
 $fromDate = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $toDate = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 
 error_log("Purchase Summary Request: Company=$companyId, Mode=$mode, From=$fromDate, To=$toDate");
 
-// Initialize summary structure
-$purchaseSummary = [
-    'SPIRITS' => [],
-    'WINE' => [],
-    'FERMENTED BEER' => [],
-    'MILD BEER' => [],
-    'COUNTRY LIQUOR' => []
+// Initialize summary structure for TP-wise data
+$tpWiseSummary = [];
+
+// Categories in order: SPIRITS, WINE, FERMENTED BEER, MILD BEER
+$categorySizes = [
+    'SPIRITS' => [
+        '>1L',
+        '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', '330 ML',
+        '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
+    ],
+    'WINE' => [
+        '>1L',
+        '1L W', '750 W', '700 W', '500 W', '375 W', '330 W',
+        '250 W', '180 W', '100 W'
+    ],
+    'FERMENTED BEER' => [
+        '>1L',
+        '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+        '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+    ],
+    'MILD BEER' => [
+        '>1L',
+        '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+        '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+    ]
 ];
 
-// All possible sizes
-$allSizes = [
-    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+// Class to category mapping based on tblitemmaster CLASS field
+$classToCategory = [
+    // SPIRITS - Whisky, Brandy, Rum, Vodka, Gin, etc.
+    'W' => 'SPIRITS', // Whisky
+    'D' => 'SPIRITS', // Brandy
+    'R' => 'SPIRITS', // Rum
+    'V' => 'SPIRITS', // Vodka
+    'G' => 'SPIRITS', // Gin
+    'S' => 'SPIRITS', // Scotch
+    'I' => 'SPIRITS', // Imported Spirits
+    'O' => 'SPIRITS', // Other Spirits
+    'L' => 'SPIRITS', // Liquor
+    'P' => 'SPIRITS', // Port
+    'K' => 'SPIRITS', // Other spirits
+    
+    // WINE
+    'WINE' => 'WINE',
+    'WN' => 'WINE',
+    'VW' => 'WINE',
+    'V' => 'WINE',  // Sometimes V is used for wine
+    
+    // BEER
+    'M' => 'MILD BEER',    // Mild Beer
+    'F' => 'FERMENTED BEER', // Fermented Beer
+    'B' => 'FERMENTED BEER', // Beer
+    'BEER' => 'FERMENTED BEER',
+    
+    // Default to SPIRITS for unknown classes
+    '' => 'SPIRITS',
+    NULL => 'SPIRITS',
+    'UNKNOWN' => 'SPIRITS'
 ];
 
-// Initialize all sizes to 0 for each category
-foreach (array_keys($purchaseSummary) as $category) {
-    foreach ($allSizes as $size) {
-        $purchaseSummary[$category][$size] = 0;
+// Initialize all sizes to 0 for each TP number
+function initializeTPEntry($tpNo) {
+    global $categorySizes;
+    $entry = [
+        'tp_no' => $tpNo,
+        'tp_details' => [],
+        'categories' => []
+    ];
+    
+    foreach ($categorySizes as $category => $sizes) {
+        $entry['categories'][$category] = [];
+        foreach ($sizes as $size) {
+            $entry['categories'][$category][$size] = 0;
+        }
     }
+    
+    return $entry;
 }
 
-// DEBUG: Log initial summary structure
-error_log("Initialized summary structure with zeros");
-
 try {
-    // Query to get purchase details with item class from tblitemmaster
+    // Query to get purchase details with class from tblitemmaster
     $query = "
         SELECT 
             pd.ItemCode,
@@ -78,15 +126,21 @@ try {
             pd.Bottles,
             pd.BottlesPerCase,
             pd.ItemName,
+            pd.TotBott,
             p.ID as PurchaseID,
             p.DATE as PurchaseDate,
             p.PUR_FLAG,
-            im.CLASS as ItemClass
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
         FROM tblpurchasedetails pd
         INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
-        LEFT JOIN tblitemmaster im ON pd.ItemCode = im.CODE
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
         WHERE p.CompID = ?
         AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
     ";
     
     // Add PUR_FLAG condition if not 'ALL'
@@ -95,6 +149,8 @@ try {
     } else {
         $query .= " AND p.PUR_FLAG IN ('F', 'T', 'P', 'C')";
     }
+
+    $query .= " ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)";
 
     error_log("Executing query: " . $query);
     
@@ -121,62 +177,164 @@ try {
     }
 
     $processedItems = 0;
-    $rawData = [];
-    $classificationStats = [];
+    $tpNumbers = [];
+    $unclassifiedItems = [];
+    $missingItems = [];
     
     while ($row = $result->fetch_assoc()) {
-        $rawData[] = $row; // Store for debugging
+        // Get TP number - use AUTO_TPNO if TPNO is empty
+        $tpNo = !empty(trim($row['TP_NO'] ?? '')) ? trim($row['TP_NO']) : 'UNKNOWN';
         
-        // Use ItemClass from tblitemmaster to determine product type
-        $productType = getProductTypeFromClass($row['ItemClass']);
-        $volume = extractVolume($row['Size'], $row['ItemName']);
-        
-        // Track classification for debugging
-        $class = $row['ItemClass'] ?? 'NULL';
-        if (!isset($classificationStats[$class])) {
-            $classificationStats[$class] = 0;
+        if ($tpNo === 'UNKNOWN') {
+            continue; // Skip if no TPNO
         }
-        $classificationStats[$class]++;
         
-        // Calculate total quantity
-        $totalQty = 0;
-        $bottlesPerCase = $row['BottlesPerCase'] ?: 12; // Default to 12 if not set
+        if (!in_array($tpNo, $tpNumbers)) {
+            $tpNumbers[] = $tpNo;
+        }
         
-        if ($bottlesPerCase > 0) {
-            $totalQty = ($row['Cases'] * $bottlesPerCase) + $row['Bottles'];
+        // Initialize TP entry if not exists
+        if (!isset($tpWiseSummary[$tpNo])) {
+            $tpWiseSummary[$tpNo] = initializeTPEntry($tpNo);
+            $tpWiseSummary[$tpNo]['tp_details'] = [
+                'purchase_date' => $row['PurchaseDate'],
+                'pur_flag' => $row['PUR_FLAG']
+            ];
+        }
+        
+        // Get ItemClass from tblitemmaster
+        $itemClass = $row['ItemClass'] ?? 'UNKNOWN';
+        $itemName = $row['ItemName'] ?? '';
+        $itemCode = $row['ItemCode'] ?? '';
+        $itemDetails = $row['ItemDetails'] ?? '';
+        $itemDetails2 = $row['ItemDetails2'] ?? '';
+        
+        // Log item information for debugging
+        error_log("Item: {$itemName}, Code: {$itemCode}, Class: '{$itemClass}', Details: '{$itemDetails}', Details2: '{$itemDetails2}'");
+        
+        // Check if item was found in tblitemmaster
+        if ($itemClass === 'UNKNOWN') {
+            $missingItems[] = [
+                'item_code' => $itemCode,
+                'item_name' => $itemName
+            ];
+            error_log("WARNING: Item not found in tblitemmaster: {$itemCode} - {$itemName}");
+        }
+        
+        // Determine product category based on CLASS field
+        $productType = 'SPIRITS'; // Default
+        
+        // First, check direct mapping
+        if (isset($classToCategory[$itemClass])) {
+            $productType = $classToCategory[$itemClass];
         } else {
-            $totalQty = $row['Cases'] + $row['Bottles'];
+            // Check for patterns in class code
+            $itemClassUpper = strtoupper($itemClass);
+            
+            if (strpos($itemClassUpper, 'WINE') !== false || 
+                strpos($itemClassUpper, 'WN') !== false ||
+                strpos($itemClassUpper, 'VW') !== false) {
+                $productType = 'WINE';
+            } elseif (strpos($itemClassUpper, 'M') !== false) {
+                $productType = 'MILD BEER';
+            } elseif (strpos($itemClassUpper, 'F') !== false || 
+                      strpos($itemClassUpper, 'B') !== false ||
+                      strpos($itemClassUpper, 'BEER') !== false) {
+                $productType = 'FERMENTED BEER';
+            } else {
+                // Default to SPIRITS
+                $productType = 'SPIRITS';
+            }
+            
+            $unclassifiedItems[] = [
+                'item' => $itemName,
+                'code' => $itemCode,
+                'class' => $itemClass,
+                'assigned_category' => $productType
+            ];
         }
         
-        $volumeColumn = getVolumeColumn($volume);
+        // Extract volume from Size or ItemDetails2
+        $size = $row['Size'] ?? '';
+        $volume = extractVolumeFromSize($size, $itemDetails2, $itemName);
         
-        // DEBUG: Log each item processing
-        error_log("Item $processedItems: " . $row['ItemName']);
-        error_log("  - ItemCode: " . $row['ItemCode']);
-        error_log("  - Size: " . $row['Size']);
-        error_log("  - Class from tblitemmaster: " . ($row['ItemClass'] ?? 'NOT FOUND'));
-        error_log("  - Product Type: " . $productType);
-        error_log("  - Extracted Volume: " . $volume);
-        error_log("  - Volume Column: " . ($volumeColumn ?: 'NOT FOUND'));
-        error_log("  - Cases: " . $row['Cases'] . ", Bottles: " . $row['Bottles'] . ", BPC: " . $bottlesPerCase);
-        error_log("  - Total Qty: " . $totalQty);
-        error_log("  - PUR_FLAG: " . $row['PUR_FLAG']);
-        
-        if ($volumeColumn && isset($purchaseSummary[$productType]) && isset($purchaseSummary[$productType][$volumeColumn])) {
-            $purchaseSummary[$productType][$volumeColumn] += $totalQty;
-            error_log("  - ADDED to $productType -> $volumeColumn: +$totalQty");
-            $processedItems++;
+        // === FIXED: Calculate total bottles properly ===
+        // Check if TotBott column has valid value
+        if (isset($row['TotBott']) && $row['TotBott'] > 0) {
+            $totalQty = intval($row['TotBott']);
+            error_log("Using TotBott column: {$totalQty}");
         } else {
-            error_log("  - SKIPPED - Volume column not found or invalid product type");
+            // Calculate manually from Cases and Bottles
+            $cases = floatval($row['Cases'] ?? 0);
+            $bottles = intval($row['Bottles'] ?? 0);
+            $bottlesPerCase = intval($row['BottlesPerCase'] ?? 12);
+            
+            // Handle special case where BottlesPerCase is 0 or negative
+            if ($bottlesPerCase <= 0) {
+                $bottlesPerCase = 1; // Default to 1 if invalid
+                error_log("Warning: Invalid BottlesPerCase={$row['BottlesPerCase']}, using 1");
+            }
+            
+            // Calculate total bottles: (cases × bottles per case) + loose bottles
+            $totalQty = intval(round($cases * $bottlesPerCase)) + $bottles;
+            
+            // Log the calculation for debugging
+            error_log("Calculated manually: Cases={$cases}, Bottles={$bottles}, BPC={$bottlesPerCase}, Total={$totalQty}");
         }
-        error_log("  ---");
+        
+        // Get the column for this volume
+        $volumeColumn = getVolumeColumnForCategory($volume, $productType);
+        
+        // Log categorization for debugging
+        error_log("Categorized as: {$productType}, Volume: {$volume}, Column: {$volumeColumn}, Qty: {$totalQty}, Class: {$itemClass}");
+        
+        // Map the product to the correct category
+        if ($volumeColumn && isset($tpWiseSummary[$tpNo]['categories'][$productType])) {
+            // Check if this is a large size (>1L)
+            $isLargeSize = isVolumeLargeSize($volume);
+            $targetColumn = $isLargeSize ? '>1L' : $volumeColumn;
+            
+            if (isset($tpWiseSummary[$tpNo]['categories'][$productType][$targetColumn])) {
+                $tpWiseSummary[$tpNo]['categories'][$productType][$targetColumn] += $totalQty;
+                $processedItems++;
+                error_log("Added to TP {$tpNo}, Category {$productType}, Size {$targetColumn}: {$totalQty}");
+            } else {
+                error_log("ERROR: Column not found: {$targetColumn} in category {$productType}");
+            }
+        } else {
+            error_log("ERROR: Category not found: {$productType} or invalid volume column: {$volumeColumn}");
+        }
     }
     
-    // DEBUG: Log classification statistics
-    error_log("Classification Statistics: " . print_r($classificationStats, true));
-    error_log("Raw data from query: " . print_r($rawData, true));
-    error_log("Final summary data: " . print_r($purchaseSummary, true));
-    error_log("Processed $processedItems items successfully");
+    // Log unclassified and missing items
+    if (!empty($unclassifiedItems)) {
+        error_log("Unclassified items (using pattern matching): " . json_encode($unclassifiedItems, JSON_PRETTY_PRINT));
+    }
+    
+    if (!empty($missingItems)) {
+        error_log("Items not found in tblitemmaster: " . json_encode($missingItems, JSON_PRETTY_PRINT));
+    }
+    
+    // Sort TP numbers
+    uksort($tpWiseSummary, function($a, $b) {
+        // Extract numeric part
+        preg_match('/\d+/', $a, $matchesA);
+        preg_match('/\d+/', $b, $matchesB);
+        
+        $numA = $matchesA[0] ?? $a;
+        $numB = $matchesB[0] ?? $b;
+        
+        if (is_numeric($numA) && is_numeric($numB)) {
+            return $numA - $numB;
+        }
+        return strnatcasecmp($a, $b);
+    });
+    
+    error_log("Processed $processedItems items into " . count($tpWiseSummary) . " TP numbers");
+    error_log("Unique TP Numbers found: " . implode(', ', $tpNumbers));
+    
+    // Log final summary structure for debugging
+    error_log("Final Summary Structure: " . json_encode($tpWiseSummary, JSON_PRETTY_PRINT));
     
     $stmt->close();
 
@@ -190,137 +348,112 @@ try {
 
 // Return JSON response
 header('Content-Type: application/json');
-echo json_encode($purchaseSummary);
+echo json_encode($tpWiseSummary);
 
-// UPDATED: Helper function that ONLY uses CLASS field from tblitemmaster
-function getProductTypeFromClass($itemClass) {
-    error_log("getProductTypeFromClass: Class='$itemClass'");
-    
-    // Convert to uppercase and trim
-    $itemClass = strtoupper(trim($itemClass ?? ''));
-    
-    // DIRECT MAPPING FROM YOUR tblitemmaster DATA STRUCTURE
-    $classMappings = [
-        // Spirits (from typical liquor classification)
-        'W' => 'SPIRITS', // Whisky
-        'G' => 'SPIRITS', // Gin
-        'D' => 'SPIRITS', // Brandy
-        'V' => 'SPIRITS', // Vodka
-        'R' => 'SPIRITS', // Rum
-        'K' => 'SPIRITS', // Other spirits
-        'O' => 'SPIRITS', // Other spirits
-        'S' => 'SPIRITS', // Scotch
-        
-        // Wine
-        'V' => 'WINE',    // Wine (V for Vin/Wine)
-        'WINE' => 'WINE', // Wine
-        
-        // BEER - CORRECTED BASED ON YOUR tblitemmaster DATA
-        'M' => 'MILD BEER',      // Mild Beer (from your data: CLASS='M')
-        'F' => 'FERMENTED BEER', // Fermented Beer (from your data: CLASS='F')
-        'B' => 'FERMENTED BEER', // Beer (generic)
-        
-        // Country Liquor
-        'L' => 'COUNTRY LIQUOR', // Country Liquor
-        'C' => 'COUNTRY LIQUOR', // Country Liquor
-        'D' => 'COUNTRY LIQUOR', // Desi Liquor
-        
-        // Default fallback (should not happen with proper data)
-        '' => 'SPIRITS',
-        'NULL' => 'SPIRITS',
-    ];
-    
-    // Check if we have a direct mapping
-    if (isset($classMappings[$itemClass])) {
-        $result = $classMappings[$itemClass];
-        error_log("  - Mapped from CLASS='$itemClass' to '$result'");
-        return $result;
-    }
-    
-    // If class is not in mapping, log warning and default to SPIRITS
-    error_log("  - WARNING: Unknown CLASS='$itemClass', defaulting to SPIRITS");
-    return 'SPIRITS';
+// Helper function to check if volume is >1L
+function isVolumeLargeSize($volume) {
+    return $volume > 1000;
 }
 
-function extractVolume($size, $itemName) {
-    error_log("extractVolume: Size='$size', ItemName='$itemName'");
+// Helper function to extract volume from size field
+function extractVolumeFromSize($size, $details2, $itemName) {
+    // Clean inputs
+    $size = trim($size ?? '');
+    $details2 = trim($details2 ?? '');
+    $itemName = trim($itemName ?? '');
     
-    // Priority: Size column first
+    // Try DETAILS2 first (usually contains size like "330 ML")
+    if (!empty($details2)) {
+        // Check for liter sizes
+        if (preg_match('/(\d+\.?\d*)\s*L/i', $details2, $matches)) {
+            return floatval($matches[1]) * 1000; // Convert to ML
+        }
+        
+        // Check for ML sizes
+        if (preg_match('/(\d+)\s*ML/i', $details2, $matches)) {
+            return intval($matches[1]);
+        }
+    }
+    
+    // Try Size column
     if (!empty($size)) {
-        error_log("  - Checking size column: '$size'");
-        // Handle liter sizes with decimal points
-        if (preg_match('/(\d+\.?\d*)\s*L\b/i', $size, $matches)) {
-            $volume = floatval($matches[1]);
-            error_log("  - Found L size: {$matches[1]}L = " . ($volume * 1000) . "ML");
-            return round($volume * 1000);
-        }
-        
-        // Handle ML sizes
-        if (preg_match('/(\d+)\s*ML\b/i', $size, $matches)) {
-            error_log("  - Found ML size: {$matches[1]}ML");
-            return intval($matches[1]);
-        }
-        
-        // Handle special cases like "90 ML (Pet)-96"
+        // Check for patterns like "90 ML-(96)" or "330 ML(12)"
         if (preg_match('/(\d+)\s*ML/i', $size, $matches)) {
-            error_log("  - Found ML size (with extra text): {$matches[1]}ML");
             return intval($matches[1]);
-        }
-    }
-    
-    // Fallback: parse item name
-    if (!empty($itemName)) {
-        error_log("  - Checking item name for size: '$itemName'");
-        // Handle liter sizes
-        if (preg_match('/(\d+\.?\d*)\s*L\b/i', $itemName, $matches)) {
-            $volume = floatval($matches[1]);
-            error_log("  - Found L size in name: {$matches[1]}L = " . ($volume * 1000) . "ML");
-            return round($volume * 1000);
         }
         
-        // Handle ML sizes
-        if (preg_match('/(\d+)\s*ML\b/i', $itemName, $matches)) {
-            error_log("  - Found ML size in name: {$matches[1]}ML");
-            return intval($matches[1]);
+        // Check for liter sizes
+        if (preg_match('/(\d+\.?\d*)\s*L/i', $size, $matches)) {
+            return floatval($matches[1]) * 1000;
         }
     }
     
-    error_log("  - No volume found, returning 0");
+    // Try item name as last resort
+    if (!empty($itemName)) {
+        if (preg_match('/(\d+)\s*ML/i', $itemName, $matches)) {
+            return intval($matches[1]);
+        }
+        
+        if (preg_match('/(\d+\.?\d*)\s*L/i', $itemName, $matches)) {
+            return floatval($matches[1]) * 1000;
+        }
+    }
+    
     return 0;
 }
 
-function getVolumeColumn($volume) {
-    $volumeMap = [
-        50 => '50 ML',
-        60 => '60 ML', 
-        90 => '90 ML',
-        170 => '170 ML',
-        180 => '180 ML',
-        200 => '200 ML',
-        250 => '250 ML',
-        275 => '275 ML',
-        330 => '330 ML',
-        355 => '355 ML',
-        375 => '375 ML',
-        500 => '500 ML',
-        650 => '650 ML',
-        700 => '700 ML',
+// Helper function to get volume column for a category
+function getVolumeColumnForCategory($volume, $category) {
+    if ($volume == 0) {
+        return null; // Cannot determine size
+    }
+    
+    // For volumes > 1000 ML
+    if ($volume > 1000) {
+        // Check for exactly 1L (1000 ML)
+        if ($volume == 1000) {
+            return ($category === 'WINE') ? '1L W' : '1L';
+        }
+        // All other sizes > 1L go to >1L column
+        return '>1L';
+    }
+    
+    // Standard size mappings
+    $standardMap = [
         750 => '750 ML',
-        1000 => '1000 ML',
-        1500 => '1.5L',
-        1750 => '1.75L',
-        2000 => '2L',
-        3000 => '3L',
-        4500 => '4.5L',
-        15000 => '15L',
-        20000 => '20L',
-        30000 => '30L',
-        50000 => '50L'
+        700 => '700 ML',
+        650 => '650 ML',
+        500 => '500 ML',
+        375 => '375 ML',
+        355 => '355 ML',
+        330 => '330 ML',
+        275 => '275 ML',
+        250 => '250 ML',
+        200 => '200 ML',
+        180 => '180 ML',
+        170 => '170 ML',
+        90 => '90 ML',
+        60 => '60 ML',
+        50 => '50 ML'
     ];
     
-    $result = isset($volumeMap[$volume]) ? $volumeMap[$volume] : null;
-    error_log("getVolumeColumn: $volume -> " . ($result ?: 'NOT FOUND'));
+    // Wine specific mappings
+    $wineMap = [
+        1000 => '1L W',
+        750 => '750 W',
+        700 => '700 W',
+        500 => '500 W',
+        375 => '375 W',
+        330 => '330 W',
+        250 => '250 W',
+        180 => '180 W',
+        100 => '100 W'
+    ];
     
-    return $result;
+    if ($category === 'WINE') {
+        return $wineMap[$volume] ?? null;
+    } else {
+        return $standardMap[$volume] ?? null;
+    }
 }
 ?>

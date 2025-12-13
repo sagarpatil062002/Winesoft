@@ -236,23 +236,194 @@ function getSortLink($column, $label) {
   .status-unpaid { background: #fef3c7; color: #92400e; }
   .status-partial { background: #dbeafe; color: #1e40af; }
   
-  /* Purchase Summary Table Styles */
+  /* Purchase Summary Table Styles with >1L grouping */
+  #purchaseSummaryTable {
+    width: auto;
+    min-width: 100%;
+    table-layout: fixed;
+    font-size: 9px;
+  }
+  
   #purchaseSummaryTable th {
-    font-size: 10px;
-    padding: 2px 1px;
+    font-size: 8px;
+    padding: 2px 3px;
     text-align: center;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    background-color: #f8f9fa;
   }
 
   #purchaseSummaryTable td {
-    font-size: 10px;
-    padding: 2px 1px;
+    font-size: 8px;
+    padding: 2px 3px;
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+  }
+  
+  /* Adjust column widths for >1L grouping */
+  #purchaseSummaryTable th.fixed-column,
+  #purchaseSummaryTable td.fixed-column {
+    width: 70px;
+    min-width: 70px;
+    max-width: 70px;
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 3;
+    border-right: 2px solid #dee2e6;
+  }
+  
+  /* Size columns width */
+  #purchaseSummaryTable th.size-column,
+  #purchaseSummaryTable td.size-column {
+    width: 35px;
+    min-width: 35px;
+    max-width: 35px;
+  }
+  
+  /* >1L column slightly wider */
+  #purchaseSummaryTable th.size-column:first-child,
+  #purchaseSummaryTable td.size-column:first-child {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+    background-color: #e3f2fd;
+  }
+  
+  /* Modal adjustments */
+  #purchaseSummaryModal .modal-dialog {
+    max-width: 98vw;
+    margin: 5px auto;
+    width: auto;
+  }
+  
+  #purchaseSummaryModal .modal-content {
+    max-height: 95vh;
+    overflow: hidden;
+  }
+  
+  #purchaseSummaryModal .modal-body {
+    padding: 10px;
+    overflow: hidden;
+  }
+  
+  /* Make the summary table container horizontally scrollable */
+  #purchaseSummaryModal .table-responsive {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+  
+  .summary-header-group th {
+    background-color: #e9ecef !important;
+    font-weight: bold;
+    border-bottom: 2px solid #adb5bd;
+    color: #212529;
+    font-size: 9px;
+  }
+  
+  .summary-size-header th {
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #dee2e6;
+    font-weight: 600;
+    font-size: 8px;
   }
   
   .table-success {
     background-color: #d1edff !important;
     font-weight: bold;
+  }
+  
+  /* >1L column highlight */
+  .large-size-column {
+    background-color: #e3f2fd !important;
+    font-weight: bold !important;
+  }
+  
+  /* Category separator lines */
+  .category-border-left {
+    border-left: 3px solid #495057 !important;
+  }
+  
+  .category-border-right {
+    border-right: 3px solid #495057 !important;
+  }
+  
+  /* Category background colors */
+  .category-spirits {
+    background-color: #e9ecef !important;
+  }
+  
+  .category-wine {
+    background-color: #d1ecf1 !important;
+  }
+  
+  .category-fermented {
+    background-color: #d4edda !important;
+  }
+  
+  .category-mild {
+    background-color: #f8d7da !important;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 1800px) {
+    #purchaseSummaryTable th.size-column,
+    #purchaseSummaryTable td.size-column {
+      width: 32px;
+      min-width: 32px;
+    }
+    
+    #purchaseSummaryTable th.size-column:first-child,
+    #purchaseSummaryTable td.size-column:first-child {
+      width: 38px;
+      min-width: 38px;
+    }
+  }
+  
+  @media (max-width: 1600px) {
+    #purchaseSummaryTable {
+      font-size: 8px;
+    }
+    
+    #purchaseSummaryTable th.size-column,
+    #purchaseSummaryTable td.size-column {
+      width: 30px;
+      min-width: 30px;
+    }
+    
+    #purchaseSummaryTable th.size-column:first-child,
+    #purchaseSummaryTable td.size-column:first-child {
+      width: 35px;
+      min-width: 35px;
+    }
+    
+    #purchaseSummaryTable th.fixed-column,
+    #purchaseSummaryTable td.fixed-column {
+      width: 65px;
+      min-width: 65px;
+    }
+  }
+  
+  @media (max-width: 1400px) {
+    #purchaseSummaryTable th.size-column,
+    #purchaseSummaryTable td.size-column {
+      width: 28px;
+      min-width: 28px;
+    }
+    
+    #purchaseSummaryTable th.size-column:first-child,
+    #purchaseSummaryTable td.size-column:first-child {
+      width: 33px;
+      min-width: 33px;
+    }
   }
   
   /* Column width adjustments for better fit */
@@ -303,6 +474,25 @@ function getSortLink($column, $label) {
     background-color: white;
     z-index: 100;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  /* Summary table specific styles */
+  .summary-header-group {
+    background-color: #f1f5f9 !important;
+    border-bottom: 2px solid #94a3b8;
+  }
+  
+  .summary-size-header {
+    background-color: #f8fafc !important;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .fixed-column {
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 2;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
   }
 </style>
 </head>
@@ -467,7 +657,7 @@ function getSortLink($column, $label) {
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="purchaseSummaryModalLabel">Purchase Summary - All Purchases</h5>
+                <h5 class="modal-title" id="purchaseSummaryModalLabel">Purchase Summary - TP Wise</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -494,14 +684,16 @@ function getSortLink($column, $label) {
                     <table class="table table-bordered table-sm table-striped" id="purchaseSummaryTable">
                         <thead class="table-light sticky-top">
                             <tr id="sizeHeaders">
-                                <th>Category</th>
-                                <!-- Size headers will be dynamically generated -->
+                                <!-- Headers will be dynamically generated -->
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="26" class="text-center text-muted">
-                                    Click "Update Summary" to load data
+                                <td colspan="52" class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-3"></i><br>
+                                    <h5>Ready to Load Data</h5>
+                                    <p class="mb-0">Click "Update Summary" to load purchase summary data</p>
+                                    <small class="text-info">Note: Sizes >1L are grouped together</small>
                                 </td>
                             </tr>
                         </tbody>
@@ -518,7 +710,7 @@ function getSortLink($column, $label) {
     </div>
 </div>
 
-<!-- Delete Confirmation Modal - ADDED FROM COPY -->
+<!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -540,7 +732,7 @@ function getSortLink($column, $label) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Delete Confirmation Function - ADDED FROM COPY
+// Delete Confirmation Function
 function confirmDelete(purchaseId, mode) {
   $('#deleteConfirm').attr('href', 'purchase_delete.php?id=' + purchaseId + '&mode=' + mode);
   $('#deleteModal').modal('show');
@@ -558,17 +750,68 @@ $('form').on('submit', function(e) {
   }
 });
 
+// Categories based on CLASS field mapping
+const categories = [
+    { 
+        name: 'SPIRITS',
+        sizes: [
+            '>1L',
+            '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', '330 ML',
+            '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
+        ],
+        columnClass: 'size-column',
+        bgColor: '#e9ecef',
+        borderColor: '#495057'
+    },
+    { 
+        name: 'WINE', 
+        sizes: [
+            '>1L',
+            '1L W', '750 W', '700 W', '500 W', '375 W', '330 W',
+            '250 W', '180 W', '100 W'
+        ],
+        columnClass: 'size-column',
+        bgColor: '#d1ecf1',
+        borderColor: '#17a2b8'
+    },
+    { 
+        name: 'FERMENTED BEER', 
+        sizes: [
+            '>1L',
+            '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+        ],
+        columnClass: 'size-column',
+        bgColor: '#d4edda',
+        borderColor: '#28a745'
+    },
+    { 
+        name: 'MILD BEER', 
+        sizes: [
+            '>1L',
+            '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+        ],
+        columnClass: 'size-column',
+        bgColor: '#f8d7da',
+        borderColor: '#dc3545'
+    }
+];
+
 // Function to load purchase summary via AJAX
 function loadPurchaseSummary() {
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
     const purchaseType = 'ALL';
 
+    let totalSizeColumns = 0;
+    categories.forEach(cat => totalSizeColumns += cat.sizes.length);
+    const totalColumns = totalSizeColumns + 1; // +1 for TP column
+    
     // Show loading state
-    const loadingColspan = 26; // 1 category + 25 sizes
     $('#purchaseSummaryTable tbody').html(`
         <tr>
-            <td colspan="${loadingColspan}" class="text-center">
+            <td colspan="${totalColumns}" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
@@ -607,7 +850,7 @@ function loadPurchaseSummary() {
                 console.error('Error parsing response:', e);
                 $('#purchaseSummaryTable tbody').html(`
                     <tr>
-                        <td colspan="26" class="text-center text-danger">
+                        <td colspan="${totalColumns}" class="text-center text-danger py-4">
                             <i class="fas fa-exclamation-triangle"></i><br>
                             Error loading purchase summary<br>
                             <small>${e.message}</small>
@@ -633,7 +876,7 @@ function loadPurchaseSummary() {
             
             $('#purchaseSummaryTable tbody').html(`
                 <tr>
-                    <td colspan="26" class="text-center text-danger">
+                    <td colspan="${totalColumns}" class="text-center text-danger py-4">
                         <i class="fas fa-exclamation-triangle"></i><br>
                         ${errorMessage}<br>
                         <small>Status: ${status}, Error: ${error}</small>
@@ -644,119 +887,239 @@ function loadPurchaseSummary() {
     });
 }
 
-// Function to convert size string to milliliters for sorting
-function sizeToMl(size) {
-    if (size.includes('L')) {
-        const liters = parseFloat(size.replace('L', ''));
-        return liters * 1000;
-    } else if (size.includes('ML')) {
-        return parseInt(size.replace(' ML', ''));
-    }
-    return 0;
-}
-
-// Function to update the purchase summary table
+// Function to update the purchase summary table with TP-wise data
 function updatePurchaseSummaryTable(summaryData) {
     const tbody = $('#purchaseSummaryTable tbody');
-    const headerRow = $('#sizeHeaders');
+    
+    // Clear existing table
+    $('#purchaseSummaryTable thead').empty();
     tbody.empty();
 
-    const allSizes = [
-        '50L', '30L', '20L', '15L', '4.5L', '3L', '2L', '1.75L', '1.5L',
-        '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', '330 ML',
-        '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
-    ];
-
-    // Update table headers dynamically
-    headerRow.empty();
-    headerRow.append($('<th>').text('Category'));
-    allSizes.forEach(size => {
-        headerRow.append($('<th>').text(size));
+    // Create main header row with category groups
+    const mainHeaderRow = $('<tr>').addClass('summary-header-group');
+    
+    // TP No column
+    mainHeaderRow.append($('<th>')
+        .text('TP No.')
+        .attr('rowspan', '2')
+        .addClass('fixed-column')
+        .css({
+            'font-weight': 'bold',
+            'background-color': '#343a40',
+            'color': 'white',
+            'border': '2px solid #495057'
+        }));
+    
+    // Add category headers with colspan and distinct colors
+    categories.forEach((category, index) => {
+        const headerCell = $('<th>')
+            .attr('colspan', category.sizes.length)
+            .text(category.name)
+            .addClass('text-center')
+            .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
+            .css({
+                'font-weight': 'bold',
+                'background-color': category.bgColor,
+                'border': '2px solid ' + category.borderColor,
+                'border-left': index === 0 ? '2px solid ' + category.borderColor : '3px solid #495057',
+                'color': '#212529'
+            });
+        
+        mainHeaderRow.append(headerCell);
     });
     
-    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+    // Create size header row
+    const sizeHeaderRow = $('<tr>').addClass('summary-size-header');
     
-    if (!summaryData || typeof summaryData !== 'object') {
+    categories.forEach((category, catIndex) => {
+        category.sizes.forEach((size, sizeIndex) => {
+            const isLargeSizeColumn = sizeIndex === 0;
+            const isFirstColumnInCategory = sizeIndex === 0;
+            const isLastColumnInCategory = sizeIndex === category.sizes.length - 1;
+            
+            const sizeCell = $('<th>')
+                .text(size)
+                .addClass('text-center ' + category.columnClass)
+                .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
+                .css({
+                    'font-weight': '600',
+                    'font-size': '9px',
+                    'background-color': isLargeSizeColumn ? '#e3f2fd' : category.bgColor,
+                    'border-top': '1px solid #dee2e6',
+                    'border-left': isFirstColumnInCategory ? '3px solid #495057' : '1px solid #dee2e6',
+                    'border-right': isLastColumnInCategory && catIndex === categories.length - 1 ? '1px solid #dee2e6' : '1px solid #dee2e6'
+                });
+            
+            sizeHeaderRow.append(sizeCell);
+        });
+    });
+    
+    $('#purchaseSummaryTable thead').append(mainHeaderRow, sizeHeaderRow);
+
+    // Calculate total columns
+    let totalSizeColumns = 0;
+    categories.forEach(cat => totalSizeColumns += cat.sizes.length);
+    const totalColumns = totalSizeColumns + 1;
+
+    // Check if we have data
+    if (!summaryData || typeof summaryData !== 'object' || Object.keys(summaryData).length === 0) {
         tbody.html(`
             <tr>
-                <td colspan="${allSizes.length + 1}" class="text-center text-danger">
-                    <i class="fas fa-exclamation-triangle"></i><br>
-                    Invalid data structure received
+                <td colspan="${totalColumns}" class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3"></i><br>
+                    <h5>No Data Found</h5>
+                    <p class="mb-0">No purchase data found for the selected date range</p>
                 </td>
             </tr>
         `);
         return;
     }
-    
-    // Check if we have any data
-    let hasData = false;
-    categories.forEach(category => {
-        if (summaryData[category]) {
-            allSizes.forEach(size => {
-                if (summaryData[category][size] > 0) {
-                    hasData = true;
+
+    // Create rows for each TP number
+    let serialNumber = 1;
+    Object.keys(summaryData).forEach((tpNo) => {
+        const tpData = summaryData[tpNo];
+        const row = $('<tr>');
+        
+        // TP number cell (fixed column)
+        row.append($('<td>')
+            .addClass('fixed-column fw-bold')
+            .css({
+                'background-color': serialNumber % 2 === 0 ? '#f8f9fa' : 'white',
+                'border-right': '2px solid #495057'
+            })
+            .text(tpNo)
+            .attr('title', 'TP No: ' + tpNo));
+        
+        // Add data for each category and size
+        categories.forEach((category, catIndex) => {
+            let categoryTotal = 0;
+            category.sizes.forEach((size, sizeIndex) => {
+                const isLargeSizeColumn = sizeIndex === 0;
+                const isFirstColumnInCategory = sizeIndex === 0;
+                
+                let value = 0;
+                
+                // Check if data exists for this category and size
+                if (tpData.categories && 
+                    tpData.categories[category.name] && 
+                    tpData.categories[category.name][size]) {
+                    value = tpData.categories[category.name][size];
+                    categoryTotal += value;
                 }
+                
+                const cell = $('<td>')
+                    .addClass('text-center ' + category.columnClass)
+                    .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
+                    .css({
+                        'background-color': serialNumber % 2 === 0 ? '#f8f9fa' : 'white',
+                        'font-size': '9px',
+                        'padding': '2px 3px',
+                        'border-left': isFirstColumnInCategory ? '3px solid #495057' : '1px solid #dee2e6'
+                    });
+                
+                if (isLargeSizeColumn) {
+                    cell.addClass('large-size-column');
+                }
+                
+                if (value > 0) {
+                    cell.text(value)
+                        .addClass('table-success')
+                        .css('font-weight', 'bold');
+                } else {
+                    cell.text('-')
+                        .css('color', '#adb5bd');
+                }
+                
+                row.append(cell);
+            });
+        });
+        
+        tbody.append(row);
+        serialNumber++;
+    });
+
+    // Add a total row
+    addTotalRow(summaryData, categories);
+}
+
+// Function to add total row
+function addTotalRow(summaryData, categories) {
+    const totals = {};
+    
+    // Initialize totals
+    categories.forEach(category => {
+        totals[category.name] = {};
+        category.sizes.forEach(size => {
+            totals[category.name][size] = 0;
+        });
+    });
+    
+    // Calculate totals
+    Object.values(summaryData).forEach(tpData => {
+        if (tpData && tpData.categories) {
+            categories.forEach(category => {
+                category.sizes.forEach(size => {
+                    if (tpData.categories[category.name] && tpData.categories[category.name][size]) {
+                        totals[category.name][size] += tpData.categories[category.name][size];
+                    }
+                });
             });
         }
     });
     
-    if (!hasData) {
-        tbody.html(`
-            <tr>
-                <td colspan="${allSizes.length + 1}" class="text-center text-muted">
-                    <i class="fas fa-info-circle"></i><br>
-                    No purchase data found for the selected date range and filters
-                </td>
-            </tr>
-        `);
-        return;
-    }
-    
-    // Create rows for each category
+    // Check if we have any totals
+    let hasTotals = false;
     categories.forEach(category => {
-        const row = $('<tr>');
-        row.append($('<td>').addClass('fw-semibold').text(category));
-        
-        allSizes.forEach(size => {
-            const value = summaryData[category] && summaryData[category][size] ? summaryData[category][size] : 0;
-            const cell = $('<td>').text(value > 0 ? value.toLocaleString() : '');
-            
-            if (value > 0) {
-                cell.addClass('table-success');
-            }
-            
-            row.append(cell);
-        });
-        
-        tbody.append(row);
-    });
-    
-    // Add a total row
-    addTotalRow(summaryData, allSizes, categories);
-}
-
-// Function to add total row
-function addTotalRow(summaryData, allSizes, categories) {
-    const totals = {};
-    
-    allSizes.forEach(size => {
-        totals[size] = 0;
-        categories.forEach(category => {
-            if (summaryData[category] && summaryData[category][size]) {
-                totals[size] += summaryData[category][size];
+        category.sizes.forEach(size => {
+            if (totals[category.name][size] > 0) {
+                hasTotals = true;
             }
         });
     });
-    
-    const hasTotals = allSizes.some(size => totals[size] > 0);
     
     if (hasTotals) {
         const totalRow = $('<tr>').addClass('table-primary fw-bold');
-        totalRow.append($('<td>').text('TOTAL'));
+        totalRow.append($('<td>')
+            .addClass('fixed-column')
+            .css({
+                'background-color': '#495057',
+                'color': 'white',
+                'border': '2px solid #343a40',
+                'font-weight': 'bold'
+            })
+            .text('TOTAL'));
         
-        allSizes.forEach(size => {
-            const cell = $('<td>').text(totals[size] > 0 ? totals[size].toLocaleString() : '');
-            totalRow.append(cell);
+        categories.forEach((category, catIndex) => {
+            category.sizes.forEach((size, sizeIndex) => {
+                const isLargeSizeColumn = sizeIndex === 0;
+                const isFirstColumnInCategory = sizeIndex === 0;
+                const value = totals[category.name][size];
+                const cell = $('<td>')
+                    .addClass('text-center ' + category.columnClass)
+                    .css({
+                        'background-color': '#495057',
+                        'color': 'white',
+                        'border': '1px solid #343a40',
+                        'border-left': isFirstColumnInCategory ? '3px solid #343a40' : '1px solid #343a40',
+                        'font-size': '9px',
+                        'padding': '2px 3px',
+                        'font-weight': 'bold'
+                    });
+                
+                if (isLargeSizeColumn) {
+                    cell.addClass('large-size-column');
+                }
+                
+                if (value > 0) {
+                    cell.text(value);
+                } else {
+                    cell.text('-')
+                        .css('opacity', '0.7');
+                }
+                
+                totalRow.append(cell);
+            });
         });
         
         $('#purchaseSummaryTable tbody').append(totalRow);
@@ -765,49 +1128,144 @@ function addTotalRow(summaryData, allSizes, categories) {
 
 // Function to print purchase summary
 function printPurchaseSummary() {
-    const printContent = $('#purchaseSummaryTable').parent().html();
-    const printWindow = window.open('', '_blank');
-    const typeLabel = 'All Purchases';
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    
+    // Clone the table for printing
+    const printTable = $('#purchaseSummaryTable').clone();
+    
+    // Remove fixed column class for print
+    printTable.find('.fixed-column').removeClass('fixed-column');
+    printTable.find('th, td').css({
+        'position': 'static',
+        'width': 'auto'
+    });
+    
+    const printContent = printTable.parent().html();
+    const printWindow = window.open('', '_blank');
     
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Purchase Summary - ${typeLabel}</title>
+            <title>Purchase Summary - TP Wise</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                table { width: 100%; border-collapse: collapse; font-size: 16px; }
-                th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
-                th { background-color: #f8f9fa; font-weight: bold; }
-                .table-success { background-color: #d1edff !important; }
-                .text-center { text-align: center; }
-                h2 { text-align: center; margin-bottom: 20px; }
-                .summary-info { text-align: center; margin-bottom: 15px; color: #666; }
-                @media print {
-                    body { margin: 0; }
-                    table { font-size: 10px; }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 15px; 
+                    font-size: 12px;
                 }
+                h2 { 
+                    text-align: center; 
+                    margin-bottom: 5px; 
+                    color: #333;
+                }
+                .summary-info { 
+                    text-align: center; 
+                    margin-bottom: 15px; 
+                    color: #666; 
+                    font-size: 14px;
+                    border-bottom: 1px solid #ddd;
+                    padding-bottom: 10px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    font-size: 8px;
+                    margin-top: 10px;
+                }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 3px; 
+                    text-align: center;
+                    page-break-inside: avoid;
+                }
+                th { 
+                    background-color: #f2f2f2 !important; 
+                    font-weight: bold;
+                    -webkit-print-color-adjust: exact;
+                }
+                .table-success { 
+                    background-color: #e3f2fd !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                .total-row th,
+                .total-row td {
+                    background-color: #007bff !important;
+                    color: white !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                .large-size-column {
+                    background-color: #e3f2fd !important;
+                    font-weight: bold !important;
+                    -webkit-print-color-adjust: exact;
+                }
+                .print-footer { 
+                    margin-top: 20px; 
+                    border-top: 1px solid #ddd; 
+                    padding-top: 10px; 
+                    font-size: 11px; 
+                    color: #666;
+                    text-align: center;
+                }
+                @media print {
+                    body { margin: 5mm; }
+                    table { font-size: 7px; }
+                    .no-print { display: none; }
+                    @page { margin: 0.5cm; size: landscape; }
+                }
+                .category-header {
+                    background-color: #e9ecef !important;
+                    font-weight: bold;
+                }
+                .note {
+                    font-size: 10px;
+                    color: #666;
+                    font-style: italic;
+                    margin-top: 5px;
+                }
+                .category-border {
+                    border-left: 3px solid #333 !important;
+                }
+                .category-spirits { background-color: #e9ecef !important; }
+                .category-wine { background-color: #d1ecf1 !important; }
+                .category-fermented-beer { background-color: #d4edda !important; }
+                .category-mild-beer { background-color: #f8d7da !important; }
             </style>
         </head>
         <body>
-            <h2>Purchase Summary - ${typeLabel}</h2>
-            <div class="summary-info">
-                Date Range: ${fromDate} to ${toDate}<br>
-                Printed on: ${new Date().toLocaleDateString()}
+            <div style="margin-bottom: 20px;">
+                <h2>Purchase Summary - TP Wise</h2>
+                <div class="summary-info">
+                    Date Range: ${fromDate} to ${toDate}<br>
+                    Company ID: <?= $companyId ?><br>
+                    Printed on: ${currentDate} at ${currentTime}
+                </div>
+                <div class="note">
+                    Note: All sizes greater than 1 liter are grouped in ">1L" column<br>
+                    Categories: SPIRITS | WINE | FERMENTED BEER | MILD BEER
+                </div>
             </div>
             ${printContent}
+            <div class="print-footer">
+                User: <?= $_SESSION['user_id'] ?? 'Unknown' ?> | 
+                Report generated by WineSoft Purchase Module
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() {
+                        window.close();
+                    }, 500);
+                };
+            <\/script>
         </body>
         </html>
     `);
     
     printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 500);
 }
 
 // Initialize modal
