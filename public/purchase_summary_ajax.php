@@ -1,14 +1,11 @@
 <?php
 session_start();
 
-// Enable comprehensive debug logging
+// Enable error reporting for debugging (disable in production for performance)
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', 'purchase_summary_ajax_debug.log');
-
-// Log the request
-error_log("=== PURCHASE SUMMARY AJAX DEBUG ===");
 
 // Check if required session variables exist
 if (!isset($_SESSION['CompID'])) {
@@ -34,8 +31,6 @@ $companyId = $_SESSION['CompID'];
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'ALL';
 $fromDate = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $toDate = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
-
-error_log("Purchase Summary Request: Company=$companyId, Mode=$mode, From=$fromDate, To=$toDate");
 
 // Initialize summary structure for TP-wise data
 $tpWiseSummary = [];

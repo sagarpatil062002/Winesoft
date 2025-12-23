@@ -34,11 +34,11 @@ function logArray($data, $title = 'Array data') {
     logMessage("$title:\n$output");
 }
 
-// DEBUG: Log page access and basic info
-logMessage("=== PAGE ACCESS ===");
-logMessage("Request method: " . $_SERVER['REQUEST_METHOD']);
-logMessage("Search term: '" . ($_GET['search'] ?? '') . "'");
-logMessage("Current session ID: " . session_id());
+// OPTIMIZATION: Reduce logging frequency - only log errors and important events
+// logMessage("=== PAGE ACCESS ===");
+// logMessage("Request method: " . $_SERVER['REQUEST_METHOD']);
+// logMessage("Search term: '" . ($_GET['search'] ?? '') . "'");
+// logMessage("Current session ID: " . session_id());
 
 // Function to clear session quantities
 function clearSessionQuantities() {
@@ -428,25 +428,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
         }
     }
     
-    // Log the update
-    logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
+    // OPTIMIZATION: Reduce logging frequency
+    // logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// ============================================================================
-// MODIFIED: Get ALL items data for JavaScript from ALL modes (for Total Sales Summary)
-// ============================================================================
-$all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
-                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-                    FROM tblitemmaster im
-                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE";
-$all_items_stmt = $conn->prepare($all_items_query);
-$all_items_stmt->execute();
-$all_items_result = $all_items_stmt->get_result();
+// OPTIMIZATION: Load all items data only when needed (lazy loading)
+// Initialize as empty array, will be loaded via AJAX when modal opens
 $all_items_data = [];
-while ($row = $all_items_result->fetch_assoc()) {
-    $all_items_data[$row['CODE']] = $row;
-}
-$all_items_stmt->close();
 
 // Create date range array
 $begin = new DateTime($start_date);
@@ -887,10 +875,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $processed_items++;
                             $total_qty = $_SESSION['sale_quantities'][$item_code];
                             
-                            // Reduce logging frequency during bulk operations
-                            if (!$bulk_operation || $processed_items % 50 == 0) {
-                                logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
-                            }
+                            // OPTIMIZATION: Reduce logging frequency during bulk operations
+                            // if (!$bulk_operation || $processed_items % 50 == 0) {
+                            //     logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
+                            // }
                             
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
@@ -1053,9 +1041,9 @@ if (isset($_GET['success'])) {
     $success_message = $_GET['success'];
 }
 
-// Log final state for debugging
-logMessage("Final session quantities count: " . count($_SESSION['sale_quantities']));
-logMessage("Items in current view: " . count($items));
+// OPTIMIZATION: Reduce logging frequency
+// logMessage("Final session quantities count: " . count($_SESSION['sale_quantities']));
+// logMessage("Items in current view: " . count($items));
 
 // Debug info
 $debug_info = [
@@ -1308,6 +1296,101 @@ tr.has-quantity td {
     font-weight: bold;
 }
 
+/* Advanced Bill Generation Progress Styles */
+.bill-spinner-container {
+    position: relative;
+    display: inline-block;
+    width: 80px;
+    height: 80px;
+}
+
+.bill-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+    animation: billPulse 2s ease-in-out infinite;
+}
+
+.bill-icon {
+    color: white;
+    font-size: 24px;
+    animation: billIconRotate 3s linear infinite;
+}
+
+.spinner-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border: 3px solid rgba(0,123,255,0.2);
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes billPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        box-shadow: 0 4px 20px rgba(0,123,255,0.5);
+    }
+}
+
+@keyframes billIconRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Progress bar animations */
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Statistics cards hover effect */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Category progress bars */
+#categoryProgressSection .progress {
+    background-color: #e9ecef;
+}
+
+#imflProgressBar {
+    background: linear-gradient(90deg, #dc3545, #c82333);
+}
+
+#beerProgressBar {
+    background: linear-gradient(90deg, #ffc107, #e0a800);
+}
+
+#clProgressBar {
+    background: linear-gradient(90deg, #17a2b8, #138496);
+}
   </style>
 </head>
 <body>
@@ -1449,6 +1532,7 @@ tr.has-quantity td {
         <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
         <input type="hidden" name="update_sales" value="1">
+        <input type="hidden" name="sale_date" value="<?= $start_date ?>">
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -1732,6 +1816,212 @@ tr.has-quantity td {
     </div>
 </div>
 
+<!-- Advanced Bill Generation Progress Modal -->
+<div class="modal fade" id="billProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Generating Bills with Volume Limits
+                </h5>
+            </div>
+            <div class="modal-body">
+                <!-- Animated Spinner Section -->
+                <div class="text-center mb-4">
+                    <div class="bill-spinner-container">
+                        <div class="bill-spinner">
+                            <i class="fas fa-file-invoice-dollar bill-icon"></i>
+                        </div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <h6 class="mt-3 text-muted" id="progressStatus">Initializing bill generation...</h6>
+                </div>
+
+                <!-- Main Progress Bar -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold">Overall Progress</span>
+                        <span class="text-muted small" id="overallProgressText">0%</span>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                             id="billProgressBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-primary">
+                            <div class="card-body text-center p-2">
+                                <div class="text-primary mb-1">
+                                    <i class="fas fa-boxes fa-lg"></i>
+                                </div>
+                                <div class="h6 mb-0" id="currentItem">0</div>
+                                <small class="text-muted">Items Processed</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-success">
+                            <div class="card-body text-center p-2">
+                                <div class="text-success mb-1">
+                                    <i class="fas fa-file-invoice fa-lg"></i>
+                                </div>
+                                <div class="h6 mb-0" id="generatedBills">0</div>
+                                <small class="text-muted">Bills Generated</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-info">
+                            <div class="card-body text-center p-2">
+                                <div class="text-info mb-1">
+                                    <i class="fas fa-clock fa-lg"></i>
+                                </div>
+                                <div class="h6 mb-0" id="timeRemaining">Calculating...</div>
+                                <small class="text-muted">Time Remaining</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center p-2">
+                                <div class="text-warning mb-1">
+                                    <i class="fas fa-chart-pie fa-lg"></i>
+                                </div>
+                                <div class="h6 mb-0" id="totalVolume">0ml</div>
+                                <small class="text-muted">Total Volume</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Progress Bars -->
+                <div class="mb-4" id="categoryProgressSection" style="display: none;">
+                    <h6 class="fw-bold mb-3">Category Volume Usage</h6>
+                    <div class="mb-2" id="imflProgress">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-bold">IMFL</span>
+                            <span class="small text-muted" id="imflUsage">0 / 0 ml</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-danger" id="imflProgressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2" id="beerProgress">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-bold">BEER</span>
+                            <span class="small text-muted" id="beerUsage">0 / 0 ml</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" id="beerProgressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2" id="clProgress">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small fw-bold">CL</span>
+                            <span class="small text-muted" id="clUsage">0 / 0 ml</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-info" id="clProgressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Processing Details -->
+                <div class="alert alert-light border">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Current Item:</small>
+                            <div class="fw-bold text-primary" id="currentItemName">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Processing:</small>
+                            <div class="fw-bold text-success" id="currentAction">Preparing...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Volume Limit Information -->
+                <div class="alert alert-info mt-3" id="volumeLimitInfo" style="display: none;">
+                    <strong><i class="fas fa-info-circle me-1"></i>Volume Limits Applied:</strong>
+                    <div id="limitDetails" class="mt-2"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelBtn" disabled>
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bill Generation Preview Modal -->
+<div class="modal fade" id="billPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>
+                    Bill Generation Preview
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Please review the estimates below before proceeding.</strong>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <div class="text-primary mb-2">
+                                    <i class="fas fa-file-invoice fa-2x"></i>
+                                </div>
+                                <h4 class="mb-0" id="estimatedBills">-</h4>
+                                <small class="text-muted">Estimated Bills</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-body text-center">
+                                <div class="text-success mb-2">
+                                    <i class="fas fa-clock fa-2x"></i>
+                                </div>
+                                <h4 class="mb-0" id="estimatedTime">-</h4>
+                                <small class="text-muted">Estimated Time</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="categoryEstimates">
+                    <!-- Category estimates will be populated here -->
+                </div>
+
+                <div class="alert alert-light">
+                    <strong>Items to Process:</strong> <span id="itemsToProcess">-</span><br>
+                    <strong>Date Range:</strong> <span id="dateRangePreview">-</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmGenerateBtn">
+                    <i class="fas fa-play me-1"></i>Start Generation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -1740,8 +2030,32 @@ const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
 // Pass ALL session quantities to JavaScript
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
-// NEW: Pass ALL items data to JavaScript for Total Sales Summary
-const allItemsData = <?= json_encode($all_items_data) ?>;
+// OPTIMIZATION: Load all items data via AJAX when needed
+let allItemsData = {};
+let allItemsDataLoaded = false;
+
+// Function to load all items data via AJAX (lazy loading for performance)
+function loadAllItemsData(callback) {
+    if (allItemsDataLoaded) {
+        if (callback) callback();
+        return;
+    }
+
+    $.ajax({
+        url: 'ajax_load_all_items.php',
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            allItemsData = data;
+            allItemsDataLoaded = true;
+            if (callback) callback();
+        },
+        error: function() {
+            console.error('Failed to load all items data');
+            if (callback) callback();
+        }
+    });
+}
 
 // Function to clear session quantities via AJAX
 function clearSessionQuantities() {
@@ -2128,36 +2442,180 @@ function saveToPendingSales() {
     });
 }
 
-// Single button with dual functionality
+// Single button with dual functionality - ENHANCED WITH PROGRESS TRACKING
 function handleGenerateBills() {
     // Check if we have any quantities > 0 (optimized check)
     let hasQuantity = false;
+    let totalItems = 0;
     for (const itemCode in allSessionQuantities) {
         if (allSessionQuantities[itemCode] > 0) {
             hasQuantity = true;
-            break;
+            totalItems++;
         }
     }
-    
+
     if (!hasQuantity) {
         alert('Please enter closing balances for at least one item.');
         return false;
     }
-    
-    // Show confirmation dialog with two options
+
+    // Show confirmation dialog with bill preview
     const userChoice = confirm(
-        "Generate Bills Options:\n\n" +
+        "Generate Bills with Volume Limits:\n\n" +
+        "Found " + totalItems + " items with quantities.\n\n" +
         "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
         "Click Cancel to save to pending sales (will save for later processing, no stock update)."
     );
-    
+
     if (userChoice === true) {
-        // User clicked OK - Generate bills immediately
-        generateBills();
+        // User clicked OK - Generate bills with progress tracking
+        generateBillsWithProgress(totalItems);
     } else {
         // User clicked Cancel - Save to pending sales
         saveToPendingSales();
     }
+}
+
+// Enhanced bill generation with progress tracking
+function generateBillsWithProgress(totalItems) {
+    // Show progress modal
+    $('#billProgressModal').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
+
+    // Initialize progress
+    $('#billProgressBar').css('width', '0%');
+    $('#overallProgressText').text('0%');
+    $('#currentItem').text('0');
+    $('#generatedBills').text('0');
+    $('#timeRemaining').text('Calculating...');
+    $('#totalVolume').text('0ml');
+    $('#progressStatus').text('Preparing bill generation...');
+    $('#currentItemName').text('-');
+    $('#currentAction').text('Preparing...');
+
+    // Show category progress section
+    $('#categoryProgressSection').show();
+
+    // Start time tracking
+    const startTime = Date.now();
+    let processedItems = 0;
+    let generatedBills = 0;
+    let totalVolume = 0;
+
+    // Initialize category tracking
+    const categoryLimits = {
+        IMFL: 9000, // Default IMFL limit
+        BEER: 0,
+        CL: 4500   // Default CL limit
+    };
+
+    const categoryUsage = {
+        IMFL: 0,
+        BEER: 0,
+        CL: 0
+    };
+
+    // Update category progress bars
+    updateCategoryProgress(categoryUsage, categoryLimits);
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('update_sales', '1');
+
+    // Add all session quantities and calculate volume
+    for (const itemCode in allSessionQuantities) {
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`closing_balance[${itemCode}]`, '0'); // Closing balance will be calculated
+
+            // Calculate volume for progress tracking
+            const itemData = getItemData(itemCode);
+            if (itemData) {
+                const volume = extractVolume(itemData.details, itemData.details2);
+                totalVolume += volume * qty;
+
+                // Update category usage
+                const category = getItemCategory(itemData.classCode);
+                if (categoryLimits.hasOwnProperty(category)) {
+                    categoryUsage[category] += volume * qty;
+                }
+            }
+
+            processedItems++;
+            $('#currentItem').text(processedItems);
+            $('#currentItemName').text(itemCode);
+            $('#currentAction').text(`Processing item ${processedItems}/${totalItems}`);
+            $('#totalVolume').text(totalVolume.toLocaleString() + 'ml');
+            $('#billProgressBar').css('width', ((processedItems / totalItems) * 30) + '%'); // First 30% for preparation
+            $('#overallProgressText').text(Math.round((processedItems / totalItems) * 30) + '%');
+
+            // Update category progress
+            updateCategoryProgress(categoryUsage, categoryLimits);
+        }
+    }
+
+    // Update progress text
+    $('#progressStatus').text('Submitting data to server...');
+    $('#currentAction').text('Sending data to server...');
+
+    // Submit the form
+    $('#ajaxLoader').show();
+    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+
+    // Use fetch for better progress tracking
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.redirected) {
+            // Success - redirect to success page
+            $('#progressStatus').text('Bills generated successfully! Redirecting...');
+            $('#currentAction').text('Redirecting to results...');
+            $('#billProgressBar').css('width', '100%');
+            $('#overallProgressText').text('100%');
+            setTimeout(() => {
+                window.location.href = response.url;
+            }, 1000);
+        } else {
+            return response.text().then(text => {
+                throw new Error('Server error: ' + text);
+            });
+        }
+    })
+    .catch(error => {
+        $('#ajaxLoader').hide();
+        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+        $('#billProgressModal').modal('hide');
+        alert('Error generating bills: ' + error.message);
+    });
+}
+
+// Helper function to update category progress bars
+function updateCategoryProgress(usage, limits) {
+    Object.keys(usage).forEach(category => {
+        const used = usage[category];
+        const limit = limits[category];
+        const percentage = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
+
+        $(`#${category.toLowerCase()}ProgressBar`).css('width', percentage + '%');
+        $(`#${category.toLowerCase()}Usage`).text(`${used.toLocaleString()} / ${limit.toLocaleString()} ml`);
+    });
+}
+
+// Helper function to get item category
+function getItemCategory(classCode) {
+    const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
+    if (spirits.includes(classCode)) return 'IMFL';
+    if (classCode === 'V') return 'WINE';
+    if (classCode === 'F') return 'BEER';
+    if (classCode === 'M') return 'BEER';
+    if (classCode === 'L') return 'CL';
+    return 'OTHER';
 }
 
 // Function to load sales log content
@@ -2584,7 +3042,9 @@ $(document).ready(function() {
     
     // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
-        updateTotalSalesModule();
+        loadAllItemsData(function() {
+            updateTotalSalesModule();
+        });
     });
 });
 

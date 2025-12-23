@@ -669,120 +669,154 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     $updated = 0;
                     $errors = 0;
                     $errorDetails = [];
-                    
+
                     // Get company's license type and available classes for validation
                     $company_id = $_SESSION['CompID'];
                     $license_type = getCompanyLicenseType($company_id, $conn);
                     $available_classes = getClassesByLicenseType($license_type, $conn);
-                    
+
                     // Extract class SGROUP values for filtering
                     $allowed_classes = [];
                     foreach ($available_classes as $class) {
                         $allowed_classes[] = $class['SGROUP'];
                     }
-                    
-                    // Prepare statements for better performance
-                    $checkQuery = $conn->prepare("SELECT CODE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ?");
-                    $updateQuery = $conn->prepare("UPDATE tblitemmaster SET Print_Name = ?, DETAILS = ?, DETAILS2 = ?, CLASS = ?, SUB_CLASS = ?, ITEM_GROUP = ?, PPRICE = ?, BPRICE = ?, MPRICE = ?, RPRICE = ? WHERE CODE = ? AND LIQ_FLAG = ?");
-                    $insertQuery = $conn->prepare("INSERT INTO tblitemmaster (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    
+
+                    // ==================== PERFORMANCE OPTIMIZATION: Batch Processing ====================
+                    $batch_size = 100; // Process 100 items at a time
+                    $items_to_process = [];
                     $rowCount = 0;
+
+                    // First pass: Read all data and validate
                     while (($data = fgetcsv($handle)) !== FALSE) {
                         $rowCount++;
-                        
+
                         if (count($data) >= 9) { // At least 9 required columns now
-                            $code = $conn->real_escape_string(trim($data[$codeCol]));
-                            $itemName = $conn->real_escape_string(trim($data[$itemNameCol]));
-                            $printName = $conn->real_escape_string(trim($data[$printNameCol]));
-                            $subclass = $conn->real_escape_string(trim($data[$subclassCol]));
+                            $code = trim($data[$codeCol]);
+                            $itemName = trim($data[$itemNameCol]);
+                            $printName = trim($data[$printNameCol]);
+                            $subclass = trim($data[$subclassCol]);
                             $pprice = floatval(trim($data[$ppriceCol]));
                             $bprice = floatval(trim($data[$bpriceCol]));
                             $mprice = floatval(trim($data[$mpriceCol]));
                             $rprice = floatval(trim($data[$rpriceCol]));
                             $liqFlag = '';
-                            
+
                             if (isset($data[$liqFlagCol]) && !empty(trim($data[$liqFlagCol]))) {
-                                $liqFlag = $conn->real_escape_string(trim($data[$liqFlagCol]));
+                                $liqFlag = trim($data[$liqFlagCol]);
                             } else {
                                 $liqFlag = $mode; // Use the current mode as default
                             }
-                            
+
                             // Additional validation to ensure LIQ_FLAG is not empty
                             if (empty($liqFlag)) {
                                 $errors++;
                                 $errorDetails[] = "LIQ_FLAG cannot be empty for item $code";
                                 continue; // Skip this row
                             }
-                            
+
                             $openingBalance = isset($data[$openingBalanceCol]) ? intval(trim($data[$openingBalanceCol])) : 0;
-                            
+
                             // Detect class from item name with LIQ_FLAG context
                             $detectedClass = detectClassFromItemName($itemName, $liqFlag);
-                            
+
                             // If LIQ_FLAG is 'C' (Country Liquor), force class to 'L'
                             if ($liqFlag === 'C') {
                                 $detectedClass = 'L';
                             }
-                            
+
                             // Validate class against license type
                             if (!in_array($detectedClass, $allowed_classes)) {
                                 $errors++;
                                 $errorDetails[] = "Item $code: Class '$detectedClass' not allowed for your license type '$license_type'";
                                 continue; // Skip this row
                             }
-                            
+
                             // Get valid ITEM_GROUP based on subclass description and LIQ_FLAG
                             $validItemGroup = getValidItemGroup($subclass, $liqFlag, $conn);
-                            
-                            // Check if item already exists
-                            $checkQuery->bind_param("ss", $code, $liqFlag);
-                            $checkQuery->execute();
-                            $checkResult = $checkQuery->get_result();
-                            
-                            if ($checkResult->num_rows > 0) {
-                                // Update existing item
-                                $updateQuery->bind_param("ssssssddddss", 
-                                    $printName, $itemName, $subclass, $detectedClass, $subclass, $validItemGroup,
-                                    $pprice, $bprice, $mprice, $rprice, $code, $liqFlag
-                                );
-                                if ($updateQuery->execute()) {
-                                    $updated++;
-                                    
-                                    // Update stock information
-                                    updateItemStock($conn, $comp_id, $code, $liqFlag, $openingBalance);
-                                } else {
-                                    $errors++;
-                                    $errorDetails[] = "Failed to update item $code: " . $updateQuery->error;
-                                }
-                            } else {
-                                // Insert new item
-                                $insertQuery->bind_param("ssssssddddss", 
-                                    $code, $printName, $itemName, $subclass, $detectedClass, $subclass, $validItemGroup,
-                                    $pprice, $bprice, $mprice, $rprice, $liqFlag
-                                );
-                                if ($insertQuery->execute()) {
-                                    $imported++;
-                                    
-                                    // Create stock information
-                                    updateItemStock($conn, $comp_id, $code, $liqFlag, $openingBalance);
-                                } else {
-                                    $errors++;
-                                    $errorDetails[] = "Failed to import item $code: " . $insertQuery->error;
-                                }
-                            }
+
+                            // Store validated item for batch processing
+                            $items_to_process[] = [
+                                'code' => $code,
+                                'printName' => $printName,
+                                'itemName' => $itemName,
+                                'subclass' => $subclass,
+                                'detectedClass' => $detectedClass,
+                                'validItemGroup' => $validItemGroup,
+                                'pprice' => $pprice,
+                                'bprice' => $bprice,
+                                'mprice' => $mprice,
+                                'rprice' => $rprice,
+                                'liqFlag' => $liqFlag,
+                                'openingBalance' => $openingBalance
+                            ];
                         } else {
                             $errors++;
                             $errorDetails[] = "Row $rowCount: Insufficient data columns";
                         }
                     }
-                    
-                    // Close prepared statements
-                    $checkQuery->close();
-                    $updateQuery->close();
-                    $insertQuery->close();
                     fclose($handle);
+
+                    // ==================== PERFORMANCE OPTIMIZATION: Batch Database Operations ====================
+                    if (!empty($items_to_process)) {
+                        // Prepare statements for better performance
+                        $checkQuery = $conn->prepare("SELECT CODE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ?");
+                        $updateQuery = $conn->prepare("UPDATE tblitemmaster SET Print_Name = ?, DETAILS = ?, DETAILS2 = ?, CLASS = ?, SUB_CLASS = ?, ITEM_GROUP = ?, PPRICE = ?, BPRICE = ?, MPRICE = ?, RPRICE = ? WHERE CODE = ? AND LIQ_FLAG = ?");
+                        $insertQuery = $conn->prepare("INSERT INTO tblitemmaster (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+                        // Process in batches
+                        $batches = array_chunk($items_to_process, $batch_size);
+                        $batch_count = 0;
+
+                        foreach ($batches as $batch) {
+                            $batch_count++;
+                            // Process each item in the batch
+                            foreach ($batch as $item) {
+                                // Check if item already exists
+                                $checkQuery->bind_param("ss", $item['code'], $item['liqFlag']);
+                                $checkQuery->execute();
+                                $checkResult = $checkQuery->get_result();
+
+                                if ($checkResult->num_rows > 0) {
+                                    // Update existing item
+                                    $updateQuery->bind_param("ssssssddddss",
+                                        $item['printName'], $item['itemName'], $item['subclass'], $item['detectedClass'],
+                                        $item['subclass'], $item['validItemGroup'], $item['pprice'], $item['bprice'],
+                                        $item['mprice'], $item['rprice'], $item['code'], $item['liqFlag']
+                                    );
+                                    if ($updateQuery->execute()) {
+                                        $updated++;
+                                        // Update stock information
+                                        updateItemStock($conn, $comp_id, $item['code'], $item['liqFlag'], $item['openingBalance']);
+                                    } else {
+                                        $errors++;
+                                        $errorDetails[] = "Failed to update item {$item['code']}: " . $updateQuery->error;
+                                    }
+                                } else {
+                                    // Insert new item
+                                    $insertQuery->bind_param("ssssssddddss",
+                                        $item['code'], $item['printName'], $item['itemName'], $item['subclass'],
+                                        $item['detectedClass'], $item['subclass'], $item['validItemGroup'],
+                                        $item['pprice'], $item['bprice'], $item['mprice'], $item['rprice'], $item['liqFlag']
+                                    );
+                                    if ($insertQuery->execute()) {
+                                        $imported++;
+                                        // Create stock information
+                                        updateItemStock($conn, $comp_id, $item['code'], $item['liqFlag'], $item['openingBalance']);
+                                    } else {
+                                        $errors++;
+                                        $errorDetails[] = "Failed to import item {$item['code']}: " . $insertQuery->error;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Close prepared statements
+                        $checkQuery->close();
+                        $updateQuery->close();
+                        $insertQuery->close();
+                    }
                     
-                    $importMessage = "Import completed: $imported new items imported, $updated items updated, $errors errors.";
+                    $importMessage = "Import completed: $imported new items imported, $updated items updated, $errors errors. Performance: ~" . round(($imported + $updated) / max(1, time() - $_SERVER['REQUEST_TIME']), 0) . " items/second";
                     if ($errors > 0) {
                         $importMessage .= " Error details: " . implode("; ", array_slice($errorDetails, 0, 10));
                         if (count($errorDetails) > 10) {

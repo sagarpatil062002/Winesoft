@@ -1,0 +1,230 @@
+[2025-12-19 08:15:52] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:15:52] [INFO] Request method: GET
+[2025-12-19 08:15:52] [INFO] Search term: ''
+[2025-12-19 08:15:52] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:15:57] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:15:57] [INFO] Request method: GET
+[2025-12-19 08:15:57] [INFO] Search term: ''
+[2025-12-19 08:15:57] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:27:32] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:27:32] [INFO] Request method: GET
+[2025-12-19 08:27:32] [INFO] Search term: ''
+[2025-12-19 08:27:32] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:27:32] [INFO] Final session quantities count: 0
+[2025-12-19 08:27:32] [INFO] Items in current view: 50
+[2025-12-19 08:27:32] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3551
+    [current_page] => 1
+    [total_pages] => 72
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-19 to 2025-12-19
+    [days_count] => 1
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+
+[2025-12-19 08:27:32] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:27:32] [INFO] Request method: GET
+[2025-12-19 08:27:32] [INFO] Search term: ''
+[2025-12-19 08:27:32] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:27:33] [INFO] Final session quantities count: 0
+[2025-12-19 08:27:33] [INFO] Items in current view: 50
+[2025-12-19 08:27:33] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3551
+    [current_page] => 1
+    [total_pages] => 72
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-19 to 2025-12-19
+    [days_count] => 1
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+
+[2025-12-19 08:27:51] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:27:51] [INFO] Request method: GET
+[2025-12-19 08:27:51] [INFO] Search term: 'directors special'
+[2025-12-19 08:27:51] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:27:51] [INFO] Final session quantities count: 0
+[2025-12-19 08:27:51] [INFO] Items in current view: 24
+[2025-12-19 08:27:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 24
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-19 to 2025-12-19
+    [days_count] => 1
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+
+[2025-12-19 08:28:03] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:28:03] [INFO] Request method: GET
+[2025-12-19 08:28:03] [INFO] Search term: 'directors special'
+[2025-12-19 08:28:03] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:28:03] [INFO] Final session quantities count: 0
+[2025-12-19 08:28:03] [INFO] Items in current view: 24
+[2025-12-19 08:28:03] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 24
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-12-19
+    [days_count] => 49
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+
+[2025-12-19 08:28:03] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:28:03] [INFO] Request method: GET
+[2025-12-19 08:28:03] [INFO] Search term: 'directors special'
+[2025-12-19 08:28:03] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:28:03] [INFO] Final session quantities count: 0
+[2025-12-19 08:28:03] [INFO] Items in current view: 24
+[2025-12-19 08:28:03] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 24
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-12-19
+    [days_count] => 49
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+
+[2025-12-19 08:28:59] [INFO] === PAGE ACCESS ===
+[2025-12-19 08:28:59] [INFO] Request method: GET
+[2025-12-19 08:28:59] [INFO] Search term: 'SCMPL0035921'
+[2025-12-19 08:28:59] [INFO] Current session ID: g9o12g50fc1n8udfviq5ipb4sn
+[2025-12-19 08:28:59] [INFO] Final session quantities count: 0
+[2025-12-19 08:28:59] [INFO] Items in current view: 1
+[2025-12-19 08:28:59] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 1
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-12-19
+    [days_count] => 49
+    [user_id] => 4
+    [comp_id] => 4
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => O
+            [9] => O
+            [10] => O
+            [11] => M
+        )
+
+)
+

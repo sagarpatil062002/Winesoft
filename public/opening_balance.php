@@ -433,9 +433,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     fgetcsv($handle);
 
     $imported_count = 0;
+    $skipped_count = 0;
     $error_messages = [];
     $items_to_update = []; // Store items for bulk update
     $items_for_daily_stock = []; // Store items for daily stock update
+    $skipped_items = []; // Store skipped items for reporting
 
     // Get all valid items in one query for validation (optimization)
     $valid_items = [];
@@ -453,8 +455,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         
         // Create a lookup array for faster validation
         while ($row = $valid_result->fetch_assoc()) {
-            $key = $row['CODE'] . '|' . $row['DETAILS'] . '|' . $row['DETAILS2'];
-            $valid_items[$key] = $row['CODE'];
+            // Create multiple lookup keys for flexibility
+            $key1 = $row['CODE']; // Just by code
+            $key2 = $row['CODE'] . '|' . $row['DETAILS'] . '|' . $row['DETAILS2']; // Full match
+            $valid_items[$key1] = $row['CODE'];
+            $valid_items[$key2] = $row['CODE'];
         }
         $valid_stmt->close();
     }
@@ -478,12 +483,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 $details2 = trim($data[2]);
                 $balance = intval(trim($data[3]));
                 
-                $key = $code . '|' . $details . '|' . $details2;
+                // Clean and normalize data for matching
+                $code = strtoupper($code);
+                $details = trim($details);
+                $details2 = trim($details2);
                 
-                // Validate item using lookup array (much faster)
-                if (isset($valid_items[$key])) {
-                    $items_to_update[] = ['code' => $code, 'balance' => $balance];
-                    $items_for_daily_stock[$code] = $balance;
+                // Try multiple matching strategies
+                $item_found = false;
+                $item_code_to_use = '';
+                
+                // Strategy 1: Try exact match with all fields
+                $full_key = $code . '|' . $details . '|' . $details2;
+                if (isset($valid_items[$full_key])) {
+                    $item_found = true;
+                    $item_code_to_use = $valid_items[$full_key];
+                }
+                // Strategy 2: Try matching just by code
+                elseif (isset($valid_items[$code])) {
+                    $item_found = true;
+                    $item_code_to_use = $valid_items[$code];
+                }
+                // Strategy 3: Try fuzzy matching by code (case-insensitive)
+                else {
+                    foreach ($valid_items as $key => $valid_code) {
+                        if (strtoupper($key) === $code || $valid_code === $code) {
+                            $item_found = true;
+                            $item_code_to_use = $valid_code;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($item_found && $item_code_to_use) {
+                    $items_to_update[] = ['code' => $item_code_to_use, 'balance' => $balance];
+                    $items_for_daily_stock[$item_code_to_use] = $balance;
                     $imported_count++;
                     
                     // Process in batches
@@ -509,7 +542,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                         $current_batch++;
                     }
                 } else {
-                    $error_messages[] = "Item validation failed for '$code' - '$details' - '$details2'. Item not found or not allowed for your license type.";
+                    $skipped_count++;
+                    $skipped_items[] = [
+                        'code' => $code,
+                        'name' => $details,
+                        'category' => $details2,
+                        'reason' => 'Item not found in database or not allowed for your license type'
+                    ];
+                    
+                    // Store in error messages (limit to first 10 to avoid huge messages)
+                    if ($skipped_count <= 10) {
+                        $error_messages[] = "Skipped item: '$code' - '$details' - '$details2' (not found in database or not allowed for your license type)";
+                    }
                 }
             }
         }
@@ -547,10 +591,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         // Commit transaction
         $conn->commit();
 
+        // Prepare success message
+        $message = "Successfully imported $imported_count opening balances (only items allowed for your license type were processed). ";
+        if ($skipped_count > 0) {
+            $message .= "$skipped_count items were skipped because they were not found in the database or not allowed for your license type. ";
+        }
+        $message .= "Performance: ~" . round($imported_count / max(1, time() - $_SERVER['REQUEST_TIME']), 0) . " items/second";
+
         $_SESSION['import_message'] = [
             'success' => true,
-            'message' => "Successfully imported $imported_count opening balances (only items allowed for your license type were processed)",
-            'errors' => $error_messages
+            'message' => $message,
+            'errors' => $error_messages,
+            'imported_count' => $imported_count,
+            'skipped_count' => $skipped_count
         ];
 
         header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search));
@@ -855,6 +908,15 @@ if (isset($_SESSION['import_message'])) {
         display: flex;
         justify-content: center;
     }
+    .skip-info {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -886,6 +948,16 @@ if (isset($_SESSION['import_message'])) {
         </ul>
       </div>
 
+      <!-- CSV Import Info -->
+      <div class="skip-info mb-3">
+        <strong>CSV Import Behavior:</strong>
+        <ul class="mb-0">
+          <li>Items not found in database will be <strong>skipped automatically</strong></li>
+          <li>Only valid items matching your license type will be imported</li>
+          <li>Skipped items will be listed in the import report</li>
+          <li>Import continues even if some items are not found</li>
+        </ul>
+      </div>
 
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
@@ -906,7 +978,7 @@ if (isset($_SESSION['import_message'])) {
             <div class="csv-format">
               <strong>CSV format:</strong> Item_Code, Item_Name, Category, Current_Stock<br>
               <strong>Optimized Processing:</strong> Batch processing (100 items/batch)<br>
-              <strong>Performance:</strong> Up to 10x faster than previous version<br>
+              <strong>Behavior:</strong> Items not found will be skipped, import continues<br>
               <strong>Memory Efficient:</strong> Processes large files without memory issues
             </div>
           </div>
@@ -929,15 +1001,28 @@ if (isset($_SESSION['import_message'])) {
         
         <?php if ($import_message): ?>
           <div class="alert alert-<?= $import_message['success'] ? 'success' : 'danger' ?> mt-3">
-            <?= $import_message['message'] ?>
-            <?php if (!empty($import_message['errors'])): ?>
-              <ul class="mb-0 mt-2">
-                <?php foreach ($import_message['errors'] as $error): ?>
-                  <li><?= $error ?></li>
-                <?php endforeach; ?>
-              </ul>
+            <strong><?= $import_message['success'] ? 'Success!' : 'Error!' ?></strong> <?= $import_message['message'] ?>
+            <?php if (isset($import_message['imported_count']) && isset($import_message['skipped_count']) && $import_message['skipped_count'] > 0): ?>
+              <div class="mt-2">
+                <strong>Import Summary:</strong><br>
+                • Imported: <?= $import_message['imported_count'] ?> items<br>
+                • Skipped: <?= $import_message['skipped_count'] ?> items (not found in database)
+              </div>
             <?php endif; ?>
-            </div>
+            <?php if (!empty($import_message['errors'])): ?>
+              <div class="mt-2">
+                <strong>Skipped Items (first 10 shown):</strong>
+                <ul class="mb-0 mt-2 small">
+                  <?php foreach ($import_message['errors'] as $error): ?>
+                    <li><?= $error ?></li>
+                  <?php endforeach; ?>
+                  <?php if (isset($import_message['skipped_count']) && $import_message['skipped_count'] > 10): ?>
+                    <li>... and <?= $import_message['skipped_count'] - 10 ?> more items were skipped</li>
+                  <?php endif; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
         <?php endif; ?>
       </div>
 
@@ -1143,7 +1228,7 @@ if (isset($_SESSION['import_message'])) {
           <div class="progress mt-3" style="width: 300px;">
             <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
           </div>
-          <p class="mt-2"><small>This may take several minutes for large files. Do not close this window.</small></p>
+          <p class="mt-2"><small>Items not found in database will be skipped automatically.</small></p>
         </div>
       `;
       document.body.appendChild(loadingOverlay);

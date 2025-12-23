@@ -615,7 +615,7 @@ function getSortLink($column, $label) {
                       </a>
                       <button class="btn btn-sm btn-danger" 
                               title="Delete" 
-                              onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>')">
+                              onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>', '<?=htmlspecialchars($purchase['DATE'])?>', '<?=htmlspecialchars($purchase['TP_NO'])?>')">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
@@ -719,11 +719,23 @@ function getSortLink($column, $label) {
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p>Are you sure you want to delete this purchase? This action cannot be undone.</p>
+        <p>Are you sure you want to delete this purchase? This action will:</p>
+        <ul>
+          <li>Delete the purchase record from tblpurchases</li>
+          <li>Delete all purchase details from tblpurchasedetails</li>
+          <li>Update item stock in tblitemstock</li>
+          <li>Update daily stock records from the purchase date until today</li>
+        </ul>
+        <p class="text-danger"><strong>Warning:</strong> This action cannot be undone and will affect stock calculations.</p>
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i> 
+          <strong>Note:</strong> Daily stock records will be recalculated from <span id="deleteStartDate"></span> to today using the formula:<br>
+          <small>day_x_closing = day_x_open + day_x_purchase - day_x_sales</small>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a href="#" id="deleteConfirm" class="btn btn-danger">Delete</a>
+        <a href="#" id="deleteConfirm" class="btn btn-danger">Yes, Delete</a>
       </div>
     </div>
   </div>
@@ -732,9 +744,12 @@ function getSortLink($column, $label) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Delete Confirmation Function
-function confirmDelete(purchaseId, mode) {
-  $('#deleteConfirm').attr('href', 'purchase_delete.php?id=' + purchaseId + '&mode=' + mode);
+// Delete Confirmation Function with enhanced parameters
+function confirmDelete(purchaseId, mode, purchaseDate, tpNo) {
+  // Set the delete URL with all necessary parameters
+  const deleteUrl = `purchase_delete.php?id=${purchaseId}&mode=${mode}&purchase_date=${purchaseDate}&tp_no=${encodeURIComponent(tpNo)}`;
+  $('#deleteConfirm').attr('href', deleteUrl);
+  $('#deleteStartDate').text(purchaseDate);
   $('#deleteModal').modal('show');
 }
 

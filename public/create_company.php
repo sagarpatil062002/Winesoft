@@ -223,8 +223,8 @@
                 // Process form submission
                 if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $company_name = trim($_POST['company_name']);
-                    $cf_line = trim($_POST['cf_line']);
-                    $cs_line = trim($_POST['cs_line']);
+                    $cf_line = ''; // Fixed: Set to empty string since there's no form field for this
+                    $cs_line = ''; // Fixed: Set to empty string since there's no form field for this
                     $fin_year = intval($_POST['fin_year']);
                     $comp_addr = trim($_POST['comp_addr']);
                     $license_type_id = isset($_POST['license_type']) ? intval($_POST['license_type']) : 0;

@@ -1,0 +1,98 @@
+[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG START ===
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase ID: 3
+[22-Dec-2025 04:57:10 Europe/Berlin] Mode: F
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase Date: 2025-11-18
+[22-Dec-2025 04:57:10 Europe/Berlin] TP No: 17007
+[22-Dec-2025 04:57:10 Europe/Berlin] Company ID: 4
+[22-Dec-2025 04:57:10 Europe/Berlin] Starting transaction...
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 1: Getting purchase data...
+[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchases WHERE ID = ? AND CompID = ?
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase data found: Array
+(
+    [ID] => 3
+    [DATE] => 2025-11-18
+    [SUBCODE] => SAMB
+    [VOC_NO] => 1
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 0.00
+    [TPNO] => 17007
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 4
+    [CreatedAt] => 2025-12-22 09:26:33
+    [UpdatedAt] => 2025-12-22 09:26:33
+    [AUTO_TPNO] => FL167-171125/17008
+)
+
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 2: Getting purchase details...
+[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchasedetails WHERE PurchaseID = ?
+[22-Dec-2025 04:57:10 Europe/Berlin] Found 2 purchase details
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 3: Updating tblitemstock...
+[22-Dec-2025 04:57:10 Europe/Berlin] Processing item: SCMKS0039633, Quantity: 3
+[22-Dec-2025 04:57:10 Europe/Berlin] Stock query: INSERT INTO tblitemstock (ITEM_CODE, QTY, CompID) 
+                               VALUES (?, -?, ?) 
+                               ON DUPLICATE KEY UPDATE QTY = QTY - ?
+[22-Dec-2025 04:57:10 Europe/Berlin] ERROR: Table 'winesoft.tblitemstock' doesn't exist
+[22-Dec-2025 04:57:10 Europe/Berlin] Rolling back transaction...
+[22-Dec-2025 04:57:10 Europe/Berlin] Delete success: NO
+[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG END ===
+[22-Dec-2025 04:57:10 Europe/Berlin] Redirecting to: purchase_module.php?mode=F
+[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG START ===
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase ID: 3
+[22-Dec-2025 04:57:10 Europe/Berlin] Mode: F
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase Date: 2025-11-18
+[22-Dec-2025 04:57:10 Europe/Berlin] TP No: 17007
+[22-Dec-2025 04:57:10 Europe/Berlin] Company ID: 4
+[22-Dec-2025 04:57:10 Europe/Berlin] Starting transaction...
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 1: Getting purchase data...
+[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchases WHERE ID = ? AND CompID = ?
+[22-Dec-2025 04:57:10 Europe/Berlin] Purchase data found: Array
+(
+    [ID] => 3
+    [DATE] => 2025-11-18
+    [SUBCODE] => SAMB
+    [VOC_NO] => 1
+    [INV_NO] => 
+    [INV_DATE] => 0000-00-00
+    [TAMT] => 0.00
+    [TPNO] => 17007
+    [TP_DATE] => 0000-00-00
+    [SCHDIS] => 0.00
+    [CASHDIS] => 0.00
+    [OCTROI] => 0.00
+    [FREIGHT] => 0.00
+    [STAX_PER] => 0.00
+    [STAX_AMT] => 0.00
+    [TCS_PER] => 0.00
+    [TCS_AMT] => 0.00
+    [MISC_CHARG] => 0.00
+    [PUR_FLAG] => T
+    [CompID] => 4
+    [CreatedAt] => 2025-12-22 09:26:33
+    [UpdatedAt] => 2025-12-22 09:26:33
+    [AUTO_TPNO] => FL167-171125/17008
+)
+
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 2: Getting purchase details...
+[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchasedetails WHERE PurchaseID = ?
+[22-Dec-2025 04:57:10 Europe/Berlin] Found 2 purchase details
+[22-Dec-2025 04:57:10 Europe/Berlin] Step 3: Updating tblitemstock...
+[22-Dec-2025 04:57:10 Europe/Berlin] Processing item: SCMKS0039633, Quantity: 3
+[22-Dec-2025 04:57:10 Europe/Berlin] Stock query: INSERT INTO tblitemstock (ITEM_CODE, QTY, CompID) 
+                               VALUES (?, -?, ?) 
+                               ON DUPLICATE KEY UPDATE QTY = QTY - ?
+[22-Dec-2025 04:57:10 Europe/Berlin] ERROR: Table 'winesoft.tblitemstock' doesn't exist
+[22-Dec-2025 04:57:10 Europe/Berlin] Rolling back transaction...
+[22-Dec-2025 04:57:10 Europe/Berlin] Delete success: NO
+[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG END ===
+[22-Dec-2025 04:57:10 Europe/Berlin] Redirecting to: purchase_module.php?mode=F

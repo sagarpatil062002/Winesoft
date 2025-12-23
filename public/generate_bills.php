@@ -334,10 +334,22 @@ function getNextBillNumberFallback($conn, $comp_id) {
         // Commit transaction
         $conn->commit();
         
+        // Calculate total volume and items processed
+        $total_volume = 0;
+        $total_items_processed = 0;
+        foreach ($items_data as $item_code => $item_data) {
+            $total_items_processed += $item_data['total_qty'];
+            // Get item size for volume calculation
+            $item_size = getItemSize($conn, $item_code, 'ALL');
+            $total_volume += $item_size * $item_data['total_qty'];
+        }
+
         $response['success'] = true;
         $response['message'] = "Sales distributed successfully! Generated " . count($bills) . " bills with sequential numbering.";
         $response['total_amount'] = number_format($total_amount, 2);
         $response['bill_count'] = count($bills);
+        $response['total_items'] = $total_items_processed;
+        $response['total_volume'] = $total_volume;
         $response['generated_bills'] = $generated_bills; // Include bill details in response
         
     } catch (Exception $e) {
