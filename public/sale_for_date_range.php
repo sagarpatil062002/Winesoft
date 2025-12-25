@@ -59,6 +59,81 @@ function validateStock($current_stock, $requested_qty, $item_code) {
     return true;
 }
 
+// Function to get the correct daily stock table name
+function getDailyStockTableName($conn, $date, $comp_id) {
+    $current_month = date('Y-m'); // Current month in "YYYY-MM" format
+    $date_month = date('Y-m', strtotime($date)); // Date month in "YYYY-MM" format
+    
+    if ($date_month === $current_month) {
+        // Use current month table (no suffix)
+        return "tbldailystock_" . $comp_id;
+    } else {
+        // Use archived month table (with suffix)
+        $month_suffix = date('m_y', strtotime($date)); // e.g., "09_25"
+        return "tbldailystock_" . $comp_id . "_" . $month_suffix;
+    }
+}
+
+// Function to get stock as of a specific date from daily stock tables
+function getStockAsOfDate($conn, $item_code, $date, $comp_id) {
+    try {
+        // Get the correct table name
+        $daily_stock_table = getDailyStockTableName($conn, $date, $comp_id);
+        
+        // Check if the table exists
+        $check_table_query = "SHOW TABLES LIKE '$daily_stock_table'";
+        $table_result = $conn->query($check_table_query);
+        
+        if ($table_result->num_rows == 0) {
+            logMessage("Daily stock table '$daily_stock_table' not found for date $date", 'WARNING');
+            return 0; // Table doesn't exist, return 0 stock
+        }
+        
+        // Extract day number from date (e.g., 2024-09-05 → day 05)
+        $day_num = date('d', strtotime($date));
+        $day_column = "DAY_" . str_pad($day_num, 2, '0', STR_PAD_LEFT) . "_CLOSING"; // Changed from _OPEN
+        
+        // Check if the column exists in the table
+        $check_column_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$day_column'";
+        $column_result = $conn->query($check_column_query);
+        
+        if ($column_result->num_rows == 0) {
+            logMessage("Column '$day_column' not found in table '$daily_stock_table' for date $date", 'WARNING');
+            return 0; // Column doesn't exist, return 0 stock
+        }
+        
+        // Get the month for the date (YYYY-MM format)
+        $month_year = date('Y-m', strtotime($date));
+        
+        // Query to get the closing stock for the specific day
+        $stock_query = "SELECT $day_column as stock_value 
+                       FROM $daily_stock_table 
+                       WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        
+        $stock_stmt = $conn->prepare($stock_query);
+        $stock_stmt->bind_param("ss", $item_code, $month_year);
+        $stock_stmt->execute();
+        $stock_result = $stock_stmt->get_result();
+        
+        if ($stock_result->num_rows > 0) {
+            $stock_data = $stock_result->fetch_assoc();
+            $stock_value = $stock_data['stock_value'] ?? 0;
+            $stock_stmt->close();
+            
+            logMessage("Stock for item $item_code on $date: $stock_value (from $day_column in $daily_stock_table)");
+            return floatval($stock_value);
+        } else {
+            $stock_stmt->close();
+            logMessage("No stock record found for item $item_code in table '$daily_stock_table' for date $date", 'WARNING');
+            return 0; // No record found, return 0 stock
+        }
+        
+    } catch (Exception $e) {
+        logMessage("Error getting stock for item $item_code on $date: " . $e->getMessage(), 'ERROR');
+        return 0; // Return 0 on error
+    }
+}
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     logMessage('User not logged in, redirecting to index.php', 'WARNING');
@@ -126,24 +201,28 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
-$current_stock_column = "Current_Stock" . $comp_id;
-$opening_stock_column = "Opening_Stock" . $comp_id;
 
-// Check if the stock columns exist, if not create them
-// Cache this check in session to avoid repeated queries
-if (!isset($_SESSION['stock_columns_checked'])) {
-    $check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
-    $column_result = $conn->query($check_column_query);
+// Validate that end date is not in the future
+if (strtotime($end_date) > strtotime(date('Y-m-d'))) {
+    $end_date = date('Y-m-d');
+    logMessage("End date adjusted to today's date as future date was selected", 'WARNING');
+}
 
-    if ($column_result->num_rows == 0) {
-        $alter_query = "ALTER TABLE tblitem_stock 
-                        ADD COLUMN $opening_stock_column DECIMAL(10,3) DEFAULT 0.000,
-                        ADD COLUMN $current_stock_column DECIMAL(10,3) DEFAULT 0.000";
-        if (!$conn->query($alter_query)) {
-            die("Error creating stock columns: " . $conn->error);
-        }
-    }
-    $_SESSION['stock_columns_checked'] = true;
+// Get day number for end date
+$end_day = date('d', strtotime($end_date));
+$end_day_column = "DAY_" . str_pad($end_day, 2, '0', STR_PAD_LEFT) . "_CLOSING"; // Changed from _OPEN
+
+// Get the correct daily stock table for end date
+$daily_stock_table = getDailyStockTableName($conn, $end_date, $comp_id);
+
+// Check if the daily stock table exists
+$check_table_query = "SHOW TABLES LIKE '$daily_stock_table'";
+$table_result = $conn->query($check_table_query);
+$table_exists = ($table_result->num_rows > 0);
+
+if (!$table_exists) {
+    logMessage("Daily stock table '$daily_stock_table' not found for end date $end_date", 'ERROR');
+    $error_message = "Daily stock data not available for the selected end date ($end_date). Please select a different date range.";
 }
 
 // Build the order clause based on sequence type
@@ -164,57 +243,70 @@ $items_per_page = 50; // Adjust based on your needs
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
-// MODIFIED: Get total count for pagination with license filtering
-if (!empty($allowed_classes)) {
+// MODIFIED: Get total count for pagination with license filtering AND stock > 0 filter
+if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
-    $count_params = array_merge([$mode], $allowed_classes);
-    $count_types = str_repeat('s', count($count_params));
+    $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
+                    FROM tblitemmaster im 
+                    LEFT JOIN $daily_stock_table dst ON im.CODE = dst.ITEM_CODE 
+                    WHERE im.LIQ_FLAG = ? 
+                    AND im.CLASS IN ($class_placeholders)
+                    AND dst.STK_MONTH = ?
+                    AND dst.$end_day_column > 0";
+    
+    $count_params = array_merge([$mode], $allowed_classes, [date('Y-m', strtotime($end_date))]);
+    $count_types = str_repeat('s', count($allowed_classes) + 2); // +2 for mode and stk_month
 } else {
-    // If no classes allowed, show empty result
+    // If no classes allowed or table doesn't exist, show empty result
     $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE 1 = 0";
     $count_params = [];
     $count_types = "";
 }
 
-if ($search !== '') {
+if ($search !== '' && $table_exists) {
     $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
     $count_params[] = "%$search%";
     $count_params[] = "%$search%";
     $count_types .= "ss";
 }
 
-$count_stmt = $conn->prepare($count_query);
-if (!empty($count_params)) {
-    $count_stmt->bind_param($count_types, ...$count_params);
+$total_items = 0;
+if ($table_exists) {
+    $count_stmt = $conn->prepare($count_query);
+    if (!empty($count_params)) {
+        $count_stmt->bind_param($count_types, ...$count_params);
+    }
+    $count_stmt->execute();
+    $count_result = $count_stmt->get_result();
+    $total_items = $count_result->fetch_assoc()['total'];
+    $count_stmt->close();
 }
-$count_stmt->execute();
-$count_result = $count_stmt->get_result();
-$total_items = $count_result->fetch_assoc()['total'];
-$count_stmt->close();
 
-// MODIFIED: Main query with pagination and license filtering
-if (!empty($allowed_classes)) {
+// MODIFIED: Main query with pagination, license filtering AND stock > 0 filter
+if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                     COALESCE(dst.$end_day_column, 0) as CURRENT_STOCK
               FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
-    $params = array_merge([$mode], $allowed_classes);
-    $types = str_repeat('s', count($params));
+              LEFT JOIN $daily_stock_table dst ON im.CODE = dst.ITEM_CODE 
+              WHERE im.LIQ_FLAG = ? 
+              AND im.CLASS IN ($class_placeholders)
+              AND dst.STK_MONTH = ?
+              AND dst.$end_day_column > 0";
+    
+    $params = array_merge([$mode], $allowed_classes, [date('Y-m', strtotime($end_date))]);
+    $types = str_repeat('s', count($allowed_classes) + 2); // +2 for mode and stk_month
 } else {
-    // If no classes allowed, show empty result
+    // If no classes allowed or table doesn't exist, show empty result
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                     COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
-              FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                     0 as CURRENT_STOCK
+              FROM tblitemmaster im 
               WHERE 1 = 0";
     $params = [];
     $types = "";
 }
 
-if ($search !== '') {
+if ($search !== '' && $table_exists) {
     $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
@@ -226,14 +318,17 @@ $params[] = $items_per_page;
 $params[] = $offset;
 $types .= "ii";
 
-$stmt = $conn->prepare($query);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+$items = [];
+if ($table_exists) {
+    $stmt = $conn->prepare($query);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $items = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
 }
-$stmt->execute();
-$result = $stmt->get_result();
-$items = $result->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
 
 // Calculate total pages
 $total_pages = ceil($total_items / $items_per_page);
@@ -264,22 +359,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
 }
 
 // MODIFIED: Get ALL items data for JavaScript from ALL modes for Total Sales Summary
-if (!empty($allowed_classes)) {
+// This now uses the daily stock table for the end date
+if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
-                               COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                               COALESCE(dst.$end_day_column, 0) as CURRENT_STOCK
                         FROM tblitemmaster im
-                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                        WHERE im.CLASS IN ($class_placeholders)"; // REMOVED mode filter
+                        LEFT JOIN $daily_stock_table dst ON im.CODE = dst.ITEM_CODE 
+                        WHERE im.CLASS IN ($class_placeholders)
+                        AND dst.STK_MONTH = ?
+                        AND dst.$end_day_column > 0"; // REMOVED mode filter
     $all_items_stmt = $conn->prepare($all_items_query);
-    $all_items_params = $allowed_classes; // REMOVED mode parameter
+    $all_items_params = array_merge($allowed_classes, [date('Y-m', strtotime($end_date))]); // REMOVED mode parameter
     $all_items_types = str_repeat('s', count($all_items_params));
     $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
 } else {
     $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
-                               COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                               0 as CURRENT_STOCK
                         FROM tblitemmaster im
-                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
                         WHERE 1 = 0";
     $all_items_stmt = $conn->prepare($all_items_query);
 }
@@ -658,22 +755,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
             // MODIFIED: Get ALL items from database for validation WITHOUT mode filtering
+            // Now using daily stock table for end date
+            $end_day = date('d', strtotime($end_date));
+            $end_day_column = "DAY_" . str_pad($end_day, 2, '0', STR_PAD_LEFT) . "_CLOSING"; // Changed from _OPEN
+            $daily_stock_table = getDailyStockTableName($conn, $end_date, $comp_id);
+            
             if (!empty($allowed_classes)) {
                 $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
                 $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
-                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                           COALESCE(dst.$end_day_column, 0) as CURRENT_STOCK
                                     FROM tblitemmaster im
-                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
-                                    WHERE im.CLASS IN ($class_placeholders)"; // REMOVED mode filter
+                                    LEFT JOIN $daily_stock_table dst ON im.CODE = dst.ITEM_CODE 
+                                    WHERE im.CLASS IN ($class_placeholders)
+                                    AND dst.STK_MONTH = ?
+                                    AND dst.$end_day_column > 0"; // REMOVED mode filter
                 $all_items_stmt = $conn->prepare($all_items_query);
-                $all_items_params = $allowed_classes; // REMOVED mode parameter
+                $all_items_params = array_merge($allowed_classes, [date('Y-m', strtotime($end_date))]); // REMOVED mode parameter
                 $all_items_types = str_repeat('s', count($all_items_params));
                 $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
             } else {
                 $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
-                                           COALESCE(st.$current_stock_column, 0) as CURRENT_STOCK
+                                           0 as CURRENT_STOCK
                                     FROM tblitemmaster im
-                                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
                                     WHERE 1 = 0";
                 $all_items_stmt = $conn->prepare($all_items_query);
             }
@@ -927,7 +1030,10 @@ $debug_info = [
     'user_id' => $_SESSION['user_id'],
     'comp_id' => $comp_id,
     'license_type' => $license_type, // ADDED: License info in debug
-    'allowed_classes' => $allowed_classes // ADDED: Allowed classes in debug
+    'allowed_classes' => $allowed_classes, // ADDED: Allowed classes in debug
+    'end_day_column' => $end_day_column, // ADDED: Which column we're using
+    'daily_stock_table' => $daily_stock_table, // ADDED: Which table we're using
+    'table_exists' => $table_exists // ADDED: Whether table exists
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
@@ -1170,6 +1276,15 @@ tr.has-quantity td {
     background-color: #fff3cd !important;
 }
 
+/* Stock info note */
+.stock-info-note {
+    background-color: #e7f3ff;
+    border-left: 4px solid #007bff;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 0.9em;
+}
+
   </style>
 </head>
 <body>
@@ -1201,6 +1316,12 @@ tr.has-quantity td {
           </p>
       </div>
 
+      <!-- Stock Info Note -->
+      <div class="stock-info-note mb-3">
+          <strong><i class="fas fa-info-circle"></i> Stock Information:</strong>
+          <p class="mb-0">Showing stock as of <strong><?= date('d-M-Y', strtotime($end_date)) ?></strong> (DAY_<?= $end_day ?>_CLOSING from <?= $daily_stock_table ?> table). Only items with stock > 0 are displayed.</p>
+      </div>
+
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -1212,6 +1333,13 @@ tr.has-quantity td {
       <?php if (isset($error_message)): ?>
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <?= $error_message ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <?php endif; ?>
+
+      <?php if (!$table_exists): ?>
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> Daily stock table '<?= $daily_stock_table ?>' not found for the selected end date. Please select a different date range.
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
@@ -1277,7 +1405,8 @@ tr.has-quantity td {
           <div class="col-md-3">
             <label for="end_date" class="form-label">End Date</label>
             <input type="date" name="end_date" class="form-control" 
-                   value="<?= htmlspecialchars($end_date); ?>" required>
+                   value="<?= htmlspecialchars($end_date); ?>" 
+                   max="<?= date('Y-m-d'); ?>" required>
           </div>
           
           <div class="col-md-4">
@@ -1287,6 +1416,9 @@ tr.has-quantity td {
                 (<?= $days_count ?> days)
               </span>
             </label>
+            <div class="text-muted small">
+              Stock shown: As of <?= date('d-M-Y', strtotime($end_date)) ?> closing
+            </div>
           </div>
           
           <div class="col-md-2">
@@ -1337,21 +1469,21 @@ tr.has-quantity td {
           </button>
           
           <!-- Single Button with Dual Functionality -->
-          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
+          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" <?= !$table_exists ? 'disabled' : '' ?>>
             <i class="fas fa-save"></i> Generate Bills
           </button>
           
           <!-- Clear Session Button -->
-          <button type="button" id="clearSessionBtn" class="btn btn-danger">
+          <button type="button" id="clearSessionBtn" class="btn btn-danger" <?= !$table_exists ? 'disabled' : '' ?>>
             <i class="fas fa-trash"></i> Clear All Quantities
           </button>
           
           <!-- Sales Log Button -->
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()" <?= !$table_exists ? 'disabled' : '' ?>>
               <i class="fas fa-file-alt"></i> View Sales Log
           </button>
 
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal" <?= !$table_exists ? 'disabled' : '' ?>>
               <i class="fas fa-chart-bar"></i> View Total Sales Summary
           </button>
           
@@ -1369,7 +1501,7 @@ tr.has-quantity td {
                 <th>Item Name</th>
                 <th>Category</th>
                 <th>Rate (₹)</th>
-                <th>Current Stock</th>
+                <th>Closing Stock<br><small>As of <?= date('d-M-Y', strtotime($end_date)) ?></small></th>
                 <th>Total Sale Qty</th>
                 <th class="closing-balance-header">Closing Balance</th>
                 <th class="action-column">Action</th>
@@ -1380,7 +1512,7 @@ tr.has-quantity td {
               </tr>
             </thead>
             <tbody>
-<?php if (!empty($items)): ?>
+<?php if (!empty($items) && $table_exists): ?>
     <?php foreach ($items as $item): 
         $item_code = $item['CODE'];
         $item_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
@@ -1416,14 +1548,16 @@ tr.has-quantity td {
            data-code="<?= htmlspecialchars($item_code); ?>"
            data-stock="<?= $item['CURRENT_STOCK'] ?>"
            data-size="<?= $size ?>"
-           oninput="validateQuantity(this)">
+           oninput="validateQuantity(this)"
+           <?= !$table_exists ? 'disabled' : '' ?>>
 </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
                 <?= number_format($closing_balance, 3) ?>
             </td>
             <td class="action-column">
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                        data-code="<?= htmlspecialchars($item_code); ?>">
+                        data-code="<?= htmlspecialchars($item_code); ?>"
+                        <?= !$table_exists ? 'disabled' : '' ?>>
                     <i class="fas fa-random"></i> Shuffle
                 </button>
             </td>
@@ -1435,9 +1569,15 @@ tr.has-quantity td {
             </td>
         </tr>
     <?php endforeach; ?>
+<?php elseif (!$table_exists): ?>
+    <tr>
+        <td colspan="9" class="text-center text-warning">
+            <i class="fas fa-exclamation-triangle"></i> Daily stock table not found for the selected end date. Please select a different date range.
+        </td>
+    </tr>
 <?php else: ?>
     <tr>
-        <td colspan="9" class="text-center text-muted">No items found.</td>
+        <td colspan="9" class="text-center text-muted">No items found with stock > 0 for the selected date range.</td>
     </tr>
 <?php endif; ?>
 </tbody>
@@ -1619,10 +1759,18 @@ const daysCount = <?= $days_count ?>;
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
+// Table exists flag
+const tableExists = <?= $table_exists ? 'true' : 'false' ?>;
 
 // NEW: Function to check stock availability via AJAX before submission
 function checkStockAvailabilityBeforeSubmit() {
     return new Promise((resolve, reject) => {
+        // Check if table exists
+        if (!tableExists) {
+            reject('Daily stock table not available for the selected date range.');
+            return;
+        }
+        
         // Check if we have any quantities > 0
         let hasQuantity = false;
         for (const itemCode in allSessionQuantities) {
@@ -1695,6 +1843,12 @@ function showClientValidationAlert(message) {
 
 // Function to clear session quantities via AJAX
 function clearSessionQuantities() {
+    // Check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot clear quantities.');
+        return;
+    }
+    
     $.ajax({
         url: 'clear_session_quantities.php',
         type: 'POST',
@@ -1712,6 +1866,13 @@ function clearSessionQuantities() {
 
 // Enhanced quantity validation function
 function validateQuantity(input) {
+    // Check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot update quantities.');
+        $(input).val(0);
+        return false;
+    }
+    
     const itemCode = $(input).data('code');
     const currentStock = parseFloat($(input).data('stock'));
     let enteredQty = parseInt($(input).val()) || 0;
@@ -1771,6 +1932,9 @@ function updateItemUI(itemCode, qty, currentStock) {
 
 // New function to save quantity to session via AJAX
 function saveQuantityToSession(itemCode, qty) {
+    // Check if table exists
+    if (!tableExists) return;
+    
     // Debounce to prevent too many requests
     if (typeof saveQuantityToSession.debounce === 'undefined') {
         saveQuantityToSession.debounce = null;
@@ -1799,6 +1963,12 @@ function saveQuantityToSession(itemCode, qty) {
 
 // Function to validate all quantities before form submission
 function validateAllQuantities() {
+    // Check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot generate bills.');
+        return false;
+    }
+    
     let isValid = true;
     let errorItems = [];
     
@@ -1871,6 +2041,9 @@ function distributeSales(total_qty, days_count) {
 
 // OPTIMIZED: Function to update the distribution preview ONLY for items with qty > 0
 function updateDistributionPreview(itemCode, totalQty) {
+    // Check if table exists
+    if (!tableExists) return;
+    
     if (totalQty <= 0) {
         // Remove distribution cells if quantity is 0
         $(`input[name="sale_qty[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
@@ -1974,7 +2147,13 @@ function setupRowNavigation() {
 
 // UPDATED: Function to generate bills immediately with client-side validation
 function generateBills() {
-    // First validate basic quantities
+    // First check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot generate bills.');
+        return false;
+    }
+    
+    // Then validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
@@ -1994,7 +2173,13 @@ function generateBills() {
 
 // Function to save to pending sales via AJAX
 function saveToPendingSales() {
-    // First validate basic quantities
+    // First check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot save to pending.');
+        return false;
+    }
+    
+    // Then validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
@@ -2061,6 +2246,12 @@ function saveToPendingSales() {
 
 // Single button with dual functionality
 function handleGenerateBills() {
+    // First check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Please select a different date range.');
+        return false;
+    }
+    
     // Check if we have any quantities > 0 (optimized check)
     let hasQuantity = false;
     for (const itemCode in allSessionQuantities) {
@@ -2275,6 +2466,12 @@ function getVolumeColumn(volume) {
 function updateTotalSalesModule() {
     console.log('updateTotalSalesModule called - Processing ALL items from ALL modes');
     
+    // Check if table exists
+    if (!tableExists) {
+        console.log('Table does not exist, skipping total sales update');
+        return;
+    }
+    
     // Initialize empty summary object with ALL sizes
     const allSizes = [
         '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
@@ -2377,6 +2574,12 @@ function printSalesSummary() {
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
     console.log('Document ready - Initializing...');
+    
+    // Check if table exists
+    if (!tableExists) {
+        console.log('Daily stock table not found, disabling functionality');
+        return;
+    }
     
     // Initialize table headers and columns
     initializeTableHeaders();

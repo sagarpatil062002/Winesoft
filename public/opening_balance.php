@@ -83,6 +83,32 @@ function getArchiveTableName($comp_id, $month) {
     return "tbldailystock_{$comp_id}_{$month_year}";
 }
 
+// Function to create a fresh archive table with only base columns (NO day columns)
+function createFreshArchiveTable($conn, $comp_id, $month) {
+    $table_name = getArchiveTableName($comp_id, $month);
+    
+    // Create table with ONLY base columns, NO day columns
+    $create_table_query = "CREATE TABLE $table_name (
+        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+        `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+        `ITEM_CODE` varchar(20) NOT NULL,
+        `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+        PRIMARY KEY (`DailyStockID`),
+        UNIQUE KEY `unique_daily_stock_$comp_id` (`STK_MONTH`,`ITEM_CODE`),
+        KEY `ITEM_CODE_$comp_id` (`ITEM_CODE`),
+        KEY `LIQ_FLAG_$comp_id` (`LIQ_FLAG`),
+        KEY `STK_MONTH_$comp_id` (`STK_MONTH`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    
+    if ($conn->query($create_table_query)) {
+        return $table_name;
+    } else {
+        error_log("Failed to create archive table $table_name: " . $conn->error);
+        return false;
+    }
+}
+
 // Check if company daily stock table exists, if not create it
 $check_table_query = "SHOW TABLES LIKE 'tbldailystock_$comp_id'";
 $check_table_result = $conn->query($check_table_query);
@@ -125,8 +151,8 @@ function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
         $archive_exists = $check_result->num_rows > 0;
         
         if (!$archive_exists) {
-            $create_archive_query = "CREATE TABLE $table_name LIKE tbldailystock_$comp_id";
-            $conn->query($create_archive_query);
+            // Create FRESH archive table with NO day columns
+            createFreshArchiveTable($conn, $comp_id, $month);
             $force_create = true; // Force column creation for new table
         }
     }
@@ -217,16 +243,65 @@ if (!$current_month_exists) {
         // Archive previous month's data
         $archive_table = getArchiveTableName($comp_id, $previous_month);
         
-        // Create archive table
-        $create_archive_query = "CREATE TABLE $archive_table LIKE tbldailystock_$comp_id";
-        $conn->query($create_archive_query);
+        // Create FRESH archive table with NO day columns
+        createFreshArchiveTable($conn, $comp_id, $previous_month);
         
-        // Copy data to archive using INSERT ... SELECT (faster)
-        $copy_data_query = "INSERT INTO $archive_table SELECT * FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-        $copy_stmt = $conn->prepare($copy_data_query);
-        $copy_stmt->bind_param("s", $previous_month);
-        $copy_stmt->execute();
-        $copy_stmt->close();
+        // Now add the correct day columns for this month
+        $prev_year_month = explode('-', $previous_month);
+        $prev_year = $prev_year_month[0];
+        $prev_month_num = $prev_year_month[1];
+        $prev_days_in_month = cal_days_in_month(CAL_GREGORIAN, $prev_month_num, $prev_year);
+        
+        // Add day columns for previous month
+        $alter_statements = [];
+        for ($day = 1; $day <= $prev_days_in_month; $day++) {
+            $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_OPEN INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_PURCHASE INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_SALES INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_CLOSING INT DEFAULT 0";
+        }
+        
+        if (!empty($alter_statements)) {
+            $alter_query = "ALTER TABLE $archive_table " . implode(", ", $alter_statements);
+            $conn->query($alter_query);
+        }
+        
+        // Copy data to archive - we need to build dynamic column lists
+        // Get columns from source table
+        $source_columns = [];
+        $source_query = "SHOW COLUMNS FROM tbldailystock_$comp_id";
+        $source_result = $conn->query($source_query);
+        while ($row = $source_result->fetch_assoc()) {
+            $source_columns[] = $row['Field'];
+        }
+        
+        // Get columns from destination table
+        $dest_columns = [];
+        $dest_query = "SHOW COLUMNS FROM $archive_table";
+        $dest_result = $conn->query($dest_query);
+        while ($row = $dest_result->fetch_assoc()) {
+            $dest_columns[] = $row['Field'];
+        }
+        
+        // Find common columns (excluding auto_increment)
+        $common_columns = array_intersect($source_columns, $dest_columns);
+        // Remove DailyStockID if it's auto_increment
+        $common_columns = array_filter($common_columns, function($col) {
+            return $col !== 'DailyStockID';
+        });
+        
+        if (!empty($common_columns)) {
+            $columns_list = implode(', ', $common_columns);
+            $copy_data_query = "INSERT INTO $archive_table ($columns_list) 
+                               SELECT $columns_list FROM tbldailystock_$comp_id 
+                               WHERE STK_MONTH = ?";
+            $copy_stmt = $conn->prepare($copy_data_query);
+            $copy_stmt->bind_param("s", $previous_month);
+            $copy_stmt->execute();
+            $copy_stmt->close();
+        }
         
         // Delete archived data
         $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";

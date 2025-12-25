@@ -6845,3 +6845,355 @@ Stack trace:
 [23-Dec-2025 16:21:31 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
 [23-Dec-2025 16:21:31 Europe/Berlin] Found 0 purchase records
 [23-Dec-2025 16:21:31 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:03:12 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:03:12 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:03:12 Europe/Berlin] Mode: F
+[24-Dec-2025 07:03:12 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:03:12 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:03:12 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:03:12 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:03:12 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:03:12 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:03:12 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:03:12 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:03:12 Europe/Berlin] Found 2 purchase records
+[24-Dec-2025 07:03:12 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:03:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:03:19 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:03:19 Europe/Berlin] Mode: F
+[24-Dec-2025 07:03:19 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:03:19 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:03:19 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:03:19 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:03:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:03:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:03:19 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:03:19 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:03:19 Europe/Berlin] Found 1 purchase records
+[24-Dec-2025 07:03:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:03:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:03:22 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:03:22 Europe/Berlin] Mode: F
+[24-Dec-2025 07:03:22 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:03:22 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:03:22 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:03:22 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:03:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:03:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:03:22 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:03:22 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:03:22 Europe/Berlin] Found 0 purchase records
+[24-Dec-2025 07:03:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:25:15 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:25:15 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:25:15 Europe/Berlin] Mode: F
+[24-Dec-2025 07:25:15 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:25:15 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:25:15 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:25:15 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:25:15 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:25:15 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:25:15 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:25:15 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:25:15 Europe/Berlin] Found 1 purchase records
+[24-Dec-2025 07:25:15 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:32:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:32:37 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:32:37 Europe/Berlin] Mode: F
+[24-Dec-2025 07:32:37 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:32:37 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:32:37 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:32:37 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:32:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:32:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:32:37 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:32:37 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:32:37 Europe/Berlin] Found 0 purchase records
+[24-Dec-2025 07:32:37 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:51:12 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:51:12 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:51:12 Europe/Berlin] Mode: F
+[24-Dec-2025 07:51:12 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:51:12 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:51:12 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:51:12 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:51:12 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:51:12 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:51:12 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:51:12 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:51:12 Europe/Berlin] Found 1 purchase records
+[24-Dec-2025 07:51:12 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 07:51:43 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 07:51:43 Europe/Berlin] Company ID: 1
+[24-Dec-2025 07:51:43 Europe/Berlin] Mode: F
+[24-Dec-2025 07:51:43 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 07:51:43 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 07:51:43 Europe/Berlin] Database connection successful
+[24-Dec-2025 07:51:43 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 07:51:43 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 07:51:43 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 07:51:43 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 07:51:43 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 07:51:43 Europe/Berlin] Found 0 purchase records
+[24-Dec-2025 07:51:43 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 13:19:11 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 13:19:11 Europe/Berlin] Company ID: 1
+[24-Dec-2025 13:19:11 Europe/Berlin] Mode: F
+[24-Dec-2025 13:19:11 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 13:19:11 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 13:19:11 Europe/Berlin] Database connection successful
+[24-Dec-2025 13:19:11 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 13:19:11 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 13:19:11 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 13:19:11 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 13:19:11 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 13:19:11 Europe/Berlin] Found 1 purchase records
+[24-Dec-2025 13:19:11 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 14:54:49 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 14:54:49 Europe/Berlin] Company ID: 1
+[24-Dec-2025 14:54:49 Europe/Berlin] Mode: F
+[24-Dec-2025 14:54:49 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 14:54:49 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 14:54:49 Europe/Berlin] Database connection successful
+[24-Dec-2025 14:54:49 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 14:54:49 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 14:54:49 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 14:54:49 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 14:54:49 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 14:54:49 Europe/Berlin] Found 2 purchase records
+[24-Dec-2025 14:54:49 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 14:56:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 14:56:24 Europe/Berlin] Company ID: 1
+[24-Dec-2025 14:56:24 Europe/Berlin] Mode: F
+[24-Dec-2025 14:56:24 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 14:56:24 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 14:56:24 Europe/Berlin] Database connection successful
+[24-Dec-2025 14:56:24 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 14:56:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 14:56:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 14:56:24 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 14:56:24 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 14:56:24 Europe/Berlin] Found 3 purchase records
+[24-Dec-2025 14:56:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 14:59:17 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 14:59:17 Europe/Berlin] Company ID: 1
+[24-Dec-2025 14:59:17 Europe/Berlin] Mode: F
+[24-Dec-2025 14:59:17 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 14:59:17 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 14:59:17 Europe/Berlin] Database connection successful
+[24-Dec-2025 14:59:17 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 14:59:17 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 14:59:17 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 14:59:17 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 14:59:17 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 14:59:17 Europe/Berlin] Found 4 purchase records
+[24-Dec-2025 14:59:17 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 15:02:03 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 15:02:03 Europe/Berlin] Company ID: 1
+[24-Dec-2025 15:02:03 Europe/Berlin] Mode: F
+[24-Dec-2025 15:02:03 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 15:02:03 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 15:02:03 Europe/Berlin] Database connection successful
+[24-Dec-2025 15:02:03 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 15:02:03 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 15:02:03 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 15:02:03 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 15:02:03 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 15:02:03 Europe/Berlin] Found 5 purchase records
+[24-Dec-2025 15:02:03 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 15:02:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 15:02:36 Europe/Berlin] Company ID: 1
+[24-Dec-2025 15:02:36 Europe/Berlin] Mode: F
+[24-Dec-2025 15:02:36 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 15:02:36 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 15:02:36 Europe/Berlin] Database connection successful
+[24-Dec-2025 15:02:36 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 15:02:36 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 15:02:36 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 15:02:36 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 15:02:36 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 15:02:36 Europe/Berlin] Found 6 purchase records
+[24-Dec-2025 15:02:36 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 15:03:02 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 15:03:02 Europe/Berlin] Company ID: 1
+[24-Dec-2025 15:03:02 Europe/Berlin] Mode: F
+[24-Dec-2025 15:03:02 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 15:03:02 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 15:03:02 Europe/Berlin] Database connection successful
+[24-Dec-2025 15:03:02 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 15:03:02 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 15:03:02 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 15:03:02 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 15:03:02 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 15:03:02 Europe/Berlin] Found 7 purchase records
+[24-Dec-2025 15:03:02 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 15:03:51 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 15:03:51 Europe/Berlin] Company ID: 1
+[24-Dec-2025 15:03:51 Europe/Berlin] Mode: F
+[24-Dec-2025 15:03:51 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 15:03:51 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 15:03:51 Europe/Berlin] Database connection successful
+[24-Dec-2025 15:03:51 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 15:03:51 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 15:03:51 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 15:03:51 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 15:03:51 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 15:03:51 Europe/Berlin] Found 8 purchase records
+[24-Dec-2025 15:03:51 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[24-Dec-2025 15:04:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[24-Dec-2025 15:04:24 Europe/Berlin] Company ID: 1
+[24-Dec-2025 15:04:24 Europe/Berlin] Mode: F
+[24-Dec-2025 15:04:24 Europe/Berlin] Session CompID: 1
+[24-Dec-2025 15:04:24 Europe/Berlin] Session User ID: 1
+[24-Dec-2025 15:04:24 Europe/Berlin] Database connection successful
+[24-Dec-2025 15:04:24 Europe/Berlin] Initial filters - Company: 1, Mode: F
+[24-Dec-2025 15:04:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[24-Dec-2025 15:04:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 1
+)
+
+[24-Dec-2025 15:04:24 Europe/Berlin] Parameter Types: i
+[24-Dec-2025 15:04:24 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[24-Dec-2025 15:04:24 Europe/Berlin] Found 10 purchase records
+[24-Dec-2025 15:04:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===

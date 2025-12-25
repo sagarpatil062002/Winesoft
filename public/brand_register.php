@@ -93,24 +93,30 @@ function getTableForDate($conn, $compID, $date) {
 // Function to get all tables needed for date range
 function getTablesForDateRange($conn, $compID, $from_date, $to_date) {
     $tables = [];
-    $current_date = $from_date;
     
-    while (strtotime($current_date) <= strtotime($to_date)) {
-        $table_name = getTableForDate($conn, $compID, $current_date);
-        $month_year = date('Y-m', strtotime($current_date));
+    // Create an array of all dates in the range
+    $start = new DateTime($from_date);
+    $end = new DateTime($to_date);
+    $interval = new DateInterval('P1D');
+    $dateRange = new DatePeriod($start, $interval, $end->modify('+1 day'));
+    
+    // Group dates by table
+    foreach ($dateRange as $date) {
+        $dateStr = $date->format('Y-m-d');
+        $table_name = getTableForDate($conn, $compID, $dateStr);
         
         if (!isset($tables[$table_name])) {
             $tables[$table_name] = [
-                'table_name' => $table_name,
+                'dates' => [],
                 'months' => []
             ];
         }
         
-        if (!in_array($month_year, $tables[$table_name]['months'])) {
-            $tables[$table_name]['months'][] = $month_year;
+        $tables[$table_name]['dates'][] = $dateStr;
+        $month = $date->format('Y-m');
+        if (!in_array($month, $tables[$table_name]['months'])) {
+            $tables[$table_name]['months'][] = $month;
         }
-        
-        $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
     }
     
     return $tables;
@@ -379,90 +385,89 @@ $cumulative_stock_data = [];
 
 // Debug: Log the tables being processed
 error_log("Processing tables for date range: $from_date to $to_date");
-foreach ($tables_needed as $table_info) {
-    error_log("Table: " . $table_info['table_name'] . " - Months: " . implode(', ', $table_info['months']));
+foreach ($tables_needed as $table_name => $table_info) {
+    error_log("Table: $table_name - Months: " . implode(', ', $table_info['months']) . " - Dates: " . count($table_info['dates']));
 }
 
 // Process each table
-foreach ($tables_needed as $table_info) {
-    $table_name = $table_info['table_name'];
+foreach ($tables_needed as $table_name => $table_info) {
     $months = $table_info['months'];
+    $dates = $table_info['dates'];
     
     // Process each month in this table
     foreach ($months as $month) {
-        // Process each date in the range for this month
-        $current_date = $from_date;
-        while (strtotime($current_date) <= strtotime($to_date)) {
-            $current_month = date('Y-m', strtotime($current_date));
+        // Get all dates in this month that are in our date range
+        $month_dates = array_filter($dates, function($date) use ($month) {
+            return date('Y-m', strtotime($date)) == $month;
+        });
+        
+        if (empty($month_dates)) continue;
+        
+        // For each date in this month, fetch the purchase data
+        foreach ($month_dates as $current_date) {
+            $day = date('d', strtotime($current_date));
             
-            // Only process dates that belong to this month and table
-            if ($current_month == $month) {
-                $day = date('d', strtotime($current_date));
-                
-                // Check if this specific table has columns for this specific day
-                if (!tableHasDayColumns($conn, $table_name, $day)) {
-                    // Skip this date if columns don't exist
-                    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
-                    continue;
-                }
-                
-                // Fetch all stock data for this month and day
-                $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                              DAY_{$day}_OPEN as opening, 
-                              DAY_{$day}_PURCHASE as purchase, 
-                              DAY_{$day}_SALES as sales, 
-                              DAY_{$day}_CLOSING as closing 
-                              FROM $table_name 
-                              WHERE STK_MONTH = ?";
-                
-                $stockStmt = $conn->prepare($stockQuery);
-                $stockStmt->bind_param("s", $month);
-                $stockStmt->execute();
-                $stockResult = $stockStmt->get_result();
-                
-                while ($row = $stockResult->fetch_assoc()) {
-                    $item_code = $row['ITEM_CODE'];
-                    
-                    // Skip if item not found in master or not allowed by license
-                    if (!isset($items[$item_code])) continue;
-                    
-                    // Initialize item data if not exists
-                    if (!isset($cumulative_stock_data[$item_code])) {
-                        $cumulative_stock_data[$item_code] = [
-                            'opening' => 0,
-                            'purchase' => 0,
-                            'sales' => 0,
-                            'closing' => 0,
-                            'liq_flag' => $row['LIQ_FLAG'],
-                            'last_date' => $current_date,
-                            'first_date' => $current_date
-                        ];
-                    }
-                    
-                    // For opening balance, take the first value (first day in range)
-                    if ($cumulative_stock_data[$item_code]['opening'] == 0) {
-                        $cumulative_stock_data[$item_code]['opening'] = $row['opening'];
-                        $cumulative_stock_data[$item_code]['first_date'] = $current_date;
-                    }
-                    
-                    // Accumulate purchase and sales (cumulative)
-                    $cumulative_stock_data[$item_code]['purchase'] += $row['purchase'];
-                    $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
-                    
-                    // For closing balance, always take the latest value (last day in range)
-                    $cumulative_stock_data[$item_code]['closing'] = $row['closing'];
-                    $cumulative_stock_data[$item_code]['last_date'] = $current_date;
-                    
-                    // Update LIQ_FLAG if not set
-                    if (empty($cumulative_stock_data[$item_code]['liq_flag'])) {
-                        $cumulative_stock_data[$item_code]['liq_flag'] = $row['LIQ_FLAG'];
-                    }
-                }
-                
-                $stockStmt->close();
+            // Check if this specific table has columns for this specific day
+            if (!tableHasDayColumns($conn, $table_name, $day)) {
+                continue;
             }
             
-            $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+            // Fetch all stock data for this month and day - SPECIFICALLY FOR PURCHASE DATA
+            $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                          DAY_{$day}_OPEN as opening, 
+                          DAY_{$day}_PURCHASE as purchase, 
+                          DAY_{$day}_SALES as sales, 
+                          DAY_{$day}_CLOSING as closing 
+                          FROM $table_name 
+                          WHERE STK_MONTH = ?";
+            
+            $stockStmt = $conn->prepare($stockQuery);
+            $stockStmt->bind_param("s", $month);
+            $stockStmt->execute();
+            $stockResult = $stockStmt->get_result();
+            
+            while ($row = $stockResult->fetch_assoc()) {
+                $item_code = $row['ITEM_CODE'];
+                
+                // Skip if item not found in master or not allowed by license
+                if (!isset($items[$item_code])) continue;
+                
+                // Initialize item data if not exists
+                if (!isset($cumulative_stock_data[$item_code])) {
+                    $cumulative_stock_data[$item_code] = [
+                        'opening' => 0,
+                        'purchase' => 0,
+                        'sales' => 0,
+                        'closing' => 0,
+                        'liq_flag' => $row['LIQ_FLAG'],
+                        'last_date' => $current_date,
+                        'first_date' => $current_date
+                    ];
+                }
+                
+                // For opening balance, take the first value (first day in range)
+                if ($cumulative_stock_data[$item_code]['opening'] == 0) {
+                    $cumulative_stock_data[$item_code]['opening'] = $row['opening'];
+                    $cumulative_stock_data[$item_code]['first_date'] = $current_date;
+                }
+                
+                // Accumulate purchase (cumulative) - THIS IS THE KEY FIX FOR RECEIVED SECTION
+                $cumulative_stock_data[$item_code]['purchase'] += $row['purchase'];
+                
+                // Accumulate sales (cumulative)
+                $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
+                
+                // For closing balance, always take the latest value (last day in range)
+                $cumulative_stock_data[$item_code]['closing'] = $row['closing'];
+                $cumulative_stock_data[$item_code]['last_date'] = $current_date;
+                
+                // Update LIQ_FLAG if not set
+                if (empty($cumulative_stock_data[$item_code]['liq_flag'])) {
+                    $cumulative_stock_data[$item_code]['liq_flag'] = $row['LIQ_FLAG'];
+                }
+            }
+            
+            $stockStmt->close();
         }
     }
 }
@@ -470,8 +475,14 @@ foreach ($tables_needed as $table_info) {
 // Debug: Log item count
 error_log("Total items in cumulative data: " . count($cumulative_stock_data));
 
-// Process cumulative stock data
+// Process cumulative stock data - MODIFIED: Only process items with non-zero stock
 foreach ($cumulative_stock_data as $item_code => $stock_data) {
+    // Skip items with zero opening, purchase, sales AND closing
+    if ($stock_data['opening'] == 0 && $stock_data['purchase'] == 0 && 
+        $stock_data['sales'] == 0 && $stock_data['closing'] == 0) {
+        continue; // Skip items with no stock activity
+    }
+    
     $item_details = $items[$item_code];
     $size = $item_details['DETAILS2'];
     $class = $item_details['CLASS'];
@@ -546,18 +557,61 @@ foreach ($cumulative_stock_data as $item_code => $stock_data) {
     }
     
     // Add to brand data and grand totals based on liquor type and grouped size
-    // Using CUMULATIVE DATA for purchase and sales, LATEST for closing, FIRST for opening
+    // Using CUMULATIVE DATA for purchase (Received) and sales, LATEST for closing, FIRST for opening
     if (isset($brand_data_by_category[$liquor_type][$brandName][$grouped_size])) {
         $brand_data_by_category[$liquor_type][$brandName][$grouped_size]['opening'] += $stock_data['opening'];
-        $brand_data_by_category[$liquor_type][$brandName][$grouped_size]['purchase'] += $stock_data['purchase'];
+        $brand_data_by_category[$liquor_type][$brandName][$grouped_size]['purchase'] += $stock_data['purchase']; // This is the cumulative purchase
         $brand_data_by_category[$liquor_type][$brandName][$grouped_size]['sales'] += $stock_data['sales'];
         $brand_data_by_category[$liquor_type][$brandName][$grouped_size]['closing'] = $stock_data['closing'];
         
         // Update grand totals
         $grand_totals[$liquor_type]['opening'][$grouped_size] += $stock_data['opening'];
-        $grand_totals[$liquor_type]['purchase'][$grouped_size] += $stock_data['purchase'];
+        $grand_totals[$liquor_type]['purchase'][$grouped_size] += $stock_data['purchase']; // This is the cumulative purchase
         $grand_totals[$liquor_type]['sales'][$grouped_size] += $stock_data['sales'];
         $grand_totals[$liquor_type]['closing'][$grouped_size] += $stock_data['closing'];
+    }
+}
+
+// NEW: Filter out brands with zero stock across all sizes
+foreach ($brand_data_by_category as $category => $brands) {
+    foreach ($brands as $brand => $size_data) {
+        $hasStock = false;
+        
+        // Check if brand has any non-zero values in opening, purchase, sales, or closing
+        foreach ($size_data as $size => $values) {
+            if ($values['opening'] > 0 || $values['purchase'] > 0 || 
+                $values['sales'] > 0 || $values['closing'] > 0) {
+                $hasStock = true;
+                break;
+            }
+        }
+        
+        // Remove brand if no stock
+        if (!$hasStock) {
+            unset($brand_data_by_category[$category][$brand]);
+        }
+    }
+}
+
+// NEW: Recalculate grand totals after filtering (optional - for accuracy)
+// Reset grand totals to zero first
+foreach ($grand_totals as $category => $data) {
+    foreach ($data as $type => $values) {
+        foreach ($values as $size => $value) {
+            $grand_totals[$category][$type][$size] = 0;
+        }
+    }
+}
+
+// Recalculate grand totals from filtered brand data
+foreach ($brand_data_by_category as $category => $brands) {
+    foreach ($brands as $brand => $size_data) {
+        foreach ($size_data as $size => $values) {
+            $grand_totals[$category]['opening'][$size] += $values['opening'];
+            $grand_totals[$category]['purchase'][$size] += $values['purchase'];
+            $grand_totals[$category]['sales'][$size] += $values['sales'];
+            $grand_totals[$category]['closing'][$size] += $values['closing'];
+        }
     }
 }
 
@@ -1037,6 +1091,15 @@ $closing_mb_end = $closing_start + count($display_sizes_s) + count($display_size
         border-right: double 3px #000 !important;
       }
     }
+
+    /* Stock info note */
+    .stock-info-note {
+        background-color: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 8px;
+        margin: 10px 0;
+        font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -1114,6 +1177,11 @@ $closing_mb_end = $closing_start + count($display_sizes_s) + count($display_size
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+        </div>
+        
+        <!-- Stock Info Note -->
+        <div class="stock-info-note">
+          <strong><i class="fas fa-info-circle"></i> Note:</strong> Only brands with stock > 0 are displayed in this report.
         </div>
         
         <!-- FIXED SCROLLING CONTAINER -->

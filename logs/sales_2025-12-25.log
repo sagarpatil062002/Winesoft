@@ -1,0 +1,321 @@
+[2025-12-25 05:52:42] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 121
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 05:52:47] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 121
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 05:52:50] [INFO] === PAGE ACCESS ===
+[2025-12-25 05:52:50] [INFO] Request method: GET
+[2025-12-25 05:52:50] [INFO] Search term: ''
+[2025-12-25 05:52:50] [INFO] Current session ID: nctdbr200omtguc3mjupev1o58
+[2025-12-25 05:52:50] [INFO] Final session quantities count: 0
+[2025-12-25 05:52:50] [INFO] Items in current view: 50
+[2025-12-25 05:52:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 121
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 05:53:10] [INFO] === PAGE ACCESS ===
+[2025-12-25 05:53:10] [INFO] Request method: GET
+[2025-12-25 05:53:10] [INFO] Search term: ''
+[2025-12-25 05:53:10] [INFO] Current session ID: nctdbr200omtguc3mjupev1o58
+[2025-12-25 05:53:10] [INFO] Final session quantities count: 0
+[2025-12-25 05:53:10] [INFO] Items in current view: 21
+[2025-12-25 05:53:10] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 121
+    [current_page] => 3
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 05:53:16] [INFO] === PAGE ACCESS ===
+[2025-12-25 05:53:16] [INFO] Request method: GET
+[2025-12-25 05:53:16] [INFO] Search term: ''
+[2025-12-25 05:53:16] [INFO] Current session ID: nctdbr200omtguc3mjupev1o58
+[2025-12-25 05:53:16] [INFO] Final session quantities count: 0
+[2025-12-25 05:53:16] [INFO] Items in current view: 50
+[2025-12-25 05:53:16] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 121
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 07:37:29] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2025-12-25 07:37:29] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2025-12-25 07:37:29] [INFO] Session quantity updated: SCMPL0010694 = 23
+[2025-12-25 07:37:30] [INFO] Session quantity updated: SCMPL0010694 = 23
+[2025-12-25 07:37:31] [INFO] Session quantity updated: SCMPL0010694 = 23
+[2025-12-25 07:37:31] [INFO] Session quantity updated: SCMPL0010694 = 23
+[2025-12-25 07:37:32] [INFO] Session quantity updated: SCMPL0010694 = 23
+[2025-12-25 07:37:35] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2025-12-25 07:37:35] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2025-12-25 07:37:36] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2025-12-25 07:37:36] [INFO] Session quantity updated: SCMPL0017866 = 1
+[2025-12-25 07:37:37] [INFO] Session quantity updated: SCMPL0017866 = 1
+[2025-12-25 07:37:38] [INFO] Session quantity updated: SCMPL0009678 = 38
+[2025-12-25 07:37:38] [INFO] Session quantity updated: SCMPL0009678 = 38
+[2025-12-25 07:37:39] [INFO] Session quantity updated: SCMKS0018283 = 1
+[2025-12-25 07:37:40] [INFO] Session quantity updated: SCMIT0020167 = 2
+[2025-12-25 07:37:40] [INFO] Session quantity updated: SCMPL0010619 = 0
+[2025-12-25 07:37:41] [INFO] Session quantity updated: SCMPL0010619 = 0
+[2025-12-25 07:37:41] [INFO] Session quantity updated: SCMPL0010619 = 0
+[2025-12-25 07:37:41] [INFO] Session quantity updated: SCMPL0010619 = 0
+[2025-12-25 07:37:42] [INFO] Session quantity updated: SCMPL0010619 = 3
+[2025-12-25 07:37:42] [INFO] Session quantity updated: SCMPL0010619 = 3
+[2025-12-25 07:37:42] [INFO] Session quantity updated: SCMPL0010619 = 3
+[2025-12-25 07:37:43] [INFO] Session quantity updated: SCMPL0010619 = 3
+[2025-12-25 07:37:43] [INFO] Session quantity updated: SCMPL0010621 = 1
+[2025-12-25 07:37:45] [INFO] Session quantity updated: SCMPL0009700 = 0
+[2025-12-25 07:37:46] [INFO] Session quantity updated: SCMPL0009700 = 1
+[2025-12-25 07:37:46] [INFO] Session quantity updated: SCMPL0009700 = 1
+[2025-12-25 07:37:53] [INFO] Getting next bill number for CompID: 1
+[2025-12-25 07:37:53] [INFO] Next bill number for CompID 1: 1
+[2025-12-25 07:37:55] [INFO] Session quantities cleared
+[2025-12-25 07:38:56] [INFO] === PAGE ACCESS ===
+[2025-12-25 07:38:56] [INFO] Request method: GET
+[2025-12-25 07:38:56] [INFO] Search term: ''
+[2025-12-25 07:38:56] [INFO] Current session ID: nctdbr200omtguc3mjupev1o58
+[2025-12-25 07:38:56] [INFO] Final session quantities count: 0
+[2025-12-25 07:38:56] [INFO] Items in current view: 50
+[2025-12-25 07:38:56] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 112
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+
+[2025-12-25 07:38:58] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 112
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-25 to 2025-12-25
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_25_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+)
+

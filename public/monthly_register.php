@@ -118,35 +118,50 @@ function getLiquorType($class) {
     return 'Other';
 }
 
-// Fixed Size Normalization Function
+// FIXED Size Normalization Function - Improved to handle various formats
 function normalizeSize($size, $class = '') {
     $size = trim($size);
     $class = strtoupper(trim($class));
     
-    // Clean the size string - remove extra text
-    $clean_size = preg_replace('/\s*\([^)]*\)/', '', $size); // Remove parentheses content
-    $clean_size = preg_replace('/\s*BOTTLE/i', '', $clean_size); // Remove "BOTTLE"
-    $clean_size = preg_replace('/\s*CAN/i', '', $clean_size); // Remove "CAN"
-    $clean_size = preg_replace('/\s*-\s*\d+/', '', $clean_size); // Remove dash numbers
-    $clean_size = trim($clean_size);
-    
-    // Extract ML value from cleaned size
-    preg_match('/(\d+)\s*ML/i', $clean_size, $matches);
+    // First, extract just the numeric ML value - more robust regex
+    preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $size, $matches);
     if (!isset($matches[1])) {
-        // Try original size if cleaned doesn't work
-        preg_match('/(\d+)\s*ML/i', $size, $matches);
-        if (!isset($matches[1])) {
+        // Try alternative patterns
+        preg_match('/(\d+)\s*LTR/i', $size, $matches_ltr);
+        if (isset($matches_ltr[1])) {
+            $ml = (int)$matches_ltr[1] * 1000;
+        } else {
             return 'Other';
         }
+    } else {
+        $ml = (int)$matches[1];
     }
-    
-    $ml = (int)$matches[1];
     
     // Special handling for beer sizes
     if ($class == 'M' || $class == 'F') {
         if ($ml == 330) return '330 ML';
         if ($ml == 500) return '500 ML';
         if ($ml == 650) return '650 ML';
+        if ($ml == 1000) return '1000 ML';
+        if ($ml == 275) return '275 ML';
+        if ($ml == 250) return '250 ML';
+        if ($ml == 750) return '750 ML';
+        if ($ml == 700) return '700 ML';
+        if ($ml == 375) return '375 ML';
+        if ($ml == 200) return '200 ML';
+        if ($ml == 180) return '180 ML';
+        if ($ml == 90) return '90 ML';
+        if ($ml == 60) return '60 ML';
+        if ($ml == 50) return '50 ML';
+    }
+    
+    // Special handling for wine sizes
+    if ($class == 'V' || $class == 'Q') {
+        if ($ml == 750) return '750 ML';
+        if ($ml == 375) return '375 ML';
+        if ($ml == 180) return '180 ML';
+        if ($ml == 90) return '90 ML';
+        if ($ml == 1000) return '1000 ML';
     }
     
     // General size grouping
@@ -172,15 +187,30 @@ function normalizeSize($size, $class = '') {
 // Function to extract ML value from size string
 function getMlFromSize($size) {
     preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $size, $matches);
-    return isset($matches[1]) ? (float)$matches[1] : 0;
+    if (isset($matches[1])) {
+        return (float)$matches[1];
+    }
+    
+    // Try LTR pattern
+    preg_match('/(\d+)\s*LTR/i', $size, $matches_ltr);
+    if (isset($matches_ltr[1])) {
+        return (float)$matches_ltr[1] * 1000;
+    }
+    
+    return 0;
 }
 
 // Define display sizes
 $display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
-$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
-$display_sizes_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-$display_sizes_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-$display_sizes_cl = ['1000 ML', '750 ML', '500 ML', '375 ML', '250 ML', '200 ML', '180 ML', '90 ML'];
+$display_sizes_w = ['1000 ML', '750 ML', '375 ML', '180 ML', '90 ML'];
+$display_sizes_fb = ['1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_mb = ['1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+$display_sizes_cl = ['1000 ML', '750 ML', '500 ML', '375 ML', '250 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
+
+// Get days in the selected month
+$month_days = date('t', strtotime($month . '-01'));
+$month_year = date('Y', strtotime($month . '-01'));
+$month_number = date('m', strtotime($month . '-01'));
 
 // Initialize monthly data structure
 $monthly_data = [
@@ -188,36 +218,36 @@ $monthly_data = [
         'opening' => array_fill_keys($display_sizes_s, 0),
         'received' => array_fill_keys($display_sizes_s, 0),
         'sold' => array_fill_keys($display_sizes_s, 0),
-        'closing' => array_fill_keys($display_sizes_s, 0),
-        'breakages' => array_fill_keys($display_sizes_s, 0)
+        'breakages' => array_fill_keys($display_sizes_s, 0),
+        'closing' => array_fill_keys($display_sizes_s, 0)
     ],
     'Wines' => [
         'opening' => array_fill_keys($display_sizes_w, 0),
         'received' => array_fill_keys($display_sizes_w, 0),
         'sold' => array_fill_keys($display_sizes_w, 0),
-        'closing' => array_fill_keys($display_sizes_w, 0),
-        'breakages' => array_fill_keys($display_sizes_w, 0)
+        'breakages' => array_fill_keys($display_sizes_w, 0),
+        'closing' => array_fill_keys($display_sizes_w, 0)
     ],
     'Fermented Beer' => [
         'opening' => array_fill_keys($display_sizes_fb, 0),
         'received' => array_fill_keys($display_sizes_fb, 0),
         'sold' => array_fill_keys($display_sizes_fb, 0),
-        'closing' => array_fill_keys($display_sizes_fb, 0),
-        'breakages' => array_fill_keys($display_sizes_fb, 0)
+        'breakages' => array_fill_keys($display_sizes_fb, 0),
+        'closing' => array_fill_keys($display_sizes_fb, 0)
     ],
     'Mild Beer' => [
         'opening' => array_fill_keys($display_sizes_mb, 0),
         'received' => array_fill_keys($display_sizes_mb, 0),
         'sold' => array_fill_keys($display_sizes_mb, 0),
-        'closing' => array_fill_keys($display_sizes_mb, 0),
-        'breakages' => array_fill_keys($display_sizes_mb, 0)
+        'breakages' => array_fill_keys($display_sizes_mb, 0),
+        'closing' => array_fill_keys($display_sizes_mb, 0)
     ],
     'Country Liquor' => [
         'opening' => array_fill_keys($display_sizes_cl, 0),
         'received' => array_fill_keys($display_sizes_cl, 0),
         'sold' => array_fill_keys($display_sizes_cl, 0),
-        'closing' => array_fill_keys($display_sizes_cl, 0),
-        'breakages' => array_fill_keys($display_sizes_cl, 0)
+        'breakages' => array_fill_keys($display_sizes_cl, 0),
+        'closing' => array_fill_keys($display_sizes_cl, 0)
     ]
 ];
 
@@ -249,70 +279,181 @@ if (!empty($allowed_classes)) {
     }
 }
 
-// Get Opening Balance
+// Fetch breakages data for the month
+$breakages_data = [];
+$breakagesQuery = "SELECT Code, SUM(BRK_Qty) as total_breakage 
+                  FROM tblbreakages 
+                  WHERE DATE_FORMAT(BRK_Date, '%Y-%m') = ? 
+                  AND CompID = ? 
+                  GROUP BY Code";
+if ($breakagesStmt = $conn->prepare($breakagesQuery)) {
+    $breakagesStmt->bind_param("si", $month, $compID);
+    $breakagesStmt->execute();
+    $breakagesResult = $breakagesStmt->get_result();
+    while ($row = $breakagesResult->fetch_assoc()) {
+        $breakages_data[$row['Code']] = (float)$row['total_breakage'];
+    }
+    $breakagesStmt->close();
+}
+
+// Get daily stock table
 $dailyStockTable = getTableForMonth($conn, $compID, $month);
 $data_fetched = false;
 $total_opening = 0;
+$other_size_items = [];
 
 if ($dailyStockTable) {
-    $checkColumnQuery = "SHOW COLUMNS FROM $dailyStockTable LIKE 'DAY_01_OPEN'";
-    $columnResult = $conn->query($checkColumnQuery);
+    // Build dynamic query for all days of the month
+    $day_columns = [];
+    for ($day = 1; $day <= $month_days; $day++) {
+        $day_str = sprintf('%02d', $day);
+        $day_columns[] = "DAY_{$day_str}_OPEN";
+        $day_columns[] = "DAY_{$day_str}_PURCHASE";
+        $day_columns[] = "DAY_{$day_str}_SALES";
+        $day_columns[] = "DAY_{$day_str}_CLOSING";
+    }
+    $columns_str = implode(', ', $day_columns);
     
-    if ($columnResult && $columnResult->num_rows > 0) {
-        $openingQuery = "SELECT ds.ITEM_CODE, ds.DAY_01_OPEN as opening 
-                        FROM $dailyStockTable ds
-                        WHERE ds.STK_MONTH = ?";
+    $stockQuery = "SELECT ds.ITEM_CODE, $columns_str 
+                  FROM $dailyStockTable ds 
+                  WHERE ds.STK_MONTH = ?";
+    
+    if ($stockStmt = $conn->prepare($stockQuery)) {
+        $stockStmt->bind_param("s", $month);
+        $stockStmt->execute();
+        $stockResult = $stockStmt->get_result();
         
-        if ($openingStmt = $conn->prepare($openingQuery)) {
-            $openingStmt->bind_param("s", $month);
-            $openingStmt->execute();
-            $openingResult = $openingStmt->get_result();
+        while ($row = $stockResult->fetch_assoc()) {
+            $item_code = $row['ITEM_CODE'];
             
-            while ($row = $openingResult->fetch_assoc()) {
-                $item_code = $row['ITEM_CODE'];
-                $opening_balance = (int)$row['opening'];
-                
-                if ($opening_balance <= 0 || !isset($items[$item_code])) {
+            if (!isset($items[$item_code])) {
+                continue;
+            }
+            
+            $item_details = $items[$item_code];
+            $size = $item_details['SIZE'];
+            $class = $item_details['CLASS'];
+            
+            // Determine category based on mode
+            if ($mode == 'Country Liquor') {
+                $category = getLiquorType($class);
+                if ($category != 'Country Liquor') {
                     continue;
                 }
-                
-                $item_details = $items[$item_code];
-                $size = $item_details['SIZE'];
-                $class = $item_details['CLASS'];
-                
-                $total_opening += $opening_balance;
-                
-                // Determine category based on mode
-                if ($mode == 'Country Liquor') {
-                    $category = getLiquorType($class);
-                    if ($category != 'Country Liquor') {
-                        continue;
-                    }
-                } else {
-                    $category = getLiquorType($class);
-                    if ($category == 'Country Liquor' || $category == 'Other') {
-                        continue;
-                    }
-                }
-                
-                $normalized_size = normalizeSize($size, $class);
-                
-                if (isset($monthly_data[$category]['opening'][$normalized_size])) {
-                    $monthly_data[$category]['opening'][$normalized_size] += $opening_balance;
+            } else {
+                $category = getLiquorType($class);
+                if ($category == 'Country Liquor' || $category == 'Other') {
+                    continue;
                 }
             }
-            $openingStmt->close();
-            $data_fetched = true;
+            
+            $normalized_size = normalizeSize($size, $class);
+            
+            if ($normalized_size == 'Other') {
+                $other_size_items[] = [
+                    'code' => $item_code,
+                    'class' => $class,
+                    'size' => $size,
+                    'normalized' => $normalized_size
+                ];
+                continue;
+            }
+            
+            // Process data for each day
+            $item_opening = 0;
+            $item_received = 0;
+            $item_sold = 0;
+            $item_closing = 0;
+            
+            for ($day = 1; $day <= $month_days; $day++) {
+                $day_str = sprintf('%02d', $day);
+                
+                // Day 1 opening
+                if ($day == 1) {
+                    $item_opening = (int)$row["DAY_{$day_str}_OPEN"];
+                }
+                
+                // Purchases for the day
+                $item_received += (int)$row["DAY_{$day_str}_PURCHASE"];
+                
+                // Sales for the day
+                $item_sold += (int)$row["DAY_{$day_str}_SALES"];
+                
+                // Last day closing
+                if ($day == $month_days) {
+                    $item_closing = (int)$row["DAY_{$day_str}_CLOSING"];
+                }
+            }
+            
+            // Add breakages if any
+            $item_breakages = $breakages_data[$item_code] ?? 0;
+            
+            // Update monthly data
+            if (isset($monthly_data[$category]['opening'][$normalized_size])) {
+                $monthly_data[$category]['opening'][$normalized_size] += $item_opening;
+                $monthly_data[$category]['received'][$normalized_size] += $item_received;
+                $monthly_data[$category]['sold'][$normalized_size] += $item_sold;
+                $monthly_data[$category]['breakages'][$normalized_size] += $item_breakages;
+                $monthly_data[$category]['closing'][$normalized_size] += $item_closing;
+            } else {
+                // If normalized size is not in display array, find appropriate size
+                $ml = getMlFromSize($size);
+                if ($ml > 0) {
+                    $display_sizes = [];
+                    switch ($category) {
+                        case 'Spirits': $display_sizes = $display_sizes_s; break;
+                        case 'Wines': $display_sizes = $display_sizes_w; break;
+                        case 'Fermented Beer': $display_sizes = $display_sizes_fb; break;
+                        case 'Mild Beer': $display_sizes = $display_sizes_mb; break;
+                        case 'Country Liquor': $display_sizes = $display_sizes_cl; break;
+                    }
+                    
+                    foreach ($display_sizes as $display_size) {
+                        $display_ml = getMlFromSize($display_size);
+                        if ($ml >= $display_ml) {
+                            $monthly_data[$category]['opening'][$display_size] += $item_opening;
+                            $monthly_data[$category]['received'][$display_size] += $item_received;
+                            $monthly_data[$category]['sold'][$display_size] += $item_sold;
+                            $monthly_data[$category]['breakages'][$display_size] += $item_breakages;
+                            $monthly_data[$category]['closing'][$display_size] += $item_closing;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            $total_opening += $item_opening;
         }
+        $stockStmt->close();
+        $data_fetched = true;
     }
 }
 
 // Calculate totals
-$spirits_total = array_sum($monthly_data['Spirits']['opening']);
-$wine_total = array_sum($monthly_data['Wines']['opening']);
-$fermented_beer_total = array_sum($monthly_data['Fermented Beer']['opening']);
-$mild_beer_total = array_sum($monthly_data['Mild Beer']['opening']);
-$country_liquor_total = array_sum($monthly_data['Country Liquor']['opening']);
+$spirits_total = array_sum($monthly_data['Spirits']['opening']) + 
+                 array_sum($monthly_data['Spirits']['received']) -
+                 array_sum($monthly_data['Spirits']['sold']) -
+                 array_sum($monthly_data['Spirits']['breakages']);
+
+$wine_total = array_sum($monthly_data['Wines']['opening']) + 
+              array_sum($monthly_data['Wines']['received']) -
+              array_sum($monthly_data['Wines']['sold']) -
+              array_sum($monthly_data['Wines']['breakages']);
+
+$fermented_beer_total = array_sum($monthly_data['Fermented Beer']['opening']) + 
+                        array_sum($monthly_data['Fermented Beer']['received']) -
+                        array_sum($monthly_data['Fermented Beer']['sold']) -
+                        array_sum($monthly_data['Fermented Beer']['breakages']);
+
+$mild_beer_total = array_sum($monthly_data['Mild Beer']['opening']) + 
+                   array_sum($monthly_data['Mild Beer']['received']) -
+                   array_sum($monthly_data['Mild Beer']['sold']) -
+                   array_sum($monthly_data['Mild Beer']['breakages']);
+
+$country_liquor_total = array_sum($monthly_data['Country Liquor']['opening']) + 
+                        array_sum($monthly_data['Country Liquor']['received']) -
+                        array_sum($monthly_data['Country Liquor']['sold']) -
+                        array_sum($monthly_data['Country Liquor']['breakages']);
 
 if ($mode == 'Country Liquor') {
     $calculated_total = $country_liquor_total;
@@ -320,66 +461,37 @@ if ($mode == 'Country Liquor') {
     $calculated_total = $spirits_total + $wine_total + $fermented_beer_total + $mild_beer_total;
 }
 
-// Calculate closing balance
-foreach ($display_sizes_s as $size) {
-    $monthly_data['Spirits']['closing'][$size] = $monthly_data['Spirits']['opening'][$size];
-}
-foreach ($display_sizes_w as $size) {
-    $monthly_data['Wines']['closing'][$size] = $monthly_data['Wines']['opening'][$size];
-}
-foreach ($display_sizes_fb as $size) {
-    $monthly_data['Fermented Beer']['closing'][$size] = $monthly_data['Fermented Beer']['opening'][$size];
-}
-foreach ($display_sizes_mb as $size) {
-    $monthly_data['Mild Beer']['closing'][$size] = $monthly_data['Mild Beer']['opening'][$size];
-}
-foreach ($display_sizes_cl as $size) {
-    $monthly_data['Country Liquor']['closing'][$size] = $monthly_data['Country Liquor']['opening'][$size];
-}
-
 // Calculate summary in liters
 $summary_liters = [
-    'Spirits' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'closing' => 0],
-    'Wines' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'closing' => 0],
-    'Fermented Beer' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'closing' => 0],
-    'Mild Beer' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'closing' => 0],
-    'Country Liquor' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'closing' => 0]
+    'Spirits' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'breakages' => 0, 'closing' => 0],
+    'Wines' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'breakages' => 0, 'closing' => 0],
+    'Fermented Beer' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'breakages' => 0, 'closing' => 0],
+    'Mild Beer' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'breakages' => 0, 'closing' => 0],
+    'Country Liquor' => ['opening' => 0, 'receipts' => 0, 'sold' => 0, 'breakages' => 0, 'closing' => 0]
 ];
 
-// Convert to liters
-foreach ($display_sizes_s as $size) {
-    $ml = getMlFromSize($size);
-    $liters_factor = $ml / 1000;
-    $summary_liters['Spirits']['opening'] += $monthly_data['Spirits']['opening'][$size] * $liters_factor;
-    $summary_liters['Spirits']['closing'] += $monthly_data['Spirits']['closing'][$size] * $liters_factor;
-}
-
-foreach ($display_sizes_w as $size) {
-    $ml = getMlFromSize($size);
-    $liters_factor = $ml / 1000;
-    $summary_liters['Wines']['opening'] += $monthly_data['Wines']['opening'][$size] * $liters_factor;
-    $summary_liters['Wines']['closing'] += $monthly_data['Wines']['closing'][$size] * $liters_factor;
-}
-
-foreach ($display_sizes_fb as $size) {
-    $ml = getMlFromSize($size);
-    $liters_factor = $ml / 1000;
-    $summary_liters['Fermented Beer']['opening'] += $monthly_data['Fermented Beer']['opening'][$size] * $liters_factor;
-    $summary_liters['Fermented Beer']['closing'] += $monthly_data['Fermented Beer']['closing'][$size] * $liters_factor;
-}
-
-foreach ($display_sizes_mb as $size) {
-    $ml = getMlFromSize($size);
-    $liters_factor = $ml / 1000;
-    $summary_liters['Mild Beer']['opening'] += $monthly_data['Mild Beer']['opening'][$size] * $liters_factor;
-    $summary_liters['Mild Beer']['closing'] += $monthly_data['Mild Beer']['closing'][$size] * $liters_factor;
-}
-
-foreach ($display_sizes_cl as $size) {
-    $ml = getMlFromSize($size);
-    $liters_factor = $ml / 1000;
-    $summary_liters['Country Liquor']['opening'] += $monthly_data['Country Liquor']['opening'][$size] * $liters_factor;
-    $summary_liters['Country Liquor']['closing'] += $monthly_data['Country Liquor']['closing'][$size] * $liters_factor;
+// Convert to liters for each category
+$categories = ['Spirits', 'Wines', 'Fermented Beer', 'Mild Beer', 'Country Liquor'];
+foreach ($categories as $category) {
+    $display_sizes = [];
+    switch ($category) {
+        case 'Spirits': $display_sizes = $display_sizes_s; break;
+        case 'Wines': $display_sizes = $display_sizes_w; break;
+        case 'Fermented Beer': $display_sizes = $display_sizes_fb; break;
+        case 'Mild Beer': $display_sizes = $display_sizes_mb; break;
+        case 'Country Liquor': $display_sizes = $display_sizes_cl; break;
+    }
+    
+    foreach ($display_sizes as $size) {
+        $ml = getMlFromSize($size);
+        $liters_factor = $ml / 1000;
+        
+        $summary_liters[$category]['opening'] += $monthly_data[$category]['opening'][$size] * $liters_factor;
+        $summary_liters[$category]['receipts'] += $monthly_data[$category]['received'][$size] * $liters_factor;
+        $summary_liters[$category]['sold'] += $monthly_data[$category]['sold'][$size] * $liters_factor;
+        $summary_liters[$category]['breakages'] += $monthly_data[$category]['breakages'][$size] * $liters_factor;
+        $summary_liters[$category]['closing'] += $monthly_data[$category]['closing'][$size] * $liters_factor;
+    }
 }
 
 // Format liters
@@ -486,6 +598,14 @@ if ($mode == 'Country Liquor') {
       padding: 10px;
       margin-bottom: 15px;
       border-radius: 5px;
+    }
+    .debug-info {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: 11px;
     }
 
     @media print {
@@ -636,8 +756,37 @@ if ($mode == 'Country Liquor') {
           </p>
       </div>
 
+      <!-- Debug Information -->
+      <?php if (!empty($other_size_items) && isset($_GET['debug'])): ?>
+      <div class="debug-info no-print">
+        <h5>Debug Information - Items categorized as "Other":</h5>
+        <p>Total items in master: <?= $item_count ?></p>
+        <p>Items with "Other" size: <?= count($other_size_items) ?></p>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Class</th>
+              <th>Original Size</th>
+              <th>Normalized Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($other_size_items as $item): ?>
+            <tr>
+              <td><?= htmlspecialchars($item['code']) ?></td>
+              <td><?= htmlspecialchars($item['class']) ?></td>
+              <td><?= htmlspecialchars($item['size']) ?></td>
+              <td><?= htmlspecialchars($item['normalized']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php endif; ?>
+
       <div class="data-summary no-print">
-        <h5>Data Summary - <?= $mode ?></h5>
+        <h5>Data Summary - <?= $mode ?> - Month: <?= date('F Y', strtotime($month . '-01')) ?></h5>
         <div class="row">
           <?php if ($mode == 'Country Liquor'): ?>
             <div class="col-md-12">
@@ -660,6 +809,11 @@ if ($mode == 'Country Liquor') {
               <strong>Total:</strong> <?= number_format($calculated_total) ?> units
             </div>
           <?php endif; ?>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-12">
+            <small class="text-muted">Month Days: <?= $month_days ?> | Data fetched: <?= $data_fetched ? 'Yes' : 'No' ?></small>
+          </div>
         </div>
       </div>
 
@@ -712,6 +866,9 @@ if ($mode == 'Country Liquor') {
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
               </button>
+              <a href="?<?= http_build_query($_GET) ?>&debug=1" class="btn btn-warning">
+                <i class="fas fa-bug me-1"></i> Debug
+              </a>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
                 <i class="fas fa-times me-1"></i> Exit
               </a>
@@ -728,6 +885,7 @@ if ($mode == 'Country Liquor') {
           <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?></h6>
           <h6>Month: <?= date('F Y', strtotime($month . '-01')) ?></h6>
           <h6>Mode: <?= htmlspecialchars($mode) ?></h6>
+          <h6>Days in Month: <?= $month_days ?></h6>
         </div>
         
         <?php if ($mode == 'Country Liquor'): ?>
@@ -802,11 +960,15 @@ if ($mode == 'Country Liquor') {
                 </tr>
                 <tr>
                   <td><strong>Receipts (Ltrs.)</strong></td>
-                  <td>0.00</td>
+                  <td><?= $summary_liters['Country Liquor']['receipts'] ?></td>
                 </tr>
                 <tr>
                   <td><strong>Sold (Ltrs.)</strong></td>
-                  <td>0.00</td>
+                  <td><?= $summary_liters['Country Liquor']['sold'] ?></td>
+                </tr>
+                <tr>
+                  <td><strong>Breakages (Ltrs.)</strong></td>
+                  <td><?= $summary_liters['Country Liquor']['breakages'] ?></td>
                 </tr>
                 <tr>
                   <td><strong>Cl. Stk. (Ltrs.)</strong></td>
@@ -951,17 +1113,24 @@ if ($mode == 'Country Liquor') {
                 </tr>
                 <tr>
                   <td><strong>Receipts (Ltrs.)</strong></td>
-                  <td>0.00</td>
-                  <td>0.00</td>
-                  <td>0.00</td>
-                  <td>0.00</td>
+                  <td><?= $summary_liters['Spirits']['receipts'] ?></td>
+                  <td><?= $summary_liters['Wines']['receipts'] ?></td>
+                  <td><?= $summary_liters['Fermented Beer']['receipts'] ?></td>
+                  <td><?= $summary_liters['Mild Beer']['receipts'] ?></td>
                 </tr>
                 <tr>
                   <td><strong>Sold (Ltrs.)</strong></td>
-                  <td>0.00</td>
-                  <td>0.00</td>
-                  <td>0.00</td>
-                  <td>0.00</td>
+                  <td><?= $summary_liters['Spirits']['sold'] ?></td>
+                  <td><?= $summary_liters['Wines']['sold'] ?></td>
+                  <td><?= $summary_liters['Fermented Beer']['sold'] ?></td>
+                  <td><?= $summary_liters['Mild Beer']['sold'] ?></td>
+                </tr>
+                <tr>
+                  <td><strong>Breakages (Ltrs.)</strong></td>
+                  <td><?= $summary_liters['Spirits']['breakages'] ?></td>
+                  <td><?= $summary_liters['Wines']['breakages'] ?></td>
+                  <td><?= $summary_liters['Fermented Beer']['breakages'] ?></td>
+                  <td><?= $summary_liters['Mild Beer']['breakages'] ?></td>
                 </tr>
                 <tr>
                   <td><strong>Cl. Stk. (Ltrs.)</strong></td>
@@ -979,7 +1148,7 @@ if ($mode == 'Country Liquor') {
         <div class="footer-info" style="text-align: right;">
            <p>Authorised Signature</p>
            <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
-           <p>Total Units: <?= number_format($calculated_total) ?></p>
+           <p>Total Units: <?= number_format($calculated_total) ?> | Days in Month: <?= $month_days ?></p>
         </div>
       </div>
     </div>

@@ -198,6 +198,16 @@ $totals = [
     ]
 ];
 
+// NEW: Initialize opening balance data for the start date
+$opening_balance_data = [
+    'Imported Spirit' => array_fill_keys($display_sizes_imported, 0),
+    'Spirits' => array_fill_keys($display_sizes_s, 0),
+    'Wine Imp' => array_fill_keys($display_sizes_wine_imp, 0),
+    'Wines' => array_fill_keys($display_sizes_w, 0),
+    'Fermented Beer' => array_fill_keys($display_sizes_fb, 0),
+    'Mild Beer' => array_fill_keys($display_sizes_mb, 0)
+];
+
 // IMPROVED: Function to determine liquor type based on CLASS and LIQ_FLAG
 function getLiquorType($class, $liq_flag, $desc = '') {
     if ($liq_flag == 'F') {
@@ -445,6 +455,78 @@ foreach ($dates as $date) {
     }
     
     $stockStmt->close();
+}
+
+// NEW: Get opening balance for the start date
+$start_day = date('d', strtotime($from_date));
+$start_month = date('Y-m', strtotime($from_date));
+$start_dailyStockTable = getTableForDate($conn, $compID, $from_date);
+$hasStartDayColumns = tableHasDayColumns($conn, $start_dailyStockTable, $start_day);
+
+if ($hasStartDayColumns) {
+    $openingQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                     DAY_{$start_day}_OPEN as opening
+                     FROM $start_dailyStockTable 
+                     WHERE STK_MONTH = ?";
+    
+    $openingStmt = $conn->prepare($openingQuery);
+    $openingStmt->bind_param("s", $start_month);
+    $openingStmt->execute();
+    $openingResult = $openingStmt->get_result();
+    
+    while ($row = $openingResult->fetch_assoc()) {
+        $item_code = $row['ITEM_CODE'];
+        
+        // Skip if item not found in master OR if item class is not allowed by license
+        if (!isset($items[$item_code])) continue;
+        
+        $item_details = $items[$item_code];
+        $size = $item_details['DETAILS2'];
+        $class = $item_details['CLASS'];
+        $liq_flag = $item_details['LIQ_FLAG'];
+        
+        // Determine liquor type
+        $liquor_type = getLiquorType($class, $liq_flag, $classData[$class]['DESC'] ?? '');
+        
+        // Get size category
+        $size_category = getSizeCategory($size);
+        
+        // Add to opening balance data based on liquor type and size category
+        switch ($liquor_type) {
+            case 'Spirits':
+                if (in_array($size_category, $display_sizes_s)) {
+                    $opening_balance_data['Spirits'][$size_category] += $row['opening'];
+                }
+                break;
+            case 'Imported Spirit':
+                if (in_array($size_category, $display_sizes_imported)) {
+                    $opening_balance_data['Imported Spirit'][$size_category] += $row['opening'];
+                }
+                break;
+            case 'Wines':
+                if (in_array($size_category, $display_sizes_w)) {
+                    $opening_balance_data['Wines'][$size_category] += $row['opening'];
+                }
+                break;
+            case 'Wine Imp':
+                if (in_array($size_category, $display_sizes_wine_imp)) {
+                    $opening_balance_data['Wine Imp'][$size_category] += $row['opening'];
+                }
+                break;
+            case 'Fermented Beer':
+                if (in_array($size_category, $display_sizes_fb)) {
+                    $opening_balance_data['Fermented Beer'][$size_category] += $row['opening'];
+                }
+                break;
+            case 'Mild Beer':
+                if (in_array($size_category, $display_sizes_mb)) {
+                    $opening_balance_data['Mild Beer'][$size_category] += $row['opening'];
+                }
+                break;
+        }
+    }
+    
+    $openingStmt->close();
 }
 
 // Calculate total columns count for table formatting
@@ -1104,344 +1186,251 @@ $total_columns = count($display_sizes_s) + count($display_sizes_imported) + coun
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Summary Row -->
+              <!-- REMOVED: Total row (the first summary row) -->
+              
+              <!-- Summary rows - Updated for new order and only in Closing Balance column -->
               <tr class="summary-row">
-                <td colspan="2">Total</td>
-                
-                <!-- Spirits Received Total -->
-                <?php foreach ($display_sizes_s as $size): ?>
-                  <td><?= $totals['Spirits']['purchase'][$size] ?></td>
-                <?php endforeach; ?>
+                <td>Received</td>
+                <td></td>
 
-                <!-- Imported Spirit Received Total -->
+                <!-- Received Section - Empty for Received summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Sold Section - Empty for Received summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Closing Balance Section - Show purchase totals -->
+                <!-- Imported Spirit Closing -->
                 <?php foreach ($display_sizes_imported as $size): ?>
                   <td><?= $totals['Imported Spirit']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Wines Received Total -->
-                <?php foreach ($display_sizes_w as $size): ?>
-                  <td><?= $totals['Wines']['purchase'][$size] ?></td>
+                <!-- Spirits Closing -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $totals['Spirits']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Wine Imp Received Total -->
+                <!-- Wine Imp Closing -->
                 <?php foreach ($display_sizes_wine_imp as $size): ?>
                   <td><?= $totals['Wine Imp']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Fermented Beer Received Total -->
+                <!-- Wines Closing -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $totals['Wines']['purchase'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Fermented Beer Closing -->
                 <?php foreach ($display_sizes_fb as $size): ?>
                   <td><?= $totals['Fermented Beer']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Mild Beer Received Total -->
+                <!-- Mild Beer Closing -->
                 <?php foreach ($display_sizes_mb as $size): ?>
                   <td><?= $totals['Mild Beer']['purchase'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Spirits Sold Total -->
-                <?php foreach ($display_sizes_s as $size): ?>
-                  <td><?= $totals['Spirits']['sales'][$size] ?></td>
+                <td>Received</td>
+              </tr>
+
+              <!-- UPDATED: Opening Balance row - Show actual opening balance from start date -->
+              <tr class="summary-row">
+                <td>Opening Balance</td>
+                <td></td>
+
+                <!-- Received Section - Empty for Opening Balance summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Sold Section - Empty for Opening Balance summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Closing Balance Section - Show opening balance from start date -->
+                <!-- Imported Spirit Opening -->
+                <?php foreach ($display_sizes_imported as $size): ?>
+                  <td><?= $opening_balance_data['Imported Spirit'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Imported Spirit Sold Total -->
+                <!-- Spirits Opening -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $opening_balance_data['Spirits'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Wine Imp Opening -->
+                <?php foreach ($display_sizes_wine_imp as $size): ?>
+                  <td><?= $opening_balance_data['Wine Imp'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Wines Opening -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $opening_balance_data['Wines'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Fermented Beer Opening -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $opening_balance_data['Fermented Beer'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Mild Beer Opening -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $opening_balance_data['Mild Beer'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <td>Opening Balance</td>
+              </tr>
+
+              <tr class="summary-row">
+                <td>Grand Total</td>
+                <td></td>
+
+                <!-- Received Section - Empty for Grand Total summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Sold Section - Empty for Grand Total summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Closing Balance Section - Show closing balance of last date -->
+                <?php $last_date = end($dates); ?>
+                <!-- Imported Spirit Closing -->
+                <?php foreach ($display_sizes_imported as $size): ?>
+                  <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Spirits Closing -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Wine Imp Closing -->
+                <?php foreach ($display_sizes_wine_imp as $size): ?>
+                  <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Wines Closing -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Fermented Beer Closing -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Mild Beer Closing -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <td>Grand Total</td>
+              </tr>
+
+              <tr class="summary-row">
+                <td>Sold</td>
+                <td></td>
+
+                <!-- Received Section - Empty for Sold summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Sold Section - Empty for Sold summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+
+                <!-- Closing Balance Section - Show sales totals -->
+                <!-- Imported Spirit Sold -->
                 <?php foreach ($display_sizes_imported as $size): ?>
                   <td><?= $totals['Imported Spirit']['sales'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Wines Sold Total -->
-                <?php foreach ($display_sizes_w as $size): ?>
-                  <td><?= $totals['Wines']['sales'][$size] ?></td>
+                <!-- Spirits Sold -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $totals['Spirits']['sales'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Wine Imp Sold Total -->
+                <!-- Wine Imp Sold -->
                 <?php foreach ($display_sizes_wine_imp as $size): ?>
                   <td><?= $totals['Wine Imp']['sales'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Fermented Beer Sold Total -->
+                <!-- Wines Sold -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $totals['Wines']['sales'][$size] ?></td>
+                <?php endforeach; ?>
+
+                <!-- Fermented Beer Sold -->
                 <?php foreach ($display_sizes_fb as $size): ?>
                   <td><?= $totals['Fermented Beer']['sales'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Mild Beer Sold Total -->
+                <!-- Mild Beer Sold -->
                 <?php foreach ($display_sizes_mb as $size): ?>
                   <td><?= $totals['Mild Beer']['sales'][$size] ?></td>
                 <?php endforeach; ?>
 
-                <!-- Spirits Closing Total -->
-                <?php foreach ($display_sizes_s as $size): ?>
-                  <td><?= $totals['Spirits']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-
-                <!-- Imported Spirit Closing Total -->
-                <?php foreach ($display_sizes_imported as $size): ?>
-                  <td><?= $totals['Imported Spirit']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-
-                <!-- Wines Closing Total -->
-                <?php foreach ($display_sizes_w as $size): ?>
-                  <td><?= $totals['Wines']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-
-                <!-- Wine Imp Closing Total -->
-                <?php foreach ($display_sizes_wine_imp as $size): ?>
-                  <td><?= $totals['Wine Imp']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer Closing Total -->
-                <?php foreach ($display_sizes_fb as $size): ?>
-                  <td><?= $totals['Fermented Beer']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer Closing Total -->
-                <?php foreach ($display_sizes_mb as $size): ?>
-                  <td><?= $totals['Mild Beer']['closing'][$size] ?></td>
-                <?php endforeach; ?>
-                
-                <td></td>
+                <td>Sold</td>
               </tr>
-              <!-- Summary rows - Updated for new order and only in Closing Balance column -->
-<tr class="summary-row">
-  <td>Received</td>
-  <td></td>
 
-  <!-- Received Section - Empty for Received summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
+              <tr class="summary-row">
+                <td>Closing Balance</td>
+                <td></td>
 
-  <!-- Sold Section - Empty for Received summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
+                <!-- Received Section - Empty for Closing Balance summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
 
-  <!-- Closing Balance Section - Show purchase totals -->
-  <!-- Imported Spirit Closing -->
-  <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $totals['Imported Spirit']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Sold Section - Empty for Closing Balance summary -->
+                <?php for ($i = 0; $i < $total_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
 
-  <!-- Spirits Closing -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Closing Balance Section - Show closing balance of last date -->
+                <?php $last_date = end($dates); ?>
+                <!-- Imported Spirit Closing -->
+                <?php foreach ($display_sizes_imported as $size): ?>
+                  <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-  <!-- Wine Imp Closing -->
-  <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $totals['Wine Imp']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Spirits Closing -->
+                <?php foreach ($display_sizes_s as $size): ?>
+                  <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-  <!-- Wines Closing -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Wine Imp Closing -->
+                <?php foreach ($display_sizes_wine_imp as $size): ?>
+                  <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-  <!-- Fermented Beer Closing -->
-  <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $totals['Fermented Beer']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Wines Closing -->
+                <?php foreach ($display_sizes_w as $size): ?>
+                  <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-  <!-- Mild Beer Closing -->
-  <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $totals['Mild Beer']['purchase'][$size] ?></td>
-  <?php endforeach; ?>
+                <!-- Fermented Beer Closing -->
+                <?php foreach ($display_sizes_fb as $size): ?>
+                  <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-  <td>Received</td>
-</tr>
+                <!-- Mild Beer Closing -->
+                <?php foreach ($display_sizes_mb as $size): ?>
+                  <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
+                <?php endforeach; ?>
 
-<tr class="summary-row">
-  <td>Opening Balance</td>
-  <td></td>
-
-  <!-- Received Section - Empty for Opening Balance summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Sold Section - Empty for Opening Balance summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Closing Balance Section - Show opening totals -->
-  <!-- Spirits Opening -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Imported Spirit Opening -->
-  <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $totals['Imported Spirit']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wines Opening -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wine Imp Opening -->
-  <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $totals['Wine Imp']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Fermented Beer Opening -->
-  <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $totals['Fermented Beer']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Mild Beer Opening -->
-  <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $totals['Mild Beer']['opening'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <td>Opening Balance</td>
-</tr>
-
-<tr class="summary-row">
-  <td>Grand Total</td>
-  <td></td>
-
-  <!-- Received Section - Empty for Grand Total summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Sold Section - Empty for Grand Total summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Closing Balance Section - Show closing balance of last date -->
-  <?php $last_date = end($dates); ?>
-  <!-- Spirits Closing -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Imported Spirit Closing -->
-  <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wines Closing -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wine Imp Closing -->
-  <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Fermented Beer Closing -->
-  <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Mild Beer Closing -->
-  <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <td>Grand Total</td>
-</tr>
-
-<tr class="summary-row">
-  <td>Sold</td>
-  <td></td>
-
-  <!-- Received Section - Empty for Sold summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Sold Section - Empty for Sold summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Closing Balance Section - Show sales totals -->
-  <!-- Spirits Sold -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $totals['Spirits']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Imported Spirit Sold -->
-  <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $totals['Imported Spirit']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wines Sold -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $totals['Wines']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wine Imp Sold -->
-  <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $totals['Wine Imp']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Fermented Beer Sold -->
-  <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $totals['Fermented Beer']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Mild Beer Sold -->
-  <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $totals['Mild Beer']['sales'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <td>Sold</td>
-</tr>
-
-<tr class="summary-row">
-  <td>Closing Balance</td>
-  <td></td>
-
-  <!-- Received Section - Empty for Closing Balance summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Sold Section - Empty for Closing Balance summary -->
-  <?php for ($i = 0; $i < $total_columns; $i++): ?>
-    <td></td>
-  <?php endfor; ?>
-
-  <!-- Closing Balance Section - Show closing balance of last date -->
-  <?php $last_date = end($dates); ?>
-  <!-- Spirits Closing -->
-  <?php foreach ($display_sizes_s as $size): ?>
-    <td><?= $daily_data[$last_date]['Spirits']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Imported Spirit Closing -->
-  <?php foreach ($display_sizes_imported as $size): ?>
-    <td><?= $daily_data[$last_date]['Imported Spirit']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wines Closing -->
-  <?php foreach ($display_sizes_w as $size): ?>
-    <td><?= $daily_data[$last_date]['Wines']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Wine Imp Closing -->
-  <?php foreach ($display_sizes_wine_imp as $size): ?>
-    <td><?= $daily_data[$last_date]['Wine Imp']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Fermented Beer Closing -->
-  <?php foreach ($display_sizes_fb as $size): ?>
-    <td><?= $daily_data[$last_date]['Fermented Beer']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <!-- Mild Beer Closing -->
-  <?php foreach ($display_sizes_mb as $size): ?>
-    <td><?= $daily_data[$last_date]['Mild Beer']['closing'][$size] ?></td>
-  <?php endforeach; ?>
-
-  <td>Closing Balance</td>
-</tr>
+                <td>Closing Balance</td>
+              </tr>
             </tbody>
           </table>
         </div>

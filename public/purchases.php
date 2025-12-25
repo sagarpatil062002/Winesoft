@@ -163,8 +163,10 @@ function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pu
         $result = $update_stmt->execute();
         $update_stmt->close();
         
-        // Now update all subsequent days in the archived month (cascading effect)
-        updateSubsequentDaysInTable($conn, $archive_table, $monthYear, $itemCode, $dayOfMonth);
+        if ($result) {
+            // Now update all subsequent days in the archived month (cascading effect)
+            updateSubsequentDaysInTable($conn, $archive_table, $monthYear, $itemCode, $dayOfMonth);
+        }
     } else {
         // For new record, opening is 0, so closing = purchase (no sales initially)
         $insert_query = "INSERT INTO $archive_table 
@@ -219,8 +221,10 @@ function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pur
         $result = $dailyStmt->execute();
         $dailyStmt->close();
         
-        // Now update all subsequent days' opening and closing values with cascading effect
-        updateSubsequentDaysInTable($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth);
+        if ($result) {
+            // Now update all subsequent days' opening and closing values with cascading effect
+            updateSubsequentDaysInTable($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth);
+        }
     } else {
         // For new record, opening is 0, so closing = purchase (no sales initially)
         $insertDailyStockQuery = "INSERT INTO $dailyStockTable 
@@ -245,8 +249,18 @@ function updateSubsequentDaysInTable($conn, $table, $monthYear, $itemCode, $purc
         'purchaseDay' => $purchaseDay
     ]);
     
+    // Get the number of days in the month
+    $timestamp = strtotime($monthYear . "-01");
+    $daysInMonth = date('t', $timestamp); // 28, 29, 30, or 31
+    
+    debugLog("Month has $daysInMonth days", [
+        'timestamp' => date('Y-m-d', $timestamp),
+        'daysInMonth' => $daysInMonth
+    ]);
+    
     // Update opening for next day (carry forward from previous day's closing)
-    for ($day = $purchaseDay + 1; $day <= 31; $day++) {
+    // Only iterate through actual days in the month
+    for ($day = $purchaseDay + 1; $day <= $daysInMonth; $day++) {
         $prevDay = $day - 1;
         $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
         $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
@@ -254,21 +268,39 @@ function updateSubsequentDaysInTable($conn, $table, $monthYear, $itemCode, $purc
         $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
         $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
         
-        // Update opening to previous day's closing, and recalculate closing
-        $updateQuery = "UPDATE $table 
-                       SET $currentDayOpening = $prevDayClosing,
-                           $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
-                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        // Check if the columns exist in the table
+        $checkColumnsQuery = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_SCHEMA = DATABASE() 
+                            AND TABLE_NAME = '$table' 
+                            AND COLUMN_NAME IN ('$currentDayOpening', '$currentDayPurchase', '$currentDaySales', '$currentDayClosing')";
         
-        debugLog("Cascading update for day $day", [
-            'query' => $updateQuery,
-            'prevDayClosing' => $prevDayClosing
-        ]);
+        $checkResult = $conn->query($checkColumnsQuery);
+        $columnsExist = $checkResult->num_rows >= 4; // All 4 columns should exist
         
-        $stmt = $conn->prepare($updateQuery);
-        $stmt->bind_param("ss", $monthYear, $itemCode);
-        $stmt->execute();
-        $stmt->close();
+        if ($columnsExist) {
+            // Update opening to previous day's closing, and recalculate closing
+            $updateQuery = "UPDATE $table 
+                           SET $currentDayOpening = $prevDayClosing,
+                               $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            
+            debugLog("Cascading update for day $day", [
+                'query' => $updateQuery,
+                'prevDayClosing' => $prevDayClosing,
+                'columns_exist' => true
+            ]);
+            
+            $stmt = $conn->prepare($updateQuery);
+            $stmt->bind_param("ss", $monthYear, $itemCode);
+            $stmt->execute();
+            $stmt->close();
+        } else {
+            debugLog("Skipping day $day - columns don't exist", [
+                'columns_checked' => [$currentDayOpening, $currentDayPurchase, $currentDaySales, $currentDayClosing],
+                'columns_found' => $checkResult->num_rows
+            ]);
+        }
+        $checkResult->free();
     }
     
     debugLog("Cascading updates completed for all days after purchase day");
@@ -330,6 +362,9 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
             
             $monthYear = date('Y-m', strtotime("$startYear-$startMonth-01"));
             
+            // Get days in this month
+            $daysInMonth = date('t', strtotime("$startYear-$startMonth-01"));
+            
             // For the first month after purchase, opening should come from previous month's last day
             if ($startMonth == $purchaseMonth + 1 || ($startMonth == 1 && $purchaseMonth == 12)) {
                 // Get previous month's last day closing
@@ -372,7 +407,7 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
                 $openingStmt->close();
                 
                 // Now cascade through the rest of this month
-                for ($day = 2; $day <= 31; $day++) {
+                for ($day = 2; $day <= $daysInMonth; $day++) {
                     $prevDay = $day - 1;
                     $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
                     $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
@@ -466,8 +501,11 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
                 $currentOpeningStmt->close();
             }
             
-            // Cascade through current month up to today
-            for ($day = 2; $day <= $currentDay; $day++) {
+            // Cascade through current month up to today (or end of month)
+            $daysInCurrentMonth = date('t');
+            $cascadeTo = min($currentDay, $daysInCurrentMonth);
+            
+            for ($day = 2; $day <= $cascadeTo; $day++) {
                 $prevDay = $day - 1;
                 $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
                 $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
@@ -1415,6 +1453,20 @@ $(function(){
     return bestMatch;
   }
 
+  // Function to update MRP in database via AJAX
+  function updateItemMRPInDatabase(itemCode, mrp) {
+    return $.ajax({
+      url: 'update_mrp_ajax.php',
+      type: 'POST',
+      dataType: 'json',
+      data: {
+        item_code: itemCode,
+        mrp: mrp,
+        company_id: companyId
+      }
+    });
+  }
+
   function validateSCMItems(scmItems) {
     const validItems = [];
     const missingItems = [];
@@ -1429,6 +1481,19 @@ $(function(){
         if (!matchingItem) matchingItem = dbItems.find(dbItem => dbItem.CODE.includes(cleanCode) || cleanCode.includes(dbItem.CODE));
         
         if (matchingItem) {
+            // Update MRP in database immediately
+            if (scmItem.mrp && scmItem.mrp > 0) {
+                updateItemMRPInDatabase(matchingItem.CODE, scmItem.mrp)
+                    .done(function(response) {
+                        if (response.success) {
+                            console.log(`MRP updated for ${matchingItem.CODE}: ${scmItem.mrp}`);
+                        }
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error(`Failed to update MRP for ${matchingItem.CODE}:`, errorThrown);
+                    });
+            }
+            
             if (allowedClasses.includes(matchingItem.CLASS)) {
                 validItems.push({
                     scmData: scmItem,
@@ -1544,7 +1609,7 @@ $(function(){
     if (validItems.length === 0) {
         alert('No valid items found in the SCM data that match your database and license restrictions.');
     } else {
-        alert(`Successfully added ${validItems.length} items from SCM data.`);
+        alert(`Successfully added ${validItems.length} items from SCM data. MRP prices have been updated in the database.`);
     }
   }
 

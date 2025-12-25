@@ -1,0 +1,155 @@
+=== SCRIPT STARTED: 2025-12-24 08:05:11 ===
+=== SCRIPT STARTED: 2025-12-24 08:05:31 ===
+=== CSV IMPORT STARTED ===
+Start date from form: 2025-11-01
+Loaded 7214 valid items for validation
+Importing item #1: SCMPL0019031 with balance 0
+Importing item #2: SCMPL0019030 with balance 0
+Importing item #3: SCMPL0019028 with balance 0
+Importing item #4: SCMPL0019029 with balance 0
+Importing item #5: SCMPL0026921 with balance 0
+Processing batch #0 with 100 items
+Processing batch #1 with 100 items
+Processing batch #2 with 100 items
+Processing batch #3 with 100 items
+Processing batch #4 with 100 items
+Processing batch #5 with 100 items
+Processing batch #6 with 100 items
+Processing batch #7 with 100 items
+Processing batch #8 with 100 items
+Processing batch #9 with 100 items
+Processing batch #10 with 100 items
+Processing batch #11 with 100 items
+Processing batch #12 with 100 items
+Processing batch #13 with 100 items
+Processing batch #14 with 100 items
+Processing batch #15 with 100 items
+Processing batch #16 with 100 items
+Processing batch #17 with 100 items
+Processing batch #18 with 100 items
+Processing batch #19 with 100 items
+Processing batch #20 with 100 items
+Processing batch #21 with 100 items
+Processing batch #22 with 100 items
+Processing batch #23 with 100 items
+Processing batch #24 with 100 items
+Processing batch #25 with 100 items
+Processing batch #26 with 100 items
+Processing batch #27 with 100 items
+Processing batch #28 with 100 items
+Processing batch #29 with 100 items
+Processing batch #30 with 100 items
+Processing batch #31 with 100 items
+Processing batch #32 with 100 items
+Processing batch #33 with 100 items
+Processing batch #34 with 100 items
+Processing batch #35 with 100 items
+CSV parsing complete. Imported: 3607, Skipped: 0
+Processing final batch with 7 items
+Items for daily stock update: 3607
+Starting daily stock update for 3607 items
+=== updateDailyStockRange STARTED ===
+Start date: 2025-11-01, Mode: F, Items to update: 3607
+Date range: 2025-11-01 to 2025-12-24
+Dates to update: 54
+First date: 2025-11-01, Last date: 2025-12-24
+Monthly grouping: 2 months
+  Month 2025-11 has 30 days
+  Month 2025-12 has 24 days
+Processing month: 2025-11 with 30 days
+Using table: tbldailystock_1_11_25 for month 2025-11
+addDayColumnsForMonth - Month: 2025-11, Year: 2025, Month_num: 11, Days_in_month: 30, Force_create: false
+Target table: tbldailystock_1_11_25 (Current month: 2025-12)
+Archive table already exists: tbldailystock_1_11_25
+Skipping column creation for tbldailystock_1_11_25 (force_create=false)
+  Updated item SCMPL0019031 in tbldailystock_1_11_25 for 2025-11
+  Updated item SCMPL0019030 in tbldailystock_1_11_25 for 2025-11
+  Updated item SCMPL0019028 in tbldailystock_1_11_25 for 2025-11
+  Processed 100 items for month 2025-11
+  Processed 200 items for month 2025-11
+  Processed 300 items for month 2025-11
+  Processed 400 items for month 2025-11
+  Processed 500 items for month 2025-11
+  Processed 600 items for month 2025-11
+  Processed 700 items for month 2025-11
+  Processed 800 items for month 2025-11
+  Processed 900 items for month 2025-11
+  Processed 1000 items for month 2025-11
+  Processed 1100 items for month 2025-11
+  Processed 1200 items for month 2025-11
+  Processed 1300 items for month 2025-11
+  Processed 1400 items for month 2025-11
+  Processed 1500 items for month 2025-11
+  Processed 1600 items for month 2025-11
+  Processed 1700 items for month 2025-11
+  Processed 1800 items for month 2025-11
+  Processed 1900 items for month 2025-11
+  Processed 2000 items for month 2025-11
+  Processed 2100 items for month 2025-11
+  Processed 2200 items for month 2025-11
+  Processed 2300 items for month 2025-11
+  Processed 2400 items for month 2025-11
+  Processed 2500 items for month 2025-11
+  Processed 2600 items for month 2025-11
+  Processed 2700 items for month 2025-11
+  Processed 2800 items for month 2025-11
+  Processed 2900 items for month 2025-11
+  Processed 3000 items for month 2025-11
+  Processed 3100 items for month 2025-11
+  Processed 3200 items for month 2025-11
+  Processed 3300 items for month 2025-11
+  Processed 3400 items for month 2025-11
+  Processed 3500 items for month 2025-11
+  Processed 3600 items for month 2025-11
+Completed month 2025-11: processed 3607 items
+Processing month: 2025-12 with 24 days
+Using table: tbldailystock_1 for month 2025-12
+addDayColumnsForMonth - Month: 2025-12, Year: 2025, Month_num: 12, Days_in_month: 31, Force_create: false
+Target table: tbldailystock_1 (Current month: 2025-12)
+Skipping column creation for tbldailystock_1 (force_create=false)
+  Updated item SCMPL0019031 in tbldailystock_1 for 2025-12
+  Updated item SCMPL0019030 in tbldailystock_1 for 2025-12
+  Updated item SCMPL0019028 in tbldailystock_1 for 2025-12
+  Processed 100 items for month 2025-12
+  Processed 200 items for month 2025-12
+  Processed 300 items for month 2025-12
+  Processed 400 items for month 2025-12
+  Processed 500 items for month 2025-12
+  Processed 600 items for month 2025-12
+  Processed 700 items for month 2025-12
+  Processed 800 items for month 2025-12
+  Processed 900 items for month 2025-12
+  Processed 1000 items for month 2025-12
+  Processed 1100 items for month 2025-12
+  Processed 1200 items for month 2025-12
+  Processed 1300 items for month 2025-12
+  Processed 1400 items for month 2025-12
+  Processed 1500 items for month 2025-12
+  Processed 1600 items for month 2025-12
+  Processed 1700 items for month 2025-12
+  Processed 1800 items for month 2025-12
+  Processed 1900 items for month 2025-12
+  Processed 2000 items for month 2025-12
+  Processed 2100 items for month 2025-12
+  Processed 2200 items for month 2025-12
+  Processed 2300 items for month 2025-12
+  Processed 2400 items for month 2025-12
+  Processed 2500 items for month 2025-12
+  Processed 2600 items for month 2025-12
+  Processed 2700 items for month 2025-12
+  Processed 2800 items for month 2025-12
+  Processed 2900 items for month 2025-12
+  Processed 3000 items for month 2025-12
+  Processed 3100 items for month 2025-12
+  Processed 3200 items for month 2025-12
+  Processed 3300 items for month 2025-12
+  Processed 3400 items for month 2025-12
+  Processed 3500 items for month 2025-12
+  Processed 3600 items for month 2025-12
+Completed month 2025-12: processed 3607 items
+=== updateDailyStockRange COMPLETED ===
+
+Transaction committed successfully
+=== CSV IMPORT COMPLETED SUCCESSFULLY ===
+
+=== SCRIPT STARTED: 2025-12-24 08:05:45 ===
