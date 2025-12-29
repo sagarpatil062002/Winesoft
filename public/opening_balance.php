@@ -40,6 +40,9 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
+// View type selection (with_stock or without_stock)
+$view_type = isset($_GET['view']) ? $_GET['view'] : 'with_stock';
+
 // Get current company details
 $company_query = "SELECT CompID, Comp_Name FROM tblcompany WHERE CompID = ?";
 $company_stmt = $conn->prepare($company_query);
@@ -427,6 +430,334 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
     }
 }
 
+// ==================== OPENING BALANCE SUMMARY FUNCTION ====================
+// Function to get opening balance summary with volume breakdown
+function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = []) {
+    $summary = [
+        'total_items' => 0,
+        'total_stock' => 0,
+        'items_with_stock' => 0,
+        'items_without_stock' => 0,
+        'average_stock' => 0,
+        'max_stock' => 0,
+        'min_stock' => 0,
+        'category_breakdown' => [],
+        'volume_breakdown' => []
+    ];
+    
+    try {
+        // Build query based on license filtering
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $query = "SELECT 
+                        im.CODE,
+                        im.DETAILS,
+                        im.DETAILS2,
+                        im.CLASS,
+                        COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                      FROM tblitemmaster im
+                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                      WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+            $params = array_merge([$mode], $allowed_classes);
+            $types = "s" . str_repeat('s', count($allowed_classes));
+        } else {
+            $query = "SELECT 
+                        im.CODE,
+                        im.DETAILS,
+                        im.DETAILS2,
+                        im.CLASS,
+                        COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                      FROM tblitemmaster im
+                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                      WHERE 1 = 0";
+            $params = [$mode];
+            $types = "s";
+        }
+        
+        $stmt = $conn->prepare($query);
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $items = $result->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        
+        // Calculate summary statistics
+        $total_stock = 0;
+        $items_with_stock = 0;
+        $max_stock = 0;
+        $min_stock = PHP_INT_MAX;
+        $category_totals = [];
+        $category_counts = [];
+        $volume_totals = [];
+        
+        foreach ($items as $item) {
+            $current_stock = (int)$item['CURRENT_STOCK'];
+            $category = $item['CLASS'] ?? 'Uncategorized';
+            
+            // Initialize category arrays if not exists
+            if (!isset($category_totals[$category])) {
+                $category_totals[$category] = 0;
+                $category_counts[$category] = 0;
+            }
+            
+            // Update statistics
+            $total_stock += $current_stock;
+            $category_totals[$category] += $current_stock;
+            $category_counts[$category]++;
+            
+            if ($current_stock > 0) {
+                $items_with_stock++;
+            }
+            
+            if ($current_stock > $max_stock) {
+                $max_stock = $current_stock;
+            }
+            
+            if ($current_stock < $min_stock) {
+                $min_stock = $current_stock;
+            }
+            
+            // Extract volume from item details for volume breakdown
+            $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2']);
+            if ($volume > 0) {
+                if (!isset($volume_totals[$volume])) {
+                    $volume_totals[$volume] = 0;
+                }
+                $volume_totals[$volume] += $current_stock;
+            }
+        }
+        
+        // Prepare summary array
+        $summary['total_items'] = count($items);
+        $summary['total_stock'] = $total_stock;
+        $summary['items_with_stock'] = $items_with_stock;
+        $summary['items_without_stock'] = count($items) - $items_with_stock;
+        $summary['average_stock'] = count($items) > 0 ? round($total_stock / count($items), 2) : 0;
+        $summary['max_stock'] = $max_stock === PHP_INT_MAX ? 0 : $max_stock;
+        $summary['min_stock'] = $min_stock === PHP_INT_MAX ? 0 : $min_stock;
+        
+        // Prepare category breakdown
+        foreach ($category_totals as $category => $total) {
+            $summary['category_breakdown'][] = [
+                'category' => $category,
+                'item_count' => $category_counts[$category],
+                'total_stock' => $total,
+                'average_stock' => round($total / $category_counts[$category], 2)
+            ];
+        }
+        
+        // Prepare volume breakdown
+        foreach ($volume_totals as $volume => $total) {
+            $summary['volume_breakdown'][] = [
+                'volume' => $volume,
+                'volume_label' => getVolumeLabel($volume),
+                'total_stock' => $total
+            ];
+        }
+        
+        // Sort categories by total stock (descending)
+        usort($summary['category_breakdown'], function($a, $b) {
+            return $b['total_stock'] - $a['total_stock'];
+        });
+        
+        // Sort volumes by size
+        usort($summary['volume_breakdown'], function($a, $b) {
+            return $a['volume'] - $b['volume'];
+        });
+        
+    } catch (Exception $e) {
+        error_log("Error fetching opening balance summary: " . $e->getMessage());
+    }
+    
+    return $summary;
+}
+
+// Helper function to extract volume from item details
+function extractVolumeFromDetails($details, $details2) {
+    // Priority: details2 column first
+    if ($details2) {
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details2, $matches);
+        if ($literMatch && isset($matches[1])) {
+            $volume = floatval($matches[1]);
+            return round($volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details2, $matches);
+        if ($mlMatch && isset($matches[1])) {
+            return intval($matches[1]);
+        }
+    }
+    
+    // Fallback: parse details column
+    if ($details) {
+        // Handle special cases
+        if (stripos($details, 'QUART') !== false) return 750;
+        if (stripos($details, 'PINT') !== false) return 375;
+        if (stripos($details, 'NIP') !== false) return 90;
+        
+        // Handle liter sizes with decimal points
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details, $matches);
+        if ($literMatch && isset($matches[1])) {
+            $volume = floatval($matches[1]);
+            return round($volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details, $matches);
+        if ($mlMatch && isset($matches[1])) {
+            return intval($matches[1]);
+        }
+    }
+    
+    return 0; // Unknown volume
+}
+
+// Helper function to get volume label
+function getVolumeLabel($volume) {
+    $volumeMap = [
+        // ML sizes
+        50 => '50 ML',
+        60 => '60 ML', 
+        90 => '90 ML',
+        170 => '170 ML',
+        180 => '180 ML',
+        200 => '200 ML',
+        250 => '250 ML',
+        275 => '275 ML',
+        330 => '330 ML',
+        355 => '355 ML',
+        375 => '375 ML',
+        500 => '500 ML',
+        650 => '650 ML',
+        700 => '700 ML',
+        750 => '750 ML',
+        1000 => '1000 ML',
+        
+        // Liter sizes (converted to ML for consistency)
+        1500 => '1.5L',    // 1.5L = 1500ML
+        1750 => '1.75L',   // 1.75L = 1750ML
+        2000 => '2L',      // 2L = 2000ML
+        3000 => '3L',      // 3L = 3000ML
+        4500 => '4.5L',    // 4.5L = 4500ML
+        15000 => '15L',    // 15L = 15000ML
+        20000 => '20L',    // 20L = 20000ML
+        30000 => '30L',    // 30L = 30000ML
+        50000 => '50L'     // 50L = 50000ML
+    ];
+    
+    return $volumeMap[$volume] ?? $volume . ' ML';
+}
+
+// Function to classify product type from class code
+function getProductTypeFromClass($classCode) {
+    $spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
+    if (in_array($classCode, $spirits)) return 'SPIRITS';
+    if ($classCode === 'V') return 'WINE';
+    if ($classCode === 'F') return 'FERMENTED BEER';
+    if ($classCode === 'M') return 'MILD BEER';
+    if ($classCode === 'L') return 'COUNTRY LIQUOR';
+    return 'OTHER';
+}
+
+// ==================== VOLUME SUMMARY FUNCTION ====================
+function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes = []) {
+    $volumeSummary = [
+        'SPIRITS' => [],
+        'WINE' => [],
+        'FERMENTED BEER' => [],
+        'MILD BEER' => [],
+        'COUNTRY LIQUOR' => [],
+        'OTHER' => []
+    ];
+    
+    // Initialize all volume sizes to 0 for each category
+    $allSizes = [
+        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+    ];
+    
+    foreach ($volumeSummary as $category => $data) {
+        foreach ($allSizes as $size) {
+            $volumeSummary[$category][$size] = 0;
+        }
+    }
+    
+    try {
+        // Build query to get all items with their stock
+        if (!empty($allowed_classes)) {
+            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            $query = "SELECT 
+                        im.CODE,
+                        im.DETAILS,
+                        im.DETAILS2,
+                        im.CLASS,
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                      FROM tblitemmaster im
+                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                      WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+            $params = array_merge([$mode], $allowed_classes);
+            $types = "s" . str_repeat('s', count($allowed_classes));
+        } else {
+            $query = "SELECT 
+                        im.CODE,
+                        im.DETAILS,
+                        im.DETAILS2,
+                        im.CLASS,
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
+                      FROM tblitemmaster im
+                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                      WHERE 1 = 0";
+            $params = [$mode];
+            $types = "s";
+        }
+        
+        $stmt = $conn->prepare($query);
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        while ($item = $result->fetch_assoc()) {
+            $current_stock = (int)$item['CURRENT_STOCK'];
+            if ($current_stock > 0) {
+                $classCode = $item['CLASS'] ?? 'O';
+                $productType = getProductTypeFromClass($classCode);
+                
+                // Extract volume from item details
+                $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2']);
+                $volumeColumn = getVolumeLabel($volume);
+                
+                // Add to summary
+                if (isset($volumeSummary[$productType][$volumeColumn])) {
+                    $volumeSummary[$productType][$volumeColumn] += $current_stock;
+                } elseif ($productType !== 'OTHER') {
+                    // For unknown sizes in known categories, add to 50ML as fallback
+                    $volumeSummary[$productType]['50 ML'] += $current_stock;
+                }
+            }
+        }
+        
+        $stmt->close();
+        
+    } catch (Exception $e) {
+        error_log("Error fetching volume summary: " . $e->getMessage());
+    }
+    
+    return $volumeSummary;
+}
+
+// Get summary data
+$summary_data = getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes);
+$volume_summary_data = getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes);
+
 // Handle export requests
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
@@ -681,7 +1012,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             'skipped_count' => $skipped_count
         ];
 
-        header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search));
+        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
         exit;
         
     } catch (Exception $e) {
@@ -695,7 +1026,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             'errors' => $error_messages
         ];
         
-        header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search));
+        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
         exit;
     }
 }
@@ -740,44 +1071,153 @@ if (isset($_GET['download_template'])) {
 }
 
 // ==================== PERFORMANCE OPTIMIZATION #6: Optimized Item Fetching ====================
-// Fetch items with pagination if needed
+// Fetch items based on view type
 $limit = 1000; // Adjust based on your needs
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
+$items = [];
+$total_items = 0;
+$total_with_stock = 0;
+$total_without_stock = 0;
+
+// First, get counts for both views
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $query = "SELECT 
-                im.CODE, 
-                im.Print_Name, 
-                im.DETAILS, 
-                im.DETAILS2, 
-                im.CLASS, 
-                im.SUB_CLASS, 
-                im.ITEM_GROUP,
-                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
-                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
-              FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
+    
+    // Count items with stock > 0
+    $count_with_stock_query = "SELECT COUNT(*) as total 
+                              FROM tblitemmaster im
+                              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                              WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders) 
+                              AND COALESCE(st.CURRENT_STOCK$comp_id, 0) > 0";
     $params = array_merge([$mode], $allowed_classes);
     $types = "s" . str_repeat('s', count($allowed_classes));
+    
+    if ($search !== '') {
+        $count_with_stock_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
+        $types .= "ss";
+    }
+    
+    $count_with_stock_stmt = $conn->prepare($count_with_stock_query);
+    if ($params) {
+        $count_with_stock_stmt->bind_param($types, ...$params);
+    }
+    $count_with_stock_stmt->execute();
+    $count_with_stock_result = $count_with_stock_stmt->get_result();
+    $total_with_stock_row = $count_with_stock_result->fetch_assoc();
+    $total_with_stock = $total_with_stock_row['total'] ?? 0;
+    $count_with_stock_stmt->close();
+    
+    // Count items with stock = 0
+    $count_without_stock_query = "SELECT COUNT(*) as total 
+                                 FROM tblitemmaster im
+                                 LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                                 WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders) 
+                                 AND (st.CURRENT_STOCK$comp_id IS NULL OR COALESCE(st.CURRENT_STOCK$comp_id, 0) = 0)";
+    $params_without = array_merge([$mode], $allowed_classes);
+    $types_without = "s" . str_repeat('s', count($allowed_classes));
+    
+    if ($search !== '') {
+        $count_without_stock_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
+        $params_without[] = "%$search%";
+        $params_without[] = "%$search%";
+        $types_without .= "ss";
+    }
+    
+    $count_without_stock_stmt = $conn->prepare($count_without_stock_query);
+    if ($params_without) {
+        $count_without_stock_stmt->bind_param($types_without, ...$params_without);
+    }
+    $count_without_stock_stmt->execute();
+    $count_without_stock_result = $count_without_stock_stmt->get_result();
+    $total_without_stock_row = $count_without_stock_result->fetch_assoc();
+    $total_without_stock = $total_without_stock_row['total'] ?? 0;
+    $count_without_stock_stmt->close();
 } else {
-    $query = "SELECT 
-                im.CODE, 
-                im.Print_Name, 
-                im.DETAILS, 
-                im.DETAILS2, 
-                im.CLASS, 
-                im.SUB_CLASS, 
-                im.ITEM_GROUP,
-                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
-                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
-              FROM tblitemmaster im
-              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-              WHERE 1 = 0";
-    $params = [$mode];
-    $types = "s";
+    $total_with_stock = 0;
+    $total_without_stock = 0;
+}
+
+$total_items = $total_with_stock + $total_without_stock;
+
+// Now fetch items based on view type
+if ($view_type === 'with_stock') {
+    // Get items with stock > 0
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        $query = "SELECT 
+                    im.CODE, 
+                    im.Print_Name, 
+                    im.DETAILS, 
+                    im.DETAILS2, 
+                    im.CLASS, 
+                    im.SUB_CLASS, 
+                    im.ITEM_GROUP,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                    COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders) 
+                  AND COALESCE(st.CURRENT_STOCK$comp_id, 0) > 0";
+        $params = array_merge([$mode], $allowed_classes);
+        $types = "s" . str_repeat('s', count($allowed_classes));
+    } else {
+        $query = "SELECT 
+                    im.CODE, 
+                    im.Print_Name, 
+                    im.DETAILS, 
+                    im.DETAILS2, 
+                    im.CLASS, 
+                    im.SUB_CLASS, 
+                    im.ITEM_GROUP,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                    COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE 1 = 0";
+        $params = [$mode];
+        $types = "s";
+    }
+} else {
+    // Get items with stock = 0
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        $query = "SELECT 
+                    im.CODE, 
+                    im.Print_Name, 
+                    im.DETAILS, 
+                    im.DETAILS2, 
+                    im.CLASS, 
+                    im.SUB_CLASS, 
+                    im.ITEM_GROUP,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                    COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders) 
+                  AND (st.CURRENT_STOCK$comp_id IS NULL OR COALESCE(st.CURRENT_STOCK$comp_id, 0) = 0)";
+        $params = array_merge([$mode], $allowed_classes);
+        $types = "s" . str_repeat('s', count($allowed_classes));
+    } else {
+        $query = "SELECT 
+                    im.CODE, 
+                    im.Print_Name, 
+                    im.DETAILS, 
+                    im.DETAILS2, 
+                    im.CLASS, 
+                    im.SUB_CLASS, 
+                    im.ITEM_GROUP,
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
+                    COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
+                  FROM tblitemmaster im
+                  LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                  WHERE 1 = 0";
+        $params = [$mode];
+        $types = "s";
+    }
 }
 
 if ($search !== '') {
@@ -788,22 +1228,9 @@ if ($search !== '') {
 }
 
 // Add pagination
-$count_query = preg_replace('/SELECT.*FROM/', 'SELECT COUNT(*) as total FROM', $query);
 $query .= " ORDER BY im.DETAILS ASC LIMIT $limit OFFSET $offset";
 
-// Get total count
-$count_stmt = $conn->prepare($count_query);
-if ($params) {
-    $count_stmt->bind_param($types, ...$params);
-}
-$count_stmt->execute();
-$count_result = $count_stmt->get_result();
-$total_row = $count_result->fetch_assoc();
-$total_items = isset($total_row['total']) ? $total_row['total'] : 0;
-$total_pages = ceil($total_items / $limit);
-$count_stmt->close();
-
-// Get items for current page
+// Get items for current view
 $stmt = $conn->prepare($query);
 if ($params) {
     $stmt->bind_param($types, ...$params);
@@ -889,7 +1316,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
         }
     }
     
-    header("Location: opening_balance.php?mode=" . $mode . "&search=" . urlencode($search) . "&page=" . $page);
+    header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search) . "&page=" . $page);
     exit;
 }
 
@@ -947,10 +1374,6 @@ if (isset($_SESSION['import_message'])) {
     .download-template {
       margin-top: 10px;
     }
-    .csv-format {
-      font-size: 0.9rem;
-      color: #6c757d;
-    }
     .table th {
       background-color: #343a40;
       color: white;
@@ -971,26 +1394,44 @@ if (isset($_SESSION['import_message'])) {
         gap: 10px;
         margin-bottom: 15px;
     }
-    .archive-info {
-        background-color: #e7f3ff;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        font-size: 0.9rem;
-    }
     .pagination-container {
         margin-top: 15px;
         display: flex;
         justify-content: center;
     }
-    .skip-info {
-        background-color: #fff3cd;
-        border-color: #ffeaa7;
-        color: #856404;
-        padding: 10px;
+    /* Total Opening Balance Summary Table Styles */
+    #openingBalanceSummaryTable th {
+        font-size: 11px;
+        padding: 4px 2px;
+        text-align: center;
+        white-space: nowrap;
+    }
+    #openingBalanceSummaryTable td {
+        font-size: 11px;
+        padding: 4px 2px;
+        text-align: center;
+    }
+    .table-responsive {
+        max-height: 600px;
+        overflow: auto;
+    }
+    .table-success {
+        background-color: #d1edff !important;
+        font-weight: bold;
+    }
+    .section-header {
+        background-color: #e3f2fd;
+        padding: 8px 15px;
         border-radius: 5px;
-        margin-top: 10px;
-        font-size: 0.9rem;
+        margin: 20px 0 10px 0;
+        border-left: 4px solid #0d6efd;
+    }
+    .section-header h5 {
+        margin: 0;
+        color: #0d6efd;
+    }
+    .view-toggle-buttons {
+        margin-bottom: 20px;
     }
   </style>
 </head>
@@ -1004,40 +1445,13 @@ if (isset($_SESSION['import_message'])) {
     <div class="content-area">
       <h3 class="mb-4">Opening Balance Management</h3>
 
-      <!-- Company and Financial Year Info -->
-      <div class="company-info mb-3">
-        <strong>Financial Year:</strong> <?= htmlspecialchars($fin_year) ?> | 
-        <strong>Current Company:</strong> <?= htmlspecialchars($current_company['Comp_Name']) ?> |
-        <strong>Current Month:</strong> <?= date('F Y') ?> |
-        <strong>Total Items:</strong> <?= $total_items ?>
-      </div>
-
-      <!-- Archive System Info -->
-      <div class="archive-info mb-3">
-        <strong>Performance Optimized Archive System:</strong>
-        <ul class="mb-0">
-          <li>Bulk operations for faster processing</li>
-          <li>Batch updates (100 items per batch)</li>
-          <li>Optimized database queries</li>
-          <li>Efficient memory management</li>
-        </ul>
-      </div>
-
-      <!-- CSV Import Info -->
-      <div class="skip-info mb-3">
-        <strong>CSV Import Behavior:</strong>
-        <ul class="mb-0">
-          <li>Items not found in database will be <strong>skipped automatically</strong></li>
-          <li>Only valid items matching your license type will be imported</li>
-          <li>Skipped items will be listed in the import report</li>
-          <li>Import continues even if some items are not found</li>
-        </ul>
-      </div>
-
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
         <div class="btn-group">
-          <a href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&export=csv" class="btn btn-info">
+          <button type="button" class="btn btn-info position-relative" data-bs-toggle="modal" data-bs-target="#openingBalanceVolumeModal">
+            <i class="fas fa-wine-bottle"></i> View Volume Summary
+          </button>
+          <a href="?mode=<?= $mode ?>&view=<?= $view_type ?>&search=<?= urlencode($search) ?>&export=csv" class="btn btn-info">
             <i class="fas fa-file-export"></i> Export CSV
           </a>
         </div>
@@ -1045,22 +1459,15 @@ if (isset($_SESSION['import_message'])) {
 
       <!-- Import from CSV Section -->
       <div class="import-section mb-4">
-        <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV (Optimized)</h5>
+        <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV</h5>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end" id="importForm">
           <div class="col-md-4">
             <label for="csv_file" class="form-label">CSV File</label>
             <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
-            <div class="csv-format">
-              <strong>CSV format:</strong> Item_Code, Item_Name, Category, Current_Stock<br>
-              <strong>Optimized Processing:</strong> Batch processing (100 items/batch)<br>
-              <strong>Behavior:</strong> Items not found will be skipped, import continues<br>
-              <strong>Memory Efficient:</strong> Processes large files without memory issues
-            </div>
           </div>
           <div class="col-md-3">
             <label for="start_date_import" class="form-label">Start Date</label>
             <input type="date" class="form-control" id="start_date_import" name="start_date" value="<?= date('Y-m-d') ?>" required>
-            <div class="form-text">Enter the date from which opening balance should apply</div>
           </div>
           <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100" id="importBtn">
@@ -1105,15 +1512,15 @@ if (isset($_SESSION['import_message'])) {
       <div class="mode-selector mb-3">
         <label class="form-label">Liquor Mode:</label>
         <div class="btn-group" role="group">
-          <a href="?mode=F&search=<?= urlencode($search) ?>"
+          <a href="?mode=F&view=<?= $view_type ?>&search=<?= urlencode($search) ?>"
              class="btn btn-outline-primary <?= $mode === 'F' ? 'active' : '' ?>">
             Foreign Liquor
           </a>
-          <a href="?mode=C&search=<?= urlencode($search) ?>"
+          <a href="?mode=C&view=<?= $view_type ?>&search=<?= urlencode($search) ?>"
              class="btn btn-outline-primary <?= $mode === 'C' ? 'active' : '' ?>">
             Country Liquor
           </a>
-          <a href="?mode=O&search=<?= urlencode($search) ?>"
+          <a href="?mode=O&view=<?= $view_type ?>&search=<?= urlencode($search) ?>"
              class="btn btn-outline-primary <?= $mode === 'O' ? 'active' : '' ?>">
             Others
           </a>
@@ -1123,6 +1530,7 @@ if (isset($_SESSION['import_message'])) {
       <!-- Search -->
       <form method="GET" class="search-control mb-3">
         <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
+        <input type="hidden" name="view" value="<?= htmlspecialchars($view_type); ?>">
         <div class="input-group">
           <input type="text" name="search" class="form-control"
                  placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
@@ -1130,53 +1538,47 @@ if (isset($_SESSION['import_message'])) {
             <i class="fas fa-search"></i> Find
           </button>
           <?php if ($search !== ''): ?>
-            <a href="?mode=<?= $mode ?>" class="btn btn-secondary">Clear</a>
+            <a href="?mode=<?= $mode ?>&view=<?= $view_type ?>" class="btn btn-secondary">Clear</a>
           <?php endif; ?>
         </div>
       </form>
 
+      <!-- View Toggle Buttons -->
+      <div class="view-toggle-buttons mb-3">
+        <label class="form-label">View Items:</label>
+        <div class="btn-group" role="group">
+          <a href="?mode=<?= $mode ?>&view=with_stock&search=<?= urlencode($search) ?>"
+             class="btn btn-outline-primary <?= $view_type === 'with_stock' ? 'active' : '' ?>">
+            <i class="fas fa-box-open"></i> Items with Stock (<?= $total_with_stock ?>)
+          </a>
+          <a href="?mode=<?= $mode ?>&view=without_stock&search=<?= urlencode($search) ?>"
+             class="btn btn-outline-primary <?= $view_type === 'without_stock' ? 'active' : '' ?>">
+            <i class="fas fa-box"></i> Items without Stock (<?= $total_without_stock ?>)
+          </a>
+        </div>
+      </div>
+
       <!-- Balance Management Form -->
       <form method="POST" id="balanceForm">
         <input type="hidden" name="page" value="<?= $page ?>">
+        <input type="hidden" name="view" value="<?= $view_type ?>">
         <div class="mb-3">
           <label for="start_date_balance" class="form-label">Start Date for Opening Balance</label>
           <input type="date" class="form-control" id="start_date_balance" name="start_date" value="<?= date('Y-m-d') ?>" required style="max-width: 200px;">
-          <div class="form-text">Enter the date from which opening balance should apply</div>
         </div>
-
-        <!-- Pagination -->
-        <?php if ($total_pages > 1): ?>
-        <div class="pagination-container mb-3">
-          <nav aria-label="Page navigation">
-            <ul class="pagination">
-              <?php if ($page > 1): ?>
-                <li class="page-item"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $page-1 ?>">Previous</a></li>
-              <?php endif; ?>
-              
-              <?php 
-              $start_page = max(1, $page - 2);
-              $end_page = min($total_pages, $page + 2);
-              
-              for ($i = $start_page; $i <= $end_page; $i++): ?>
-                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                  <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $i ?>"><?= $i ?></a>
-                </li>
-              <?php endfor; ?>
-              
-              <?php if ($page < $total_pages): ?>
-                <li class="page-item"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $page+1 ?>">Next</a></li>
-              <?php endif; ?>
-            </ul>
-          </nav>
-        </div>
-        <?php endif; ?>
 
         <div class="action-btn mb-3 d-flex gap-2">
           <button type="submit" name="update_balances" class="btn btn-success" id="saveBtn">
-            <i class="fas fa-save"></i> Save Opening Balances (Optimized)
+            <i class="fas fa-save"></i> Save Opening Balances
           </button>
           <div class="ms-auto">
-            <span class="text-muted me-3">Page <?= $page ?> of <?= $total_pages ?></span>
+            <span class="text-muted me-3">
+              <?php if ($view_type === 'with_stock'): ?>
+                Showing <?= count($items) ?> items with stock (Total: <?= $total_with_stock ?>)
+              <?php else: ?>
+                Showing <?= count($items) ?> items without stock (Total: <?= $total_without_stock ?>)
+              <?php endif; ?>
+            </span>
             <a href="dashboard.php" class="btn btn-secondary">
               <i class="fas fa-sign-out-alt"></i> Exit
             </a>
@@ -1192,7 +1594,7 @@ if (isset($_SESSION['import_message'])) {
                 <th>Item Name</th>
                 <th>Category</th>
                 <th class="company-column">
-                  Current Stock
+                  Current Stock (CURRENT_STOCK<?= $comp_id ?>)
                 </th>
               </tr>
             </thead>
@@ -1214,7 +1616,13 @@ if (isset($_SESSION['import_message'])) {
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="4" class="text-center">No items found for the selected liquor mode and license type.</td>
+                <td colspan="4" class="text-center">
+                  <?php if ($view_type === 'with_stock'): ?>
+                    No items with stock found for the selected liquor mode and license type.
+                  <?php else: ?>
+                    No items without stock found for the selected liquor mode and license type.
+                  <?php endif; ?>
+                </td>
               </tr>
             <?php endif; ?>
             </tbody>
@@ -1224,12 +1632,16 @@ if (isset($_SESSION['import_message'])) {
         <!-- Save Button at Bottom -->
         <div class="action-btn mt-3 d-flex gap-2">
           <button type="submit" name="update_balances" class="btn btn-success" id="saveBottomBtn">
-            <i class="fas fa-save"></i> Save Opening Balances (Optimized)
+            <i class="fas fa-save"></i> Save Opening Balances
           </button>
           <div class="ms-auto">
-            <?php if ($total_pages > 1): ?>
-              <span class="text-muted me-3">Page <?= $page ?> of <?= $total_pages ?></span>
-            <?php endif; ?>
+            <span class="text-muted me-3">
+              <?php if ($view_type === 'with_stock'): ?>
+                Showing <?= count($items) ?> items with stock (Total: <?= $total_with_stock ?>)
+              <?php else: ?>
+                Showing <?= count($items) ?> items without stock (Total: <?= $total_without_stock ?>)
+              <?php endif; ?>
+            </span>
             <a href="dashboard.php" class="btn btn-secondary">
               <i class="fas fa-sign-out-alt"></i> Exit
             </a>
@@ -1238,6 +1650,88 @@ if (isset($_SESSION['import_message'])) {
       </form>
     </div>
   </div>
+</div>
+
+<!-- Opening Balance Volume Summary Modal -->
+<div class="modal fade" id="openingBalanceVolumeModal" tabindex="-1" aria-labelledby="openingBalanceVolumeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-dark">
+                <h5 class="modal-title" id="openingBalanceVolumeModalLabel">
+                    <i class="fas fa-wine-bottle me-2"></i>Opening Balance Volume Summary (CURRENT_STOCK<?= $comp_id ?>)
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm" id="openingBalanceSummaryTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <!-- ML Sizes -->
+                                <th>50 ML</th>
+                                <th>60 ML</th>
+                                <th>90 ML</th>
+                                <th>170 ML</th>
+                                <th>180 ML</th>
+                                <th>200 ML</th>
+                                <th>250 ML</th>
+                                <th>275 ML</th>
+                                <th>330 ML</th>
+                                <th>355 ML</th>
+                                <th>375 ML</th>
+                                <th>500 ML</th>
+                                <th>650 ML</th>
+                                <th>700 ML</th>
+                                <th>750 ML</th>
+                                <th>1000 ML</th>
+                                <!-- Liter Sizes -->
+                                <th>1.5L</th>
+                                <th>1.75L</th>
+                                <th>2L</th>
+                                <th>3L</th>
+                                <th>4.5L</th>
+                                <th>15L</th>
+                                <th>20L</th>
+                                <th>30L</th>
+                                <th>50L</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            // Display categories in the requested order
+                            $categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+                            $allSizes = [
+                                '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+                                '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+                                '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+                            ];
+                            
+                            foreach ($categories as $category): ?>
+                                <tr>
+                                    <td><strong><?= $category ?></strong></td>
+                                    <?php foreach ($allSizes as $size): 
+                                        $value = isset($volume_summary_data[$category][$size]) ? $volume_summary_data[$category][$size] : 0;
+                                    ?>
+                                        <td class="<?= $value > 0 ? 'table-success' : '' ?>">
+                                            <?= $value > 0 ? number_format($value) : '' ?>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printOpeningBalanceVolumeSummary()">
+                    <i class="fas fa-print me-1"></i> Print Volume Summary
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -1273,6 +1767,66 @@ if (isset($_SESSION['import_message'])) {
   form.addEventListener('submit', () => {
     formChanged = false;
   });
+
+  // Print volume summary function
+  function printOpeningBalanceVolumeSummary() {
+    const modalContent = document.querySelector('#openingBalanceVolumeModal .modal-content').innerHTML;
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Opening Balance Volume Summary - <?= htmlspecialchars($current_company['Comp_Name']) ?></title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                body { padding: 20px; }
+                .print-header { 
+                    text-align: center; 
+                    margin-bottom: 30px;
+                    border-bottom: 2px solid #333;
+                    padding-bottom: 20px;
+                }
+                .print-footer { 
+                    margin-top: 30px; 
+                    text-align: center;
+                    color: #666;
+                    font-size: 0.9rem;
+                }
+                @media print {
+                    .no-print { display: none; }
+                    .table { font-size: 10px; }
+                    th, td { padding: 3px !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="print-header">
+                <h2>Opening Balance Volume Summary</h2>
+                <h4><?= htmlspecialchars($current_company['Comp_Name']) ?></h4>
+                <p>Mode: <?= $mode === 'F' ? 'Foreign Liquor' : ($mode === 'C' ? 'Country Liquor' : 'Others') ?></p>
+                <p>Generated on: <?= date('Y-m-d H:i:s') ?></p>
+                <p>Column: CURRENT_STOCK<?= $comp_id ?> from tblitem_stock</p>
+            </div>
+            
+            ${modalContent}
+            
+            <div class="print-footer no-print">
+                <p>This report was generated from liqoursoft system</p>
+            </div>
+            
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(() => window.close(), 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+  }
 
   // Show progress for bulk operations
   document.addEventListener('DOMContentLoaded', function() {
@@ -1311,19 +1865,19 @@ if (isset($_SESSION['import_message'])) {
     
     if (importForm) {
       importForm.addEventListener('submit', function() {
-        showProgress('Importing opening balances...<br>Processing in batches of 100 items');
+        showProgress('Importing opening balances...');
       });
     }
     
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
-        showProgress('Saving opening balances...<br>Optimized batch processing in progress');
+        showProgress('Saving opening balances...');
       });
     }
     
     if (saveBottomBtn) {
       saveBottomBtn.addEventListener('click', function() {
-        showProgress('Saving opening balances...<br>Optimized batch processing in progress');
+        showProgress('Saving opening balances...');
       });
     }
   });
