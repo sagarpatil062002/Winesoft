@@ -48,6 +48,179 @@ function clearSessionQuantities() {
     }
 }
 
+// ============================================================================
+// NEW: DATE AVAILABILITY FUNCTIONS
+// ============================================================================
+
+// Function to get all dates between start and end date
+function getDatesBetween($start_date, $end_date) {
+    $dates = [];
+    $current = strtotime($start_date);
+    $end = strtotime($end_date);
+    
+    while ($current <= $end) {
+        $dates[] = date('Y-m-d', $current);
+        $current = strtotime('+1 day', $current);
+    }
+    
+    return $dates;
+}
+
+// NEW: Check if isDryDay function exists, provide fallback
+if (!function_exists('isDryDay')) {
+    function isDryDay($date, $conn, $comp_id = null) {
+        try {
+            $formatted_date = date('Y-m-d', strtotime($date));
+            
+            $query = "SELECT COUNT(*) as count FROM tbldrydays WHERE DRY_DATE = ?";
+            $params = [$formatted_date];
+            $types = "s";
+            
+            // Use session CompID if not provided
+            if ($comp_id === null && isset($_SESSION['CompID'])) {
+                $comp_id = $_SESSION['CompID'];
+            }
+            
+            if ($comp_id) {
+                $query .= " AND COMP_ID = ?";
+                $params[] = $comp_id;
+                $types .= "i";
+            }
+            
+            $stmt = $conn->prepare($query);
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $is_dry = $row['count'] > 0;
+                $stmt->close();
+                return $is_dry;
+            }
+            
+            $stmt->close();
+            return false;
+            
+        } catch (Exception $e) {
+            error_log("Error in isDryDay: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+// NEW: Function to check item date availability based on latest sale date
+function getItemDateAvailability($conn, $item_code, $start_date, $end_date, $comp_id) {
+    $available_dates = [];
+    $dates = getDatesBetween($start_date, $end_date);
+    
+    // Get the latest sale date for this item
+    $latest_sale_query = "SELECT MAX(BILL_DATE) as latest_sale_date 
+                         FROM tblsaleheader sh
+                         JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO
+                         WHERE sd.ITEM_CODE = ? AND sh.COMP_ID = ?";
+    $latest_sale_stmt = $conn->prepare($latest_sale_query);
+    $latest_sale_stmt->bind_param("si", $item_code, $comp_id);
+    $latest_sale_stmt->execute();
+    $latest_sale_result = $latest_sale_stmt->get_result();
+    
+    $latest_sale_date = null;
+    if ($latest_sale_result->num_rows > 0) {
+        $row = $latest_sale_result->fetch_assoc();
+        $latest_sale_date = $row['latest_sale_date'];
+    }
+    $latest_sale_stmt->close();
+    
+    foreach ($dates as $date) {
+        $is_available = true;
+        
+        // Rule 1: Check if date is after latest sale date
+        if ($latest_sale_date && $date <= $latest_sale_date) {
+            $is_available = false;
+        }
+        
+        // Rule 2: Check if it's a dry day (with fallback if function doesn't exist)
+        if (function_exists('isDryDay')) {
+            if (isDryDay($date, $conn, $comp_id)) {
+                $is_available = false;
+            }
+        } else {
+            // Fallback: Check dry days table directly
+            $dry_day_query = "SELECT COUNT(*) as count FROM tbldrydays 
+                             WHERE DRY_DATE = ? AND COMP_ID = ?";
+            $dry_day_stmt = $conn->prepare($dry_day_query);
+            $dry_day_stmt->bind_param("si", $date, $comp_id);
+            $dry_day_stmt->execute();
+            $dry_day_result = $dry_day_stmt->get_result();
+            
+            if ($dry_day_result->num_rows > 0) {
+                $dry_row = $dry_day_result->fetch_assoc();
+                if ($dry_row['count'] > 0) {
+                    $is_available = false;
+                }
+            }
+            $dry_day_stmt->close();
+        }
+        
+        // Rule 3: Check if date is in the future (should already be prevented)
+        if ($date > date('Y-m-d')) {
+            $is_available = false;
+        }
+        
+        $available_dates[$date] = $is_available;
+    }
+    
+    return $available_dates;
+}
+
+// NEW: Function to distribute sales across available dates only
+function distributeSalesAcrossAvailableDates($total_qty, $dates, $date_availability) {
+    // Filter available dates
+    $available_dates = [];
+    foreach ($dates as $date) {
+        if ($date_availability[$date]) {
+            $available_dates[] = $date;
+        }
+    }
+    
+    $available_days_count = count($available_dates);
+    
+    if ($available_days_count == 0 || $total_qty <= 0) {
+        // Return array with all dates as 0
+        $distribution = [];
+        foreach ($dates as $date) {
+            $distribution[$date] = 0;
+        }
+        return $distribution;
+    }
+    
+    // Calculate base distribution
+    $base_qty = floor($total_qty / $available_days_count);
+    $remainder = $total_qty % $available_days_count;
+    
+    // Initialize distribution
+    $distribution = [];
+    foreach ($dates as $date) {
+        if ($date_availability[$date]) {
+            $distribution[$date] = $base_qty;
+        } else {
+            $distribution[$date] = 0;
+        }
+    }
+    
+    // Distribute remainder across available dates
+    $available_date_keys = array_keys(array_filter($date_availability));
+    for ($i = 0; $i < $remainder; $i++) {
+        $date_index = $i % $available_days_count;
+        $date = $available_date_keys[$date_index];
+        $distribution[$date]++;
+    }
+    
+    return $distribution;
+}
+
 // NEW: Function to get the correct daily stock table name
 function getDailyStockTableName($conn, $date, $comp_id) {
     $current_month = date('Y-m'); // Current month in "YYYY-MM" format
@@ -170,7 +343,6 @@ function validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id) {
 // VOLUME-BASED BILL GENERATION FUNCTIONS (FROM sale_for_date_range.php)
 // ============================================================================
 
-
 // Function to extract bottle size from item details
 function extractBottleSize($details, $details2) {
     // Priority: details2 column first
@@ -225,7 +397,6 @@ function getVolumeLimits($license_type) {
     
     return $limits[$license_type] ?? $limits['DEFAULT'];
 }
-
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -431,6 +602,50 @@ if ($table_exists) {
 $total_pages = ceil($total_items / $items_per_page);
 
 // ============================================================================
+// NEW: DATE AVAILABILITY CHECKING FOR EACH ITEM
+// ============================================================================
+$item_availability = [];
+$availability_summary = [
+    'fully_available' => 0,
+    'partially_available' => 0,
+    'not_available' => 0,
+    'total_items' => count($items)
+];
+
+// Create date range array
+$begin = new DateTime($start_date);
+$end = new DateTime($end_date);
+$end = $end->modify('+1 day'); // Include end date
+
+$interval = new DateInterval('P1D');
+$date_range = new DatePeriod($begin, $interval, $end);
+
+$date_array = [];
+foreach ($date_range as $date) {
+    $date_array[] = $date->format("Y-m-d");
+}
+$days_count = count($date_array);
+
+// Check availability for each item
+foreach ($items as $item) {
+    $item_code = $item['CODE'];
+    $availability = getItemDateAvailability($conn, $item_code, $start_date, $end_date, $comp_id);
+    $item_availability[$item_code] = $availability;
+    
+    // Count available dates
+    $available_dates_count = count(array_filter($availability));
+    
+    // Update summary
+    if ($available_dates_count == 0) {
+        $availability_summary['not_available']++;
+    } elseif ($available_dates_count == $days_count) {
+        $availability_summary['fully_available']++;
+    } else {
+        $availability_summary['partially_available']++;
+    }
+}
+
+// ============================================================================
 // FIXED: SESSION QUANTITY PRESERVATION WITH PAGINATION
 // ============================================================================
 
@@ -498,20 +713,6 @@ while ($row = $all_items_result->fetch_assoc()) {
     $all_items_data[$row['CODE']] = $row;
 }
 $all_items_stmt->close();
-
-// Create date range array
-$begin = new DateTime($start_date);
-$end = new DateTime($end_date);
-$end = $end->modify('+1 day'); // Include end date
-
-$interval = new DateInterval('P1D');
-$date_range = new DatePeriod($begin, $interval, $end);
-
-$date_array = [];
-foreach ($date_range as $date) {
-    $date_array[] = $date->format("Y-m-d");
-}
-$days_count = count($date_array);
 
 // Function to update item stock
 function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
@@ -884,223 +1085,248 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $all_items_stmt->close();
             
-            // Enhanced stock validation before transaction
-            $stock_errors = [];
-            if (isset($_SESSION['sale_quantities'])) {
-                foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
-                    if ($total_qty > 0 && isset($all_items[$item_code])) {
-                        $current_stock = $all_items[$item_code]['CURRENT_STOCK'];
-                        
-                        // Enhanced stock validation
-                        if (!validateStock($current_stock, $total_qty, $item_code)) {
-                            $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
-                        }
-                    }
+            // NEW: Check item availability before processing
+            $availability_errors = [];
+            $all_available_dates = [];
+            foreach ($all_items as $item_code => $item) {
+                $availability = getItemDateAvailability($conn, $item_code, $start_date, $end_date, $comp_id);
+                $all_available_dates[$item_code] = $availability;
+                
+                // Check if item has any available dates
+                $available_dates = array_filter($availability);
+                if (isset($_SESSION['sale_quantities'][$item_code]) && 
+                    $_SESSION['sale_quantities'][$item_code] > 0 && 
+                    count($available_dates) == 0) {
+                    $availability_errors[] = "Item {$item_code} ({$item['DETAILS']}) has no available dates in the selected range";
                 }
             }
             
-            // If stock errors found, stop processing
-            if (!empty($stock_errors)) {
-                $error_message = "Stock validation failed:<br>" . implode("<br>", array_slice($stock_errors, 0, 5));
-                if (count($stock_errors) > 5) {
-                    $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
+            if (!empty($availability_errors)) {
+                $error_message = "Date availability check failed:<br>" . implode("<br>", array_slice($availability_errors, 0, 5));
+                if (count($availability_errors) > 5) {
+                    $error_message .= "<br>... and " . (count($availability_errors) - 5) . " more items";
                 }
-                logMessage("Stock validation failed: " . implode("; ", $stock_errors), 'ERROR');
+                logMessage("Date availability check failed: " . implode("; ", $availability_errors), 'ERROR');
             } else {
-                // Start transaction
-                $conn->begin_transaction();
-                
-                try {
-                    $total_amount = 0;
-                    $items_data = [];
-                    $daily_sales_data = [];
-                    
-                    // ============================================================================
-                    // PERFORMANCE OPTIMIZATION: BATCH PROCESSING WITH PROGRESS
-                    // ============================================================================
-                    $batch_size = 50;
-                    $session_items = array_keys($_SESSION['sale_quantities']);
-                    $total_session_items = count($session_items);
-                    $processed_items = 0;
-                    
-                    // Cache item data to avoid repeated database lookups
-                    $item_cache = [];
-                    foreach ($all_items as $item_code => $item) {
-                        $item_cache[$item_code] = [
-                            'stock' => $item['CURRENT_STOCK'],
-                            'rate' => $item['RPRICE'],
-                            'details' => $item['DETAILS']
-                        ];
-                    }
-                    
-                    // MySQL Performance Tweaks
-                    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
-                    $conn->query("SET UNIQUE_CHECKS = 0");
-                    $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
-                    
-                    // Process ONLY session quantities > 0 (from ALL modes) in batches
-                    for ($i = 0; $i < $total_session_items; $i += $batch_size) {
-                        $batch_items = array_slice($session_items, $i, $batch_size);
-                        
-                        foreach ($batch_items as $item_code) {
-                            $processed_items++;
-                            $total_qty = $_SESSION['sale_quantities'][$item_code];
+                // Enhanced stock validation before transaction
+                $stock_errors = [];
+                if (isset($_SESSION['sale_quantities'])) {
+                    foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                        if ($total_qty > 0 && isset($all_items[$item_code])) {
+                            $current_stock = $all_items[$item_code]['CURRENT_STOCK'];
                             
-                            // OPTIMIZATION: Reduce logging frequency during bulk operations
-                            // if (!$bulk_operation || $processed_items % 50 == 0) {
-                            //     logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
-                            // }
-                            
-                            if ($total_qty > 0 && isset($all_items[$item_code])) {
-                                $item = $all_items[$item_code];
-                                
-                                // Generate distribution using VOLUME-BASED distribution
-                                $daily_sales = distributeSales($total_qty, $days_count);
-                                $daily_sales_data[$item_code] = $daily_sales;
-                                
-                                // Store item data
-                                $items_data[$item_code] = [
-                                    'name' => $item['DETAILS'],
-                                    'rate' => $item['RPRICE'],
-                                    'total_qty' => $total_qty,
-                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode, not current page mode
-                                ];
+                            // Enhanced stock validation
+                            if (!validateStock($current_stock, $total_qty, $item_code)) {
+                                $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
                             }
                         }
-                        
-                        // Optional: Add small delay to prevent server overload
-                        if ($bulk_operation) {
-                            usleep(100000); // 0.1 second
-                        }
                     }
-                    
-                    // NEW: Date-wise stock validation before proceeding
-                    $date_wise_errors = validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id);
-                    if (!empty($date_wise_errors)) {
-                        throw new Exception("Date-wise stock validation failed:\n" . implode("\n", array_slice($date_wise_errors, 0, 10)));
-                    }
-                    
-                    // Only proceed if we have items with quantities
-                    if (!empty($items_data)) {
-                        // ============================================================================
-                        // VOLUME-BASED BILL GENERATION (FROM sale_for_date_range.php)
-                        // ============================================================================
-                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
-                        
-                        // Get stock column names
-                        $current_stock_column = "Current_Stock" . $comp_id;
-                        $opening_stock_column = "Opening_Stock" . $comp_id;
-                        
-                        // Get next bill number once to ensure proper numerical order FOR THIS COMPANY
-                        $next_bill_number = getNextBillNumber($conn, $comp_id);
-                        
-                        // Process each bill in chronological AND numerical order
-                        usort($bills, function($a, $b) {
-                            return strtotime($a['bill_date']) - strtotime($b['bill_date']);
-                        });
-                        
-                        // Process each bill with proper zero-padded bill numbers
-                        $bill_numbers = []; // Store bill numbers for cash memo generation
-                        
-                        foreach ($bills as $bill) {
-                            $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
-                            $bill_numbers[] = $padded_bill_no; // Store for cash memo generation
-                            
-                            // Insert sale header
-                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-                            $header_stmt = $conn->prepare($header_query);
-                            $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
-                                                    $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
-                            $header_stmt->execute();
-                            $header_stmt->close();
-                            
-                            // Insert sale details for each item in the bill
-                            foreach ($bill['items'] as $item) {
-                                $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
-                                $detail_stmt = $conn->prepare($detail_query);
-                                $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
-                                                        $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
-                                $detail_stmt->execute();
-                                $detail_stmt->close();
-                                
-                                // Update stock
-                                updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-                                
-                                // ENHANCED: Update daily stock with cascading logic
-                                updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
-                            }
-                            
-                            $total_amount += $bill['total_amount'];
-                        }
-                        
-                        // Commit transaction
-                        $conn->commit();
-                        
-                        // CLEAR SESSION QUANTITIES AFTER SUCCESS
-                        clearSessionQuantities();
-                        
-                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
-                        
-                        // ============================================================================
-                        // ADD AUTOMATIC CASH MEMO GENERATION (FROM OLD VERSION)
-                        // ============================================================================
-                        $cash_memos_generated = 0;
-                        $cash_memo_errors = [];
-
-                        // Generate cash memos for all created bills
-                        foreach ($bill_numbers as $bill_no) {
-                            if (autoGenerateCashMemoForBill($conn, $bill_no, $comp_id, $_SESSION['user_id'])) {
-                                $cash_memos_generated++;
-                                logCashMemoGeneration($bill_no, true);
-                            } else {
-                                $cash_memo_errors[] = $bill_no;
-                                logCashMemoGeneration($bill_no, false, "Cash memo generation failed");
-                            }
-                        }
-
-                        // Update success message to include cash memo info
-                        if ($cash_memos_generated > 0) {
-                            $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
-                        }
-
-                        if (!empty($cash_memo_errors)) {
-                            $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
-                            if (count($cash_memo_errors) > 5) {
-                                $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
-                            }
-                        }
-
-                        // Redirect to retail_sale.php
-                        header("Location: retail_sale.php?success=" . urlencode($success_message));
-                        exit;
-                    } else {
-                        $error_message = "No quantities entered for any items.";
-                    }
-                } catch (Exception $e) {
-                    // Rollback transaction on error
-                    $conn->rollback();
-                    $error_message = "Error updating sales: " . $e->getMessage();
-                    logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
                 }
                 
-                // ============================================================================
-                // PERFORMANCE OPTIMIZATION: CLEANUP
-                // ============================================================================
-                
-                // Re-enable database constraints
-                $conn->query("SET FOREIGN_KEY_CHECKS = 1");
-                $conn->query("SET UNIQUE_CHECKS = 1");
-                
-                // Clean up memory
-                if (isset($all_items)) unset($all_items);
-                if (isset($items_data)) unset($items_data); 
-                if (isset($daily_sales_data)) unset($daily_sales_data);
-                gc_collect_cycles();
-                
-                if ($bulk_operation) {
-                    logMessage("Bulk sales operation completed - Processed $processed_items items");
+                // If stock errors found, stop processing
+                if (!empty($stock_errors)) {
+                    $error_message = "Stock validation failed:<br>" . implode("<br>", array_slice($stock_errors, 0, 5));
+                    if (count($stock_errors) > 5) {
+                        $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
+                    }
+                    logMessage("Stock validation failed: " . implode("; ", $stock_errors), 'ERROR');
+                } else {
+                    // Start transaction
+                    $conn->begin_transaction();
+                    
+                    try {
+                        $total_amount = 0;
+                        $items_data = [];
+                        $daily_sales_data = [];
+                        
+                        // ============================================================================
+                        // PERFORMANCE OPTIMIZATION: BATCH PROCESSING WITH PROGRESS
+                        // ============================================================================
+                        $batch_size = 50;
+                        $session_items = array_keys($_SESSION['sale_quantities']);
+                        $total_session_items = count($session_items);
+                        $processed_items = 0;
+                        
+                        // Cache item data to avoid repeated database lookups
+                        $item_cache = [];
+                        foreach ($all_items as $item_code => $item) {
+                            $item_cache[$item_code] = [
+                                'stock' => $item['CURRENT_STOCK'],
+                                'rate' => $item['RPRICE'],
+                                'details' => $item['DETAILS']
+                            ];
+                        }
+                        
+                        // MySQL Performance Tweaks
+                        $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+                        $conn->query("SET UNIQUE_CHECKS = 0");
+                        $conn->query("SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO'");
+                        
+                        // Process ONLY session quantities > 0 (from ALL modes) in batches
+                        for ($i = 0; $i < $total_session_items; $i += $batch_size) {
+                            $batch_items = array_slice($session_items, $i, $batch_size);
+                            
+                            foreach ($batch_items as $item_code) {
+                                $processed_items++;
+                                $total_qty = $_SESSION['sale_quantities'][$item_code];
+                                
+                                // OPTIMIZATION: Reduce logging frequency during bulk operations
+                                // if (!$bulk_operation || $processed_items % 50 == 0) {
+                                //     logMessage("Processing item $processed_items/$total_session_items: $item_code, Qty: $total_qty");
+                                // }
+                                
+                                if ($total_qty > 0 && isset($all_items[$item_code])) {
+                                    $item = $all_items[$item_code];
+                                    
+                                    // NEW: Generate distribution based on date availability
+                                    $availability = $all_available_dates[$item_code];
+                                    $daily_sales = distributeSalesAcrossAvailableDates($total_qty, $date_array, $availability);
+                                    $daily_sales_data[$item_code] = $daily_sales;
+                                    
+                                    // Store item data
+                                    $items_data[$item_code] = [
+                                        'name' => $item['DETAILS'],
+                                        'rate' => $item['RPRICE'],
+                                        'total_qty' => $total_qty,
+                                        'mode' => $item['LIQ_FLAG'] // Use item's actual mode, not current page mode
+                                    ];
+                                }
+                            }
+                            
+                            // Optional: Add small delay to prevent server overload
+                            if ($bulk_operation) {
+                                usleep(100000); // 0.1 second
+                            }
+                        }
+                        
+                        // NEW: Date-wise stock validation before proceeding
+                        $date_wise_errors = validateAllDateWiseStocks($conn, $daily_sales_data, $comp_id);
+                        if (!empty($date_wise_errors)) {
+                            throw new Exception("Date-wise stock validation failed:\n" . implode("\n", array_slice($date_wise_errors, 0, 10)));
+                        }
+                        
+                        // Only proceed if we have items with quantities
+                        if (!empty($items_data)) {
+                            // ============================================================================
+                            // VOLUME-BASED BILL GENERATION (FROM sale_for_date_range.php)
+                            // ============================================================================
+                            $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                            
+                            // Get stock column names
+                            $current_stock_column = "Current_Stock" . $comp_id;
+                            $opening_stock_column = "Opening_Stock" . $comp_id;
+                            
+                            // Get next bill number once to ensure proper numerical order FOR THIS COMPANY
+                            $next_bill_number = getNextBillNumber($conn, $comp_id);
+                            
+                            // Process each bill in chronological AND numerical order
+                            usort($bills, function($a, $b) {
+                                return strtotime($a['bill_date']) - strtotime($b['bill_date']);
+                            });
+                            
+                            // Process each bill with proper zero-padded bill numbers
+                            $bill_numbers = []; // Store bill numbers for cash memo generation
+                            
+                            foreach ($bills as $bill) {
+                                $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+                                $bill_numbers[] = $padded_bill_no; // Store for cash memo generation
+                                
+                                // Insert sale header
+                                $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                                 VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                                $header_stmt = $conn->prepare($header_query);
+                                $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
+                                                        $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                                $header_stmt->execute();
+                                $header_stmt->close();
+                                
+                                // Insert sale details for each item in the bill
+                                foreach ($bill['items'] as $item) {
+                                    $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                                     VALUES (?, ?, ?, ?, ?, ?, ?)";
+                                    $detail_stmt = $conn->prepare($detail_query);
+                                    $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
+                                                            $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                                    $detail_stmt->execute();
+                                    $detail_stmt->close();
+                                    
+                                    // Update stock
+                                    updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                                    
+                                    // ENHANCED: Update daily stock with cascading logic
+                                    updateCascadingDailyStock($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
+                                }
+                                
+                                $total_amount += $bill['total_amount'];
+                            }
+                            
+                            // Commit transaction
+                            $conn->commit();
+                            
+                            // CLEAR SESSION QUANTITIES AFTER SUCCESS
+                            clearSessionQuantities();
+                            
+                            $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+                            
+                            // ============================================================================
+                            // ADD AUTOMATIC CASH MEMO GENERATION (FROM OLD VERSION)
+                            // ============================================================================
+                            $cash_memos_generated = 0;
+                            $cash_memo_errors = [];
+
+                            // Generate cash memos for all created bills
+                            foreach ($bill_numbers as $bill_no) {
+                                if (autoGenerateCashMemoForBill($conn, $bill_no, $comp_id, $_SESSION['user_id'])) {
+                                    $cash_memos_generated++;
+                                    logCashMemoGeneration($bill_no, true);
+                                } else {
+                                    $cash_memo_errors[] = $bill_no;
+                                    logCashMemoGeneration($bill_no, false, "Cash memo generation failed");
+                                }
+                            }
+
+                            // Update success message to include cash memo info
+                            if ($cash_memos_generated > 0) {
+                                $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                            }
+
+                            if (!empty($cash_memo_errors)) {
+                                $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                                if (count($cash_memo_errors) > 5) {
+                                    $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                                }
+                            }
+
+                            // Redirect to retail_sale.php
+                            header("Location: retail_sale.php?success=" . urlencode($success_message));
+                            exit;
+                        } else {
+                            $error_message = "No quantities entered for any items.";
+                        }
+                    } catch (Exception $e) {
+                        // Rollback transaction on error
+                        $conn->rollback();
+                        $error_message = "Error updating sales: " . $e->getMessage();
+                        logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
+                    }
+                    
+                    // ============================================================================
+                    // PERFORMANCE OPTIMIZATION: CLEANUP
+                    // ============================================================================
+                    
+                    // Re-enable database constraints
+                    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+                    $conn->query("SET UNIQUE_CHECKS = 1");
+                    
+                    // Clean up memory
+                    if (isset($all_items)) unset($all_items);
+                    if (isset($items_data)) unset($items_data); 
+                    if (isset($daily_sales_data)) unset($daily_sales_data);
+                    gc_collect_cycles();
+                    
+                    if ($bulk_operation) {
+                        logMessage("Bulk sales operation completed - Processed $processed_items items");
+                    }
                 }
             }
         }
@@ -1131,7 +1357,8 @@ $debug_info = [
     'allowed_classes' => $allowed_classes,
     'end_day_column' => $end_day_column, // ADDED: Which column we're using
     'daily_stock_table' => $daily_stock_table, // ADDED: Which table we're using
-    'table_exists' => $table_exists // ADDED: Whether table exists
+    'table_exists' => $table_exists, // ADDED: Whether table exists
+    'availability_summary' => $availability_summary // NEW: Added availability summary
 ];
 logArray($debug_info, "Sales by Closing Balance Page Load Debug Info");
 ?>
@@ -1207,6 +1434,109 @@ logArray($debug_info, "Sales by Closing Balance Page Load Debug Info");
         padding: 10px;
         margin: 10px 0;
         font-size: 0.9em;
+    }
+
+    /* NEW: Date availability info banner */
+    .date-availability-banner {
+        background-color: #e7f3ff;
+        border-left: 4px solid #007bff;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+
+    .availability-explanation {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 10px;
+    }
+
+    .availability-explanation ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+
+    /* NEW: Availability summary cards */
+    .availability-card {
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .availability-card-fully {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+
+    .availability-card-partial {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+    }
+
+    .availability-card-none {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+
+    .availability-count {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .availability-label {
+        font-size: 14px;
+        color: #666;
+    }
+
+    /* NEW: Availability badge styles */
+    .availability-badge {
+        font-size: 0.7em;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+
+    .availability-fully {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .availability-partial {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .availability-none {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    /* NEW: Date cell styles */
+    .date-cell-available {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+    }
+
+    .date-cell-unavailable {
+        background-color: #f8d9db !important;
+        color: #721c24 !important;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .date-cell-unavailable::after {
+        content: "⛔";
+        display: block;
+        font-size: 12px;
+    }
+
+    .date-cell-has-sales {
+        background-color: #cce5ff !important;
+        color: #004085 !important;
+        font-weight: bold;
     }
 
     /* Closing balance warning styles */
@@ -1379,100 +1709,129 @@ tr.has-quantity td {
     font-weight: bold;
 }
 
-/* Advanced Bill Generation Progress Styles */
-.bill-spinner-container {
-    position: relative;
+/* Date distribution column styles */
+.date-header {
+    min-width: 60px;
+    text-align: center;
+    font-size: 11px;
+    padding: 4px !important;
+    background-color: #f8f9fa;
+}
+
+.date-distribution-cell {
+    text-align: center;
+    font-size: 11px;
+    padding: 4px !important;
+    background-color: #f8fff8;
+}
+
+.date-distribution-cell.highlight {
+    background-color: #e8f5e8;
+    font-weight: bold;
+}
+
+/* Date headers styling */
+.date-header-cell {
+    min-width: 50px;
+    text-align: center;
+    font-size: 11px;
+    padding: 2px !important;
+}
+
+/* Action column */
+.action-column {
+    min-width: 100px;
+}
+
+/* Date cells in table */
+.date-cell {
+    min-width: 50px;
+    text-align: center;
+    font-size: 11px;
+    padding: 2px !important;
+}
+
+/* Hide certain columns by default */
+.hidden-columns {
+    display: none;
+}
+
+/* Sales distribution preview styles */
+.distribution-preview {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.distribution-day {
     display: inline-block;
-    width: 80px;
-    height: 80px;
-}
-
-.bill-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px;
-    height: 60px;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,123,255,0.3);
-    animation: billPulse 2s ease-in-out infinite;
-}
-
-.bill-icon {
-    color: white;
-    font-size: 24px;
-    animation: billIconRotate 3s linear infinite;
-}
-
-.spinner-ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80px;
-    height: 80px;
-    border: 3px solid rgba(0,123,255,0.2);
-    border-top: 3px solid #007bff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes billPulse {
-    0%, 100% {
-        transform: translate(-50%, -50%) scale(1);
-        box-shadow: 0 4px 15px rgba(0,123,255,0.3);
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.1);
-        box-shadow: 0 4px 20px rgba(0,123,255,0.5);
-    }
-}
-
-@keyframes billIconRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-/* Progress bar animations */
-.progress-bar {
-    transition: width 0.3s ease;
-}
-
-/* Statistics cards hover effect */
-.card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-/* Category progress bars */
-#categoryProgressSection .progress {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    margin: 2px;
+    border-radius: 3px;
     background-color: #e9ecef;
+    font-size: 11px;
 }
 
-#imflProgressBar {
-    background: linear-gradient(90deg, #dc3545, #c82333);
+.distribution-day.has-qty {
+    background-color: #d4edda;
+    color: #155724;
+    font-weight: bold;
 }
 
-#beerProgressBar {
-    background: linear-gradient(90deg, #ffc107, #e0a800);
+/* Modal styles */
+.modal-xl {
+    max-width: 90%;
 }
 
-#clProgressBar {
-    background: linear-gradient(90deg, #17a2b8, #138496);
+/* Client-side validation alert */
+.validation-alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 500px;
+}
+
+/* Stock checking animation */
+.stock-checking {
+    background-color: #fff3cd !important;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+/* Date range info */
+.date-range-info {
+    background-color: #e7f3ff;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 4px solid #007bff;
+}
+
+/* Table responsive */
+.table-container {
+    overflow-x: auto;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* Fixed header for table */
+.styled-table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 10;
 }
   </style>
 </head>
@@ -1487,6 +1846,48 @@ tr.has-quantity td {
     <div class="content-area">
       <h3 class="mb-4">Sales by Closing Balance</h3>
 
+      <!-- NEW: Date Availability Info Banner -->
+      <div class="date-availability-banner mb-3">
+          <strong><i class="fas fa-calendar-check"></i> Date Availability Information:</strong>
+          <p class="mb-2">Dates are automatically blocked based on:
+            <span class="text-success"><i class="fas fa-check-circle"></i> Previous sales dates</span> | 
+            <span class="text-danger"><i class="fas fa-ban"></i> Dry days</span> | 
+            <span class="text-warning"><i class="fas fa-calendar-times"></i> Future dates</span>
+          </p>
+          
+          <!-- Availability Summary Cards -->
+          <div class="row mb-2">
+              <div class="col-md-4">
+                  <div class="availability-card availability-card-fully">
+                      <div class="availability-count"><?= $availability_summary['fully_available'] ?></div>
+                      <div class="availability-label">Fully Available<br><small>All <?= $days_count ?> dates</small></div>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="availability-card availability-card-partial">
+                      <div class="availability-count"><?= $availability_summary['partially_available'] ?></div>
+                      <div class="availability-label">Partially Available<br><small>Some dates blocked</small></div>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="availability-card availability-card-none">
+                      <div class="availability-count"><?= $availability_summary['not_available'] ?></div>
+                      <div class="availability-label">Not Available<br><small>All dates blocked</small></div>
+                  </div>
+              </div>
+          </div>
+          
+          <div class="availability-explanation">
+              <strong>How availability works:</strong>
+              <ul>
+                  <li><strong>Fully Available:</strong> Item can be sold on all <?= $days_count ?> dates in the range</li>
+                  <li><strong>Partially Available:</strong> Some dates are blocked (after last sale date or dry days)</li>
+                  <li><strong>Not Available:</strong> All dates are blocked (item sold after <?= $end_date ?>)</li>
+              </ul>
+              <p class="mb-0"><small><i class="fas fa-info-circle"></i> Sales will only be distributed to available dates. Blocked dates show as grayed out with ⛔ symbol.</small></p>
+          </div>
+      </div>
+
       <!-- License Information Banner -->
       <div class="license-info-banner">
         <i class="fas fa-id-card"></i> License Type: <?= htmlspecialchars($license_type) ?> | 
@@ -1497,6 +1898,15 @@ tr.has-quantity td {
       <div class="stock-info-note mb-3">
           <strong><i class="fas fa-info-circle"></i> Stock Information:</strong>
           <p class="mb-0">Showing stock as of <strong><?= date('d-M-Y', strtotime($end_date)) ?></strong> (DAY_<?= $end_day ?>_CLOSING from <?= $daily_stock_table ?> table). Only items with stock > 0 are displayed.</p>
+      </div>
+
+      <!-- Date Range Info -->
+      <div class="date-range-info mb-3">
+          <strong><i class="fas fa-calendar-alt"></i> Date Range:</strong>
+          <?= date('d-M-Y', strtotime($start_date)) ?> to <?= date('d-M-Y', strtotime($end_date)) ?>
+          (<?= $days_count ?> days) | 
+          <strong>Total Items:</strong> <?= $total_items ?> | 
+          <strong>Items with Quantities:</strong> <span id="itemsWithQtyCount"><?= count($_SESSION['sale_quantities']) ?></span>
       </div>
 
       <!-- Success/Error Messages -->
@@ -1520,6 +1930,12 @@ tr.has-quantity td {
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
+
+      <!-- Client-side Validation Alert -->
+      <div class="alert alert-warning validation-alert" id="clientValidationAlert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span id="validationMessage"></span>
+      </div>
 
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
@@ -1554,7 +1970,7 @@ tr.has-quantity td {
           </a>
           <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
-                         Group Defined
+            Group Defined
           </a>
         </div>
       </div>
@@ -1583,7 +1999,7 @@ tr.has-quantity td {
           <div class="col-md-4">
             <label class="form-label">Date Range: 
               <span class="fw-bold">
-<?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
+                <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
             </label>
@@ -1632,7 +2048,6 @@ tr.has-quantity td {
         <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
         <input type="hidden" name="update_sales" value="1">
-        <input type="hidden" name="sale_date" value="<?= $start_date ?>">
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -1678,18 +2093,33 @@ tr.has-quantity td {
                 <th>Total Sale Qty</th>
                 <th class="action-column">Action</th>
                 
-                <!-- Date Distribution Headers (will be populated by JavaScript) -->
+                <!-- Date Distribution Headers -->
+                <?php foreach ($date_array as $date): 
+                    $date_obj = new DateTime($date);
+                    $day = $date_obj->format('d');
+                    $month = $date_obj->format('M');
+                ?>
+                <th class="date-header date-header-cell" data-date="<?= $date ?>">
+                    <?= $day ?><br><?= $month ?>
+                </th>
+                <?php endforeach; ?>
                 
                 <th class="hidden-columns">Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
-<?php if (!empty($items) && $table_exists): ?>
-    <?php foreach ($items as $item): 
+<?php if (!empty($items) && $table_exists): 
+    $item_counter = 0;
+    foreach ($items as $item): 
         $item_code = $item['CODE'];
         $item_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
         $item_total = $item_qty * $item['RPRICE'];
         $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+        
+        // Format values as integers (no decimals)
+        $current_stock_int = (int)$item['CURRENT_STOCK']; // Cast to integer
+        $closing_balance_int = (int)$closing_balance; // Cast to integer
+        $item_qty_int = (int)$item_qty; // Cast to integer
         
         // Extract size from item details
         $size = 0;
@@ -1700,44 +2130,90 @@ tr.has-quantity td {
         // Get class code - now available from the query
         $class_code = $item['CLASS'] ?? 'O'; // Default to 'O' if not set
         
-        // Calculate default closing balance for input field
-        $default_closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+        // NEW: Get availability for this item
+        $availability = $item_availability[$item_code] ?? [];
+        $available_dates = array_filter($availability);
+        $availability_count = count($available_dates);
+        
+        // Determine availability badge
+        if ($availability_count == 0) {
+            $availability_class = 'availability-none';
+            $availability_text = 'No dates';
+        } elseif ($availability_count == $days_count) {
+            $availability_class = 'availability-fully';
+            $availability_text = 'All dates';
+        } else {
+            $availability_class = 'availability-partial';
+            $availability_text = $availability_count . '/' . $days_count . ' dates';
+        }
+        
+        $item_counter++;
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
-    data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
-    data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?>">
-            <td><?= htmlspecialchars($item_code); ?></td>
+            data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
+            data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
+            data-availability='<?= json_encode($availability) ?>'
+            class="<?= $item_qty > 0 ? 'has-quantity' : '' ?>"
+            id="item-row-<?= $item_counter ?>">
+            <td>
+                <?= htmlspecialchars($item_code); ?>
+                <!-- NEW: Availability badge -->
+                <span class="availability-badge <?= $availability_class ?>" 
+                      title="Available on <?= $availability_text ?> in the selected date range">
+                    <?= $availability_text ?>
+                </span>
+            </td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
             <td><?= number_format($item['RPRICE'], 2); ?></td>
             <td>
-                <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
+                <span class="stock-info"><?= number_format($current_stock_int, 0, '.', ','); ?></span>
             </td>
             <td>
-    <input type="number" name="closing_balance[<?= htmlspecialchars($item_code); ?>]" 
-           class="form-control qty-input" min="0" 
-           max="<?= $item['CURRENT_STOCK']; ?>" 
-           step="0.001" value="<?= number_format($default_closing_balance, 3) ?>" 
-           data-rate="<?= $item['RPRICE'] ?>"
-           data-code="<?= htmlspecialchars($item_code); ?>"
-           data-stock="<?= $item['CURRENT_STOCK'] ?>"
-           data-size="<?= $size ?>"
-           oninput="validateClosingBalance(this)"
-           <?= !$table_exists ? 'disabled' : '' ?>>
-</td>
+                <input type="number" name="closing_balance[<?= htmlspecialchars($item_code); ?>]" 
+                       class="form-control qty-input" min="0" 
+                       max="<?= $item['CURRENT_STOCK']; ?>" 
+                       step="1" value="<?= number_format($closing_balance_int, 0) ?>" 
+                       data-rate="<?= $item['RPRICE'] ?>"
+                       data-code="<?= htmlspecialchars($item_code); ?>"
+                       data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                       data-size="<?= $size ?>"
+                       data-counter="<?= $item_counter ?>"
+                       data-availability='<?= json_encode($availability) ?>'
+                       oninput="validateClosingBalance(this)"
+                       id="closing-input-<?= $item_counter ?>"
+                       <?= !$table_exists ? 'disabled' : '' ?>
+                       <?= ($availability_count == 0) ? 'disabled title="No available dates for this item in the selected range"' : '' ?>>
+            </td>
             <td class="sale-qty-cell" id="sale_qty_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($item_qty, 3) ?>
+                <?= number_format($item_qty_int, 0) ?>
             </td>
             <td class="action-column">
                 <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
                         data-code="<?= htmlspecialchars($item_code); ?>"
-                        <?= !$table_exists ? 'disabled' : '' ?>>
+                        data-counter="<?= $item_counter ?>"
+                        <?= !$table_exists ? 'disabled' : '' ?>
+                        <?= ($availability_count == 0) ? 'disabled title="No available dates for this item"' : '' ?>>
                     <i class="fas fa-random"></i> Shuffle
                 </button>
             </td>
             
-            <!-- Date distribution cells will be inserted here by JavaScript -->
+            <!-- Date distribution cells -->
+            <?php foreach ($date_array as $date_index => $date): 
+                $date_id = str_replace('-', '', $date);
+                // Check if date is available
+                $is_available = $availability[$date] ?? false;
+                $cell_class = $is_available ? 'date-cell-available' : 'date-cell-unavailable';
+            ?>
+            <td class="date-distribution-cell date-cell <?= $cell_class ?>" 
+                data-date="<?= $date ?>"
+                data-item="<?= htmlspecialchars($item_code); ?>"
+                data-available="<?= $is_available ? 'true' : 'false' ?>"
+                id="date-cell-<?= $item_counter ?>-<?= $date_id ?>"
+                title="<?= $is_available ? 'Available date' : 'Not available (blocked)' ?>">
+                <span class="date-qty-display" id="date-qty-<?= $item_counter ?>-<?= $date_id ?>">0</span>
+            </td>
+            <?php endforeach; ?>
             
             <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
                 <?= number_format($item_qty * $item['RPRICE'], 2) ?>
@@ -1746,13 +2222,13 @@ tr.has-quantity td {
     <?php endforeach; ?>
 <?php elseif (!$table_exists): ?>
     <tr>
-        <td colspan="9" class="text-center text-warning">
+        <td colspan="<?= 9 + count($date_array) ?>" class="text-center text-warning">
             <i class="fas fa-exclamation-triangle"></i> Daily stock table not found for the selected end date. Please select a different date range.
         </td>
     </tr>
 <?php else: ?>
     <tr>
-        <td colspan="9" class="text-center text-muted">No items found with stock > 0 for the selected date range.</td>
+        <td colspan="<?= 9 + count($date_array) ?>" class="text-center text-muted">No items found with stock > 0 for the selected date range.</td>
     </tr>
 <?php endif; ?>
 </tbody>
@@ -1829,6 +2305,20 @@ tr.has-quantity td {
         </div>
         <?php endif; ?>
         
+        <!-- Total Amount Summary -->
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="alert alert-info">
+                    <strong>Total Sale Quantity:</strong> <span id="totalSaleQty">0</span> units
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-success">
+                    <strong>Total Amount:</strong> ₹<span id="totalAmount">0.00</span>
+                </div>
+            </div>
+        </div>
+        
         <!-- Ajax Loader -->
         <div id="ajaxLoader" class="ajax-loader">
           <div class="loader"></div>
@@ -1846,7 +2336,7 @@ tr.has-quantity td {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
+                <h5 class="modal-title" id="salesLogModalLabel">Sales Log</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1924,32 +2414,27 @@ tr.has-quantity td {
     </div>
 </div>
 
-<!-- Advanced Bill Generation Progress Modal -->
+<!-- Bill Progress Modal -->
 <div class="modal fade" id="billProgressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-md">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">
-                    <i class="fas fa-file-invoice-dollar me-2"></i>
-                    Generating Bills with Volume Limits
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    Generating Bills...
                 </h5>
             </div>
             <div class="modal-body">
-                <!-- Animated Spinner Section -->
                 <div class="text-center mb-4">
-                    <div class="bill-spinner-container">
-                        <div class="bill-spinner">
-                            <i class="fas fa-file-invoice-dollar bill-icon"></i>
-                        </div>
-                        <div class="spinner-ring"></div>
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    <h6 class="mt-3 text-muted" id="progressStatus">Initializing bill generation...</h6>
+                    <h6 class="mt-3 text-muted" id="progressStatus">Processing your request...</h6>
                 </div>
 
-                <!-- Main Progress Bar -->
                 <div class="mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold">Overall Progress</span>
+                        <span class="fw-bold">Progress</span>
                         <span class="text-muted small" id="overallProgressText">0%</span>
                     </div>
                     <div class="progress" style="height: 20px;">
@@ -1958,173 +2443,9 @@ tr.has-quantity td {
                     </div>
                 </div>
 
-                <!-- Statistics Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card border-primary">
-                            <div class="card-body text-center p-2">
-                                <div class="text-primary mb-1">
-                                    <i class="fas fa-boxes fa-lg"></i>
-                                </div>
-                                <div class="h6 mb-0" id="currentItem">0</div>
-                                <small class="text-muted">Items Processed</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-success">
-                            <div class="card-body text-center p-2">
-                                <div class="text-success mb-1">
-                                    <i class="fas fa-file-invoice fa-lg"></i>
-                                </div>
-                                <div class="h6 mb-0" id="generatedBills">0</div>
-                                <small class="text-muted">Bills Generated</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-info">
-                            <div class="card-body text-center p-2">
-                                <div class="text-info mb-1">
-                                    <i class="fas fa-clock fa-lg"></i>
-                                </div>
-                                <div class="h6 mb-0" id="timeRemaining">Calculating...</div>
-                                <small class="text-muted">Time Remaining</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-warning">
-                            <div class="card-body text-center p-2">
-                                <div class="text-warning mb-1">
-                                    <i class="fas fa-chart-pie fa-lg"></i>
-                                </div>
-                                <div class="h6 mb-0" id="totalVolume">0ml</div>
-                                <small class="text-muted">Total Volume</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Category Progress Bars -->
-                <div class="mb-4" id="categoryProgressSection" style="display: none;">
-                    <h6 class="fw-bold mb-3">Category Volume Usage</h6>
-                    <div class="mb-2" id="imflProgress">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small fw-bold">IMFL</span>
-                            <span class="small text-muted" id="imflUsage">0 / 0 ml</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-danger" id="imflProgressBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-2" id="beerProgress">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small fw-bold">BEER</span>
-                            <span class="small text-muted" id="beerUsage">0 / 0 ml</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-warning" id="beerProgressBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="mb-2" id="clProgress">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="small fw-bold">CL</span>
-                            <span class="small text-muted" id="clUsage">0 / 0 ml</span>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-info" id="clProgressBar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Current Processing Details -->
-                <div class="alert alert-light border">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">Current Item:</small>
-                            <div class="fw-bold text-primary" id="currentItemName">-</div>
-                        </div>
-                        <div class="col-md-6">
-                            <small class="text-muted">Processing:</small>
-                            <div class="fw-bold text-success" id="currentAction">Preparing...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Volume Limit Information -->
-                <div class="alert alert-info mt-3" id="volumeLimitInfo" style="display: none;">
-                    <strong><i class="fas fa-info-circle me-1"></i>Volume Limits Applied:</strong>
-                    <div id="limitDetails" class="mt-2"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" id="cancelBtn" disabled>
-                    <i class="fas fa-times me-1"></i>Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Bill Generation Preview Modal -->
-<div class="modal fade" id="billPreviewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-eye me-2"></i>
-                    Bill Generation Preview
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Please review the estimates below before proceeding.</strong>
-                </div>
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="card border-primary">
-                            <div class="card-body text-center">
-                                <div class="text-primary mb-2">
-                                    <i class="fas fa-file-invoice fa-2x"></i>
-                                </div>
-                                <h4 class="mb-0" id="estimatedBills">-</h4>
-                                <small class="text-muted">Estimated Bills</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-success">
-                            <div class="card-body text-center">
-                                <div class="text-success mb-2">
-                                    <i class="fas fa-clock fa-2x"></i>
-                                </div>
-                                <h4 class="mb-0" id="estimatedTime">-</h4>
-                                <small class="text-muted">Estimated Time</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="categoryEstimates">
-                    <!-- Category estimates will be populated here -->
-                </div>
-
                 <div class="alert alert-light">
-                    <strong>Items to Process:</strong> <span id="itemsToProcess">-</span><br>
-                    <strong>Date Range:</strong> <span id="dateRangePreview">-</span>
+                    <small class="text-muted">Please do not close this window or refresh the page while bills are being generated.</small>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-1"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmGenerateBtn">
-                    <i class="fas fa-play me-1"></i>Start Generation
-                </button>
             </div>
         </div>
     </div>
@@ -2143,30 +2464,77 @@ const allItemsData = <?= json_encode($all_items_data) ?>;
 // Table exists flag
 const tableExists = <?= $table_exists ? 'true' : 'false' ?>;
 
-// Function to clear session quantities via AJAX
-function clearSessionQuantities() {
-    // Check if table exists
-    if (!tableExists) {
-        alert('Daily stock table not available. Cannot clear quantities.');
-        return;
+// NEW: Function to get availability for an item
+function getItemAvailability(itemCode, itemCounter) {
+    const inputField = $(`#closing-input-${itemCounter}`);
+    if (inputField.length > 0) {
+        const availabilityData = inputField.data('availability');
+        if (availabilityData) {
+            return availabilityData;
+        }
     }
     
-    $.ajax({
-        url: 'clear_session_quantities.php',
-        type: 'POST',
-        success: function(response) {
-            console.log('Session quantities cleared');
-            // Reload the page to reflect changes
-            location.reload();
-        },
-        error: function() {
-            console.log('Error clearing session quantities');
-            alert('Error clearing quantities. Please try again.');
-        }
+    // If not found in input field, return all dates as available (default)
+    const defaultAvailability = {};
+    dateArray.forEach(date => {
+        defaultAvailability[date] = true;
     });
+    return defaultAvailability;
 }
 
-// NEW: Enhanced closing balance validation function
+// NEW: Function to count available dates for an item
+function countAvailableDates(itemCode, itemCounter) {
+    const availability = getItemAvailability(itemCode, itemCounter);
+    return Object.values(availability).filter(isAvailable => isAvailable).length;
+}
+
+// NEW: Function to distribute sales across available dates only (client-side)
+function distributeSalesAcrossAvailableDatesClient(totalQty, availability) {
+    // Filter available dates
+    const availableDates = [];
+    dateArray.forEach(date => {
+        if (availability[date]) {
+            availableDates.push(date);
+        }
+    });
+    
+    const availableDaysCount = availableDates.length;
+    
+    if (availableDaysCount === 0 || totalQty <= 0) {
+        // Return array with all dates as 0
+        const distribution = {};
+        dateArray.forEach(date => {
+            distribution[date] = 0;
+        });
+        return distribution;
+    }
+    
+    // Calculate base distribution
+    const baseQty = Math.floor(totalQty / availableDaysCount);
+    const remainder = totalQty % availableDaysCount;
+    
+    // Initialize distribution
+    const distribution = {};
+    dateArray.forEach(date => {
+        if (availability[date]) {
+            distribution[date] = baseQty;
+        } else {
+            distribution[date] = 0;
+        }
+    });
+    
+    // Distribute remainder across available dates
+    const availableDateKeys = Object.keys(availability).filter(date => availability[date]);
+    for (let i = 0; i < remainder; i++) {
+        const dateIndex = i % availableDaysCount;
+        const date = availableDateKeys[dateIndex];
+        distribution[date]++;
+    }
+    
+    return distribution;
+}
+
+// NEW: Enhanced closing balance validation function with date availability
 function validateClosingBalance(input) {
     // Check if table exists
     if (!tableExists) {
@@ -2178,6 +2546,17 @@ function validateClosingBalance(input) {
     const itemCode = $(input).data('code');
     const currentStock = parseFloat($(input).data('stock'));
     let enteredClosingBalance = parseFloat($(input).val()) || 0;
+    const itemCounter = $(input).data('counter');
+    
+    // NEW: Check if item has available dates
+    const availability = $(input).data('availability');
+    const availableDates = Object.values(availability).filter(isAvailable => isAvailable);
+    
+    if (availableDates.length === 0 && enteredClosingBalance < currentStock) {
+        alert('This item has no available dates in the selected range. Please select a different date range.');
+        $(input).val(currentStock);
+        enteredClosingBalance = currentStock;
+    }
     
     // Validate input
     if (isNaN(enteredClosingBalance) || enteredClosingBalance < 0) {
@@ -2188,7 +2567,7 @@ function validateClosingBalance(input) {
     // NEW: Prevent closing balance exceeding current stock
     if (enteredClosingBalance > currentStock) {
         enteredClosingBalance = currentStock;
-        $(input).val(currentStock.toFixed(3));
+        $(input).val(currentStock.toFixed(0)); // Changed to 0 decimal places
         
         // Show warning but don't prevent operation
         $(input).addClass('is-invalid');
@@ -2203,10 +2582,67 @@ function validateClosingBalance(input) {
     // Update UI immediately
     updateItemUI(itemCode, saleQty, currentStock, enteredClosingBalance);
     
+    // Update distribution preview with date availability
+    updateDistributionPreview(itemCode, saleQty, itemCounter, availability);
+    
+    // Update total amounts
+    updateTotalAmounts();
+    
     // Save to session via AJAX to prevent data loss
     saveQuantityToSession(itemCode, saleQty);
     
     return true;
+}
+
+// Function to update distribution preview with date availability
+function updateDistributionPreview(itemCode, totalQty, itemCounter, availability) {
+    // Check if table exists
+    if (!tableExists) return;
+    
+    if (totalQty <= 0) {
+        // Clear all date cells
+        dateArray.forEach((date, index) => {
+            const dateId = date.replace(/-/g, '');
+            $(`#date-qty-${itemCounter}-${dateId}`).text('0');
+            $(`#date-cell-${itemCounter}-${dateId}`).removeClass('date-cell-has-sales');
+        });
+        return;
+    }
+    
+    // Use availability-aware distribution
+    const dailySales = distributeSalesAcrossAvailableDatesClient(totalQty, availability);
+    
+    // Update UI
+    let totalDistributed = 0;
+    dateArray.forEach((date, index) => {
+        const dateId = date.replace(/-/g, '');
+        const qty = dailySales[date] || 0;
+        const cell = $(`#date-cell-${itemCounter}-${dateId}`);
+        const qtyDisplay = $(`#date-qty-${itemCounter}-${dateId}`);
+        
+        qtyDisplay.text(qty);
+        totalDistributed += qty;
+        
+        // Style cell based on availability and quantity
+        cell.removeClass('date-cell-has-sales date-cell-available date-cell-unavailable');
+        
+        if (!availability[date]) {
+            cell.addClass('date-cell-unavailable');
+            qtyDisplay.text(''); // Clear quantity for unavailable dates
+            cell.attr('title', 'Date not available (blocked)');
+        } else if (qty > 0) {
+            cell.addClass('date-cell-has-sales');
+            cell.attr('title', `${qty} units on ${date}`);
+        } else {
+            cell.addClass('date-cell-available');
+            cell.attr('title', 'Available date (no sales)');
+        }
+    });
+    
+    // Update sale quantity display (should match totalDistributed)
+    $(`#sale_qty_${itemCode}`).text(totalDistributed.toFixed(0));
+    
+    return dailySales;
 }
 
 // UPDATED: Function to update all UI elements for an item
@@ -2220,14 +2656,14 @@ function updateItemUI(itemCode, saleQty, currentStock, closingBalance = null) {
     }
     
     // Update all related UI elements
-    $(`#sale_qty_${itemCode}`).text(saleQty.toFixed(3));
+    $(`#sale_qty_${itemCode}`).text(saleQty.toFixed(0));
     $(`#amount_${itemCode}`).text(amount.toFixed(2));
     
     // Update row styling
     const row = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
     row.toggleClass('has-quantity', saleQty > 0);
     
-    // Update closing balance styling
+    // Update closing balance input styling
     const closingInput = $(`input[name="closing_balance[${itemCode}]"]`);
     closingInput.removeClass('text-warning text-danger fw-bold');
     
@@ -2261,12 +2697,25 @@ function saveQuantityToSession(itemCode, qty) {
                 console.log('Quantity saved to session:', itemCode, qty);
                 // Update global session quantities object
                 allSessionQuantities[itemCode] = qty;
+                // Update items with quantities count
+                updateItemsWithQtyCount();
             },
             error: function() {
                 console.error('Failed to save quantity to session');
             }
         });
-    }, 200); // Reduced from 500ms to 200ms
+    }, 200);
+}
+
+// Function to update items with quantities count
+function updateItemsWithQtyCount() {
+    let count = 0;
+    for (const itemCode in allSessionQuantities) {
+        if (allSessionQuantities[itemCode] > 0) {
+            count++;
+        }
+    }
+    $('#itemsWithQtyCount').text(count);
 }
 
 // Function to validate all quantities before form submission
@@ -2315,7 +2764,7 @@ function validateAllQuantities() {
     if (!isValid) {
         let errorMessage = "The following items have insufficient stock:\n\n";
         errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(3)}, Quantity ${item.qty}\n`;
+            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(0)}, Quantity ${item.qty}\n`;
         });
         errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
         alert(errorMessage);
@@ -2324,94 +2773,55 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// Function to distribute sales uniformly (client-side version) - VOLUME-BASED
-function distributeSales(total_qty, days_count) {
-    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
+// Function to update total amounts
+function updateTotalAmounts() {
+    let totalSaleQty = 0;
+    let totalAmount = 0;
     
-    const base_qty = Math.floor(total_qty / days_count);
-    const remainder = total_qty % days_count;
-    
-    const daily_sales = new Array(days_count).fill(base_qty);
-    
-    // Distribute remainder evenly across days
-    for (let i = 0; i < remainder; i++) {
-        daily_sales[i]++;
+    // Calculate from all session quantities
+    for (const itemCode in allSessionQuantities) {
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
+            totalSaleQty += qty;
+            
+            // Get rate from input or allItemsData
+            const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
+            let rate = 0;
+            
+            if (inputField.length > 0) {
+                rate = parseFloat(inputField.data('rate'));
+            } else if (allItemsData[itemCode]) {
+                rate = parseFloat(allItemsData[itemCode].RPRICE);
+            }
+            
+            totalAmount += qty * rate;
+        }
     }
     
-    // Shuffle the distribution to make it look more natural
-    for (let i = daily_sales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [daily_sales[i], daily_sales[j]] = [daily_sales[j], daily_sales[i]];
-    }
-    
-    return daily_sales;
+    $('#totalSaleQty').text(totalSaleQty.toFixed(0));
+    $('#totalAmount').text(totalAmount.toFixed(2));
 }
 
-// OPTIMIZED: Function to update the distribution preview ONLY for items with qty > 0
-function updateDistributionPreview(itemCode, totalQty) {
-    // Check if table exists
-    if (!tableExists) return;
+// Function to calculate total amount from visible rows
+function calculateTotalAmountFromVisibleRows() {
+    let totalSaleQty = 0;
+    let totalAmount = 0;
     
-    if (totalQty <= 0) {
-        // Remove distribution cells if quantity is 0
-        $(`input[name="closing_balance[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
-        return;
-    }
-    
-    const dailySales = distributeSales(totalQty, daysCount);
-    const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
-    const itemRow = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-    
-    // Add date distribution cells after the action column
-    let totalDistributed = 0;
-    dailySales.forEach((qty, index) => {
-        totalDistributed += qty;
-        // Insert distribution cells after the action column
-        $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
-    });
-    
-    // Update sale quantity display
-    $(`#sale_qty_${itemCode}`).text(totalDistributed.toFixed(3));
-    
-    // Update amount
-    const amount = totalDistributed * rate;
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
-    
-    // Show date columns if they're hidden
-    $('.date-header, .date-distribution-cell').show();
-    
-    return dailySales;
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
     $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
+        const amount = parseFloat($(this).text()) || 0;
+        totalAmount += amount;
     });
-    $('#totalAmount').text(total.toFixed(2));
-}
-
-// Function to initialize date headers and closing balance column
-function initializeTableHeaders() {
-    // Remove existing date headers if any
-    $('.date-header').remove();
     
-    // Add date headers after the action column header
-    dateArray.forEach(date => {
-        const dateObj = new Date(date);
-        const day = dateObj.getDate();
-        const month = dateObj.toLocaleString('default', { month: 'short' });
-        
-        // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+    $('.sale-qty-cell').each(function() {
+        const qty = parseFloat($(this).text()) || 0;
+        totalSaleQty += qty;
     });
+    
+    $('#totalSaleQty').text(totalSaleQty.toFixed(0));
+    $('#totalAmount').text(totalAmount.toFixed(2));
 }
 
-// Function to handle row navigation with arrow keys
+// Function to setup row navigation with arrow keys
 function setupRowNavigation() {
     const closingInputs = $('input.qty-input');
     let currentRowIndex = -1;
@@ -2451,7 +2861,113 @@ function setupRowNavigation() {
     });
 }
 
-// Function to generate bills immediately - FIXED VERSION WITH VOLUME-BASED SPLITTING
+// Function to clear session quantities via AJAX
+function clearSessionQuantities() {
+    // Check if table exists
+    if (!tableExists) {
+        alert('Daily stock table not available. Cannot clear quantities.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to clear all quantities? This action cannot be undone.')) {
+        return;
+    }
+    
+    $.ajax({
+        url: 'clear_session_quantities.php',
+        type: 'POST',
+        success: function(response) {
+            console.log('Session quantities cleared');
+            // Reload the page to reflect changes
+            location.reload();
+        },
+        error: function() {
+            console.log('Error clearing session quantities');
+            alert('Error clearing quantities. Please try again.');
+        }
+    });
+}
+
+// Function to show client-side validation alert
+function showClientValidationAlert(message) {
+    $('#validationMessage').text(message);
+    $('#clientValidationAlert').fadeIn();
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        $('#clientValidationAlert').fadeOut();
+    }, 10000);
+}
+
+// Function to check stock availability via AJAX before submission
+function checkStockAvailabilityBeforeSubmit() {
+    return new Promise((resolve, reject) => {
+        // Check if table exists
+        if (!tableExists) {
+            reject('Daily stock table not available for the selected date range.');
+            return;
+        }
+        
+        // Check if we have any quantities > 0
+        let hasQuantity = false;
+        for (const itemCode in allSessionQuantities) {
+            if (allSessionQuantities[itemCode] > 0) {
+                hasQuantity = true;
+                break;
+            }
+        }
+        
+        if (!hasQuantity) {
+            reject('Please enter closing balances for at least one item.');
+            return;
+        }
+
+        // Show checking state
+        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+        $('tr.has-quantity').addClass('stock-checking');
+
+        // Prepare data for AJAX check
+        const checkData = {
+            start_date: '<?= $start_date ?>',
+            end_date: '<?= $end_date ?>',
+            mode: '<?= $mode ?>',
+            comp_id: '<?= $comp_id ?>',
+            quantities: allSessionQuantities
+        };
+
+        $.ajax({
+            url: 'check_stock_availability.php',
+            type: 'POST',
+            data: JSON.stringify(checkData),
+            contentType: 'application/json',
+            success: function(response) {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                
+                try {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        resolve(true);
+                    } else {
+                        showClientValidationAlert(result.message);
+                        reject(result.message);
+                    }
+                } catch (e) {
+                    showClientValidationAlert('Error checking stock availability. Please try again.');
+                    reject('Error checking stock availability.');
+                }
+            },
+            error: function() {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                showClientValidationAlert('Error connecting to server. Please try again.');
+                reject('Connection error');
+            }
+        });
+    });
+}
+
+// UPDATED: Function to generate bills immediately with client-side validation and date availability check
 function generateBills() {
     // First check if table exists
     if (!tableExists) {
@@ -2459,31 +2975,60 @@ function generateBills() {
         return false;
     }
     
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
+    // NEW: Check date availability for items with quantities
+    let availabilityErrors = [];
+    $('input.qty-input').each(function() {
+        const itemCode = $(this).data('code');
+        const itemCounter = $(this).data('counter');
+        const currentStock = parseFloat($(this).data('stock'));
+        const closingBalance = parseFloat($(this).val()) || 0;
+        const saleQty = currentStock - closingBalance;
+        
+        if (saleQty > 0) {
+            const availableDatesCount = countAvailableDates(itemCode, itemCounter);
+            if (availableDatesCount === 0) {
+                const itemName = allItemsData[itemCode]?.DETAILS || itemCode;
+                availabilityErrors.push(`${itemName} (${itemCode})`);
+            }
         }
-    }
+    });
     
-    if (!hasQuantity) {
-        alert('Please enter closing balances for at least one item.');
+    if (availabilityErrors.length > 0) {
+        alert('The following items have no available dates in the selected range:\n\n' + 
+              availabilityErrors.join('\n') + 
+              '\n\nPlease adjust quantities or select a different date range.');
         return false;
     }
     
-    // Validate all quantities to prevent negative closing balance
+    // Then validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Submit the form normally (not via AJAX) to maintain server-side processing
-    document.getElementById('salesForm').submit();
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // If validation passes, show progress modal and submit
+            $('#billProgressModal').modal('show');
+            
+            // Simulate progress (in real scenario, this would be server-side)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                $('#billProgressBar').css('width', progress + '%');
+                $('#overallProgressText').text(progress + '%');
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    // Submit the form
+                    document.getElementById('salesForm').submit();
+                }
+            }, 300);
+        })
+        .catch((error) => {
+            // Validation failed, don't submit
+            console.log('Client-side validation failed:', error);
+        });
 }
 
 // Function to save to pending sales via AJAX
@@ -2494,78 +3039,72 @@ function saveToPendingSales() {
         return false;
     }
     
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter closing balances for at least one item.');
-        return false;
-    }
-    
-    // Validate all quantities to prevent negative closing balance
+    // Then validate basic quantities
     if (!validateAllQuantities()) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's quantity from session (not just visible ones)
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            formData.append(`sale_qty[${itemCode}]`, qty);
-        }
-    }
-    
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+    // Then check stock availability via AJAX
+    checkStockAvailabilityBeforeSubmit()
+        .then(() => {
+            // Show loader and disable button
+            $('#ajaxLoader').show();
+            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
             
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    // Clear session quantities
-                    clearSessionQuantities();
-                    alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
+            // Collect all the data
+            const formData = new FormData();
+            formData.append('save_pending', 'true');
+            formData.append('start_date', '<?= $start_date ?>');
+            formData.append('end_date', '<?= $end_date ?>');
+            formData.append('mode', '<?= $mode ?>');
+            
+            // Add each item's quantity from session (not just visible ones)
+            for (const itemCode in allSessionQuantities) {
+                const qty = allSessionQuantities[itemCode];
+                if (qty > 0) {
+                    formData.append(`sale_qty[${itemCode}]`, qty);
                 }
-            } catch (e) {
-                alert('Error processing response: ' + response);
             }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-            alert('Error saving data to pending. Please try again.');
-        }
-    });
+            
+            // Send AJAX request
+            $.ajax({
+                url: 'save_pending_sales.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success) {
+                            // Clear session quantities
+                            clearSessionQuantities();
+                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (e) {
+                        alert('Error processing response: ' + response);
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoader').hide();
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    alert('Error saving data to pending. Please try again.');
+                }
+            });
+        })
+        .catch((error) => {
+            // Validation failed, don't proceed
+            console.log('Client-side validation failed for pending sales:', error);
+        });
 }
 
-// Single button with dual functionality - ENHANCED WITH PROGRESS TRACKING
+// Single button with dual functionality
 function handleGenerateBills() {
     // First check if table exists
     if (!tableExists) {
@@ -2590,161 +3129,19 @@ function handleGenerateBills() {
 
     // Show confirmation dialog with bill preview
     const userChoice = confirm(
-        "Generate Bills with Volume Limits:\n\n" +
+        "Generate Bills:\n\n" +
         "Found " + totalItems + " items with quantities.\n\n" +
         "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
         "Click Cancel to save to pending sales (will save for later processing, no stock update)."
     );
 
     if (userChoice === true) {
-        // User clicked OK - Generate bills with progress tracking
-        generateBillsWithProgress(totalItems);
+        // User clicked OK - Generate bills immediately
+        generateBills();
     } else {
         // User clicked Cancel - Save to pending sales
         saveToPendingSales();
     }
-}
-
-// Enhanced bill generation with progress tracking
-function generateBillsWithProgress(totalItems) {
-    // Show progress modal
-    $('#billProgressModal').modal({
-        backdrop: 'static',
-        keyboard: false
-    });
-
-    // Initialize progress
-    $('#billProgressBar').css('width', '0%');
-    $('#overallProgressText').text('0%');
-    $('#currentItem').text('0');
-    $('#generatedBills').text('0');
-    $('#timeRemaining').text('Calculating...');
-    $('#totalVolume').text('0ml');
-    $('#progressStatus').text('Preparing bill generation...');
-    $('#currentItemName').text('-');
-    $('#currentAction').text('Preparing...');
-
-    // Show category progress section
-    $('#categoryProgressSection').show();
-
-    // Start time tracking
-    const startTime = Date.now();
-    let processedItems = 0;
-    let generatedBills = 0;
-    let totalVolume = 0;
-
-    // Initialize category tracking
-    const categoryLimits = {
-        IMFL: 9000, // Default IMFL limit
-        BEER: 0,
-        CL: 4500   // Default CL limit
-    };
-
-    const categoryUsage = {
-        IMFL: 0,
-        BEER: 0,
-        CL: 0
-    };
-
-    // Update category progress bars
-    updateCategoryProgress(categoryUsage, categoryLimits);
-
-    // Prepare form data
-    const formData = new FormData();
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('update_sales', '1');
-
-    // Add all session quantities and calculate volume
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            formData.append(`closing_balance[${itemCode}]`, '0'); // Closing balance will be calculated
-
-            // Calculate volume for progress tracking
-            const itemData = getItemData(itemCode);
-            if (itemData) {
-                const volume = extractVolume(itemData.details, itemData.details2);
-                totalVolume += volume * qty;
-
-                // Update category usage
-                const category = getItemCategory(itemData.classCode);
-                if (categoryLimits.hasOwnProperty(category)) {
-                    categoryUsage[category] += volume * qty;
-                }
-            }
-
-            processedItems++;
-            $('#currentItem').text(processedItems);
-            $('#currentItemName').text(itemCode);
-            $('#currentAction').text(`Processing item ${processedItems}/${totalItems}`);
-            $('#totalVolume').text(totalVolume.toLocaleString() + 'ml');
-            $('#billProgressBar').css('width', ((processedItems / totalItems) * 30) + '%'); // First 30% for preparation
-            $('#overallProgressText').text(Math.round((processedItems / totalItems) * 30) + '%');
-
-            // Update category progress
-            updateCategoryProgress(categoryUsage, categoryLimits);
-        }
-    }
-
-    // Update progress text
-    $('#progressStatus').text('Submitting data to server...');
-    $('#currentAction').text('Sending data to server...');
-
-    // Submit the form
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-
-    // Use fetch for better progress tracking
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (response.redirected) {
-            // Success - redirect to success page
-            $('#progressStatus').text('Bills generated successfully! Redirecting...');
-            $('#currentAction').text('Redirecting to results...');
-            $('#billProgressBar').css('width', '100%');
-            $('#overallProgressText').text('100%');
-            setTimeout(() => {
-                window.location.href = response.url;
-            }, 1000);
-        } else {
-            return response.text().then(text => {
-                throw new Error('Server error: ' + text);
-            });
-        }
-    })
-    .catch(error => {
-        $('#ajaxLoader').hide();
-        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-        $('#billProgressModal').modal('hide');
-        alert('Error generating bills: ' + error.message);
-    });
-}
-
-// Helper function to update category progress bars
-function updateCategoryProgress(usage, limits) {
-    Object.keys(usage).forEach(category => {
-        const used = usage[category];
-        const limit = limits[category];
-        const percentage = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
-
-        $(`#${category.toLowerCase()}ProgressBar`).css('width', percentage + '%');
-        $(`#${category.toLowerCase()}Usage`).text(`${used.toLocaleString()} / ${limit.toLocaleString()} ml`);
-    });
-}
-
-// Helper function to get item category
-function getItemCategory(classCode) {
-    const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
-    if (spirits.includes(classCode)) return 'IMFL';
-    if (classCode === 'V') return 'WINE';
-    if (classCode === 'F') return 'BEER';
-    if (classCode === 'M') return 'BEER';
-    if (classCode === 'L') return 'CL';
-    return 'OTHER';
 }
 
 // Function to load sales log content
@@ -2787,7 +3184,7 @@ function printSalesLog() {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>Sales Log - Foreign Export</title>
+            <title>Sales Log</title>
             <style>
                 body { font-family: Arial, sans-serif; margin: 20px; }
                 table { width: 100%; border-collapse: collapse; }
@@ -2798,7 +3195,7 @@ function printSalesLog() {
             </style>
         </head>
         <body>
-            <h2 class="text-center">Sales Log - Foreign Export</h2>
+            <h2 class="text-center">Sales Log</h2>
             ${printContent}
         </body>
         </html>
@@ -2857,36 +3254,38 @@ function getProductType(classCode) {
 function extractVolume(details, details2) {
     // Priority: details2 column first
     if (details2) {
-        const volumeMatch = details2.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000; // Convert liters to ML
-            }
-            return volume;
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
     // Fallback: parse details column
     if (details) {
-        // Handle special cases like QUART, PINT, NIP
+        // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
-        if (details.includes('80 ML')) return 80;
         
-        // Try to extract numeric volume
-        const volumeMatch = details.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000;
-            }
-            return volume;
+        // Handle liter sizes with decimal points
+        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
@@ -2927,48 +3326,6 @@ function getVolumeColumn(volume) {
     };
     
     return volumeMap[volume] || null;
-}
-
-// Function to extract volume from details - ENHANCED VERSION
-function extractVolume(details, details2) {
-    // Priority: details2 column first
-    if (details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if (details) {
-        // Handle special cases
-        if (details.includes('QUART')) return 750;
-        if (details.includes('PINT')) return 375;
-        if (details.includes('NIP')) return 90;
-        
-        // Handle liter sizes with decimal points
-        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    return 0; // Unknown volume
 }
 
 // OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0 FROM ALL MODES
@@ -3028,7 +3385,7 @@ function updateSalesModalTable(salesSummary, allSizes) {
         
         allSizes.forEach(size => {
             const value = salesSummary[category][size] || 0;
-            const cell = $('<td>').text(value > 0 ? value : '');
+            const cell = $('<td>').text(value > 0 ? value.toFixed(0) : '');
             
             // Add subtle highlighting for non-zero values
             if (value > 0) {
@@ -3044,29 +3401,53 @@ function updateSalesModalTable(salesSummary, allSizes) {
 
 // Print function
 function printSalesSummary() {
-    const printContent = document.getElementById('totalSalesModuleContainer').innerHTML;
+    const printContent = document.getElementById('totalSalesModal').innerHTML;
     const originalContent = document.body.innerHTML;
     
     document.body.innerHTML = printContent;
     window.print();
     document.body.innerHTML = originalContent;
-    
-    // Re-initialize any necessary scripts
-    location.reload();
 }
 
-// OPTIMIZED: Document ready - Only process items with quantities > 0
+// NEW FUNCTION: Initialize input values from session on page load
+function initializeQuantitiesFromSession() {
+    $('input[name^="closing_balance"]').each(function() {
+        const itemCode = $(this).data('code');
+        const currentStock = parseFloat($(this).data('stock'));
+        const itemCounter = $(this).data('counter');
+        const availability = $(this).data('availability');
+        
+        if (allSessionQuantities[itemCode] !== undefined) {
+            const sessionQty = allSessionQuantities[itemCode];
+            // Calculate closing balance: closing_balance = current_stock - sale_qty
+            const closingBalance = currentStock - sessionQty;
+            $(this).val(closingBalance.toFixed(0));
+            
+            // Update UI for this item
+            updateItemUI(itemCode, sessionQty, currentStock, closingBalance);
+            
+            // Update distribution if quantity > 0
+            if (sessionQty > 0) {
+                updateDistributionPreview(itemCode, sessionQty, itemCounter, availability);
+            }
+        }
+    });
+    
+    // Calculate initial total amounts
+    calculateTotalAmountFromVisibleRows();
+    updateItemsWithQtyCount();
+}
+
+// OPTIMIZED: Document ready
 $(document).ready(function() {
+    console.log('Document ready - Initializing Sales by Closing Balance...');
+    
     // Check if table exists
     if (!tableExists) {
         console.log('Daily stock table not found, disabling functionality');
-        // Disable all buttons and inputs
         $('input.qty-input, button.btn-action, #shuffleBtn, #generateBillsBtn, #clearSessionBtn').prop('disabled', true);
         return;
     }
-    
-    // Initialize table headers and columns
-    initializeTableHeaders();
     
     // Set up row navigation with arrow keys
     setupRowNavigation();
@@ -3076,9 +3457,7 @@ $(document).ready(function() {
     
     // Clear session button click event
     $('#clearSessionBtn').click(function() {
-        if (confirm('Are you sure you want to clear all quantities? This action cannot be undone.')) {
-            clearSessionQuantities();
-        }
+        clearSessionQuantities();
     });
     
     // Single button with dual functionality
@@ -3087,55 +3466,19 @@ $(document).ready(function() {
         handleGenerateBills();
     });
     
-    // OPTIMIZED: Event delegation with debouncing
-    let quantityTimeout;
+    // OPTIMIZED: Event delegation with debouncing for closing balance input
+    let closingBalanceTimeout;
     $(document).off('input', 'input.qty-input').on('input', 'input.qty-input', function(e) {
-        clearTimeout(quantityTimeout);
-        quantityTimeout = setTimeout(() => {
+        clearTimeout(closingBalanceTimeout);
+        closingBalanceTimeout = setTimeout(() => {
             validateClosingBalance(this);
         }, 200);
     });
     
     // Closing balance input change event
     $(document).on('change', 'input[name^="closing_balance"]', function() {
-        // First validate the closing balance
-        if (!validateClosingBalance(this)) {
-            return; // Stop if validation fails
-        }
-        
-        const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(this).data('stock'));
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const totalQty = currentStock - closingBalance;
-        
-        // Only update distribution if quantity > 0 (optimization)
-        if (totalQty > 0) {
-            updateDistributionPreview(itemCode, totalQty);
-        } else {
-            // Remove distribution cells if quantity is 0
-            $(`input[name="closing_balance[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
-            
-            // Reset sale quantity and amount
-            $(`#sale_qty_${itemCode}`).text('0.000');
-            $(`#amount_${itemCode}`).text('0.00');
-            
-            // Hide date columns if no items have quantity
-            if ($('input[name^="closing_balance"]').filter(function() { 
-                const stock = parseFloat($(this).data('stock'));
-                const closing = parseFloat($(this).val()) || 0;
-                return (stock - closing) > 0; 
-            }).length === 0) {
-                $('.date-header, .date-distribution-cell').hide();
-            }
-        }
-
-        // Also update total sales module if modal is open
-        if ($('#totalSalesModal').hasClass('show')) {
-            updateTotalSalesModule();
-        }
-        
-        // Update total amount
-        calculateTotalAmount();
+        // Validate the closing balance
+        validateClosingBalance(this);
     });
     
     // OPTIMIZED: Shuffle all button click event - Only shuffle items with qty > 0
@@ -3145,30 +3488,34 @@ $(document).ready(function() {
             const currentStock = parseFloat($(this).data('stock'));
             const closingBalance = parseFloat($(this).val()) || 0;
             const totalQty = currentStock - closingBalance;
+            const itemCounter = $(this).data('counter');
+            const availability = $(this).data('availability');
             
-            // Only shuffle if quantity > 0 and visible (optimization)
+            // Only shuffle if quantity > 0 and visible
             if (totalQty > 0 && $(this).is(':visible')) {
-                updateDistributionPreview(itemCode, totalQty);
+                updateDistributionPreview(itemCode, totalQty, itemCounter, availability);
             }
         });
         
         // Update total amount
-        calculateTotalAmount();
+        calculateTotalAmountFromVisibleRows();
     });
     
     // Individual shuffle button click event
     $(document).on('click', '.btn-shuffle-item', function() {
         const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('stock'));
-        const closingBalance = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).val()) || 0;
+        const itemCounter = $(this).data('counter');
+        const currentStock = parseFloat($(`#closing-input-${itemCounter}`).data('stock'));
+        const closingBalance = parseFloat($(`#closing-input-${itemCounter}`).val()) || 0;
         const totalQty = currentStock - closingBalance;
+        const availability = $(`#closing-input-${itemCounter}`).data('availability');
         
         // Only shuffle if quantity > 0
         if (totalQty > 0) {
-            updateDistributionPreview(itemCode, totalQty);
+            updateDistributionPreview(itemCode, totalQty, itemCounter, availability);
             
             // Update total amount
-            calculateTotalAmount();
+            calculateTotalAmountFromVisibleRows();
         }
     });
     
@@ -3179,38 +3526,18 @@ $(document).ready(function() {
     
     // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
+        console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
     });
-});
-
-// NEW FUNCTION: Initialize input values from session on page load
-function initializeQuantitiesFromSession() {
-    $('input[name^="closing_balance"]').each(function() {
-        const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(this).data('stock'));
-        
-        if (allSessionQuantities[itemCode] !== undefined) {
-            const sessionQty = allSessionQuantities[itemCode];
-            // Calculate closing balance: closing_balance = current_stock - sale_qty
-            const closingBalance = currentStock - sessionQty;
-            $(this).val(closingBalance.toFixed(3));
-            
-            // Update UI for this item
-            updateItemUI(itemCode, sessionQty, currentStock, closingBalance);
-            
-            // Show distribution if quantity > 0 (optimization)
-            if (sessionQty > 0) {
-                updateDistributionPreview(itemCode, sessionQty);
-            }
-        }
+    
+    // Also update when modal is already shown but data changes
+    $('#totalSalesModal').on('shown.bs.modal', function() {
+        console.log('Total Sales Modal shown - refreshing data from ALL modes...');
+        updateTotalSalesModule();
     });
     
-    // Show date headers if any items have quantities > 0
-    const hasQuantities = Object.values(allSessionQuantities).some(qty => qty > 0);
-    if (hasQuantities) {
-        $('.date-header').show();
-    }
-}
-</script> 
+    console.log('Sales by Closing Balance initialized successfully');
+});
+</script>
 </body>
 </html>
