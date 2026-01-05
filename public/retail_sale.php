@@ -130,7 +130,83 @@ if (isset($_SESSION['error'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
- 
+  
+  <style>
+    /* Enhanced delete confirmation modal styling */
+    .delete-confirmation-list {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    
+    .delete-confirmation-item {
+        padding: 8px 12px;
+        margin-bottom: 5px;
+        background-color: #f8f9fa;
+        border-left: 4px solid #dc3545;
+        border-radius: 3px;
+    }
+    
+    .stock-warning-box {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-left: 4px solid #f39c12;
+        padding: 12px;
+        border-radius: 4px;
+        margin-top: 15px;
+    }
+    
+    .stock-formula {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 13px;
+        color: #495057;
+    }
+    
+    /* Checkbox selection styles */
+    .table-checkbox-cell {
+        width: 40px;
+        text-align: center;
+        vertical-align: middle;
+    }
+    
+    .selected-counter {
+        background-color: #198754;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    /* Action buttons like purchase_module.php */
+    .action-buttons {
+        display: flex;
+        gap: 3px;
+        flex-wrap: nowrap;
+    }
+
+    .action-buttons .btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+    
+    /* Status badges like purchase_module.php */
+    .status-badge {
+        padding: 4px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    
+    .status-foreign { background: #d1fae5; color: #065f46; }
+    .status-country { background: #fef3c7; color: #92400e; }
+    .status-others { background: #dbeafe; color: #1e40af; }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -295,7 +371,7 @@ if (isset($_SESSION['error'])) {
               ?>
               <span class="badge bg-primary ms-2"><?= count($sales) ?> bills</span>
             </div>
-            <div id="selectedCount" class="text-success fw-bold" style="display: none;">
+            <div id="selectedCount" class="selected-counter" style="display: none;">
               <i class="fa-solid fa-check-circle me-1"></i>
               <span id="countText">0</span> selected
             </div>
@@ -304,10 +380,10 @@ if (isset($_SESSION['error'])) {
         <div class="card-body">
           <?php if (count($sales) > 0): ?>
             <div class="table-container">
-              <table class="styled-table">
-                <thead>
+              <table class="table table-striped table-bordered table-hover styled-table">
+                <thead class="sticky-header">
                   <tr>
-                    <th width="50">
+                    <th class="table-checkbox-cell">
                       <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="selectAllTable">
                       </div>
@@ -325,18 +401,22 @@ if (isset($_SESSION['error'])) {
                 <tbody>
                   <?php foreach($sales as $sale): 
                     $liquorType = "Foreign Liquor";
+                    $statusClass = "status-foreign";
                     if ($sale['LIQ_FLAG'] === 'C') {
                         $liquorType = "Country Liquor";
+                        $statusClass = "status-country";
                     } elseif ($sale['LIQ_FLAG'] === 'O') {
                         $liquorType = "Others";
+                        $statusClass = "status-others";
                     }
                   ?>
                     <tr>
-                      <td>
+                      <td class="table-checkbox-cell">
                         <div class="form-check">
                           <input class="form-check-input bill-checkbox" type="checkbox" 
                                  value="<?= htmlspecialchars($sale['BILL_NO']) ?>"
-                                 data-billno="<?= htmlspecialchars($sale['BILL_NO']) ?>">
+                                 data-billno="<?= htmlspecialchars($sale['BILL_NO']) ?>"
+                                 data-billdate="<?= htmlspecialchars($sale['BILL_DATE']) ?>">
                         </div>
                       </td>
                       <td class="fw-bold"><?= htmlspecialchars($sale['BILL_NO']) ?></td>
@@ -345,7 +425,9 @@ if (isset($_SESSION['error'])) {
                       <td class="fw-bold">₹<?= number_format($sale['TOTAL_AMOUNT'], 2) ?></td>
                       <td>₹<?= number_format($sale['DISCOUNT'], 2) ?></td>
                       <td class="fw-bold text-success">₹<?= number_format($sale['NET_AMOUNT'], 2) ?></td>
-                      <td><span class="badge bg-info"><?= $liquorType ?></span></td>
+                      <td>
+                        <span class="status-badge <?= $statusClass ?>"><?= $liquorType ?></span>
+                      </td>
                       <td>
                         <div class="action-buttons">
                           <!-- Edit Button - Redirects to edit form -->
@@ -354,10 +436,11 @@ if (isset($_SESSION['error'])) {
                             <i class="fa-solid fa-pen-to-square"></i>
                           </a>
                           
-                          <!-- Delete Button - Uses new AJAX method -->
+                          <!-- Delete Button - Enhanced like purchase_module.php -->
                           <button class="btn btn-sm btn-danger delete-single-btn" 
                                   title="Delete Bill" 
-                                  data-billno="<?= htmlspecialchars($sale['BILL_NO']) ?>">
+                                  data-billno="<?= htmlspecialchars($sale['BILL_NO']) ?>"
+                                  data-billdate="<?= htmlspecialchars($sale['BILL_DATE']) ?>">
                             <i class="fa-solid fa-trash"></i>
                           </button>
                         </div>
@@ -390,56 +473,84 @@ if (isset($_SESSION['error'])) {
   </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Delete Confirmation Modal (Enhanced like purchase_module.php) -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confirm Delete</h5>
+        <h5 class="modal-title text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirm Delete</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete <strong id="deleteBillCount"></strong>?</p>
-        <div id="selectedBillsList" class="mb-3" style="max-height: 150px; overflow-y: auto;"></div>
-        <p class="text-info">
+        
+        <div id="selectedBillsList" class="delete-confirmation-list mb-3"></div>
+        
+        <!-- Stock Reversal Warning like purchase_module.php -->
+        <div class="stock-warning-box">
+          <i class="fas fa-exclamation-triangle text-warning me-2"></i> 
+          <strong>Stock Reversal Warning:</strong> This action will:
+          <ul class="mb-2 mt-2">
+            <li>Delete the sale record from tblsaleheader</li>
+            <li>Delete all sale details from tblsaledetails</li>
+            <li>Update item stock in tblitemstock (add back sold quantities)</li>
+            <li>Update daily stock records from the sale date until today</li>
+          </ul>
+          <p class="text-danger mb-1"><strong>Warning:</strong> This action cannot be undone and will affect stock calculations.</p>
+          <div class="stock-formula">
+            <strong>Stock Formula:</strong> day_x_closing = day_x_open + day_x_purchase - day_x_sales
+          </div>
+          <div id="dateRangeWarning" class="mt-2">
+            <small><i class="fa-solid fa-calendar me-1"></i> Daily stock will be recalculated from <span id="deleteStartDate"></span> to today</small>
+          </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
           <i class="fa-solid fa-info-circle me-2"></i>
-          Subsequent bills will be automatically renumbered to maintain sequence.
-        </p>
-        <p class="text-danger">
-          <i class="fa-solid fa-exclamation-triangle me-2"></i>
-          <strong>Warning:</strong> This action cannot be undone.
-        </p>
+          <strong>Note:</strong> Subsequent bills will be automatically renumbered to maintain sequence.
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
-          <i class="fa-solid fa-trash me-2"></i>Delete & Renumber
+          <i class="fa-solid fa-trash me-2"></i>Yes, Delete & Update Stock
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Delete Date Confirmation Modal -->
+<!-- Delete Date Confirmation Modal (Enhanced) -->
 <div class="modal fade" id="deleteDateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title text-danger"><i class="fa-solid fa-calendar-xmark me-2"></i>Delete All Bills for Date</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fa-solid fa-calendar-xmark me-2"></i>Delete All Bills for Date</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to delete <strong>ALL bills</strong> for <strong id="deleteDateText"></strong>?</p>
-        <div class="alert alert-warning">
-          <i class="fa-solid fa-triangle-exclamation me-2"></i>
-          <strong>This will delete:</strong>
-          <ul class="mb-0 mt-2">
-            <li>All bills for the selected date</li>
-            <li>All associated sale details</li>
+        
+        <!-- Enhanced stock reversal warning -->
+        <div class="stock-warning-box">
+          <i class="fa-solid fa-triangle-exclamation text-danger me-2"></i>
+          <strong>This will affect stock for ALL items sold on this date:</strong>
+          <ul class="mb-2 mt-2">
+            <li>All bills for the selected date will be deleted</li>
+            <li>All associated sale details will be removed</li>
+            <li>Stock will be updated (quantities added back to inventory)</li>
+            <li>Daily stock records will be recalculated from this date forward</li>
             <li>Subsequent bills will be renumbered</li>
           </ul>
+          <div class="stock-formula">
+            <strong>Stock Recovery Formula:</strong> closing_stock = current_stock + sold_quantity
+          </div>
+          <div class="mt-2">
+            <small><i class="fa-solid fa-calendar me-1"></i> Stock will be updated from <span id="deleteDateStart"></span> to today</small>
+          </div>
         </div>
-        <p class="text-danger">
+        
+        <p class="text-danger mt-3">
           <i class="fa-solid fa-skull-crossbones me-2"></i>
           <strong>Extreme Warning:</strong> This action is irreversible. Make sure you have backups.
         </p>
@@ -447,7 +558,7 @@ if (isset($_SESSION['error'])) {
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger" id="confirmDeleteDateBtn">
-          <i class="fa-solid fa-fire me-2"></i>Delete All Bills for Date
+          <i class="fa-solid fa-fire me-2"></i>Delete All & Update Stock
         </button>
       </div>
     </div>
@@ -462,8 +573,8 @@ if (isset($_SESSION['error'])) {
         <div class="spinner-border text-primary mb-3" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-        <h6>Processing...</h6>
-        <p class="text-muted small mb-0" id="loadingMessage">Please wait while we update the bill sequence</p>
+        <h6>Processing Stock Update...</h6>
+        <p class="text-muted small mb-0" id="loadingMessage">Updating stock and renumbering bills. This may take a moment.</p>
       </div>
     </div>
   </div>
@@ -541,9 +652,10 @@ if (isset($_SESSION['error'])) {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-let selectedBills = new Set();
+let selectedBills = new Map(); // Map to store billNo: billDate pairs
 let currentBillToDelete = '';
 let deleteDate = '';
+let earliestDeleteDate = '';
 
 // Update selected count display
 function updateSelectedCount() {
@@ -556,18 +668,36 @@ function updateSelectedCount() {
         countText.text(count);
         selectedCountDiv.show();
         deleteSelectedBtn.prop('disabled', false);
+        
+        // Find earliest date among selected bills for stock recalculation
+        updateEarliestDate();
     } else {
         selectedCountDiv.hide();
         deleteSelectedBtn.prop('disabled', true);
+        earliestDeleteDate = '';
     }
+}
+
+// Update earliest delete date for stock recalculation
+function updateEarliestDate() {
+    if (selectedBills.size === 0) {
+        earliestDeleteDate = '';
+        return;
+    }
+    
+    const dates = Array.from(selectedBills.values());
+    earliestDeleteDate = dates.reduce((earliest, current) => {
+        return current < earliest ? current : earliest;
+    });
 }
 
 // Handle individual bill checkbox
 $(document).on('change', '.bill-checkbox', function() {
     const billNo = $(this).val();
+    const billDate = $(this).data('billdate');
     
     if ($(this).is(':checked')) {
-        selectedBills.add(billNo);
+        selectedBills.set(billNo, billDate);
     } else {
         selectedBills.delete(billNo);
         $('#selectAllBills').prop('checked', false);
@@ -584,7 +714,7 @@ $('#selectAllBills').on('change', function() {
     
     if (isChecked) {
         $('.bill-checkbox').each(function() {
-            selectedBills.add($(this).val());
+            selectedBills.set($(this).val(), $(this).data('billdate'));
         });
     } else {
         selectedBills.clear();
@@ -601,7 +731,7 @@ $('#selectAllTable').on('change', function() {
     
     if (isChecked) {
         $('.bill-checkbox').each(function() {
-            selectedBills.add($(this).val());
+            selectedBills.set($(this).val(), $(this).data('billdate'));
         });
     } else {
         selectedBills.clear();
@@ -615,66 +745,43 @@ $('#deleteSelectedBtn').on('click', function() {
     if (selectedBills.size === 0) return;
     
     // Build bills list for display
-    let billsList = '<div class="list-group">';
-    selectedBills.forEach(billNo => {
-        billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${billNo}</div>`;
+    let billsList = '';
+    selectedBills.forEach((billDate, billNo) => {
+        const formattedDate = new Date(billDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        billsList += `<div class="delete-confirmation-item">
+            <strong>Bill No:</strong> ${billNo} | <strong>Date:</strong> ${formattedDate}
+        </div>`;
     });
-    billsList += '</div>';
     
     $('#selectedBillsList').html(billsList);
     $('#deleteBillCount').text(`${selectedBills.size} selected bill(s)`);
+    $('#deleteStartDate').text(formatDate(earliestDeleteDate));
     $('#deleteModal').modal('show');
-});
-
-// Confirm delete selected bills
-$('#confirmDeleteBtn').on('click', function() {
-    $('#deleteModal').modal('hide');
-    $('#loadingModal').modal('show');
-    $('#loadingMessage').text('Deleting selected bills and renumbering...');
-    
-    const formData = new FormData();
-    const billsArray = Array.from(selectedBills);
-    formData.append('bill_nos', JSON.stringify(billsArray));
-    formData.append('bulk_delete', 'true');
-    
-    fetch('delete_bill.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        $('#loadingModal').modal('hide');
-        
-        if (data.success) {
-            showAlert('success', data.message || `${selectedBills.size} bill(s) deleted successfully!`);
-            selectedBills.clear();
-            updateSelectedCount();
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            showAlert('danger', data.message || 'Error deleting bills. Please try again.');
-        }
-    })
-    .catch(error => {
-        $('#loadingModal').modal('hide');
-        console.error('Error:', error);
-        showAlert('danger', 'Network error: ' + error.message);
-    });
 });
 
 // Single bill delete
 $(document).on('click', '.delete-single-btn', function() {
     currentBillToDelete = $(this).data('billno');
+    const billDate = $(this).data('billdate');
     
     // Build bills list for display
-    let billsList = '<div class="list-group">';
-    billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${currentBillToDelete}</div>`;
-    billsList += '</div>';
+    const formattedDate = new Date(billDate).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+    
+    let billsList = `<div class="delete-confirmation-item">
+        <strong>Bill No:</strong> ${currentBillToDelete} | <strong>Date:</strong> ${formattedDate}
+    </div>`;
     
     $('#selectedBillsList').html(billsList);
     $('#deleteBillCount').text(`bill ${currentBillToDelete}`);
+    $('#deleteStartDate').text(formatDate(billDate));
     $('#deleteModal').modal('show');
 });
 
@@ -694,55 +801,173 @@ $('#deleteByDateBtn').on('click', function() {
     });
     
     $('#deleteDateText').text(formattedDate);
+    $('#deleteDateStart').text(formattedDate);
     $('#deleteDateModal').modal('show');
+});
+
+// Confirm delete selected bills
+$('#confirmDeleteBtn').on('click', function() {
+    $('#deleteModal').modal('hide');
+    $('#loadingModal').modal('show');
+    
+    if (currentBillToDelete) {
+        // Single bill delete
+        $('#loadingMessage').text('Deleting bill and updating stock...');
+        
+        // Send POST request for single bill
+        $.ajax({
+            url: 'delete_bill.php',
+            method: 'POST',
+            data: {
+                bill_no: currentBillToDelete,
+                single_delete: 'true'
+            },
+            dataType: 'json',
+            success: function(data) {
+                $('#loadingModal').modal('hide');
+                
+                if (data.success) {
+                    showAlert('success', data.message);
+                    currentBillToDelete = '';
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert('danger', data.message || 'Error deleting bill.');
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loadingModal').modal('hide');
+                
+                console.error('AJAX Error:', status, error);
+                console.error('Response:', xhr.responseText);
+                
+                let errorMsg = 'Network error occurred.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        errorMsg = response.message;
+                    }
+                } catch (e) {
+                    errorMsg = xhr.responseText || 'Server error occurred';
+                }
+                
+                showAlert('danger', 'Delete failed: ' + errorMsg);
+            }
+        });
+        
+    } else if (selectedBills.size > 0) {
+        // Bulk delete
+        $('#loadingMessage').text('Deleting selected bills and updating stock...');
+        
+        const billsArray = Array.from(selectedBills.keys());
+        
+        // Send POST request for bulk delete
+        $.ajax({
+            url: 'delete_bill.php',
+            method: 'POST',
+            data: {
+                bill_nos: JSON.stringify(billsArray),
+                bulk_delete: 'true'
+            },
+            dataType: 'json',
+            success: function(data) {
+                $('#loadingModal').modal('hide');
+                
+                if (data.success) {
+                    showAlert('success', data.message);
+                    selectedBills.clear();
+                    updateSelectedCount();
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showAlert('danger', data.message || 'Error deleting bills.');
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#loadingModal').modal('hide');
+                
+                console.error('AJAX Error:', status, error);
+                console.error('Response:', xhr.responseText);
+                
+                let errorMsg = 'Network error occurred.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        errorMsg = response.message;
+                    }
+                } catch (e) {
+                    errorMsg = xhr.responseText || 'Server error occurred';
+                }
+                
+                showAlert('danger', 'Delete failed: ' + errorMsg);
+            }
+        });
+    }
 });
 
 // Confirm delete all bills for date
 $('#confirmDeleteDateBtn').on('click', function() {
     $('#deleteDateModal').modal('hide');
     $('#loadingModal').modal('show');
-    $('#loadingMessage').text(`Deleting all bills for ${deleteDate} and renumbering...`);
+    $('#loadingMessage').text(`Deleting all bills for ${deleteDate} and updating stock...`);
     
-    const formData = new FormData();
-    formData.append('delete_date', deleteDate);
-    formData.append('delete_by_date', 'true');
-    
-    fetch('delete_bill.php', {
+    // Send POST request for date-based deletion
+    $.ajax({
+        url: 'delete_bill.php',
         method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        $('#loadingModal').modal('hide');
-        
-        if (data.success) {
-            showAlert('success', data.message || `All bills for ${deleteDate} deleted successfully!`);
+        data: {
+            delete_date: deleteDate,
+            delete_by_date: 'true'
+        },
+        dataType: 'json',
+        success: function(data) {
+            $('#loadingModal').modal('hide');
             
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            showAlert('danger', data.message || 'Error deleting bills for date. Please try again.');
+            if (data.success) {
+                showAlert('success', data.message);
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', data.message || 'Error deleting bills for date.');
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingModal').modal('hide');
+            
+            console.error('AJAX Error:', status, error);
+            console.error('Response:', xhr.responseText);
+            
+            let errorMsg = 'Network error occurred.';
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response && response.message) {
+                    errorMsg = response.message;
+                }
+            } catch (e) {
+                errorMsg = xhr.responseText || 'Server error occurred';
+            }
+            
+            showAlert('danger', 'Delete failed: ' + errorMsg);
         }
-    })
-    .catch(error => {
-        $('#loadingModal').modal('hide');
-        console.error('Error:', error);
-        showAlert('danger', 'Network error: ' + error.message);
     });
 });
 
-// Original single delete function (for backward compatibility)
-function confirmDelete(billNo) {
-    currentBillToDelete = billNo;
+// Format date for display
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
     
-    let billsList = '<div class="list-group">';
-    billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${billNo}</div>`;
-    billsList += '</div>';
-    
-    $('#selectedBillsList').html(billsList);
-    $('#deleteBillCount').text(`bill ${billNo}`);
-    $('#deleteModal').modal('show');
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
 }
 
 // Show alert function
@@ -767,6 +992,7 @@ function showAlert(type, message) {
 // Reset modals when closed
 $('#deleteModal').on('hidden.bs.modal', function() {
     $('#selectedBillsList').empty();
+    currentBillToDelete = '';
 });
 
 $('#deleteDateModal').on('hidden.bs.modal', function() {
@@ -791,11 +1017,6 @@ $(document).ready(function() {
         $('.alert').alert('close');
     }, 5000);
 });
-
-// Edit bill function
-function editBill(billNo) {
-    window.location.href = 'edit_bill_form.php?bill_no=' + billNo;
-}
 
 // Enhanced export functionality with modal
 $('#exportExcelBtn').on('click', function() {

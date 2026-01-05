@@ -509,20 +509,20 @@ function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
  */
 function distributeSales($total_qty, $days_count) {
     if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
-    
+
     $base_qty = floor($total_qty / $days_count);
     $remainder = $total_qty % $days_count;
-    
+
     $daily_sales = array_fill(0, $days_count, $base_qty);
-    
+
     // Distribute remainder evenly across days
     for ($i = 0; $i < $remainder; $i++) {
         $daily_sales[$i]++;
     }
-    
+
     // Shuffle the distribution to make it look more natural
     shuffle($daily_sales);
-    
+
     return $daily_sales;
 }
 ?>

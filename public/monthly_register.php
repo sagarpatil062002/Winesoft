@@ -62,32 +62,209 @@ if ($companyStmt = $conn->prepare($companyQuery)) {
     $companyStmt->close();
 }
 
-// Function to get correct table name
+// Function to get available months from all tables - IMPROVED
+function getAvailableMonths($conn, $compID) {
+    $available_months = [];
+    $tablePrefix = "tbldailystock_" . $compID;
+    
+    // Check for all tables matching the pattern
+    $checkQuery = "SHOW TABLES LIKE '{$tablePrefix}%'";
+    $result = $conn->query($checkQuery);
+    
+    if ($result) {
+        while ($row = $result->fetch_array()) {
+            $tableName = $row[0];
+            
+            // Check if this is the main table (no month/year suffix)
+            if ($tableName == $tablePrefix) {
+                // Main table - get all unique months from it
+                $monthQuery = "SELECT DISTINCT STK_MONTH FROM $tableName WHERE STK_MONTH IS NOT NULL AND STK_MONTH != ''";
+                $monthResult = $conn->query($monthQuery);
+                if ($monthResult) {
+                    while ($monthRow = $monthResult->fetch_assoc()) {
+                        $stk_month = trim($monthRow['STK_MONTH']);
+                        
+                        // Try multiple date formats
+                        $formats = ['Y-m', 'Y-m-d', 'Y/m', 'Y/m/d'];
+                        $found = false;
+                        
+                        foreach ($formats as $format) {
+                            $date = DateTime::createFromFormat($format, $stk_month);
+                            if ($date !== false) {
+                                $available_months[] = $date->format('Y-m');
+                                $found = true;
+                                break;
+                            }
+                        }
+                        
+                        // If no format matched, try regex
+                        if (!$found) {
+                            if (preg_match('/(\d{4}-\d{2})/', $stk_month, $matches)) {
+                                $available_months[] = $matches[1];
+                            } elseif (preg_match('/(\d{4}\d{2})/', $stk_month, $matches)) {
+                                // Handle YYYYMM format
+                                $available_months[] = substr($matches[1], 0, 4) . '-' . substr($matches[1], 4, 2);
+                            }
+                        }
+                    }
+                } else {
+                    // If query fails, at least add current month
+                    $available_months[] = date('Y-m');
+                }
+            } else {
+                // Archive table - extract from table name
+                // Pattern: tbldailystock_123_MM_YY or tbldailystock_123_MM_YYYY
+                if (preg_match('/_(\d{2})_(\d{2,4})$/', $tableName, $matches)) {
+                    $month_num = $matches[1];
+                    $year_part = $matches[2];
+                    
+                    if (strlen($year_part) == 2) {
+                        // Convert YY to YYYY (assuming 2000s)
+                        $year_full = '20' . $year_part;
+                    } else {
+                        $year_full = $year_part;
+                    }
+                    
+                    $available_months[] = $year_full . '-' . $month_num;
+                }
+            }
+        }
+    }
+    
+    // Always include current month even if table exists but has no data yet
+    $current_month = date('Y-m');
+    if (!in_array($current_month, $available_months)) {
+        $available_months[] = $current_month;
+    }
+    
+    // Check if main table exists at all
+    $checkMain = "SHOW TABLES LIKE '$tablePrefix'";
+    $mainResult = $conn->query($checkMain);
+    
+    if ($mainResult && $mainResult->num_rows > 0) {
+        // Main table exists - ensure we have months from it
+        $distinctQuery = "SELECT DISTINCT STK_MONTH FROM $tablePrefix WHERE STK_MONTH IS NOT NULL AND STK_MONTH != ''";
+        $distinctResult = $conn->query($distinctQuery);
+        if ($distinctResult) {
+            while ($distinctRow = $distinctResult->fetch_assoc()) {
+                $stk_month = trim($distinctRow['STK_MONTH']);
+                if (preg_match('/(\d{4}-\d{2})/', $stk_month, $matches)) {
+                    if (!in_array($matches[1], $available_months)) {
+                        $available_months[] = $matches[1];
+                    }
+                }
+            }
+        }
+    }
+    
+    // Remove duplicates and sort descending (newest first)
+    $available_months = array_unique($available_months);
+    
+    // Custom sort to ensure YYYY-MM format sorts correctly (newest first)
+    usort($available_months, function($a, $b) {
+        return strtotime($b . '-01') - strtotime($a . '-01');
+    });
+    
+    return $available_months;
+}
+
+// Get all available months
+$available_months = getAvailableMonths($conn, $compID);
+
+// If no month is selected or selected month not available, use current month if available, otherwise first available
+if (empty($available_months)) {
+    // No data available at all
+    $month = date('Y-m');
+} else {
+    // Check if we have a valid month in GET
+    if (isset($_GET['month']) && in_array($_GET['month'], $available_months)) {
+        $month = $_GET['month'];
+    } else {
+        // No valid month selected, try current month first
+        $current_month = date('Y-m');
+        if (in_array($current_month, $available_months)) {
+            $month = $current_month;
+        } else {
+            // Current month not available, use the most recent available month
+            $month = $available_months[0]; // First one is newest due to sorting
+        }
+    }
+}
+
+// Extract year from selected month
+$year = date('Y', strtotime($month . '-01'));
+if ($year === false) {
+    $year = date('Y'); // Fallback to current year
+}
+
+// IMPROVED Function to get correct table name with better archive detection
 function getTableForMonth($conn, $compID, $month) {
     $current_month = date('Y-m');
     $tablePrefix = "tbldailystock_" . $compID;
     
+    // First check if it's current month and main table exists
     if ($month == $current_month) {
         $tableName = $tablePrefix;
-    } else {
-        $month_num = date('m', strtotime($month . '-01'));
-        $year_short = date('y', strtotime($month . '-01'));
-        $tableName = $tablePrefix . "_" . $month_num . "_" . $year_short;
-    }
-    
-    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
-    $tableCheckResult = $conn->query($tableCheckQuery);
-    
-    if ($tableCheckResult->num_rows == 0) {
-        $tableName = $tablePrefix;
-        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
-        $tableCheckResult2 = $conn->query($tableCheckQuery2);
-        if ($tableCheckResult2->num_rows == 0) {
-            return false;
+        
+        $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
+        $tableCheckResult = $conn->query($tableCheckQuery);
+        
+        if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
+            return $tableName;
         }
     }
     
-    return $tableName;
+    // For archive months - try multiple naming patterns
+    $month_num = date('m', strtotime($month . '-01'));
+    $year_full = date('Y', strtotime($month . '-01'));
+    $year_short = date('y', strtotime($month . '-01'));
+    
+    // Common archive table naming patterns
+    $patterns = [
+        $tablePrefix . "_" . $month_num . "_" . $year_short,           // tbldailystock_123_11_25
+        $tablePrefix . "_" . sprintf("%02d", $month_num) . "_" . $year_short,
+        $tablePrefix . "_" . $month_num . "_" . $year_full,            // tbldailystock_123_11_2025
+        $tablePrefix . "_m" . $month_num . "_y" . $year_short,
+        $tablePrefix . "_" . $month_num . $year_short,                 // tbldailystock_123_1125
+        $tablePrefix . "_archive_" . $month_num . "_" . $year_full,    // tbldailystock_123_archive_11_2025
+    ];
+    
+    foreach ($patterns as $pattern) {
+        $tableCheckQuery = "SHOW TABLES LIKE '$pattern'";
+        $tableCheckResult = $conn->query($tableCheckQuery);
+        
+        if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
+            return $pattern;
+        }
+    }
+    
+    // Fallback to current table (even for archive months if archive table doesn't exist)
+    $tableCheckQuery = "SHOW TABLES LIKE '$tablePrefix'";
+    $tableCheckResult = $conn->query($tableCheckQuery);
+    
+    if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
+        return $tablePrefix;
+    }
+    
+    return false;
+}
+
+// DEBUG: Check table availability
+function checkAvailableTables($conn, $compID) {
+    $tablePrefix = "tbldailystock_" . $compID;
+    $tables = [];
+    
+    // Check for all tables matching the pattern
+    $checkQuery = "SHOW TABLES LIKE '{$tablePrefix}%'";
+    $result = $conn->query($checkQuery);
+    
+    if ($result) {
+        while ($row = $result->fetch_array()) {
+            $tables[] = $row[0];
+        }
+    }
+    
+    return $tables;
 }
 
 // Fixed Categorization Function
@@ -131,7 +308,14 @@ function normalizeSize($size, $class = '') {
         if (isset($matches_ltr[1])) {
             $ml = (int)$matches_ltr[1] * 1000;
         } else {
-            return 'Other';
+            // Try to extract any numbers
+            preg_match('/(\d+)/', $size, $matches_num);
+            if (isset($matches_num[1])) {
+                $ml = (int)$matches_num[1];
+                // Assume it's ML if no unit specified
+            } else {
+                return 'Other';
+            }
         }
     } else {
         $ml = (int)$matches[1];
@@ -195,6 +379,12 @@ function getMlFromSize($size) {
     preg_match('/(\d+)\s*LTR/i', $size, $matches_ltr);
     if (isset($matches_ltr[1])) {
         return (float)$matches_ltr[1] * 1000;
+    }
+    
+    // Try to extract any number
+    preg_match('/(\d+)/', $size, $matches_num);
+    if (isset($matches_num[1])) {
+        return (float)$matches_num[1];
     }
     
     return 0;
@@ -296,13 +486,21 @@ if ($breakagesStmt = $conn->prepare($breakagesQuery)) {
     $breakagesStmt->close();
 }
 
-// Get daily stock table
+// Get daily stock table - IMPROVED with debugging
 $dailyStockTable = getTableForMonth($conn, $compID, $month);
 $data_fetched = false;
 $total_opening = 0;
 $other_size_items = [];
 
+// DEBUG: Show available tables
+$available_tables = checkAvailableTables($conn, $compID);
+
 if ($dailyStockTable) {
+    // DEBUG: Check table structure
+    $structure_query = "SHOW COLUMNS FROM $dailyStockTable";
+    $structure_result = $conn->query($structure_query);
+    $column_count = $structure_result ? $structure_result->num_rows : 0;
+    
     // Build dynamic query for all days of the month
     $day_columns = [];
     for ($day = 1; $day <= $month_days; $day++) {
@@ -314,16 +512,25 @@ if ($dailyStockTable) {
     }
     $columns_str = implode(', ', $day_columns);
     
+    // FIXED: Handle different STK_MONTH formats in archive tables
+    // Try multiple date matching patterns
     $stockQuery = "SELECT ds.ITEM_CODE, $columns_str 
                   FROM $dailyStockTable ds 
-                  WHERE ds.STK_MONTH = ?";
+                  WHERE (ds.STK_MONTH = ? OR 
+                         ds.STK_MONTH LIKE ? OR 
+                         DATE_FORMAT(ds.STK_MONTH, '%Y-%m') = ?)";
     
     if ($stockStmt = $conn->prepare($stockQuery)) {
-        $stockStmt->bind_param("s", $month);
+        $month_param = $month;
+        $month_like = $month . '%';
+        $stockStmt->bind_param("sss", $month_param, $month_like, $month_param);
         $stockStmt->execute();
         $stockResult = $stockStmt->get_result();
         
+        $row_count = 0;
+        
         while ($row = $stockResult->fetch_assoc()) {
+            $row_count++;
             $item_code = $row['ITEM_CODE'];
             
             if (!isset($items[$item_code])) {
@@ -370,18 +577,22 @@ if ($dailyStockTable) {
                 
                 // Day 1 opening
                 if ($day == 1) {
-                    $item_opening = (int)$row["DAY_{$day_str}_OPEN"];
+                    $open_key = "DAY_{$day_str}_OPEN";
+                    $item_opening = isset($row[$open_key]) ? (int)$row[$open_key] : 0;
                 }
                 
                 // Purchases for the day
-                $item_received += (int)$row["DAY_{$day_str}_PURCHASE"];
+                $purchase_key = "DAY_{$day_str}_PURCHASE";
+                $item_received += isset($row[$purchase_key]) ? (int)$row[$purchase_key] : 0;
                 
                 // Sales for the day
-                $item_sold += (int)$row["DAY_{$day_str}_SALES"];
+                $sales_key = "DAY_{$day_str}_SALES";
+                $item_sold += isset($row[$sales_key]) ? (int)$row[$sales_key] : 0;
                 
                 // Last day closing
                 if ($day == $month_days) {
-                    $item_closing = (int)$row["DAY_{$day_str}_CLOSING"];
+                    $closing_key = "DAY_{$day_str}_CLOSING";
+                    $item_closing = isset($row[$closing_key]) ? (int)$row[$closing_key] : 0;
                 }
             }
             
@@ -425,7 +636,7 @@ if ($dailyStockTable) {
             $total_opening += $item_opening;
         }
         $stockStmt->close();
-        $data_fetched = true;
+        $data_fetched = ($row_count > 0);
     }
 }
 
@@ -506,6 +717,31 @@ if ($mode == 'Country Liquor') {
     $total_columns = count($display_sizes_cl);
 } else {
     $total_columns = count($display_sizes_s) + count($display_sizes_w) + count($display_sizes_fb) + count($display_sizes_mb);
+}
+
+// Group available months by year for dropdown display
+$years_with_months = [];
+foreach ($available_months as $avail_month) {
+    $year = date('Y', strtotime($avail_month . '-01'));
+    $month_name = date('F', strtotime($avail_month . '-01'));
+    
+    if (!isset($years_with_months[$year])) {
+        $years_with_months[$year] = [];
+    }
+    $years_with_months[$year][] = [
+        'value' => $avail_month,
+        'name' => $month_name
+    ];
+}
+
+// Get all available years
+$available_years = array_keys($years_with_months);
+rsort($available_years); // Show newest years first
+
+// Determine current year for dropdown
+$current_year_for_dropdown = $year;
+if (!in_array($current_year_for_dropdown, $available_years) && !empty($available_years)) {
+    $current_year_for_dropdown = $available_years[0];
 }
 ?>
 <!DOCTYPE html>
@@ -606,6 +842,20 @@ if ($mode == 'Country Liquor') {
       padding: 10px;
       margin-bottom: 15px;
       font-size: 11px;
+    }
+    .table-debug {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+    .available-months {
+      background-color: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 15px;
     }
 
     @media print {
@@ -756,11 +1006,74 @@ if ($mode == 'Country Liquor') {
           </p>
       </div>
 
+      <!-- DEBUG: Show available months -->
+      <div class="available-months no-print">
+        <h5>Available Data Periods:</h5>
+        <?php if (!empty($available_months)): ?>
+          <div class="row">
+            <div class="col-md-12">
+              <strong>All Available Months:</strong><br>
+              <?= implode(', ', $available_months) ?>
+            </div>
+          </div>
+          <div class="row mt-2">
+            <?php 
+            $counter = 0;
+            foreach ($years_with_months as $year_val => $months_list): 
+              $counter++;
+            ?>
+              <div class="col-md-3">
+                <strong><?= $year_val ?>:</strong><br>
+                <?php 
+                $month_names = [];
+                foreach ($months_list as $month_info) {
+                  $month_names[] = $month_info['name'];
+                }
+                echo implode(', ', $month_names);
+                ?>
+              </div>
+              <?php if ($counter % 4 == 0): ?>
+                </div><div class="row">
+              <?php endif; ?>
+            <?php endforeach; ?>
+          </div>
+          <small class="text-muted">Total available months: <?= count($available_months) ?> | Current month: <?= date('Y-m') ?> | Selected month: <?= $month ?></small>
+        <?php else: ?>
+          <div class="alert alert-warning">
+            No data available. Please check if tables exist for this company.
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- Table Debug Information -->
+      <div class="table-debug no-print">
+        <h5>Table Debug Information:</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <strong>Selected Month:</strong> <?= htmlspecialchars($month) ?> (<?= date('F Y', strtotime($month . '-01')) ?>)<br>
+            <strong>Table Selected:</strong> <?= htmlspecialchars($dailyStockTable ?: 'NO TABLE FOUND') ?><br>
+            <strong>Data Fetched:</strong> <?= $data_fetched ? 'YES' : 'NO' ?><br>
+            <strong>Month Days:</strong> <?= $month_days ?><br>
+            <strong>Current Month:</strong> <?= date('Y-m') ?>
+          </div>
+          <div class="col-md-6">
+            <strong>Available Tables:</strong><br>
+            <?php 
+            if (!empty($available_tables)) {
+                echo implode('<br>', $available_tables);
+            } else {
+                echo 'No tables found for pattern: tbldailystock_' . $compID . '%';
+            }
+            ?>
+          </div>
+        </div>
+      </div>
+
       <!-- Debug Information -->
       <?php if (!empty($other_size_items) && isset($_GET['debug'])): ?>
       <div class="debug-info no-print">
         <h5>Debug Information - Items categorized as "Other":</h5>
-        <p>Total items in master: <?= $item_count ?></p>
+        <p>Total items in master: <?= count($items) ?></p>
         <p>Items with "Other" size: <?= count($other_size_items) ?></p>
         <table class="table table-sm">
           <thead>
@@ -812,7 +1125,7 @@ if ($mode == 'Country Liquor') {
         </div>
         <div class="row mt-2">
           <div class="col-md-12">
-            <small class="text-muted">Month Days: <?= $month_days ?> | Data fetched: <?= $data_fetched ? 'Yes' : 'No' ?></small>
+            <small class="text-muted">Month Days: <?= $month_days ?> | Data fetched: <?= $data_fetched ? 'Yes' : 'No' ?> | Table: <?= $dailyStockTable ?: 'None' ?> | Current Month: <?= date('Y-m') ?></small>
           </div>
         </div>
       </div>
@@ -820,42 +1133,64 @@ if ($mode == 'Country Liquor') {
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
         <div class="card-body">
-          <form method="GET" class="report-filters">
+          <form method="GET" class="report-filters" id="reportForm">
+            <input type="hidden" name="mode" value="<?= htmlspecialchars($mode) ?>">
+            
             <div class="row mb-3">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label">Mode:</label>
-                <select name="mode" class="form-control">
+                <select name="mode" class="form-control" id="modeSelect">
                   <option value="Foreign Liquor" <?= $mode == 'Foreign Liquor' ? 'selected' : '' ?>>Foreign Liquor</option>
                   <option value="Country Liquor" <?= $mode == 'Country Liquor' ? 'selected' : '' ?>>Country Liquor</option>
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Month:</label>
-                <select name="month" class="form-control">
+              
+              <div class="col-md-4">
+                <label class="form-label">Year:</label>
+                <select name="year" class="form-control" id="yearSelect">
                   <?php
-                  $months = [
-                    '01' => 'January', '02' => 'February', '03' => 'March', '04' => 'April',
-                    '05' => 'May', '06' => 'June', '07' => 'July', '08' => 'August',
-                    '09' => 'September', '10' => 'October', '11' => 'November', '12' => 'December'
-                  ];
-                  foreach ($months as $key => $name) {
-                    $selected = ($month == date('Y') . '-' . $key) ? 'selected' : '';
-                    echo "<option value=\"" . date('Y') . "-$key\" $selected>$name</option>";
+                  if (empty($available_years)) {
+                    echo '<option value="">No data available</option>';
+                  } else {
+                    foreach ($available_years as $avail_year) {
+                      $selected = ($current_year_for_dropdown == $avail_year) ? 'selected' : '';
+                      echo "<option value=\"$avail_year\" $selected>$avail_year</option>";
+                    }
                   }
                   ?>
                 </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">Year:</label>
-                <select name="year" class="form-control">
+              
+              <div class="col-md-4">
+                <label class="form-label">Month:</label>
+                <select name="month" class="form-control" id="monthSelect">
                   <?php
-                  $current_year = date('Y');
-                  for ($y = $current_year - 5; $y <= $current_year + 1; $y++) {
-                    $selected = ($year == $y) ? 'selected' : '';
-                    echo "<option value=\"$y\" $selected>$y</option>";
+                  if (isset($years_with_months[$current_year_for_dropdown])) {
+                    foreach ($years_with_months[$current_year_for_dropdown] as $month_info) {
+                      $selected = ($month == $month_info['value']) ? 'selected' : '';
+                      echo "<option value=\"{$month_info['value']}\" $selected>{$month_info['name']} $current_year_for_dropdown</option>";
+                    }
+                  } elseif (!empty($available_months)) {
+                    // Fallback: show all available months
+                    foreach ($available_months as $avail_month) {
+                      $selected = ($month == $avail_month) ? 'selected' : '';
+                      $month_name = date('F Y', strtotime($avail_month . '-01'));
+                      echo "<option value=\"$avail_month\" $selected>$month_name</option>";
+                    }
+                  } else {
+                    echo '<option value="">No months available</option>';
                   }
                   ?>
                 </select>
+              </div>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input" name="debug" value="1" <?= isset($_GET['debug']) ? 'checked' : '' ?>>
+                  <label class="form-check-label">Show Debug Info</label>
+                </div>
               </div>
             </div>
             
@@ -866,9 +1201,6 @@ if ($mode == 'Country Liquor') {
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
               </button>
-              <a href="?<?= http_build_query($_GET) ?>&debug=1" class="btn btn-warning">
-                <i class="fas fa-bug me-1"></i> Debug
-              </a>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
                 <i class="fas fa-times me-1"></i> Exit
               </a>
@@ -877,285 +1209,365 @@ if ($mode == 'Country Liquor') {
         </div>
       </div>
 
-      <div class="print-section">
-        <div class="company-header">
-          <h5>License to <?= htmlspecialchars($companyName) ?> (<?= $year ?> - <?= $year + 1 ?>), Pune.</h5>
-          <h5>[Monthly Register]</h5>
-          <h6><?= htmlspecialchars($companyName) ?></h6>
-          <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?></h6>
-          <h6>Month: <?= date('F Y', strtotime($month . '-01')) ?></h6>
-          <h6>Mode: <?= htmlspecialchars($mode) ?></h6>
-          <h6>Days in Month: <?= $month_days ?></h6>
+      <?php if (empty($available_months)): ?>
+        <div class="alert alert-warning">
+          <h5>No Data Available</h5>
+          <p>There are no tables available for company ID: <?= $compID ?></p>
+          <p>Please check if:</p>
+          <ol>
+            <li>Daily stock tables exist in the database</li>
+            <li>Tables follow the naming pattern: tbldailystock_<?= $compID ?> or tbldailystock_<?= $compID ?>_MM_YY</li>
+            <li>You have proper database permissions</li>
+          </ol>
         </div>
-        
-        <?php if ($mode == 'Country Liquor'): ?>
-          <!-- Country Liquor Table -->
-          <div class="table-responsive">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th rowspan="3" class="description-col">Description</th>
-                  <th colspan="<?= count($display_sizes_cl) ?>">COUNTRY LIQUOR</th>
-                </tr>
-                <tr>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <th class="size-col vertical-text"><?= $size ?></th>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <th colspan="<?= $total_columns ?>">SOL D IND. OF BOTTLES (in min.)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="description-col">Opening Balance of the Beginning of the Month :-</td>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <td><?= $monthly_data['Country Liquor']['opening'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Received during the Current Month :-</td>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <td><?= $monthly_data['Country Liquor']['received'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Sold during the Current Month :-</td>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <td><?= $monthly_data['Country Liquor']['sold'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Breakages during the Current Month :-</td>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <td><?= $monthly_data['Country Liquor']['breakages'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Closing Balance at the End of the Month :-</td>
-                  <?php foreach ($display_sizes_cl as $size): ?>
-                    <td><?= $monthly_data['Country Liquor']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-              </tbody>
-            </table>
+      <?php else: ?>
+        <div class="print-section">
+          <div class="company-header">
+            <h5>License to <?= htmlspecialchars($companyName) ?> (<?= $year ?> - <?= $year + 1 ?>), Pune.</h5>
+            <h5>[Monthly Register]</h5>
+            <h6><?= htmlspecialchars($companyName) ?></h6>
+            <h6>LICENCE NO. :- <?= htmlspecialchars($licenseNo) ?></h6>
+            <h6>Month: <?= date('F Y', strtotime($month . '-01')) ?></h6>
+            <h6>Mode: <?= htmlspecialchars($mode) ?></h6>
+            <h6>Days in Month: <?= $month_days ?></h6>
           </div>
           
-          <!-- Summary Section for Country Liquor -->
-          <div class="table-responsive mt-3">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th colspan="3" style="text-align: center;">SUMMARY (IN LITERS) - COUNTRY LIQUOR</th>
-                </tr>
-                <tr>
-                  <th></th>
-                  <th>COUNTRY LIQUOR</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Op. Stk. (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Country Liquor']['opening'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Receipts (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Country Liquor']['receipts'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Sold (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Country Liquor']['sold'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Breakages (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Country Liquor']['breakages'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Cl. Stk. (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Country Liquor']['closing'] ?></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <?php if ($mode == 'Country Liquor'): ?>
+            <!-- Country Liquor Table -->
+            <div class="table-responsive">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th rowspan="3" class="description-col">Description</th>
+                    <th colspan="<?= count($display_sizes_cl) ?>">COUNTRY LIQUOR</th>
+                  </tr>
+                  <tr>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <th colspan="<?= $total_columns ?>">SOL D IND. OF BOTTLES (in min.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="description-col">Opening Balance of the Beginning of the Month :-</td>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <td><?= $monthly_data['Country Liquor']['opening'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Received during the Current Month :-</td>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <td><?= $monthly_data['Country Liquor']['received'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Sold during the Current Month :-</td>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <td><?= $monthly_data['Country Liquor']['sold'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Breakages during the Current Month :-</td>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <td><?= $monthly_data['Country Liquor']['breakages'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Closing Balance at the End of the Month :-</td>
+                    <?php foreach ($display_sizes_cl as $size): ?>
+                      <td><?= $monthly_data['Country Liquor']['closing'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Summary Section for Country Liquor -->
+            <div class="table-responsive mt-3">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th colspan="3" style="text-align: center;">SUMMARY (IN LITERS) - COUNTRY LIQUOR</th>
+                  </tr>
+                  <tr>
+                    <th></th>
+                    <th>COUNTRY LIQUOR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Op. Stk. (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Country Liquor']['opening'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Receipts (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Country Liquor']['receipts'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Sold (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Country Liquor']['sold'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Breakages (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Country Liquor']['breakages'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Cl. Stk. (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Country Liquor']['closing'] ?></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+          <?php else: ?>
+            <!-- Foreign Liquor Table -->
+            <div class="table-responsive">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th rowspan="3" class="description-col">Description</th>
+                    <th colspan="<?= count($display_sizes_s) ?>">SPIRITS</th>
+                    <th colspan="<?= count($display_sizes_w) ?>">WINE</th>
+                    <th colspan="<?= count($display_sizes_fb) ?>">FERMENTED BEER</th>
+                    <th colspan="<?= count($display_sizes_mb) ?>">MILD BEER</th>
+                  </tr>
+                  <tr>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <th class="size-col vertical-text"><?= $size ?></th>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <th colspan="<?= $total_columns ?>">SOL D IND. OF BOTTLES (in min.)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="description-col">Opening Balance of the Beginning of the Month :-</td>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td><?= $monthly_data['Spirits']['opening'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td><?= $monthly_data['Wines']['opening'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td><?= $monthly_data['Fermented Beer']['opening'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td><?= $monthly_data['Mild Beer']['opening'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Received during the Current Month :-</td>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td><?= $monthly_data['Spirits']['received'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td><?= $monthly_data['Wines']['received'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td><?= $monthly_data['Fermented Beer']['received'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td><?= $monthly_data['Mild Beer']['received'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Sold during the Current Month :-</td>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td><?= $monthly_data['Spirits']['sold'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td><?= $monthly_data['Wines']['sold'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td><?= $monthly_data['Fermented Beer']['sold'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td><?= $monthly_data['Mild Beer']['sold'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Breakages during the Current Month :-</td>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td><?= $monthly_data['Spirits']['breakages'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td><?= $monthly_data['Wines']['breakages'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td><?= $monthly_data['Fermented Beer']['breakages'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td><?= $monthly_data['Mild Beer']['breakages'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                  <tr>
+                    <td class="description-col">Closing Balance at the End of the Month :-</td>
+                    <?php foreach ($display_sizes_s as $size): ?>
+                      <td><?= $monthly_data['Spirits']['closing'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_w as $size): ?>
+                      <td><?= $monthly_data['Wines']['closing'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_fb as $size): ?>
+                      <td><?= $monthly_data['Fermented Beer']['closing'][$size] ?></td>
+                    <?php endforeach; ?>
+                    <?php foreach ($display_sizes_mb as $size): ?>
+                      <td><?= $monthly_data['Mild Beer']['closing'][$size] ?></td>
+                    <?php endforeach; ?>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Summary Section for Foreign Liquor -->
+            <div class="table-responsive mt-3">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th colspan="5" style="text-align: center;">SUMMARY (IN LITERS) - FOREIGN LIQUOR</th>
+                  </tr>
+                  <tr>
+                    <th></th>
+                    <th>SPIRITS</th>
+                    <th>WINE</th>
+                    <th>FERMENTED BEER</th>
+                    <th>MILD BEER</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Op. Stk. (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Spirits']['opening'] ?></td>
+                    <td><?= $summary_liters['Wines']['opening'] ?></td>
+                    <td><?= $summary_liters['Fermented Beer']['opening'] ?></td>
+                    <td><?= $summary_liters['Mild Beer']['opening'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Receipts (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Spirits']['receipts'] ?></td>
+                    <td><?= $summary_liters['Wines']['receipts'] ?></td>
+                    <td><?= $summary_liters['Fermented Beer']['receipts'] ?></td>
+                    <td><?= $summary_liters['Mild Beer']['receipts'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Sold (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Spirits']['sold'] ?></td>
+                    <td><?= $summary_liters['Wines']['sold'] ?></td>
+                    <td><?= $summary_liters['Fermented Beer']['sold'] ?></td>
+                    <td><?= $summary_liters['Mild Beer']['sold'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Breakages (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Spirits']['breakages'] ?></td>
+                    <td><?= $summary_liters['Wines']['breakages'] ?></td>
+                    <td><?= $summary_liters['Fermented Beer']['breakages'] ?></td>
+                    <td><?= $summary_liters['Mild Beer']['breakages'] ?></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Cl. Stk. (Ltrs.)</strong></td>
+                    <td><?= $summary_liters['Spirits']['closing'] ?></td>
+                    <td><?= $summary_liters['Wines']['closing'] ?></td>
+                    <td><?= $summary_liters['Fermented Beer']['closing'] ?></td>
+                    <td><?= $summary_liters['Mild Beer']['closing'] ?></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+          <?php endif; ?>
           
-        <?php else: ?>
-          <!-- Foreign Liquor Table -->
-          <div class="table-responsive">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th rowspan="3" class="description-col">Description</th>
-                  <th colspan="<?= count($display_sizes_s) ?>">SPIRITS</th>
-                  <th colspan="<?= count($display_sizes_w) ?>">WINE</th>
-                  <th colspan="<?= count($display_sizes_fb) ?>">FERMENTED BEER</th>
-                  <th colspan="<?= count($display_sizes_mb) ?>">MILD BEER</th>
-                </tr>
-                <tr>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <th class="size-col vertical-text"><?= $size ?></th>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <th class="size-col vertical-text"><?= $size ?></th>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <th class="size-col vertical-text"><?= $size ?></th>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <th class="size-col vertical-text"><?= $size ?></th>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <th colspan="<?= $total_columns ?>">SOL D IND. OF BOTTLES (in min.)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="description-col">Opening Balance of the Beginning of the Month :-</td>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $monthly_data['Spirits']['opening'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $monthly_data['Wines']['opening'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $monthly_data['Fermented Beer']['opening'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $monthly_data['Mild Beer']['opening'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Received during the Current Month :-</td>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $monthly_data['Spirits']['received'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $monthly_data['Wines']['received'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $monthly_data['Fermented Beer']['received'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $monthly_data['Mild Beer']['received'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Sold during the Current Month :-</td>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $monthly_data['Spirits']['sold'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $monthly_data['Wines']['sold'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $monthly_data['Fermented Beer']['sold'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $monthly_data['Mild Beer']['sold'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Breakages during the Current Month :-</td>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $monthly_data['Spirits']['breakages'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $monthly_data['Wines']['breakages'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $monthly_data['Fermented Beer']['breakages'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $monthly_data['Mild Beer']['breakages'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-                <tr>
-                  <td class="description-col">Closing Balance at the End of the Month :-</td>
-                  <?php foreach ($display_sizes_s as $size): ?>
-                    <td><?= $monthly_data['Spirits']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_w as $size): ?>
-                    <td><?= $monthly_data['Wines']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_fb as $size): ?>
-                    <td><?= $monthly_data['Fermented Beer']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-                  <?php foreach ($display_sizes_mb as $size): ?>
-                    <td><?= $monthly_data['Mild Beer']['closing'][$size] ?></td>
-                  <?php endforeach; ?>
-                </tr>
-              </tbody>
-            </table>
+          <div class="footer-info" style="text-align: right;">
+             <p>Authorised Signature</p>
+             <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
+             <p>Total Units: <?= number_format($calculated_total) ?> | Days in Month: <?= $month_days ?></p>
+             <p>Table: <?= $dailyStockTable ?: 'Main Table' ?></p>
           </div>
-          
-          <!-- Summary Section for Foreign Liquor -->
-          <div class="table-responsive mt-3">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th colspan="5" style="text-align: center;">SUMMARY (IN LITERS) - FOREIGN LIQUOR</th>
-                </tr>
-                <tr>
-                  <th></th>
-                  <th>SPIRITS</th>
-                  <th>WINE</th>
-                  <th>FERMENTED BEER</th>
-                  <th>MILD BEER</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Op. Stk. (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Spirits']['opening'] ?></td>
-                  <td><?= $summary_liters['Wines']['opening'] ?></td>
-                  <td><?= $summary_liters['Fermented Beer']['opening'] ?></td>
-                  <td><?= $summary_liters['Mild Beer']['opening'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Receipts (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Spirits']['receipts'] ?></td>
-                  <td><?= $summary_liters['Wines']['receipts'] ?></td>
-                  <td><?= $summary_liters['Fermented Beer']['receipts'] ?></td>
-                  <td><?= $summary_liters['Mild Beer']['receipts'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Sold (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Spirits']['sold'] ?></td>
-                  <td><?= $summary_liters['Wines']['sold'] ?></td>
-                  <td><?= $summary_liters['Fermented Beer']['sold'] ?></td>
-                  <td><?= $summary_liters['Mild Beer']['sold'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Breakages (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Spirits']['breakages'] ?></td>
-                  <td><?= $summary_liters['Wines']['breakages'] ?></td>
-                  <td><?= $summary_liters['Fermented Beer']['breakages'] ?></td>
-                  <td><?= $summary_liters['Mild Beer']['breakages'] ?></td>
-                </tr>
-                <tr>
-                  <td><strong>Cl. Stk. (Ltrs.)</strong></td>
-                  <td><?= $summary_liters['Spirits']['closing'] ?></td>
-                  <td><?= $summary_liters['Wines']['closing'] ?></td>
-                  <td><?= $summary_liters['Fermented Beer']['closing'] ?></td>
-                  <td><?= $summary_liters['Mild Beer']['closing'] ?></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-        <?php endif; ?>
-        
-        <div class="footer-info" style="text-align: right;">
-           <p>Authorised Signature</p>
-           <p>Generated on: <?= date('d/m/Y h:i A') ?> | User: <?= $_SESSION['user_name'] ?? 'System' ?></p>
-           <p>Total Units: <?= number_format($calculated_total) ?> | Days in Month: <?= $month_days ?></p>
         </div>
-      </div>
+      <?php endif; ?>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Month data from PHP
+const monthData = <?= json_encode($years_with_months) ?>;
+let formSubmitted = false;
+
+function updateMonthOptions() {
+    const yearSelect = document.getElementById('yearSelect');
+    const monthSelect = document.getElementById('monthSelect');
+    const selectedYear = yearSelect.value;
+    
+    // Clear current options
+    monthSelect.innerHTML = '';
+    
+    if (monthData[selectedYear]) {
+        // Add options for selected year
+        monthData[selectedYear].forEach(month => {
+            const option = document.createElement('option');
+            option.value = month.value;
+            option.textContent = month.name + ' ' + selectedYear;
+            monthSelect.appendChild(option);
+        });
+        
+        // Select first month if none selected
+        if (monthSelect.options.length > 0 && !formSubmitted) {
+            monthSelect.selectedIndex = 0;
+        }
+    } else {
+        // No months for this year
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No months available';
+        monthSelect.appendChild(option);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Update month options based on selected year
+    updateMonthOptions();
+    
+    // Handle form submission
+    const reportForm = document.getElementById('reportForm');
+    reportForm.addEventListener('submit', function() {
+        formSubmitted = true;
+    });
+    
+    // Auto-submit when year changes (but not on initial load)
+    const yearSelect = document.getElementById('yearSelect');
+    yearSelect.addEventListener('change', function() {
+        if (this.value) {
+            // Update month options first
+            updateMonthOptions();
+            // Small delay to ensure month options are updated
+            setTimeout(() => {
+                reportForm.submit();
+            }, 100);
+        }
+    });
+    
+    // Auto-submit when mode changes
+    const modeSelect = document.getElementById('modeSelect');
+    modeSelect.addEventListener('change', function() {
+        reportForm.submit();
+    });
+});
+</script>
 </body>
 </html>
 <?php $conn->close(); ?>

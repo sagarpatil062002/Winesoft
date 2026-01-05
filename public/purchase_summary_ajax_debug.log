@@ -72385,3 +72385,103 @@ Stack trace:
         }
     }
 }
+[31-Dec-2025 06:46:16 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[31-Dec-2025 06:46:16 Europe/Berlin] Item: McDowell\'s Green Label Superior Grain Whisky ., Code: SCMPL0010513, Class: 'W', Details: 'McDowell\'s Green Label Superior Grain Whisky .', Details2: '90 ML-(96)'
+[31-Dec-2025 06:46:16 Europe/Berlin] Using TotBott column: 12
+[31-Dec-2025 06:46:16 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 12, Class: W
+[31-Dec-2025 06:46:16 Europe/Berlin] Added to TP 2007, Category SPIRITS, Size 90 ML: 12
+[31-Dec-2025 06:46:16 Europe/Berlin] Processed 1 items into 1 TP numbers
+[31-Dec-2025 06:46:16 Europe/Berlin] Unique TP Numbers found: 2007
+[31-Dec-2025 06:46:16 Europe/Berlin] Final Summary Structure: {
+    "2007": {
+        "tp_no": "2007",
+        "tp_details": {
+            "purchase_date": "2025-12-15",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 12,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}

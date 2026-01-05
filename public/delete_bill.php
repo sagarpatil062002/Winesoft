@@ -2,45 +2,71 @@
 // delete_bill.php - Dedicated bill deletion with renumbering
 session_start();
 include_once "../config/db.php";
-include_once "stock_functions.php";
+
+// Always set JSON header first
+header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['CompID'])) {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
 }
 
 $response = ['success' => false, 'message' => ''];
-$conn->begin_transaction();
+$comp_id = $_SESSION['CompID'];
 
 try {
-    $comp_id = $_SESSION['CompID'];
-    
-    // Handle bulk delete
-    if (isset($_POST['bulk_delete']) && $_POST['bulk_delete'] === 'true' && isset($_POST['bill_nos'])) {
+    // Handle single bill delete via POST
+    if (isset($_POST['single_delete']) && $_POST['single_delete'] === 'true' && isset($_POST['bill_no'])) {
+        $bill_no = $_POST['bill_no'];
+        $result = deleteBillWithRenumbering($conn, $bill_no, $comp_id);
+        $response = $result;
+        
+    } 
+    // Handle bulk delete via POST
+    else if (isset($_POST['bulk_delete']) && $_POST['bulk_delete'] === 'true' && isset($_POST['bill_nos'])) {
         $billNos = json_decode($_POST['bill_nos'], true);
         
-        if (empty($billNos)) {
-            throw new Exception("No bills selected");
+        if (empty($billNos) || !is_array($billNos)) {
+            throw new Exception("No valid bills selected");
         }
         
         // Sort bills in ascending order to delete from smallest to largest
         sort($billNos, SORT_NUMERIC);
+        $deletedCount = 0;
+        $errors = [];
         
         foreach ($billNos as $bill_no) {
-            $result = deleteSingleBillWithRenumbering($conn, $bill_no, $comp_id);
-            if (!$result['success']) {
-                throw new Exception("Failed to delete bill $bill_no: " . $result['message']);
+            try {
+                $result = deleteBillWithRenumbering($conn, $bill_no, $comp_id);
+                if ($result['success']) {
+                    $deletedCount++;
+                } else {
+                    $errors[] = "Bill $bill_no: " . $result['message'];
+                }
+            } catch (Exception $e) {
+                $errors[] = "Bill $bill_no: " . $e->getMessage();
             }
         }
         
-        $response['success'] = true;
-        $response['message'] = count($billNos) . " bill(s) deleted successfully!";
+        if ($deletedCount > 0) {
+            $response['success'] = true;
+            $response['message'] = "$deletedCount bill(s) deleted successfully!";
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+        } else {
+            $response['message'] = "Failed to delete bills: " . implode(", ", $errors);
+        }
         
     } 
-    // Handle delete by date
+    // Handle delete by date via POST
     else if (isset($_POST['delete_by_date']) && $_POST['delete_by_date'] === 'true' && isset($_POST['delete_date'])) {
         $delete_date = $_POST['delete_date'];
+        
+        // Validate date format
+        if (!strtotime($delete_date)) {
+            throw new Exception("Invalid date format");
+        }
         
         // Get all bill numbers for the date
         $billNos = getBillsByDate($conn, $delete_date, $comp_id);
@@ -51,35 +77,48 @@ try {
         
         // Sort bills in ascending order
         sort($billNos, SORT_NUMERIC);
+        $deletedCount = 0;
+        $errors = [];
         
         foreach ($billNos as $bill_no) {
-            $result = deleteSingleBillWithRenumbering($conn, $bill_no, $comp_id);
-            if (!$result['success']) {
-                throw new Exception("Failed to delete bill $bill_no: " . $result['message']);
+            try {
+                $result = deleteBillWithRenumbering($conn, $bill_no, $comp_id);
+                if ($result['success']) {
+                    $deletedCount++;
+                } else {
+                    $errors[] = "Bill $bill_no: " . $result['message'];
+                }
+            } catch (Exception $e) {
+                $errors[] = "Bill $bill_no: " . $e->getMessage();
             }
         }
         
-        $response['success'] = true;
-        $response['message'] = "All bills for " . $delete_date . " deleted successfully! " . count($billNos) . " bill(s) removed.";
+        if ($deletedCount > 0) {
+            $response['success'] = true;
+            $response['message'] = "All bills for " . date('d-M-Y', strtotime($delete_date)) . " deleted successfully! $deletedCount bill(s) removed.";
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+        } else {
+            $response['message'] = "Failed to delete bills: " . implode(", ", $errors);
+        }
         
     } 
-    // Handle single bill delete (original functionality)
+    // Handle original POST request (backward compatibility)
     else if (isset($_POST['bill_no'])) {
         $bill_no = $_POST['bill_no'];
-        $response = deleteSingleBillWithRenumbering($conn, $bill_no, $comp_id);
+        $result = deleteBillWithRenumbering($conn, $bill_no, $comp_id);
+        $response = $result;
     } 
     else {
         throw new Exception("Invalid request parameters");
     }
     
-    $conn->commit();
-    
 } catch (Exception $e) {
-    $conn->rollback();
     $response['message'] = "Error: " . $e->getMessage();
+    error_log("Delete Bill Error: " . $e->getMessage());
 }
 
-header('Content-Type: application/json');
 echo json_encode($response);
 exit;
 
@@ -103,13 +142,15 @@ function getBillsByDate($conn, $date, $comp_id) {
 }
 
 /**
- * Delete single bill and renumber subsequent bills (main existing logic)
+ * Main function to delete a bill with renumbering
  */
-function deleteSingleBillWithRenumbering($conn, $bill_no, $comp_id) {
+function deleteBillWithRenumbering($conn, $bill_no, $comp_id) {
+    $conn->begin_transaction();
+    
     try {
         // Check if bill exists
         if (!billExists($conn, $bill_no, $comp_id)) {
-            return ['success' => false, 'message' => "Bill $bill_no not found!"];
+            throw new Exception("Bill $bill_no not found!");
         }
 
         // First, reverse the stock changes for the bill being deleted
@@ -127,10 +168,13 @@ function deleteSingleBillWithRenumbering($conn, $bill_no, $comp_id) {
         // 4. Restore subsequent bills with new numbers (automatically renumbers)
         restoreSubsequentBillsFromTemp($conn, $comp_id);
 
-        return ['success' => true, 'message' => 'Bill deleted and numbering sequence maintained!'];
+        $conn->commit();
+        return ['success' => true, 'message' => "Bill $bill_no deleted successfully!"];
 
     } catch (Exception $e) {
-        return ['success' => false, 'message' => $e->getMessage()];
+        $conn->rollback();
+        error_log("Delete Bill Error - Bill: $bill_no, Comp: $comp_id - " . $e->getMessage());
+        return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
     }
 }
 
@@ -324,7 +368,7 @@ function deleteBillCompletely($conn, $bill_no, $comp_id) {
 }
 
 /**
- * Reverse stock changes for sale deletion
+ * Reverse stock changes for sale deletion - FIXED VERSION
  */
 function reverseSaleStock($conn, $bill_no, $comp_id) {
     // Get sale details before deletion - need LIQ_FLAG for proper joining
@@ -344,13 +388,123 @@ function reverseSaleStock($conn, $bill_no, $comp_id) {
         $saleDate = $row['StkDate'];
         $liqFlag = $row['LIQ_FLAG'];
 
-        // Reverse daily stock changes using cascading logic
-        updateCascadingDailyStock($conn, $itemCode, $saleDate, $comp_id, 'sale', -$quantity);
+        // FIX: Changed from non-existent updateCascadingDailyStock() to reverseSaleDailyStock()
+        reverseSaleDailyStock($conn, $itemCode, $quantity, $saleDate, $comp_id);
 
         // Reverse item stock changes
         reverseSaleItemStock($conn, $itemCode, $quantity, $comp_id);
     }
     $stmt->close();
+}
+
+/**
+ * Reverse daily stock changes for sale
+ */
+function reverseSaleDailyStock($conn, $itemCode, $quantity, $saleDate, $comp_id) {
+    $dayOfMonth = date('j', strtotime($saleDate));
+    $monthYear = date('Y-m', strtotime($saleDate));
+    $dailyStockTable = "tbldailystock_" . $comp_id;
+
+    $saleColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+
+    // Check if record exists
+    $check_query = "SELECT COUNT(*) as count FROM $dailyStockTable
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+
+    if ($exists) {
+        // Reverse sale: subtract from sales column and add back to closing stock
+        $update_query = "UPDATE $dailyStockTable
+                        SET $saleColumn = $saleColumn - ?,
+                            $closingColumn = $closingColumn + ?
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddss", $quantity, $quantity, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
+
+        // Now cascade the changes to subsequent days
+        cascadeSaleStockChanges($conn, $itemCode, $monthYear, $dayOfMonth, $dailyStockTable);
+    }
+}
+
+/**
+ * Cascade stock changes to subsequent days for sales
+ */
+function cascadeSaleStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStockTable) {
+    // Get the new closing stock for the modified day
+    $closingColumn = "DAY_" . str_pad($startDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    $query = "SELECT $closingColumn as new_closing FROM $dailyStockTable
+              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $monthYear, $itemCode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $newClosingStock = $row['new_closing'];
+    $stmt->close();
+
+    // Get current date to limit updates
+    $currentDate = date('Y-m-d');
+    $currentDay = date('j', strtotime($currentDate));
+    $currentMonthYear = date('Y-m', strtotime($currentDate));
+
+    // Only cascade if we're in the same month
+    if ($monthYear === $currentMonthYear) {
+        $endDay = min(31, $currentDay); // Don't go beyond current day
+    } else {
+        $endDay = 31; // For past months, update all days
+    }
+
+    // Update all subsequent days' opening stock up to current date
+    for ($day = $startDay + 1; $day <= $endDay; $day++) {
+        $openColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $closingColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+
+        // Check if this day has data
+        $check_query = "SELECT COUNT(*) as count FROM information_schema.columns
+                       WHERE table_name = '$dailyStockTable' AND column_name = '$openColumn'";
+        $check_result = $conn->query($check_query);
+        if ($check_result->fetch_assoc()['count'] > 0) {
+            // Update opening stock for this day
+            $update_query = "UPDATE $dailyStockTable
+                            SET $openColumn = ?
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $newClosingStock, $monthYear, $itemCode);
+            $update_stmt->execute();
+            $update_stmt->close();
+
+            // Recalculate closing stock for this day
+            $saleColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+            $purchaseColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+
+            $recalc_query = "UPDATE $dailyStockTable
+                            SET $closingColumn = $openColumn + $purchaseColumn - $saleColumn
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $recalc_stmt = $conn->prepare($recalc_query);
+            $recalc_stmt->bind_param("ss", $monthYear, $itemCode);
+            $recalc_stmt->execute();
+            $recalc_stmt->close();
+
+            // Get the new closing stock for next day's opening
+            $get_closing_query = "SELECT $closingColumn as closing FROM $dailyStockTable
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $get_stmt = $conn->prepare($get_closing_query);
+            $get_stmt->bind_param("ss", $monthYear, $itemCode);
+            $get_stmt->execute();
+            $get_result = $get_stmt->get_result();
+            $closing_row = $get_result->fetch_assoc();
+            $newClosingStock = $closing_row['closing'];
+            $get_stmt->close();
+        }
+    }
 }
 
 /**

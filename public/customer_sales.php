@@ -211,239 +211,502 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Finalize sale
     if (isset($_POST['finalize_sale'])) {
-        // Validate customer selection
-        $customerId = (int)($selectedCustomer ?? 0);
-        if ($customerId <= 0 || !array_key_exists($customerId, $customers)) {
-            $_SESSION['error'] = "Please select a valid customer";
-        } elseif (!isset($_SESSION['sale_cart']) || empty($_SESSION['sale_cart'])) {
-            $_SESSION['error'] = "No items in cart to finalize sale";
+        // Get customer ID from session - this is the key fix
+        $customerId = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
+        
+        // For walk-in customers, session value will be empty string
+        if ($customerId === '') {
+            // Walk-in customer is allowed
+            $isWalkIn = true;
+            $customerIdForDisplay = 0;
+            $customerNameForDisplay = 'Walk-in Customer';
         } else {
-            // Generate bill number
-            $billNoQuery = "SELECT MAX(BillNo) as max_bill FROM tblcustomersales WHERE CompID = ?";
-            $billStmt = $conn->prepare($billNoQuery);
-            $billStmt->bind_param("i", $_SESSION['CompID']);
-            $billStmt->execute();
-            $billResult = $billStmt->get_result();
+            // Validate it's a valid customer code
+            $customerId = intval($customerId);
+            if ($customerId <= 0 || !array_key_exists($customerId, $customers)) {
+                $_SESSION['error'] = "Please select a valid customer before finalizing sale";
+                header("Location: customer_sales.php");
+                exit;
+            }
+            $isWalkIn = false;
+            $customerIdForDisplay = $customerId;
+            $customerNameForDisplay = $customers[$customerId];
+        }
+        
+        // Validate cart
+        if (!isset($_SESSION['sale_cart']) || empty($_SESSION['sale_cart'])) {
+            $_SESSION['error'] = "No items in cart to finalize sale";
+            header("Location: customer_sales.php");
+            exit;
+        }
+        
+        // ========== NEW: Get next retail bill number ==========
+        function getNextBillNumberForCustomerSale($conn, $comp_id) {
+            // Get the highest existing bill number numerically FOR THIS COMP_ID
+            $sql = "SELECT BILL_NO FROM tblsaleheader 
+                    WHERE COMP_ID = ? 
+                    ORDER BY CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED) DESC 
+                    LIMIT 1";
             
-            $billNo = 1;
-            if ($billResult->num_rows > 0) {
-                $billData = $billResult->fetch_assoc();
-                $billNo = (int)$billData['max_bill'] + 1;
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("i", $comp_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $nextNumber = 1; // Default starting number for this company
+            
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                $lastBillNo = $row['BILL_NO'];
+                
+                // Extract numeric part and increment
+                if (preg_match('/BL(\d+)/', $lastBillNo, $matches)) {
+                    $nextNumber = intval($matches[1]) + 1;
+                }
+            }
+            
+            $stmt->close();
+            return 'BL' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        }
+        
+        // ========== NEW: Stock update functions ==========
+        function updateDailyStock($conn, $daily_stock_table, $item_code, $sale_date, $qty, $comp_id) {
+            $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+            $sales_column = "DAY_{$day_num}_SALES";
+            $closing_column = "DAY_{$day_num}_CLOSING";
+            $opening_column = "DAY_{$day_num}_OPEN";
+            $purchase_column = "DAY_{$day_num}_PURCHASE";
+            
+            $month_year = date('Y-m', strtotime($sale_date));
+            
+            // Check if record exists
+            $check_query = "SELECT COUNT(*) as count FROM $daily_stock_table 
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $check_stmt = $conn->prepare($check_query);
+            $check_stmt->bind_param("ss", $month_year, $item_code);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+            $exists = $check_result->fetch_assoc()['count'] > 0;
+            $check_stmt->close();
+            
+            if ($exists) {
+                // Get current values
+                $select_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                                 FROM $daily_stock_table 
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $select_stmt = $conn->prepare($select_query);
+                $select_stmt->bind_param("ss", $month_year, $item_code);
+                $select_stmt->execute();
+                $select_result = $select_stmt->get_result();
+                $current_values = $select_result->fetch_assoc();
+                $select_stmt->close();
+                
+                $opening = $current_values[$opening_column] ?? 0;
+                $purchase = $current_values[$purchase_column] ?? 0;
+                $current_sales = $current_values[$sales_column] ?? 0;
+                
+                // Calculate new sales and closing
+                $new_sales = $current_sales + $qty;
+                $new_closing = $opening + $purchase - $new_sales;
+                
+                // Update existing record
+                $update_query = "UPDATE $daily_stock_table 
+                                 SET $sales_column = ?, 
+                                     $closing_column = ?,
+                                     LAST_UPDATED = CURRENT_TIMESTAMP 
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_stmt = $conn->prepare($update_query);
+                $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year, $item_code);
+                $update_stmt->execute();
+                $update_stmt->close();
+                
+                // Update next day's opening stock if it exists
+                $next_day = intval($day_num) + 1;
+                if ($next_day <= 31) {
+                    $next_day_num = sprintf('%02d', $next_day);
+                    $next_opening_column = "DAY_{$next_day_num}_OPEN";
+                    
+                    // Check if next day exists in the table
+                    $check_next_day_query = "SHOW COLUMNS FROM $daily_stock_table LIKE '$next_opening_column'";
+                    $next_day_result = $conn->query($check_next_day_query);
+                    
+                    if ($next_day_result->num_rows > 0) {
+                        $update_next_query = "UPDATE $daily_stock_table 
+                                             SET $next_opening_column = ?,
+                                                 LAST_UPDATED = CURRENT_TIMESTAMP 
+                                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                        $update_next_stmt = $conn->prepare($update_next_query);
+                        $update_next_stmt->bind_param("dss", $new_closing, $month_year, $item_code);
+                        $update_next_stmt->execute();
+                        $update_next_stmt->close();
+                    }
+                }
+            } else {
+                // Create new record
+                $closing = 0 - $qty;
+                $insert_query = "INSERT INTO $daily_stock_table 
+                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $opening_column, $purchase_column, $sales_column, $closing_column) 
+                                 VALUES (?, ?, 'F', 0, 0, ?, ?)";
+                $insert_stmt = $conn->prepare($insert_query);
+                $insert_stmt->bind_param("ssdd", $month_year, $item_code, $qty, $closing);
+                $insert_stmt->execute();
+                $insert_stmt->close();
+            }
+        }
+        
+        function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
+            // Check if record exists
+            $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+            $check_stmt = $conn->prepare($check_stock_query);
+            $check_stmt->bind_param("s", $item_code);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
+            $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+            $check_stmt->close();
+            
+            if ($stock_exists) {
+                $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+                $stock_stmt = $conn->prepare($stock_query);
+                $stock_stmt->bind_param("ds", $qty, $item_code);
+                $stock_stmt->execute();
+                $stock_stmt->close();
+            } else {
+                $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                                       VALUES (?, ?, ?, ?)";
+                $insert_stock_stmt = $conn->prepare($insert_stock_query);
+                $current_stock = -$qty;
+                $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
+                $insert_stock_stmt->execute();
+                $insert_stock_stmt->close();
+            }
+        }
+        
+        // Start transaction for all operations
+        $conn->begin_transaction();
+        
+        try {
+            // ========== PART 1: EXISTING Customer Sales ==========
+            // Generate customer sales bill number
+            $customerBillNoQuery = "SELECT MAX(BillNo) as max_bill FROM tblcustomersales WHERE CompID = ?";
+            $customerBillStmt = $conn->prepare($customerBillNoQuery);
+            $customerBillStmt->bind_param("i", $_SESSION['CompID']);
+            $customerBillStmt->execute();
+            $customerBillResult = $customerBillStmt->get_result();
+            
+            $customerBillNo = 1;
+            if ($customerBillResult->num_rows > 0) {
+                $customerBillData = $customerBillResult->fetch_assoc();
+                $customerBillNo = (int)$customerBillData['max_bill'] + 1;
             }
             
             // Get the user ID from session
             $userId = $_SESSION['user_id'];
             
-            // Insert sales records - UserID column exists in your table
-            $insertQuery = "INSERT INTO tblcustomersales (BillNo, BillDate, LCode, ItemCode, ItemName, ItemSize, Rate, Quantity, Amount, CompID, UserID) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $insertStmt = $conn->prepare($insertQuery);
+            // Only save to tblcustomersales if it's NOT a walk-in customer
+            if (!$isWalkIn) {
+                // Insert customer sales records
+                $customerInsertQuery = "INSERT INTO tblcustomersales (BillNo, BillDate, LCode, ItemCode, ItemName, ItemSize, Rate, Quantity, Amount, CompID, UserID) 
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $customerInsertStmt = $conn->prepare($customerInsertQuery);
+                
+                $currentDate = date('Y-m-d');
+                $customerSuccess = true;
+                
+                foreach ($_SESSION['sale_cart'] as $item) {
+                    // Verify item exists in master table
+                    $verifyQuery = "SELECT COUNT(*) as count FROM tblitemmaster WHERE CODE = ?";
+                    $verifyStmt = $conn->prepare($verifyQuery);
+                    $verifyStmt->bind_param("s", $item['code']);
+                    $verifyStmt->execute();
+                    $verifyResult = $verifyStmt->get_result();
+                    $itemExists = $verifyResult->fetch_assoc()['count'] > 0;
+                    
+                    if (!$itemExists) {
+                        $_SESSION['error'] = "Item " . $item['code'] . " does not exist in item master. Sale cancelled.";
+                        $customerSuccess = false;
+                        break;
+                    }
+                    
+                    // Convert values
+                    $customerBillNoInt = (int)$customerBillNo;
+                    $rateFloat = (float)$item['rate'];
+                    $quantityInt = (int)$item['quantity'];
+                    $amountFloat = (float)$item['amount'];
+                    $compIdInt = (int)$_SESSION['CompID'];
+                    $userIdInt = (int)$userId;
+                    
+                    $customerInsertStmt->bind_param(
+                        "isisssdiiii", 
+                        $customerBillNoInt, 
+                        $currentDate, 
+                        $customerIdForDisplay, 
+                        $item['code'], 
+                        $item['name'], 
+                        $item['size'], 
+                        $rateFloat, 
+                        $quantityInt, 
+                        $amountFloat,
+                        $compIdInt,
+                        $userIdInt
+                    );
+                    
+                    if (!$customerInsertStmt->execute()) {
+                        $_SESSION['error'] = "Error saving customer sale: " . $conn->error;
+                        $customerSuccess = false;
+                        break;
+                    }
+                }
+                
+                if (!$customerSuccess) {
+                    $conn->rollback();
+                    header("Location: customer_sales.php");
+                    exit;
+                }
+                
+                $customerInsertStmt->close();
+            }
             
-            $currentDate = date('Y-m-d');
-            $success = true;
+            // ========== PART 2: NEW Retail Sales ==========
+            // Get next retail bill number
+            $retailBillNo = getNextBillNumberForCustomerSale($conn, $_SESSION['CompID']);
+            
+            // Calculate total amount for retail sale
+            $retailTotalAmount = 0;
+            foreach ($_SESSION['sale_cart'] as $item) {
+                $retailTotalAmount += $item['amount'];
+            }
+            
+            // Determine mode (LIQ_FLAG) for retail sale
+            // Default to Foreign Liquor, you can adjust this logic
+            $mode = 'F'; // 'F' for Foreign Liquor
+            
+            // Insert retail sale header
+            $retailHeaderQuery = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY)
+                                  VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+            $retailHeaderStmt = $conn->prepare($retailHeaderQuery);
+            $retailHeaderStmt->bind_param("ssddssi", 
+                $retailBillNo, 
+                $currentDate, 
+                $retailTotalAmount,
+                $retailTotalAmount, 
+                $mode, 
+                $_SESSION['CompID'], 
+                $userId);
+            
+            if (!$retailHeaderStmt->execute()) {
+                throw new Exception("Error saving retail sale header: " . $conn->error);
+            }
+            $retailHeaderStmt->close();
+            
+            // Insert retail sale details and update stock
+            $current_stock_column = "Current_Stock" . $_SESSION['CompID'];
+            $opening_stock_column = "Opening_Stock" . $_SESSION['CompID'];
+            $daily_stock_table = "tbldailystock_" . $_SESSION['CompID'];
+            $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
             foreach ($_SESSION['sale_cart'] as $item) {
-                // Verify item exists in master table before inserting
-                $verifyQuery = "SELECT COUNT(*) as count FROM tblitemmaster WHERE CODE = ?";
-                $verifyStmt = $conn->prepare($verifyQuery);
-                $verifyStmt->bind_param("s", $item['code']);
-                $verifyStmt->execute();
-                $verifyResult = $verifyStmt->get_result();
-                $itemExists = $verifyResult->fetch_assoc()['count'] > 0;
-                
-                if (!$itemExists) {
-                    $_SESSION['error'] = "Item " . $item['code'] . " does not exist in item master. Sale cancelled.";
-                    $success = false;
-                    break;
-                }
-                
-                // Convert values to appropriate types
-                $billNoInt = (int)$billNo;
-                $customerIdInt = (int)$customerId;
-                $rateFloat = (float)$item['rate'];
-                $quantityInt = (int)$item['quantity'];
-                $amountFloat = (float)$item['amount'];
-                $compIdInt = (int)$_SESSION['CompID'];
-                $userIdInt = (int)$userId;
-                
-                $insertStmt->bind_param(
-                    "isssssdiiii", 
-                    $billNoInt, 
-                    $currentDate, 
-                    $customerIdInt, 
+                // Insert retail sale detail
+                $retailDetailQuery = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID)
+                                      VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $retailDetailStmt = $conn->prepare($retailDetailQuery);
+                $retailDetailStmt->bind_param("ssddssi", 
+                    $retailBillNo, 
                     $item['code'], 
-                    $item['name'], 
-                    $item['size'], 
-                    $rateFloat, 
-                    $quantityInt, 
-                    $amountFloat,
-                    $compIdInt,
-                    $userIdInt
-                );
+                    $item['quantity'],
+                    $item['rate'], 
+                    $item['amount'], 
+                    $mode, 
+                    $_SESSION['CompID']);
                 
-                if (!$insertStmt->execute()) {
-                    $_SESSION['error'] = "Error saving sale: " . $conn->error;
-                    $success = false;
-                    break;
+                if (!$retailDetailStmt->execute()) {
+                    throw new Exception("Error saving retail sale detail: " . $conn->error);
+                }
+                $retailDetailStmt->close();
+                
+                // ========== STOCK UPDATES (ONLY ONCE) ==========
+                updateItemStock($conn, $item['code'], $item['quantity'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                updateDailyStock($conn, $daily_stock_table, $item['code'], $currentDate, $item['quantity'], $_SESSION['CompID']);
+            }
+            
+            // ========== PART 3: Generate Cash Memo ==========
+            // Include cash memo functions if available
+            $cashMemoFile = "cash_memo_functions.php";
+            if (file_exists($cashMemoFile)) {
+                include_once $cashMemoFile;
+                if (function_exists('autoGenerateCashMemoForBill')) {
+                    if (!autoGenerateCashMemoForBill($conn, $retailBillNo, $_SESSION['CompID'], $userId)) {
+                        // Log error but don't fail the transaction
+                        error_log("Failed to generate cash memo for bill: " . $retailBillNo);
+                    }
                 }
             }
             
-            if ($success) {
-                // Calculate totals
-                $totalAmount = 0;
-                foreach ($_SESSION['sale_cart'] as $item) {
-                    $totalAmount += $item['amount'];
-                }
-                
-                $taxRate = 0.08; // 8% tax - you can fetch this from your database
-                $taxAmount = $totalAmount * $taxRate;
-                $finalAmount = $totalAmount + $taxAmount;
-                
-                // Store bill data in session for the view page
-                $_SESSION['last_bill_data'] = [
-                    'bill_no' => $billNo,
-                    'customer_id' => $customerId,
-                    'customer_name' => $customers[$customerId],
-                    'bill_date' => $currentDate,
-                    'items' => $_SESSION['sale_cart'],
-                    'total_amount' => $totalAmount,
-                    'tax_rate' => $taxRate,
-                    'tax_amount' => $taxAmount,
-                    'final_amount' => $finalAmount
-                ];
-                
-                // Clear cart and selected customer
-                unset($_SESSION['sale_cart']);
-                unset($_SESSION['selected_customer']);
-                
-                // Show bill preview
-                echo '<!DOCTYPE html>
-                <html lang="en">
-                <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Bill Preview - WineSoft</title>
-                  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-                  <style>
-                    @media print {
-                      body * {
-                        visibility: hidden;
-                      }
-                      .bill-preview, .bill-preview * {
-                        visibility: visible;
-                      }
-                      .bill-preview {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                      }
-                      .no-print {
-                        display: none !important;
-                      }
-                    }
-                    .bill-preview {
-                      width: 80mm;
-                      margin: 0 auto;
-                      padding: 5px;
-                      font-family: monospace;
-                      font-size: 12px;
-                    }
-                    .text-center {
-                      text-align: center;
-                    }
-                    .text-right {
-                      text-align: right;
-                    }
-                    .bill-header {
-                      border-bottom: 1px dashed #000;
-                      padding-bottom: 5px;
-                      margin-bottom: 5px;
-                    }
-                    .bill-footer {
-                      border-top: 1px dashed #000;
-                      padding-top: 5px;
-                      margin-top: 5px;
-                    }
-                    .bill-table {
-                      width: 100%;
-                      border-collapse: collapse;
-                    }
-                    .bill-table th, .bill-table td {
-                      padding: 2px 0;
-                    }
-                    .bill-table .text-right {
-                      text-align: right;
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="bill-preview">
-                    <div class="bill-header text-center">
-                <h1><?= htmlspecialchars($companyName) ?></h1>
-
-                    </div>
-                    
-                    <div style="margin: 5px 0;">
-                      <p style="margin: 2px 0;"><strong>Bill No:</strong> ' . $billNo . '</p>
-                      <p style="margin: 2px 0;"><strong>Date:</strong> ' . date('d/m/Y', strtotime($currentDate)) . '</p>
-                      <p style="margin: 2px 0;"><strong>Customer:</strong> ' . $customers[$customerId] . ' (' . $customerId . ')</p>
-                    </div>
-                    
-                    <table class="bill-table">
-                      <thead>
-                        <tr>
-                          <th>Item</th>
-                          <th class="text-right">Qty</th>
-                          <th class="text-right">Rate</th>
-                          <th class="text-right">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>';
-                
-                foreach ($_SESSION['last_bill_data']['items'] as $item) {
-                    echo '<tr>
-                            <td>' . substr($item['name'], 0, 15) . '</td>
-                            <td class="text-right">' . $item['quantity'] . '</td>
-                            <td class="text-right">' . number_format($item['rate'], 2) . '</td>
-                            <td class="text-right">' . number_format($item['amount'], 2) . '</td>
-                          </tr>';
-                }
-                
-                echo '</tbody>
-                    </table>
-                    
-                    <div class="bill-footer">
-                      <table class="bill-table">
-                        <tr>
-                          <td>Sub Total:</td>
-                          <td class="text-right">₹' . number_format($totalAmount, 2) . '</td>
-                        </tr>
-                        <tr>
-                          <td>Tax (' . ($taxRate * 100) . '%):</td>
-                          <td class="text-right">₹' . number_format($taxAmount, 2) . '</td>
-                        </tr>
-                        <tr>
-                          <td><strong>Total Due:</strong></td>
-                          <td class="text-right"><strong>₹' . number_format($finalAmount, 2) . '</strong></td>
-                        </tr>
-                      </table>
-                      
-                      <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
-                      <p style="margin: 2px 0; text-align: center; font-size: 10px;">GST #: 103340329010001</p>
-                    </div>
-                    
-                    <div class="no-print text-center" style="margin-top: 15px;">
-                      <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
-                      <a href="customer_sales_view.php?bill_no=' . $billNo . '" class="btn btn-success btn-sm"><i class="fas fa-eye"></i> View Details</a>
-                      <a href="customer_sales.php" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> New Sale</a>
-                    </div>
-                  </div>
-                </body>
-                </html>';
-                exit;
+            // Commit all changes
+            $conn->commit();
+            
+            // Calculate totals for display
+            $totalAmount = 0;
+            foreach ($_SESSION['sale_cart'] as $item) {
+                $totalAmount += $item['amount'];
             }
+            
+            $taxRate = 0.08; // 8% tax
+            $taxAmount = $totalAmount * $taxRate;
+            $finalAmount = $totalAmount + $taxAmount;
+            
+            // Store bill data in session for the view page
+            $_SESSION['last_bill_data'] = [
+                'bill_no' => $isWalkIn ? $retailBillNo : $customerBillNo, // Use retail bill for walk-in
+                'retail_bill_no' => $retailBillNo,
+                'customer_id' => $customerIdForDisplay,
+                'customer_name' => $customerNameForDisplay,
+                'bill_date' => $currentDate,
+                'items' => $_SESSION['sale_cart'],
+                'total_amount' => $totalAmount,
+                'tax_rate' => $taxRate,
+                'tax_amount' => $taxAmount,
+                'final_amount' => $finalAmount
+            ];
+            
+            // Clear cart and selected customer
+            unset($_SESSION['sale_cart']);
+            unset($_SESSION['selected_customer']);
+            
+            // Show bill preview
+            echo '<!DOCTYPE html>
+            <html lang="en">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bill Preview - WineSoft</title>
+              <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+              <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+              <style>
+                @media print {
+                  body * {
+                    visibility: hidden;
+                  }
+                  .bill-preview, .bill-preview * {
+                    visibility: visible;
+                  }
+                  .bill-preview {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                  }
+                  .no-print {
+                    display: none !important;
+                  }
+                }
+                .bill-preview {
+                  width: 80mm;
+                  margin: 0 auto;
+                  padding: 5px;
+                  font-family: monospace;
+                  font-size: 12px;
+                }
+                .text-center {
+                  text-align: center;
+                }
+                .text-right {
+                  text-align: right;
+                }
+                .bill-header {
+                  border-bottom: 1px dashed #000;
+                  padding-bottom: 5px;
+                  margin-bottom: 5px;
+                }
+                .bill-footer {
+                  border-top: 1px dashed #000;
+                  padding-top: 5px;
+                  margin-top: 5px;
+                }
+                .bill-table {
+                  width: 100%;
+                  border-collapse: collapse;
+                }
+                .bill-table th, .bill-table td {
+                  padding: 2px 0;
+                }
+                .bill-table .text-right {
+                  text-align: right;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="bill-preview">
+                <div class="bill-header text-center">
+                  <h4>WineSoft POS</h4>
+                  <p>Customer Sale Invoice</p>
+                </div>
+                
+                <div style="margin: 5px 0;">
+                  <p style="margin: 2px 0;"><strong>Bill No:</strong> ' . ($isWalkIn ? $retailBillNo : $customerBillNo) . '</p>
+                  <p style="margin: 2px 0;"><strong>Retail Bill No:</strong> ' . $retailBillNo . '</p>
+                  <p style="margin: 2px 0;"><strong>Date:</strong> ' . date('d/m/Y', strtotime($currentDate)) . '</p>
+                  <p style="margin: 2px 0;"><strong>Customer:</strong> ' . $customerNameForDisplay . ($customerIdForDisplay > 0 ? ' (' . $customerIdForDisplay . ')' : '') . '</p>
+                </div>
+                
+                <table class="bill-table">
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th class="text-right">Qty</th>
+                      <th class="text-right">Rate</th>
+                      <th class="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>';
+            
+            foreach ($_SESSION['last_bill_data']['items'] as $item) {
+                echo '<tr>
+                        <td>' . substr($item['name'], 0, 15) . '</td>
+                        <td class="text-right">' . $item['quantity'] . '</td>
+                        <td class="text-right">' . number_format($item['rate'], 2) . '</td>
+                        <td class="text-right">' . number_format($item['amount'], 2) . '</td>
+                      </tr>';
+            }
+            
+            echo '</tbody>
+                </table>
+                
+                <div class="bill-footer">
+                  <table class="bill-table">
+                    <tr>
+                      <td>Sub Total:</td>
+                      <td class="text-right">₹' . number_format($totalAmount, 2) . '</td>
+                    </tr>
+                    <tr>
+                      <td>Tax (' . ($taxRate * 100) . '%):</td>
+                      <td class="text-right">₹' . number_format($taxAmount, 2) . '</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Total Due:</strong></td>
+                      <td class="text-right"><strong>₹' . number_format($finalAmount, 2) . '</strong></td>
+                    </tr>
+                  </table>
+                  
+                  <p style="margin: 5px 0; text-align: center;">Thank you for your business!</p>
+                  <p style="margin: 2px 0; text-align: center; font-size: 10px;">GST #: 103340329010001</p>
+                </div>
+                
+                <div class="no-print text-center" style="margin-top: 15px;">
+                  <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+                  <a href="customer_sales_view.php?bill_no=' . ($isWalkIn ? $retailBillNo : $customerBillNo) . '" class="btn btn-success btn-sm"><i class="fas fa-eye"></i> View Details</a>
+                  <a href="customer_sales.php" class="btn btn-secondary btn-sm"><i class="fas fa-plus"></i> New Sale</a>
+                </div>
+              </div>
+            </body>
+            </html>';
+            exit;
+            
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $conn->rollback();
+            $_SESSION['error'] = "Error processing sale: " . $e->getMessage();
+            header("Location: customer_sales.php");
+            exit;
         }
     }
     
