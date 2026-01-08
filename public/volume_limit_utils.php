@@ -166,19 +166,15 @@ function getItemSize($conn, $item_code, $mode) {
 }
 
 /**
- * Generate bills with volume limits - ENHANCED MULTI-CATEGORY LOGIC WITH DEBUGGING
+ * Generate bills with volume limits - ENHANCED MULTI-CATEGORY LOGIC
  */
 function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
     $category_limits = getCategoryLimits($conn, $comp_id);
-
-    // OPTIMIZATION: Log volume limits for debugging (only in development)
-    // error_log("Volume limits for CompID $comp_id: " . json_encode($category_limits));
-
     $bills = [];
-
+    
     foreach ($date_array as $date_index => $sale_date) {
         $daily_bills = [];
-
+        
         // Collect all items for this day with enhanced categorization
         $all_items = [];
         foreach ($items_data as $item_code => $item_data) {
@@ -186,7 +182,7 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
             if ($qty > 0) {
                 $category = getItemCategory($conn, $item_code, $mode);
                 $size = getItemSize($conn, $item_code, $mode);
-
+                
                 $all_items[] = [
                     'code' => $item_code,
                     'qty' => $qty,
@@ -198,21 +194,15 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
                 ];
             }
         }
-
+        
         // If no items for this day, skip
         if (empty($all_items)) {
             continue;
         }
-
-        // OPTIMIZATION: Log items being processed for debugging
-        // error_log("Processing " . count($all_items) . " items for date $sale_date");
-
+        
         // Create bills using the ENHANCED multi-category algorithm
         $bills_for_day = createMultiCategoryBills($all_items, $category_limits);
-
-        // OPTIMIZATION: Log bill creation results
-        // error_log("Created " . count($bills_for_day) . " bills for date $sale_date");
-
+        
         // Create actual bills - bill number assignment moved to main file
         foreach ($bills_for_day as $bill_items) {
             if (!empty($bill_items)) {
@@ -220,10 +210,10 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
                 $daily_bills[] = createBill($bill_items, $sale_date, 0, $mode, $comp_id, $user_id);
             }
         }
-
+        
         $bills = array_merge($bills, $daily_bills);
     }
-
+    
     return $bills;
 }
 
@@ -275,23 +265,14 @@ function createMultiCategoryBills($all_items, $category_limits) {
             $category_volumes[$category] = 0;
         }
         
-        // OPTIMIZATION: Process categories in priority order (IMFL first, then others)
-        $category_order = ['IMFL', 'BEER', 'CL', 'OTHER'];
-        $bill_has_items = false;
-
-        foreach ($category_order as $category) {
-            if (!isset($category_pools[$category]) || empty($category_pools[$category])) {
-                continue;
-            }
-
+        // Try to add items from each category to the current bill
+        foreach ($category_pools as $category => &$pool) {
             $category_limit = $category_limits[$category] ?? 0;
-
-            // Skip if category has no limit
-            if ($category_limit <= 0) {
+            
+            // Skip if category has no limit or no items
+            if ($category_limit <= 0 || empty($pool)) {
                 continue;
             }
-
-            $pool = &$category_pools[$category];
             
             foreach ($pool as &$item) {
                 if ($item['remaining_qty'] <= 0) {
@@ -509,20 +490,20 @@ function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
  */
 function distributeSales($total_qty, $days_count) {
     if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
-
+    
     $base_qty = floor($total_qty / $days_count);
     $remainder = $total_qty % $days_count;
-
+    
     $daily_sales = array_fill(0, $days_count, $base_qty);
-
+    
     // Distribute remainder evenly across days
     for ($i = 0; $i < $remainder; $i++) {
         $daily_sales[$i]++;
     }
-
+    
     // Shuffle the distribution to make it look more natural
     shuffle($daily_sales);
-
+    
     return $daily_sales;
 }
 ?>
