@@ -2,7 +2,7 @@
 session_start();
 require_once 'drydays_functions.php'; // Single include
 require_once 'license_functions.php'; // ADDED: Include license 
-require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
+require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions with proper check
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
@@ -48,17 +48,17 @@ function clearSessionQuantities() {
     }
 }
 
-// Enhanced stock validation function
-function validateStock($current_stock, $requested_qty, $item_code) {
+// Enhanced stock validation function - VALIDATE AGAINST ACTUAL STOCK
+function validateStock($actual_stock, $requested_qty, $item_code) {
     if ($requested_qty <= 0) return true;
     
-    if ($requested_qty > $current_stock) {
-        logMessage("Stock validation failed for item $item_code: Available: $current_stock, Requested: $requested_qty", 'WARNING');
+    if ($requested_qty > $actual_stock) {
+        logMessage("Stock validation failed for item $item_code: Available: $actual_stock, Requested: $requested_qty", 'WARNING');
         return false;
     }
     
     // Additional safety check - prevent negative values
-    if ($current_stock - $requested_qty < 0) {
+    if ($actual_stock - $requested_qty < 0) {
         logMessage("Negative closing balance prevented for item $item_code", 'WARNING');
         return false;
     }
@@ -66,27 +66,58 @@ function validateStock($current_stock, $requested_qty, $item_code) {
     return true;
 }
 
-// Function to get next bill number - ADDED THIS MISSING FUNCTION
+// FIXED: Function to get next bill number with proper zero-padding AND CompID consideration
 function getNextBillNumber($conn, $comp_id) {
-    // Get the current maximum bill number for the company
-    $query = "SELECT MAX(BILL_NO) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $stmt->close();
+    logMessage("Getting next bill number for CompID: $comp_id");
     
-    $max_bill = $row['max_bill'] ?? 'BL0000';
+    // Use transaction for atomic operation
+    $conn->begin_transaction();
     
-    // Extract numeric part from bill number (assuming format like BL0123)
-    if (preg_match('/BL(\d+)/', $max_bill, $matches)) {
-        $next_number = intval($matches[1]) + 1;
-    } else {
-        $next_number = 1;
+    try {
+        // Get the maximum numeric part of bill numbers FOR THIS COMPANY
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
+        $stmt->close();
+        
+        // Double-check this bill number doesn't exist FOR THIS COMPANY (prevent race conditions)
+        $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
+        $check_stmt->bind_param("si", $bill_no_to_check, $comp_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $exists = $check_result->fetch_assoc()['count'] > 0;
+        $check_stmt->close();
+        
+        if ($exists) {
+            // If it exists, increment and check again
+            $next_bill++;
+        }
+        
+        $conn->commit();
+        logMessage("Next bill number for CompID $comp_id: $next_bill");
+        
+        return $next_bill;
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        logMessage("Error getting next bill number for CompID $comp_id: " . $e->getMessage(), 'ERROR');
+        
+        // Fallback method
+        $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        return ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
     }
-    
-    return $next_number;
 }
 
 // Function to get daily stock table name based on date - UPDATED WITH CORRECT FORMAT
@@ -121,131 +152,504 @@ function checkColumnExists($conn, $table_name, $column_name) {
     return ($column_result->num_rows > 0);
 }
 
-// Function to update cascading stock across all daily stock tables
-function updateCascadingDailyStockAll($conn, $item_code, $sale_date, $comp_id, $transaction_type, $quantity) {
-    // Get the sale date components
-    $sale_year = date('Y', strtotime($sale_date));
-    $sale_month = date('m', strtotime($sale_date));
-    $sale_day = date('d', strtotime($sale_date));
+// Function to update item stock
+function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
+    // Check if record exists first
+    $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock_query);
+    $check_stmt->bind_param("s", $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    $stock_exists = $check_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
     
-    // Start from the sale month and update all future months
-    $current_date = $sale_date;
-    $max_months = 12; // Limit to prevent infinite loop
-    
-    for ($i = 0; $i < $max_months; $i++) {
-        $current_date_obj = new DateTime($current_date);
-        $current_month = $current_date_obj->format('m');
-        $current_year = $current_date_obj->format('Y');
-        $short_year = $current_date_obj->format('y'); // 2-digit year
-        
-        // Determine which table to use
-        if ($current_year == date('Y') && $current_month == date('m')) {
-            $table_name = "tbldailystock_" . $comp_id;
-        } else {
-            $table_name = "tbldailystock_" . $comp_id . "_" . $current_month . "_" . $short_year;
-        }
-        
-        // Check if table exists
-        if (!checkTableExists($conn, $table_name)) {
-            // If table doesn't exist, break the loop
-            logMessage("Table $table_name does not exist, stopping cascading update", 'INFO');
-            break;
-        }
-        
-        // For the sale month, update the specific day
-        if ($i == 0) {
-            // Update specific day in sale month
-            $update_day_column = "DAY_" . sprintf('%02d', $sale_day);
-            
-            if ($transaction_type == 'sale') {
-                // For sales, reduce the closing stock
-                $update_query = "UPDATE $table_name 
-                                SET $update_day_column = GREATEST(0, $update_day_column - ?)
-                                WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            } else {
-                // For returns/purchases, increase the closing stock
-                $update_query = "UPDATE $table_name 
-                                SET $update_day_column = $update_day_column + ?
-                                WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            }
-            
-            $stmt = $conn->prepare($update_query);
-            $stmt_month = $current_date_obj->format('Y-m');
-            $stmt->bind_param("dss", $quantity, $item_code, $stmt_month);
-            $stmt->execute();
-            $stmt->close();
-            
-            logMessage("Updated $table_name day $sale_day for item $item_code with quantity $quantity", 'INFO');
-        }
-        
-        // For all months (including sale month), update opening stock of next days
-        $stmt_month = $current_date_obj->format('Y-m');
-        
-        if ($transaction_type == 'sale') {
-            // For sales, reduce opening stock of subsequent days in the same month
-            for ($day = $sale_day + 1; $day <= 31; $day++) {
-                $day_column = "DAY_" . sprintf('%02d', $day);
-                
-                // Check if column exists
-                if (checkColumnExists($conn, $table_name, $day_column)) {
-                    $update_query = "UPDATE $table_name 
-                                    SET $day_column = GREATEST(0, $day_column - ?)
-                                    WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-                    
-                    $stmt = $conn->prepare($update_query);
-                    $stmt->bind_param("dss", $quantity, $item_code, $stmt_month);
-                    $stmt->execute();
-                    $stmt->close();
-                    
-                    logMessage("Updated $table_name day $day for item $item_code with quantity $quantity", 'INFO');
-                }
-            }
-        }
-        
-        // Move to next month
-        $current_date_obj->modify('first day of next month');
-        $current_date = $current_date_obj->format('Y-m-d');
-        
-        // Stop if we've gone too far into the future
-        if ($current_date_obj > new DateTime('+2 years')) {
-            break;
-        }
+    if ($stock_exists) {
+        $stock_query = "UPDATE tblitem_stock SET $current_stock_column = $current_stock_column - ? WHERE ITEM_CODE = ?";
+        $stock_stmt = $conn->prepare($stock_query);
+        $stock_stmt->bind_param("ds", $qty, $item_code);
+        $stock_stmt->execute();
+        $stock_stmt->close();
+    } else {
+        $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
+                               VALUES (?, ?, ?, ?)";
+        $insert_stock_stmt = $conn->prepare($insert_stock_query);
+        $current_stock = -$qty; // Negative since we're deducting
+        $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
+        $insert_stock_stmt->execute();
+        $insert_stock_stmt->close();
     }
 }
 
-// Function to generate cash memo
-function generateCashMemo($conn, $bill_no, $bill_date, $total_amount, $comp_id, $user_id) {
-    // Generate cash memo number (CM + padded number)
-    $cash_memo_query = "SELECT MAX(CASH_MEMO_NO) as max_cm FROM tblcashmemo WHERE COMP_ID = ?";
-    $stmt = $conn->prepare($cash_memo_query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $stmt->close();
+// Function to distribute sales (same as in sale_for_date_range.php)
+function distributeSales($total_qty, $days_count) {
+    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
     
-    $max_cm = $row['max_cm'] ?? 'CM0000';
+    $base_qty = floor($total_qty / $days_count);
+    $remainder = $total_qty % $days_count;
     
-    // Extract numeric part
-    if (preg_match('/CM(\d+)/', $max_cm, $matches)) {
-        $next_cm_number = intval($matches[1]) + 1;
-    } else {
-        $next_cm_number = 1;
+    $daily_sales = array_fill(0, $days_count, $base_qty);
+    
+    // Distribute remainder evenly across days
+    for ($i = 0; $i < $remainder; $i++) {
+        $daily_sales[$i]++;
     }
     
-    $cash_memo_no = "CM" . str_pad($next_cm_number, 4, '0', STR_PAD_LEFT);
+    // Shuffle the distribution to make it look more natural
+    shuffle($daily_sales);
     
-    // Insert cash memo record
-    $insert_cm_query = "INSERT INTO tblcashmemo (CASH_MEMO_NO, BILL_NO, BILL_DATE, AMOUNT, COMP_ID, CREATED_BY, CREATED_DATE) 
-                        VALUES (?, ?, ?, ?, ?, ?, NOW())";
-    $stmt = $conn->prepare($insert_cm_query);
-    $stmt->bind_param("sssdii", $cash_memo_no, $bill_no, $bill_date, $total_amount, $comp_id, $user_id);
-    $stmt->execute();
-    $stmt->close();
+    return $daily_sales;
+}
+
+// NEW: Function to get the correct daily stock table for a specific date
+function getDailyStockTableForDate($conn, $comp_id, $date) {
+    $current_month = date('Y-m'); // Current month in "YYYY-MM" format
+    $date_month = date('Y-m', strtotime($date)); // Date month in "YYYY-MM" format
     
-    logMessage("Generated cash memo $cash_memo_no for bill $bill_no", 'INFO');
+    if ($date_month === $current_month) {
+        // Use current month table (no suffix)
+        return "tbldailystock_" . $comp_id;
+    } else {
+        // Use archived month table (with suffix mm_yy)
+        $date_month_short = date('m', strtotime($date)); // e.g., "12"
+        $date_year_short = date('y', strtotime($date)); // e.g., "25"
+        return "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
+    }
+}
+
+// ENHANCED: Function to update daily stock table with cascading updates across tables (from sale_for_date_range.php)
+function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
+    // Get the correct table for the sale date
+    $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
     
-    return $cash_memo_no;
+    // Get current month table
+    $current_daily_stock_table = "tbldailystock_" . $comp_id;
+    
+    // Extract day number from date (e.g., 2025-09-27 → day 27)
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $sales_column = "DAY_{$day_num}_SALES";
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    $opening_column = "DAY_{$day_num}_OPEN";
+    $purchase_column = "DAY_{$day_num}_PURCHASE";
+    
+    $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
+    
+    // ============================================================================
+    // STEP 1: UPDATE THE STOCK TABLE FOR THE SALE DATE
+    // ============================================================================
+    
+    // First, check if the required table exists
+    $check_table_query = "SHOW TABLES LIKE '$sale_daily_stock_table'";
+    $table_result = $conn->query($check_table_query);
+    
+    if ($table_result->num_rows == 0) {
+        // Table doesn't exist, create it
+        createDailyStockTable($conn, $sale_daily_stock_table);
+    }
+    
+    // Check if record exists for this month and item
+    $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
+                    FROM $sale_daily_stock_table 
+                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $month_year_full, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows == 0) {
+        // Record doesn't exist, create it with initial values
+        $check_stmt->close();
+        
+        // Get previous month's closing if available
+        $prev_month = date('Y-m', strtotime($month_year_full . '-01 -1 month'));
+        $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
+        
+        $prev_closing = 0;
+        if ($prev_month) {
+            // Get last day of previous month
+            $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
+            $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
+            
+            $prev_query = "SELECT $prev_closing_column FROM $prev_table 
+                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $prev_stmt = $conn->prepare($prev_query);
+            $prev_stmt->bind_param("ss", $prev_month, $item_code);
+            if ($prev_stmt->execute()) {
+                $prev_result = $prev_stmt->get_result();
+                if ($prev_result->num_rows > 0) {
+                    $prev_row = $prev_result->fetch_assoc();
+                    $prev_closing = $prev_row[$prev_closing_column] ?? 0;
+                }
+            }
+            $prev_stmt->close();
+        }
+        
+        // Insert new record
+        $insert_query = "INSERT INTO $sale_daily_stock_table 
+                        (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                        VALUES (?, ?, ?, 0, 0, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssdd", $item_code, $month_year_full, $prev_closing, $prev_closing);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+        
+        // Now get the record
+        $check_stmt = $conn->prepare($check_query);
+        $check_stmt->bind_param("ss", $month_year_full, $item_code);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+    }
+    
+    $current_values = $check_result->fetch_assoc();
+    $check_stmt->close();
+    
+    $current_closing = $current_values[$closing_column] ?? 0;
+    $current_opening = $current_values[$opening_column] ?? 0;
+    $current_purchase = $current_values[$purchase_column] ?? 0;
+    $current_sales = $current_values[$sales_column] ?? 0;
+    
+    // Validate closing stock is sufficient for the sale quantity
+    if ($current_closing < $qty) {
+        throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $current_closing, Requested: $qty");
+    }
+    
+    // Calculate new sales and closing
+    $new_sales = $current_sales + $qty;
+    $new_closing = $current_opening + $current_purchase - $new_sales;
+    
+    // Update existing record with correct closing calculation
+    $update_query = "UPDATE $sale_daily_stock_table 
+                     SET $sales_column = ?, 
+                         $closing_column = ?,
+                         LAST_UPDATED = CURRENT_TIMESTAMP 
+                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $update_stmt = $conn->prepare($update_query);
+    $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year_full, $item_code);
+    $update_stmt->execute();
+    
+    if ($update_stmt->affected_rows === 0) {
+        $update_stmt->close();
+        throw new Exception("Failed to update daily stock for item $item_code on $sale_date in table $sale_daily_stock_table");
+    }
+    $update_stmt->close();
+    
+    // ============================================================================
+    // STEP 2: CASCADE UPDATES TO NEXT DAY IN THE SAME TABLE
+    // ============================================================================
+    
+    // Update next day's opening stock if it exists (and if we're not at month end)
+    $next_day = intval($day_num) + 1;
+    if ($next_day <= 31) {
+        $next_day_num = sprintf('%02d', $next_day);
+        $next_opening_column = "DAY_{$next_day_num}_OPEN";
+        
+        // Check if next day exists in the table
+        $check_next_day_query = "SHOW COLUMNS FROM $sale_daily_stock_table LIKE '$next_opening_column'";
+        $next_day_result = $conn->query($check_next_day_query);
+        
+        if ($next_day_result->num_rows > 0) {
+            // Update next day's opening to match current day's closing
+            $update_next_query = "UPDATE $sale_daily_stock_table 
+                                 SET $next_opening_column = ?,
+                                     LAST_UPDATED = CURRENT_TIMESTAMP 
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_next_stmt = $conn->prepare($update_next_query);
+            $update_next_stmt->bind_param("dss", $new_closing, $month_year_full, $item_code);
+            $update_next_stmt->execute();
+            $update_next_stmt->close();
+        }
+    }
+    
+    // ============================================================================
+    // STEP 3: RECALCULATE ALL SUBSEQUENT DAYS IN THE SAME MONTH
+    // ============================================================================
+    
+    recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
+    
+    // ============================================================================
+    // STEP 4: CASCADE UPDATES TO NEXT MONTH (IF SALE IS AT MONTH END)
+    // ============================================================================
+    
+    $last_day_of_month = date('t', strtotime($sale_date));
+    if ($day_num == $last_day_of_month) {
+        // This is the last day of the month, update next month's opening
+        $next_month = date('Y-m', strtotime($month_year_full . '-01 +1 month'));
+        $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
+        
+        // Check if next month table exists
+        $check_next_month = "SHOW TABLES LIKE '$next_month_table'";
+        if ($conn->query($check_next_month)->num_rows > 0) {
+            // Update next month's opening (DAY_01_OPEN)
+            $update_next_month_query = "UPDATE $next_month_table 
+                                       SET DAY_01_OPEN = ?,
+                                           LAST_UPDATED = CURRENT_TIMESTAMP 
+                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_next_month_stmt = $conn->prepare($update_next_month_query);
+            $update_next_month_stmt->bind_param("dss", $new_closing, $next_month, $item_code);
+            $update_next_month_stmt->execute();
+            $update_next_month_stmt->close();
+            
+            // Recalculate next month's stock
+            recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
+        }
+    }
+    
+    // ============================================================================
+    // STEP 5: UPDATE CURRENT MONTH TABLE IF SALE IS IN ARCHIVED MONTH
+    // ============================================================================
+    
+    $current_month = date('Y-m');
+    if ($month_year_full < $current_month) {
+        // Sale is in archived month, need to adjust current month's opening
+        
+        // Check if current month table exists
+        $check_current_table = "SHOW TABLES LIKE '$current_daily_stock_table'";
+        if ($conn->query($check_current_table)->num_rows > 0) {
+            // Get current month's record
+            $current_check_query = "SELECT DAY_01_OPEN FROM $current_daily_stock_table 
+                                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $current_check_stmt = $conn->prepare($current_check_query);
+            $current_check_stmt->bind_param("ss", $current_month, $item_code);
+            $current_check_stmt->execute();
+            $current_check_result = $current_check_stmt->get_result();
+            
+            if ($current_check_result->num_rows > 0) {
+                // Adjust current month's opening by deducting the sale quantity
+                $update_current_query = "UPDATE $current_daily_stock_table 
+                                        SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_current_stmt = $conn->prepare($update_current_query);
+                $update_current_stmt->bind_param("dss", $qty, $current_month, $item_code);
+                $update_current_stmt->execute();
+                $update_current_stmt->close();
+                
+                // Recalculate current month's stock
+                recalculateDailyStockFromDay($conn, $current_daily_stock_table, $item_code, $current_month, 1);
+            }
+            $current_check_stmt->close();
+        }
+    }
+    
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing");
+}
+
+// Helper function to create daily stock table
+function createDailyStockTable($conn, $table_name) {
+    $create_query = "CREATE TABLE IF NOT EXISTS $table_name (
+        ID INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ITEM_CODE VARCHAR(50) NOT NULL,
+        STK_MONTH VARCHAR(7) NOT NULL,
+        DAY_01_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_item_month (ITEM_CODE, STK_MONTH),
+        KEY idx_item_code (ITEM_CODE),
+        KEY idx_stk_month (STK_MONTH)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    if ($conn->query($create_query)) {
+        logMessage("Created daily stock table: $table_name");
+        return true;
+    } else {
+        logMessage("Failed to create daily stock table: " . $conn->error, 'ERROR');
+        return false;
+    }
+}
+
+// Helper function to recalculate daily stock from a specific day onward
+function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month, $start_day = 1) {
+    logMessage("Recalculating stock from day $start_day for item $item_code in $stk_month");
+    
+    // Start from the specified day and recalculate forward
+    for ($day = $start_day; $day <= 31; $day++) {
+        $day_num = sprintf('%02d', $day);
+        $opening_column = "DAY_{$day_num}_OPEN";
+        $purchase_column = "DAY_{$day_num}_PURCHASE";
+        $sales_column = "DAY_{$day_num}_SALES";
+        $closing_column = "DAY_{$day_num}_CLOSING";
+        
+        // Check if day columns exist
+        $check_columns = "SHOW COLUMNS FROM $table_name LIKE '$opening_column'";
+        $column_result = $conn->query($check_columns);
+        
+        if ($column_result->num_rows == 0) {
+            continue; // Day doesn't exist in table
+        }
+        
+        // Get current values for this day
+        $day_query = "SELECT $opening_column, $purchase_column, $sales_column 
+                      FROM $table_name 
+                      WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $day_stmt = $conn->prepare($day_query);
+        $day_stmt->bind_param("ss", $item_code, $stk_month);
+        $day_stmt->execute();
+        $day_result = $day_stmt->get_result();
+        
+        if ($day_result->num_rows > 0) {
+            $day_values = $day_result->fetch_assoc();
+            $opening = $day_values[$opening_column] ?? 0;
+            $purchase = $day_values[$purchase_column] ?? 0;
+            $sales = $day_values[$sales_column] ?? 0;
+            
+            // Calculate closing using the same formula
+            $closing = $opening + $purchase - $sales;
+            
+            // Update closing
+            $update_query = "UPDATE $table_name 
+                            SET $closing_column = ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Set next day's opening to this day's closing
+            $next_day = $day + 1;
+            if ($next_day <= 31) {
+                $next_day_num = sprintf('%02d', $next_day);
+                $next_opening_column = "DAY_{$next_day_num}_OPEN";
+                
+                // Check if next day exists
+                $check_next = "SHOW COLUMNS FROM $table_name LIKE '$next_opening_column'";
+                $next_result = $conn->query($check_next);
+                
+                if ($next_result->num_rows > 0) {
+                    $update_next_query = "UPDATE $table_name 
+                                         SET $next_opening_column = ?,
+                                             LAST_UPDATED = CURRENT_TIMESTAMP 
+                                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                    $update_next_stmt = $conn->prepare($update_next_query);
+                    $update_next_stmt->bind_param("dss", $closing, $item_code, $stk_month);
+                    $update_next_stmt->execute();
+                    $update_next_stmt->close();
+                }
+            }
+        }
+        $day_stmt->close();
+    }
 }
 
 // Ensure user is logged in and company is selected
@@ -326,20 +730,22 @@ $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
 // ============================================================================
-// OPTIMIZED: Get daily stock table name and closing column
+// OPTIMIZED: Get daily stock table name and closing column - USING START DATE
 // ============================================================================
-$end_date_day = date('d', strtotime($end_date));
-$closing_column = "DAY_" . sprintf('%02d', $end_date_day) . "_CLOSING";
-$end_date_month = date('Y-m', strtotime($end_date));
+$start_date_day = date('d', strtotime($start_date));
+$closing_column = "DAY_" . sprintf('%02d', $start_date_day) . "_CLOSING";
+$stock_month = date('Y-m', strtotime($start_date)); // Month of start_date
 
-// Get the appropriate daily stock table
-$daily_stock_table = getDailyStockTable($comp_id, $end_date);
+// Get the appropriate daily stock table based on START DATE
+$daily_stock_table = getDailyStockTable($comp_id, $start_date);
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION: CACHE CHECK FOR TABLE AND COLUMN EXISTENCE
 // ============================================================================
 $table_exists = false;
 $column_exists = false;
+$fallback_mode = false; // Flag to indicate fallback to all items
+$fallback_message = '';
 
 // Check if table exists with caching
 $cache_key_table = 'table_checked_' . $daily_stock_table;
@@ -361,6 +767,13 @@ if ($table_exists) {
     }
 }
 
+// Check if we need to fallback to showing all items
+if (!$table_exists || !$column_exists) {
+    $fallback_mode = true;
+    $fallback_message = "Daily stock table or column not found. Showing all items with actual stock.";
+    logMessage("Daily stock table/column not found. Falling back to all items.", 'WARNING');
+}
+
 // Build the order clause based on sequence type
 $order_clause = "";
 if ($sequence_type === 'system_defined') {
@@ -373,73 +786,68 @@ if ($sequence_type === 'system_defined') {
 }
 
 // ============================================================================
-// OPTIMIZED: MAIN QUERY WITH STOCK > 0 CONDITION
+// OPTIMIZED: MAIN QUERY WITH DUAL STOCK CHECKING
 // ============================================================================
 $items = [];
 $total_items = 0;
 $total_pages = 0;
 
-if ($table_exists && $column_exists) {
-    // Build where conditions for license filtering
-    $where_conditions = ["im.LIQ_FLAG = ?"];
-    $params = [$mode];
-    $types = "s";
-    
-    // Add class filtering if allowed_classes is not empty
-    if (!empty($allowed_classes)) {
-        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $where_conditions[] = "im.CLASS IN ($class_placeholders)";
-        $params = array_merge($params, $allowed_classes);
-        $types .= str_repeat('s', count($allowed_classes));
-    }
-    
-    // Add stock condition - ONLY items with closing stock > 0
-    $where_conditions[] = "ds.$closing_column > 0";
-    
-    // Add search condition
-    if ($search !== '') {
-        $where_conditions[] = "(im.DETAILS LIKE ? OR im.CODE LIKE ?)";
-        $params[] = "%$search%";
-        $params[] = "%$search%";
-        $types .= "ss";
-    }
-    
-    $where_clause = implode(' AND ', $where_conditions);
-    
+// Build where conditions for license filtering
+$where_conditions = ["im.LIQ_FLAG = ?"];
+$params = [$mode];
+$types = "s";
+
+// Add class filtering if allowed_classes is not empty
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $where_conditions[] = "im.CLASS IN ($class_placeholders)";
+    $params = array_merge($params, $allowed_classes);
+    $types .= str_repeat('s', count($allowed_classes));
+}
+
+// Add search condition
+if ($search !== '') {
+    $where_conditions[] = "(im.DETAILS LIKE ? OR im.CODE LIKE ?)";
+    $params[] = "%$search%";
+    $params[] = "%$search%";
+    $types .= "ss";
+}
+
+$where_clause = implode(' AND ', $where_conditions);
+
+if ($fallback_mode) {
     // ============================================================================
-    // OPTIMIZED COUNT QUERY
+    // FALLBACK MODE: Show all items (when daily stock table doesn't exist)
     // ============================================================================
+    
+    // Count query for fallback mode
     $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
                     FROM tblitemmaster im
-                    INNER JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
-                    WHERE $where_clause AND ds.STK_MONTH = ?";
-    
-    $count_params = array_merge($params, [$end_date_month]);
-    $count_types = $types . "s";
+                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                    WHERE $where_clause";
     
     $count_stmt = $conn->prepare($count_query);
-    if (!empty($count_params)) {
-        $count_stmt->bind_param($count_types, ...$count_params);
+    if (!empty($params)) {
+        $count_stmt->bind_param($types, ...$params);
     }
     $count_stmt->execute();
     $count_result = $count_stmt->get_result();
     $total_items = $count_result->fetch_assoc()['total'] ?? 0;
     $count_stmt->close();
     
-    // ============================================================================
-    // OPTIMIZED MAIN QUERY WITH PAGINATION
-    // ============================================================================
-    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
-                     ds.$closing_column as CURRENT_STOCK
+    // Main query for fallback mode
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
+                     COALESCE(st.$current_stock_column, 0) as ACTUAL_STOCK,
+                     0 as DAILY_CLOSING_STOCK
               FROM tblitemmaster im
-              INNER JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
-              WHERE $where_clause AND ds.STK_MONTH = ?
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              WHERE $where_clause
               $order_clause 
               LIMIT ? OFFSET ?";
     
     // Add pagination parameters
-    $query_params = array_merge($params, [$end_date_month, $items_per_page, $offset]);
-    $query_types = $types . "sii";
+    $query_params = array_merge($params, [$items_per_page, $offset]);
+    $query_types = $types . "ii";
     
     $stmt = $conn->prepare($query);
     if (!empty($query_params)) {
@@ -451,13 +859,61 @@ if ($table_exists && $column_exists) {
     $stmt->close();
     
     $total_pages = ceil($total_items / $items_per_page);
+    
 } else {
-    // Log table/column missing
-    if (!$table_exists) {
-        logMessage("Daily stock table '$daily_stock_table' not found", 'WARNING');
-    } elseif (!$column_exists) {
-        logMessage("Column '$closing_column' not found in table '$daily_stock_table'", 'WARNING');
+    // ============================================================================
+    // NORMAL MODE: Show items with DAILY_CLOSING_STOCK > 0
+    // ============================================================================
+    
+    // Add daily closing stock condition
+    $daily_where_clause = $where_clause . " AND COALESCE(ds.$closing_column, 0) > 0";
+    
+    // Count query for normal mode
+    $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
+                    FROM tblitemmaster im
+                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                    LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        AND ds.STK_MONTH = ?
+                    WHERE $daily_where_clause";
+    
+    $count_params = array_merge([$stock_month], $params);
+    $count_types = "s" . $types;
+    
+    $count_stmt = $conn->prepare($count_query);
+    if (!empty($count_params)) {
+        $count_stmt->bind_param($count_types, ...$count_params);
     }
+    $count_stmt->execute();
+    $count_result = $count_stmt->get_result();
+    $total_items = $count_result->fetch_assoc()['total'] ?? 0;
+    $count_stmt->close();
+    
+    // Main query for normal mode - ENHANCED WITH BOTH STOCKS
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
+                     COALESCE(st.$current_stock_column, 0) as ACTUAL_STOCK,
+                     COALESCE(ds.$closing_column, 0) as DAILY_CLOSING_STOCK
+              FROM tblitemmaster im
+              LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                  AND ds.STK_MONTH = ?
+              WHERE $daily_where_clause
+              $order_clause 
+              LIMIT ? OFFSET ?";
+    
+    // Add pagination parameters
+    $query_params = array_merge([$stock_month], $params, [$items_per_page, $offset]);
+    $query_types = "s" . $types . "ii";
+    
+    $stmt = $conn->prepare($query);
+    if (!empty($query_params)) {
+        $stmt->bind_param($query_types, ...$query_params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $items = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+    
+    $total_pages = ceil($total_items / $items_per_page);
 }
 
 // ============================================================================
@@ -474,17 +930,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
         $closing_val = floatval($closing_balance);
         
-        // Find current stock for this item
-        $current_stock = 0;
+        // Find actual stock for this item
+        $actual_stock = 0;
         foreach ($items as $item) {
             if ($item['CODE'] == $item_code) {
-                $current_stock = $item['CURRENT_STOCK'];
+                $actual_stock = $item['ACTUAL_STOCK'];
                 break;
             }
         }
         
-        // Calculate sale quantity: sale_qty = current_stock - closing_balance
-        $sale_qty = $current_stock - $closing_val;
+        // Calculate sale quantity: sale_qty = actual_stock - closing_balance
+        $sale_qty = $actual_stock - $closing_val;
         
         if ($sale_qty > 0) {
             $_SESSION['sale_quantities'][$item_code] = $sale_qty;
@@ -503,48 +959,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
 // ============================================================================
 $all_items_data = [];
 
-// Only fetch if needed and table exists
-if ($table_exists && $column_exists) {
-    // Build query for all items with stock > 0
-    $all_items_conditions = [];
-    $all_items_params = [];
-    $all_items_types = "";
-    
-    // Add class filtering
-    if (!empty($allowed_classes)) {
-        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $all_items_conditions[] = "im.CLASS IN ($class_placeholders)";
-        $all_items_params = array_merge($all_items_params, $allowed_classes);
-        $all_items_types .= str_repeat('s', count($allowed_classes));
-    }
-    
-    // Add stock condition
-    $all_items_conditions[] = "ds.$closing_column > 0";
-    
-    $all_items_where = !empty($all_items_conditions) ? "WHERE " . implode(' AND ', $all_items_conditions) : "";
+// Build query for all items with stock
+$all_items_conditions = ["im.LIQ_FLAG = ?"];
+$all_items_params = [$mode];
+$all_items_types = "s";
+
+// Add class filtering
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    $all_items_conditions[] = "im.CLASS IN ($class_placeholders)";
+    $all_items_params = array_merge($all_items_params, $allowed_classes);
+    $all_items_types .= str_repeat('s', count($allowed_classes));
+}
+
+$all_items_where = implode(' AND ', $all_items_conditions);
+
+if (!$fallback_mode && $table_exists && $column_exists) {
+    // Normal mode: Include daily closing stock condition
+    $all_items_where .= " AND COALESCE(ds.$closing_column, 0) > 0";
     
     $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
-                               ds.$closing_column as CURRENT_STOCK
+                               COALESCE(st.$current_stock_column, 0) as ACTUAL_STOCK,
+                               COALESCE(ds.$closing_column, 0) as DAILY_CLOSING_STOCK
                         FROM tblitemmaster im
-                        INNER JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
                             AND ds.STK_MONTH = ?
-                        $all_items_where";
+                        WHERE $all_items_where";
     
-    $all_items_params = array_merge([$end_date_month], $all_items_params);
+    $all_items_params = array_merge([$stock_month], $all_items_params);
     $all_items_types = "s" . $all_items_types;
-    
-    $all_items_stmt = $conn->prepare($all_items_query);
-    if (!empty($all_items_params)) {
-        $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
-    }
-    $all_items_stmt->execute();
-    $all_items_result = $all_items_stmt->get_result();
-    
-    while ($row = $all_items_result->fetch_assoc()) {
-        $all_items_data[$row['CODE']] = $row;
-    }
-    $all_items_stmt->close();
+} else {
+    // Fallback mode: No daily stock condition
+    $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
+                               COALESCE(st.$current_stock_column, 0) as ACTUAL_STOCK,
+                               0 as DAILY_CLOSING_STOCK
+                        FROM tblitemmaster im
+                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE 
+                        WHERE $all_items_where";
 }
+
+$all_items_stmt = $conn->prepare($all_items_query);
+if (!empty($all_items_params)) {
+    $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
+}
+$all_items_stmt->execute();
+$all_items_result = $all_items_stmt->get_result();
+
+while ($row = $all_items_result->fetch_assoc()) {
+    $all_items_data[$row['CODE']] = $row;
+}
+$all_items_stmt->close();
 
 // Create date range array
 $begin = new DateTime($start_date);
@@ -593,7 +1058,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Enhanced stock validation before transaction
+            // Enhanced stock validation before transaction - USING ACTUAL STOCK
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
                 $item_count = 0;
@@ -601,11 +1066,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $item_count++;
                     
                     if ($total_qty > 0 && isset($all_items_data[$item_code])) {
-                        $current_stock = $all_items_data[$item_code]['CURRENT_STOCK'];
+                        $actual_stock = $all_items_data[$item_code]['ACTUAL_STOCK'];
                         
-                        // Enhanced stock validation
-                        if (!validateStock($current_stock, $total_qty, $item_code)) {
-                            $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
+                        // Enhanced stock validation - VALIDATE AGAINST ACTUAL STOCK
+                        if (!validateStock($actual_stock, $total_qty, $item_code)) {
+                            $stock_errors[] = "Item {$item_code}: Available stock {$actual_stock}, Requested {$total_qty}";
                         }
                     }
                 }
@@ -671,12 +1136,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         });
                         
                         // Process each bill with proper zero-padded bill numbers
-                        $bill_numbers = []; // Store bill numbers for cash memo generation
-                        $cash_memo_numbers = []; // Store cash memo numbers
+                        $bill_count = 0;
+                        $total_bills = count($bills);
+                        $cash_memo_errors = [];
+                        $cash_memos_generated = 0;
                         
-                        foreach ($bills as $bill) {
+                        foreach ($bills as $bill_index => $bill) {
+                            $bill_count++;
+                            if ($bulk_operation && $bill_count % 10 == 0) {
+                                logMessage("Bill generation progress: $bill_count/$total_bills bills created");
+                            }
+                            
                             $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
-                            $bill_numbers[] = $padded_bill_no;
                             
                             // Insert sale header
                             $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
@@ -687,9 +1158,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $header_stmt->execute();
                             $header_stmt->close();
                             
-                            // Generate cash memo for this bill
-                            $cash_memo_no = generateCashMemo($conn, $padded_bill_no, $bill['bill_date'], $bill['total_amount'], $comp_id, $user_id);
-                            $cash_memo_numbers[] = $cash_memo_no;
+                            // Generate cash memo using the existing function (same as sale_for_date_range.php)
+                            if (function_exists('autoGenerateCashMemoForBill')) {
+                                try {
+                                    if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $user_id)) {
+                                        logMessage("Cash memo generated for bill: $padded_bill_no", 'INFO');
+                                        $cash_memos_generated++;
+                                    } else {
+                                        logMessage("Failed to generate cash memo for bill: $padded_bill_no", 'WARNING');
+                                        $cash_memo_errors[] = $padded_bill_no;
+                                    }
+                                } catch (Exception $e) {
+                                    logMessage("Exception generating cash memo for $padded_bill_no: " . $e->getMessage(), 'ERROR');
+                                    $cash_memo_errors[] = $padded_bill_no;
+                                    // Don't throw error, continue with next bill
+                                }
+                            } else {
+                                logMessage("Cash memo function not available for bill: $padded_bill_no", 'WARNING');
+                                $cash_memo_errors[] = $padded_bill_no;
+                            }
                             
                             // Insert sale details for each item in the bill
                             foreach ($bill['items'] as $item) {
@@ -701,11 +1188,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $detail_stmt->execute();
                                 $detail_stmt->close();
                                 
-                                // Update main stock table
+                                // Update main stock table - USING ACTUAL STOCK
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
                                 
-                                // Update daily stock with CASCADING logic across ALL tables
-                                updateCascadingDailyStockAll($conn, $item['code'], $bill['bill_date'], $comp_id, 'sale', $item['qty']);
+                                // Update daily stock with cascading logic (using function from sale_for_date_range.php)
+                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
                             $total_amount += $bill['total_amount'];
@@ -717,12 +1204,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // CLEAR SESSION QUANTITIES AFTER SUCCESS
                         clearSessionQuantities();
                         
-                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills and " . count($cash_memo_numbers) . " cash memos. Total Amount: ₹" . number_format($total_amount, 2);
+                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
                         
-                        // Log success with details
-                        logMessage("Successfully generated bills: " . implode(", ", $bill_numbers), 'INFO');
-                        logMessage("Successfully generated cash memos: " . implode(", ", $cash_memo_numbers), 'INFO');
+                        // Add cash memo info to success message
+                        if ($cash_memos_generated > 0) {
+                            $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                        }
+
+                        if (!empty($cash_memo_errors)) {
+                            $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                            if (count($cash_memo_errors) > 5) {
+                                $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                            }
+                        }
                         
+                        // Clean up memory
+                        unset($all_items);
+                        unset($items_data);
+                        unset($daily_sales_data);
+                        unset($bills);
+                        gc_collect_cycles();
+                        
+                        if ($bulk_operation) {
+                            logMessage("Bulk sales operation completed successfully");
+                        }
+
                         // Redirect to retail_sale.php
                         header("Location: retail_sale.php?success=" . urlencode($success_message));
                         exit;
@@ -761,13 +1267,13 @@ $debug_info = [
     'allowed_classes' => $allowed_classes,
     'table_exists' => $table_exists,
     'column_exists' => $column_exists,
-    'stock_source' => 'DAILY_STOCK_TABLE',
+    'fallback_mode' => $fallback_mode,
+    'stock_source' => $fallback_mode ? 'ACTUAL_STOCK_ONLY' : 'DAILY_CLOSING_STOCK',
     'daily_stock_table' => $daily_stock_table,
-    'table_format' => getDailyStockTable($comp_id, $end_date),
-    'end_date_stock' => $end_date,
     'closing_column' => $closing_column,
+    'start_date' => $start_date,
+    'stock_month' => $stock_month,
     'current_date' => date('Y-m-d'),
-    'end_date_month' => $end_date_month,
     'current_month' => date('Y-m')
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
@@ -1022,8 +1528,8 @@ tr.has-quantity td {
     margin-right: 8px;
 }
 
-/* Warning for missing table/column */
-.table-missing-warning {
+/* Fallback mode indicator */
+.fallback-indicator {
     background-color: #fff3cd;
     border: 1px solid #ffc107;
     color: #856404;
@@ -1032,8 +1538,23 @@ tr.has-quantity td {
     margin-bottom: 15px;
 }
 
+.fallback-indicator i {
+    color: #ffc107;
+    margin-right: 8px;
+}
+
+/* Warning for missing table/column */
+.table-missing-warning {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
 .table-missing-warning a {
-    color: #856404;
+    color: #721c24;
     text-decoration: underline;
     font-weight: bold;
 }
@@ -1083,6 +1604,21 @@ tr.has-quantity td {
     margin-right: 8px;
 }
 
+/* Stock info styles */
+.stock-info-primary {
+    color: #0d6efd;
+    font-weight: bold;
+}
+
+.stock-info-secondary {
+    color: #6c757d;
+    font-size: 0.85em;
+}
+
+.stock-info-success {
+    color: #198754;
+}
+
   </style>
 </head>
 <body>
@@ -1096,19 +1632,29 @@ tr.has-quantity td {
     <div class="content-area">
       <h3 class="mb-4">Sales by Closing Balance</h3>
 
+      <!-- Fallback Mode Indicator -->
+      <?php if ($fallback_mode): ?>
+      <div class="fallback-indicator">
+          <i class="fas fa-exclamation-triangle"></i>
+          <strong>Fallback Mode Activated</strong>
+          <p><?= $fallback_message ?></p>
+          <p><small>Expected table: <?= $daily_stock_table ?> | Column: <?= $closing_column ?></small></p>
+      </div>
+      <?php endif; ?>
+
+      <!-- Table Missing Warning -->
       <?php if (!$table_exists || !$column_exists): ?>
       <div class="table-missing-warning">
-          <i class="fas fa-exclamation-triangle"></i>
-          <strong>Stock Data Unavailable</strong>
+          <i class="fas fa-exclamation-circle"></i>
+          <strong>Daily Stock Table Issue</strong>
           <p>
               <?php if (!$table_exists): ?>
                   Daily stock table <strong><?= $daily_stock_table ?></strong> not found.
               <?php else: ?>
-                  Stock column <strong><?= $closing_column ?></strong> not found in table.
+                  Column <strong><?= $closing_column ?></strong> not found in table.
               <?php endif; ?>
           </p>
-          <p>Please ensure the daily stock table is created for <?= date('F Y', strtotime($end_date_month . '-01')) ?>.</p>
-          <p>Expected table name: <?= getDailyStockTable($comp_id, $end_date) ?></p>
+          <p><small>System has fallen back to showing all items with actual stock.</small></p>
       </div>
       <?php endif; ?>
 
@@ -1117,7 +1663,8 @@ tr.has-quantity td {
       <div class="table-name-info">
         <i class="fas fa-table"></i> 
         <strong>Table:</strong> <?= $daily_stock_table ?> | 
-        <strong>Format:</strong> <?= getDailyStockTable($comp_id, $end_date) ?>
+        <strong>Column:</strong> <?= $closing_column ?> | 
+        <strong>Month:</strong> <?= date('F Y', strtotime($stock_month . '-01')) ?>
       </div>
       <?php endif; ?>
 
@@ -1125,32 +1672,37 @@ tr.has-quantity td {
       <?php 
       $current_year = date('Y');
       $current_month = date('m');
-      $target_year = date('Y', strtotime($end_date));
-      $target_month = date('m', strtotime($end_date));
+      $target_year = date('Y', strtotime($start_date));
+      $target_month = date('m', strtotime($start_date));
       $is_archive_month = !($target_year == $current_year && $target_month == $current_month);
       ?>
       <?php if ($is_archive_month && $table_exists && $column_exists): ?>
       <div class="archive-indicator">
         <i class="fas fa-archive"></i> 
-        <strong>Archive Month:</strong> Viewing stock data from archive table (<?= date('F Y', strtotime($end_date_month . '-01')) ?>)
+        <strong>Archive Month:</strong> Viewing stock data from archive table (<?= date('F Y', strtotime($stock_month . '-01')) ?>)
       </div>
       <?php endif; ?>
 
       <!-- Stock Source Indicator -->
-      <?php if ($table_exists && $column_exists): ?>
       <div class="stock-source-indicator">
         <i class="fas fa-database"></i> 
-        <strong>Stock Source:</strong> <?= $is_archive_month ? 'Archive Table' : 'Current Table' ?> | 
-        <strong>Stock Date:</strong> <?= date('d-M-Y', strtotime($end_date)) ?> | 
-        <strong>Showing:</strong> Items with stock > 0 only
+        <strong>Stock Source:</strong> 
+        <?php if ($fallback_mode): ?>
+          <span class="text-warning">Actual Stock Only (Fallback Mode)</span>
+        <?php else: ?>
+          <span class="text-success">Daily Closing Stock > 0</span> 
+          <small class="text-muted">(As of <?= date('d-M-Y', strtotime($start_date)) ?>)</small>
+        <?php endif; ?>
+        | 
+        <strong>Filter:</strong> <?= $fallback_mode ? 'All Items' : 'Items with Daily Closing > 0' ?>
       </div>
-      <?php endif; ?>
 
       <!-- Cash Memo Generation Indicator -->
       <div class="cash-memo-indicator">
         <i class="fas fa-file-invoice-dollar"></i> 
         <strong>Cash Memos:</strong> Will be automatically generated for each bill | 
-        <strong>Cascading Updates:</strong> Stock updates will cascade across all daily stock tables
+        <strong>Cascading Updates:</strong> Stock updates will cascade across all daily stock tables |
+        <strong>Validation:</strong> Against Actual Stock from tblitem_stock
       </div>
 
       <!-- License Information Banner -->
@@ -1221,16 +1773,17 @@ tr.has-quantity td {
           <input type="hidden" name="page" value="1">
           
           <div class="col-md-3">
-            <label for="start_date" class="form-label">Start Date</label>
+            <label for="start_date" class="form-label">Start Date (Stock Date)</label>
             <input type="date" name="start_date" class="form-control" 
                    value="<?= htmlspecialchars($start_date); ?>" required>
+            <small class="text-muted">Stock shown for this start date</small>
           </div>
           
           <div class="col-md-3">
-            <label for="end_date" class="form-label">End Date (Stock Date)</label>
+            <label for="end_date" class="form-label">End Date</label>
             <input type="date" name="end_date" class="form-control" 
                    value="<?= htmlspecialchars($end_date); ?>" required>
-            <small class="text-muted">Stock shown is closing balance for this date</small>
+            <small class="text-muted">Sales distribution end date</small>
           </div>
           
           <div class="col-md-4">
@@ -1242,9 +1795,9 @@ tr.has-quantity td {
             </label>
             <?php if ($table_exists && $column_exists): ?>
             <div class="text-muted">
-              <small>Table: <?= $daily_stock_table ?> (<?= date('F Y', strtotime($end_date_month . '-01')) ?>)</small>
+              <small>Stock Source: <?= $daily_stock_table ?> (Day <?= $start_date_day ?> closing)</small>
               <?php if ($is_archive_month): ?>
-                <br><small class="text-warning"><i class="fas fa-archive"></i> Archive Month Data - Read Only</small>
+                <br><small class="text-warning"><i class="fas fa-archive"></i> Archive Month Data</small>
               <?php else: ?>
                 <br><small class="text-success"><i class="fas fa-database"></i> Current Month Data</small>
               <?php endif; ?>
@@ -1279,7 +1832,10 @@ tr.has-quantity td {
         </div>
         <div class="col-md-6 text-end">
           <div class="text-muted">
-            Total Items with Stock > 0: <?= $total_items ?> | Page: <?= $current_page ?> of <?= $total_pages ?>
+            <?php if ($fallback_mode): ?>
+              <span class="text-warning"><i class="fas fa-exclamation-triangle"></i> Fallback Mode</span> | 
+            <?php endif; ?>
+            Total Items: <?= $total_items ?> | Page: <?= $current_page ?> of <?= $total_pages ?>
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities</span>
             <?php endif; ?>
@@ -1332,7 +1888,15 @@ tr.has-quantity td {
                 <th>Item Name</th>
                 <th>Category</th>
                 <th>Rate (₹)</th>
-                <th>Current Stock<br><small>(As of <?= date('d-M-Y', strtotime($end_date)) ?>)</small></th>
+                <th>Stock Information<br>
+                  <small>
+                    <?php if ($fallback_mode): ?>
+                      Actual Stock Only
+                    <?php else: ?>
+                      Actual / Daily (<?= date('d-M', strtotime($start_date)) ?>)
+                    <?php endif; ?>
+                  </small>
+                </th>
                 <th class="closing-balance-header">Closing Balance</th>
                 <th>Total Sale Qty</th>
                 <th class="action-column">Action</th>
@@ -1348,7 +1912,9 @@ tr.has-quantity td {
         $item_code = $item['CODE'];
         $item_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
         $item_total = $item_qty * $item['RPRICE'];
-        $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+        $actual_stock = $item['ACTUAL_STOCK'];
+        $daily_closing_stock = $item['DAILY_CLOSING_STOCK'];
+        $closing_balance = $actual_stock - $item_qty;
         
         // Extract size from item details
         $size = 0;
@@ -1360,7 +1926,7 @@ tr.has-quantity td {
         $class_code = $item['CLASS'] ?? 'O';
         
         // Calculate default closing balance for input field
-        $default_closing_balance = $item['CURRENT_STOCK'] - $item_qty;
+        $default_closing_balance = $actual_stock - $item_qty;
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
@@ -1371,16 +1937,23 @@ tr.has-quantity td {
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
             <td><?= number_format($item['RPRICE'], 2); ?></td>
             <td>
-                <span class="stock-info"><?= number_format($item['CURRENT_STOCK'], 3); ?></span>
+                <span class="stock-info-primary"><?= number_format($actual_stock, 3); ?></span>
+                <?php if (!$fallback_mode && $daily_closing_stock > 0): ?>
+                <br>
+                <small class="stock-info-success">
+                    <i class="fas fa-calendar-check"></i>
+                    <?= date('d-M', strtotime($start_date)) ?>: <?= number_format($daily_closing_stock, 3); ?>
+                </small>
+                <?php endif; ?>
             </td>
             <td>
     <input type="number" name="closing_balance[<?= htmlspecialchars($item_code); ?>]" 
            class="form-control qty-input" min="0" 
-           max="<?= $item['CURRENT_STOCK']; ?>" 
+           max="<?= $actual_stock; ?>" 
            step="0.001" value="<?= number_format($default_closing_balance, 3) ?>" 
            data-rate="<?= $item['RPRICE'] ?>"
            data-code="<?= htmlspecialchars($item_code); ?>"
-           data-stock="<?= $item['CURRENT_STOCK'] ?>"
+           data-stock="<?= $actual_stock ?>"
            data-size="<?= $size ?>"
            oninput="validateClosingBalance(this)">
 </td>
@@ -1404,16 +1977,14 @@ tr.has-quantity td {
 <?php else: ?>
     <tr>
         <td colspan="9" class="text-center text-muted">
-            <?php if (!$table_exists || !$column_exists): ?>
-                Daily stock table or column not available.
-                <br><small>Expected table: <?= getDailyStockTable($comp_id, $end_date) ?></small>
-                <br><small>For current month: tbldailystock_<?= $comp_id ?></small>
-                <br><small>For archive month: tbldailystock_<?= $comp_id ?>_mm_yy (e.g., tbldailystock_1_12_24 for Dec 2024)</small>
-            <?php elseif ($total_items == 0): ?>
-                No items with stock > 0 found for the selected date range and license criteria.
-                <br><small class="text-muted">Stock is checked as of <?= date('d-M-Y', strtotime($end_date)) ?></small>
+            <?php if ($fallback_mode): ?>
+                No items found for the selected criteria in fallback mode.
+            <?php elseif (!$table_exists || !$column_exists): ?>
+                Daily stock table issue and no items found in fallback mode.
+                <br><small>Expected table: <?= $daily_stock_table ?>, Column: <?= $closing_column ?></small>
             <?php else: ?>
-                No items found on this page. Please check another page.
+                No items with daily closing stock > 0 found for <?= date('d-M-Y', strtotime($start_date)) ?>.
+                <br><small class="text-muted">Showing items where DAY_<?= sprintf('%02d', $start_date_day) ?>_CLOSING > 0</small>
             <?php endif; ?>
         </td>
     </tr>
@@ -1485,7 +2056,13 @@ tr.has-quantity td {
             </ul>
         </nav>
         <div class="pagination-info">
-            Showing <?= count($items) ?> of <?= $total_items ?> items with stock > 0 (Page <?= $current_page ?> of <?= $total_pages ?>)
+            Showing <?= count($items) ?> of <?= $total_items ?> items 
+            <?php if ($fallback_mode): ?>
+              <span class="text-warning">(Fallback Mode: All Items)</span>
+            <?php else: ?>
+              (Filter: DAY_<?= sprintf('%02d', $start_date_day) ?>_CLOSING > 0)
+            <?php endif; ?>
+            (Page <?= $current_page ?> of <?= $total_pages ?>)
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages (ALL MODES)</span>
             <?php endif; ?>
@@ -1597,6 +2174,7 @@ const daysCount = <?= $days_count ?>;
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
 // Pass ALL items data to JavaScript for Total Sales Summary
 const allItemsData = <?= json_encode($all_items_data) ?>;
+const fallbackMode = <?= $fallback_mode ? 'true' : 'false' ?>;
 
 // Function to clear session quantities via AJAX
 function clearSessionQuantities() {
@@ -1618,7 +2196,7 @@ function clearSessionQuantities() {
 // Enhanced closing balance validation function
 function validateClosingBalance(input) {
     const itemCode = $(input).data('code');
-    const currentStock = parseFloat($(input).data('stock'));
+    const actualStock = parseFloat($(input).data('stock'));
     let enteredClosingBalance = parseFloat($(input).val()) || 0;
     
     // Validate input
@@ -1627,10 +2205,10 @@ function validateClosingBalance(input) {
         $(input).val(0);
     }
     
-    // Prevent closing balance exceeding current stock
-    if (enteredClosingBalance > currentStock) {
-        enteredClosingBalance = currentStock;
-        $(input).val(currentStock.toFixed(3));
+    // Prevent closing balance exceeding actual stock
+    if (enteredClosingBalance > actualStock) {
+        enteredClosingBalance = actualStock;
+        $(input).val(actualStock.toFixed(3));
         
         // Show warning but don't prevent operation
         $(input).addClass('is-invalid');
@@ -1639,11 +2217,11 @@ function validateClosingBalance(input) {
         $(input).removeClass('is-invalid');
     }
     
-    // Calculate sale quantity: sale_qty = current_stock - closing_balance
-    const saleQty = currentStock - enteredClosingBalance;
+    // Calculate sale quantity: sale_qty = actual_stock - closing_balance
+    const saleQty = actualStock - enteredClosingBalance;
     
     // Update UI immediately
-    updateItemUI(itemCode, saleQty, currentStock, enteredClosingBalance);
+    updateItemUI(itemCode, saleQty, actualStock, enteredClosingBalance);
     
     // Save to session via AJAX to prevent data loss
     saveQuantityToSession(itemCode, saleQty);
@@ -1652,13 +2230,13 @@ function validateClosingBalance(input) {
 }
 
 // Function to update all UI elements for an item
-function updateItemUI(itemCode, saleQty, currentStock, closingBalance = null) {
+function updateItemUI(itemCode, saleQty, actualStock, closingBalance = null) {
     const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
     const amount = saleQty * rate;
     
     // If closingBalance is not provided, calculate it
     if (closingBalance === null) {
-        closingBalance = currentStock - saleQty;
+        closingBalance = actualStock - saleQty;
     }
     
     // Update all related UI elements
@@ -1675,7 +2253,7 @@ function updateItemUI(itemCode, saleQty, currentStock, closingBalance = null) {
     
     if (closingBalance < 0) {
         closingInput.addClass('text-danger fw-bold');
-    } else if (closingBalance < (currentStock * 0.1)) {
+    } else if (closingBalance < (actualStock * 0.1)) {
         closingInput.addClass('text-warning fw-bold');
     }
 }
@@ -1708,7 +2286,7 @@ function saveQuantityToSession(itemCode, qty) {
     }, 200);
 }
 
-// Function to validate all quantities before form submission
+// Function to validate all quantities before form submission - VALIDATE AGAINST ACTUAL STOCK
 function validateAllQuantities() {
     let isValid = true;
     let errorItems = [];
@@ -1719,26 +2297,26 @@ function validateAllQuantities() {
         if (qty > 0) {
             // Find the stock data from the input field or use a default
             const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
-            let currentStock;
+            let actualStock;
             
             if (inputField.length > 0) {
-                currentStock = parseFloat(inputField.data('stock'));
+                actualStock = parseFloat(inputField.data('stock'));
             } else {
                 // If item not in current view, get from allItemsData
                 if (allItemsData[itemCode]) {
-                    currentStock = parseFloat(allItemsData[itemCode].CURRENT_STOCK);
+                    actualStock = parseFloat(allItemsData[itemCode].ACTUAL_STOCK);
                 } else {
                     continue; // Skip if we can't validate
                 }
             }
             
-            const closingBalance = currentStock - qty;
+            const closingBalance = actualStock - qty;
             
             if (closingBalance < 0) {
                 isValid = false;
                 errorItems.push({
                     code: itemCode,
-                    stock: currentStock,
+                    stock: actualStock,
                     qty: qty
                 });
             }
@@ -1748,7 +2326,7 @@ function validateAllQuantities() {
     if (!isValid) {
         let errorMessage = "The following items have insufficient stock:\n\n";
         errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(3)}, Quantity ${item.qty}\n`;
+            errorMessage += `• Item ${item.code}: Actual Stock ${item.stock.toFixed(3)}, Quantity ${item.qty}\n`;
         });
         errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
         alert(errorMessage);
@@ -1897,7 +2475,7 @@ function generateBills() {
         return false;
     }
     
-    // Validate all quantities to prevent negative closing balance
+    // Validate all quantities to prevent negative closing balance - VALIDATE AGAINST ACTUAL STOCK
     if (!validateAllQuantities()) {
         return false;
     }
@@ -2086,9 +2664,9 @@ function getItemData(itemCode) {
     const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
     if (inputField.length > 0) {
         const itemRow = inputField.closest('tr');
-        const currentStock = parseFloat(inputField.data('stock'));
+        const actualStock = parseFloat(inputField.data('stock'));
         const closingBalance = parseFloat(inputField.val()) || 0;
-        const saleQty = currentStock - closingBalance;
+        const saleQty = actualStock - closingBalance;
         
         return {
             classCode: itemRow.data('class'),
@@ -2125,36 +2703,38 @@ function getProductType(classCode) {
 function extractVolume(details, details2) {
     // Priority: details2 column first
     if (details2) {
-        const volumeMatch = details2.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000; // Convert liters to ML
-            }
-            return volume;
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
     // Fallback: parse details column
     if (details) {
-        // Handle special cases like QUART, PINT, NIP
+        // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
-        if (details.includes('80 ML')) return 80;
         
-        // Try to extract numeric volume
-        const volumeMatch = details.match(/(\d+)\s*(ML|LTR?)/i);
-        if (volumeMatch) {
-            let volume = parseInt(volumeMatch[1]);
-            const unit = volumeMatch[2].toUpperCase();
-            
-            if (unit === 'LTR' || unit === 'L') {
-                volume = volume * 1000;
-            }
-            return volume;
+        // Handle liter sizes with decimal points
+        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        const mlMatch = details.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
         }
     }
     
@@ -2195,48 +2775,6 @@ function getVolumeColumn(volume) {
     };
     
     return volumeMap[volume] || null;
-}
-
-// Function to extract volume from details - ENHANCED VERSION
-function extractVolume(details, details2) {
-    // Priority: details2 column first
-    if (details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if (details) {
-        // Handle special cases
-        if (details.includes('QUART')) return 750;
-        if (details.includes('PINT')) return 375;
-        if (details.includes('NIP')) return 90;
-        
-        // Handle liter sizes with decimal points
-        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        const mlMatch = details.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    return 0; // Unknown volume
 }
 
 // OPTIMIZED: Function to update total sales module - PROCESS ONLY ITEMS WITH QTY > 0 FROM ALL MODES
@@ -2364,9 +2902,9 @@ $(document).ready(function() {
         }
         
         const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(this).data('stock'));
+        const actualStock = parseFloat($(this).data('stock'));
         const closingBalance = parseFloat($(this).val()) || 0;
-        const totalQty = currentStock - closingBalance;
+        const totalQty = actualStock - closingBalance;
         
         // Only update distribution if quantity > 0 (optimization)
         if (totalQty > 0) {
@@ -2402,9 +2940,9 @@ $(document).ready(function() {
     $('#shuffleBtn').off('click').on('click', function() {
         $('input.qty-input').each(function() {
             const itemCode = $(this).data('code');
-            const currentStock = parseFloat($(this).data('stock'));
+            const actualStock = parseFloat($(this).data('stock'));
             const closingBalance = parseFloat($(this).val()) || 0;
-            const totalQty = currentStock - closingBalance;
+            const totalQty = actualStock - closingBalance;
             
             // Only shuffle if quantity > 0 and visible (optimization)
             if (totalQty > 0 && $(this).is(':visible')) {
@@ -2419,9 +2957,9 @@ $(document).ready(function() {
     // Individual shuffle button click event
     $(document).on('click', '.btn-shuffle-item', function() {
         const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('stock'));
+        const actualStock = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('stock'));
         const closingBalance = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).val()) || 0;
-        const totalQty = currentStock - closingBalance;
+        const totalQty = actualStock - closingBalance;
         
         // Only shuffle if quantity > 0
         if (totalQty > 0) {
@@ -2447,16 +2985,16 @@ $(document).ready(function() {
 function initializeQuantitiesFromSession() {
     $('input[name^="closing_balance"]').each(function() {
         const itemCode = $(this).data('code');
-        const currentStock = parseFloat($(this).data('stock'));
+        const actualStock = parseFloat($(this).data('stock'));
         
         if (allSessionQuantities[itemCode] !== undefined) {
             const sessionQty = allSessionQuantities[itemCode];
-            // Calculate closing balance: closing_balance = current_stock - sale_qty
-            const closingBalance = currentStock - sessionQty;
+            // Calculate closing balance: closing_balance = actual_stock - sale_qty
+            const closingBalance = actualStock - sessionQty;
             $(this).val(closingBalance.toFixed(3));
             
             // Update UI for this item
-            updateItemUI(itemCode, sessionQty, currentStock, closingBalance);
+            updateItemUI(itemCode, sessionQty, actualStock, closingBalance);
             
             // Show distribution if quantity > 0 (optimization)
             if (sessionQty > 0) {
