@@ -955,7 +955,13 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     
     // Validate closing stock is sufficient for the sale quantity
     if ($current_closing < $qty) {
-        throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $current_closing, Requested: $qty");
+        // Try to get stock from another source or calculate from opening + purchase
+        $available_stock = $current_opening + $current_purchase - $current_sales;
+        if ($available_stock < $qty) {
+            throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $available_stock, Requested: $qty");
+        }
+        // If we got here, use the calculated available stock
+        $current_closing = $available_stock;
     }
     
     // Calculate new sales and closing
@@ -994,31 +1000,39 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $last_day_of_sale_month = date('t', strtotime($sale_date));
     $is_last_day_of_month = ($day_num == $last_day_of_sale_month);
     
-    if ($is_last_day_of_month) {
-        // Start cascading from next month
+    // Always cascade to current month regardless of sale date
+    $current_month = $current_date->format('Y-m');
+    
+    if ($month_year_full < $current_month || $is_last_day_of_month) {
+        logMessage("Cascading from sale month $month_year_full to current month $current_month", 'INFO');
+        
+        // Create a month iterator starting from sale month
         $current_month_obj = new DateTime($month_year_full . '-01');
         
         while (true) {
             // Move to next month
             $current_month_obj->modify('+1 month');
             $next_month = $current_month_obj->format('Y-m');
-            $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
             
-            // Check if we've reached future (beyond current date)
+            // Stop if we've reached beyond current month
             $next_month_start = new DateTime($next_month . '-01');
             if ($next_month_start > $current_date) {
-                logMessage("Reached future month $next_month, stopping cascading", 'INFO');
+                logMessage("Reached month $next_month which is beyond current date, stopping cascade", 'INFO');
                 break;
             }
             
-            // Check if next month table exists
-            $check_next_month = "SHOW TABLES LIKE '$next_month_table'";
-            if ($conn->query($check_next_month)->num_rows == 0) {
-                logMessage("Table $next_month_table doesn't exist, creating it", 'INFO');
+            // Get the table for this month
+            $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
+            
+            // Check if table exists
+            $check_table = "SHOW TABLES LIKE '$next_month_table'";
+            if ($conn->query($check_table)->num_rows == 0) {
+                // Create the table
                 createDailyStockTable($conn, $next_month_table);
+                logMessage("Created table $next_month_table for cascading", 'INFO');
             }
             
-            // Get the closing stock from previous month
+            // Get previous month's closing
             $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
             $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
             $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
@@ -1036,112 +1050,56 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
                     if ($prev_result->num_rows > 0) {
                         $prev_row = $prev_result->fetch_assoc();
                         $prev_closing = $prev_row[$prev_closing_column] ?? 0;
+                    } else {
+                        // If no record in previous month, use 0
+                        $prev_closing = 0;
                     }
                 }
                 $prev_stmt->close();
             }
             
-            // Check if record exists in next month table
-            $check_next_query = "SELECT DAY_01_OPEN FROM $next_month_table 
-                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $check_next_stmt = $conn->prepare($check_next_query);
-            $check_next_stmt->bind_param("ss", $next_month, $item_code);
-            $check_next_stmt->execute();
-            $check_next_result = $check_next_stmt->get_result();
+            // Update or create record in next month
+            $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $check_stmt = $conn->prepare($check_record);
+            $check_stmt->bind_param("ss", $next_month, $item_code);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
             
-            if ($check_next_result->num_rows == 0) {
-                // Insert new record with opening from previous month
-                $check_next_stmt->close();
-                
-                $insert_next_query = "INSERT INTO $next_month_table 
-                                    (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                                    VALUES (?, ?, ?, 0, 0, ?)";
-                $insert_next_stmt = $conn->prepare($insert_next_query);
-                $insert_next_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
-                $insert_next_stmt->execute();
-                $insert_next_stmt->close();
-                
-                logMessage("Created record for item $item_code in $next_month with opening $prev_closing", 'INFO');
+            if ($check_result->num_rows == 0) {
+                // Create new record
+                $check_stmt->close();
+                $insert_query = "INSERT INTO $next_month_table 
+                                (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                                VALUES (?, ?, ?, 0, 0, ?)";
+                $insert_stmt = $conn->prepare($insert_query);
+                $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
+                $insert_stmt->execute();
+                $insert_stmt->close();
+                logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
             } else {
-                // Update existing record's opening
-                $check_next_stmt->close();
-                
-                $update_next_query = "UPDATE $next_month_table 
-                                     SET DAY_01_OPEN = ?,
-                                         LAST_UPDATED = CURRENT_TIMESTAMP 
-                                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_next_stmt = $conn->prepare($update_next_query);
-                $update_next_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
-                $update_next_stmt->execute();
-                $update_next_stmt->close();
-                
-                logMessage("Updated opening for item $item_code in $next_month to $prev_closing", 'INFO');
+                // Update existing record
+                $check_stmt->close();
+                $update_query = "UPDATE $next_month_table 
+                               SET DAY_01_OPEN = ?,
+                                   LAST_UPDATED = CURRENT_TIMESTAMP 
+                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_stmt = $conn->prepare($update_query);
+                $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
+                $update_stmt->execute();
+                $update_stmt->close();
+                logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
             }
             
-            // Recalculate the entire next month
+            // Recalculate the entire month
             recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
             
-            logMessage("Completed cascading update for month $next_month", 'INFO');
+            logMessage("Completed cascading for month $next_month", 'INFO');
             
-            // Check if this is the current month
-            $current_month = $current_date->format('Y-m');
+            // Break after updating current month
             if ($next_month >= $current_month) {
-                logMessage("Reached current or future month $next_month, stopping cascading", 'INFO');
+                logMessage("Reached current month $current_month, stopping cascading", 'INFO');
                 break;
-            }
-        }
-    } else {
-        // Not last day of month, but we still need to handle if sale date is in archived month
-        // and current month needs updating
-        
-        $current_month = $current_date->format('Y-m');
-        if ($month_year_full < $current_month) {
-            logMessage("Sale in archived month $month_year_full, updating current month $current_month", 'INFO');
-            
-            // Check if current month table exists
-            $check_current_table = "SHOW TABLES LIKE '$current_daily_stock_table'";
-            if ($conn->query($check_current_table)->num_rows > 0) {
-                // Get current month's opening
-                $current_check_query = "SELECT DAY_01_OPEN FROM $current_daily_stock_table 
-                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $current_check_stmt = $conn->prepare($current_check_query);
-                $current_check_stmt->bind_param("ss", $current_month, $item_code);
-                $current_check_stmt->execute();
-                $current_check_result = $current_check_stmt->get_result();
-                
-                if ($current_check_result->num_rows > 0) {
-                    // Adjust current month's opening by deducting the sale quantity
-                    $update_current_query = "UPDATE $current_daily_stock_table 
-                                            SET DAY_01_OPEN = DAY_01_OPEN - ?,
-                                                LAST_UPDATED = CURRENT_TIMESTAMP 
-                                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                    $update_current_stmt = $conn->prepare($update_current_query);
-                    $update_current_stmt->bind_param("dss", $qty, $current_month, $item_code);
-                    $update_current_stmt->execute();
-                    $update_current_stmt->close();
-                    
-                    // Recalculate current month's stock
-                    recalculateDailyStockFromDay($conn, $current_daily_stock_table, $item_code, $current_month, 1);
-                    
-                    logMessage("Updated current month $current_month opening for item $item_code by -$qty", 'INFO');
-                } else {
-                    // No record in current month, create one
-                    $current_check_stmt->close();
-                    
-                    // Get opening from previous month (which might be the sale month or earlier)
-                    $opening_to_use = $new_closing; // Use closing from sale date
-                    
-                    $insert_current_query = "INSERT INTO $current_daily_stock_table 
-                                            (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                                            VALUES (?, ?, ?, 0, 0, ?)";
-                    $insert_current_stmt = $conn->prepare($insert_current_query);
-                    $insert_current_stmt->bind_param("ssdd", $item_code, $current_month, $opening_to_use, $opening_to_use);
-                    $insert_current_stmt->execute();
-                    $insert_current_stmt->close();
-                    
-                    logMessage("Created record for item $item_code in current month $current_month with opening $opening_to_use", 'INFO');
-                }
-                $current_check_stmt->close();
             }
         }
     }
@@ -2159,6 +2117,21 @@ tr.backdated-restriction .qty-input {
     color: #721c24 !important;
 }
 
+/* Simplified stock display - hide decimal points */
+.stock-integer {
+    font-weight: bold;
+}
+
+.stock-decimal {
+    display: none !important;
+}
+
+/* Compact info display */
+.compact-info {
+    font-size: 11px;
+    color: #6c757d;
+}
+
   </style>
 </head>
 <body>
@@ -2172,36 +2145,10 @@ tr.backdated-restriction .qty-input {
     <div class="content-area">
       <h3 class="mb-4">Sales by Date Range</h3>
 
-      <!-- ADDED: License Restriction Info -->
-      <div class="alert alert-info mb-3">
+      <!-- SIMPLIFIED License Restriction Info -->
+      <div class="alert alert-info mb-3 py-2">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
-          <p class="mb-0">Showing items for classes: 
-              <?php 
-              if (!empty($available_classes)) {
-                  $class_names = [];
-                  foreach ($available_classes as $class) {
-                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
-                  }
-                  echo implode(', ', $class_names);
-              } else {
-                  echo 'No classes available for your license type';
-              }
-              ?>
-          </p>
-          <!-- UPDATED: Stock source info with table indicator -->
-          <p class="mb-0">
-              <small>
-                  Stock displayed is closing balance for <?= htmlspecialchars($end_date) ?> 
-                  from table: 
-                  <span class="table-source-indicator <?= $end_date_month === date('Y-m') ? 'table-current' : 'table-archive' ?>">
-                      <?= $daily_stock_table ?>
-                  </span>
-                  (only items with stock > 0 are shown)
-                  <?php if (!$table_exists): ?>
-                      <br><span class="text-warning"><i class="fas fa-exclamation-triangle"></i> Table created automatically</span>
-                  <?php endif; ?>
-              </small>
-          </p>
+          <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
       <!-- Success/Error Messages -->
@@ -2289,14 +2236,7 @@ tr.backdated-restriction .qty-input {
 <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
-              <!-- UPDATED: Stock source indicator with table info -->
-              <br><small class="text-muted">
-                  Stock source: <?= $daily_stock_table ?> 
-                  <span class="table-source-indicator <?= $end_date_month === date('Y-m') ? 'table-current' : 'table-archive' ?>">
-                      <?= $end_date_month === date('Y-m') ? 'Current Month' : 'Archive' ?>
-                  </span>
-                  (only items with stock > 0)
-              </small>
+              <!-- SIMPLIFIED: Removed stock source info -->
             </label>
           </div>
           
@@ -2331,11 +2271,7 @@ tr.backdated-restriction .qty-input {
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities</span>
             <?php endif; ?>
-            <!-- UPDATED: Stock filter info with table name -->
-            <br><small>
-                Filter: Only showing items with available stock > 0 
-                from <?= $daily_stock_table ?>
-            </small>
+            <!-- SIMPLIFIED: Removed stock filter info -->
           </div>
         </div>
       </div>
@@ -2403,6 +2339,12 @@ tr.backdated-restriction .qty-input {
         $item_total = $item_qty * $item['RPRICE'];
         $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
         
+        // Format numbers to remove decimals for display
+        $display_stock = floor($item['CURRENT_STOCK']);
+        $display_rate = intval($item['RPRICE']);
+        $display_closing = floor($closing_balance);
+        $display_amount = intval($item_total);
+        
         // Extract size from item details
         $size = 0;
         if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
@@ -2440,10 +2382,10 @@ tr.backdated-restriction .qty-input {
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
-            <td><?= number_format($item['RPRICE'], 2); ?></td>
+            <td class="stock-integer"><?= number_format($display_rate); ?></td>
             <td>
                 <span class="stock-info">
-                    <?= number_format($item['CURRENT_STOCK'], 3); ?>
+                    <span class="stock-integer"><?= number_format($display_stock); ?></span>
                     <span class="stock-status <?= $stock_status_class ?>">
                         <?php if ($item['CURRENT_STOCK'] <= 0): ?>
                             Out
@@ -2454,15 +2396,6 @@ tr.backdated-restriction .qty-input {
                         <?php endif; ?>
                     </span>
                 </span>
-                <!-- UPDATED: Add stock source indicator with table info -->
-                <?php if (isset($item['stock_month']) && $item['stock_month'] == $end_date_month): ?>
-                    <br><small class="text-muted">
-                        (<?= date('M Y', strtotime($end_date_month . '-01')) ?> - 
-                        <span class="table-source-indicator <?= $end_date_month === date('Y-m') ? 'table-current' : 'table-archive' ?>">
-                            <?= $end_date_month === date('Y-m') ? 'Current' : 'Archive' ?>
-                        </span>)
-                    </small>
-                <?php endif; ?>
             </td>
             <td>
     <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
@@ -2477,7 +2410,7 @@ tr.backdated-restriction .qty-input {
            <?= $has_backdated_restriction ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
 </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($closing_balance, 3) ?>
+                <span class="stock-integer"><?= number_format($display_closing) ?></span>
                 <!-- Show stock status for closing balance too -->
                 <?php if ($closing_balance <= 0): ?>
                     <br><span class="stock-status stock-out">Out</span>
@@ -2502,7 +2435,7 @@ tr.backdated-restriction .qty-input {
             <!-- Date distribution cells will be inserted here by JavaScript -->
             
             <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
-                <?= number_format($item_qty * $item['RPRICE'], 2) ?>
+                <span class="stock-integer"><?= number_format($display_amount) ?></span>
             </td>
         </tr>
     <?php endforeach; ?>
@@ -2515,14 +2448,6 @@ tr.backdated-restriction .qty-input {
                 <?php if ($search !== ''): ?>
                     <p class="mb-1">Try a different search term</p>
                 <?php endif; ?>
-                <p class="mb-0">
-                    <small>
-                        Check if items have stock in <?= $daily_stock_table ?> for <?= date('M Y', strtotime($end_date_month . '-01')) ?>
-                        <?php if (!$table_exists): ?>
-                            <br><span class="text-warning"><i class="fas fa-exclamation-triangle"></i> Table was just created, please refresh or add stock first</span>
-                        <?php endif; ?>
-                    </small>
-                </p>
                 <p class="mb-0"><small>Note: Only items with stock > 0 are shown</small></p>
             </div>
         </td>
@@ -2599,11 +2524,6 @@ tr.backdated-restriction .qty-input {
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages</span>
             <?php endif; ?>
-            <!-- UPDATED: Stock filter reminder with table info -->
-            <br><small>
-                Filter applied: Only showing items with stock > 0 in <?= $daily_stock_table ?> 
-                for <?= date('M Y', strtotime($end_date_month . '-01')) ?>
-            </small>
         </div>
         <?php endif; ?>
         
@@ -2712,12 +2632,6 @@ const daysCount = <?= $days_count ?>;
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
-// NEW: Add end date info for stock display
-const endDate = '<?= $end_date ?>';
-const endDateMonth = '<?= date('M Y', strtotime($end_date_month . '-01')) ?>';
-const dailyStockTable = '<?= $daily_stock_table ?>';
-const tableSuffix = '<?= $table_suffix ?>';
-const isCurrentMonthTable = <?= $end_date_month === date('Y-m') ? 'true' : 'false' ?>;
 
 // NEW: Enhanced function to check backdated sales by specific dates
 function checkBackdatedSalesBySpecificDatesBeforeSubmit() {
@@ -2819,7 +2733,7 @@ function checkStockAvailabilityBeforeSubmit() {
             mode: '<?= $mode ?>',
             comp_id: '<?= $comp_id ?>',
             quantities: allSessionQuantities,
-            daily_stock_table: dailyStockTable,
+            daily_stock_table: '<?= $daily_stock_table ?>',
             end_date_month: '<?= $end_date_month ?>'
         };
 
@@ -2928,9 +2842,13 @@ function updateItemUI(itemCode, qty, currentStock) {
     const closingBalance = currentStock - qty;
     const amount = qty * rate;
     
+    // Format to remove decimals for display
+    const displayClosing = Math.floor(closingBalance);
+    const displayAmount = Math.floor(amount);
+    
     // Update all related UI elements
-    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
     
     // Update row styling
     const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
@@ -3015,7 +2933,7 @@ function validateAllQuantities() {
     if (!isValid) {
         let errorMessage = "The following items have insufficient stock:\n\n";
         errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: Stock ${item.stock.toFixed(3)}, Quantity ${item.qty}\n`;
+            errorMessage += `• Item ${item.code}: Stock ${Math.floor(item.stock)}, Quantity ${item.qty}\n`;
         });
         errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
         alert(errorMessage);
@@ -3073,11 +2991,13 @@ function updateDistributionPreview(itemCode, totalQty) {
     // Update closing balance
     const currentStock = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('stock'));
     const closingBalance = currentStock - totalDistributed;
-    $(`#closing_${itemCode}`).text(closingBalance.toFixed(3));
+    const displayClosing = Math.floor(closingBalance);
+    $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
     
     // Update amount
     const amount = totalDistributed * rate;
-    $(`#amount_${itemCode}`).text(amount.toFixed(2));
+    const displayAmount = Math.floor(amount);
+    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
     
     // Show date columns if they're hidden
     $('.date-header, .date-distribution-cell').show();
@@ -3091,7 +3011,7 @@ function calculateTotalAmount() {
     $('.amount-cell').each(function() {
         total += parseFloat($(this).text()) || 0;
     });
-    $('#totalAmount').text(total.toFixed(2));
+    $('#totalAmount').text(Math.floor(total));
 }
 
 // Function to initialize date headers and closing balance column
@@ -3560,9 +3480,6 @@ function initializeBackdatedTooltips() {
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
     console.log('Document ready - Initializing...');
-    console.log('Stock source: ' + dailyStockTable + ' (end date: ' + endDate + ')');
-    console.log('Table type: ' + (isCurrentMonthTable ? 'Current Month' : 'Archive Month'));
-    console.log('Stock filter: Only showing items with stock > 0');
     
     // Initialize table headers and columns
     initializeTableHeaders();
@@ -3617,8 +3534,9 @@ $(document).ready(function() {
             
             // Reset closing balance and amount
             const currentStock = parseFloat($(this).data('stock'));
-            $(`#closing_${itemCode}`).text(currentStock.toFixed(3));
-            $(`#amount_${itemCode}`).text('0.00');
+            const displayClosing = Math.floor(currentStock);
+            $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+            $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
             
             // Hide date columns if no items have quantity
             if ($('input[name^="sale_qty"]').filter(function() { 

@@ -66,6 +66,66 @@ function validateStock($actual_stock, $requested_qty, $item_code) {
     return true;
 }
 
+// Enhanced stock validation function - VALIDATE AGAINST ACTUAL STOCK FOR SPECIFIC DATE
+function validateStockForDate($conn, $item_code, $sale_date, $requested_qty, $comp_id) {
+    if ($requested_qty <= 0) return true;
+    
+    // Get the correct daily stock table for the sale date
+    $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
+    
+    // Check if table exists
+    $check_table = "SHOW TABLES LIKE '$sale_daily_stock_table'";
+    if ($conn->query($check_table)->num_rows == 0) {
+        logMessage("Daily stock table $sale_daily_stock_table doesn't exist for item $item_code on $sale_date", 'WARNING');
+        return true; // Table doesn't exist, cannot validate
+    }
+    
+    // Extract day number from date
+    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    
+    // Check if column exists
+    $check_column = "SHOW COLUMNS FROM $sale_daily_stock_table LIKE '$closing_column'";
+    if ($conn->query($check_column)->num_rows == 0) {
+        logMessage("Column $closing_column doesn't exist in table $sale_daily_stock_table", 'WARNING');
+        return true; // Column doesn't exist, cannot validate
+    }
+    
+    // Get month of sale date
+    $sale_month = date('Y-m', strtotime($sale_date));
+    
+    // Get closing stock for the specific date
+    $query = "SELECT $closing_column FROM $sale_daily_stock_table 
+              WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $item_code, $sale_month);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows == 0) {
+        $stmt->close();
+        logMessage("No stock record found for item $item_code in month $sale_month", 'WARNING');
+        return true; // No record exists
+    }
+    
+    $row = $result->fetch_assoc();
+    $available_stock = $row[$closing_column] ?? 0;
+    $stmt->close();
+    
+    if ($requested_qty > $available_stock) {
+        logMessage("Stock validation failed for item $item_code on $sale_date: Available: $available_stock, Requested: $requested_qty", 'WARNING');
+        return false;
+    }
+    
+    // Additional safety check - prevent negative values
+    if ($available_stock - $requested_qty < 0) {
+        logMessage("Negative closing balance prevented for item $item_code on $sale_date", 'WARNING');
+        return false;
+    }
+    
+    return true;
+}
+
 // FIXED: Function to get next bill number with proper zero-padding AND CompID consideration
 function getNextBillNumber($conn, $comp_id) {
     logMessage("Getting next bill number for CompID: $comp_id");
@@ -198,7 +258,7 @@ function getDailyStockTableForDate($conn, $comp_id, $date) {
     }
 }
 
-// ENHANCED: Function to update daily stock table with cascading updates across tables (from sale_for_date_range.php)
+// ENHANCED: Function to update daily stock table with MULTI-MONTH cascading updates
 function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     // Get the correct table for the sale date
     $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
@@ -214,9 +274,10 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $purchase_column = "DAY_{$day_num}_PURCHASE";
     
     $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
+    $current_month = date('Y-m'); // Current month
     
     // ============================================================================
-    // STEP 1: UPDATE THE STOCK TABLE FOR THE SALE DATE
+    // STEP 1: VALIDATE STOCK FOR THE SPECIFIC DATE
     // ============================================================================
     
     // First, check if the required table exists
@@ -251,18 +312,22 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
             $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
             $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
             
-            $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $prev_stmt = $conn->prepare($prev_query);
-            $prev_stmt->bind_param("ss", $prev_month, $item_code);
-            if ($prev_stmt->execute()) {
-                $prev_result = $prev_stmt->get_result();
-                if ($prev_result->num_rows > 0) {
-                    $prev_row = $prev_result->fetch_assoc();
-                    $prev_closing = $prev_row[$prev_closing_column] ?? 0;
+            // Check if previous table exists
+            $check_prev_table = "SHOW TABLES LIKE '$prev_table'";
+            if ($conn->query($check_prev_table)->num_rows > 0) {
+                $prev_query = "SELECT $prev_closing_column FROM $prev_table 
+                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $prev_stmt = $conn->prepare($prev_query);
+                $prev_stmt->bind_param("ss", $prev_month, $item_code);
+                if ($prev_stmt->execute()) {
+                    $prev_result = $prev_stmt->get_result();
+                    if ($prev_result->num_rows > 0) {
+                        $prev_row = $prev_result->fetch_assoc();
+                        $prev_closing = $prev_row[$prev_closing_column] ?? 0;
+                    }
                 }
+                $prev_stmt->close();
             }
-            $prev_stmt->close();
         }
         
         // Insert new record
@@ -315,104 +380,166 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $update_stmt->close();
     
     // ============================================================================
-    // STEP 2: CASCADE UPDATES TO NEXT DAY IN THE SAME TABLE
+    // STEP 2: CASCADE UPDATES WITHIN THE SAME MONTH
     // ============================================================================
     
-    // Update next day's opening stock if it exists (and if we're not at month end)
-    $next_day = intval($day_num) + 1;
-    if ($next_day <= 31) {
-        $next_day_num = sprintf('%02d', $next_day);
-        $next_opening_column = "DAY_{$next_day_num}_OPEN";
-        
-        // Check if next day exists in the table
-        $check_next_day_query = "SHOW COLUMNS FROM $sale_daily_stock_table LIKE '$next_opening_column'";
-        $next_day_result = $conn->query($check_next_day_query);
-        
-        if ($next_day_result->num_rows > 0) {
-            // Update next day's opening to match current day's closing
-            $update_next_query = "UPDATE $sale_daily_stock_table 
-                                 SET $next_opening_column = ?,
-                                     LAST_UPDATED = CURRENT_TIMESTAMP 
-                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $update_next_stmt = $conn->prepare($update_next_query);
-            $update_next_stmt->bind_param("dss", $new_closing, $month_year_full, $item_code);
-            $update_next_stmt->execute();
-            $update_next_stmt->close();
-        }
-    }
-    
-    // ============================================================================
-    // STEP 3: RECALCULATE ALL SUBSEQUENT DAYS IN THE SAME MONTH
-    // ============================================================================
-    
+    // Recalculate all days from the sale day onward in the same month
     recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
     
     // ============================================================================
-    // STEP 4: CASCADE UPDATES TO NEXT MONTH (IF SALE IS AT MONTH END)
+    // STEP 3: CASCADE UPDATES TO SUBSEQUENT MONTHS
     // ============================================================================
     
+    // Determine if this is the last day of the month
     $last_day_of_month = date('t', strtotime($sale_date));
+    
+    // Get the next month for cascading
+    $next_month_date = date('Y-m-d', strtotime($month_year_full . '-01 +1 month'));
+    $next_month = date('Y-m', strtotime($next_month_date));
+    
+    // Start cascading from the next month if sale is at month end
     if ($day_num == $last_day_of_month) {
-        // This is the last day of the month, update next month's opening
-        $next_month = date('Y-m', strtotime($month_year_full . '-01 +1 month'));
-        $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
-        
-        // Check if next month table exists
-        $check_next_month = "SHOW TABLES LIKE '$next_month_table'";
-        if ($conn->query($check_next_month)->num_rows > 0) {
-            // Update next month's opening (DAY_01_OPEN)
-            $update_next_month_query = "UPDATE $next_month_table 
-                                       SET DAY_01_OPEN = ?,
-                                           LAST_UPDATED = CURRENT_TIMESTAMP 
-                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $update_next_month_stmt = $conn->prepare($update_next_month_query);
-            $update_next_month_stmt->bind_param("dss", $new_closing, $next_month, $item_code);
-            $update_next_month_stmt->execute();
-            $update_next_month_stmt->close();
-            
-            // Recalculate next month's stock
-            recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
-        }
+        cascadeStockToNextMonth($conn, $comp_id, $item_code, $new_closing, $next_month);
     }
     
     // ============================================================================
-    // STEP 5: UPDATE CURRENT MONTH TABLE IF SALE IS IN ARCHIVED MONTH
+    // STEP 4: CASCADE UPDATES TO ALL MONTHS BETWEEN SALE DATE AND CURRENT MONTH
     // ============================================================================
     
-    $current_month = date('Y-m');
+    // If sale is in a past month (not current month), cascade through all intermediate months
     if ($month_year_full < $current_month) {
-        // Sale is in archived month, need to adjust current month's opening
-        
-        // Check if current month table exists
-        $check_current_table = "SHOW TABLES LIKE '$current_daily_stock_table'";
-        if ($conn->query($check_current_table)->num_rows > 0) {
-            // Get current month's record
-            $current_check_query = "SELECT DAY_01_OPEN FROM $current_daily_stock_table 
-                                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $current_check_stmt = $conn->prepare($current_check_query);
-            $current_check_stmt->bind_param("ss", $current_month, $item_code);
-            $current_check_stmt->execute();
-            $current_check_result = $current_check_stmt->get_result();
-            
-            if ($current_check_result->num_rows > 0) {
-                // Adjust current month's opening by deducting the sale quantity
-                $update_current_query = "UPDATE $current_daily_stock_table 
-                                        SET DAY_01_OPEN = DAY_01_OPEN - ?,
-                                            LAST_UPDATED = CURRENT_TIMESTAMP 
-                                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_current_stmt = $conn->prepare($update_current_query);
-                $update_current_stmt->bind_param("dss", $qty, $current_month, $item_code);
-                $update_current_stmt->execute();
-                $update_current_stmt->close();
-                
-                // Recalculate current month's stock
-                recalculateDailyStockFromDay($conn, $current_daily_stock_table, $item_code, $current_month, 1);
-            }
-            $current_check_stmt->close();
-        }
+        cascadeThroughIntermediateMonths($conn, $comp_id, $item_code, $month_year_full, $qty, $current_month);
+    }
+    
+    // ============================================================================
+    // STEP 5: UPDATE CURRENT MONTH'S OPENING STOCK IF NEEDED
+    // ============================================================================
+    
+    // If sale is in any month before current month, adjust current month's opening
+    if ($month_year_full < $current_month) {
+        adjustCurrentMonthOpening($conn, $comp_id, $item_code, $current_month, $qty);
     }
     
     logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing");
+}
+
+// Helper function to cascade stock to next month
+function cascadeStockToNextMonth($conn, $comp_id, $item_code, $closing_stock, $target_month) {
+    $target_table = getDailyStockTableForDate($conn, $comp_id, $target_month . '-01');
+    
+    // Check if target table exists
+    $check_table = "SHOW TABLES LIKE '$target_table'";
+    if ($conn->query($check_table)->num_rows == 0) {
+        // Table doesn't exist, create it
+        createDailyStockTable($conn, $target_table);
+    }
+    
+    // Check if record exists for this month and item
+    $check_query = "SELECT DAY_01_OPEN FROM $target_table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $target_month, $item_code);
+    $check_stmt->execute();
+    $check_result = $check_stmt->get_result();
+    
+    if ($check_result->num_rows == 0) {
+        // Insert new record with the closing stock as opening
+        $check_stmt->close();
+        $insert_query = "INSERT INTO $target_table 
+                        (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                        VALUES (?, ?, ?, 0, 0, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssdd", $item_code, $target_month, $closing_stock, $closing_stock);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    } else {
+        // Update existing record
+        $check_stmt->close();
+        $update_query = "UPDATE $target_table 
+                        SET DAY_01_OPEN = ?,
+                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("dss", $closing_stock, $target_month, $item_code);
+        $update_stmt->execute();
+        $update_stmt->close();
+    }
+    
+    // Recalculate the target month
+    recalculateDailyStockFromDay($conn, $target_table, $item_code, $target_month, 1);
+    
+    logMessage("Cascaded stock to next month $target_month for item $item_code: Opening=$closing_stock");
+}
+
+// Helper function to cascade through intermediate months
+function cascadeThroughIntermediateMonths($conn, $comp_id, $item_code, $start_month, $sale_qty, $current_month) {
+    $month_date = date('Y-m-d', strtotime($start_month . '-01 +1 month'));
+    $month = date('Y-m', strtotime($month_date));
+    
+    // Loop through all months between start_month and current_month (exclusive)
+    while ($month < $current_month) {
+        $table_name = getDailyStockTableForDate($conn, $comp_id, $month . '-01');
+        
+        // Check if table exists
+        $check_table = "SHOW TABLES LIKE '$table_name'";
+        if ($conn->query($check_table)->num_rows > 0) {
+            // Adjust opening stock by subtracting sale quantity
+            $update_query = "UPDATE $table_name 
+                            SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $sale_qty, $month, $item_code);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Recalculate the entire month
+            recalculateDailyStockFromDay($conn, $table_name, $item_code, $month, 1);
+            
+            logMessage("Adjusted intermediate month $month for item $item_code: Reduced opening by $sale_qty");
+        }
+        
+        // Move to next month
+        $month_date = date('Y-m-d', strtotime($month . '-01 +1 month'));
+        $month = date('Y-m', strtotime($month_date));
+    }
+}
+
+// Helper function to adjust current month's opening stock
+function adjustCurrentMonthOpening($conn, $comp_id, $item_code, $current_month, $sale_qty) {
+    $current_table = "tbldailystock_" . $comp_id;
+    
+    // Check if current month table exists
+    $check_table = "SHOW TABLES LIKE '$current_table'";
+    if ($conn->query($check_table)->num_rows > 0) {
+        // Check if record exists
+        $check_query = "SELECT DAY_01_OPEN FROM $current_table 
+                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $check_stmt->bind_param("ss", $current_month, $item_code);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows > 0) {
+            // Update existing record
+            $check_stmt->close();
+            $update_query = "UPDATE $current_table 
+                            SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $sale_qty, $current_month, $item_code);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Recalculate current month
+            recalculateDailyStockFromDay($conn, $current_table, $item_code, $current_month, 1);
+            
+            logMessage("Adjusted current month $current_month for item $item_code: Reduced opening by $sale_qty");
+        } else {
+            $check_stmt->close();
+        }
+    }
 }
 
 // Helper function to create daily stock table
@@ -1008,7 +1135,7 @@ foreach ($date_range as $date) {
 $days_count = count($date_array);
 
 // ============================================================================
-// OPTIMIZED: FORM SUBMISSION HANDLING WITH CASCADING UPDATES
+// OPTIMIZED: FORM SUBMISSION HANDLING WITH MULTI-MONTH CASCADING UPDATES
 // ============================================================================
 
 // Handle form submission for sales update
@@ -1040,19 +1167,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // Enhanced stock validation before transaction - USING ACTUAL STOCK
+            // Enhanced stock validation before transaction - VALIDATE EACH ITEM FOR EACH DATE
             $stock_errors = [];
             if (isset($_SESSION['sale_quantities'])) {
-                $item_count = 0;
                 foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
-                    $item_count++;
-                    
                     if ($total_qty > 0 && isset($all_items_data[$item_code])) {
-                        $actual_stock = $all_items_data[$item_code]['ACTUAL_STOCK'];
+                        $item = $all_items_data[$item_code];
+                        $actual_stock = $item['ACTUAL_STOCK'];
                         
                         // Enhanced stock validation - VALIDATE AGAINST ACTUAL STOCK
                         if (!validateStock($actual_stock, $total_qty, $item_code)) {
                             $stock_errors[] = "Item {$item_code}: Available stock {$actual_stock}, Requested {$total_qty}";
+                        }
+                        
+                        // If we're going to distribute sales, validate for each specific date
+                        $daily_sales = distributeSales($total_qty, $days_count);
+                        foreach ($date_array as $index => $sale_date) {
+                            $daily_qty = $daily_sales[$index];
+                            if ($daily_qty > 0) {
+                                // Validate stock for the specific date
+                                if (!validateStockForDate($conn, $item_code, $sale_date, $daily_qty, $comp_id)) {
+                                    $stock_errors[] = "Item {$item_code}: Insufficient stock on {$sale_date}, Requested {$daily_qty}";
+                                }
+                            }
                         }
                     }
                 }
@@ -1173,7 +1310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update main stock table - USING ACTUAL STOCK
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
                                 
-                                // Update daily stock with cascading logic (using function from sale_for_date_range.php)
+                                // Update daily stock with MULTI-MONTH cascading logic
                                 updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
@@ -1601,6 +1738,21 @@ tr.has-quantity td {
     color: #198754;
 }
 
+/* Multi-month cascade indicator */
+.multi-month-cascade {
+    background-color: #e7f3ff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    border-left: 5px solid #0d6efd;
+    font-size: 14px;
+}
+
+.multi-month-cascade i {
+    color: #0d6efd;
+    margin-right: 8px;
+}
+
   </style>
 </head>
 <body>
@@ -1640,6 +1792,14 @@ tr.has-quantity td {
       </div>
       <?php endif; ?>
 
+      <!-- Multi-Month Cascade Indicator -->
+      <div class="multi-month-cascade">
+        <i class="fas fa-sitemap"></i> 
+        <strong>Multi-Month Cascading Updates:</strong> Stock updates will cascade through all months from sale date to current month | 
+        <strong>Date-Specific Validation:</strong> Each item validated for each specific date | 
+        <strong>Automatic Table Creation:</strong> Missing daily stock tables will be created automatically
+      </div>
+
       <!-- Table Name Information -->
       <?php if ($table_exists && $column_exists): ?>
       <div class="table-name-info">
@@ -1662,6 +1822,9 @@ tr.has-quantity td {
       <div class="archive-indicator">
         <i class="fas fa-archive"></i> 
         <strong>Archive Month:</strong> Viewing stock data from archive table (<?= date('F Y', strtotime($stock_month . '-01')) ?>)
+        <?php if ($target_month < $current_month || $target_year < $current_year): ?>
+          | <span class="text-warning fw-bold">Sales in this month will cascade through all subsequent months</span>
+        <?php endif; ?>
       </div>
       <?php endif; ?>
 
@@ -1683,8 +1846,8 @@ tr.has-quantity td {
       <div class="cash-memo-indicator">
         <i class="fas fa-file-invoice-dollar"></i> 
         <strong>Cash Memos:</strong> Will be automatically generated for each bill | 
-        <strong>Cascading Updates:</strong> Stock updates will cascade across all daily stock tables |
-        <strong>Validation:</strong> Against Actual Stock from tblitem_stock
+        <strong>Multi-Month Cascading:</strong> Stock updates cascade through all months from sale date to current | 
+        <strong>Validation:</strong> Date-specific validation for each item
       </div>
 
       <!-- License Information Banner -->
@@ -1780,6 +1943,17 @@ tr.has-quantity td {
               <small>Stock Source: <?= $daily_stock_table ?> (Day <?= $start_date_day ?> closing)</small>
               <?php if ($is_archive_month): ?>
                 <br><small class="text-warning"><i class="fas fa-archive"></i> Archive Month Data</small>
+                <?php 
+                $months_between = 0;
+                $sale_month = date('Y-m', strtotime($start_date));
+                $current_month = date('Y-m');
+                if ($sale_month < $current_month) {
+                    $months_between = (date('Y', strtotime($current_month)) - date('Y', strtotime($sale_month))) * 12;
+                    $months_between += date('m', strtotime($current_month)) - date('m', strtotime($sale_month));
+                }
+                if ($months_between > 0): ?>
+                <br><small class="text-info"><i class="fas fa-sitemap"></i> Will cascade through <?= $months_between ?> subsequent month(s)</small>
+                <?php endif; ?>
               <?php else: ?>
                 <br><small class="text-success"><i class="fas fa-database"></i> Current Month Data</small>
               <?php endif; ?>
