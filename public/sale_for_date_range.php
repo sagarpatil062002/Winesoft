@@ -60,8 +60,108 @@ function validateStock($current_stock, $requested_qty, $item_code) {
 }
 
 // ============================================================================
-// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: PREVENT BACKDATED SALES FOR SPECIFIC DATE RANGES
+// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: PARTIAL DATE RANGE SUPPORT
 // ============================================================================
+
+/**
+ * NEW: Check if sales exist for an item on specific dates within a date range
+ * Returns array of dates where sales already exist for this item
+ */
+function getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
+    // Query to get specific dates where sales exist for this item
+    $query = "SELECT DISTINCT sh.BILL_DATE
+              FROM tblsaleheader sh
+              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
+                AND sh.COMP_ID = sd.COMP_ID
+              WHERE sd.ITEM_CODE = ? 
+              AND sh.BILL_DATE BETWEEN ? AND ?
+              AND sh.COMP_ID = ?
+              ORDER BY sh.BILL_DATE";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("sssi", $item_code, $start_date, $end_date, $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $existing_dates = [];
+    while ($row = $result->fetch_assoc()) {
+        $existing_dates[] = $row['BILL_DATE'];
+    }
+    $stmt->close();
+    
+    logMessage("Existing sale dates for item $item_code from $start_date to $end_date: " . implode(', ', $existing_dates), 'INFO');
+    
+    return $existing_dates;
+}
+
+/**
+ * NEW: Check if sales exist for multiple items and return dates
+ * Returns array with item_code => [existing_dates, is_partial]
+ */
+function checkItemsExistingSaleDates($conn, $items_with_dates, $comp_id) {
+    if (empty($items_with_dates)) return [];
+    
+    $items_data = [];
+    
+    foreach ($items_with_dates as $item_code => $date_range) {
+        $start_date = $date_range['start_date'];
+        $end_date = $date_range['end_date'];
+        
+        // Check for each item individually
+        $existing_dates = getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
+        
+        if (!empty($existing_dates)) {
+            $items_data[$item_code] = [
+                'existing_dates' => $existing_dates,
+                'is_partial' => (count($existing_dates) < countDateRange($start_date, $end_date)),
+                'start_date' => $start_date,
+                'end_date' => $end_date,
+                'message' => 'Sales exist on: ' . implode(', ', $existing_dates)
+            ];
+        }
+    }
+    
+    return $items_data;
+}
+
+// Helper function to count days in date range
+function countDateRange($start_date, $end_date) {
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day');
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $count = 0;
+    foreach ($date_range as $date) {
+        $count++;
+    }
+    return $count;
+}
+
+/**
+ * NEW: Get available dates for distribution (exclude existing sale dates)
+ */
+function getAvailableDatesForDistribution($start_date, $end_date, $existing_dates = []) {
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day');
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $available_dates = [];
+    foreach ($date_range as $date) {
+        $date_str = $date->format("Y-m-d");
+        if (!in_array($date_str, $existing_dates)) {
+            $available_dates[] = $date_str;
+        }
+    }
+    
+    logMessage("Available dates for distribution from $start_date to $end_date: " . 
+               implode(', ', $available_dates) . " (Excluded: " . implode(', ', $existing_dates) . ")", 'INFO');
+    
+    return $available_dates;
+}
 
 /**
  * Check if a sale already exists for an item within or after the given date range
@@ -682,22 +782,62 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// CHANGED: Renamed function to avoid conflict with volume_limit_utils.php
-function distributeSalesUniformly($total_qty, $days_count) {
-    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
+// NEW: Enhanced function to distribute sales uniformly with partial date support
+function distributeSalesUniformlyWithPartialDates($total_qty, $date_array, $existing_dates = []) {
+    if ($total_qty <= 0 || empty($date_array)) return array_fill(0, count($date_array), 0);
     
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
+    // Get available dates (exclude existing sale dates)
+    $available_dates = [];
+    $date_index_map = [];
+    $available_count = 0;
     
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
+    foreach ($date_array as $index => $date) {
+        if (!in_array($date, $existing_dates)) {
+            $available_dates[] = $date;
+            $date_index_map[$available_count] = $index;
+            $available_count++;
+        }
     }
     
-    // Shuffle the distribution to make it look more natural
-    shuffle($daily_sales);
+    // If no available dates, return zeros
+    if ($available_count === 0) {
+        return array_fill(0, count($date_array), 0);
+    }
+    
+    // Distribute among available dates
+    $base_qty = floor($total_qty / $available_count);
+    $remainder = $total_qty % $available_count;
+    
+    // Initialize result array with zeros for all dates
+    $daily_sales = array_fill(0, count($date_array), 0);
+    
+    // Distribute base quantity to available dates
+    for ($i = 0; $i < $available_count; $i++) {
+        $original_index = $date_index_map[$i];
+        $daily_sales[$original_index] = $base_qty;
+    }
+    
+    // Distribute remainder evenly across available dates
+    for ($i = 0; $i < $remainder; $i++) {
+        $original_index = $date_index_map[$i % $available_count];
+        $daily_sales[$original_index]++;
+    }
+    
+    // Shuffle the distribution among available dates only
+    if ($available_count > 1) {
+        $available_values = [];
+        foreach ($date_index_map as $map_index => $original_index) {
+            $available_values[] = $daily_sales[$original_index];
+        }
+        
+        shuffle($available_values);
+        
+        foreach ($date_index_map as $map_index => $original_index) {
+            $daily_sales[$original_index] = $available_values[$map_index];
+        }
+    }
+    
+    logMessage("Distributed $total_qty across " . $available_count . " available dates (Excluded: " . count($existing_dates) . " dates)", 'INFO');
     
     return $daily_sales;
 }
@@ -1458,7 +1598,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // NEW: Enhanced backdated sales check with specific dates for each item
+            // NEW: Check for existing sales dates for partial date distribution
             if (isset($_SESSION['sale_quantities']) && !empty($_SESSION['sale_quantities'])) {
                 $items_with_dates = [];
                 
@@ -1473,6 +1613,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if (!empty($items_with_dates)) {
+                    // Get existing sale dates for each item
+                    $items_existing_dates = checkItemsExistingSaleDates($conn, $items_with_dates, $comp_id);
+                    
+                    // Check for backdated restrictions (complete date range blockage)
                     $restricted_items = checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id);
                     
                     if (!empty($restricted_items)) {
@@ -1598,16 +1742,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
-                                // Generate distribution using the renamed function
-                                $daily_sales = distributeSalesUniformly($total_qty, $days_count);
+                                // Get existing sale dates for this item (if any)
+                                $existing_dates = [];
+                                if (isset($items_existing_dates[$item_code])) {
+                                    $existing_dates = $items_existing_dates[$item_code]['existing_dates'];
+                                    logMessage("Item $item_code has existing sales on dates: " . implode(', ', $existing_dates), 'INFO');
+                                }
+                                
+                                // Generate distribution with partial date support
+                                $daily_sales = distributeSalesUniformlyWithPartialDates($total_qty, $date_array, $existing_dates);
                                 $daily_sales_data[$item_code] = $daily_sales;
                                 
-                                // Store item data
+                                // Store item data with existing dates info
                                 $items_data[$item_code] = [
                                     'name' => $item['DETAILS'],
                                     'rate' => $item['RPRICE'],
                                     'total_qty' => $total_qty,
-                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode
+                                    'mode' => $item['LIQ_FLAG'], // Use item's actual mode
+                                    'existing_dates' => $existing_dates // Add existing dates for reference
                                 ];
                             }
                         }
@@ -1615,8 +1767,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
-                        // FIXED: Use volume_limit_utils.php function for bill generation
-                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                        // NEW: Modified bill generation function to handle partial dates
+                        $bills = generateBillsWithPartialDates($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
                         
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
@@ -1767,6 +1919,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Re-enable database constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
     $conn->query("SET UNIQUE_CHECKS = 1");
+}
+
+// NEW: Function to generate bills with partial date support
+function generateBillsWithPartialDates($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
+    logMessage("Generating bills with partial date support for " . count($items_data) . " items", 'INFO');
+    
+    $bills = [];
+    $bill_items_by_date = [];
+    
+    // Group items by date
+    foreach ($date_array as $date_index => $date) {
+        $bill_items_by_date[$date] = [];
+        
+        foreach ($items_data as $item_code => $item_data) {
+            if (isset($daily_sales_data[$item_code][$date_index]) && $daily_sales_data[$item_code][$date_index] > 0) {
+                $qty = $daily_sales_data[$item_code][$date_index];
+                $amount = $qty * $item_data['rate'];
+                
+                $bill_items_by_date[$date][] = [
+                    'code' => $item_code,
+                    'name' => $item_data['name'],
+                    'qty' => $qty,
+                    'rate' => $item_data['rate'],
+                    'amount' => $amount,
+                    'mode' => $item_data['mode']
+                ];
+            }
+        }
+    }
+    
+    // Create bills for each date that has items
+    foreach ($bill_items_by_date as $date => $items) {
+        if (count($items) > 0) {
+            $total_amount = 0;
+            foreach ($items as $item) {
+                $total_amount += $item['amount'];
+            }
+            
+            // Determine the mode for this bill (use the mode of the first item)
+            $bill_mode = count($items) > 0 ? $items[0]['mode'] : $mode;
+            
+            $bills[] = [
+                'bill_date' => $date,
+                'items' => $items,
+                'total_amount' => $total_amount,
+                'mode' => $bill_mode,
+                'comp_id' => $comp_id,
+                'user_id' => $user_id
+            ];
+            
+            logMessage("Created bill for $date with " . count($items) . " items, total amount: $total_amount", 'INFO');
+        }
+    }
+    
+    logMessage("Generated " . count($bills) . " bills with partial date distribution", 'INFO');
+    return $bills;
 }
 
 render_page:
@@ -2132,6 +2340,36 @@ tr.backdated-restriction .qty-input {
     color: #6c757d;
 }
 
+/* Partial date info styles */
+.partial-date-info {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.partial-date-warning {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.date-excluded {
+    text-decoration: line-through;
+    color: #dc3545;
+    opacity: 0.7;
+}
+
+.date-available {
+    color: #28a745;
+    font-weight: bold;
+}
+
   </style>
 </head>
 <body>
@@ -2371,13 +2609,28 @@ tr.backdated-restriction .qty-input {
         $latest_sale = $backdated_check['latest_sale'] ?? null;
         $sale_count = $backdated_check['sale_count'] ?? 0;
         
+        // NEW: Check for existing sale dates for partial distribution
+        $existing_dates = getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
+        $has_existing_dates = !empty($existing_dates);
+        $available_dates_count = $days_count - count($existing_dates);
+        
         $backdated_class = $has_backdated_restriction ? 'backdated-restriction' : '';
         $backdated_title = $has_backdated_restriction ? 
             "Sales exist from $earliest_sale to $latest_sale (Total: $sale_count sales)" : '';
+        
+        // NEW: Create partial date info
+        $partial_date_info = '';
+        if ($has_existing_dates && !$has_backdated_restriction) {
+            $partial_date_info = "<div class='partial-date-info'>";
+            $partial_date_info .= "<i class='fas fa-calendar-check'></i> Sales exist on " . count($existing_dates) . " dates<br>";
+            $partial_date_info .= "<small>Will distribute across $available_dates_count available dates</small>";
+            $partial_date_info .= "</div>";
+        }
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
     data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
+    data-existing-dates="<?= htmlspecialchars(json_encode($existing_dates)) ?>"
     class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?>">
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
@@ -2406,8 +2659,12 @@ tr.backdated-restriction .qty-input {
            data-code="<?= htmlspecialchars($item_code); ?>"
            data-stock="<?= $item['CURRENT_STOCK'] ?>"
            data-size="<?= $size ?>"
+           data-existing-dates="<?= htmlspecialchars(json_encode($existing_dates)) ?>"
            oninput="validateQuantity(this)"
            <?= $has_backdated_restriction ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
+    <?php if ($partial_date_info): ?>
+        <?= $partial_date_info ?>
+    <?php endif; ?>
 </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_closing) ?></span>
@@ -2942,25 +3199,69 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// FIXED: Function to distribute sales uniformly (client-side version) - renamed to avoid conflict
-function distributeSalesUniformly(total_qty, days_count) {
-    if (total_qty <= 0 || days_count <= 0) return new Array(days_count).fill(0);
+// NEW: Function to distribute sales uniformly with partial date support (client-side version)
+function distributeSalesUniformlyWithPartialDates(total_qty, date_array, existing_dates = []) {
+    if (total_qty <= 0 || date_array.length === 0) return new Array(date_array.length).fill(0);
     
-    const base_qty = Math.floor(total_qty / days_count);
-    const remainder = total_qty % days_count;
+    // Get available dates (exclude existing sale dates)
+    const available_dates = [];
+    const date_index_map = [];
+    let available_count = 0;
     
-    const daily_sales = new Array(days_count).fill(base_qty);
+    date_array.forEach((date, index) => {
+        if (!existing_dates.includes(date)) {
+            available_dates.push(date);
+            date_index_map[available_count] = index;
+            available_count++;
+        }
+    });
     
-    // Distribute remainder evenly across days
+    // If no available dates, return zeros
+    if (available_count === 0) {
+        return new Array(date_array.length).fill(0);
+    }
+    
+    // Distribute among available dates
+    const base_qty = Math.floor(total_qty / available_count);
+    const remainder = total_qty % available_count;
+    
+    // Initialize result array with zeros for all dates
+    const daily_sales = new Array(date_array.length).fill(0);
+    
+    // Distribute base quantity to available dates
+    for (let i = 0; i < available_count; i++) {
+        const original_index = date_index_map[i];
+        daily_sales[original_index] = base_qty;
+    }
+    
+    // Distribute remainder evenly across available dates
     for (let i = 0; i < remainder; i++) {
-        daily_sales[i]++;
+        const original_index = date_index_map[i % available_count];
+        daily_sales[original_index]++;
     }
     
-    // Shuffle the distribution to make it look more natural
-    for (let i = daily_sales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [daily_sales[i], daily_sales[j]] = [daily_sales[j], daily_sales[i]];
+    // Shuffle the distribution among available dates only
+    if (available_count > 1) {
+        const available_values = [];
+        for (let i = 0; i < available_count; i++) {
+            const original_index = date_index_map[i];
+            available_values.push(daily_sales[original_index]);
+        }
+        
+        // Shuffle the values
+        for (let i = available_values.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [available_values[i], available_values[j]] = [available_values[j], available_values[i]];
+        }
+        
+        // Put shuffled values back
+        for (let i = 0; i < available_count; i++) {
+            const original_index = date_index_map[i];
+            daily_sales[original_index] = available_values[i];
+        }
     }
+    
+    console.log(`Distributed ${total_qty} across ${available_count} available dates (Excluded: ${existing_dates.length} dates)`);
     
     return daily_sales;
 }
@@ -2973,7 +3274,21 @@ function updateDistributionPreview(itemCode, totalQty) {
         return;
     }
     
-    const dailySales = distributeSalesUniformly(totalQty, daysCount);
+    // Get existing dates for this item
+    const existingDates = [];
+    const existingDatesData = $(`input[name="sale_qty[${itemCode}]"]`).data('existing-dates');
+    if (existingDatesData) {
+        try {
+            const parsedDates = JSON.parse(existingDatesData);
+            if (Array.isArray(parsedDates)) {
+                existingDates.push(...parsedDates);
+            }
+        } catch (e) {
+            console.error('Error parsing existing dates:', e);
+        }
+    }
+    
+    const dailySales = distributeSalesUniformlyWithPartialDates(totalQty, dateArray, existingDates);
     const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
     const itemRow = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
     
@@ -2984,8 +3299,17 @@ function updateDistributionPreview(itemCode, totalQty) {
     let totalDistributed = 0;
     dailySales.forEach((qty, index) => {
         totalDistributed += qty;
+        const date = dateArray[index];
+        const isExcluded = existingDates.includes(date);
+        
+        // Create cell with appropriate styling
+        const cell = $(`<td class="date-distribution-cell ${isExcluded ? 'date-excluded' : 'date-available'}">${qty}</td>`);
+        if (isExcluded) {
+            cell.attr('title', 'Sales already exist on this date');
+        }
+        
         // Insert distribution cells after the action column
-        $(`<td class="date-distribution-cell">${qty}</td>`).insertAfter(itemRow.find('.action-column'));
+        cell.insertAfter(itemRow.find('.action-column'));
     });
     
     // Update closing balance

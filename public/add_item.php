@@ -94,32 +94,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // For SUB_CLASS, use the first character of subclass or a default
         $subClassField = !empty($details2) ? substr($details2, 0, 1) : 'O';
 
-        // Insert into tblitemmaster
-        $sql = "INSERT INTO tblitemmaster 
-            (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, BARCODE, LIQ_FLAG) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        if (!$stmt) {
-            $error = "Prepare failed: " . $conn->error;
-        } else {
+        // Start transaction
+        $conn->begin_transaction();
+        
+        try {
+            // Insert into tblitemmaster
+            $sql = "INSERT INTO tblitemmaster 
+                (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, BARCODE, LIQ_FLAG) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
             $stmt->bind_param(
                 "sssssssddddss",
                 $code, $Print_Name, $details, $details2, $class, $subClassField, $item_group,
                 $pprice, $bprice, $mprice, $RPRICE, $BARCODE, $liq_flag
             );
 
-            if ($stmt->execute()) {
-                // Update stock information (same function as in item_master.php)
-                updateItemStock($conn, $company_id, $code, $liq_flag, $opening_balance);
-                
-                $success = "Item added successfully!";
-                // Reset form
-                $code = $Print_Name = $details = $details2 = $BARCODE = '';
-                $pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
-            } else {
-                $error = "Error: " . $stmt->error;
+            if (!$stmt->execute()) {
+                throw new Exception("Error inserting into tblitemmaster: " . $stmt->error);
             }
             $stmt->close();
+            
+            // Update stock information for all tables
+            updateItemStockAllTables($conn, $company_id, $code, $liq_flag, $opening_balance);
+            
+            // Commit transaction
+            $conn->commit();
+            
+            $success = "Item added successfully!";
+            // Reset form
+            $code = $Print_Name = $details = $details2 = $BARCODE = '';
+            $pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
+            
+        } catch (Exception $e) {
+            // Rollback transaction on error
+            $conn->rollback();
+            $error = "Error: " . $e->getMessage();
         }
     }
 }
@@ -234,9 +247,11 @@ function detectClassFromItemName($itemName) {
     return 'O';
 }
 
-// Function to update item stock information (same as in item_master.php)
-function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
-    // Update tblitem_stock
+// Function to update item stock information for all tables
+function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
+    $current_year = date('Y');
+    
+    // 1. Update tblitem_stock
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_stock_query);
     $check_stmt->bind_param("s", $item_code);
@@ -250,26 +265,26 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
     
     if ($stock_exists) {
         // Update existing stock record
-        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
+        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ?, FIN_YEAR = ? WHERE ITEM_CODE = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
+        $update_stmt->bind_param("iiis", $opening_balance, $opening_balance, $current_year, $item_code);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
         // Insert new stock record
-        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
+        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_col, $current_col) VALUES (?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
+        $insert_stmt->bind_param("siii", $item_code, $current_year, $opening_balance, $opening_balance);
         $insert_stmt->execute();
         $insert_stmt->close();
     }
     
-    // Update daily stock for today
+    // 2. Update current month's daily stock table (tbldailystock_$comp_id)
     $today = date('d');
     $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     $current_month = date('Y-m');
     
-    // Check if daily stock record exists
+    // Check if current month daily stock record exists
     $check_daily_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
                          WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
     $check_daily_stmt = $conn->prepare($check_daily_query);
@@ -300,6 +315,48 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $insert_daily_stmt->execute();
         $insert_daily_stmt->close();
     }
+    
+    // 3. Update monthly table (tbldailystock_{comp_id}_{mm_yy})
+    $month_short = date('m_y'); // Format: 01_26 for January 2026
+    $monthly_table_name = "tbldailystock_{$comp_id}_{$month_short}";
+    
+    // Check if monthly table exists
+    $check_table_query = "SHOW TABLES LIKE '$monthly_table_name'";
+    $table_result = $conn->query($check_table_query);
+    
+    if ($table_result->num_rows > 0) {
+        // Monthly table exists, update it
+        $check_monthly_query = "SELECT COUNT(*) as count FROM $monthly_table_name 
+                               WHERE ITEM_CODE = ? AND LIQ_FLAG = ?";
+        $check_monthly_stmt = $conn->prepare($check_monthly_query);
+        $check_monthly_stmt->bind_param("ss", $item_code, $liqFlag);
+        $check_monthly_stmt->execute();
+        $monthly_result = $check_monthly_stmt->get_result();
+        $monthly_exists = $monthly_result->fetch_assoc()['count'] > 0;
+        $check_monthly_stmt->close();
+        
+        if ($monthly_exists) {
+            // Update existing monthly record
+            $update_monthly_query = "UPDATE $monthly_table_name 
+                                    SET DAY_{$today_padded}_OPEN = ?, 
+                                        DAY_{$today_padded}_CLOSING = ?,
+                                        LAST_UPDATED = CURRENT_TIMESTAMP 
+                                    WHERE ITEM_CODE = ? AND LIQ_FLAG = ?";
+            $update_monthly_stmt = $conn->prepare($update_monthly_query);
+            $update_monthly_stmt->bind_param("iiss", $opening_balance, $opening_balance, $item_code, $liqFlag);
+            $update_monthly_stmt->execute();
+            $update_monthly_stmt->close();
+        } else {
+            // Insert new monthly record
+            $insert_monthly_query = "INSERT INTO $monthly_table_name 
+                                    (ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
+                                    VALUES (?, ?, ?, ?)";
+            $insert_monthly_stmt = $conn->prepare($insert_monthly_query);
+            $insert_monthly_stmt->bind_param("ssii", $item_code, $liqFlag, $opening_balance, $opening_balance);
+            $insert_monthly_stmt->execute();
+            $insert_monthly_stmt->close();
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -312,9 +369,8 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="css/navbar.css?v=<?= time() ?>">
-      <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-  <style>
+    <!-- Include shortcuts functionality -->
+    <script src="components/shortcuts.js?v=<?= time() ?>"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -349,6 +405,26 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
             border-radius: 5px;
             margin-bottom: 15px;
             border-left: 4px solid #ffc107;
+        }
+        .custom-dropdown {
+            position: relative;
+        }
+        .custom-dropdown select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 30px;
+        }
+        .custom-dropdown:after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -436,11 +512,21 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                            placeholder="Class will appear here">
                 </div>
 
-                <!-- Additional Details (Subclass) -->
+                <!-- Additional Details (Subclass) - Changed to Dropdown -->
                 <div class="col-md-3">
                     <label for="details2" class="form-label">Subclass/Description</label>
-                    <input type="text" id="details2" name="details2" class="form-control"
-                           value="<?= htmlspecialchars($details2) ?>">
+                    <div class="custom-dropdown">
+                        <select id="details2" name="details2" class="form-select">
+                            <option value="">-- Select Subclass --</option>
+                            <?php foreach ($subclasses as $subclass): ?>
+                                <option value="<?= htmlspecialchars($subclass['subclass_name']) ?>" 
+                                    <?= $details2 === $subclass['subclass_name'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($subclass['subclass_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <small class="text-muted">Select from predefined subclasses</small>
                 </div>
 
                 <!-- Barcode -->

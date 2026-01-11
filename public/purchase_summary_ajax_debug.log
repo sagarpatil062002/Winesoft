@@ -72485,3 +72485,778 @@ Stack trace:
         }
     }
 }
+[09-Jan-2026 14:17:01 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[09-Jan-2026 14:17:01 Europe/Berlin] Processed 0 items into 0 TP numbers
+[09-Jan-2026 14:17:01 Europe/Berlin] Unique TP Numbers found: 
+[09-Jan-2026 14:17:01 Europe/Berlin] Final Summary Structure: []
+[09-Jan-2026 14:17:09 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Grand Master\'s Cranberry Platinum Vodka ., Code: SCMPL0033617, Class: 'K', Details: 'Grand Master\'s Cranberry Platinum Vodka .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: K
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 3935, Category SPIRITS, Size 180 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Grand Master\'s Mango Platinum Vodka ., Code: SCMPL0033620, Class: 'K', Details: 'Grand Master\'s Mango Platinum Vodka .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: K
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 3935, Category SPIRITS, Size 180 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Seagram\'s Royal Stag Deluxe Whisky ., Code: SCMPL0010087, Class: 'W', Details: 'Seagram\'s Royal Stag Deluxe Whisky .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4395, Category SPIRITS, Size 180 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Seagram\'s Imperial Blue Superior Grain Whisky ., Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4595, Category SPIRITS, Size 180 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Seagram\'s Blenders Pride Ultra Premium Whisky ., Code: SCMPL0010702, Class: 'W', Details: 'Seagram\'s Blenders Pride Ultra Premium Whisky .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4595, Category SPIRITS, Size 180 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Kingfisher Premium Lager Beer ., Code: SCMBR0018149, Class: 'M', Details: 'Kingfisher Premium Lager Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: MILD BEER, Volume: 650, Column: 650 ML, Qty: 12, Class: M
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4797, Category MILD BEER, Size 650 ML: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Kingfisher Strong Premium Beer ., Code: SCMBR0009846, Class: 'F', Details: 'Kingfisher Strong Premium Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 36
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 36, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4797, Category FERMENTED BEER, Size 650 ML: 36
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Kingfisher Strong Premium Beer ., Code: SCMBR0009847, Class: 'F', Details: 'Kingfisher Strong Premium Beer .', Details2: '330 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 24, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4797, Category FERMENTED BEER, Size 330 ML: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: London Pilsner Premium Strong Beer ., Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 12, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 4797, Category FERMENTED BEER, Size 650 ML: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum ., Code: SCMPL0041325, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum .', Details2: '90 ML-(96)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: R
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 10070, Category SPIRITS, Size 90 ML: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum ., Code: SCMPL0041326, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum .', Details2: '180 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: R
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 10070, Category SPIRITS, Size 180 ML: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY ., Code: SCMPL0036599, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 12, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category SPIRITS, Size 180 ML: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Budweiser Magnum Super Premium Beer ., Code: SCMBR0027089, Class: 'F', Details: 'Budweiser Magnum Super Premium Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 120
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category FERMENTED BEER, Size 650 ML: 120
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: BUDWEISER MAGNUM UNIVERSAL KING OF BEERS ., Code: SCMKB0031388, Class: 'F', Details: 'BUDWEISER MAGNUM UNIVERSAL KING OF BEERS .', Details2: '330 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 72
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 72, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category FERMENTED BEER, Size 330 ML: 72
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Budweiser Premium King of Beer ., Code: SCMBR0018132, Class: 'M', Details: 'Budweiser Premium King of Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 60
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: MILD BEER, Volume: 650, Column: 650 ML, Qty: 60, Class: M
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category MILD BEER, Size 650 ML: 60
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY ., Code: SCMPL0036598, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 12, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category SPIRITS, Size 180 ML: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: BREEZER Tangy CRANBERRY FLAVOUR ., Code: SCMPL0031817, Class: 'D', Details: 'BREEZER Tangy CRANBERRY FLAVOUR .', Details2: '275 ML(24)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 24, Class: D
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category SPIRITS, Size 275 ML: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Budweiser Premium King of Beer ., Code: SCMBR0009735, Class: 'M', Details: 'Budweiser Premium King of Beer .', Details2: '330 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: MILD BEER, Volume: 330, Column: 330 ML, Qty: 24, Class: M
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 12687, Category MILD BEER, Size 330 ML: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Johnnie Walker Blonde Blended Scotch Whisky ., Code: SCMLS0042805, Class: 'W', Details: 'Johnnie Walker Blonde Blended Scotch Whisky .', Details2: '200 ML (24)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 1
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 200, Column: 200 ML, Qty: 1, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 17007, Category SPIRITS, Size 200 ML: 1
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Smirnoff Minty Jamum Triple Distilled Flavoured Vo, Code: SCMKS0039633, Class: 'K', Details: 'Smirnoff Minty Jamum Triple Distilled Flavoured Vo', Details2: '180 ML (Pet)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 3
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 3, Class: K
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 17007, Category SPIRITS, Size 180 ML: 3
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Carlsberg Elephant Strong Super Premium Beer ., Code: SCMBR0018160, Class: 'F', Details: 'Carlsberg Elephant Strong Super Premium Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 12, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24022, Category FERMENTED BEER, Size 650 ML: 12
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Tuborg Strong Premium Beer ., Code: SCMBR0018161, Class: 'F', Details: 'Tuborg Strong Premium Beer .', Details2: '330 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 24, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24022, Category FERMENTED BEER, Size 330 ML: 24
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Tuborg Strong Premium Beer ., Code: SCMBR0018164, Class: 'F', Details: 'Tuborg Strong Premium Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 48, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24022, Category FERMENTED BEER, Size 650 ML: 48
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Tuborg Strong Premium Beer ., Code: SCMBR0018164, Class: 'F', Details: 'Tuborg Strong Premium Beer .', Details2: '650 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 180
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 180, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24666, Category FERMENTED BEER, Size 650 ML: 180
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Royal Challenge Finest Premium Whisky ., Code: SCMPL0036328, Class: 'W', Details: 'Royal Challenge Finest Premium Whisky .', Details2: '90 ML(100)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 100
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24666, Category SPIRITS, Size 90 ML: 100
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Royal Challenge Classic Premium Whisky ., Code: SCMPL0042623, Class: 'W', Details: 'Royal Challenge Classic Premium Whisky .', Details2: '180 ML (Pet)'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: W
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24666, Category SPIRITS, Size 180 ML: 96
+[09-Jan-2026 14:17:10 Europe/Berlin] Item: Tuborg Strong Premium Beer ., Code: SCMBR0018161, Class: 'F', Details: 'Tuborg Strong Premium Beer .', Details2: '330 ML'
+[09-Jan-2026 14:17:10 Europe/Berlin] Using TotBott column: 120
+[09-Jan-2026 14:17:10 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 120, Class: F
+[09-Jan-2026 14:17:10 Europe/Berlin] Added to TP 24666, Category FERMENTED BEER, Size 330 ML: 120
+[09-Jan-2026 14:17:10 Europe/Berlin] Processed 27 items into 9 TP numbers
+[09-Jan-2026 14:17:10 Europe/Berlin] Unique TP Numbers found: 3935, 4395, 4595, 4797, 10070, 12687, 17007, 24022, 24666
+[09-Jan-2026 14:17:10 Europe/Berlin] Final Summary Structure: {
+    "3935": {
+        "tp_no": "3935",
+        "tp_details": {
+            "purchase_date": "2025-11-12",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 96,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4395": {
+        "tp_no": "4395",
+        "tp_details": {
+            "purchase_date": "2025-11-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 48,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4595": {
+        "tp_no": "4595",
+        "tp_details": {
+            "purchase_date": "2025-11-23",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 96,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4797": {
+        "tp_no": "4797",
+        "tp_details": {
+            "purchase_date": "2025-11-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 48,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 24,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 12,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "10070": {
+        "tp_no": "10070",
+        "tp_details": {
+            "purchase_date": "2025-11-19",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 96,
+                "170 ML": 0,
+                "90 ML": 96,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12687": {
+        "tp_no": "12687",
+        "tp_details": {
+            "purchase_date": "2025-11-28",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 24,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 24,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 120,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 72,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 60,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 24,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "17007": {
+        "tp_no": "17007",
+        "tp_details": {
+            "purchase_date": "2025-11-18",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 1,
+                "180 ML": 3,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "24022": {
+        "tp_no": "24022",
+        "tp_details": {
+            "purchase_date": "2025-11-18",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 60,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 24,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "24666": {
+        "tp_no": "24666",
+        "tp_details": {
+            "purchase_date": "2025-11-23",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 96,
+                "170 ML": 0,
+                "90 ML": 100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 180,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 120,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}

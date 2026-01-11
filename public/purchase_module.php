@@ -33,6 +33,8 @@ if (!$conn) {
 
 // Handle success message
 $success = isset($_GET['success']) ? $_GET['success'] : 0;
+$import_success = isset($_GET['import_success']) ? $_GET['import_success'] : 0;
+$import_error = isset($_GET['import_error']) ? $_GET['import_error'] : '';
 
 // Build query with filters
 $whereConditions = ["p.CompID = ?"];
@@ -494,6 +496,19 @@ function getSortLink($column, $label) {
     z-index: 2;
     box-shadow: 2px 0 4px rgba(0,0,0,0.1);
   }
+  
+  /* Import modal styles */
+  .import-template-info {
+    font-size: 12px;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+  }
+  
+  .import-template-info ul {
+    margin-bottom: 0;
+  }
 </style>
 </head>
 <body>
@@ -511,6 +526,9 @@ function getSortLink($column, $label) {
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
             <i class="fas fa-chart-bar me-2"></i> Purchase Summary
           </button>
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
+            <i class="fas fa-file-import me-2"></i> Import from Excel/CSV
+          </button>
           <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="btn btn-primary">
             <i class="fa-solid fa-plus me-2"></i> New Purchase
           </a>
@@ -520,6 +538,20 @@ function getSortLink($column, $label) {
       <?php if ($success): ?>
         <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
           <i class="fa-solid fa-circle-check me-2"></i> Purchase saved successfully!
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($import_success): ?>
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+          <i class="fa-solid fa-file-csv me-2"></i> Purchase data imported successfully from CSV!
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php endif; ?>
+
+      <?php if ($import_error): ?>
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+          <i class="fa-solid fa-exclamation-triangle me-2"></i> Import error: <?= htmlspecialchars($import_error) ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
@@ -636,6 +668,9 @@ function getSortLink($column, $label) {
         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
           <i class="fas fa-chart-bar me-2"></i> Purchase Summary
         </button>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
+          <i class="fas fa-file-import me-2"></i> Import from CSV
+        </button>
         <div class="ms-auto d-flex gap-2">
           <a href="dashboard.php" class="btn btn-secondary">
             <i class="fas fa-sign-out-alt me-2"></i> Exit
@@ -706,6 +741,84 @@ function getSortLink($column, $label) {
                     <i class="fas fa-print"></i> Print
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Purchase Modal -->
+<div class="modal fade" id="importPurchaseModal" tabindex="-1" aria-labelledby="importPurchaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importPurchaseModalLabel">Import Purchases from CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="import_purchase.php" enctype="multipart/form-data" id="importForm">
+                <div class="modal-body">
+                    <div class="import-template-info">
+                        <strong><i class="fas fa-info-circle me-2"></i>CSV File Format Requirements:</strong>
+                        <ul class="mt-2">
+                            <li>File format: .csv (Comma Separated Values)</li>
+                            <li>Required columns: Date, TP No., Supplier, Item Code, Item Name, Size, Cases, Bottles, Free Cases, Free Bottles, Case Rate, MRP</li>
+                            <li>Date format: YYYY-MM-DD (e.g., 2025-12-07)</li>
+                            <li>Make sure item codes match your database (with or without SCM prefix)</li>
+                            <li>First row should contain column headers</li>
+                            <li>Save your Excel file as CSV: File → Save As → CSV (Comma delimited)</li>
+                        </ul>
+                        <p class="mt-2 mb-0">
+                            <a href="generate_template.php" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-download me-1"></i> Download CSV Template
+                            </a>
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">Select CSV File</label>
+                        <input type="file" name="excel_file" id="excelFile" class="form-control" accept=".csv" required>
+                        <div class="form-text">Allowed file type: .csv (Max 10MB). Please use CSV format for reliable import.</div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Purchase Mode</label>
+                            <select name="import_mode" class="form-select" required>
+                                <option value="F">Foreign (F)</option>
+                                <option value="C">Country (C)</option>
+                                <option value="ALL" selected>All</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Status</label>
+                            <select name="default_status" class="form-select" required>
+                                <option value="T" selected>Temporary (T)</option>
+                                <option value="F">Final (F)</option>
+                                <option value="C">Completed (C)</option>
+                                <option value="P">Partial (P)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="update_mrp" id="updateMRP" checked>
+                        <label class="form-check-label" for="updateMRP">
+                            Update MRP prices in item master
+                        </label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="update_stock" id="updateStock" checked>
+                        <label class="form-check-label" for="updateStock">
+                            Update stock levels
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="importSubmit">
+                        <i class="fas fa-upload me-2"></i> Import CSV Data
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -1283,17 +1396,80 @@ function printPurchaseSummary() {
     printWindow.document.close();
 }
 
-// Initialize modal
-$('#purchaseSummaryModal').on('show.bs.modal', function() {
-    if (!$('#purchaseFromDate').val()) {
-        $('#purchaseFromDate').val('<?= date('Y-m-01') ?>');
-    }
-    if (!$('#purchaseToDate').val()) {
-        $('#purchaseToDate').val('<?= date('Y-m-d') ?>');
-    }
+// File upload functionality
+$(document).ready(function() {
+    const fileInput = $('#excelFile');
+    const importForm = $('#importForm');
+    const importSubmit = $('#importSubmit');
     
-    // Load initial summary
-    loadPurchaseSummary();
+    // File selected - show validation
+    fileInput.on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+            
+            // Check file size (10MB max)
+            if (fileSize > 10) {
+                alert('File size exceeds 10MB limit. Please select a smaller file.');
+                $(this).val(''); // Clear file input
+                return;
+            }
+            
+            // Check file extension - ONLY CSV
+            const fileName = file.name.toLowerCase();
+            if (!fileName.match(/\.csv$/)) {
+                alert('Please select only CSV files (.csv). Save your Excel file as CSV format first.');
+                $(this).val(''); // Clear file input
+                return;
+            }
+            
+            console.log('File selected:', file.name, 'Size:', fileSize + 'MB');
+        }
+    });
+    
+    // Form submission
+    importForm.on('submit', function(e) {
+        const file = fileInput[0].files[0];
+        if (!file) {
+            e.preventDefault();
+            alert('Please select a CSV file to upload');
+            fileInput.focus();
+            return;
+        }
+        
+        // Show loading
+        importSubmit.html('<i class="fas fa-spinner fa-spin me-2"></i> Importing...').prop('disabled', true);
+        
+        // You can also validate file size here again
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        if (fileSize > 10) {
+            e.preventDefault();
+            alert('File size exceeds 10MB limit. Please select a smaller file.');
+            importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
+            fileInput.val('');
+            return;
+        }
+    });
+    
+    // Reset button state when modal is hidden
+    $('#importPurchaseModal').on('hidden.bs.modal', function() {
+        importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
+        // Clear file input
+        fileInput.val('');
+    });
+    
+    // Initialize modal
+    $('#purchaseSummaryModal').on('show.bs.modal', function() {
+        if (!$('#purchaseFromDate').val()) {
+            $('#purchaseFromDate').val('<?= date('Y-m-01') ?>');
+        }
+        if (!$('#purchaseToDate').val()) {
+            $('#purchaseToDate').val('<?= date('Y-m-d') ?>');
+        }
+        
+        // Load initial summary
+        loadPurchaseSummary();
+    });
 });
 
 // Add hover effects to table headers

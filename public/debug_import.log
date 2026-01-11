@@ -1,0 +1,481 @@
+[2026-01-10 12:42:47] === IMPORT PURCHASE STARTED ===
+[2026-01-10 12:42:47] Company ID from session: 1
+[2026-01-10 12:42:47] Database connection included
+[2026-01-10 12:42:47] License functions included
+[2026-01-10 12:42:47] License type: FL-II
+[2026-01-10 12:42:47] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "15",
+        "SGROUP": "I",
+        "DESC": "Imported",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "16",
+        "SGROUP": "Q",
+        "DESC": "Wine Imp",
+        "LIQ_FLAG": "F"
+    }
+]
+[2026-01-10 12:42:47] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M",
+    "I",
+    "Q"
+]
+[2026-01-10 12:42:47] === FORM SUBMISSION STARTED ===
+[2026-01-10 12:42:47] Import settings: {
+    "mode": "ALL",
+    "default_status": "T",
+    "update_mrp": true,
+    "update_stock": true
+}
+[2026-01-10 12:42:47] Processing CSV file: C:\xampp\tmp\php23FE.tmp
+[2026-01-10 12:42:47] CSV Headers normalized: [
+    "licensee_diamond_wine_shop_3",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+]
+[2026-01-10 12:42:47] Row 2 raw data: {
+    "licensee_diamond_wine_shop_3": "TP Details",
+    "": ""
+}
+[2026-01-10 12:42:47] Row 3 raw data: {
+    "licensee_diamond_wine_shop_3": "Received Date",
+    "": "Driver City"
+}
+[2026-01-10 12:42:47] Row 4 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 5 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 6 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 7 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 8 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 9 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 10 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 11 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 12 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 13 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 14 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 15 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 16 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 17 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 18 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 19 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 20 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 21 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 22 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 23 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 24 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 25 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 26 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 27 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 28 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SANGLI"
+}
+[2026-01-10 12:42:47] Row 29 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 30 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 31 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 32 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 33 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 34 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 35 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 36 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 37 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 38 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 39 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 40 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 41 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 42 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 43 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 44 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SATARA"
+}
+[2026-01-10 12:42:47] Row 45 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 46 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 47 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 48 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 49 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 50 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 51 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 52 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 53 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 54 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 55 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 56 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 57 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 58 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 59 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 60 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 61 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 62 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 63 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 64 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 65 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 66 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 67 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 68 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 69 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 70 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 71 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 72 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 73 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 74 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 75 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "SOLAPUR"
+}
+[2026-01-10 12:42:47] Row 76 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": ""
+}
+[2026-01-10 12:42:47] Row 77 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": ""
+}
+[2026-01-10 12:42:47] Row 78 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "KOLHAPUR"
+}
+[2026-01-10 12:42:47] Row 79 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "KOLHAPUR"
+}
+[2026-01-10 12:42:47] Row 80 raw data: {
+    "licensee_diamond_wine_shop_3": "30-Nov-25",
+    "": "KOLHAPUR"
+}
+[2026-01-10 12:42:47] Found TP groups: {
+    "count": 0,
+    "tps": []
+}
+[2026-01-10 12:42:47] Processing TP groups: {
+    "total_tps": 0
+}

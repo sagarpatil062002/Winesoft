@@ -544,9 +544,12 @@ if (isset($_SESSION['error'])) {
 let selectedBills = new Set();
 let currentBillToDelete = '';
 let deleteDate = '';
+let isProcessing = false;
 
-// Update selected count display
+// Optimized: Batch DOM updates
 function updateSelectedCount() {
+    if (isProcessing) return;
+    
     const count = selectedBills.size;
     const countText = $('#countText');
     const deleteSelectedBtn = $('#deleteSelectedBtn');
@@ -562,11 +565,14 @@ function updateSelectedCount() {
     }
 }
 
-// Handle individual bill checkbox
+// Optimized: Event delegation for better performance
 $(document).on('change', '.bill-checkbox', function() {
-    const billNo = $(this).val();
+    if (isProcessing) return;
     
-    if ($(this).is(':checked')) {
+    const billNo = $(this).val();
+    const $this = $(this);
+    
+    if ($this.is(':checked')) {
         selectedBills.add(billNo);
     } else {
         selectedBills.delete(billNo);
@@ -579,8 +585,11 @@ $(document).on('change', '.bill-checkbox', function() {
 
 // Select all bills (global checkbox)
 $('#selectAllBills').on('change', function() {
+    if (isProcessing) return;
+    
     const isChecked = $(this).is(':checked');
     $('.bill-checkbox').prop('checked', isChecked);
+    $('#selectAllTable').prop('checked', isChecked);
     
     if (isChecked) {
         $('.bill-checkbox').each(function() {
@@ -595,6 +604,8 @@ $('#selectAllBills').on('change', function() {
 
 // Select all bills (table header checkbox)
 $('#selectAllTable').on('change', function() {
+    if (isProcessing) return;
+    
     const isChecked = $(this).is(':checked');
     $('.bill-checkbox').prop('checked', isChecked);
     $('#selectAllBills').prop('checked', isChecked);
@@ -612,7 +623,7 @@ $('#selectAllTable').on('change', function() {
 
 // Delete selected bills
 $('#deleteSelectedBtn').on('click', function() {
-    if (selectedBills.size === 0) return;
+    if (selectedBills.size === 0 || isProcessing) return;
     
     // Build bills list for display
     let billsList = '<div class="list-group">';
@@ -626,46 +637,68 @@ $('#deleteSelectedBtn').on('click', function() {
     $('#deleteModal').modal('show');
 });
 
+// Optimized: Single API call for all operations
+function performDeleteOperation(formData, successMessage) {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    $('#loadingModal').modal('show');
+    
+    // Optimize: Set timeout for quicker response
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 second timeout
+    });
+    
+    const deletePromise = fetch('delete_bill.php', {
+        method: 'POST',
+        body: formData
+    }).then(response => response.json());
+    
+    Promise.race([deletePromise, timeoutPromise])
+        .then(data => {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            
+            if (data.success) {
+                showAlert('success', data.message || successMessage);
+                selectedBills.clear();
+                updateSelectedCount();
+                
+                // Optimized: Slight delay before reload to show success message
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', data.message || 'Error deleting bills. Please try again.');
+            }
+        })
+        .catch(error => {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            console.error('Error:', error);
+            showAlert('danger', 'Network error: ' + error.message);
+        });
+}
+
 // Confirm delete selected bills
 $('#confirmDeleteBtn').on('click', function() {
+    if (selectedBills.size === 0 || isProcessing) return;
+    
     $('#deleteModal').modal('hide');
-    $('#loadingModal').modal('show');
-    $('#loadingMessage').text('Deleting selected bills and renumbering...');
     
     const formData = new FormData();
     const billsArray = Array.from(selectedBills);
     formData.append('bill_nos', JSON.stringify(billsArray));
     formData.append('bulk_delete', 'true');
+    formData.append('optimized', 'true'); // Add flag for optimized processing
     
-    fetch('delete_bill.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        $('#loadingModal').modal('hide');
-        
-        if (data.success) {
-            showAlert('success', data.message || `${selectedBills.size} bill(s) deleted successfully!`);
-            selectedBills.clear();
-            updateSelectedCount();
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            showAlert('danger', data.message || 'Error deleting bills. Please try again.');
-        }
-    })
-    .catch(error => {
-        $('#loadingModal').modal('hide');
-        console.error('Error:', error);
-        showAlert('danger', 'Network error: ' + error.message);
-    });
+    performDeleteOperation(formData, `${selectedBills.size} bill(s) deleted successfully!`);
 });
 
 // Single bill delete
 $(document).on('click', '.delete-single-btn', function() {
+    if (isProcessing) return;
+    
     currentBillToDelete = $(this).data('billno');
     
     // Build bills list for display
@@ -678,8 +711,25 @@ $(document).on('click', '.delete-single-btn', function() {
     $('#deleteModal').modal('show');
 });
 
+// Handle confirm delete for single bill
+$(document).on('click', '#confirmDeleteBtn', function() {
+    // If it's a single bill delete
+    if (currentBillToDelete && selectedBills.size === 0) {
+        $('#deleteModal').modal('hide');
+        
+        const formData = new FormData();
+        formData.append('bill_no', currentBillToDelete);
+        formData.append('optimized', 'true'); // Add flag for optimized processing
+        
+        performDeleteOperation(formData, `Bill ${currentBillToDelete} deleted successfully!`);
+        currentBillToDelete = '';
+    }
+});
+
 // Delete all bills for date
 $('#deleteByDateBtn').on('click', function() {
+    if (isProcessing) return;
+    
     deleteDate = $('input[name="delete_date"]').val();
     
     if (!deleteDate) {
@@ -699,51 +749,17 @@ $('#deleteByDateBtn').on('click', function() {
 
 // Confirm delete all bills for date
 $('#confirmDeleteDateBtn').on('click', function() {
+    if (isProcessing) return;
+    
     $('#deleteDateModal').modal('hide');
-    $('#loadingModal').modal('show');
-    $('#loadingMessage').text(`Deleting all bills for ${deleteDate} and renumbering...`);
     
     const formData = new FormData();
     formData.append('delete_date', deleteDate);
     formData.append('delete_by_date', 'true');
+    formData.append('optimized', 'true'); // Add flag for optimized processing
     
-    fetch('delete_bill.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        $('#loadingModal').modal('hide');
-        
-        if (data.success) {
-            showAlert('success', data.message || `All bills for ${deleteDate} deleted successfully!`);
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            showAlert('danger', data.message || 'Error deleting bills for date. Please try again.');
-        }
-    })
-    .catch(error => {
-        $('#loadingModal').modal('hide');
-        console.error('Error:', error);
-        showAlert('danger', 'Network error: ' + error.message);
-    });
+    performDeleteOperation(formData, `All bills for ${deleteDate} deleted successfully!`);
 });
-
-// Original single delete function (for backward compatibility)
-function confirmDelete(billNo) {
-    currentBillToDelete = billNo;
-    
-    let billsList = '<div class="list-group">';
-    billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${billNo}</div>`;
-    billsList += '</div>';
-    
-    $('#selectedBillsList').html(billsList);
-    $('#deleteBillCount').text(`bill ${billNo}`);
-    $('#deleteModal').modal('show');
-}
 
 // Show alert function
 function showAlert(type, message) {
