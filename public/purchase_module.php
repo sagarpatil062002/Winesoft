@@ -36,6 +36,15 @@ $success = isset($_GET['success']) ? $_GET['success'] : 0;
 $import_success = isset($_GET['import_success']) ? $_GET['import_success'] : 0;
 $import_error = isset($_GET['import_error']) ? $_GET['import_error'] : '';
 
+// Handle delete success/error messages
+if (isset($_GET['delete_success'])) {
+    $delete_success = urldecode($_GET['delete_success']);
+}
+
+if (isset($_GET['delete_error'])) {
+    $delete_error = urldecode($_GET['delete_error']);
+}
+
 // Build query with filters
 $whereConditions = ["p.CompID = ?"];
 $params = [$companyId];
@@ -297,7 +306,7 @@ function getSortLink($column, $label) {
     background-color: #e3f2fd;
   }
   
-  /* Modal adjustments */
+  /* Modal adjustments for purchase summary - FIXED SCROLLING */
   #purchaseSummaryModal .modal-dialog {
     max-width: 98vw;
     margin: 5px auto;
@@ -309,26 +318,80 @@ function getSortLink($column, $label) {
     overflow: hidden;
   }
   
+  #purchaseSummaryModal .modal-header {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 1050;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
   #purchaseSummaryModal .modal-body {
     padding: 10px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: calc(95vh - 120px);
   }
   
-  /* Make the summary table container horizontally scrollable */
+  /* Make the summary table container BOTH horizontally and vertically scrollable */
   #purchaseSummaryModal .table-responsive {
-    max-height: 70vh;
-    overflow-y: auto;
-    overflow-x: auto;
+    flex: 1;
+    overflow: auto;
     border: 1px solid #dee2e6;
+    border-radius: 4px;
+    position: relative;
+  }
+  
+  /* Double scrollbar - vertical on right, horizontal on bottom */
+  #purchaseSummaryModal .table-responsive::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  #purchaseSummaryModal .table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
     border-radius: 4px;
   }
   
+  #purchaseSummaryModal .table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  #purchaseSummaryModal .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  /* Horizontal scroll indicator */
+  .scroll-hint {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    z-index: 1000;
+    animation: fadeInOut 3s infinite;
+  }
+  
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+  
+  /* Summary table header styles */
   .summary-header-group th {
     background-color: #e9ecef !important;
     font-weight: bold;
     border-bottom: 2px solid #adb5bd;
     color: #212529;
     font-size: 9px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
   }
   
   .summary-size-header th {
@@ -336,6 +399,9 @@ function getSortLink($column, $label) {
     border-top: 1px solid #dee2e6;
     font-weight: 600;
     font-size: 8px;
+    position: sticky;
+    top: 24px; /* Height of first header row */
+    z-index: 2;
   }
   
   .table-success {
@@ -493,7 +559,7 @@ function getSortLink($column, $label) {
     position: sticky;
     left: 0;
     background-color: white;
-    z-index: 2;
+    z-index: 4; /* Higher than other sticky elements */
     box-shadow: 2px 0 4px rgba(0,0,0,0.1);
   }
   
@@ -509,6 +575,36 @@ function getSortLink($column, $label) {
   .import-template-info ul {
     margin-bottom: 0;
   }
+  
+  /* Bulk delete selection styles */
+  .selection-count {
+    background-color: #28a745;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+  }
+  
+  .select-checkbox {
+    width: 50px;
+    text-align: center;
+  }
+  
+  /* Alert styles */
+  .alert {
+    margin-bottom: 15px;
+  }
+  
+  /* Modal footer sticky */
+  #purchaseSummaryModal .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: white;
+    border-top: 1px solid #dee2e6;
+    z-index: 1050;
+  }
 </style>
 </head>
 <body>
@@ -520,21 +616,7 @@ function getSortLink($column, $label) {
     <div class="content-area">
       <h3 class="mb-4">Purchase Records Management</h3>
 
-      <!-- Import/Export Buttons like opening_balance.php -->
-      <div class="import-export-buttons">
-        <div class="btn-group">
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
-            <i class="fas fa-chart-bar me-2"></i> Purchase Summary
-          </button>
-          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
-            <i class="fas fa-file-import me-2"></i> Import from Excel/CSV
-          </button>
-          <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="btn btn-primary">
-            <i class="fa-solid fa-plus me-2"></i> New Purchase
-          </a>
-        </div>
-      </div>
-
+      <!-- Success/Error Messages -->
       <?php if ($success): ?>
         <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
           <i class="fa-solid fa-circle-check me-2"></i> Purchase saved successfully!
@@ -556,7 +638,39 @@ function getSortLink($column, $label) {
         </div>
       <?php endif; ?>
 
-      <!-- Filter Section like opening_balance.php -->
+      <?php if (isset($delete_success)): ?>
+        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+          <i class="fa-solid fa-trash-check me-2"></i> <?= htmlspecialchars($delete_success) ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php endif; ?>
+
+      <?php if (isset($delete_error)): ?>
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+          <i class="fa-solid fa-trash-xmark me-2"></i> <?= htmlspecialchars($delete_error) ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php endif; ?>
+
+      <!-- Import/Export Buttons -->
+      <div class="import-export-buttons">
+        <div class="btn-group">
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
+            <i class="fas fa-chart-bar me-2"></i> Purchase Summary
+          </button>
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
+            <i class="fas fa-file-import me-2"></i> Import from Excel/CSV
+          </button>
+          <button type="button" class="btn btn-danger" id="bulkDeleteBtn" disabled>
+            <i class="fa-solid fa-trash me-2"></i> Delete Selected
+          </button>
+          <a href="purchases.php?mode=<?=$mode === 'ALL' ? 'F' : $mode?>" class="btn btn-primary">
+            <i class="fa-solid fa-plus me-2"></i> New Purchase
+          </a>
+        </div>
+      </div>
+
+      <!-- Filter Section -->
       <form method="GET" class="search-control mb-3">
         <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
         <input type="hidden" name="sort" value="<?= htmlspecialchars($sortColumn); ?>">
@@ -596,6 +710,11 @@ function getSortLink($column, $label) {
         <table class="table table-striped table-bordered table-hover styled-table">
           <thead class="sticky-header">
             <tr>
+              <th class="select-checkbox">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="selectAllPurchases">
+                </div>
+              </th>
               <th class="col-voucher"><?=getSortLink('p.VOC_NO', 'Voucher No.')?></th>
               <th class="col-date"><?=getSortLink('p.DATE', 'Date')?></th>
               <th class="col-tp"><?=getSortLink('TP_NO', 'TP No.')?></th>
@@ -628,7 +747,13 @@ function getSortLink($column, $label) {
                     $statusClass = 'status-completed';
                 }
               ?>
-                <tr>
+                <tr data-id="<?= htmlspecialchars($purchase['ID']) ?>">
+                  <td class="select-checkbox">
+                    <div class="form-check">
+                      <input class="form-check-input purchase-checkbox" type="checkbox" 
+                             value="<?= htmlspecialchars($purchase['ID']) ?>">
+                    </div>
+                  </td>
                   <td class="col-voucher"><?=htmlspecialchars($purchase['VOC_NO'])?></td>
                   <td class="col-date"><?=htmlspecialchars($purchase['DATE'])?></td>
                   <td class="col-tp"><?=htmlspecialchars($purchase['TP_NO'])?></td>
@@ -645,9 +770,11 @@ function getSortLink($column, $label) {
                          class="btn btn-sm btn-warning" title="Edit">
                         <i class="fa-solid fa-edit"></i>
                       </a>
-                      <button class="btn btn-sm btn-danger" 
+                      <button class="btn btn-sm btn-danger delete-single-btn" 
                               title="Delete" 
-                              onclick="confirmDelete(<?=htmlspecialchars($purchase['ID'])?>, '<?=htmlspecialchars($mode)?>', '<?=htmlspecialchars($purchase['DATE'])?>', '<?=htmlspecialchars($purchase['TP_NO'])?>')">
+                              data-id="<?= htmlspecialchars($purchase['ID']) ?>"
+                              data-date="<?= htmlspecialchars($purchase['DATE']) ?>"
+                              data-tpno="<?= htmlspecialchars($purchase['TP_NO']) ?>">
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
@@ -656,20 +783,23 @@ function getSortLink($column, $label) {
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
-                <td colspan="9" class="text-center">No purchases found for the selected filters.</td>
+                <td colspan="10" class="text-center">No purchases found for the selected filters.</td>
               </tr>
             <?php endif; ?>
           </tbody>
         </table>
       </div>
 
-      <!-- Action buttons at bottom like opening_balance.php -->
+      <!-- Action buttons at bottom -->
       <div class="action-btn mt-3 d-flex gap-2">
         <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#purchaseSummaryModal">
           <i class="fas fa-chart-bar me-2"></i> Purchase Summary
         </button>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
           <i class="fas fa-file-import me-2"></i> Import from CSV
+        </button>
+        <button type="button" class="btn btn-danger" id="bulkDeleteBottomBtn" disabled>
+          <i class="fa-solid fa-trash me-2"></i> Delete Selected
         </button>
         <div class="ms-auto d-flex gap-2">
           <a href="dashboard.php" class="btn btn-secondary">
@@ -687,7 +817,7 @@ function getSortLink($column, $label) {
   </div>
 </div>
 
-<!-- Purchase Summary Modal -->
+<!-- Purchase Summary Modal with Improved Scrolling -->
 <div class="modal fade" id="purchaseSummaryModal" tabindex="-1" aria-labelledby="purchaseSummaryModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -698,26 +828,37 @@ function getSortLink($column, $label) {
             <div class="modal-body">
                 <!-- Summary filters -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">From Date</label>
                         <input type="date" id="purchaseFromDate" class="form-control" value="<?= date('Y-m-01') ?>">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">To Date</label>
                         <input type="date" id="purchaseToDate" class="form-control" value="<?= date('Y-m-d') ?>">
                     </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-12">
+                    <div class="col-md-4 d-flex align-items-end">
                         <button type="button" class="btn btn-primary w-100" onclick="loadPurchaseSummary()">
-                            <i class="fas fa-refresh"></i> Update Summary
+                            <i class="fas fa-refresh me-2"></i> Update Summary
                         </button>
                     </div>
                 </div>
                 
-                <div class="table-responsive">
+                <!-- Scroll hint -->
+                <div class="alert alert-info py-2 mb-2">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Use scrollbars below to view all TP numbers and sizes. TP column stays fixed while scrolling.
+                </div>
+                
+                <!-- Scrollable table container -->
+                <div class="table-responsive" id="summaryTableContainer">
+                    <div class="scroll-hint" id="horizontalHint" style="display: none;">
+                        <i class="fas fa-arrows-left-right me-1"></i> Scroll horizontally
+                    </div>
+                    <div class="scroll-hint" id="verticalHint" style="display: none; bottom: 20px;">
+                        <i class="fas fa-arrows-up-down me-1"></i> Scroll vertically
+                    </div>
                     <table class="table table-bordered table-sm table-striped" id="purchaseSummaryTable">
-                        <thead class="table-light sticky-top">
+                        <thead class="table-light">
                             <tr id="sizeHeaders">
                                 <!-- Headers will be dynamically generated -->
                             </tr>
@@ -736,10 +877,22 @@ function getSortLink($column, $label) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="printPurchaseSummary()">
-                    <i class="fas fa-print"></i> Print
-                </button>
+                <div class="d-flex justify-content-between w-100">
+                    <div>
+                        <span class="text-muted small" id="summaryStats">
+                            <i class="fas fa-chart-bar me-1"></i>
+                            <span id="tpCount">0</span> TP(s) loaded
+                        </span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i> Close
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="printPurchaseSummary()">
+                            <i class="fas fa-print me-2"></i> Print
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -848,36 +1001,67 @@ function getSortLink($column, $label) {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <a href="#" id="deleteConfirm" class="btn btn-danger">Yes, Delete</a>
+        <button type="button" class="btn btn-danger" id="deleteConfirmBtn">
+          <i class="fas fa-trash me-2"></i> Yes, Delete
+        </button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Bulk Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deletePurchaseCount">0</strong> selected purchase(s)?</p>
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-exclamation-triangle me-2"></i>
+                    <strong>This action will:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Reduce item stock levels</li>
+                        <li>Update DAY_XX_PURCHASE columns in daily stock tables</li>
+                        <li>Recalculate closing stock for affected dates</li>
+                        <li>Delete purchase records permanently</li>
+                    </ul>
+                </div>
+                <p class="text-danger">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Warning:</strong> This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmBulkDelete">
+                    <i class="fa-solid fa-trash me-2"></i> Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h6>Processing Deletion...</h6>
+                <p class="text-muted small mb-0">Please wait while we update stock records</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Delete Confirmation Function with enhanced parameters
-function confirmDelete(purchaseId, mode, purchaseDate, tpNo) {
-  // Set the delete URL with all necessary parameters
-  const deleteUrl = `purchase_delete.php?id=${purchaseId}&mode=${mode}&purchase_date=${purchaseDate}&tp_no=${encodeURIComponent(tpNo)}`;
-  $('#deleteConfirm').attr('href', deleteUrl);
-  $('#deleteStartDate').text(purchaseDate);
-  $('#deleteModal').modal('show');
-}
-
-// Apply filters with date range validation
-$('form').on('submit', function(e) {
-  const fromDate = $('input[name="from_date"]').val();
-  const toDate = $('input[name="to_date"]').val();
-  
-  if (fromDate && toDate && fromDate > toDate) {
-    e.preventDefault();
-    alert('From date cannot be greater than To date');
-    return false;
-  }
-});
-
 // Categories based on CLASS field mapping
 const categories = [
     { 
@@ -926,6 +1110,158 @@ const categories = [
     }
 ];
 
+// Bulk deletion functionality
+let selectedPurchases = new Set();
+let currentPurchaseId = null;
+
+// Function to update selected count
+function updateSelectedPurchaseCount() {
+    const count = selectedPurchases.size;
+    const deleteBtn = $('#bulkDeleteBtn');
+    const deleteBottomBtn = $('#bulkDeleteBottomBtn');
+    
+    if (count > 0) {
+        deleteBtn.prop('disabled', false);
+        deleteBtn.html(`<i class="fa-solid fa-trash me-2"></i> Delete Selected (${count})`);
+        deleteBottomBtn.prop('disabled', false);
+        deleteBottomBtn.html(`<i class="fa-solid fa-trash me-2"></i> Delete Selected (${count})`);
+    } else {
+        deleteBtn.prop('disabled', true);
+        deleteBtn.html('<i class="fa-solid fa-trash me-2"></i> Delete Selected');
+        deleteBottomBtn.prop('disabled', true);
+        deleteBottomBtn.html('<i class="fa-solid fa-trash me-2"></i> Delete Selected');
+    }
+}
+
+// Select all purchases
+$('#selectAllPurchases').on('change', function() {
+    const isChecked = $(this).is(':checked');
+    $('.purchase-checkbox').prop('checked', isChecked);
+    
+    if (isChecked) {
+        $('.purchase-checkbox').each(function() {
+            selectedPurchases.add($(this).val());
+        });
+    } else {
+        selectedPurchases.clear();
+    }
+    
+    updateSelectedPurchaseCount();
+});
+
+// Individual checkbox selection
+$(document).on('change', '.purchase-checkbox', function() {
+    const purchaseId = $(this).val();
+    
+    if ($(this).is(':checked')) {
+        selectedPurchases.add(purchaseId);
+    } else {
+        selectedPurchases.delete(purchaseId);
+        $('#selectAllPurchases').prop('checked', false);
+    }
+    
+    updateSelectedPurchaseCount();
+});
+
+// Bulk delete button click
+$('#bulkDeleteBtn, #bulkDeleteBottomBtn').on('click', function() {
+    if (selectedPurchases.size === 0) return;
+    
+    // Show confirmation modal
+    $('#deletePurchaseCount').text(selectedPurchases.size);
+    $('#bulkDeleteModal').modal('show');
+});
+
+// Single delete button click
+$(document).on('click', '.delete-single-btn', function() {
+    currentPurchaseId = $(this).data('id');
+    const purchaseDate = $(this).data('date');
+    $('#deleteStartDate').text(purchaseDate);
+    $('#deleteModal').modal('show');
+});
+
+// Confirm bulk delete
+$('#confirmBulkDelete').on('click', function() {
+    if (selectedPurchases.size === 0) return;
+    
+    const purchaseIds = Array.from(selectedPurchases);
+    const mode = '<?= $mode ?>';
+    
+    $('#bulkDeleteModal').modal('hide');
+    $('#loadingModal').modal('show');
+    
+    // Send AJAX request
+    $.ajax({
+        url: 'purchase_delete.php',
+        type: 'POST',
+        data: {
+            bulk_delete: true,
+            purchase_ids: JSON.stringify(purchaseIds),
+            mode: mode
+        },
+        success: function(response) {
+            $('#loadingModal').modal('hide');
+            
+            if (response.success) {
+                showAlert('success', response.message);
+                selectedPurchases.clear();
+                updateSelectedPurchaseCount();
+                
+                // Reload page after delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingModal').modal('hide');
+            showAlert('danger', 'Error deleting purchases: ' + error);
+        }
+    });
+});
+
+// Confirm single delete
+$('#deleteConfirmBtn').on('click', function() {
+    if (!currentPurchaseId) return;
+    
+    const mode = '<?= $mode ?>';
+    
+    $('#deleteModal').modal('hide');
+    $('#loadingModal').modal('show');
+    
+    $.ajax({
+        url: 'purchase_delete.php',
+        type: 'POST',
+        data: {
+            purchase_id: currentPurchaseId,
+            mode: mode
+        },
+        success: function(response) {
+            $('#loadingModal').modal('hide');
+            
+            if (response.success) {
+                showAlert('success', response.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingModal').modal('hide');
+            showAlert('danger', 'Error deleting purchase: ' + error);
+        }
+    });
+});
+
+// Reset currentPurchaseId when modal is closed
+$('#deleteModal').on('hidden.bs.modal', function() {
+    currentPurchaseId = null;
+});
+
 // Function to load purchase summary via AJAX
 function loadPurchaseSummary() {
     const fromDate = $('#purchaseFromDate').val();
@@ -944,9 +1280,13 @@ function loadPurchaseSummary() {
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-2">Loading purchase summary data...</p>
+                <small class="text-muted">This may take a moment for large date ranges</small>
             </td>
         </tr>
     `);
+    
+    // Show scroll hints
+    $('#horizontalHint, #verticalHint').hide();
     
     $.ajax({
         url: 'purchase_summary_ajax.php',
@@ -1100,12 +1440,15 @@ function updatePurchaseSummaryTable(summaryData) {
                 </td>
             </tr>
         `);
+        $('#tpCount').text('0');
         return;
     }
 
     // Create rows for each TP number
     let serialNumber = 1;
-    Object.keys(summaryData).forEach((tpNo) => {
+    const tpNumbers = Object.keys(summaryData);
+    
+    tpNumbers.forEach((tpNo) => {
         const tpData = summaryData[tpNo];
         const row = $('<tr>');
         
@@ -1169,6 +1512,28 @@ function updatePurchaseSummaryTable(summaryData) {
 
     // Add a total row
     addTotalRow(summaryData, categories);
+    
+    // Update statistics
+    $('#tpCount').text(tpNumbers.length);
+    
+    // Show scroll hints if table is large
+    setTimeout(() => {
+        const tableContainer = $('#summaryTableContainer');
+        const table = $('#purchaseSummaryTable');
+        
+        if (table.width() > tableContainer.width()) {
+            $('#horizontalHint').show();
+        }
+        
+        if (table.height() > tableContainer.height()) {
+            $('#verticalHint').show();
+        }
+        
+        // Auto-hide hints after 5 seconds
+        setTimeout(() => {
+            $('#horizontalHint, #verticalHint').fadeOut();
+        }, 5000);
+    }, 500);
 }
 
 // Function to add total row
@@ -1458,7 +1823,7 @@ $(document).ready(function() {
         fileInput.val('');
     });
     
-    // Initialize modal
+    // Initialize purchase summary modal
     $('#purchaseSummaryModal').on('show.bs.modal', function() {
         if (!$('#purchaseFromDate').val()) {
             $('#purchaseFromDate').val('<?= date('Y-m-01') ?>');
@@ -1469,6 +1834,11 @@ $(document).ready(function() {
         
         // Load initial summary
         loadPurchaseSummary();
+    });
+    
+    // Reset scroll hints when modal is shown
+    $('#purchaseSummaryModal').on('shown.bs.modal', function() {
+        $('#horizontalHint, #verticalHint').hide();
     });
 });
 
@@ -1494,6 +1864,78 @@ setTimeout(() => {
         bsAlert.close();
     });
 }, 5000);
+
+// Apply filters with date range validation
+$('form').on('submit', function(e) {
+    const fromDate = $('input[name="from_date"]').val();
+    const toDate = $('input[name="to_date"]').val();
+    
+    if (fromDate && toDate && fromDate > toDate) {
+        e.preventDefault();
+        showAlert('warning', 'From date cannot be greater than To date');
+        return false;
+    }
+});
+
+// Alert function
+function showAlert(type, message) {
+    $('.alert').alert('close');
+    
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'} me-2"></i> 
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    $('.content-area').prepend(alertHtml);
+}
+
+// Add keyboard navigation for purchase summary table
+$(document).on('keydown', function(e) {
+    // Only handle when purchase summary modal is open
+    if ($('#purchaseSummaryModal').hasClass('show')) {
+        const tableContainer = $('#summaryTableContainer')[0];
+        
+        if (!tableContainer) return;
+        
+        switch(e.key) {
+            case 'ArrowRight':
+                tableContainer.scrollLeft += 50;
+                e.preventDefault();
+                break;
+            case 'ArrowLeft':
+                tableContainer.scrollLeft -= 50;
+                e.preventDefault();
+                break;
+            case 'ArrowDown':
+                tableContainer.scrollTop += 50;
+                e.preventDefault();
+                break;
+            case 'ArrowUp':
+                tableContainer.scrollTop -= 50;
+                e.preventDefault();
+                break;
+            case 'Home':
+                if (e.ctrlKey) {
+                    tableContainer.scrollTop = 0;
+                } else {
+                    tableContainer.scrollLeft = 0;
+                }
+                e.preventDefault();
+                break;
+            case 'End':
+                if (e.ctrlKey) {
+                    tableContainer.scrollTop = tableContainer.scrollHeight;
+                } else {
+                    tableContainer.scrollLeft = tableContainer.scrollWidth;
+                }
+                e.preventDefault();
+                break;
+        }
+    }
+});
 </script>
 </body>
 </html>

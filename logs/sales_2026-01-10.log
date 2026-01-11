@@ -1,0 +1,2711 @@
+[2026-01-10 15:17:36] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:17:36] [INFO] Request method: GET
+[2026-01-10 15:17:36] [INFO] Search term: ''
+[2026-01-10 15:17:36] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:17:36] [INFO] Final session quantities count: 3
+[2026-01-10 15:17:36] [INFO] Items in current view: 50
+[2026-01-10 15:17:36] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 1
+    [total_pages] => 4
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0028276 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0028278 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0028357 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010694 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010696 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0041500 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0041501 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0041503 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009668 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031945 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031946 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0017866 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009678 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMKS0018283 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0030963 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMIT0020167 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010619 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010621 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0024580 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0024581 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0024582 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0024583 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009698 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009700 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009693 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009695 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMLS0018484 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031822 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031818 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031817 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0031819 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0027089 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMKB0031388 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMKB0031389 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMKB0031390 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0009735 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0018132 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0018158 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0018159 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0018160 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMBR0018963 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMIT0019057 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010445 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0035921 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0009770 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0010312 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMLS0027532 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0019014 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0033617 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:36] [INFO] Existing sale dates for item SCMPL0033620 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:36] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:40] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 15:17:40] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 15:17:41] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 15:17:41] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 15:17:43] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 15:17:55] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:17:55] [INFO] Request method: GET
+[2026-01-10 15:17:55] [INFO] Search term: ''
+[2026-01-10 15:17:55] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:17:55] [INFO] Final session quantities count: 4
+[2026-01-10 15:17:55] [INFO] Items in current view: 50
+[2026-01-10 15:17:55] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 2
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:17:55] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:17:55] [INFO] Request method: GET
+[2026-01-10 15:17:55] [INFO] Search term: ''
+[2026-01-10 15:17:55] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:17:55] [INFO] Final session quantities count: 4
+[2026-01-10 15:17:55] [INFO] Items in current view: 50
+[2026-01-10 15:17:55] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 2
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMWN0020367 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMWN0020361 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0023009 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0010034 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0033890 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0034978 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0029952 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLW0019523 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMIT0019512 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0036768 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0037959 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0018798 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMLS0018800 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMIT0019050 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0018149 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0009847 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0018627 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0009846 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0018619 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0018628 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0032649 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMBR0018145 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0038467 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0038461 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0038472 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0030235 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0022641 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0022639 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0022636 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0030234 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMWN0038921 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0036420 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0040014 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0010056 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0010459 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0034638 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0036329 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMKS0038715 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMKS0038713 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMKS0038711 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0039797 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031274 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0036598 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031276 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031275 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031271 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031272 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0031273 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0036599 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:55] [INFO] Existing sale dates for item SCMPL0039947 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:55] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:17:59] [INFO] Request method: GET
+[2026-01-10 15:17:59] [INFO] Search term: ''
+[2026-01-10 15:17:59] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:17:59] [INFO] Final session quantities count: 4
+[2026-01-10 15:17:59] [INFO] Items in current view: 50
+[2026-01-10 15:17:59] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 3
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMKS0023811 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010391 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0041326 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0041325 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010393 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0040931 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0040930 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010434 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0040935 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0009936 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0035367 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0011125 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMKS0018267 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0038688 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0042623 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0036328 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0036711 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0009942 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0033758 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMKS0041508 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMWN0041743 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010089 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010095 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010702 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010088 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010113 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010112 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0010111 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:17:59] [INFO] Existing sale dates for item SCMPL0035192 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:17:59] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0010076 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0010075 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0010087 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0039083 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0029933 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMKS0039633 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0009972 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0009971 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMPL0009977 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMWN0019723 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMWN0019719 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMWN0019704 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMLS0027929 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMLS0018821 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMKS0018253 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMIT0018960 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMLS0040513 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMBR0018167 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMBR0023261 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMBR0018161 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:00] [INFO] Existing sale dates for item SCMBR0018163 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:00] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:04] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:18:04] [INFO] Request method: GET
+[2026-01-10 15:18:04] [INFO] Search term: ''
+[2026-01-10 15:18:04] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:18:04] [INFO] Final session quantities count: 4
+[2026-01-10 15:18:04] [INFO] Items in current view: 3
+[2026-01-10 15:18:04] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 4
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:18:04] [INFO] Existing sale dates for item SCMBR0018164 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:04] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:04] [INFO] Existing sale dates for item SCMPL0010011 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:04] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:04] [INFO] Existing sale dates for item SCMPL0010020 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:04] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:18:08] [INFO] Request method: GET
+[2026-01-10 15:18:08] [INFO] Search term: ''
+[2026-01-10 15:18:08] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:18:08] [INFO] Final session quantities count: 4
+[2026-01-10 15:18:08] [INFO] Items in current view: 50
+[2026-01-10 15:18:08] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 1
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0028276 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0028278 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0028357 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010694 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010696 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0041500 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0041501 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0041503 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009668 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031945 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031946 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0017866 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009678 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMKS0018283 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0030963 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMIT0020167 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010619 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010621 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0024580 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0024581 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0024582 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0024583 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009698 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009700 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009693 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009695 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMLS0018484 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031822 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031818 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031817 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0031819 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0027089 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMKB0031388 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMKB0031389 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMKB0031390 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0009735 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0018132 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0018158 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0018159 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0018160 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMBR0018963 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMIT0019057 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010445 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0035921 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0009770 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0010312 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMLS0027532 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0019014 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0033617 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:08] [INFO] Existing sale dates for item SCMPL0033620 from 2026-01-10 to 2026-01-10: 
+[2026-01-10 15:18:08] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10: 2026-01-10 (Blocked: )
+[2026-01-10 15:18:14] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 15:18:14] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 15:18:16] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 15:18:31] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:18:31] [INFO] Request method: GET
+[2026-01-10 15:18:31] [INFO] Search term: ''
+[2026-01-10 15:18:31] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:18:31] [INFO] Final session quantities count: 4
+[2026-01-10 15:18:31] [INFO] Items in current view: 50
+[2026-01-10 15:18:31] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010694 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010696 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009668 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0031945 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0017866 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009678 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMKS0018283 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMIT0020167 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-04, 2025-11-05 (Blocked: 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010619 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010621 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009698 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009700 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009693 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009695 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0018484 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMKB0031388 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMKB0031389 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMKB0031390 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0009735 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018132 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018158 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018159 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018160 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018963 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMIT0019057 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010445 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0035921 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0009770 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0010312 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0027532 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0019014 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMWN0020367 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMWN0020361 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0023009 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0010034 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0033890 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-04, 2025-11-05 (Blocked: 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMPL0034978 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0029952 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLW0019523 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMIT0019512 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0036768 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0037959 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0018798 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMLS0018800 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMIT0019050 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018149 from 2025-11-01 to 2025-11-05: 
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0009846 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-04, 2025-11-05 (Blocked: 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0009847 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018627 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:31] [INFO] Existing sale dates for item SCMBR0018619 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:18:31] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-04, 2025-11-05 (Blocked: 2025-11-02, 2025-11-03)
+[2026-01-10 15:18:37] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 15:18:37] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 15:18:38] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-10 15:18:38] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-10 15:19:03] [INFO] Session quantity updated: SCMPL0017866 = 0
+[2026-01-10 15:19:03] [INFO] Session quantity updated: SCMPL0017866 = 0
+[2026-01-10 15:19:04] [INFO] Session quantity updated: SCMPL0009678 = 0
+[2026-01-10 15:19:04] [INFO] Session quantity updated: SCMPL0009678 = 0
+[2026-01-10 15:19:08] [INFO] Session quantity updated: SCMPL0009678 = 0
+[2026-01-10 15:56:27] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:56:27] [INFO] Request method: GET
+[2026-01-10 15:56:27] [INFO] Search term: ''
+[2026-01-10 15:56:27] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:56:27] [INFO] Final session quantities count: 4
+[2026-01-10 15:56:27] [INFO] Items in current view: 50
+[2026-01-10 15:56:27] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 153
+    [current_page] => 1
+    [total_pages] => 4
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0028276 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0028278 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0028357 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010694 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010696 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0041500 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0041501 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0041503 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009668 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031945 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031946 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0017866 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009678 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMKS0018283 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0030963 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMIT0020167 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010619 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010621 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0024580 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0024581 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0024582 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0024583 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009698 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009700 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009693 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009695 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMLS0018484 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031822 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031818 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031817 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0031819 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0027089 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMKB0031388 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMKB0031389 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMKB0031390 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0009735 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0018132 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0018158 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0018159 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0018160 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMBR0018963 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMIT0019057 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010445 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0035921 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0009770 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0010312 on or before 2026-01-10: 2025-11-03
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: 2025-11-03): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMLS0027532 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0019014 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0033617 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:27] [INFO] Latest sale date for item SCMPL0033620 on or before 2026-01-10: None
+[2026-01-10 15:56:27] [INFO] Allowed dates for item from 2026-01-10 to 2026-01-10 (latest sale: ): 2026-01-10 (Blocked: )
+[2026-01-10 15:56:45] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:56:45] [INFO] Request method: GET
+[2026-01-10 15:56:45] [INFO] Search term: ''
+[2026-01-10 15:56:45] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:56:45] [INFO] Final session quantities count: 4
+[2026-01-10 15:56:45] [INFO] Items in current view: 50
+[2026-01-10 15:56:45] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010694 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010696 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009668 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0031945 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0017866 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009678 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMKS0018283 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMIT0020167 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010619 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010621 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009698 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009700 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009693 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009695 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0018484 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMKB0031388 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMKB0031389 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMKB0031390 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0009735 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018132 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018158 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018159 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018160 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018963 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMIT0019057 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010445 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0035921 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0009770 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0010312 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0027532 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0019014 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMWN0020367 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMWN0020361 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0023009 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0010034 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0033890 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMPL0034978 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0029952 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLW0019523 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMIT0019512 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0036768 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0037959 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0018798 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMLS0018800 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMIT0019050 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018149 on or before 2025-11-05: None
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: ): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: )
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0009846 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0009847 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018627 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:45] [INFO] Latest sale date for item SCMBR0018619 on or before 2025-11-05: 2025-11-03
+[2026-01-10 15:56:45] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05 (latest sale: 2025-11-03): 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03)
+[2026-01-10 15:56:50] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 15:56:51] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 15:56:51] [INFO] Session quantity updated: SCMPL0010694 = 8
+[2026-01-10 15:56:52] [INFO] Session quantity updated: SCMPL0010694 = 8
+[2026-01-10 15:56:52] [INFO] Session quantity updated: SCMPL0010694 = 8
+[2026-01-10 15:57:03] [INFO] === PAGE ACCESS ===
+[2026-01-10 15:57:03] [INFO] Request method: GET
+[2026-01-10 15:57:03] [INFO] Search term: ''
+[2026-01-10 15:57:03] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 15:57:03] [INFO] Final session quantities count: 4
+[2026-01-10 15:57:03] [INFO] Items in current view: 50
+[2026-01-10 15:57:03] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010694 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0010694 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010696 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009668 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0031945 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0017866 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009678 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0009678 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMKS0018283 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMIT0020167 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMIT0020167 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010619 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010621 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009698 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0009698 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009700 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009693 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009695 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0018484 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMKB0031388 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMKB0031388 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMKB0031389 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMKB0031389 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMKB0031390 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMKB0031390 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0009735 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0009735 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0018132 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0018132 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0018158 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0018158 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0018159 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0018159 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0018160 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0018160 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0018963 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMBR0018963 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMIT0019057 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010445 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0010445 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0035921 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0035921 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0009770 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0009770 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0010312 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0010312 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0027532 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0019014 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMWN0020367 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMWN0020367 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMWN0020361 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMWN0020361 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0023009 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMBR0010034 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0033890 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:03] [INFO] Existing sale dates for item SCMPL0033890 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMPL0034978 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0029952 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLW0019523 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMIT0019512 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0036768 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0037959 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0018798 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMLS0018800 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:03] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:03] [INFO] Latest sale for item SCMIT0019050 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:04] [INFO] Latest sale for item SCMBR0018149 from 2025-11-01 to 2025-11-05: No sales
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (): 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05
+[2026-01-10 15:57:04] [INFO] Latest sale for item SCMBR0009846 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:04] [INFO] Existing sale dates for item SCMBR0009846 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:04] [INFO] Latest sale for item SCMBR0009847 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:04] [INFO] Existing sale dates for item SCMBR0009847 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-03
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:04] [INFO] Latest sale for item SCMBR0018627 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:04] [INFO] Existing sale dates for item SCMBR0018627 from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 15:57:04] [INFO] Latest sale for item SCMBR0018619 from 2025-11-01 to 2025-11-05: 2025-11-03
+[2026-01-10 15:57:04] [INFO] Existing sale dates for item SCMBR0018619 from 2025-11-01 to 2025-11-05: 2025-11-02, 2025-11-03
+[2026-01-10 15:57:04] [INFO] Available dates from latest sale (2025-11-03): 2025-11-04, 2025-11-05
+[2026-01-10 16:45:35] [INFO] === PAGE ACCESS ===
+[2026-01-10 16:45:35] [INFO] Request method: GET
+[2026-01-10 16:45:35] [INFO] Search term: ''
+[2026-01-10 16:45:35] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 16:45:36] [INFO] Final session quantities count: 4
+[2026-01-10 16:45:36] [INFO] Items in current view: 50
+[2026-01-10 16:45:36] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010694 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010696 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009668 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0031945 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0017866 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009678 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMKS0018283 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMIT0020167 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010619 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010621 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009698 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009700 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009693 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009695 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0018484 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMKB0031388 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMKB0031389 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMKB0031390 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0009735 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018132 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018158 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018159 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018160 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018963 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMIT0019057 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010445 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0035921 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0009770 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0010312 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0027532 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0019014 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMWN0020367 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMWN0020361 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0023009 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0010034 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0033890 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMPL0034978 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0029952 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLW0019523 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMIT0019512 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0036768 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0037959 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0018798 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMLS0018800 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMIT0019050 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018149 up to 2025-11-05: None
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-01, 2025-11-02, 2025-11-03, 2025-11-04, 2025-11-05 (Blocked: , Latest sale: )
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0009846 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0009847 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018627 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:45:36] [INFO] Latest sale date for item SCMBR0018619 up to 2025-11-05: 2025-11-03
+[2026-01-10 16:45:36] [INFO] Allowed dates for item from 2025-11-01 to 2025-11-05: 2025-11-04, 2025-11-05 (Blocked: 2025-11-01, 2025-11-02, 2025-11-03, Latest sale: 2025-11-03)
+[2026-01-10 16:47:08] [INFO] === PAGE ACCESS ===
+[2026-01-10 16:47:08] [INFO] Request method: GET
+[2026-01-10 16:47:08] [INFO] Search term: ''
+[2026-01-10 16:47:08] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 16:47:08] [INFO] Final session quantities count: 4
+[2026-01-10 16:47:08] [INFO] Items in current view: 50
+[2026-01-10 16:47:08] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0010694 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0010694 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0009678 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0009678 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMIT0020167 from 2025-11-03 to 2025-11-03 (Count: 1)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMIT0020167 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0009698 from 2025-11-01 to 2025-11-03 (Count: 2)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0009698 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMKB0031388 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMKB0031388 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMKB0031389 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMKB0031389 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMKB0031390 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMKB0031390 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0009735 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0009735 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018132 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018132 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018158 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018158 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018159 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018159 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018160 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018160 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018963 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018963 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0010445 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0010445 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0035921 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0035921 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0009770 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0009770 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0010312 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0010312 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMWN0020367 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMWN0020367 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMWN0020361 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMWN0020361 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMPL0033890 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMPL0033890 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0009846 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0009846 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0009847 from 2025-11-01 to 2025-11-03 (Count: 2)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0009847 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018627 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018627 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 16:47:08] [INFO] Sales exist for item SCMBR0018619 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 16:47:08] [WARNING] Cannot enter sales for item SCMBR0018619 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:23:50] [INFO] === PAGE ACCESS ===
+[2026-01-10 17:23:50] [INFO] Request method: GET
+[2026-01-10 17:23:50] [INFO] Search term: ''
+[2026-01-10 17:23:50] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 17:23:50] [INFO] Final session quantities count: 4
+[2026-01-10 17:23:50] [INFO] Items in current view: 50
+[2026-01-10 17:23:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 17:24:04] [INFO] === PAGE ACCESS ===
+[2026-01-10 17:24:04] [INFO] Request method: GET
+[2026-01-10 17:24:04] [INFO] Search term: ''
+[2026-01-10 17:24:04] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 17:24:04] [INFO] Final session quantities count: 4
+[2026-01-10 17:24:04] [INFO] Items in current view: 50
+[2026-01-10 17:24:04] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 17:24:04] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0009678: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMIT0020167: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0009698: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMKB0031388: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMKB0031389: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMKB0031390: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0009735: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018132: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018158: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018159: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018160: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018963: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0010445: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0035921: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0009770: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0010312: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMWN0020367: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMWN0020361: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMPL0033890: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0009846: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0009847: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018627: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:04] [INFO] Item SCMBR0018619: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:04] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:04] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:09] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 17:24:09] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 17:24:12] [INFO] Session quantity updated: SCMPL0010694 = 8
+[2026-01-10 17:24:12] [INFO] Session quantity updated: SCMPL0010694 = 8
+[2026-01-10 17:24:54] [INFO] === PAGE ACCESS ===
+[2026-01-10 17:24:54] [INFO] Request method: GET
+[2026-01-10 17:24:54] [INFO] Search term: ''
+[2026-01-10 17:24:54] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 17:24:54] [INFO] Final session quantities count: 4
+[2026-01-10 17:24:54] [INFO] Items in current view: 50
+[2026-01-10 17:24:54] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 17:24:54] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0009678: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMIT0020167: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0009698: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMKB0031388: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMKB0031389: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMKB0031390: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0009735: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018132: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018158: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018159: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018160: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018963: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0010445: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0035921: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0009770: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0010312: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMWN0020367: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMWN0020361: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMPL0033890: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0009846: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0009847: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018627: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:24:54] [INFO] Item SCMBR0018619: Latest existing sale: 2025-11-03
+[2026-01-10 17:24:54] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 17:24:54] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 17:28:11] [INFO] === PAGE ACCESS ===
+[2026-01-10 17:28:11] [INFO] Request method: GET
+[2026-01-10 17:28:11] [INFO] Search term: ''
+[2026-01-10 17:28:11] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 17:28:11] [INFO] Final session quantities count: 4
+[2026-01-10 17:28:11] [INFO] Items in current view: 50
+[2026-01-10 17:28:11] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [session_closing_balances_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 17:28:26] [INFO] === PAGE ACCESS ===
+[2026-01-10 17:28:26] [INFO] Request method: GET
+[2026-01-10 17:28:26] [INFO] Search term: ''
+[2026-01-10 17:28:26] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 17:28:26] [INFO] Final session quantities count: 4
+[2026-01-10 17:28:26] [INFO] Items in current view: 50
+[2026-01-10 17:28:26] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [session_closing_balances_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0010694 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0010694 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0009678 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0009678 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMIT0020167 from 2025-11-03 to 2025-11-03 (Count: 1)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMIT0020167 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0009698 from 2025-11-01 to 2025-11-03 (Count: 2)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0009698 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMKB0031388 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMKB0031388 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMKB0031389 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMKB0031389 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMKB0031390 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMKB0031390 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0009735 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0009735 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018132 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018132 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018158 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018158 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018159 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018159 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018160 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018160 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018963 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018963 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0010445 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0010445 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0035921 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0035921 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0009770 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0009770 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0010312 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0010312 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMWN0020367 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMWN0020367 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMWN0020361 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMWN0020361 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMPL0033890 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMPL0033890 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0009846 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0009846 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0009847 from 2025-11-01 to 2025-11-03 (Count: 2)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0009847 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018627 from 2025-11-01 to 2025-11-03 (Count: 3)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018627 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 17:28:26] [INFO] Sales exist for item SCMBR0018619 from 2025-11-02 to 2025-11-03 (Count: 2)
+[2026-01-10 17:28:26] [WARNING] Cannot enter sales for item SCMBR0018619 between 2025-11-01 and 2025-11-05 - sales already exist in this range
+[2026-01-10 18:02:39] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:02:39] [INFO] Request method: GET
+[2026-01-10 18:02:39] [INFO] Search term: ''
+[2026-01-10 18:02:39] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:02:39] [INFO] Final session quantities count: 4
+[2026-01-10 18:02:39] [INFO] Items in current view: 50
+[2026-01-10 18:02:39] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [session_closing_balances_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:03:01] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:03:01] [INFO] Request method: GET
+[2026-01-10 18:03:01] [INFO] Search term: ''
+[2026-01-10 18:03:01] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:03:02] [INFO] Final session quantities count: 4
+[2026-01-10 18:03:02] [INFO] Items in current view: 50
+[2026-01-10 18:03:02] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 4
+    [session_closing_balances_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:03:24] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:03:24] [INFO] Request method: POST
+[2026-01-10 18:03:24] [INFO] Search term: ''
+[2026-01-10 18:03:24] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:03:24] [INFO] Session quantities and closing balances updated from POST: 2 items
+[2026-01-10 18:03:24] [INFO] Getting next bill number for CompID: 1
+[2026-01-10 18:03:24] [INFO] Next bill number for CompID 1: 4
+[2026-01-10 18:03:24] [INFO] Starting optimized cash memo generation for 1 bills
+[2026-01-10 18:03:24] [INFO] Cash memo generated for bill: BL0004
+[2026-01-10 18:03:24] [INFO] Cash memo generation completed: 1 successful, 0 failed
+[2026-01-10 18:03:24] [INFO] Session quantities cleared
+[2026-01-10 18:03:24] [INFO] Session closing balances cleared
+[2026-01-10 18:03:30] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:03:30] [INFO] Request method: GET
+[2026-01-10 18:03:30] [INFO] Search term: ''
+[2026-01-10 18:03:30] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:03:31] [INFO] Final session quantities count: 0
+[2026-01-10 18:03:31] [INFO] Items in current view: 50
+[2026-01-10 18:03:31] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:03:34] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 18:03:34] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-10 18:03:35] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 18:03:36] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 18:03:36] [INFO] Session quantity updated: SCMPL0028276 = 5
+[2026-01-10 18:03:50] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:03:50] [INFO] Request method: GET
+[2026-01-10 18:03:50] [INFO] Search term: ''
+[2026-01-10 18:03:50] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:03:50] [INFO] Final session quantities count: 1
+[2026-01-10 18:03:50] [INFO] Items in current view: 50
+[2026-01-10 18:03:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:03:50] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0009678: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMIT0020167: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0009698: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMKB0031388: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMKB0031389: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMKB0031390: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0009735: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018132: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018158: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018159: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018160: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018963: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0010445: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0035921: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0009770: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0010312: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMWN0020367: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMWN0020361: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMPL0033890: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0009846: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0009847: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018627: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:50] [INFO] Item SCMBR0018619: Latest existing sale: 2025-11-03
+[2026-01-10 18:03:50] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:03:50] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:03:53] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 18:03:53] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 18:03:54] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-10 18:03:54] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-10 18:03:55] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-10 18:16:49] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:16:49] [INFO] Request method: GET
+[2026-01-10 18:16:49] [INFO] Search term: ''
+[2026-01-10 18:16:49] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:16:49] [INFO] Final session quantities count: 2
+[2026-01-10 18:16:49] [INFO] Items in current view: 50
+[2026-01-10 18:16:49] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [session_closing_balances_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:19:32] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:19:32] [INFO] Request method: GET
+[2026-01-10 18:19:32] [INFO] Search term: ''
+[2026-01-10 18:19:32] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:19:32] [INFO] Final session quantities count: 2
+[2026-01-10 18:19:32] [INFO] Items in current view: 50
+[2026-01-10 18:19:32] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [session_closing_balances_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:19:43] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:19:43] [INFO] Request method: GET
+[2026-01-10 18:19:43] [INFO] Search term: ''
+[2026-01-10 18:19:43] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:19:43] [INFO] Final session quantities count: 2
+[2026-01-10 18:19:43] [INFO] Items in current view: 50
+[2026-01-10 18:19:43] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:19:57] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:19:57] [INFO] Request method: GET
+[2026-01-10 18:19:57] [INFO] Search term: ''
+[2026-01-10 18:19:57] [INFO] Current session ID: 8offk27e50964u6eio3sq8mhaa
+[2026-01-10 18:19:58] [INFO] Final session quantities count: 2
+[2026-01-10 18:19:58] [INFO] Items in current view: 50
+[2026-01-10 18:19:58] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:19:58] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0009678: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMIT0020167: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0009698: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMKB0031388: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMKB0031389: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMKB0031390: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0009735: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018132: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018158: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018159: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018160: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018963: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0010445: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0035921: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0009770: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0010312: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMWN0020367: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMWN0020361: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMPL0033890: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0009846: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0009847: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018627: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:19:58] [INFO] Item SCMBR0018619: Latest existing sale: 2025-11-03
+[2026-01-10 18:19:58] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:19:58] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-10 18:20:33] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:20:33] [INFO] Request method: GET
+[2026-01-10 18:20:33] [INFO] Search term: ''
+[2026-01-10 18:20:33] [INFO] Current session ID: dvojc8bt6mba210ha7om3or4t7
+[2026-01-10 18:20:34] [INFO] Final session quantities count: 0
+[2026-01-10 18:20:34] [INFO] Items in current view: 50
+[2026-01-10 18:20:34] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:20:36] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:20:36] [INFO] Request method: GET
+[2026-01-10 18:20:36] [INFO] Search term: 'SCMPL0010694'
+[2026-01-10 18:20:36] [INFO] Current session ID: dvojc8bt6mba210ha7om3or4t7
+[2026-01-10 18:20:37] [INFO] Final session quantities count: 0
+[2026-01-10 18:20:37] [INFO] Items in current view: 1
+[2026-01-10 18:20:37] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 1
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-10 to 2026-01-10
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 10
+    [closing_column] => DAY_10_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:20:40] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-10 18:20:40] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-10 18:20:41] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-10 18:20:42] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-10 18:20:50] [INFO] === PAGE ACCESS ===
+[2026-01-10 18:20:50] [INFO] Request method: GET
+[2026-01-10 18:20:50] [INFO] Search term: 'SCMPL0010694'
+[2026-01-10 18:20:50] [INFO] Current session ID: dvojc8bt6mba210ha7om3or4t7
+[2026-01-10 18:20:51] [INFO] Final session quantities count: 1
+[2026-01-10 18:20:51] [INFO] Items in current view: 1
+[2026-01-10 18:20:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 1
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-10 18:20:51] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-10 18:20:51] [INFO] Available dates: 2025-11-04, 2025-11-05
+[2026-01-10 18:20:51] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03

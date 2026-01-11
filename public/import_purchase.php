@@ -1,5 +1,5 @@
 <?php
-// import_purchase.php - UPDATED WITH EXACT CSV MAPPING
+// import_purchase.php - UPDATED FOR SCM CSV FORMAT WITH FIXES
 session_start();
 
 // Enable debug logging like purchases.php
@@ -61,14 +61,14 @@ if (!empty($available_classes)) {
 }
 debugLog("Allowed class SGROUP values", $allowed_classes);
 
-// Function to clean item code by removing SCM prefix (SAME AS purchases.php)
+// Function to clean item code by removing SCM prefix
 function cleanItemCode($code) {
     $cleaned = preg_replace('/^SCM/i', '', trim($code));
     debugLog("cleanItemCode: '$code' -> '$cleaned'");
     return $cleaned;
 }
 
-// Function to update MRP in tblitemmaster (SAME AS purchases.php)
+// Function to update MRP in tblitemmaster
 function updateItemMRP($conn, $itemCode, $mrp) {
     // Clean the item code by removing SCM prefix
     $cleanCode = cleanItemCode($itemCode);
@@ -98,7 +98,59 @@ function updateItemMRP($conn, $itemCode, $mrp) {
     return $result;
 }
 
-// Function to find supplier by name (SAME AS purchases.php logic)
+// Function to normalize supplier names for better matching
+function normalizeSupplierName($name) {
+    if (empty($name)) return '';
+    
+    // Convert to lowercase
+    $normalized = strtolower(trim($name));
+    
+    // Remove common suffixes and prefixes
+    $removeWords = [
+        'private', 'limited', 'ltd', 'pvt', 'ltd.', 'pvt.', 'llp', 'llp.',
+        'traders', 'trading', 'company', 'co', 'co.', 'corporation', 'corp',
+        'and', '&', 'the', 'ind.', 'industries', 'industry'
+    ];
+    
+    foreach ($removeWords as $word) {
+        $normalized = preg_replace('/\b' . preg_quote($word, '/') . '\b/', '', $normalized);
+    }
+    
+    // Remove extra spaces and punctuation
+    $normalized = preg_replace('/[^a-z0-9]/', ' ', $normalized);
+    $normalized = preg_replace('/\s+/', ' ', $normalized);
+    $normalized = trim($normalized);
+    
+    // Remove numbers at the end (common in supplier names like "ABC 123")
+    $normalized = preg_replace('/\s+\d+$/', '', $normalized);
+    
+    return $normalized;
+}
+
+// Function to calculate similarity between two strings
+function stringSimilarity($str1, $str2) {
+    $str1 = normalizeSupplierName($str1);
+    $str2 = normalizeSupplierName($str2);
+    
+    if (empty($str1) || empty($str2)) return 0;
+    
+    // Exact match after normalization
+    if ($str1 === $str2) return 100;
+    
+    // Calculate Levenshtein distance
+    $len1 = strlen($str1);
+    $len2 = strlen($str2);
+    $maxLen = max($len1, $len2);
+    
+    if ($maxLen == 0) return 0;
+    
+    $distance = levenshtein($str1, $str2);
+    $similarity = (1 - $distance / $maxLen) * 100;
+    
+    return max(0, $similarity);
+}
+
+// Function to find supplier by name with improved matching
 function findBestSupplierMatch($supplierName, $conn) {
     debugLog("Finding supplier match for", $supplierName);
     
@@ -106,42 +158,198 @@ function findBestSupplierMatch($supplierName, $conn) {
         return null;
     }
     
-    // Try exact match first
-    $query = "SELECT CODE, DETAILS FROM tblsupplier WHERE DETAILS = ? LIMIT 1";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $supplierName);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // First, try to get all suppliers for better matching
+    $allSuppliers = [];
+    $query = "SELECT CODE, DETAILS FROM tblsupplier";
+    $result = $conn->query($query);
     
-    if ($result->num_rows > 0) {
-        $supplier = $result->fetch_assoc();
-        $stmt->close();
-        debugLog("Exact match found", $supplier);
-        return $supplier;
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $allSuppliers[] = $row;
+        }
     }
-    $stmt->close();
     
-    // Try LIKE match
-    $query = "SELECT CODE, DETAILS FROM tblsupplier WHERE DETAILS LIKE ? LIMIT 1";
-    $stmt = $conn->prepare($query);
-    $searchTerm = "%" . $supplierName . "%";
-    $stmt->bind_param("s", $searchTerm);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    debugLog("Total suppliers in database", count($allSuppliers));
     
-    if ($result->num_rows > 0) {
-        $supplier = $result->fetch_assoc();
-        $stmt->close();
-        debugLog("Partial match found", $supplier);
-        return $supplier;
+    if (empty($allSuppliers)) {
+        return null;
     }
-    $stmt->close();
     
-    debugLog("No supplier match found");
-    return null;
+    // Try different matching strategies
+    $bestMatch = null;
+    $bestScore = 0;
+    $inputNormalized = normalizeSupplierName($supplierName);
+    
+    foreach ($allSuppliers as $supplier) {
+        $dbName = $supplier['DETAILS'];
+        $dbCode = $supplier['CODE'];
+        $dbNormalized = normalizeSupplierName($dbName);
+        
+        $score = 0;
+        
+        // Strategy 1: Exact match (after normalization)
+        if ($inputNormalized === $dbNormalized) {
+            $score = 100;
+        }
+        // Strategy 2: Contains match (either way)
+        elseif (strpos($inputNormalized, $dbNormalized) !== false || 
+                strpos($dbNormalized, $inputNormalized) !== false) {
+            $score = 85;
+        }
+        // Strategy 3: SCM code match (if supplier name contains SCM code)
+        elseif (strpos($supplierName, $dbCode) !== false) {
+            $score = 80;
+        }
+        // Strategy 4: String similarity
+        else {
+            $similarity = stringSimilarity($supplierName, $dbName);
+            if ($similarity > 70) {
+                $score = $similarity;
+            }
+        }
+        
+        // Strategy 5: Check for common abbreviations
+        if ($score < 70) {
+            $commonAbbreviations = [
+                'traders' => 'tr',
+                'trading' => 'tr',
+                'limited' => 'ltd',
+                'private' => 'pvt',
+                'company' => 'co',
+                'corporation' => 'corp'
+            ];
+            
+            $inputTest = $inputNormalized;
+            $dbTest = $dbNormalized;
+            
+            foreach ($commonAbbreviations as $full => $abbr) {
+                $inputTest = str_replace($full, $abbr, $inputTest);
+                $dbTest = str_replace($full, $abbr, $dbTest);
+            }
+            
+            if ($inputTest === $dbTest) {
+                $score = 75;
+            }
+        }
+        
+        // Strategy 6: Word-by-word matching
+        if ($score < 60) {
+            $inputWords = explode(' ', $inputNormalized);
+            $dbWords = explode(' ', $dbNormalized);
+            
+            $matchingWords = 0;
+            $totalWords = max(count($inputWords), count($dbWords));
+            
+            foreach ($inputWords as $inputWord) {
+                foreach ($dbWords as $dbWord) {
+                    if (strlen($inputWord) > 3 && strlen($dbWord) > 3) {
+                        if (strpos($inputWord, $dbWord) !== false || 
+                            strpos($dbWord, $inputWord) !== false) {
+                            $matchingWords++;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if ($totalWords > 0) {
+                $wordScore = ($matchingWords / $totalWords) * 100;
+                if ($wordScore > 60) {
+                    $score = max($score, $wordScore * 0.8);
+                }
+            }
+        }
+        
+        // Update best match if this supplier has a higher score
+        if ($score > $bestScore) {
+            $bestScore = $score;
+            $bestMatch = $supplier;
+            
+            debugLog("New best match found", [
+                'supplier' => $dbName,
+                'code' => $dbCode,
+                'score' => $score,
+                'input_normalized' => $inputNormalized,
+                'db_normalized' => $dbNormalized
+            ]);
+        }
+    }
+    
+    // If we have a decent match (score > 60), return it
+    if ($bestScore >= 60) {
+        debugLog("Best supplier match selected", [
+            'input' => $supplierName,
+            'matched_name' => $bestMatch['DETAILS'],
+            'matched_code' => $bestMatch['CODE'],
+            'match_score' => $bestScore
+        ]);
+        return $bestMatch;
+    }
+    
+    // Try partial matching in database as fallback
+    if (!$bestMatch || $bestScore < 60) {
+        $searchTerms = [];
+        
+        // Try without common words
+        $cleanName = preg_replace('/\b(?:traders|trading|limited|ltd|private|pvt|company|co|corporation|corp|and|&|the)\b/i', '', $supplierName);
+        $cleanName = trim(preg_replace('/\s+/', ' ', $cleanName));
+        
+        if (!empty($cleanName)) {
+            $searchTerms[] = $cleanName;
+        }
+        
+        // Try with first few words
+        $words = explode(' ', $supplierName);
+        if (count($words) > 2) {
+            $searchTerms[] = implode(' ', array_slice($words, 0, 2));
+        }
+        
+        foreach ($searchTerms as $term) {
+            if (strlen($term) < 3) continue;
+            
+            $query = "SELECT CODE, DETAILS FROM tblsupplier WHERE DETAILS LIKE ? LIMIT 5";
+            $stmt = $conn->prepare($query);
+            $searchPattern = "%" . $term . "%";
+            $stmt->bind_param("s", $searchPattern);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $suppliers = [];
+                while ($row = $result->fetch_assoc()) {
+                    $suppliers[] = $row;
+                }
+                
+                // Find best among these partial matches
+                foreach ($suppliers as $supplier) {
+                    $score = stringSimilarity($supplierName, $supplier['DETAILS']);
+                    if ($score > $bestScore) {
+                        $bestScore = $score;
+                        $bestMatch = $supplier;
+                    }
+                }
+            }
+            $stmt->close();
+            
+            if ($bestScore >= 60) break;
+        }
+    }
+    
+    if ($bestMatch) {
+        debugLog("Supplier match found via fallback", [
+            'input' => $supplierName,
+            'matched_name' => $bestMatch['DETAILS'],
+            'matched_code' => $bestMatch['CODE'],
+            'match_score' => $bestScore
+        ]);
+    } else {
+        debugLog("No supplier match found for", $supplierName);
+    }
+    
+    return $bestMatch;
 }
 
-// Function to find item by code (SAME AS purchases.php)
+// Function to find item by code
 function findItem($itemCode, $conn, $allowed_classes) {
     $cleanCode = cleanItemCode($itemCode);
     
@@ -150,39 +358,65 @@ function findItem($itemCode, $conn, $allowed_classes) {
         'clean_code' => $cleanCode
     ]);
     
-    // Build query with license filtering
+    // First try exact match with SCM prefix
+    $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
+                     COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                     CONCAT('SCM', im.CODE) AS SCM_CODE
+              FROM tblitemmaster im
+              LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
+              WHERE CONCAT('SCM', im.CODE) = ?";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $itemCode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $item = $result->fetch_assoc();
+        $stmt->close();
+        debugLog("Item found by SCM code", $item);
+        
+        // Check if item class is allowed
+        if (!empty($allowed_classes) && !in_array($item['CLASS'], $allowed_classes)) {
+            debugLog("Item class not allowed by license", [
+                'item_class' => $item['CLASS'],
+                'allowed_classes' => $allowed_classes
+            ]);
+            return null;
+        }
+        
+        return $item;
+    }
+    $stmt->close();
+    
+    // Try with clean code (without SCM prefix)
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.BOTTLE_PER_CASE, im.CLASS,
-                         COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE
+        $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
+                         COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                         CONCAT('SCM', im.CODE) AS SCM_CODE
                   FROM tblitemmaster im
                   LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
-                  WHERE (im.CODE = ? OR im.CODE = ?) 
+                  WHERE im.CODE = ? 
                   AND im.CLASS IN ($class_placeholders)
                   LIMIT 1";
         
-        $params = array_merge([$itemCode, $cleanCode], $allowed_classes);
+        $params = array_merge([$cleanCode], $allowed_classes);
         $types = str_repeat('s', count($params));
-        
-        debugLog("Item query with license filter", [
-            'query' => $query,
-            'params' => $params,
-            'types' => $types
-        ]);
         
         $stmt = $conn->prepare($query);
         $stmt->bind_param($types, ...$params);
     } else {
-        // No license restrictions
-        $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.BOTTLE_PER_CASE, im.CLASS,
-                         COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE
+        $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
+                         COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                         CONCAT('SCM', im.CODE) AS SCM_CODE
                   FROM tblitemmaster im
                   LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
-                  WHERE im.CODE = ? OR im.CODE = ?
+                  WHERE im.CODE = ?
                   LIMIT 1";
         
         $stmt = $conn->prepare($query);
-        $stmt->bind_param("ss", $itemCode, $cleanCode);
+        $stmt->bind_param("s", $cleanCode);
     }
     
     $stmt->execute();
@@ -191,74 +425,515 @@ function findItem($itemCode, $conn, $allowed_classes) {
     if ($result->num_rows > 0) {
         $item = $result->fetch_assoc();
         $stmt->close();
-        debugLog("Item found", $item);
+        debugLog("Item found by clean code", $item);
         return $item;
     }
     $stmt->close();
     
-    debugLog("Item not found");
+    debugLog("Item not found in database");
     return null;
 }
 
-// Function to update stock (SAME AS purchases.php)
-function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
-    debugLog("Updating stock for imported item", [
-        'item_code' => $itemCode,
-        'total_bottles' => $totalBottles,
-        'purchase_date' => $purchaseDate,
-        'company_id' => $companyId
+// Function to check if a month is archived
+function isMonthArchived($conn, $comp_id, $month, $year) {
+    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+    $year_2digit = substr($year, -2);
+    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+    
+    // Check if archive table exists
+    $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                           WHERE table_schema = DATABASE() 
+                           AND table_name = '$archive_table'";
+    $check_result = $conn->query($check_archive_query);
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    
+    return $exists;
+}
+
+// Function to update archived month stock with complete calculation including cascading
+function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
+    
+    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+    $year_2digit = substr($year, -2);
+    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+    
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $saleColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    
+    debugLog("Updating archived month stock", [
+        'table' => $archive_table,
+        'monthYear' => $monthYear,
+        'itemCode' => $itemCode,
+        'dayOfMonth' => $dayOfMonth,
+        'totalBottles' => $totalBottles
     ]);
     
+    // Check if record exists in archive table
+    $check_query = "SELECT COUNT(*) as count FROM $archive_table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Update existing record with complete calculation including sales
+        $update_query = "UPDATE $archive_table 
+                        SET $purchaseColumn = $purchaseColumn + ?,
+                            $closingColumn = $openingColumn + $purchaseColumn - $saleColumn
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $result = $update_stmt->execute();
+        $update_stmt->close();
+        
+        if ($result) {
+            // Now update all subsequent days in the archived month (cascading effect)
+            updateSubsequentDaysInTable($conn, $archive_table, $monthYear, $itemCode, $dayOfMonth);
+        }
+    } else {
+        // For new record, opening is 0, so closing = purchase (no sales initially)
+        $insert_query = "INSERT INTO $archive_table 
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
+                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $result = $insert_stmt->execute();
+        $insert_stmt->close();
+    }
+    
+    return $result;
+}
+
+// Function to update current month stock with proper cascading updates
+function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    $dailyStockTable = "tbldailystock_" . $comp_id;
+    
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $saleColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    debugLog("Updating current month stock", [
+        'table' => $dailyStockTable,
+        'monthYear' => $monthYear,
+        'itemCode' => $itemCode,
+        'dayOfMonth' => $dayOfMonth,
+        'totalBottles' => $totalBottles
+    ]);
+    
+    // Check if daily stock record exists for this month and item
+    $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $checkStmt = $conn->prepare($checkDailyStockQuery);
+    $checkStmt->bind_param("ss", $monthYear, $itemCode);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
+    $row = $result->fetch_assoc();
+    $checkStmt->close();
+    
+    if ($row['count'] > 0) {
+        // Update existing record with complete calculation including sales
+        $updateDailyStockQuery = "UPDATE $dailyStockTable 
+                                 SET $purchaseColumn = $purchaseColumn + ?,
+                                     $closingColumn = $openingColumn + $purchaseColumn - $saleColumn
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $dailyStmt = $conn->prepare($updateDailyStockQuery);
+        $dailyStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $result = $dailyStmt->execute();
+        $dailyStmt->close();
+        
+        if ($result) {
+            // Now update all subsequent days' opening and closing values with cascading effect
+            updateSubsequentDaysInTable($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth);
+        }
+    } else {
+        // For new record, opening is 0, so closing = purchase (no sales initially)
+        $insertDailyStockQuery = "INSERT INTO $dailyStockTable 
+                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
+                                 VALUES (?, ?, 'F', 0, ?, 0, ?)";
+        $dailyStmt = $conn->prepare($insertDailyStockQuery);
+        $dailyStmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $result = $dailyStmt->execute();
+        $dailyStmt->close();
+    }
+    
+    return $result;
+}
+
+// Universal function to update subsequent days' opening and closing values with cascading effect
+// Works for both current and archived tables
+function updateSubsequentDaysInTable($conn, $table, $monthYear, $itemCode, $purchaseDay) {
+    debugLog("Starting cascading updates in table", [
+        'table' => $table,
+        'monthYear' => $monthYear,
+        'itemCode' => $itemCode,
+        'purchaseDay' => $purchaseDay
+    ]);
+    
+    // Get the number of days in the month
+    $timestamp = strtotime($monthYear . "-01");
+    $daysInMonth = date('t', $timestamp); // 28, 29, 30, or 31
+    
+    debugLog("Month has $daysInMonth days", [
+        'timestamp' => date('Y-m-d', $timestamp),
+        'daysInMonth' => $daysInMonth
+    ]);
+    
+    // Update opening for next day (carry forward from previous day's closing)
+    // Only iterate through actual days in the month
+    for ($day = $purchaseDay + 1; $day <= $daysInMonth; $day++) {
+        $prevDay = $day - 1;
+        $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+        $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        // Check if the columns exist in the table
+        $checkColumnsQuery = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_SCHEMA = DATABASE() 
+                            AND TABLE_NAME = '$table' 
+                            AND COLUMN_NAME IN ('$currentDayOpening', '$currentDayPurchase', '$currentDaySales', '$currentDayClosing')";
+        
+        $checkResult = $conn->query($checkColumnsQuery);
+        $columnsExist = $checkResult->num_rows >= 4; // All 4 columns should exist
+        
+        if ($columnsExist) {
+            // Update opening to previous day's closing, and recalculate closing
+            $updateQuery = "UPDATE $table 
+                           SET $currentDayOpening = $prevDayClosing,
+                               $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            
+            debugLog("Cascading update for day $day", [
+                'query' => $updateQuery,
+                'prevDayClosing' => $prevDayClosing,
+                'columns_exist' => true
+            ]);
+            
+            $stmt = $conn->prepare($updateQuery);
+            $stmt->bind_param("ss", $monthYear, $itemCode);
+            $stmt->execute();
+            $stmt->close();
+        } else {
+            debugLog("Skipping day $day - columns don't exist", [
+                'columns_checked' => [$currentDayOpening, $currentDayPurchase, $currentDaySales, $currentDayClosing],
+                'columns_found' => $checkResult->num_rows
+            ]);
+        }
+        $checkResult->free();
+    }
+    
+    debugLog("Cascading updates completed for all days after purchase day");
+}
+
+// Function to continue cascading from archived month to current month
+function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate) {
+    debugLog("Continuing cascading to current month", [
+        'comp_id' => $comp_id,
+        'itemCode' => $itemCode,
+        'purchaseDate' => $purchaseDate
+    ]);
+    
+    $purchaseDay = date('j', strtotime($purchaseDate));
+    $purchaseMonth = date('n', strtotime($purchaseDate));
+    $purchaseYear = date('Y', strtotime($purchaseDate));
+    $currentDay = date('j');
+    $currentMonth = date('n');
+    $currentYear = date('Y');
+    
+    // If purchase is in current month, cascading has already been handled
+    if ($purchaseMonth == $currentMonth && $purchaseYear == $currentYear) {
+        debugLog("Purchase is in current month, cascading already handled");
+        return;
+    }
+    
+    // Start from the next month after purchase
+    $startMonth = $purchaseMonth + 1;
+    $startYear = $purchaseYear;
+    if ($startMonth > 12) {
+        $startMonth = 1;
+        $startYear++;
+    }
+    
+    debugLog("Starting cascading from month", [
+        'startMonth' => $startMonth,
+        'startYear' => $startYear
+    ]);
+    
+    // Loop through months from purchase month+1 to current month
+    while (($startYear < $currentYear) || ($startYear == $currentYear && $startMonth <= $currentMonth)) {
+        $month_2digit = str_pad($startMonth, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($startYear, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        
+        // Check if this month's table exists (archived or current)
+        $check_table_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                             WHERE table_schema = DATABASE() 
+                             AND table_name = '$archive_table'";
+        $check_result = $conn->query($check_table_query);
+        $table_exists = $check_result->fetch_assoc()['count'] > 0;
+        
+        if ($table_exists) {
+            debugLog("Found table for cascading", [
+                'table' => $archive_table,
+                'month' => $startMonth,
+                'year' => $startYear
+            ]);
+            
+            $monthYear = date('Y-m', strtotime("$startYear-$startMonth-01"));
+            
+            // Get days in this month
+            $daysInMonth = date('t', strtotime("$startYear-$startMonth-01"));
+            
+            // For the first month after purchase, opening should come from previous month's last day
+            if ($startMonth == $purchaseMonth + 1 || ($startMonth == 1 && $purchaseMonth == 12)) {
+                // Get previous month's last day closing
+                $prevMonth = $purchaseMonth;
+                $prevYear = $purchaseYear;
+                $prevMonthDays = date('t', strtotime("$prevYear-$prevMonth-01"));
+                
+                $prevMonth_2digit = str_pad($prevMonth, 2, '0', STR_PAD_LEFT);
+                $prevYear_2digit = substr($prevYear, -2);
+                $prevTable = "tbldailystock_{$comp_id}_{$prevMonth_2digit}_{$prevYear_2digit}";
+                
+                $prevClosingColumn = "DAY_" . str_pad($prevMonthDays, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                
+                $getPrevClosingQuery = "SELECT $prevClosingColumn as closing FROM $prevTable 
+                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $prevStmt = $conn->prepare($getPrevClosingQuery);
+                $prevMonthYear = date('Y-m', strtotime("$prevYear-$prevMonth-01"));
+                $prevStmt->bind_param("ss", $prevMonthYear, $itemCode);
+                $prevStmt->execute();
+                $prevResult = $prevStmt->get_result();
+                $prevRow = $prevResult->fetch_assoc();
+                $prevStmt->close();
+                
+                $openingValue = $prevRow ? $prevRow['closing'] : 0;
+                
+                debugLog("Got opening value from previous month", [
+                    'prevTable' => $prevTable,
+                    'prevClosingColumn' => $prevClosingColumn,
+                    'openingValue' => $openingValue
+                ]);
+                
+                // Update the first day of this month with the opening value
+                $updateOpeningQuery = "UPDATE $archive_table 
+                                      SET DAY_01_OPEN = ?,
+                                          DAY_01_CLOSING = DAY_01_OPEN + DAY_01_PURCHASE - DAY_01_SALES
+                                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $openingStmt = $conn->prepare($updateOpeningQuery);
+                $openingStmt->bind_param("iss", $openingValue, $monthYear, $itemCode);
+                $openingStmt->execute();
+                $openingStmt->close();
+                
+                // Now cascade through the rest of this month
+                for ($day = 2; $day <= $daysInMonth; $day++) {
+                    $prevDay = $day - 1;
+                    $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                    $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+                    $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+                    $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+                    $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                    
+                    $updateDayQuery = "UPDATE $archive_table 
+                                      SET $currentDayOpening = $prevDayClosing,
+                                          $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                    
+                    $dayStmt = $conn->prepare($updateDayQuery);
+                    $dayStmt->bind_param("ss", $monthYear, $itemCode);
+                    $dayStmt->execute();
+                    $dayStmt->close();
+                }
+            } else {
+                // For subsequent months, cascade from day 1
+                updateSubsequentDaysInTable($conn, $archive_table, $monthYear, $itemCode, 1);
+            }
+        }
+        
+        // Move to next month
+        $startMonth++;
+        if ($startMonth > 12) {
+            $startMonth = 1;
+            $startYear++;
+        }
+    }
+    
+    // If we've reached current month, ensure current month table is also updated
+    if ($currentMonth != $purchaseMonth || $currentYear != $purchaseYear) {
+        $dailyStockTable = "tbldailystock_" . $comp_id;
+        $currentMonthYear = date('Y-m');
+        
+        // Check if record exists in current month table
+        $checkCurrentQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
+                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $checkCurrentStmt = $conn->prepare($checkCurrentQuery);
+        $checkCurrentStmt->bind_param("ss", $currentMonthYear, $itemCode);
+        $checkCurrentStmt->execute();
+        $currentResult = $checkCurrentStmt->get_result();
+        $currentExists = $currentResult->fetch_assoc()['count'] > 0;
+        $checkCurrentStmt->close();
+        
+        if ($currentExists) {
+            // Get previous month's last day closing for opening value
+            $prevMonth = $currentMonth - 1;
+            $prevYear = $currentYear;
+            if ($prevMonth < 1) {
+                $prevMonth = 12;
+                $prevYear--;
+            }
+            
+            $prevMonthDays = date('t', strtotime("$prevYear-$prevMonth-01"));
+            $prevMonth_2digit = str_pad($prevMonth, 2, '0', STR_PAD_LEFT);
+            $prevYear_2digit = substr($prevYear, -2);
+            $prevTable = "tbldailystock_{$comp_id}_{$prevMonth_2digit}_{$prevYear_2digit}";
+            
+            // Check if previous table exists
+            $checkPrevTableQuery = "SELECT COUNT(*) as count FROM information_schema.tables 
+                                   WHERE table_schema = DATABASE() 
+                                   AND table_name = '$prevTable'";
+            $checkPrevResult = $conn->query($checkPrevTableQuery);
+            $prevTableExists = $checkPrevResult->fetch_assoc()['count'] > 0;
+            
+            if ($prevTableExists) {
+                $prevClosingColumn = "DAY_" . str_pad($prevMonthDays, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                $prevMonthYear = date('Y-m', strtotime("$prevYear-$prevMonth-01"));
+                
+                $getPrevClosingQuery = "SELECT $prevClosingColumn as closing FROM $prevTable 
+                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $prevStmt = $conn->prepare($getPrevClosingQuery);
+                $prevStmt->bind_param("ss", $prevMonthYear, $itemCode);
+                $prevStmt->execute();
+                $prevResult = $prevStmt->get_result();
+                $prevRow = $prevResult->fetch_assoc();
+                $prevStmt->close();
+                
+                $openingValue = $prevRow ? $prevRow['closing'] : 0;
+                
+                // Update current month's day 1 opening
+                $updateCurrentOpeningQuery = "UPDATE $dailyStockTable 
+                                            SET DAY_01_OPEN = ?,
+                                                DAY_01_CLOSING = DAY_01_OPEN + DAY_01_PURCHASE - DAY_01_SALES
+                                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $currentOpeningStmt = $conn->prepare($updateCurrentOpeningQuery);
+                $currentOpeningStmt->bind_param("iss", $openingValue, $currentMonthYear, $itemCode);
+                $currentOpeningStmt->execute();
+                $currentOpeningStmt->close();
+            }
+            
+            // Cascade through current month up to today (or end of month)
+            $daysInCurrentMonth = date('t');
+            $cascadeTo = min($currentDay, $daysInCurrentMonth);
+            
+            for ($day = 2; $day <= $cascadeTo; $day++) {
+                $prevDay = $day - 1;
+                $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+                $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+                $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+                $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                
+                $updateDayQuery = "UPDATE $dailyStockTable 
+                                  SET $currentDayOpening = $prevDayClosing,
+                                      $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                                  WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                
+                $dayStmt = $conn->prepare($updateDayQuery);
+                $dayStmt->bind_param("ss", $currentMonthYear, $itemCode);
+                $dayStmt->execute();
+                $dayStmt->close();
+            }
+        }
+    }
+    
+    debugLog("Cascading completed up to current date");
+}
+
+// Function to update item stock
+function updateItemStock($conn, $itemCode, $totalBottles, $companyId) {
+    $stockColumn = "CURRENT_STOCK" . $companyId;
+    
+    // Check if record exists
+    $checkQuery = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("s", $itemCode);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    $exists = $checkResult->fetch_assoc()['count'] > 0;
+    $checkStmt->close();
+    
+    if ($exists) {
+        // Add to existing stock
+        $updateItemStockQuery = "UPDATE tblitem_stock 
+                                SET $stockColumn = $stockColumn + ? 
+                                WHERE ITEM_CODE = ?";
+        
+        $itemStmt = $conn->prepare($updateItemStockQuery);
+        $itemStmt->bind_param("is", $totalBottles, $itemCode);
+        $result = $itemStmt->execute();
+        $itemStmt->close();
+    } else {
+        // Insert new stock record
+        $insertItemStockQuery = "INSERT INTO tblitem_stock (ITEM_CODE, $stockColumn) 
+                                VALUES (?, ?)";
+        
+        $itemStmt = $conn->prepare($insertItemStockQuery);
+        $itemStmt->bind_param("si", $itemCode, $totalBottles);
+        $result = $itemStmt->execute();
+        $itemStmt->close();
+    }
+    
+    return $result;
+}
+
+// Function to update stock after purchase (complete version matching purchases.php)
+function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
     // Get day of month from purchase date
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $month = date('n', strtotime($purchaseDate));
     $year = date('Y', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    // Check if this month is archived
-    function isMonthArchived($conn, $comp_id, $month, $year) {
-        $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
-        $year_2digit = substr($year, -2);
-        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-        
-        // Check if archive table exists
-        $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
-                               WHERE table_schema = DATABASE() 
-                               AND table_name = '$archive_table'";
-        $check_result = $conn->query($check_archive_query);
-        $exists = $check_result->fetch_assoc()['count'] > 0;
-        
-        return $exists;
-    }
+    debugLog("Updating stock for item", [
+        'item_code' => $itemCode,
+        'total_bottles' => $totalBottles,
+        'purchase_date' => $purchaseDate,
+        'day_of_month' => $dayOfMonth,
+        'month' => $month,
+        'year' => $year
+    ]);
     
+    // Check if this month is archived
     $isArchived = isMonthArchived($conn, $companyId, $month, $year);
     
     if ($isArchived) {
-        debugLog("Month is archived, updating archive table");
-        // For simplicity, we'll update item_stock only for now
-        // In production, you would call the full updateArchivedMonthStock function
+        debugLog("Month is archived, updating archive table with cascading");
+        // Update archived month data with cascading
+        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+        
+        // Continue cascading to current month
+        continueCascadingToCurrentMonth($conn, $companyId, $itemCode, $purchaseDate);
+    } else {
+        debugLog("Month is current, updating current table with cascading");
+        // Update current month data with cascading
+        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     }
     
-    // Update tblitem_stock (SAME AS purchases.php)
-    $stockColumn = "CURRENT_STOCK" . $companyId;
-    
-    // Add to existing stock
-    $updateItemStockQuery = "UPDATE tblitem_stock 
-                            SET $stockColumn = $stockColumn + ? 
-                            WHERE ITEM_CODE = ?";
-    
-    $itemStmt = $conn->prepare($updateItemStockQuery);
-    $itemStmt->bind_param("is", $totalBottles, $itemCode);
-    $result = $itemStmt->execute();
-    $itemStmt->close();
-    
-    debugLog("Stock update result", [
-        'success' => $result,
-        'item_code' => $itemCode,
-        'added_stock' => $totalBottles
-    ]);
-    
-    return $result;
+    // Update tblitem_stock
+    updateItemStock($conn, $itemCode, $totalBottles, $companyId);
 }
 
 // Handle file upload
@@ -314,146 +989,150 @@ function processCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatu
         exit;
     }
     
-    // Read headers from first line
-    $headers = fgetcsv($handle);
-    if (!$headers) {
-        fclose($handle);
-        debugLog("Empty or invalid CSV file");
-        header("Location: purchase_module.php?mode=$importMode&import_error=Empty or invalid CSV file");
-        exit;
-    }
-    
-    // Normalize header names (lowercase, trim, remove special chars)
-    $headers = array_map(function($h) {
-        $h = trim($h);
-        $h = strtolower($h);
-        $h = preg_replace('/[^a-z0-9\s]/', '', $h); // Remove special characters
-        $h = str_replace(' ', '_', $h); // Replace spaces with underscores
-        return $h;
-    }, $headers);
-    
-    debugLog("CSV Headers normalized", $headers);
-    
+    // Read and skip metadata rows
+    $rowNum = 0;
+    $headersFound = false;
+    $headers = [];
     $tpGroups = [];
-    $rowNum = 1;
     
-    // Read data rows
+    // Read file line by line
     while (($data = fgetcsv($handle)) !== false) {
         $rowNum++;
         
-        // Map data to headers
-        $rowData = [];
-        foreach ($headers as $index => $header) {
-            if (isset($data[$index])) {
-                $rowData[$header] = trim($data[$index]);
-            } else {
-                $rowData[$header] = '';
-            }
-        }
-        
-        debugLog("Row $rowNum raw data", $rowData);
-        
         // Skip empty rows
-        if (empty($rowData['scm_item_code']) && empty($rowData['item_name'])) {
+        if (empty($data) || (count($data) == 1 && empty(trim($data[0])))) {
             continue;
         }
         
-        // Get values from CSV - MATCHING YOUR CSV STRUCTURE
-        $receivedDate = $rowData['received_date'] ?? '';
-        $autoTpNo = $rowData['auto_tp_no'] ?? '';
-        $manualTpNo = $rowData['manual_tp_no'] ?? '';
-        $tpDate = $rowData['tp_date'] ?? '';
-        $district = $rowData['district'] ?? '';
-        $scmPartyCode = $rowData['scm_party_code'] ?? '';
-        $partyName = $rowData['party_name'] ?? '';
-        $srNo = $rowData['srno'] ?? '';
-        $scmItemCode = $rowData['scm_item_code'] ?? '';
-        $itemName = $rowData['item_name'] ?? '';
-        $size = $rowData['size'] ?? '';
-        $cases = floatval($rowData['qty_cases'] ?? 0);
-        $bottles = intval($rowData['qty_bottles'] ?? 0);
-        $batchNo = $rowData['batch_no'] ?? '';
-        $mfgMonth = $rowData['mfg_month'] ?? '';
-        $mrp = floatval($rowData['mrp'] ?? 0);
-        $bl = floatval($rowData['bl'] ?? 0);
-        $vv = floatval($rowData['vv'] ?? 0);
-        $totalBottQty = intval($rowData['total_bot_qty'] ?? 0);
-        
-        // Calculate missing fields
-        $freeCases = 0; // Not in CSV, default to 0
-        $freeBottles = 0; // Not in CSV, default to 0
-        
-        debugLog("Row $rowNum parsed data", [
-            'received_date' => $receivedDate,
-            'auto_tp_no' => $autoTpNo,
-            'manual_tp_no' => $manualTpNo,
-            'party_name' => $partyName,
-            'scm_item_code' => $scmItemCode,
-            'item_name' => $itemName,
-            'size' => $size,
-            'cases' => $cases,
-            'bottles' => $bottles,
-            'mrp' => $mrp,
-            'total_bott_qty' => $totalBottQty
-        ]);
-        
-        // Format dates - Use received_date as purchase date
-        $purchaseDate = '';
-        if (!empty($receivedDate)) {
-            $purchaseDate = date('Y-m-d', strtotime($receivedDate));
-            if ($purchaseDate == '1970-01-01') {
-                $purchaseDate = date('Y-m-d');
-            }
-        } else {
-            $purchaseDate = date('Y-m-d');
+        // Skip the first two metadata rows
+        if ($rowNum <= 2) {
+            debugLog("Skipping metadata row $rowNum", $data[0]);
+            continue;
         }
         
-        // Format TP date
-        $formattedTpDate = '';
-        if (!empty($tpDate)) {
-            $formattedTpDate = date('Y-m-d', strtotime($tpDate));
-            if ($formattedTpDate == '1970-01-01') {
-                $formattedTpDate = '0000-00-00';
-            }
-        } else {
-            $formattedTpDate = '0000-00-00';
+        // Row 3 should contain headers
+        if ($rowNum == 3) {
+            // Clean headers: remove special chars, trim, lowercase
+            $headers = array_map(function($h) {
+                $h = trim($h);
+                $h = strtolower($h);
+                $h = preg_replace('/[^a-z0-9\s]/', '', $h); // Remove special characters
+                $h = str_replace(' ', '_', $h); // Replace spaces with underscores
+                return $h;
+            }, $data);
+            
+            debugLog("CSV Headers found", $headers);
+            $headersFound = true;
+            continue;
         }
         
-        // Use manual TP number if available, otherwise auto TP number
-        $tpNo = !empty($manualTpNo) ? $manualTpNo : $autoTpNo;
-        
-        // Group by TP No. (manual or auto)
-        if (!empty($tpNo)) {
-            if (!isset($tpGroups[$tpNo])) {
-                $tpGroups[$tpNo] = [
-                    'date' => $purchaseDate,
-                    'supplier' => $partyName,
-                    'auto_tp_no' => $autoTpNo,
-                    'manual_tp_no' => $manualTpNo,
-                    'tp_date' => $formattedTpDate,
-                    'district' => $district,
-                    'scm_party_code' => $scmPartyCode,
-                    'items' => []
-                ];
+        // Process data rows (row 4 onwards)
+        if ($headersFound) {
+            // Map data to headers
+            $rowData = [];
+            foreach ($headers as $index => $header) {
+                if (isset($data[$index])) {
+                    $rowData[$header] = trim($data[$index]);
+                } else {
+                    $rowData[$header] = '';
+                }
             }
             
-            $tpGroups[$tpNo]['items'][] = [
-                'scm_item_code' => $scmItemCode,
-                'item_name' => $itemName,
-                'size' => $size,
-                'cases' => $cases,
-                'bottles' => $bottles,
-                'free_cases' => $freeCases,
-                'free_bottles' => $freeBottles,
-                'batch_no' => $batchNo,
-                'mfg_month' => $mfgMonth,
-                'mrp' => $mrp,
-                'bl' => $bl,
-                'vv' => $vv,
-                'total_bott_qty' => $totalBottQty
-            ];
-        } else {
-            debugLog("Skipping row - no TP number", $rowNum);
+            // Skip rows without essential data
+            if (empty($rowData['scm_item_code']) && empty($rowData['item_name'])) {
+                debugLog("Skipping empty row $rowNum");
+                continue;
+            }
+            
+            // Get values from CSV - using actual column names from your file
+            $receivedDate = $rowData['received_date'] ?? '';
+            $autoTpNo = $rowData['auto_tp_no'] ?? '';
+            $manualTpNo = $rowData['manual_tp_no'] ?? '';
+            $tpDate = $rowData['tp_date'] ?? '';
+            $district = $rowData['district'] ?? '';
+            $scmPartyCode = $rowData['scm_party_code'] ?? '';
+            $partyName = $rowData['party_name'] ?? '';
+            $srNo = $rowData['srno'] ?? '';
+            $scmItemCode = $rowData['scm_item_code'] ?? '';
+            $itemName = $rowData['item_name'] ?? '';
+            $size = $rowData['size'] ?? '';
+            $cases = floatval($rowData['qty_cases'] ?? 0);
+            $bottles = intval($rowData['qty_bottles'] ?? 0);
+            $batchNo = $rowData['batch_no'] ?? '';
+            $mfgMonth = $rowData['mfg_month'] ?? '';
+            $mrp = floatval($rowData['mrp'] ?? 0);
+            $bl = floatval($rowData['bl'] ?? 0);
+            $vv = floatval($rowData['vv'] ?? 0);
+            $totalBottQty = intval($rowData['total_bot_qty'] ?? 0);
+            
+            // Default values for missing fields
+            $freeCases = 0;
+            $freeBottles = 0;
+            
+            // Format dates
+            $purchaseDate = '';
+            if (!empty($receivedDate)) {
+                $purchaseDate = date('Y-m-d', strtotime($receivedDate));
+                if ($purchaseDate == '1970-01-01') {
+                    $purchaseDate = date('Y-m-d');
+                }
+            } else {
+                $purchaseDate = date('Y-m-d');
+            }
+            
+            // Format TP date
+            $formattedTpDate = '';
+            if (!empty($tpDate)) {
+                $formattedTpDate = date('Y-m-d', strtotime($tpDate));
+                if ($formattedTpDate == '1970-01-01') {
+                    $formattedTpDate = '0000-00-00';
+                }
+            } else {
+                $formattedTpDate = '0000-00-00';
+            }
+            
+            // Use manual TP number if available, otherwise auto TP number
+            $tpNo = !empty($manualTpNo) ? $manualTpNo : $autoTpNo;
+            
+            // Group by TP No. (manual or auto)
+            if (!empty($tpNo)) {
+                if (!isset($tpGroups[$tpNo])) {
+                    $tpGroups[$tpNo] = [
+                        'date' => $purchaseDate,
+                        'supplier' => $partyName,
+                        'auto_tp_no' => $autoTpNo,
+                        'manual_tp_no' => $manualTpNo,
+                        'tp_date' => $formattedTpDate,
+                        'district' => $district,
+                        'scm_party_code' => $scmPartyCode,
+                        'items' => []
+                    ];
+                    
+                    debugLog("Created new TP group", [
+                        'tp_no' => $tpNo,
+                        'date' => $purchaseDate,
+                        'supplier' => $partyName
+                    ]);
+                }
+                
+                $tpGroups[$tpNo]['items'][] = [
+                    'scm_item_code' => $scmItemCode,
+                    'item_name' => $itemName,
+                    'size' => $size,
+                    'cases' => $cases,
+                    'bottles' => $bottles,
+                    'free_cases' => $freeCases,
+                    'free_bottles' => $freeBottles,
+                    'batch_no' => $batchNo,
+                    'mfg_month' => $mfgMonth,
+                    'mrp' => $mrp,
+                    'bl' => $bl,
+                    'vv' => $vv,
+                    'total_bott_qty' => $totalBottQty
+                ];
+            } else {
+                debugLog("Skipping row - no TP number", $rowNum);
+            }
         }
     }
     
@@ -463,6 +1142,14 @@ function processCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatu
         'count' => count($tpGroups),
         'tps' => array_keys($tpGroups)
     ]);
+    
+    // If no TP groups were found, show error
+    if (count($tpGroups) == 0) {
+        $errorMessage = "No valid TP data found in CSV. Please check that your CSV has the correct format with headers in row 3.";
+        debugLog("No TP groups found");
+        header("Location: purchase_module.php?mode=$importMode&import_error=" . urlencode($errorMessage));
+        exit;
+    }
     
     // Process TP groups
     $result = processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $importMode);
@@ -489,7 +1176,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
     $allItems = [];
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $itemsQuery = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.BOTTLE_PER_CASE, im.CLASS,
+        $itemsQuery = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
                               COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
                               CONCAT('SCM', im.CODE) AS SCM_CODE
                        FROM tblitemmaster im
@@ -522,7 +1209,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
             // Start transaction
             $conn->begin_transaction();
             
-            // Find supplier - SAME AS purchases.php
+            // Find supplier with improved matching
             $supplierInfo = findBestSupplierMatch($tpData['supplier'], $conn);
             $supplierCode = $supplierInfo ? $supplierInfo['CODE'] : '';
             
@@ -532,7 +1219,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 'found_name' => $supplierInfo ? $supplierInfo['DETAILS'] : 'Not found'
             ]);
             
-            // Get next voucher number - EXACT SAME AS purchases.php
+            // Get next voucher number
             $vocQuery = "SELECT MAX(VOC_NO) AS MAX_VOC FROM tblpurchases WHERE CompID = ?";
             $vocStmt = $conn->prepare($vocQuery);
             $vocStmt->bind_param("i", $companyId);
@@ -576,11 +1263,10 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 
                 $bottlesPerCase = $itemInfo ? intval($itemInfo['BOTTLE_PER_CASE']) : 12;
                 
-                // We need case rate - not in CSV, so we need to get it from database
                 // Use PPRICE from tblitemmaster as default case rate
                 $caseRate = $itemInfo ? floatval($itemInfo['PPRICE']) : 0;
                 
-                // Calculate amount - SAME FORMULA AS purchases.php
+                // Calculate amount
                 $amount = ($item['cases'] * $caseRate) + 
                          ($item['bottles'] * ($caseRate / $bottlesPerCase));
                 $totalAmount += $amount;
@@ -614,7 +1300,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 throw new Exception("No valid items found for this TP (all items may be missing or license restricted)");
             }
             
-            // Use auto TP number from CSV or generate one
+            // Use auto TP number from CSV
             $autoTpNo = !empty($tpData['auto_tp_no']) ? $tpData['auto_tp_no'] : 
                        'FL' . date('dmY', strtotime($tpData['date'])) . '/' . $tpNo;
             
@@ -624,11 +1310,11 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 'tp_date' => $tpData['tp_date']
             ]);
             
-            // Insert purchase header - EXACT SAME COLUMNS AS purchases.php
+            // Insert purchase header - FIXED: Correct parameter binding
             $insertQuery = "INSERT INTO tblpurchases (
                 DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, 
-                TPNO, TP_DATE, PUR_FLAG, CompID, DISTRICT
-            ) VALUES (?, ?, ?, ?, '', '0000-00-00', ?, ?, ?, ?, ?, ?)";
+                TPNO, TP_DATE, PUR_FLAG, CompID
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             debugLog("Purchase header insert query", $insertQuery);
             
@@ -637,23 +1323,29 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 throw new Exception("Error preparing purchase header: " . $conn->error);
             }
             
-            // Use empty string for invoice number and date
+            // Set empty values for invoice fields
             $invNo = '';
             $invDate = '0000-00-00';
             
-            // Bind parameters - SAME ORDER AS purchases.php
+            // Convert VOC_NO to integer
+            $vocNoInt = (int)$nextVoc;
+            // Convert TAMT to string for binding
+            $totalAmountStr = (string)$totalAmount;
+            
+            // Bind parameters for 11 placeholders - FIXED TYPE STRING
             $insertStmt->bind_param(
-                "sssssssssis",  // Updated for district
-                $tpData['date'],        // DATE
-                $supplierCode,          // SUBCODE
-                $autoTpNo,              // AUTO_TPNO
-                $nextVoc,               // VOC_NO
-                $totalAmount,           // TAMT
-                $tpNo,                  // TPNO (manual TP no)
-                $tpData['tp_date'],     // TP_DATE
-                $defaultStatus,         // PUR_FLAG
-                $companyId,             // CompID
-                $tpData['district']     // DISTRICT
+                "sssissssssi", // 11 characters: s=string, i=integer
+                $tpData['date'],        // DATE (s) - 1
+                $supplierCode,          // SUBCODE (s) - 2
+                $autoTpNo,              // AUTO_TPNO (s) - 3
+                $vocNoInt,              // VOC_NO (i) - 4
+                $invNo,                 // INV_NO (s) - 5
+                $invDate,               // INV_DATE (s) - 6
+                $totalAmountStr,        // TAMT (s) - 7
+                $tpNo,                  // TPNO (s) - 8
+                $tpData['tp_date'],     // TP_DATE (s) - 9
+                $defaultStatus,         // PUR_FLAG (s) - 10
+                $companyId              // CompID (i) - 11
             );
             
             if (!$insertStmt->execute()) {
@@ -669,7 +1361,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 'affected_rows' => $conn->affected_rows
             ]);
             
-            // Insert purchase items - EXACT SAME COLUMNS AS purchases.php
+            // Insert purchase items
             $detailQuery = "INSERT INTO tblpurchasedetails (
                 PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
                 CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
@@ -692,10 +1384,15 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 $totalBottles = $validItem['total_bottles'];
                 
                 // Use BL from CSV if available, otherwise calculate
-                $bl = $item['bl'] > 0 ? $item['bl'] : 0;
+                $bl = $item['bl'] > 0 ? $item['bl'] : 0.00;
                 
                 // Use VV from CSV if available
-                $vv = $item['vv'] > 0 ? $item['vv'] : 0;
+                $vv = $item['vv'] > 0 ? $item['vv'] : 0.00;
+                
+                // Ensure string values
+                $batchNo = $item['batch_no'] ?? '';
+                $mfgMonth = $item['mfg_month'] ?? '';
+                $autoBatch = ''; // FIX: Create variable for AutoBatch
                 
                 debugLog("Inserting item detail", [
                     'purchase_id' => $purchaseId,
@@ -706,27 +1403,27 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                     'amount' => $amount
                 ]);
                 
-                // Bind parameters - EXACT SAME ORDER AND TYPES AS purchases.php
+                // Bind parameters with correct types - FIXED: 18 parameters with correct type string
                 $detailStmt->bind_param(
-                    "isssdddddddisssddi",  // SAME DATA TYPES
-                    $purchaseId,            // PurchaseID
-                    $itemInfo['CODE'],      // ItemCode (use database code, not SCM code)
-                    $item['item_name'],     // ItemName
-                    $item['size'],          // Size
-                    $item['cases'],         // Cases
-                    $item['bottles'],       // Bottles
-                    $item['free_cases'],    // FreeCases
-                    $item['free_bottles'],  // FreeBottles
-                    $caseRate,              // CaseRate (from PPRICE)
-                    $item['mrp'],           // MRP
-                    $amount,                // Amount
-                    $bottlesPerCase,        // BottlesPerCase
-                    $item['batch_no'],      // BatchNo
-                    '',                     // AutoBatch (empty for import)
-                    $item['mfg_month'],     // MfgMonth
-                    $bl,                    // BL
-                    $vv,                    // VV
-                    $totalBottles           // TotBott
+                    "isssdddddddsssdddi",  // FIXED: 18 characters for 18 parameters
+                    $purchaseId,            // PurchaseID (i) - 1
+                    $itemInfo['CODE'],      // ItemCode (s) - 2
+                    $item['item_name'],     // ItemName (s) - 3
+                    $item['size'],          // Size (s) - 4
+                    $item['cases'],         // Cases (d) - 5
+                    $item['bottles'],       // Bottles (d) - 6
+                    $item['free_cases'],    // FreeCases (d) - 7
+                    $item['free_bottles'],  // FreeBottles (d) - 8
+                    $caseRate,              // CaseRate (d) - 9
+                    $item['mrp'],           // MRP (d) - 10
+                    $amount,                // Amount (d) - 11
+                    $bottlesPerCase,        // BottlesPerCase (d) - 12
+                    $batchNo,               // BatchNo (s) - 13
+                    $autoBatch,             // AutoBatch (s) - 14
+                    $mfgMonth,              // MfgMonth (s) - 15
+                    $bl,                    // BL (d) - 16
+                    $vv,                    // VV (d) - 17
+                    $totalBottles           // TotBott (i) - 18
                 );
                 
                 if (!$detailStmt->execute()) {
@@ -735,7 +1432,7 @@ function processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMR
                 
                 $itemsInserted++;
                 
-                // Update MRP if requested - SAME FUNCTION AS purchases.php
+                // Update MRP if requested
                 if ($updateMRP && $item['mrp'] > 0) {
                     updateItemMRP($conn, $itemInfo['CODE'], $item['mrp']);
                 }

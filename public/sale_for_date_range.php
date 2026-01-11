@@ -60,26 +60,26 @@ function validateStock($current_stock, $requested_qty, $item_code) {
 }
 
 // ============================================================================
-// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: PARTIAL DATE RANGE SUPPORT
+// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: ALLOW SALES ONLY AFTER LATEST SALE
 // ============================================================================
 
 /**
- * NEW: Check if sales exist for an item on specific dates within a date range
- * Returns array of dates where sales already exist for this item
+ * Check if a sale already exists for an item within or after the given date range
+ * Returns array with allowed dates (after latest existing sale)
  */
-function getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
-    // Query to get specific dates where sales exist for this item
-    $query = "SELECT DISTINCT sh.BILL_DATE
+function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
+    // Query to get all sales for this item in or after the date range
+    $query = "SELECT sh.BILL_DATE
               FROM tblsaleheader sh
               JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
                 AND sh.COMP_ID = sd.COMP_ID
               WHERE sd.ITEM_CODE = ? 
-              AND sh.BILL_DATE BETWEEN ? AND ?
+              AND sh.BILL_DATE >= ? 
               AND sh.COMP_ID = ?
-              ORDER BY sh.BILL_DATE";
+              ORDER BY sh.BILL_DATE ASC";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("sssi", $item_code, $start_date, $end_date, $comp_id);
+    $stmt->bind_param("ssi", $item_code, $start_date, $comp_id);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -89,147 +89,58 @@ function getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, 
     }
     $stmt->close();
     
-    logMessage("Existing sale dates for item $item_code from $start_date to $end_date: " . implode(', ', $existing_dates), 'INFO');
-    
-    return $existing_dates;
-}
-
-/**
- * NEW: Check if sales exist for multiple items and return dates
- * Returns array with item_code => [existing_dates, is_partial]
- */
-function checkItemsExistingSaleDates($conn, $items_with_dates, $comp_id) {
-    if (empty($items_with_dates)) return [];
-    
-    $items_data = [];
-    
-    foreach ($items_with_dates as $item_code => $date_range) {
-        $start_date = $date_range['start_date'];
-        $end_date = $date_range['end_date'];
-        
-        // Check for each item individually
-        $existing_dates = getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
-        
-        if (!empty($existing_dates)) {
-            $items_data[$item_code] = [
-                'existing_dates' => $existing_dates,
-                'is_partial' => (count($existing_dates) < countDateRange($start_date, $end_date)),
-                'start_date' => $start_date,
-                'end_date' => $end_date,
-                'message' => 'Sales exist on: ' . implode(', ', $existing_dates)
-            ];
-        }
-    }
-    
-    return $items_data;
-}
-
-// Helper function to count days in date range
-function countDateRange($start_date, $end_date) {
+    // Create date range array
     $begin = new DateTime($start_date);
     $end = new DateTime($end_date);
-    $end = $end->modify('+1 day');
+    $end = $end->modify('+1 day'); // Include end date
     $interval = new DateInterval('P1D');
     $date_range = new DatePeriod($begin, $interval, $end);
     
-    $count = 0;
+    $all_dates = [];
     foreach ($date_range as $date) {
-        $count++;
-    }
-    return $count;
-}
-
-/**
- * NEW: Get available dates for distribution (exclude existing sale dates)
- */
-function getAvailableDatesForDistribution($start_date, $end_date, $existing_dates = []) {
-    $begin = new DateTime($start_date);
-    $end = new DateTime($end_date);
-    $end = $end->modify('+1 day');
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($begin, $interval, $end);
-    
-    $available_dates = [];
-    foreach ($date_range as $date) {
-        $date_str = $date->format("Y-m-d");
-        if (!in_array($date_str, $existing_dates)) {
-            $available_dates[] = $date_str;
-        }
+        $all_dates[] = $date->format("Y-m-d");
     }
     
-    logMessage("Available dates for distribution from $start_date to $end_date: " . 
-               implode(', ', $available_dates) . " (Excluded: " . implode(', ', $existing_dates) . ")", 'INFO');
-    
-    return $available_dates;
-}
-
-/**
- * Check if a sale already exists for an item within or after the given date range
- * Returns detailed information about sales for that specific item
- */
-function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
-    // Query to check if any sale exists for this item within or after the date range
-    $query = "SELECT MIN(sh.BILL_DATE) as earliest_sale, 
-                     MAX(sh.BILL_DATE) as latest_sale,
-                     COUNT(*) as sale_count
-              FROM tblsaleheader sh
-              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
-                AND sh.COMP_ID = sd.COMP_ID
-              WHERE sd.ITEM_CODE = ? 
-              AND sh.BILL_DATE >= ? 
-              AND sh.COMP_ID = ?
-              LIMIT 1";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssi", $item_code, $start_date, $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $stmt->close();
-    
-    $earliest_sale = $row['earliest_sale'] ?? null;
-    $latest_sale = $row['latest_sale'] ?? null;
-    $sale_count = $row['sale_count'] ?? 0;
-    
-    if ($sale_count > 0) {
-        logMessage("Sales exist for item $item_code from $earliest_sale to $latest_sale (Count: $sale_count)", 'INFO');
+    if (!empty($existing_dates)) {
+        // Find the latest existing sale date
+        $latest_existing = max($existing_dates);
+        $latest_existing_date = new DateTime($latest_existing);
         
-        // If earliest sale is within our date range, we cannot enter sales before it
-        if ($earliest_sale <= $end_date) {
-            // Check if we're trying to enter sales on dates where sales already exist
-            $check_query = "SELECT COUNT(*) as sale_count 
-                           FROM tblsaleheader sh
-                           JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
-                             AND sh.COMP_ID = sd.COMP_ID
-                           WHERE sd.ITEM_CODE = ? 
-                           AND sh.BILL_DATE BETWEEN ? AND ?
-                           AND sh.COMP_ID = ?";
-            
-            $check_stmt = $conn->prepare($check_query);
-            $check_stmt->bind_param("sssi", $item_code, $start_date, $end_date, $comp_id);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
-            $check_row = $check_result->fetch_assoc();
-            $check_stmt->close();
-            
-            if ($check_row['sale_count'] > 0) {
-                logMessage("Cannot enter sales for item $item_code between $start_date and $end_date - sales already exist in this range", 'WARNING');
-                return [
-                    'restricted' => true,
-                    'earliest_sale' => $earliest_sale,
-                    'latest_sale' => $latest_sale,
-                    'sale_count' => $sale_count,
-                    'message' => "Sales already exist for this item from $earliest_sale"
-                ];
+        // Determine which dates are available (after latest sale date)
+        $available_dates = [];
+        $unavailable_dates = [];
+        
+        foreach ($all_dates as $date) {
+            $current_date = new DateTime($date);
+            if ($current_date > $latest_existing_date) {
+                $available_dates[] = $date;
+            } else {
+                $unavailable_dates[] = $date;
             }
         }
+        
+        logMessage("Item $item_code: Latest existing sale: $latest_existing", 'INFO');
+        logMessage("Available dates: " . implode(', ', $available_dates), 'INFO');
+        logMessage("Unavailable dates (has existing sales): " . implode(', ', $unavailable_dates), 'INFO');
+        
+        return [
+            'restricted' => !empty($unavailable_dates), // Restricted if ANY dates are unavailable
+            'latest_existing_sale' => $latest_existing,
+            'available_dates' => $available_dates,
+            'unavailable_dates' => $unavailable_dates,
+            'all_existing_dates' => $existing_dates,
+            'message' => !empty($unavailable_dates) ? 
+                "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
+                "No sales restrictions for this item"
+        ];
     }
     
     return [
         'restricted' => false,
-        'earliest_sale' => $earliest_sale,
-        'latest_sale' => $latest_sale,
-        'sale_count' => $sale_count,
+        'latest_existing_sale' => null,
+        'available_dates' => $all_dates, // All dates available if no existing sales
+        'unavailable_dates' => [],
+        'all_existing_dates' => [],
         'message' => "No sales restrictions for this item"
     ];
 }
@@ -250,20 +161,69 @@ function checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id) {
         // Check for each item individually
         $result = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
         
-        if ($result['restricted']) {
+        // Only block if NO dates are available
+        if ($result['restricted'] && empty($result['available_dates'])) {
             $restricted_items[$item_code] = [
                 'code' => $item_code,
                 'start_date' => $start_date,
                 'end_date' => $end_date,
-                'earliest_existing_sale' => $result['earliest_sale'],
-                'latest_existing_sale' => $result['latest_sale'],
-                'sale_count' => $result['sale_count'],
+                'latest_existing_sale' => $result['latest_existing_sale'],
+                'available_dates' => $result['available_dates'],
+                'unavailable_dates' => $result['unavailable_dates'],
                 'message' => $result['message']
             ];
         }
     }
     
     return $restricted_items;
+}
+
+// ============================================================================
+// NEW: GET EXISTING SALES DATES FOR ITEMS WITHIN DATE RANGE
+// ============================================================================
+
+/**
+ * Get existing sales dates for items within a date range
+ * Returns array with item_code => [sale_dates]
+ */
+function getExistingSalesDatesForItems($conn, $item_codes, $start_date, $end_date, $comp_id) {
+    if (empty($item_codes)) return [];
+    
+    $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
+    
+    $query = "SELECT sd.ITEM_CODE, sh.BILL_DATE
+              FROM tblsaleheader sh
+              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
+                AND sh.COMP_ID = sd.COMP_ID
+              WHERE sd.ITEM_CODE IN ($placeholders)
+              AND sh.BILL_DATE BETWEEN ? AND ?
+              AND sh.COMP_ID = ?
+              ORDER BY sd.ITEM_CODE, sh.BILL_DATE";
+    
+    $stmt = $conn->prepare($query);
+    
+    // Build parameters array
+    $params = array_merge($item_codes, [$start_date, $end_date, $comp_id]);
+    $types = str_repeat('s', count($item_codes)) . 'ssi';
+    
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $existing_sales = [];
+    while ($row = $result->fetch_assoc()) {
+        $item_code = $row['ITEM_CODE'];
+        $bill_date = $row['BILL_DATE'];
+        
+        if (!isset($existing_sales[$item_code])) {
+            $existing_sales[$item_code] = [];
+        }
+        
+        $existing_sales[$item_code][] = $bill_date;
+    }
+    
+    $stmt->close();
+    return $existing_sales;
 }
 
 // Ensure user is logged in and company is selected
@@ -469,7 +429,7 @@ if (!$table_exists) {
         DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_SALES DECimal(10,3) DEFAULT 0.000,
         DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
@@ -782,62 +742,82 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
     }
 }
 
-// NEW: Enhanced function to distribute sales uniformly with partial date support
-function distributeSalesUniformlyWithPartialDates($total_qty, $date_array, $existing_dates = []) {
-    if ($total_qty <= 0 || empty($date_array)) return array_fill(0, count($date_array), 0);
+// ============================================================================
+// NEW: ENHANCED DISTRIBUTION LOGIC FOR PARTIAL DATE RANGES
+// ============================================================================
+
+/**
+ * Enhanced distribution function that handles items with existing sales in the date range
+ * For items with existing sales: distribute only across available dates (after latest sale)
+ * For items without existing sales: distribute across entire date range
+ */
+function distributeSalesIntelligently($conn, $total_qty, $item_code, $start_date, $end_date, $comp_id) {
+    if ($total_qty <= 0) return array_fill(0, count($date_array), 0);
     
-    // Get available dates (exclude existing sale dates)
-    $available_dates = [];
-    $date_index_map = [];
-    $available_count = 0;
-    
-    foreach ($date_array as $index => $date) {
-        if (!in_array($date, $existing_dates)) {
-            $available_dates[] = $date;
-            $date_index_map[$available_count] = $index;
-            $available_count++;
-        }
-    }
+    // Get available dates for this item
+    $date_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
+    $available_dates = $date_check['available_dates'];
     
     // If no available dates, return zeros
-    if ($available_count === 0) {
+    if (empty($available_dates)) {
+        logMessage("Item $item_code has no available dates for distribution", 'INFO');
         return array_fill(0, count($date_array), 0);
     }
     
-    // Distribute among available dates
-    $base_qty = floor($total_qty / $available_count);
-    $remainder = $total_qty % $available_count;
+    // Create date array
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day'); // Include end date
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
     
-    // Initialize result array with zeros for all dates
-    $daily_sales = array_fill(0, count($date_array), 0);
-    
-    // Distribute base quantity to available dates
-    for ($i = 0; $i < $available_count; $i++) {
-        $original_index = $date_index_map[$i];
-        $daily_sales[$original_index] = $base_qty;
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
     }
     
-    // Distribute remainder evenly across available dates
+    // Create a map of date to index
+    $date_index_map = [];
+    foreach ($all_dates as $index => $date) {
+        $date_index_map[$date] = $index;
+    }
+    
+    // Distribute only across available dates
+    $available_days = count($available_dates);
+    $distribution = distributeSalesUniformlyBasic($total_qty, $available_days);
+    
+    // Create full distribution array with zeros for all dates
+    $full_distribution = array_fill(0, count($all_dates), 0);
+    
+    // Fill in the distribution for available dates
+    foreach ($available_dates as $i => $date) {
+        $index = $date_index_map[$date] ?? null;
+        if ($index !== null) {
+            $full_distribution[$index] = $distribution[$i] ?? 0;
+        }
+    }
+    
+    logMessage("Item $item_code: Distributing $total_qty across $available_days available dates: " . implode(', ', $available_dates), 'INFO');
+    
+    return $full_distribution;
+}
+
+// Basic distribution function (renamed to avoid conflict)
+function distributeSalesUniformlyBasic($total_qty, $days_count) {
+    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
+    
+    $base_qty = floor($total_qty / $days_count);
+    $remainder = $total_qty % $days_count;
+    
+    $daily_sales = array_fill(0, $days_count, $base_qty);
+    
+    // Distribute remainder evenly across days
     for ($i = 0; $i < $remainder; $i++) {
-        $original_index = $date_index_map[$i % $available_count];
-        $daily_sales[$original_index]++;
+        $daily_sales[$i]++;
     }
     
-    // Shuffle the distribution among available dates only
-    if ($available_count > 1) {
-        $available_values = [];
-        foreach ($date_index_map as $map_index => $original_index) {
-            $available_values[] = $daily_sales[$original_index];
-        }
-        
-        shuffle($available_values);
-        
-        foreach ($date_index_map as $map_index => $original_index) {
-            $daily_sales[$original_index] = $available_values[$map_index];
-        }
-    }
-    
-    logMessage("Distributed $total_qty across " . $available_count . " available dates (Excluded: " . count($existing_dates) . " dates)", 'INFO');
+    // Shuffle the distribution to make it look more natural
+    shuffle($daily_sales);
     
     return $daily_sales;
 }
@@ -1000,13 +980,16 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
     logMessage("Completed recalculating stock for $stk_month from day $start_day", 'INFO');
 }
 
+// ============================================================================
+// FIXED: ENHANCED DAILY STOCK UPDATE WITH PROPER CASCADING TO TODAY'S DATE
+// ============================================================================
+
 // ENHANCED: Function to update daily stock table with MULTI-MONTH cascading updates
 function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
+    logMessage("Starting daily stock update for item $item_code sold on $sale_date (Qty: $qty)", 'INFO');
+    
     // Get the correct table for the sale date
     $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
-    
-    // Get current month table
-    $current_daily_stock_table = "tbldailystock_" . $comp_id;
     
     // Extract day number from date (e.g., 2025-09-27 → day 27)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
@@ -1018,6 +1001,7 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
     $sale_date_obj = new DateTime($sale_date);
     $current_date = new DateTime();
+    $current_month = $current_date->format('Y-m');
     
     // ============================================================================
     // STEP 1: UPDATE THE STOCK TABLE FOR THE SALE DATE
@@ -1131,20 +1115,14 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
     
     // ============================================================================
-    // STEP 3: MULTI-MONTH CASCADING - Update ALL subsequent months
+    // STEP 3: CASCADE TO CURRENT MONTH (CRITICAL FIX - THIS WAS MISSING)
     // ============================================================================
     
-    logMessage("Starting multi-month cascading for item $item_code sold on $sale_date", 'INFO');
+    logMessage("Starting cascading to current month for item $item_code sold on $sale_date", 'INFO');
     
-    // Get the last day of the sale month
-    $last_day_of_sale_month = date('t', strtotime($sale_date));
-    $is_last_day_of_month = ($day_num == $last_day_of_sale_month);
-    
-    // Always cascade to current month regardless of sale date
-    $current_month = $current_date->format('Y-m');
-    
-    if ($month_year_full < $current_month || $is_last_day_of_month) {
-        logMessage("Cascading from sale month $month_year_full to current month $current_month", 'INFO');
+    // If sale is not in current month, we need to cascade to current month
+    if ($month_year_full < $current_month) {
+        logMessage("Sale in archived month $month_year_full, cascading to current month $current_month", 'INFO');
         
         // Create a month iterator starting from sale month
         $current_month_obj = new DateTime($month_year_full . '-01');
@@ -1155,9 +1133,8 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
             $next_month = $current_month_obj->format('Y-m');
             
             // Stop if we've reached beyond current month
-            $next_month_start = new DateTime($next_month . '-01');
-            if ($next_month_start > $current_date) {
-                logMessage("Reached month $next_month which is beyond current date, stopping cascade", 'INFO');
+            if ($next_month > $current_month) {
+                logMessage("Reached month $next_month which is beyond current month $current_month, stopping cascade", 'INFO');
                 break;
             }
             
@@ -1244,119 +1221,50 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
         }
     }
     
-    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing", 'INFO');
+    // ============================================================================
+    // STEP 4: UPDATE CURRENT MONTH'S STOCK IF SALE DATE IS IN ARCHIVED MONTH
+    // ============================================================================
     
-    return true;
-}
-
-// NEW: Function to handle complete multi-month cascading for bulk operations
-function cascadeStockUpdatesAcrossMonths($conn, $item_code, $sale_date, $qty, $comp_id) {
-    logMessage("Starting complete multi-month cascading for item $item_code sold on $sale_date", 'INFO');
+    // Get current month table
+    $current_daily_stock_table = "tbldailystock_" . $comp_id;
     
-    $sale_date_obj = new DateTime($sale_date);
-    $current_date = new DateTime();
-    
-    // Get the month of the sale
-    $sale_month = $sale_date_obj->format('Y-m');
-    
-    // Update the sale month first
-    updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id);
-    
-    // If sale is not in current month, we need to cascade forward
-    $current_month = $current_date->format('Y-m');
-    
-    if ($sale_month < $current_month) {
-        logMessage("Sale in archived month $sale_month, cascading to current month $current_month", 'INFO');
+    // If sale is in archived month, update current month's stock
+    if ($month_year_full < $current_month) {
+        logMessage("Sale in archived month, updating current month's stock", 'INFO');
         
-        // Create a month iterator
-        $current_month_obj = new DateTime($sale_month . '-01');
+        // Get previous month (the month before current month)
+        $prev_month_of_current = date('Y-m', strtotime($current_month . '-01 -1 month'));
         
-        while (true) {
-            // Move to next month
-            $current_month_obj->modify('+1 month');
-            $next_month = $current_month_obj->format('Y-m');
+        if ($prev_month_of_current == $month_year_full) {
+            // Sale was in the month just before current month, update current month's opening
+            $current_record_check = "SELECT DAY_01_OPEN FROM $current_daily_stock_table 
+                                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $current_check_stmt = $conn->prepare($current_record_check);
+            $current_check_stmt->bind_param("ss", $current_month, $item_code);
+            $current_check_stmt->execute();
+            $current_check_result = $current_check_stmt->get_result();
             
-            // Stop if we've reached beyond current month
-            if ($next_month > $current_month) {
-                logMessage("Reached month $next_month which is beyond current month $current_month, stopping cascade", 'INFO');
-                break;
+            if ($current_check_result->num_rows > 0) {
+                // Update current month's opening (deduct the sale)
+                $update_current_query = "UPDATE $current_daily_stock_table 
+                                        SET DAY_01_OPEN = DAY_01_OPEN - ?,
+                                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $update_current_stmt = $conn->prepare($update_current_query);
+                $update_current_stmt->bind_param("dss", $qty, $current_month, $item_code);
+                $update_current_stmt->execute();
+                $update_current_stmt->close();
+                
+                // Recalculate current month
+                recalculateDailyStockFromDay($conn, $current_daily_stock_table, $item_code, $current_month, 1);
+                logMessage("Updated current month's opening by deducting $qty", 'INFO');
             }
-            
-            // Get the table for this month
-            $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
-            
-            // Check if table exists
-            $check_table = "SHOW TABLES LIKE '$next_month_table'";
-            if ($conn->query($check_table)->num_rows == 0) {
-                // Create the table
-                createDailyStockTable($conn, $next_month_table);
-                logMessage("Created table $next_month_table for cascading", 'INFO');
-            }
-            
-            // Get previous month's closing
-            $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
-            $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
-            $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-            $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-            
-            // Get previous month's closing
-            $prev_closing = 0;
-            if ($prev_month) {
-                $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $prev_stmt = $conn->prepare($prev_query);
-                $prev_stmt->bind_param("ss", $prev_month, $item_code);
-                if ($prev_stmt->execute()) {
-                    $prev_result = $prev_stmt->get_result();
-                    if ($prev_result->num_rows > 0) {
-                        $prev_row = $prev_result->fetch_assoc();
-                        $prev_closing = $prev_row[$prev_closing_column] ?? 0;
-                    }
-                }
-                $prev_stmt->close();
-            }
-            
-            // Update or create record in next month
-            $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
-                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $check_stmt = $conn->prepare($check_record);
-            $check_stmt->bind_param("ss", $next_month, $item_code);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
-            
-            if ($check_result->num_rows == 0) {
-                // Create new record
-                $check_stmt->close();
-                $insert_query = "INSERT INTO $next_month_table 
-                                (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                                VALUES (?, ?, ?, 0, 0, ?)";
-                $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
-                $insert_stmt->execute();
-                $insert_stmt->close();
-                logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
-            } else {
-                // Update existing record
-                $check_stmt->close();
-                $update_query = "UPDATE $next_month_table 
-                               SET DAY_01_OPEN = ?,
-                                   LAST_UPDATED = CURRENT_TIMESTAMP 
-                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_stmt = $conn->prepare($update_query);
-                $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
-                $update_stmt->execute();
-                $update_stmt->close();
-                logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
-            }
-            
-            // Recalculate the entire month
-            recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
-            
-            logMessage("Completed cascading for month $next_month", 'INFO');
+            $current_check_stmt->close();
         }
     }
     
-    logMessage("Completed multi-month cascading for item $item_code", 'INFO');
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing", 'INFO');
+    
     return true;
 }
 
@@ -1396,7 +1304,7 @@ function createDailyStockTable($conn, $table_name) {
         DAY_07_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_08_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_08_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_08_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_SALES DECimal(10,3) DEFAULT 0.000,
         DAY_08_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_09_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_09_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
@@ -1435,7 +1343,7 @@ function createDailyStockTable($conn, $table_name) {
         DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_PURCHASE DECimal(10,3) DEFAULT 0.000,
         DAY_18_SALES DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_19_OPEN DECIMAL(10,3) DEFAULT 0.000,
@@ -1479,7 +1387,7 @@ function createDailyStockTable($conn, $table_name) {
         DAY_28_SALES DECIMAL(10,3) DEFAULT 0.000,
         DAY_28_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_29_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_29_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_PURCHASE DECimal(10,3) DEFAULT 0.000,
         DAY_29_SALES DECIMAL(10,3) DEFAULT 0.000,
         DAY_29_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_30_OPEN DECIMAL(10,3) DEFAULT 0.000,
@@ -1598,7 +1506,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // NEW: Check for existing sales dates for partial date distribution
+            // NEW: Enhanced backdated sales check with specific dates for each item
             if (isset($_SESSION['sale_quantities']) && !empty($_SESSION['sale_quantities'])) {
                 $items_with_dates = [];
                 
@@ -1613,10 +1521,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if (!empty($items_with_dates)) {
-                    // Get existing sale dates for each item
-                    $items_existing_dates = checkItemsExistingSaleDates($conn, $items_with_dates, $comp_id);
-                    
-                    // Check for backdated restrictions (complete date range blockage)
                     $restricted_items = checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id);
                     
                     if (!empty($restricted_items)) {
@@ -1630,7 +1534,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $error_message .= "<div class='mb-2'>";
                             $error_message .= "<strong>$item_name ($item_code)</strong><br>";
                             $error_message .= "<small>Selected Date Range: <span class='text-primary'>{$restriction['start_date']} to {$restriction['end_date']}</span></small><br>";
-                            $error_message .= "<small>Existing Sales: <span class='text-danger'>{$restriction['earliest_existing_sale']} to {$restriction['latest_existing_sale']}</span></small><br>";
+                            $error_message .= "<small>Latest Existing Sale: <span class='text-danger'>{$restriction['latest_existing_sale']}</span></small><br>";
+                            $error_message .= "<small>Available Dates: <span class='text-success'>" . 
+                                (empty($restriction['available_dates']) ? 'None' : implode(', ', $restriction['available_dates'])) . 
+                                "</span></small><br>";
                             $error_message .= "<small><em>{$restriction['message']}</em></small>";
                             $error_message .= "</div>";
                         }
@@ -1639,7 +1546,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error_message .= "<strong>Solution:</strong> Please adjust your date range to be after the latest existing sale date for each restricted item, or remove these items from your sales entry.";
                         $error_message .= "</div>";
                         
-                        logMessage("Backdated sales prevented for items: " . implode(', ', array_keys($restricted_items)), 'WARNING');
+                        logMessage("Backdated sales prevented for items with no available dates: " . implode(', ', array_keys($restricted_items)), 'WARNING');
                         
                         // Skip further processing
                         goto render_page;
@@ -1742,24 +1649,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
-                                // Get existing sale dates for this item (if any)
-                                $existing_dates = [];
-                                if (isset($items_existing_dates[$item_code])) {
-                                    $existing_dates = $items_existing_dates[$item_code]['existing_dates'];
-                                    logMessage("Item $item_code has existing sales on dates: " . implode(', ', $existing_dates), 'INFO');
-                                }
-                                
-                                // Generate distribution with partial date support
-                                $daily_sales = distributeSalesUniformlyWithPartialDates($total_qty, $date_array, $existing_dates);
+                                // NEW: Use intelligent distribution based on available dates
+                                $daily_sales = distributeSalesIntelligently($conn, $total_qty, $item_code, $start_date, $end_date, $comp_id);
                                 $daily_sales_data[$item_code] = $daily_sales;
                                 
-                                // Store item data with existing dates info
+                                // Store item data
                                 $items_data[$item_code] = [
                                     'name' => $item['DETAILS'],
                                     'rate' => $item['RPRICE'],
                                     'total_qty' => $total_qty,
-                                    'mode' => $item['LIQ_FLAG'], // Use item's actual mode
-                                    'existing_dates' => $existing_dates // Add existing dates for reference
+                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode
                                 ];
                             }
                         }
@@ -1767,8 +1666,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
-                        // NEW: Modified bill generation function to handle partial dates
-                        $bills = generateBillsWithPartialDates($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                        // FIXED: Use volume_limit_utils.php function for bill generation
+                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
                         
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
@@ -1816,7 +1715,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 // Update item stock
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
 
-                                // Update daily stock with cascading logic
+                                // Update daily stock with cascading logic - USING THE FIXED FUNCTION
                                 updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
@@ -1919,62 +1818,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Re-enable database constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
     $conn->query("SET UNIQUE_CHECKS = 1");
-}
-
-// NEW: Function to generate bills with partial date support
-function generateBillsWithPartialDates($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
-    logMessage("Generating bills with partial date support for " . count($items_data) . " items", 'INFO');
-    
-    $bills = [];
-    $bill_items_by_date = [];
-    
-    // Group items by date
-    foreach ($date_array as $date_index => $date) {
-        $bill_items_by_date[$date] = [];
-        
-        foreach ($items_data as $item_code => $item_data) {
-            if (isset($daily_sales_data[$item_code][$date_index]) && $daily_sales_data[$item_code][$date_index] > 0) {
-                $qty = $daily_sales_data[$item_code][$date_index];
-                $amount = $qty * $item_data['rate'];
-                
-                $bill_items_by_date[$date][] = [
-                    'code' => $item_code,
-                    'name' => $item_data['name'],
-                    'qty' => $qty,
-                    'rate' => $item_data['rate'],
-                    'amount' => $amount,
-                    'mode' => $item_data['mode']
-                ];
-            }
-        }
-    }
-    
-    // Create bills for each date that has items
-    foreach ($bill_items_by_date as $date => $items) {
-        if (count($items) > 0) {
-            $total_amount = 0;
-            foreach ($items as $item) {
-                $total_amount += $item['amount'];
-            }
-            
-            // Determine the mode for this bill (use the mode of the first item)
-            $bill_mode = count($items) > 0 ? $items[0]['mode'] : $mode;
-            
-            $bills[] = [
-                'bill_date' => $date,
-                'items' => $items,
-                'total_amount' => $total_amount,
-                'mode' => $bill_mode,
-                'comp_id' => $comp_id,
-                'user_id' => $user_id
-            ];
-            
-            logMessage("Created bill for $date with " . count($items) . " items, total amount: $total_amount", 'INFO');
-        }
-    }
-    
-    logMessage("Generated " . count($bills) . " bills with partial date distribution", 'INFO');
-    return $bills;
 }
 
 render_page:
@@ -2340,36 +2183,197 @@ tr.backdated-restriction .qty-input {
     color: #6c757d;
 }
 
-/* Partial date info styles */
-.partial-date-info {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-top: 3px;
+/* Special styling for items with partial date distribution */
+.partial-date-item {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107 !important;
 }
 
-.partial-date-warning {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-top: 3px;
+.partial-date-item td {
+    color: #856404 !important;
 }
 
-.date-excluded {
-    text-decoration: line-through;
-    color: #dc3545;
-    opacity: 0.7;
+.partial-distribution-cell {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    font-style: italic;
 }
 
-.date-available {
-    color: #28a745;
+/* Enhanced styling for unavailable date cells */
+.unavailable-date-cell {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    text-align: center;
+    position: relative;
     font-weight: bold;
 }
 
+.unavailable-date-cell span {
+    font-size: 14px;
+    display: block;
+}
+
+/* Available date cell with new sales */
+.available-date-cell {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Partial date item row styling */
+.partial-date-item {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107 !important;
+}
+
+.partial-date-item td {
+    color: #856404 !important;
+}
+
+/* Distribution column styles */
+.date-distribution-cell {
+    text-align: center !important;
+    font-weight: bold !important;
+    font-size: 12px !important;
+    padding: 3px 5px !important;
+    min-width: 35px !important;
+    border-left: 1px solid #dee2e6 !important;
+    border-right: 1px solid #dee2e6 !important;
+}
+
+.date-distribution-cell.zero-distribution {
+    color: #6c757d !important;
+    font-weight: normal !important;
+}
+
+.date-distribution-cell.non-zero-distribution {
+    color: #198754 !important;
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+.date-distribution-cell.unavailable-date {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.date-header {
+    text-align: center !important;
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+    min-width: 40px !important;
+    background-color: #f8f9fa !important;
+    border-left: 1px solid #dee2e6 !important;
+    border-right: 1px solid #dee2e6 !important;
+    font-weight: bold !important;
+    vertical-align: middle !important;
+}
+
+/* Make sure the table headers and columns are visible */
+.date-header, .date-distribution-cell {
+    display: table-cell !important;
+    visibility: visible !important;
+}
+
+/* Action column adjustment */
+.action-column {
+    width: 120px !important;
+    min-width: 120px !important;
+}
+
+/* Ensure the table layout doesn't break with date columns */
+.table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.styled-table {
+    min-width: 1200px; /* Minimum width to ensure all columns are visible */
+}
+
+/* Style for Shuffle button in action column */
+.btn-shuffle-item {
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+}
+
+/* ENHANCED: Date distribution cell styling for better visual representation */
+.date-distribution-cell.available-date-cell {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    font-weight: bold;
+    position: relative;
+}
+
+.date-distribution-cell.available-date-cell:after {
+    content: "✓";
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: 10px;
+    color: #28a745;
+}
+
+.date-distribution-cell.unavailable-date-cell {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.date-distribution-cell.unavailable-date-cell span {
+    display: block;
+    font-size: 14px;
+}
+
+.date-distribution-cell.non-zero-distribution {
+    background-color: #cce5ff !important;
+    color: #004085 !important;
+    font-weight: bold;
+}
+
+.date-distribution-cell.zero-distribution {
+    color: #6c757d !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Enhanced tooltip for date cells */
+.date-distribution-cell {
+    position: relative;
+    cursor: help;
+}
+
+/* Visual indicator for partial date items */
+.partial-date-item {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107 !important;
+}
+
+.partial-date-item td {
+    color: #856404 !important;
+}
+
+/* FIXED: Special styling for unavailable dates */
+.unavailable-date {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    font-weight: bold;
+    position: relative;
+}
+
+.unavailable-date:after {
+    content: "✗";
+    position: absolute;
+    top: 0;
+    right: 2px;
+    font-size: 10px;
+    color: #dc3545;
+}
+
+/* FIXED: Available date styling */
+.available-date-with-sales {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    font-weight: bold;
+}
   </style>
 </head>
 <body>
@@ -2560,13 +2564,13 @@ tr.backdated-restriction .qty-input {
                 <th>Category</th>
                 <th>Rate (₹)</th>
                 <th>Available Stock</th>
-                <th>Total Sale Qty</th>
-                <th class="closing-balance-header">Closing Balance</th>
+                <th>Sale Qty (Auto-calculated)</th>
+                <th class="closing-balance-header">Enter Closing Balance</th>
                 <th class="action-column">Action</th>
                 
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
                 
-                <th class="hidden-columns">Amount (₹)</th>
+                <th>Amount (₹)</th>
               </tr>
             </thead>
             <tbody>
@@ -2605,33 +2609,34 @@ tr.backdated-restriction .qty-input {
         // Enhanced backdated check for this specific item and date range
         $backdated_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
         $has_backdated_restriction = $backdated_check['restricted'];
-        $earliest_sale = $backdated_check['earliest_sale'] ?? null;
-        $latest_sale = $backdated_check['latest_sale'] ?? null;
-        $sale_count = $backdated_check['sale_count'] ?? 0;
+        $latest_existing = $backdated_check['latest_existing_sale'] ?? null;
+        $available_dates = $backdated_check['available_dates'] ?? [];
+        $unavailable_dates = $backdated_check['unavailable_dates'] ?? [];
         
-        // NEW: Check for existing sale dates for partial distribution
-        $existing_dates = getExistingSaleDatesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
-        $has_existing_dates = !empty($existing_dates);
-        $available_dates_count = $days_count - count($existing_dates);
+        // Check if ANY dates are available
+        $has_available_dates = !empty($available_dates);
         
-        $backdated_class = $has_backdated_restriction ? 'backdated-restriction' : '';
-        $backdated_title = $has_backdated_restriction ? 
-            "Sales exist from $earliest_sale to $latest_sale (Total: $sale_count sales)" : '';
+        // Disable input only if NO dates are available
+        $should_disable_input = $has_backdated_restriction && !$has_available_dates;
         
-        // NEW: Create partial date info
-        $partial_date_info = '';
-        if ($has_existing_dates && !$has_backdated_restriction) {
-            $partial_date_info = "<div class='partial-date-info'>";
-            $partial_date_info .= "<i class='fas fa-calendar-check'></i> Sales exist on " . count($existing_dates) . " dates<br>";
-            $partial_date_info .= "<small>Will distribute across $available_dates_count available dates</small>";
-            $partial_date_info .= "</div>";
-        }
+        $backdated_class = $should_disable_input ? 'backdated-restriction' : '';
+        $backdated_title = $should_disable_input ? 
+            "Sales exist on: " . implode(', ', $unavailable_dates) . ". No available dates in selected range." : 
+            ($has_backdated_restriction ? 
+                "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) : 
+                '');
+        
+        // Add partial date warning class if some dates are available
+        $partial_class = ($has_backdated_restriction && $has_available_dates) ? 'partial-date-warning' : '';
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
     data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-    data-existing-dates="<?= htmlspecialchars(json_encode($existing_dates)) ?>"
-    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?>">
+    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?> <?= $partial_class ?>"
+    data-has-backdated-restriction="<?= $has_backdated_restriction ? 'true' : 'false' ?>"
+    data-available-dates="<?= htmlspecialchars(json_encode($available_dates)) ?>"
+    data-unavailable-dates="<?= htmlspecialchars(json_encode($unavailable_dates)) ?>"
+    data-latest-existing="<?= htmlspecialchars($latest_existing ?? '') ?>">
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
@@ -2640,32 +2645,33 @@ tr.backdated-restriction .qty-input {
                 <span class="stock-info">
                     <span class="stock-integer"><?= number_format($display_stock); ?></span>
                     <span class="stock-status <?= $stock_status_class ?>">
-                        <?php if ($item['CURRENT_STOCK'] <= 0): ?>
-                            Out
-                        <?php elseif ($item['CURRENT_STOCK'] < 10): ?>
-                            Low
-                        <?php else: ?>
-                            Available
-                        <?php endif; ?>
+                        <?php if ($item['CURRENT_STOCK'] <= 0): ?>Out
+                        <?php elseif ($item['CURRENT_STOCK'] < 10): ?>Low
+                        <?php else: ?>Available<?php endif; ?>
                     </span>
+                    <?php if ($has_backdated_restriction && $has_available_dates): ?>
+                        <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                              title="Sales exist on <?= implode(', ', $unavailable_dates) ?>. New sales will be distributed on available dates only.">
+                            <i class="fas fa-calendar-day"></i> Partial Dates
+                        </span>
+                    <?php endif; ?>
                 </span>
             </td>
             <td>
-    <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
-           class="form-control qty-input" min="0" 
-           max="<?= floor($item['CURRENT_STOCK']); ?>" 
-           step="1" value="<?= $item_qty ?>" 
-           data-rate="<?= $item['RPRICE'] ?>"
-           data-code="<?= htmlspecialchars($item_code); ?>"
-           data-stock="<?= $item['CURRENT_STOCK'] ?>"
-           data-size="<?= $size ?>"
-           data-existing-dates="<?= htmlspecialchars(json_encode($existing_dates)) ?>"
-           oninput="validateQuantity(this)"
-           <?= $has_backdated_restriction ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
-    <?php if ($partial_date_info): ?>
-        <?= $partial_date_info ?>
-    <?php endif; ?>
-</td>
+                <input type="number" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
+                       class="form-control qty-input" min="0" 
+                       max="<?= floor($item['CURRENT_STOCK']); ?>" 
+                       step="1" value="<?= $item_qty ?>" 
+                       data-rate="<?= $item['RPRICE'] ?>"
+                       data-code="<?= htmlspecialchars($item_code); ?>"
+                       data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                       data-size="<?= $size ?>"
+                       data-has-backdated-restriction="<?= $has_backdated_restriction ? 'true' : 'false' ?>"
+                       data-available-dates="<?= htmlspecialchars(json_encode($available_dates)) ?>"
+                       data-unavailable-dates="<?= htmlspecialchars(json_encode($unavailable_dates)) ?>"
+                       oninput="validateQuantity(this)"
+                       <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
+            </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_closing) ?></span>
                 <!-- Show stock status for closing balance too -->
@@ -2676,10 +2682,15 @@ tr.backdated-restriction .qty-input {
                 <?php endif; ?>
             </td>
             <td class="action-column">
-                <?php if ($has_backdated_restriction): ?>
+                <?php if ($should_disable_input): ?>
                     <span class="badge bg-danger" data-bs-toggle="tooltip" 
                           title="<?= htmlspecialchars($backdated_title) ?>">
-                        <i class="fas fa-calendar-times"></i> Sales Exist From <?= $earliest_sale ?>
+                        <i class="fas fa-calendar-times"></i> No Available Dates
+                    </span>
+                <?php elseif ($has_backdated_restriction && $has_available_dates): ?>
+                    <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                          title="Sales exist on <?= implode(', ', $unavailable_dates) ?>. New sales will be distributed on available dates only.">
+                        <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates) ?> dates
                     </span>
                 <?php else: ?>
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
@@ -2691,7 +2702,7 @@ tr.backdated-restriction .qty-input {
             
             <!-- Date distribution cells will be inserted here by JavaScript -->
             
-            <td class="amount-cell hidden-columns" id="amount_<?= htmlspecialchars($item_code); ?>">
+            <td class="amount-cell" id="amount_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_amount) ?></span>
             </td>
         </tr>
@@ -2706,8 +2717,7 @@ tr.backdated-restriction .qty-input {
                     <p class="mb-1">Try a different search term</p>
                 <?php endif; ?>
                 <p class="mb-0"><small>Note: Only items with stock > 0 are shown</small></p>
-            </div>
-        </td>
+            </td>
     </tr>
 <?php endif; ?>
 </tbody>
@@ -2890,7 +2900,112 @@ const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? [])
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
-// NEW: Enhanced function to check backdated sales by specific dates
+// NEW: Function to get available dates for an item via AJAX
+function getAvailableDatesForItem(itemCode) {
+    return new Promise((resolve, reject) => {
+        $.ajax({
+            url: 'get_available_dates.php',
+            type: 'POST',
+            data: {
+                item_code: itemCode,
+                start_date: '<?= $start_date ?>',
+                end_date: '<?= $end_date ?>',
+                comp_id: '<?= $comp_id ?>'
+            },
+            success: function(response) {
+                try {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        resolve(result.available_dates || []);
+                    } else {
+                        resolve([]); // Return empty array if error
+                    }
+                } catch (e) {
+                    resolve([]); // Return empty array if parsing error
+                }
+            },
+            error: function() {
+                resolve([]); // Return empty array if AJAX error
+            }
+        });
+    });
+}
+
+// FIXED: Enhanced distribution function that correctly handles available/unavailable dates
+function distributeSalesOnAvailableDates(totalQty, availableDates, unavailableDates) {
+    if (totalQty <= 0) return new Array(daysCount).fill(0);
+    
+    // Create a map of date to index in the dateArray
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    // Create distribution array
+    const distribution = new Array(daysCount).fill(0);
+    
+    // If no available dates, return zeros
+    if (availableDates.length === 0) {
+        console.log(`No available dates for distribution`);
+        return distribution;
+    }
+    
+    // Distribute quantity only on available dates
+    const availableDaysCount = availableDates.length;
+    const baseQty = Math.floor(totalQty / availableDaysCount);
+    const remainder = totalQty % availableDaysCount;
+    
+    const dailySales = new Array(availableDaysCount).fill(baseQty);
+    
+    // Distribute remainder
+    for (let i = 0; i < remainder; i++) {
+        dailySales[i]++;
+    }
+    
+    // Shuffle the distribution
+    for (let i = dailySales.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
+    }
+    
+    // Place the distributed quantities in the correct date positions
+    availableDates.forEach((date, index) => {
+        const dateIndex = dateIndexMap[date];
+        if (dateIndex !== undefined) {
+            distribution[dateIndex] = dailySales[index];
+        }
+    });
+    
+    console.log(`Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
+    console.log(`Distribution:`, distribution);
+    
+    return distribution;
+}
+
+// Basic distribution function (client-side version) - for items with no restrictions
+function distributeSalesUniformlyClientSide(totalQty, daysCount) {
+    if (totalQty <= 0 || daysCount <= 0) return new Array(daysCount).fill(0);
+    
+    const baseQty = Math.floor(totalQty / daysCount);
+    const remainder = totalQty % daysCount;
+    
+    const dailySales = new Array(daysCount).fill(baseQty);
+    
+    // Distribute remainder evenly across days
+    for (let i = 0; i < remainder; i++) {
+        dailySales[i]++;
+    }
+    
+    // Shuffle the distribution to make it look more natural
+    for (let i = dailySales.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
+    }
+    
+    return dailySales;
+}
+
+// NEW: Enhanced backdated sales check by specific dates
 function checkBackdatedSalesBySpecificDatesBeforeSubmit() {
     return new Promise((resolve, reject) => {
         // Check if we have any quantities > 0
@@ -2939,7 +3054,8 @@ function checkBackdatedSalesBySpecificDatesBeforeSubmit() {
                         result.restricted_items.forEach(item => {
                             errorMessage += `• ${item.name} (${item.code})\n`;
                             errorMessage += `  Selected Date Range: ${item.start_date} to ${item.end_date}\n`;
-                            errorMessage += `  Existing Sales: ${item.earliest_sale} to ${item.latest_sale}\n`;
+                            errorMessage += `  Latest Existing Sale: ${item.latest_existing_sale}\n`;
+                            errorMessage += `  Available Dates: ${item.available_dates.length > 0 ? item.available_dates.join(', ') : 'None'}\n`;
                             errorMessage += `  ${item.message}\n\n`;
                         });
                         
@@ -3090,6 +3206,9 @@ function validateQuantity(input) {
     // Save to session via AJAX to prevent data loss
     saveQuantityToSession(itemCode, enteredQty);
     
+    // Update distribution preview with backend-like logic
+    updateDistributionPreviewWithAvailableDates(itemCode, enteredQty);
+    
     return true;
 }
 
@@ -3199,134 +3318,269 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// NEW: Function to distribute sales uniformly with partial date support (client-side version)
-function distributeSalesUniformlyWithPartialDates(total_qty, date_array, existing_dates = []) {
-    if (total_qty <= 0 || date_array.length === 0) return new Array(date_array.length).fill(0);
+// FIXED: Enhanced function to update distribution preview - correctly shows only available dates
+function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const itemRow = inputField.closest('tr');
     
-    // Get available dates (exclude existing sale dates)
-    const available_dates = [];
-    const date_index_map = [];
-    let available_count = 0;
-    
-    date_array.forEach((date, index) => {
-        if (!existing_dates.includes(date)) {
-            available_dates.push(date);
-            date_index_map[available_count] = index;
-            available_count++;
-        }
-    });
-    
-    // If no available dates, return zeros
-    if (available_count === 0) {
-        return new Array(date_array.length).fill(0);
-    }
-    
-    // Distribute among available dates
-    const base_qty = Math.floor(total_qty / available_count);
-    const remainder = total_qty % available_count;
-    
-    // Initialize result array with zeros for all dates
-    const daily_sales = new Array(date_array.length).fill(0);
-    
-    // Distribute base quantity to available dates
-    for (let i = 0; i < available_count; i++) {
-        const original_index = date_index_map[i];
-        daily_sales[original_index] = base_qty;
-    }
-    
-    // Distribute remainder evenly across available dates
-    for (let i = 0; i < remainder; i++) {
-        const original_index = date_index_map[i % available_count];
-        daily_sales[original_index]++;
-    }
-    
-    // Shuffle the distribution among available dates only
-    if (available_count > 1) {
-        const available_values = [];
-        for (let i = 0; i < available_count; i++) {
-            const original_index = date_index_map[i];
-            available_values.push(daily_sales[original_index]);
-        }
-        
-        // Shuffle the values
-        for (let i = available_values.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [available_values[i], available_values[j]] = [available_values[j], available_values[i]];
-        }
-        
-        // Put shuffled values back
-        for (let i = 0; i < available_count; i++) {
-            const original_index = date_index_map[i];
-            daily_sales[original_index] = available_values[i];
-        }
-    }
-    
-    console.log(`Distributed ${total_qty} across ${available_count} available dates (Excluded: ${existing_dates.length} dates)`);
-    
-    return daily_sales;
-}
-
-// OPTIMIZED: Function to update the distribution preview ONLY for items with qty > 0
-function updateDistributionPreview(itemCode, totalQty) {
     if (totalQty <= 0) {
         // Remove distribution cells if quantity is 0
-        $(`input[name="sale_qty[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
+        itemRow.find('.date-distribution-cell').remove();
+        
+        // Reset closing balance and amount
+        const currentStock = parseFloat(inputField.data('stock'));
+        const displayClosing = Math.floor(currentStock);
+        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
+        
+        // Hide date columns if no items have quantity
+        if ($('input[name^="sale_qty"]').filter(function() { 
+            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+        
         return;
     }
     
-    // Get existing dates for this item
-    const existingDates = [];
-    const existingDatesData = $(`input[name="sale_qty[${itemCode}]"]`).data('existing-dates');
-    if (existingDatesData) {
+    // Get available and unavailable dates from data attributes
+    const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
+    const availableDatesJson = inputField.data('available-dates');
+    const unavailableDatesJson = inputField.data('unavailable-dates');
+    
+    let availableDates = [];
+    let unavailableDates = [];
+    
+    if (availableDatesJson) {
         try {
-            const parsedDates = JSON.parse(existingDatesData);
-            if (Array.isArray(parsedDates)) {
-                existingDates.push(...parsedDates);
-            }
+            availableDates = JSON.parse(availableDatesJson);
         } catch (e) {
-            console.error('Error parsing existing dates:', e);
+            console.error('Error parsing available dates:', e);
         }
     }
     
-    const dailySales = distributeSalesUniformlyWithPartialDates(totalQty, dateArray, existingDates);
-    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
-    const itemRow = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
+    if (unavailableDatesJson) {
+        try {
+            unavailableDates = JSON.parse(unavailableDatesJson);
+        } catch (e) {
+            console.error('Error parsing unavailable dates:', e);
+        }
+    }
+    
+    // Create date index map
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    // Calculate distribution based on availability
+    let distribution = new Array(daysCount).fill(0);
+    
+    if (hasBackdatedRestriction && availableDates.length > 0) {
+        // Distribute only on available dates (backend logic)
+        const availableDaysCount = availableDates.length;
+        const baseQty = Math.floor(totalQty / availableDaysCount);
+        const remainder = totalQty % availableDaysCount;
+        
+        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
+        
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            dailySalesForAvailableDates[i]++;
+        }
+        
+        // Shuffle the distribution
+        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] = 
+            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+        }
+        
+        // Place the distributed quantities in the correct date positions
+        availableDates.forEach((date, index) => {
+            const dateIndex = dateIndexMap[date];
+            if (dateIndex !== undefined) {
+                distribution[dateIndex] = dailySalesForAvailableDates[index];
+            }
+        });
+        
+        console.log(`Item ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
+        console.log(`Distribution array:`, distribution);
+        
+        // Add special class to row to indicate partial distribution
+        itemRow.addClass('partial-date-item');
+        itemRow.attr('title', `Sales exist on some dates. New sales will be distributed only on: ${availableDates.join(', ')}`);
+    } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+        // No restrictions or all dates available - distribute across all dates
+        const baseQty = Math.floor(totalQty / daysCount);
+        const remainder = totalQty % daysCount;
+        
+        distribution = new Array(daysCount).fill(baseQty);
+        
+        // Distribute remainder evenly across days
+        for (let i = 0; i < remainder; i++) {
+            distribution[i]++;
+        }
+        
+        // Shuffle the distribution to make it look more natural
+        for (let i = distribution.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
+        }
+        
+        itemRow.removeClass('partial-date-item');
+        console.log(`Item ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
+    } else {
+        // No available dates - all zeros
+        console.log(`Item ${itemCode}: No available dates for distribution`);
+        itemRow.addClass('partial-date-item');
+        itemRow.attr('title', 'No available dates in selected range');
+    }
     
     // Remove any existing distribution cells
     itemRow.find('.date-distribution-cell').remove();
     
-    // Add date distribution cells after the action column
-    let totalDistributed = 0;
-    dailySales.forEach((qty, index) => {
-        totalDistributed += qty;
+    // Add date distribution cells with proper styling
+    distribution.forEach((qty, index) => {
         const date = dateArray[index];
-        const isExcluded = existingDates.includes(date);
+        const cell = $(`<td class="date-distribution-cell">${qty}</td>`);
         
-        // Create cell with appropriate styling
-        const cell = $(`<td class="date-distribution-cell ${isExcluded ? 'date-excluded' : 'date-available'}">${qty}</td>`);
-        if (isExcluded) {
-            cell.attr('title', 'Sales already exist on this date');
+        // Check if this date is unavailable due to existing sales
+        const isUnavailable = hasBackdatedRestriction && 
+                             unavailableDates.length > 0 && 
+                             unavailableDates.includes(date);
+        
+        const isAvailable = hasBackdatedRestriction && 
+                           availableDates.length > 0 && 
+                           availableDates.includes(date);
+        
+        // Apply styling based on availability and quantity
+        if (isUnavailable) {
+            // Date has existing sales - should always be 0
+            cell.addClass('unavailable-date');
+            cell.html('<span class="text-danger">✗</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            
+        } else if (isAvailable && qty > 0) {
+            // Date is available and has new sales
+            cell.addClass('available-date-with-sales');
+            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+            
+        } else if (qty > 0) {
+            // Normal distribution (no restrictions)
+            cell.addClass('non-zero-distribution');
+            cell.attr('title', `${qty} units scheduled for ${date}`);
+            
+        } else {
+            // Zero quantity
+            cell.addClass('zero-distribution');
+            
+            if (isAvailable) {
+                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
+            } else if (!hasBackdatedRestriction) {
+                cell.attr('title', `Date ${date} has 0 units assigned`);
+            }
         }
         
         // Insert distribution cells after the action column
         cell.insertAfter(itemRow.find('.action-column'));
     });
     
-    // Update closing balance
-    const currentStock = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('stock'));
-    const closingBalance = currentStock - totalDistributed;
-    const displayClosing = Math.floor(closingBalance);
-    $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+    // Update total distribution count
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed !== totalQty) {
+        console.warn(`Warning: Total distributed (${totalDistributed}) doesn't match input (${totalQty}) for item ${itemCode}`);
+    }
     
-    // Update amount
-    const amount = totalDistributed * rate;
-    const displayAmount = Math.floor(amount);
-    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
-    
-    // Show date columns if they're hidden
+    // Show date columns
     $('.date-header, .date-distribution-cell').show();
+}
+
+// FIXED: Enhanced distribution function for shuffle that correctly handles available dates
+function shuffleDistributionForItem(itemCode, totalQty) {
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
+    const availableDatesJson = inputField.data('available-dates');
+    const unavailableDatesJson = inputField.data('unavailable-dates');
     
-    return dailySales;
+    let availableDates = [];
+    let unavailableDates = [];
+    
+    if (availableDatesJson) {
+        try {
+            availableDates = JSON.parse(availableDatesJson);
+        } catch (e) {
+            console.error('Error parsing available dates:', e);
+        }
+    }
+    
+    if (unavailableDatesJson) {
+        try {
+            unavailableDates = JSON.parse(unavailableDatesJson);
+        } catch (e) {
+            console.error('Error parsing unavailable dates:', e);
+        }
+    }
+    
+    // Create date index map
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    let distribution = new Array(daysCount).fill(0);
+    
+    if (hasBackdatedRestriction && availableDates.length > 0) {
+        // Distribute only on available dates
+        const availableDaysCount = availableDates.length;
+        const baseQty = Math.floor(totalQty / availableDaysCount);
+        const remainder = totalQty % availableDaysCount;
+        
+        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
+        
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            dailySalesForAvailableDates[i]++;
+        }
+        
+        // Shuffle the distribution
+        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] = 
+            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+        }
+        
+        // Place the distributed quantities in the correct date positions
+        availableDates.forEach((date, index) => {
+            const dateIndex = dateIndexMap[date];
+            if (dateIndex !== undefined) {
+                distribution[dateIndex] = dailySalesForAvailableDates[index];
+            }
+        });
+        
+        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates`);
+    } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+        // Distribute across all dates
+        const baseQty = Math.floor(totalQty / daysCount);
+        const remainder = totalQty % daysCount;
+        
+        distribution = new Array(daysCount).fill(baseQty);
+        
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            distribution[i]++;
+        }
+        
+        // Shuffle the distribution
+        for (let i = distribution.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
+        }
+        
+        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
+    }
+    
+    return distribution;
 }
 
 // Function to calculate total amount
@@ -3350,7 +3604,7 @@ function initializeTableHeaders() {
         const month = dateObj.toLocaleString('default', { month: 'short' });
         
         // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}" style="display: none;">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+        $(`<th class="date-header" title="${date}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
     });
 }
 
@@ -3801,6 +4055,206 @@ function initializeBackdatedTooltips() {
     });
 }
 
+// Function to initialize distribution preview for all items with quantities
+function initializeDistributionPreview() {
+    console.log('Initializing distribution preview for items with quantities...');
+    
+    let itemsWithQuantity = 0;
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+        
+        if (totalQty > 0 && !$(this).prop('disabled')) {
+            updateDistributionPreviewWithAvailableDates(itemCode, totalQty);
+            itemsWithQuantity++;
+        }
+    });
+    
+    console.log(`Initialized distribution preview for ${itemsWithQuantity} items with quantities`);
+    
+    // Show date headers if we have any items with quantity
+    if (itemsWithQuantity > 0) {
+        $('.date-header, .date-distribution-cell').show();
+    }
+}
+
+// FIXED: Individual shuffle button click event - correctly handles available dates
+$(document).on('click', '.btn-shuffle-item', async function() {
+    const itemCode = $(this).data('code');
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const totalQty = parseInt(inputField.val()) || 0;
+    
+    // Only shuffle if quantity > 0 and not disabled
+    if (totalQty > 0 && !inputField.prop('disabled')) {
+        // Get new distribution based on backend logic
+        const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
+        
+        // Update the distribution cells
+        const itemRow = inputField.closest('tr');
+        const dateCells = itemRow.find('.date-distribution-cell');
+        
+        // Get available/unavailable dates
+        const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
+        const availableDatesJson = inputField.data('available-dates');
+        const unavailableDatesJson = inputField.data('unavailable-dates');
+        
+        let availableDates = [];
+        let unavailableDates = [];
+        
+        if (availableDatesJson) {
+            try {
+                availableDates = JSON.parse(availableDatesJson);
+            } catch (e) {}
+        }
+        
+        if (unavailableDatesJson) {
+            try {
+                unavailableDates = JSON.parse(unavailableDatesJson);
+            } catch (e) {}
+        }
+        
+        // Create date index map
+        const dateIndexMap = {};
+        dateArray.forEach((date, index) => {
+            dateIndexMap[date] = index;
+        });
+        
+        newDistribution.forEach((qty, index) => {
+            if (dateCells.eq(index).length) {
+                const cell = dateCells.eq(index);
+                const date = dateArray[index];
+                
+                // Update the cell value
+                cell.text(qty);
+                
+                // Update styling based on value and availability
+                cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
+                
+                // Check if this date is unavailable
+                const isUnavailable = hasBackdatedRestriction && 
+                                     unavailableDates.length > 0 && 
+                                     unavailableDates.includes(date);
+                
+                const isAvailable = hasBackdatedRestriction && 
+                                   availableDates.length > 0 && 
+                                   availableDates.includes(date);
+                
+                if (isUnavailable) {
+                    // Date has existing sales - should always be 0
+                    cell.addClass('unavailable-date');
+                    cell.html('<span class="text-danger">✗</span>');
+                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                } else if (isAvailable && qty > 0) {
+                    // Date is available and has new sales
+                    cell.addClass('available-date-with-sales');
+                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+                } else if (qty > 0) {
+                    cell.addClass('non-zero-distribution');
+                    cell.attr('title', `${qty} units scheduled for ${date}`);
+                } else {
+                    cell.addClass('zero-distribution');
+                    cell.attr('title', `Date ${date} has 0 units assigned`);
+                }
+            }
+        });
+        
+        console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
+    }
+});
+
+// FIXED: Shuffle all button click event - correctly handles available dates
+$('#shuffleBtn').off('click').on('click', async function() {
+    // Show loader
+    $('#ajaxLoader').show();
+    
+    // Process all items with quantities
+    const itemsToShuffle = [];
+    $('input.qty-input').each(function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+        
+        // Only shuffle if quantity > 0, visible, and not disabled
+        if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
+            itemsToShuffle.push({ itemCode, totalQty });
+        }
+    });
+    
+    // Shuffle each item using backend-like logic
+    for (const item of itemsToShuffle) {
+        const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
+        
+        // Update the distribution cells
+        const inputField = $(`input[name="sale_qty[${item.itemCode}]"]`);
+        const itemRow = inputField.closest('tr');
+        const dateCells = itemRow.find('.date-distribution-cell');
+        
+        // Get available/unavailable dates
+        const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
+        const availableDatesJson = inputField.data('available-dates');
+        const unavailableDatesJson = inputField.data('unavailable-dates');
+        
+        let availableDates = [];
+        let unavailableDates = [];
+        
+        if (availableDatesJson) {
+            try {
+                availableDates = JSON.parse(availableDatesJson);
+            } catch (e) {}
+        }
+        
+        if (unavailableDatesJson) {
+            try {
+                unavailableDates = JSON.parse(unavailableDatesJson);
+            } catch (e) {}
+        }
+        
+        newDistribution.forEach((qty, index) => {
+            if (dateCells.eq(index).length) {
+                const cell = dateCells.eq(index);
+                const date = dateArray[index];
+                
+                // Update the cell value
+                cell.text(qty);
+                
+                // Update styling based on value and availability
+                cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
+                
+                // Check if this date is unavailable
+                const isUnavailable = hasBackdatedRestriction && 
+                                     unavailableDates.length > 0 && 
+                                     unavailableDates.includes(date);
+                
+                const isAvailable = hasBackdatedRestriction && 
+                                   availableDates.length > 0 && 
+                                   availableDates.includes(date);
+                
+                if (isUnavailable) {
+                    // Date has existing sales - should always be 0
+                    cell.addClass('unavailable-date');
+                    cell.html('<span class="text-danger">✗</span>');
+                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                } else if (isAvailable && qty > 0) {
+                    // Date is available and has new sales
+                    cell.addClass('available-date-with-sales');
+                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+                } else if (qty > 0) {
+                    cell.addClass('non-zero-distribution');
+                    cell.attr('title', `${qty} units scheduled for ${date}`);
+                } else {
+                    cell.addClass('zero-distribution');
+                    cell.attr('title', `Date ${date} has 0 units assigned`);
+                }
+            }
+        });
+    }
+    
+    // Hide loader
+    $('#ajaxLoader').hide();
+    
+    // Update total amount
+    calculateTotalAmount();
+});
+
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
     console.log('Document ready - Initializing...');
@@ -3813,6 +4267,9 @@ $(document).ready(function() {
     
     // Initialize quantities in visible inputs from session
     initializeQuantitiesFromSession();
+    
+    // Initialize distribution preview for items with quantities
+    initializeDistributionPreview();
     
     // Initialize enhanced tooltips
     initializeBackdatedTooltips();
@@ -3841,72 +4298,16 @@ $(document).ready(function() {
     
     // Quantity input change event
     $(document).on('change', 'input[name^="sale_qty"]', function() {
-        // First validate the quantity
-        if (!validateQuantity(this)) {
-            return; // Stop if validation fails
-        }
+        // The validateQuantity function now handles distribution updates
+        validateQuantity(this);
         
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(this).val()) || 0;
+        // Update total amount
+        calculateTotalAmount();
         
-        // Only update distribution if quantity > 0 and not disabled (optimization)
-        if (totalQty > 0 && !$(this).prop('disabled')) {
-            updateDistributionPreview(itemCode, totalQty);
-        } else {
-            // Remove distribution cells if quantity is 0
-            $(`input[name="sale_qty[${itemCode}]"]`).closest('tr').find('.date-distribution-cell').remove();
-            
-            // Reset closing balance and amount
-            const currentStock = parseFloat($(this).data('stock'));
-            const displayClosing = Math.floor(currentStock);
-            $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
-            $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
-            
-            // Hide date columns if no items have quantity
-            if ($('input[name^="sale_qty"]').filter(function() { 
-                return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
-            }).length === 0) {
-                $('.date-header, .date-distribution-cell').hide();
-            }
-        }
-
         // Also update total sales module if modal is open
         if ($('#totalSalesModal').hasClass('show')) {
             console.log('Modal is open, updating total sales module with ALL modes data...');
             updateTotalSalesModule();
-        }
-        
-        // Update total amount
-        calculateTotalAmount();
-    });
-    
-    // OPTIMIZED: Shuffle all button click event - Only shuffle items with qty > 0 and not disabled
-    $('#shuffleBtn').off('click').on('click', function() {
-        $('input.qty-input').each(function() {
-            const itemCode = $(this).data('code');
-            const totalQty = parseInt($(this).val()) || 0;
-            
-            // Only shuffle if quantity > 0, visible, and not disabled (optimization)
-            if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
-                updateDistributionPreview(itemCode, totalQty);
-            }
-        });
-        
-        // Update total amount
-        calculateTotalAmount();
-    });
-    
-    // Individual shuffle button click event
-    $(document).on('click', '.btn-shuffle-item', function() {
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0;
-        
-        // Only shuffle if quantity > 0 and not disabled
-        if (totalQty > 0 && !$(`input[name="sale_qty[${itemCode}]"]`).prop('disabled')) {
-            updateDistributionPreview(itemCode, totalQty);
-            
-            // Update total amount
-            calculateTotalAmount();
         }
     });
     
@@ -3915,7 +4316,7 @@ $(document).ready(function() {
         loadSalesLog();
     });
     
-    // Update total sales module when modal is shown - FIXED: Use 'show.bs.modal' instead of 'shown.bs.modal'
+    // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
         console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
@@ -3939,11 +4340,6 @@ function initializeQuantitiesFromSession() {
             // Update UI for this item
             const currentStock = parseFloat($(this).data('stock'));
             updateItemUI(itemCode, sessionQty, currentStock);
-            
-            // Show distribution if quantity > 0 and not disabled (optimization)
-            if (sessionQty > 0 && !$(this).prop('disabled')) {
-                updateDistributionPreview(itemCode, sessionQty);
-            }
         }
     });
     
