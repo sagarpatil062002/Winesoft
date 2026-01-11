@@ -7690,3 +7690,2941 @@ Array
 [2026-01-11 12:22:17] [INFO] Item SCMPL0010694: Latest existing sale: 2026-01-07
 [2026-01-11 12:22:17] [INFO] Available dates: 2026-01-08, 2026-01-09
 [2026-01-11 12:22:17] [INFO] Unavailable dates (has existing sales): 2026-01-06, 2026-01-07
+[2026-01-11 12:49:50] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:49:50] [INFO] Request method: GET
+[2026-01-11 12:49:50] [INFO] Search term: ''
+[2026-01-11 12:49:50] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:49:51] [INFO] Final session quantities count: 1
+[2026-01-11 12:49:51] [INFO] Items in current view: 50
+[2026-01-11 12:49:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:50:00] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:50:00] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:50:03] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:50:08] [INFO] Session quantity updated: SCMPL0010694 = 2
+[2026-01-11 12:50:08] [INFO] Session quantity updated: SCMPL0010694 = 2
+[2026-01-11 12:50:09] [INFO] Session quantity updated: SCMPL0010694 = 2
+[2026-01-11 12:50:12] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:50:12] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:50:12] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-11 12:50:12] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-11 12:50:13] [INFO] Session quantity updated: SCMPL0010694 = 5
+[2026-01-11 12:50:19] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:50:19] [INFO] Request method: GET
+[2026-01-11 12:50:19] [INFO] Search term: ''
+[2026-01-11 12:50:19] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:50:19] [INFO] Final session quantities count: 1
+[2026-01-11 12:50:19] [INFO] Items in current view: 50
+[2026-01-11 12:50:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:50:19] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:50:19] [INFO] Request method: GET
+[2026-01-11 12:50:19] [INFO] Search term: ''
+[2026-01-11 12:50:19] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:50:19] [INFO] Final session quantities count: 1
+[2026-01-11 12:50:19] [INFO] Items in current view: 50
+[2026-01-11 12:50:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:50:19] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:50:19] [INFO] Request method: GET
+[2026-01-11 12:50:19] [INFO] Search term: ''
+[2026-01-11 12:50:19] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:50:19] [INFO] Final session quantities count: 1
+[2026-01-11 12:50:19] [INFO] Items in current view: 50
+[2026-01-11 12:50:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:50:19] [INFO] Item SCMPL0010694: Latest existing sale: 2026-01-07
+[2026-01-11 12:50:19] [INFO] Available dates: 2026-01-08, 2026-01-09, 2026-01-10, 2026-01-11
+[2026-01-11 12:50:19] [INFO] Unavailable dates (has existing sales): 2026-01-06, 2026-01-07
+[2026-01-11 12:57:28] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:28] [INFO] Request method: GET
+[2026-01-11 12:57:28] [INFO] Search term: ''
+[2026-01-11 12:57:28] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:29] [INFO] Final session quantities count: 1
+[2026-01-11 12:57:29] [INFO] Items in current view: 50
+[2026-01-11 12:57:29] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:29] [INFO] Item SCMPL0010694: Latest existing sale: 2026-01-07
+[2026-01-11 12:57:29] [INFO] Available dates: 2026-01-08, 2026-01-09, 2026-01-10, 2026-01-11
+[2026-01-11 12:57:29] [INFO] Unavailable dates (has existing sales): 2026-01-06, 2026-01-07
+[2026-01-11 12:57:37] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:57:37] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:57:39] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:57:40] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 12:57:40] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 12:57:41] [INFO] Session quantity updated: SCMPL0041501 = 20
+[2026-01-11 12:57:41] [INFO] Session quantity updated: SCMPL0041501 = 20
+[2026-01-11 12:57:42] [INFO] Session quantity updated: SCMPL0041501 = 20
+[2026-01-11 12:57:44] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 12:57:44] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 12:57:47] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:47] [INFO] Request method: GET
+[2026-01-11 12:57:47] [INFO] Search term: ''
+[2026-01-11 12:57:47] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:47] [INFO] Final session quantities count: 2
+[2026-01-11 12:57:47] [INFO] Items in current view: 50
+[2026-01-11 12:57:47] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 2
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:47] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:47] [INFO] Request method: GET
+[2026-01-11 12:57:47] [INFO] Search term: ''
+[2026-01-11 12:57:47] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:48] [INFO] Final session quantities count: 2
+[2026-01-11 12:57:48] [INFO] Items in current view: 50
+[2026-01-11 12:57:48] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 2
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:48] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 12:57:51] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:51] [INFO] Request method: GET
+[2026-01-11 12:57:51] [INFO] Search term: ''
+[2026-01-11 12:57:51] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:51] [INFO] Final session quantities count: 2
+[2026-01-11 12:57:51] [INFO] Items in current view: 44
+[2026-01-11 12:57:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 3
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:51] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:51] [INFO] Request method: GET
+[2026-01-11 12:57:51] [INFO] Search term: ''
+[2026-01-11 12:57:51] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:51] [INFO] Final session quantities count: 2
+[2026-01-11 12:57:51] [INFO] Items in current view: 44
+[2026-01-11 12:57:51] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 3
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:55] [INFO] === PAGE ACCESS ===
+[2026-01-11 12:57:55] [INFO] Request method: GET
+[2026-01-11 12:57:55] [INFO] Search term: ''
+[2026-01-11 12:57:55] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 12:57:55] [INFO] Final session quantities count: 2
+[2026-01-11 12:57:55] [INFO] Items in current view: 50
+[2026-01-11 12:57:55] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-06 to 2026-01-11
+    [days_count] => 6
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 12:57:55] [INFO] Item SCMPL0010694: Latest existing sale: 2026-01-07
+[2026-01-11 12:57:55] [INFO] Available dates: 2026-01-08, 2026-01-09, 2026-01-10, 2026-01-11
+[2026-01-11 12:57:55] [INFO] Unavailable dates (has existing sales): 2026-01-06, 2026-01-07
+[2026-01-11 12:57:59] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:57:59] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 12:58:00] [INFO] Session quantity updated: SCMPL0010694 = 7
+[2026-01-11 12:58:00] [INFO] Session quantity updated: SCMPL0010694 = 7
+[2026-01-11 12:58:01] [INFO] Session quantity updated: SCMPL0010694 = 7
+[2026-01-11 13:01:19] [INFO] === PAGE ACCESS ===
+[2026-01-11 13:01:19] [INFO] Request method: GET
+[2026-01-11 13:01:19] [INFO] Search term: ''
+[2026-01-11 13:01:19] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 13:01:19] [INFO] Final session quantities count: 2
+[2026-01-11 13:01:19] [INFO] Items in current view: 50
+[2026-01-11 13:01:19] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 13:02:53] [INFO] === PAGE ACCESS ===
+[2026-01-11 13:02:53] [INFO] Request method: GET
+[2026-01-11 13:02:53] [INFO] Search term: ''
+[2026-01-11 13:02:53] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 13:02:54] [INFO] Final session quantities count: 2
+[2026-01-11 13:02:54] [INFO] Items in current view: 50
+[2026-01-11 13:02:54] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 13:45:15] [INFO] === PAGE ACCESS ===
+[2026-01-11 13:45:15] [INFO] Request method: GET
+[2026-01-11 13:45:15] [INFO] Search term: ''
+[2026-01-11 13:45:15] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 13:45:15] [INFO] Final session closing balances count: 0
+[2026-01-11 13:45:15] [INFO] Final session quantities count: 2
+[2026-01-11 13:45:15] [INFO] Items in current view: 50
+[2026-01-11 13:45:15] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [session_quantities_count] => 2
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 13:45:26] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 13:45:26] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 13:45:27] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 13:45:27] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 13:45:28] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 13:45:33] [INFO] === PAGE ACCESS ===
+[2026-01-11 13:45:33] [INFO] Request method: POST
+[2026-01-11 13:45:33] [INFO] Search term: ''
+[2026-01-11 13:45:33] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 13:45:33] [INFO] Session closing balances updated from POST: 50 items
+[2026-01-11 13:45:33] [INFO] Item SCMPL0028276: Distributing 31 across 1 available dates: 2026-01-11
+[2026-01-11 13:45:33] [INFO] Getting next bill number for CompID: 1
+[2026-01-11 13:45:33] [INFO] Next bill number for CompID 1: 8
+[2026-01-11 13:45:33] [INFO] Starting daily stock update for item SCMPL0028276 sold on 2026-01-11 (Qty: 5)
+[2026-01-11 13:45:33] [INFO] Recalculating stock from day 11 for item SCMPL0028276 in 2026-01 in table tbldailystock_1
+[2026-01-11 13:45:33] [DEBUG] Day 11: Opening=285, Purchase=0, Sales=5, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 12: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 13: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 14: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 15: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 16: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 17: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 18: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 19: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:33] [DEBUG] Day 20: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 21: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 22: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 23: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 24: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 25: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 26: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 27: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 28: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 29: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 30: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [DEBUG] Day 31: Opening=280, Purchase=0, Sales=0, Closing=280
+[2026-01-11 13:45:34] [INFO] Completed recalculating stock for 2026-01 from day 11
+[2026-01-11 13:45:34] [INFO] Starting cascading to current month for item SCMPL0028276 sold on 2026-01-11
+[2026-01-11 13:45:34] [INFO] Daily stock updated successfully for item SCMPL0028276 on 2026-01-11 in table tbldailystock_1: Sales=5, Closing=280
+[2026-01-11 13:45:34] [INFO] Starting daily stock update for item SCMPL0028276 sold on 2026-01-11 (Qty: 5)
+[2026-01-11 13:45:34] [INFO] Recalculating stock from day 11 for item SCMPL0028276 in 2026-01 in table tbldailystock_1
+[2026-01-11 13:45:34] [DEBUG] Day 11: Opening=285, Purchase=0, Sales=6, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 12: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 13: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 14: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 15: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 16: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 17: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 18: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 19: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 20: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:34] [DEBUG] Day 21: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 22: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 23: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 24: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 25: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 26: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 27: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 28: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 29: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 30: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [DEBUG] Day 31: Opening=279, Purchase=0, Sales=0, Closing=279
+[2026-01-11 13:45:35] [INFO] Completed recalculating stock for 2026-01 from day 11
+[2026-01-11 13:45:35] [INFO] Starting cascading to current month for item SCMPL0028276 sold on 2026-01-11
+[2026-01-11 13:45:35] [INFO] Daily stock updated successfully for item SCMPL0028276 on 2026-01-11 in table tbldailystock_1: Sales=6, Closing=279
+[2026-01-11 13:45:35] [INFO] Starting daily stock update for item SCMPL0028276 sold on 2026-01-11 (Qty: 5)
+[2026-01-11 13:45:35] [ERROR] Transaction rolled back: Failed to update daily stock for item SCMPL0028276 on 2026-01-11 in table tbldailystock_1
+[2026-01-11 13:45:35] [INFO] Final session closing balances count: 50
+[2026-01-11 13:45:35] [INFO] Final session quantities count: 3
+[2026-01-11 13:45:35] [INFO] Items in current view: 50
+[2026-01-11 13:45:35] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 50
+    [session_quantities_count] => 3
+    [post_closing_balances_count] => 50
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:00:50] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:00:50] [INFO] Request method: GET
+[2026-01-11 14:00:50] [INFO] Search term: ''
+[2026-01-11 14:00:50] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:00:50] [INFO] Final session closing balances count: 50
+[2026-01-11 14:00:50] [INFO] Final session quantities count: 3
+[2026-01-11 14:00:50] [INFO] Items in current view: 50
+[2026-01-11 14:00:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 50
+    [session_quantities_count] => 3
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:00:58] [INFO] Session quantity updated: SCMPL0028276 = 0
+[2026-01-11 14:01:25] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:01:25] [INFO] Request method: GET
+[2026-01-11 14:01:25] [INFO] Search term: ''
+[2026-01-11 14:01:25] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:01:26] [INFO] Final session quantities count: 3
+[2026-01-11 14:01:26] [INFO] Items in current view: 50
+[2026-01-11 14:01:26] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:08:37] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:08:37] [INFO] Request method: GET
+[2026-01-11 14:08:37] [INFO] Search term: ''
+[2026-01-11 14:08:37] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:08:37] [INFO] Final session closing balances count: 50
+[2026-01-11 14:08:37] [INFO] Final session quantities count: 3
+[2026-01-11 14:08:37] [INFO] Items in current view: 50
+[2026-01-11 14:08:37] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 50
+    [session_quantities_count] => 3
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:18:41] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:18:41] [INFO] Request method: GET
+[2026-01-11 14:18:41] [INFO] Search term: ''
+[2026-01-11 14:18:41] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:18:41] [INFO] Final session quantities count: 3
+[2026-01-11 14:18:41] [INFO] Items in current view: 50
+[2026-01-11 14:18:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:20:17] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:20:17] [INFO] Request method: GET
+[2026-01-11 14:20:17] [INFO] Search term: ''
+[2026-01-11 14:20:17] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:20:17] [INFO] Final session quantities count: 3
+[2026-01-11 14:20:17] [INFO] Items in current view: 50
+[2026-01-11 14:20:17] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:20:55] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:20:55] [INFO] Request method: GET
+[2026-01-11 14:20:55] [INFO] Search term: ''
+[2026-01-11 14:20:55] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:20:56] [INFO] Final session quantities count: 3
+[2026-01-11 14:20:56] [INFO] Items in current view: 50
+[2026-01-11 14:20:56] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:22:20] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:22:20] [INFO] Request method: GET
+[2026-01-11 14:22:20] [INFO] Search term: ''
+[2026-01-11 14:22:20] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:22:20] [INFO] Final session quantities count: 3
+[2026-01-11 14:22:20] [INFO] Items in current view: 50
+[2026-01-11 14:22:20] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:27:32] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:27:32] [INFO] Request method: GET
+[2026-01-11 14:27:32] [INFO] Search term: ''
+[2026-01-11 14:27:32] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:27:32] [INFO] Final session quantities count: 3
+[2026-01-11 14:27:32] [INFO] Items in current view: 50
+[2026-01-11 14:27:32] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:29:45] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:29:45] [INFO] Request method: GET
+[2026-01-11 14:29:45] [INFO] Search term: ''
+[2026-01-11 14:29:45] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:29:46] [INFO] Final session quantities count: 3
+[2026-01-11 14:29:46] [INFO] Items in current view: 50
+[2026-01-11 14:29:46] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:34:30] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:34:30] [INFO] Request method: GET
+[2026-01-11 14:34:30] [INFO] Search term: ''
+[2026-01-11 14:34:30] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:34:30] [INFO] Final session closing balances count: 50
+[2026-01-11 14:34:30] [INFO] Items in current view: 50
+[2026-01-11 14:34:30] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 112
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 50
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:40:17] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:40:17] [INFO] Request method: GET
+[2026-01-11 14:40:17] [INFO] Search term: ''
+[2026-01-11 14:40:17] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:40:17] [INFO] Final session quantities count: 3
+[2026-01-11 14:40:17] [INFO] Items in current view: 0
+[2026-01-11 14:40:18] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:40:30] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:40:30] [INFO] Request method: GET
+[2026-01-11 14:40:30] [INFO] Search term: ''
+[2026-01-11 14:40:30] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:40:30] [INFO] Final session quantities count: 3
+[2026-01-11 14:40:30] [INFO] Items in current view: 0
+[2026-01-11 14:40:30] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 14:59:43] [INFO] === PAGE ACCESS ===
+[2026-01-11 14:59:43] [INFO] Request method: GET
+[2026-01-11 14:59:43] [INFO] Search term: ''
+[2026-01-11 14:59:43] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 14:59:44] [INFO] Final session quantities count: 3
+[2026-01-11 14:59:44] [INFO] Items in current view: 50
+[2026-01-11 14:59:44] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:04] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:04] [INFO] Request method: GET
+[2026-01-11 15:00:04] [INFO] Search term: ''
+[2026-01-11 15:00:04] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 15:00:04] [INFO] Final session quantities count: 3
+[2026-01-11 15:00:04] [INFO] Items in current view: 50
+[2026-01-11 15:00:04] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:04] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:04] [INFO] Request method: GET
+[2026-01-11 15:00:04] [INFO] Search term: ''
+[2026-01-11 15:00:04] [INFO] Current session ID: 18fp28p2ujei71eglk33480oge
+[2026-01-11 15:00:04] [INFO] Final session quantities count: 3
+[2026-01-11 15:00:04] [INFO] Items in current view: 50
+[2026-01-11 15:00:04] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 3
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:24] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:24] [INFO] Request method: GET
+[2026-01-11 15:00:24] [INFO] Search term: ''
+[2026-01-11 15:00:24] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:00:24] [INFO] Final session quantities count: 0
+[2026-01-11 15:00:24] [INFO] Items in current view: 50
+[2026-01-11 15:00:24] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:40] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:40] [INFO] Request method: GET
+[2026-01-11 15:00:40] [INFO] Search term: ''
+[2026-01-11 15:00:40] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:00:40] [INFO] Final session quantities count: 0
+[2026-01-11 15:00:40] [INFO] Items in current view: 50
+[2026-01-11 15:00:40] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:40] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:40] [INFO] Request method: GET
+[2026-01-11 15:00:40] [INFO] Search term: ''
+[2026-01-11 15:00:40] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:00:40] [INFO] Final session quantities count: 0
+[2026-01-11 15:00:40] [INFO] Items in current view: 50
+[2026-01-11 15:00:40] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:00:43] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:00:43] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:00:43] [INFO] Session quantity updated: SCMPL0010694 = 1
+[2026-01-11 15:00:43] [INFO] Session quantity updated: SCMPL0010694 = 1
+[2026-01-11 15:00:45] [INFO] Session quantity updated: SCMPL0010694 = 13
+[2026-01-11 15:00:45] [INFO] Session quantity updated: SCMPL0010694 = 13
+[2026-01-11 15:00:47] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:00:47] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:00:48] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:00:53] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:00:53] [INFO] Request method: POST
+[2026-01-11 15:00:53] [INFO] Search term: ''
+[2026-01-11 15:00:53] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:00:53] [INFO] Session quantities updated from POST: 1 items
+[2026-01-11 15:00:53] [INFO] Item SCMPL0010694: Distributing 3 across 3 available dates: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-11 15:00:53] [INFO] Getting next bill number for CompID: 1
+[2026-01-11 15:00:53] [INFO] Next bill number for CompID 1: 1
+[2026-01-11 15:00:53] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-01 (Qty: 1)
+[2026-01-11 15:00:53] [INFO] Recalculating stock from day 01 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:00:54] [DEBUG] Day 01: Opening=23, Purchase=0, Sales=1, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:54] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [INFO] Completed recalculating stock for 2025-11 from day 01
+[2026-01-11 15:00:55] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-01
+[2026-01-11 15:00:55] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:00:55] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 22
+[2026-01-11 15:00:55] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:00:55] [DEBUG] Day 1: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:55] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 31: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [INFO] Updated DAY_01_OPEN to 22 based on previous month's closing
+[2026-01-11 15:00:56] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:00:56] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:00:56] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 22
+[2026-01-11 15:00:56] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:00:56] [DEBUG] Day 1: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:56] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [DEBUG] Day 31: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:00:57] [INFO] Updated DAY_01_OPEN to 22 based on previous month's closing
+[2026-01-11 15:00:57] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:00:57] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:00:57] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:00:57] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:00:57] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-01 in table tbldailystock_1_11_25: Sales=1, Closing=22
+[2026-01-11 15:00:57] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-02 (Qty: 1)
+[2026-01-11 15:00:57] [INFO] Recalculating stock from day 02 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:00:57] [DEBUG] Day 02: Opening=22, Purchase=0, Sales=1, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:57] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [INFO] Completed recalculating stock for 2025-11 from day 02
+[2026-01-11 15:00:58] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-02
+[2026-01-11 15:00:58] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:00:58] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 21
+[2026-01-11 15:00:58] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:00:58] [DEBUG] Day 1: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 2: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:58] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 31: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [INFO] Updated DAY_01_OPEN to 21 based on previous month's closing
+[2026-01-11 15:00:59] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:00:59] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:00:59] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 21
+[2026-01-11 15:00:59] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:00:59] [DEBUG] Day 1: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 2: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:00:59] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:01:00] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:01:00] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:01:00] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:01:00] [DEBUG] Day 31: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:01:00] [INFO] Updated DAY_01_OPEN to 21 based on previous month's closing
+[2026-01-11 15:01:00] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:01:00] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:01:00] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:01:00] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:01:00] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-02 in table tbldailystock_1_11_25: Sales=1, Closing=21
+[2026-01-11 15:01:00] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-03 (Qty: 1)
+[2026-01-11 15:01:00] [INFO] Recalculating stock from day 03 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:01:00] [DEBUG] Day 03: Opening=21, Purchase=0, Sales=1, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [INFO] Completed recalculating stock for 2025-11 from day 03
+[2026-01-11 15:01:00] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-03
+[2026-01-11 15:01:00] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:01:00] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 20
+[2026-01-11 15:01:00] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:01:00] [DEBUG] Day 1: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 2: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 3: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:00] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 31: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [INFO] Updated DAY_01_OPEN to 20 based on previous month's closing
+[2026-01-11 15:01:01] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:01:01] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:01:01] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 20
+[2026-01-11 15:01:01] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:01:01] [DEBUG] Day 1: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 2: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 3: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:01] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:02] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [DEBUG] Day 31: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:01:03] [INFO] Updated DAY_01_OPEN to 20 based on previous month's closing
+[2026-01-11 15:01:03] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:01:03] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:01:03] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:01:03] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:01:03] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-03 in table tbldailystock_1_11_25: Sales=1, Closing=20
+[2026-01-11 15:01:03] [INFO] Starting optimized cash memo generation for 3 bills
+[2026-01-11 15:01:03] [INFO] Cash memo generated for bill: BL0001
+[2026-01-11 15:01:03] [INFO] Cash memo generated for bill: BL0002
+[2026-01-11 15:01:03] [INFO] Cash memo generated for bill: BL0003
+[2026-01-11 15:01:03] [INFO] Cash memo generation completed: 3 successful, 0 failed
+[2026-01-11 15:01:03] [INFO] Session quantities cleared
+[2026-01-11 15:01:19] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:01:19] [INFO] Request method: GET
+[2026-01-11 15:01:19] [INFO] Search term: ''
+[2026-01-11 15:01:19] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:01:20] [INFO] Final session quantities count: 0
+[2026-01-11 15:01:20] [INFO] Items in current view: 50
+[2026-01-11 15:01:20] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:14:41] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:14:41] [INFO] Request method: GET
+[2026-01-11 15:14:41] [INFO] Search term: ''
+[2026-01-11 15:14:41] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:14:41] [INFO] Final session quantities count: 0
+[2026-01-11 15:14:41] [INFO] Items in current view: 50
+[2026-01-11 15:14:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:14:49] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:14:49] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:14:52] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:14:59] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 15:14:59] [INFO] Session quantity updated: SCMPL0041501 = 0
+[2026-01-11 15:15:00] [INFO] Session quantity updated: SCMPL0041501 = 4
+[2026-01-11 15:15:00] [INFO] Session quantity updated: SCMPL0041501 = 4
+[2026-01-11 15:15:01] [INFO] Session quantity updated: SCMPL0041501 = 4
+[2026-01-11 15:15:12] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:15:12] [INFO] Request method: GET
+[2026-01-11 15:15:12] [INFO] Search term: ''
+[2026-01-11 15:15:12] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:15:12] [INFO] Final session quantities count: 2
+[2026-01-11 15:15:12] [INFO] Items in current view: 50
+[2026-01-11 15:15:12] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-01 to 2025-12-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-12
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_12_25
+    [table_suffix] => _12_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:15:12] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:15:12] [INFO] Request method: GET
+[2026-01-11 15:15:12] [INFO] Search term: ''
+[2026-01-11 15:15:12] [INFO] Current session ID: l49it5u0slnlpd51p3vrun4e8n
+[2026-01-11 15:15:13] [INFO] Final session quantities count: 2
+[2026-01-11 15:15:13] [INFO] Items in current view: 50
+[2026-01-11 15:15:13] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 144
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 2
+    [post_quantities_count] => 0
+    [date_range] => 2025-12-01 to 2025-12-05
+    [days_count] => 5
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 05
+    [closing_column] => DAY_05_CLOSING
+    [end_date_month] => 2025-12
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_12_25
+    [table_suffix] => _12_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:15:43] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:15:43] [INFO] Request method: GET
+[2026-01-11 15:15:43] [INFO] Search term: ''
+[2026-01-11 15:15:43] [INFO] Current session ID: vnrbbtkgk1i3g22rhh0pvfufsl
+[2026-01-11 15:15:43] [INFO] Final session quantities count: 0
+[2026-01-11 15:15:43] [INFO] Items in current view: 50
+[2026-01-11 15:15:43] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:15:51] [INFO] Session quantity updated: SCMPL0009678 = 0
+[2026-01-11 15:15:51] [INFO] Session quantity updated: SCMPL0009678 = 0
+[2026-01-11 15:15:51] [INFO] Session quantity updated: SCMPL0009678 = 4
+[2026-01-11 15:15:52] [INFO] Session quantity updated: SCMPL0009678 = 4
+[2026-01-11 15:15:53] [INFO] Session quantity updated: SCMPL0009678 = 4
+[2026-01-11 15:16:04] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:16:04] [INFO] Request method: GET
+[2026-01-11 15:16:04] [INFO] Search term: ''
+[2026-01-11 15:16:04] [INFO] Current session ID: vnrbbtkgk1i3g22rhh0pvfufsl
+[2026-01-11 15:16:04] [INFO] Final session quantities count: 1
+[2026-01-11 15:16:04] [INFO] Items in current view: 50
+[2026-01-11 15:16:04] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-04
+    [days_count] => 4
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 04
+    [closing_column] => DAY_04_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:18:33] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:18:33] [INFO] Request method: GET
+[2026-01-11 15:18:33] [INFO] Search term: ''
+[2026-01-11 15:18:33] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:18:33] [INFO] Final session quantities count: 0
+[2026-01-11 15:18:33] [INFO] Items in current view: 50
+[2026-01-11 15:18:33] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:18:46] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:18:46] [INFO] Request method: GET
+[2026-01-11 15:18:46] [INFO] Search term: ''
+[2026-01-11 15:18:46] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:18:47] [INFO] Final session quantities count: 0
+[2026-01-11 15:18:47] [INFO] Items in current view: 50
+[2026-01-11 15:18:47] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:18:47] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:18:47] [INFO] Request method: GET
+[2026-01-11 15:18:47] [INFO] Search term: ''
+[2026-01-11 15:18:47] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:18:47] [INFO] Final session quantities count: 0
+[2026-01-11 15:18:47] [INFO] Items in current view: 50
+[2026-01-11 15:18:47] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 03
+    [closing_column] => DAY_03_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:18:49] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:18:50] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-01-11 15:18:50] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:18:50] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:18:53] [INFO] Session quantity updated: SCMPL0010694 = 3
+[2026-01-11 15:18:54] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:18:54] [INFO] Request method: POST
+[2026-01-11 15:18:54] [INFO] Search term: ''
+[2026-01-11 15:18:54] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:18:55] [INFO] Session quantities updated from POST: 1 items
+[2026-01-11 15:18:55] [INFO] Item SCMPL0010694: Distributing 3 across 3 available dates: 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-11 15:18:55] [INFO] Getting next bill number for CompID: 1
+[2026-01-11 15:18:55] [INFO] Next bill number for CompID 1: 1
+[2026-01-11 15:18:55] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-01 (Qty: 1)
+[2026-01-11 15:18:55] [INFO] Recalculating stock from day 01 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:18:55] [DEBUG] Day 01: Opening=23, Purchase=0, Sales=1, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:55] [INFO] Completed recalculating stock for 2025-11 from day 01
+[2026-01-11 15:18:55] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-01
+[2026-01-11 15:18:55] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:18:56] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 22
+[2026-01-11 15:18:56] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:18:56] [DEBUG] Day 1: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:56] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 31: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [INFO] Updated DAY_01_OPEN to 22 based on previous month's closing
+[2026-01-11 15:18:57] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:18:57] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:18:57] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 22
+[2026-01-11 15:18:57] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:18:57] [DEBUG] Day 1: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 2: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 3: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 4: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 5: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 6: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 7: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 8: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 9: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 10: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:57] [DEBUG] Day 11: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 12: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 13: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 14: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 15: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 16: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 17: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 18: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 19: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 20: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 21: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 22: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 23: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 24: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 25: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 26: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 27: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 28: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 29: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 30: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [DEBUG] Day 31: Opening=22, Purchase=0, Sales=0, Closing=22
+[2026-01-11 15:18:58] [INFO] Updated DAY_01_OPEN to 22 based on previous month's closing
+[2026-01-11 15:18:58] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:18:58] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:18:58] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:18:58] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:18:58] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-01 in table tbldailystock_1_11_25: Sales=1, Closing=22
+[2026-01-11 15:18:58] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-02 (Qty: 1)
+[2026-01-11 15:18:58] [INFO] Recalculating stock from day 02 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:18:58] [DEBUG] Day 02: Opening=22, Purchase=0, Sales=1, Closing=21
+[2026-01-11 15:18:58] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:58] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:18:59] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [INFO] Completed recalculating stock for 2025-11 from day 02
+[2026-01-11 15:19:00] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-02
+[2026-01-11 15:19:00] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:19:00] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 21
+[2026-01-11 15:19:00] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:19:00] [DEBUG] Day 1: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 2: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:00] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:01] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 31: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [INFO] Updated DAY_01_OPEN to 21 based on previous month's closing
+[2026-01-11 15:19:02] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:19:02] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:19:02] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 21
+[2026-01-11 15:19:02] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:19:02] [DEBUG] Day 1: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 2: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 3: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 4: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 5: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 6: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 7: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 8: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 9: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 10: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 11: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 12: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 13: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 14: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 15: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 16: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 17: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 18: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 19: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 20: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 21: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 22: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 23: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 24: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 25: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:02] [DEBUG] Day 26: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [DEBUG] Day 27: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [DEBUG] Day 28: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [DEBUG] Day 29: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [DEBUG] Day 30: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [DEBUG] Day 31: Opening=21, Purchase=0, Sales=0, Closing=21
+[2026-01-11 15:19:03] [INFO] Updated DAY_01_OPEN to 21 based on previous month's closing
+[2026-01-11 15:19:03] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:19:03] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:19:03] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:19:03] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:19:03] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-02 in table tbldailystock_1_11_25: Sales=1, Closing=21
+[2026-01-11 15:19:03] [INFO] Starting daily stock update for item SCMPL0010694 sold on 2025-11-03 (Qty: 1)
+[2026-01-11 15:19:03] [INFO] Recalculating stock from day 03 for item SCMPL0010694 in 2025-11 in table tbldailystock_1_11_25
+[2026-01-11 15:19:03] [DEBUG] Day 03: Opening=21, Purchase=0, Sales=1, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:03] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [INFO] Completed recalculating stock for 2025-11 from day 03
+[2026-01-11 15:19:04] [INFO] Starting cascading to current month for item SCMPL0010694 sold on 2025-11-03
+[2026-01-11 15:19:04] [INFO] Sale in archived month 2025-11, cascading to current month 2026-01
+[2026-01-11 15:19:04] [INFO] Updated opening for SCMPL0010694 in 2025-12 to 20
+[2026-01-11 15:19:04] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2025-12 in table tbldailystock_1_12_25
+[2026-01-11 15:19:04] [DEBUG] Day 1: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 2: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 3: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:04] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 31: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [INFO] Updated DAY_01_OPEN to 20 based on previous month's closing
+[2026-01-11 15:19:05] [INFO] Completed recalculating stock for 2025-12 from day 1
+[2026-01-11 15:19:05] [INFO] Completed cascading for month 2025-12
+[2026-01-11 15:19:05] [INFO] Updated opening for SCMPL0010694 in 2026-01 to 20
+[2026-01-11 15:19:05] [INFO] Recalculating stock from day 1 for item SCMPL0010694 in 2026-01 in table tbldailystock_1
+[2026-01-11 15:19:05] [DEBUG] Day 1: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 2: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 3: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 4: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 5: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 6: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 7: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 8: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 9: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 10: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 11: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 12: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 13: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 14: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 15: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 16: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 17: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 18: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 19: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 20: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 21: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 22: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 23: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:05] [DEBUG] Day 24: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 25: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 26: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 27: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 28: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 29: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 30: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [DEBUG] Day 31: Opening=20, Purchase=0, Sales=0, Closing=20
+[2026-01-11 15:19:06] [INFO] Updated DAY_01_OPEN to 20 based on previous month's closing
+[2026-01-11 15:19:06] [INFO] Completed recalculating stock for 2026-01 from day 1
+[2026-01-11 15:19:06] [INFO] Completed cascading for month 2026-01
+[2026-01-11 15:19:06] [INFO] Reached current month 2026-01, stopping cascading
+[2026-01-11 15:19:06] [INFO] Sale in archived month, updating current month's stock
+[2026-01-11 15:19:06] [INFO] Daily stock updated successfully for item SCMPL0010694 on 2025-11-03 in table tbldailystock_1_11_25: Sales=1, Closing=20
+[2026-01-11 15:19:06] [INFO] Starting optimized cash memo generation for 3 bills
+[2026-01-11 15:19:06] [INFO] Cash memo generated for bill: BL0001
+[2026-01-11 15:19:06] [INFO] Cash memo generated for bill: BL0002
+[2026-01-11 15:19:06] [INFO] Cash memo generated for bill: BL0003
+[2026-01-11 15:19:06] [INFO] Cash memo generation completed: 3 successful, 0 failed
+[2026-01-11 15:19:06] [INFO] Session quantities cleared
+[2026-01-11 15:19:24] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:19:24] [INFO] Request method: GET
+[2026-01-11 15:19:24] [INFO] Search term: ''
+[2026-01-11 15:19:24] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:19:25] [INFO] Final session closing balances count: 0
+[2026-01-11 15:19:25] [INFO] Items in current view: 50
+[2026-01-11 15:19:25] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 11
+    [closing_column] => DAY_11_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:19:39] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:19:39] [INFO] Request method: GET
+[2026-01-11 15:19:39] [INFO] Search term: ''
+[2026-01-11 15:19:39] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:19:40] [INFO] Final session closing balances count: 0
+[2026-01-11 15:19:40] [INFO] Items in current view: 50
+[2026-01-11 15:19:40] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-04
+    [days_count] => 4
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 04
+    [closing_column] => DAY_04_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:19:40] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-11 15:19:40] [INFO] Available dates: 2025-11-04
+[2026-01-11 15:19:40] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03
+[2026-01-11 15:21:55] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_11_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+    [availability_summary] => Array
+        (
+            [fully_available] => 50
+            [partially_available] => 0
+            [not_available] => 0
+            [total_items] => 50
+        )
+
+)
+
+[2026-01-11 15:22:03] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2026-01-11 15:22:03] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2026-01-11 15:22:03] [INFO] Session quantity updated: SCMPL0009668 = 0
+[2026-01-11 15:22:04] [INFO] Session quantity updated: SCMPL0009668 = 0
+[2026-01-11 15:22:04] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2026-01-11 15:22:05] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2026-01-11 15:22:05] [INFO] Session quantity updated: SCMPL0009668 = 4
+[2026-01-11 15:22:06] [INFO] Session quantity updated: SCMPL0009668 = 4

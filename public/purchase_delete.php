@@ -1,5 +1,5 @@
 <?php
-// purchase_delete_optimized.php - Complete Working Version
+// purchase_delete_optimized.php - Complete Working Version with Full Cascading
 session_start();
 require_once "../config/db.php";
 
@@ -48,6 +48,37 @@ function getDailyStockTableForDate($conn, $comp_id, $date) {
     }
 }
 
+// Function to get all daily stock tables from start date to today
+function getDailyStockTablesInRange($conn, $comp_id, $start_date) {
+    $tables = [];
+    $start_date_obj = new DateTime($start_date);
+    $end_date_obj = new DateTime(); // today
+    $current_month = date('Y-m');
+    
+    // Always include current month table
+    $tables[] = "tbldailystock_" . $comp_id;
+    
+    // Add historical tables
+    for ($i = 1; $i <= 12; $i++) { // Check up to 12 months back
+        $check_date = clone $start_date_obj;
+        $check_date->modify("-$i months");
+        $check_month = $check_date->format('Y-m');
+        
+        // Stop if we've gone before the start date
+        if ($check_date < $start_date_obj && $i > 1) break;
+        
+        $table_name = "tbldailystock_" . $comp_id . "_" . $check_date->format('m') . "_" . $check_date->format('y');
+        
+        // Check if table exists
+        $check_table = "SHOW TABLES LIKE '$table_name'";
+        if ($conn->query($check_table)->num_rows > 0) {
+            $tables[] = $table_name;
+        }
+    }
+    
+    return array_unique($tables);
+}
+
 // Optimized: Batch recalculation function for PURCHASE
 function recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items_data, $purchase_date) {
     $day_num = date('d', strtotime($purchase_date));
@@ -60,19 +91,23 @@ function recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items_data, $pu
         return false;
     }
     
-    // Prepare column names - using PURCHASE columns instead of SALES
-    $purchase_column = "DAY_" . sprintf('%02d', $day_num) . "_PURCHASE";
-    $closing_column = "DAY_" . sprintf('%02d', $day_num) . "_CLOSING";
-    $opening_column = "DAY_" . sprintf('%02d', $day_num) . "_OPEN";
+    // Prepare column names for PURCHASE
+    $day_str = sprintf('%02d', $day_num);
+    $purchase_column = "DAY_" . $day_str . "_PURCHASE";
+    $closing_column = "DAY_" . $day_str . "_CLOSING";
+    $opening_column = "DAY_" . $day_str . "_OPEN";
+    $sales_column = "DAY_" . $day_str . "_SALES";
     
     // Check if columns exist
     $check_purchase = "SHOW COLUMNS FROM $daily_table LIKE '$purchase_column'";
     $check_closing = "SHOW COLUMNS FROM $daily_table LIKE '$closing_column'";
     $check_opening = "SHOW COLUMNS FROM $daily_table LIKE '$opening_column'";
+    $check_sales = "SHOW COLUMNS FROM $daily_table LIKE '$sales_column'";
     
     if ($conn->query($check_purchase)->num_rows == 0 || 
         $conn->query($check_closing)->num_rows == 0 ||
-        $conn->query($check_opening)->num_rows == 0) {
+        $conn->query($check_opening)->num_rows == 0 ||
+        $conn->query($check_sales)->num_rows == 0) {
         return false;
     }
     
@@ -88,7 +123,7 @@ function recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items_data, $pu
     // Create placeholders
     $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
     
-    // Update purchase quantities in batch
+    // 1. FIRST: Reduce purchase quantities in batch
     $update_purchase_query = "UPDATE $daily_table 
                           SET $purchase_column = $purchase_column - CASE ITEM_CODE ";
     
@@ -118,105 +153,221 @@ function recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items_data, $pu
     $update_purchase_stmt->execute();
     $update_purchase_stmt->close();
     
-    // Batch recalculate closing for all items
-    foreach ($items_data as $item) {
-        $item_code = $item['ITEM_CODE'];
-        
-        // Get current values
-        $query = "SELECT 
-                    $opening_column as opening,
-                    $purchase_column as purchase,
-                    DAY_" . sprintf('%02d', $day_num) . "_SALES as sales
-                  FROM $daily_table 
-                  WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ss", $item_code, $stk_month);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $opening_val = $row['opening'] ?? 0;
-            $purchase_val = $row['purchase'] ?? 0;
-            $sales_val = $row['sales'] ?? 0;
-            
-            // Calculate new closing: opening + purchase - sales
-            $new_closing = $opening_val + $purchase_val - $sales_val;
-            
-            // Update closing column
-            $update_closing_query = "UPDATE $daily_table 
-                                   SET $closing_column = GREATEST(0, ?),
-                                       LAST_UPDATED = CURRENT_TIMESTAMP 
-                                   WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            $update_stmt = $conn->prepare($update_closing_query);
-            $update_stmt->bind_param("dss", $new_closing, $item_code, $stk_month);
-            $update_stmt->execute();
-            $update_stmt->close();
-            
-            // Optimized: Cascade only if needed
-            cascadeDailyStockFromDayOptimized($conn, $daily_table, $item_code, $stk_month, $day_num + 1);
-        }
-        $stmt->close();
+    // 2. THEN: Recalculate closing for all items using the formula:
+    // day_xx_closing = day_xx_opening + day_xx_purchase - day_xx_sales
+    
+    // Batch update all items at once for better performance
+    $recalc_query = "UPDATE $daily_table 
+                    SET $closing_column = GREATEST(0, $opening_column + $purchase_column - $sales_column),
+                        LAST_UPDATED = CURRENT_TIMESTAMP 
+                    WHERE ITEM_CODE IN ($placeholders) AND STK_MONTH = ?";
+    
+    $recalc_params = [];
+    $recalc_types = '';
+    foreach ($item_codes as $code) {
+        $recalc_params[] = $code;
+        $recalc_types .= 's';
+    }
+    $recalc_params[] = $stk_month;
+    $recalc_types .= 's';
+    
+    $recalc_stmt = $conn->prepare($recalc_query);
+    $recalc_stmt->bind_param($recalc_types, ...$recalc_params);
+    $recalc_stmt->execute();
+    $recalc_stmt->close();
+    
+    // 3. Cascade to subsequent days for each item using NEW CORRECTED FUNCTION
+    foreach ($item_codes as $item_code) {
+        cascadeDailyStockCorrected($conn, $daily_table, $item_code, $stk_month, $day_num);
     }
     
     return true;
 }
 
-// Optimized cascade function (same as delete_bill.php)
-function cascadeDailyStockFromDayOptimized($conn, $table_name, $item_code, $stk_month, $start_day) {
-    // Only cascade if we have valid columns
+// NEW CORRECTED CASCADE FUNCTION - FIXED VERSION
+function cascadeDailyStockCorrected($conn, $table_name, $item_code, $stk_month, $start_day) {
+    // First, let's get ALL the data for this item in one query to avoid transaction visibility issues
+    $all_data_query = "SELECT ";
+    
+    // Build SELECT for all columns from start_day to 31
     for ($day = $start_day; $day <= 31; $day++) {
-        $day_num = sprintf('%02d', $day);
-        $closing_column = "DAY_{$day_num}_CLOSING";
-        $next_opening_column = "DAY_" . sprintf('%02d', $day + 1) . "_OPEN";
+        $day_str = sprintf('%02d', $day);
+        $prev_day_str = sprintf('%02d', $day - 1);
+        
+        $opening_column = "DAY_{$day_str}_OPEN";
+        $purchase_column = "DAY_{$day_str}_PURCHASE";
+        $sales_column = "DAY_{$day_str}_SALES";
+        $closing_column = "DAY_{$day_str}_CLOSING";
         
         // Check if columns exist
-        $check_columns = "SHOW COLUMNS FROM $table_name WHERE Field IN ('$closing_column', '$next_opening_column')";
+        $check_columns = "SHOW COLUMNS FROM $table_name WHERE Field IN ('$opening_column', '$purchase_column', '$sales_column', '$closing_column')";
         $col_result = $conn->query($check_columns);
-        if ($col_result->num_rows < 2) break;
+        if ($col_result->num_rows < 4) break;
         
-        // Get current closing
-        $get_query = "SELECT $closing_column FROM $table_name WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-        $get_stmt = $conn->prepare($get_query);
-        $get_stmt->bind_param("ss", $item_code, $stk_month);
-        $get_stmt->execute();
-        $get_result = $get_stmt->get_result();
+        if ($day > $start_day) $all_data_query .= ", ";
+        $all_data_query .= "$opening_column as opening_$day_str, ";
+        $all_data_query .= "$purchase_column as purchase_$day_str, ";
+        $all_data_query .= "$sales_column as sales_$day_str, ";
+        $all_data_query .= "$closing_column as closing_$day_str";
+    }
+    
+    $all_data_query .= " FROM $table_name WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    
+    $stmt = $conn->prepare($all_data_query);
+    $stmt->bind_param("ss", $item_code, $stk_month);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows == 0) {
+        $stmt->close();
+        return;
+    }
+    
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    
+    // Now process the cascading in memory
+    $previous_closing = 0;
+    
+    // For start_day, we need to use the recalculated closing from step 2
+    // Get the recalculated closing for start_day
+    $start_day_str = sprintf('%02d', $start_day);
+    $get_start_closing = "SELECT DAY_{$start_day_str}_CLOSING as closing 
+                         FROM $table_name 
+                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    $get_stmt = $conn->prepare($get_start_closing);
+    $get_stmt->bind_param("ss", $item_code, $stk_month);
+    $get_stmt->execute();
+    $closing_result = $get_stmt->get_result();
+    
+    if ($closing_result->num_rows > 0) {
+        $closing_row = $closing_result->fetch_assoc();
+        $previous_closing = $closing_row['closing'] ?? 0;
+    }
+    $get_stmt->close();
+    
+    // Now cascade from start_day+1 to 31
+    for ($day = $start_day + 1; $day <= 31; $day++) {
+        $day_str = sprintf('%02d', $day);
+        $prev_day_str = sprintf('%02d', $day - 1);
         
-        if ($get_result->num_rows > 0) {
-            $row = $get_result->fetch_assoc();
-            $current_closing = $row[$closing_column] ?? 0;
-            
-            // Set next day's opening
-            $update_query = "UPDATE $table_name 
-                           SET $next_opening_column = ?,
-                               LAST_UPDATED = CURRENT_TIMESTAMP 
-                           WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            $update_stmt = $conn->prepare($update_query);
-            $update_stmt->bind_param("dss", $current_closing, $item_code, $stk_month);
-            $update_stmt->execute();
-            $update_stmt->close();
-            
-            // Recalculate closing for this next day
-            $next_purchase_col = "DAY_" . sprintf('%02d', $day + 1) . "_PURCHASE";
-            $next_sales_col = "DAY_" . sprintf('%02d', $day + 1) . "_SALES";
-            $next_closing_col = "DAY_" . sprintf('%02d', $day + 1) . "_CLOSING";
-            
-            $recalc_query = "UPDATE $table_name 
-                           SET $next_closing_col = GREATEST(0, $next_opening_column + $next_purchase_col - $next_sales_col),
-                               LAST_UPDATED = CURRENT_TIMESTAMP 
-                           WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            $recalc_stmt = $conn->prepare($recalc_query);
-            $recalc_stmt->bind_param("ss", $item_code, $stk_month);
-            $recalc_stmt->execute();
-            $recalc_stmt->close();
-        }
-        $get_stmt->close();
+        $opening_column = "DAY_{$day_str}_OPEN";
+        $purchase_column = "DAY_{$day_str}_PURCHASE";
+        $sales_column = "DAY_{$day_str}_SALES";
+        $closing_column = "DAY_{$day_str}_CLOSING";
+        
+        // Check if columns exist
+        $check_columns = "SHOW COLUMNS FROM $table_name WHERE Field IN ('$opening_column', '$purchase_column', '$sales_column', '$closing_column')";
+        $col_result = $conn->query($check_columns);
+        if ($col_result->num_rows < 4) break;
+        
+        // Get purchase and sales values from our fetched data
+        $purchase = $row["purchase_$day_str"] ?? 0;
+        $sales = $row["sales_$day_str"] ?? 0;
+        
+        // Calculate new opening (previous day's closing)
+        $new_opening = $previous_closing;
+        
+        // Calculate new closing: opening + purchase - sales
+        $new_closing = $new_opening + $purchase - $sales;
+        if ($new_closing < 0) $new_closing = 0;
+        
+        // Update the day in a single query
+        $update_query = "UPDATE $table_name 
+                        SET $opening_column = ?,
+                            $closing_column = ?,
+                            LAST_UPDATED = CURRENT_TIMESTAMP 
+                        WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("ddss", $new_opening, $new_closing, $item_code, $stk_month);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        // Update previous closing for next iteration
+        $previous_closing = $new_closing;
     }
 }
 
-// Optimized: Function to reverse stock updates for a purchase
+// NEW SIMPLIFIED AND WORKING CASCADE FUNCTION
+function cascadeDailyStockSimple($conn, $table_name, $item_code, $stk_month, $start_day) {
+    // Get initial closing for start_day (already recalculated)
+    $start_day_str = sprintf('%02d', $start_day);
+    $get_closing_query = "SELECT DAY_{$start_day_str}_CLOSING as closing 
+                         FROM $table_name 
+                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    $get_stmt = $conn->prepare($get_closing_query);
+    $get_stmt->bind_param("ss", $item_code, $stk_month);
+    $get_stmt->execute();
+    $result = $get_stmt->get_result();
+    
+    if ($result->num_rows == 0) {
+        $get_stmt->close();
+        return;
+    }
+    
+    $row = $result->fetch_assoc();
+    $current_closing = $row['closing'] ?? 0;
+    $get_stmt->close();
+    
+    // Now cascade day by day
+    for ($day = $start_day + 1; $day <= 31; $day++) {
+        $day_str = sprintf('%02d', $day);
+        $opening_column = "DAY_{$day_str}_OPEN";
+        $purchase_column = "DAY_{$day_str}_PURCHASE";
+        $sales_column = "DAY_{$day_str}_SALES";
+        $closing_column = "DAY_{$day_str}_CLOSING";
+        
+        // Check if columns exist
+        $check_columns = "SHOW COLUMNS FROM $table_name WHERE Field IN ('$opening_column', '$purchase_column', '$sales_column', '$closing_column')";
+        $col_result = $conn->query($check_columns);
+        if ($col_result->num_rows < 4) break;
+        
+        // Get purchase and sales for this day
+        $get_values_query = "SELECT $purchase_column as purchase, 
+                                    $sales_column as sales 
+                             FROM $table_name 
+                             WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $values_stmt = $conn->prepare($get_values_query);
+        $values_stmt->bind_param("ss", $item_code, $stk_month);
+        $values_stmt->execute();
+        $values_result = $values_stmt->get_result();
+        
+        if ($values_result->num_rows > 0) {
+            $values_row = $values_result->fetch_assoc();
+            $purchase = $values_row['purchase'] ?? 0;
+            $sales = $values_row['sales'] ?? 0;
+            
+            // Set opening to previous day's closing
+            $new_opening = $current_closing;
+            
+            // Calculate new closing
+            $new_closing = $new_opening + $purchase - $sales;
+            if ($new_closing < 0) $new_closing = 0;
+            
+            // Update the day
+            $update_query = "UPDATE $table_name 
+                            SET $opening_column = ?,
+                                $closing_column = ?,
+                                LAST_UPDATED = CURRENT_TIMESTAMP 
+                            WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("ddss", $new_opening, $new_closing, $item_code, $stk_month);
+            $update_stmt->execute();
+            $update_stmt->close();
+            
+            // Update current closing for next iteration
+            $current_closing = $new_closing;
+        }
+        
+        $values_stmt->close();
+    }
+}
+
+// Optimized: Function to reverse stock updates for a purchase with full cascading
 function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
-    // Get purchase details - using SQL schema from your file
+    // Get purchase details
     $purchase_query = "SELECT DATE, TPNO, AUTO_TPNO FROM tblpurchases 
                       WHERE ID = ? AND CompID = ?";
     $purchase_stmt = $conn->prepare($purchase_query);
@@ -226,7 +377,7 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
     
     if ($purchase_result->num_rows == 0) {
         $purchase_stmt->close();
-        return false;
+        return ['success' => false, 'error' => 'Purchase not found'];
     }
     
     $purchase = $purchase_result->fetch_assoc();
@@ -234,8 +385,7 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
     $tp_no = $purchase['TPNO'] ?: $purchase['AUTO_TPNO'];
     $purchase_stmt->close();
     
-    // Get purchase details - using column names from your SQL schema
-    // Note: Your table uses ItemCode not ITEM_CODE, and Cases/Bottles instead of QTY
+    // Get purchase details with calculated QTY
     $details_query = "SELECT ItemCode as ITEM_CODE, 
                              Cases, 
                              Bottles,
@@ -258,7 +408,7 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
     $details_stmt->close();
     
     if (empty($items)) {
-        return false;
+        return ['success' => false, 'error' => 'No items found in purchase'];
     }
     
     // Get current stock column name
@@ -268,7 +418,7 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
     $conn->begin_transaction();
     
     try {
-        // 1. Batch reduce main stock (opposite of sales - we're removing purchase)
+        // 1. Reduce main stock (opposite of purchase - we're removing purchase)
         $item_codes = [];
         $qtys = [];
         foreach ($items as $item) {
@@ -301,27 +451,117 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
                        WHERE ITEM_CODE IN ($placeholders)";
         $stock_stmt = $conn->prepare($stock_query);
         $stock_stmt->bind_param($types, ...$params);
-        $stock_stmt->execute();
+        
+        if (!$stock_stmt->execute()) {
+            throw new Exception("Failed to update main stock");
+        }
         $stock_stmt->close();
         
         // 2. Reverse daily stock updates using batch function (for PURCHASE)
-        recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items, $purchase_date);
+        if (!recalculateAndCascadeForPurchaseItems($conn, $comp_id, $items, $purchase_date)) {
+            throw new Exception("Failed to update daily stock");
+        }
         
-        // 3. Delete purchase details
+        // 3. Handle subsequent months if needed
+        $purchase_day = date('d', strtotime($purchase_date));
+        $purchase_month = date('Y-m', strtotime($purchase_date));
+        $current_month = date('Y-m');
+        
+        // If purchase was before current month, we need to cascade through all months
+        if ($purchase_month < $current_month) {
+            $daily_tables = getDailyStockTablesInRange($conn, $comp_id, $purchase_date);
+            
+            foreach ($daily_tables as $table_name) {
+                // Skip the current month table (already processed in step 2)
+                if ($table_name == getDailyStockTableForDate($conn, $comp_id, $purchase_date)) {
+                    continue;
+                }
+                
+                // Get STK_MONTH from table name
+                $stk_month = date('Y-m');
+                if (preg_match('/_(\d{2})_(\d{2})$/', $table_name, $matches)) {
+                    $month = $matches[1];
+                    $year = '20' . $matches[2];
+                    $stk_month = $year . '-' . $month;
+                }
+                
+                // For each item, cascade from day 1
+                foreach ($items as $item) {
+                    $item_code = $item['ITEM_CODE'];
+                    
+                    // First, ensure day 1 opening is correct
+                    // Get last day of previous month's closing
+                    $prev_month = date('Y-m', strtotime($stk_month . ' -1 month'));
+                    $prev_month_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
+                    
+                    // Check if previous month table exists
+                    $check_prev = "SHOW TABLES LIKE '$prev_month_table'";
+                    if ($conn->query($check_prev)->num_rows > 0) {
+                        // Get last day's closing from previous month
+                        $last_day_closing = 0;
+                        for ($day = 31; $day >= 1; $day--) {
+                            $day_str = sprintf('%02d', $day);
+                            $closing_column = "DAY_{$day_str}_CLOSING";
+                            
+                            $check_col = "SHOW COLUMNS FROM $prev_month_table LIKE '$closing_column'";
+                            if ($conn->query($check_col)->num_rows > 0) {
+                                $get_closing = "SELECT $closing_column as closing 
+                                               FROM $prev_month_table 
+                                               WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                                $closing_stmt = $conn->prepare($get_closing);
+                                $closing_stmt->bind_param("ss", $item_code, $prev_month);
+                                $closing_stmt->execute();
+                                $closing_result = $closing_stmt->get_result();
+                                
+                                if ($closing_result->num_rows > 0) {
+                                    $closing_row = $closing_result->fetch_assoc();
+                                    $last_day_closing = $closing_row['closing'] ?? 0;
+                                    break;
+                                }
+                                $closing_stmt->close();
+                            }
+                        }
+                        
+                        // Set day 1 opening to previous month's last closing
+                        if ($last_day_closing > 0) {
+                            $update_opening = "UPDATE $table_name 
+                                             SET DAY_01_OPEN = ?,
+                                                 LAST_UPDATED = CURRENT_TIMESTAMP 
+                                             WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+                            $opening_stmt = $conn->prepare($update_opening);
+                            $opening_stmt->bind_param("dss", $last_day_closing, $item_code, $stk_month);
+                            $opening_stmt->execute();
+                            $opening_stmt->close();
+                        }
+                    }
+                    
+                    // Now cascade through this month
+                    cascadeDailyStockSimple($conn, $table_name, $item_code, $stk_month, 1);
+                }
+            }
+        }
+        
+        // 4. Delete purchase details
         $delete_details_query = "DELETE FROM tblpurchasedetails WHERE PurchaseID = ?";
         $delete_details_stmt = $conn->prepare($delete_details_query);
         $delete_details_stmt->bind_param("i", $purchase_id);
-        $delete_details_stmt->execute();
+        
+        if (!$delete_details_stmt->execute()) {
+            throw new Exception("Failed to delete purchase details");
+        }
         $delete_details_stmt->close();
         
-        // 4. Delete purchase header
+        // 5. Delete purchase header
         $delete_header_query = "DELETE FROM tblpurchases WHERE ID = ? AND CompID = ?";
         $delete_header_stmt = $conn->prepare($delete_header_query);
         $delete_header_stmt->bind_param("ii", $purchase_id, $comp_id);
-        $delete_header_stmt->execute();
+        
+        if (!$delete_header_stmt->execute()) {
+            throw new Exception("Failed to delete purchase header");
+        }
         $delete_header_stmt->close();
         
-        // 5. Update any related records (optional)
+        // 6. Update any related records (optional)
         if (tableExists($conn, "tblsupplier_ledger")) {
             $delete_ledger_query = "DELETE FROM tblsupplier_ledger 
                                    WHERE REF_NO = ? AND REF_TYPE = 'PURCHASE'";
@@ -335,7 +575,8 @@ function reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id) {
         return [
             'success' => true,
             'tp_no' => $tp_no,
-            'item_count' => count($items)
+            'item_count' => count($items),
+            'message' => 'Purchase deleted successfully'
         ];
         
     } catch (Exception $e) {
@@ -354,6 +595,25 @@ function tableExists($conn, $table_name) {
     return $check->num_rows > 0;
 }
 
+// Helper function to validate dates in bulk delete
+function validateBulkDeleteRequest($purchase_ids, $max_limit = 50) {
+    if (!is_array($purchase_ids) || empty($purchase_ids)) {
+        return ['success' => false, 'error' => 'No purchase IDs provided'];
+    }
+    
+    if (count($purchase_ids) > $max_limit) {
+        return ['success' => false, 'error' => "Maximum $max_limit purchases can be deleted at once"];
+    }
+    
+    foreach ($purchase_ids as $id) {
+        if (!is_numeric($id) || $id <= 0) {
+            return ['success' => false, 'error' => 'Invalid purchase ID found: ' . $id];
+        }
+    }
+    
+    return ['success' => true];
+}
+
 // Main processing logic
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
@@ -363,39 +623,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Bulk delete
             $purchase_ids = json_decode($_POST['purchase_ids'], true);
             
-            if (!is_array($purchase_ids) || empty($purchase_ids)) {
-                throw new Exception("No purchase IDs provided");
-            }
-            
-            // Limit bulk operations for performance
-            $max_bulk_delete = 50;
-            if (count($purchase_ids) > $max_bulk_delete) {
-                throw new Exception("Maximum $max_bulk_delete purchases can be deleted at once");
+            // Validate the request
+            $validation = validateBulkDeleteRequest($purchase_ids);
+            if (!$validation['success']) {
+                throw new Exception($validation['error']);
             }
             
             $deleted_count = 0;
             $failed_count = 0;
             $results = [];
             
-            // Use optimized function if requested
-            $use_optimized = $optimized;
-            
             foreach ($purchase_ids as $purchase_id) {
                 $purchase_id = (int)$purchase_id;
                 
-                if ($purchase_id <= 0) {
-                    $failed_count++;
-                    $results[] = ['success' => false, 'error' => 'Invalid purchase ID'];
-                    continue;
-                }
-                
-                if ($use_optimized) {
-                    $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
-                } else {
-                    // For backward compatibility - use original function if needed
-                    $result = reversePurchaseStockUpdates($conn, $purchase_id, $compID);
-                }
-                
+                $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
                 $results[] = $result;
                 
                 if ($result['success'] ?? false) {
@@ -437,10 +678,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("is", $compID, $delete_date);
             }
             
-            if (!$stmt->execute()) {
-                throw new Exception("Failed to fetch purchases for the date");
-            }
-            
+            $stmt->execute();
             $result = $stmt->get_result();
             $purchases_to_delete = [];
             
@@ -455,20 +693,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'message' => "No purchases found for date $delete_date"
                 ];
             } else {
+                // Validate bulk delete limit
+                if (count($purchases_to_delete) > 50) {
+                    throw new Exception("Maximum 50 purchases can be deleted at once. Found " . count($purchases_to_delete) . " purchases for this date.");
+                }
+                
                 $deleted_count = 0;
                 $failed_count = 0;
                 $results = [];
                 
-                // Use optimized function if requested
-                $use_optimized = $optimized;
-                
                 foreach ($purchases_to_delete as $purchase_id) {
-                    if ($use_optimized) {
-                        $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
-                    } else {
-                        $result = reversePurchaseStockUpdates($conn, $purchase_id, $compID);
-                    }
-                    
+                    $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
                     $results[] = $result;
                     
                     if ($result['success'] ?? false) {
@@ -495,14 +730,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Invalid purchase ID");
             }
             
-            // Use optimized function if requested
-            $use_optimized = $optimized;
-            
-            if ($use_optimized) {
-                $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
-            } else {
-                $result = reversePurchaseStockUpdates($conn, $purchase_id, $compID);
-            }
+            $result = reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $compID);
             
             if ($result['success'] ?? false) {
                 $response = [
@@ -512,10 +740,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'item_count' => $result['item_count'] ?? 0
                 ];
             } else {
-                $response = [
-                    'success' => false,
-                    'message' => $result['error'] ?? "Failed to delete purchase"
-                ];
+                throw new Exception($result['error'] ?? "Failed to delete purchase");
             }
             
         } else {
@@ -542,10 +767,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Original function for backward compatibility (called when not using optimized)
+// Original function for backward compatibility
 function reversePurchaseStockUpdates($conn, $purchase_id, $comp_id) {
-    // This is the original function - kept for backward compatibility
-    // It's called when $optimized is false
     return reversePurchaseStockUpdatesOptimized($conn, $purchase_id, $comp_id);
 }
-?>
+?>]

@@ -6,7 +6,7 @@ require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
-    $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
+    $logFile = '../logs/closing_stock_' . date('Y-m-d') . '.log';
     $timestamp = date('Y-m-d H:i:s');
     $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
     
@@ -33,7 +33,7 @@ logMessage("Request method: " . $_SERVER['REQUEST_METHOD']);
 logMessage("Search term: '" . ($_GET['search'] ?? '') . "'");
 logMessage("Current session ID: " . session_id());
 
-// Function to clear session quantities - KEPT SAME AS sale_for_date_range.php
+// Function to clear session quantities - FOR COMPATIBILITY
 function clearSessionQuantities() {
     if (isset($_SESSION['sale_quantities'])) {
         unset($_SESSION['sale_quantities']);
@@ -1775,7 +1775,7 @@ $debug_info = [
     'table_suffix' => $table_suffix, // NEW: Added table suffix info
     'current_month' => date('Y-m') // NEW: Added current month info
 ];
-logArray($debug_info, "Sales Page Load Debug Info");
+logArray($debug_info, "Closing Stock Page Load Debug Info");
 ?>
 
 <!DOCTYPE html>
@@ -1783,7 +1783,7 @@ logArray($debug_info, "Sales Page Load Debug Info");
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales by Date Range - Closing Balance Input</title>
+  <title>Closing Stock for Date Range - Enter Closing Balances</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
@@ -2215,11 +2215,13 @@ tr.backdated-restriction .closing-input {
     padding: 2px 8px !important;
 }
 
-/* Sale quantity cell styling */
+/* Sale quantity cell styling - CHANGED TO AUTO-CALCULATED STYLING */
 .sale-qty-cell {
     font-weight: bold;
     text-align: center;
     background-color: #f8f9fa;
+    color: #198754; /* Green color for auto-calculated values */
+    background-color: rgba(25, 135, 84, 0.1); /* Light green background */
 }
 
 .sale-qty-cell.positive {
@@ -2229,6 +2231,7 @@ tr.backdated-restriction .closing-input {
 
 .sale-qty-cell.zero {
     color: #6c757d;
+    background-color: #f8f9fa;
 }
 
 /* NEW: Auto-calculated sale quantity cell */
@@ -2250,6 +2253,25 @@ tr.backdated-restriction .closing-input {
     font-size: 14px;
     font-weight: bold;
 }
+
+/* NEW: Workflow indicator */
+.workflow-indicator {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.workflow-indicator h6 {
+    color: #0c5460;
+    margin-bottom: 5px;
+}
+
+.workflow-indicator small {
+    color: #6c757d;
+    font-style: italic;
+}
   </style>
 </head>
 <body>
@@ -2261,7 +2283,13 @@ tr.backdated-restriction .closing-input {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Sales by Date Range - Closing Balance Input</h3>
+      <h3 class="mb-4">Closing Stock for Date Range - Enter Closing Balances</h3>
+
+      <!-- NEW: Workflow Indicator -->
+      <div class="workflow-indicator">
+        <h6><i class="fas fa-exchange-alt"></i> NEW WORKFLOW: Enter Closing Balance</h6>
+        <small>Enter closing balance → System auto-calculates sale quantity (Sale Qty = Available Stock - Closing Balance)</small>
+      </div>
 
       <!-- SIMPLIFIED License Restriction Info -->
       <div class="alert alert-info mb-3 py-2">
@@ -2323,7 +2351,7 @@ tr.backdated-restriction .closing-input {
           </a>
           <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
-                         Group Defined
+            Group Defined
           </a>
         </div>
       </div>
@@ -2400,7 +2428,7 @@ tr.backdated-restriction .closing-input {
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
         <input type="hidden" name="update_sales" value="1">
 
-        <!-- Action Buttons - KEPT SAME FUNCTIONALITY AS sale_for_date_range.php -->
+        <!-- Action Buttons - MODIFIED FOR CLOSING BALANCE WORKFLOW -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action">
             <i class="fas fa-random"></i> Shuffle All
@@ -2408,20 +2436,20 @@ tr.backdated-restriction .closing-input {
           
           <!-- Single Button with Dual Functionality -->
           <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
-            <i class="fas fa-save"></i> Generate Bills
+            <i class="fas fa-save"></i> Generate Bills from Closing Balances
           </button>
           
-          <!-- Clear Session Button - KEPT SAME AS sale_for_date_range.php -->
+          <!-- Clear Session Button -->
           <button type="button" id="clearSessionBtn" class="btn btn-danger">
             <i class="fas fa-trash"></i> Clear All Closing Balances
           </button>
           
-          <!-- Sales Log Button - KEPT SAME AS sale_for_date_range.php -->
+          <!-- Sales Log Button -->
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
               <i class="fas fa-file-alt"></i> View Sales Log
           </button>
 
-          <!-- Total Sales Summary Button - KEPT SAME AS sale_for_date_range.php -->
+          <!-- Total Sales Summary Button -->
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
               <i class="fas fa-chart-bar"></i> View Total Sales Summary
           </button>
@@ -2440,9 +2468,9 @@ tr.backdated-restriction .closing-input {
                 <th>Item Name</th>
                 <th>Category</th>
                 <th>Rate (₹)</th>
-                <th>Current Stock</th>
-                <th>Enter Closing Balance</th>
-                <th class="auto-calculated-header">Sale Qty (Auto-calculated)</th>
+                <th>Available Stock</th>
+                <th class="text-primary">Enter Closing Balance</th>
+                <th class="text-success auto-calculated-header">Sale Qty (Auto-calculated)</th>
                 <th class="action-column">Action</th>
                 
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
@@ -2555,6 +2583,9 @@ tr.backdated-restriction .closing-input {
             </td>
             <td class="sale-qty-cell <?= $sale_qty > 0 ? 'positive' : 'zero' ?>" id="sale_qty_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_sale_qty) ?></span>
+                <div class="compact-info">
+                    <small>= <?= $display_stock ?> - <?= $display_closing ?></small>
+                </div>
             </td>
             <td class="action-column">
                 <?php if ($should_disable_input): ?>
@@ -2682,11 +2713,11 @@ tr.backdated-restriction .closing-input {
   </div>
 </div>
 
-<!-- Sales Log Modal - KEPT SAME AS sale_for_date_range.php -->
+<!-- Sales Log Modal -->
 <div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-                        <div class="modal-header">
+            <div class="modal-header">
                 <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -2709,7 +2740,7 @@ tr.backdated-restriction .closing-input {
     </div>
 </div>
 
-<!-- Total Sales Modal - KEPT SAME AS sale_for_date_range.php -->
+<!-- Total Sales Modal -->
 <div class="modal fade" id="totalSalesModal" tabindex="-1" aria-labelledby="totalSalesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -3031,7 +3062,7 @@ function showClientValidationAlert(message) {
     }, 10000);
 }
 
-// Function to clear session closing balances via AJAX - KEPT SAME LOGIC AS sale_for_date_range.php
+// Function to clear session closing balances via AJAX
 function clearSessionClosingBalances() {
     $.ajax({
         url: 'clear_session_closing_balances.php',
@@ -3105,9 +3136,16 @@ function updateItemUIFromClosing(itemCode, closingBalance, currentStock) {
     // Format to remove decimals for display
     const displaySaleQty = Math.floor(saleQty);
     const displayAmount = Math.floor(amount);
+    const displayCurrentStock = Math.floor(currentStock);
+    const displayClosingBalance = Math.floor(closingBalance);
     
     // Update all related UI elements
-    $(`#sale_qty_${itemCode}`).html(`<span class="stock-integer">${displaySaleQty}</span>`);
+    $(`#sale_qty_${itemCode}`).html(`
+        <span class="stock-integer">${displaySaleQty}</span>
+        <div class="compact-info">
+            <small>= ${displayCurrentStock} - ${displayClosingBalance}</small>
+        </div>
+    `);
     $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
     
     // Update row styling
@@ -3528,7 +3566,7 @@ function handleGenerateBills() {
     }
 }
 
-// Function to load sales log content - KEPT SAME AS sale_for_date_range.php
+// Function to load sales log content
 function loadSalesLog() {
     // Show loading state
     $('#salesLogContent').html(`
@@ -3559,7 +3597,7 @@ function loadSalesLog() {
     });
 }
 
-// Function to print sales log - KEPT SAME AS sale_for_date_range.php
+// Function to print sales log
 function printSalesLog() {
     const printContent = $('#salesLogContent').html();
     const printWindow = window.open('', '_blank');
@@ -3940,18 +3978,18 @@ $(document).ready(function() {
         }
     });
     
-    // Auto-load sales log when modal is shown - KEPT SAME AS sale_for_date_range.php
+    // Auto-load sales log when modal is shown
     $('#salesLogModal').on('shown.bs.modal', function() {
         loadSalesLog();
     });
     
-    // Update total sales module when modal is shown - KEPT SAME AS sale_for_date_range.php
+    // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
         console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
     });
     
-    // Also update when modal is already shown but data changes - KEPT SAME AS sale_for_date_range.php
+    // Also update when modal is already shown but data changes
     $('#totalSalesModal').on('shown.bs.modal', function() {
         console.log('Total Sales Modal shown - refreshing data from ALL modes...');
         updateTotalSalesModule();

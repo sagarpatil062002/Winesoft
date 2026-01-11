@@ -1,0 +1,51 @@
+[2026-01-11 15:20:32] [INFO] === PAGE ACCESS ===
+[2026-01-11 15:20:32] [INFO] Request method: GET
+[2026-01-11 15:20:32] [INFO] Search term: ''
+[2026-01-11 15:20:32] [INFO] Current session ID: 5ivusj70fltdh29dadoqumdb1u
+[2026-01-11 15:20:32] [INFO] Final session closing balances count: 0
+[2026-01-11 15:20:32] [INFO] Items in current view: 50
+[2026-01-11 15:20:32] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 108
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2025-11-01 to 2025-11-04
+    [days_count] => 4
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 04
+    [closing_column] => DAY_04_CLOSING
+    [end_date_month] => 2025-11
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_11_25
+    [table_suffix] => _11_25
+    [current_month] => 2026-01
+)
+
+[2026-01-11 15:20:32] [INFO] Item SCMPL0010694: Latest existing sale: 2025-11-03
+[2026-01-11 15:20:32] [INFO] Available dates: 2025-11-04
+[2026-01-11 15:20:32] [INFO] Unavailable dates (has existing sales): 2025-11-01, 2025-11-02, 2025-11-03

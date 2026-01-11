@@ -2359,15 +2359,6 @@ tr.backdated-restriction .qty-input {
     position: relative;
 }
 
-.unavailable-date:after {
-    content: "✗";
-    position: absolute;
-    top: 0;
-    right: 2px;
-    font-size: 10px;
-    color: #dc3545;
-}
-
 /* FIXED: Available date styling */
 .available-date-with-sales {
     background-color: #d4edda !important;
@@ -2633,10 +2624,10 @@ tr.backdated-restriction .qty-input {
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
     data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
     class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?> <?= $partial_class ?>"
-    data-has-backdated-restriction="<?= $has_backdated_restriction ? 'true' : 'false' ?>"
-    data-available-dates="<?= htmlspecialchars(json_encode($available_dates)) ?>"
-    data-unavailable-dates="<?= htmlspecialchars(json_encode($unavailable_dates)) ?>"
-    data-latest-existing="<?= htmlspecialchars($latest_existing ?? '') ?>">
+    data-has-backdated-restriction='<?= $has_backdated_restriction ? 'true' : 'false' ?>'
+    data-available-dates='<?= json_encode($available_dates) ?>'
+    data-unavailable-dates='<?= json_encode($unavailable_dates) ?>'
+    data-latest-existing='<?= json_encode($latest_existing ?? '') ?>'>
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
@@ -3320,82 +3311,71 @@ function validateAllQuantities() {
 
 // FIXED: Enhanced function to update distribution preview - correctly shows only available dates
 function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
+    console.log(`DEBUG: updateDistributionPreviewWithAvailableDates called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const itemRow = inputField.closest('tr');
-    
+
     if (totalQty <= 0) {
         // Remove distribution cells if quantity is 0
         itemRow.find('.date-distribution-cell').remove();
-        
+
         // Reset closing balance and amount
         const currentStock = parseFloat(inputField.data('stock'));
         const displayClosing = Math.floor(currentStock);
         $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
         $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
-        
+
         // Hide date columns if no items have quantity
-        if ($('input[name^="sale_qty"]').filter(function() { 
+        if ($('input[name^="sale_qty"]').filter(function() {
             return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
         }).length === 0) {
             $('.date-header, .date-distribution-cell').hide();
         }
-        
+
         return;
     }
-    
+
     // Get available and unavailable dates from data attributes
-    const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
-    const availableDatesJson = inputField.data('available-dates');
-    const unavailableDatesJson = inputField.data('unavailable-dates');
-    
-    let availableDates = [];
-    let unavailableDates = [];
-    
-    if (availableDatesJson) {
-        try {
-            availableDates = JSON.parse(availableDatesJson);
-        } catch (e) {
-            console.error('Error parsing available dates:', e);
-        }
-    }
-    
-    if (unavailableDatesJson) {
-        try {
-            unavailableDates = JSON.parse(unavailableDatesJson);
-        } catch (e) {
-            console.error('Error parsing unavailable dates:', e);
-        }
-    }
+    const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+    const availableDates = inputField.data('available-dates') || [];
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+
+    console.log(`DEBUG: ${itemCode} - hasBackdatedRestriction: ${hasBackdatedRestriction}`);
+    console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
+    console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
     
     // Create date index map
     const dateIndexMap = {};
     dateArray.forEach((date, index) => {
         dateIndexMap[date] = index;
     });
-    
+
+    console.log(`DEBUG: ${itemCode} - dateIndexMap:`, dateIndexMap);
+
     // Calculate distribution based on availability
     let distribution = new Array(daysCount).fill(0);
-    
+
     if (hasBackdatedRestriction && availableDates.length > 0) {
+        console.log(`DEBUG: ${itemCode} - Has backdated restriction with ${availableDates.length} available dates`);
         // Distribute only on available dates (backend logic)
         const availableDaysCount = availableDates.length;
         const baseQty = Math.floor(totalQty / availableDaysCount);
         const remainder = totalQty % availableDaysCount;
-        
+
         const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-        
+
         // Distribute remainder
         for (let i = 0; i < remainder; i++) {
             dailySalesForAvailableDates[i]++;
         }
-        
+
         // Shuffle the distribution
         for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] = 
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
             [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
         }
-        
+
         // Place the distributed quantities in the correct date positions
         availableDates.forEach((date, index) => {
             const dateIndex = dateIndexMap[date];
@@ -3403,88 +3383,105 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
                 distribution[dateIndex] = dailySalesForAvailableDates[index];
             }
         });
-        
+
         console.log(`Item ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
         console.log(`Distribution array:`, distribution);
-        
+
         // Add special class to row to indicate partial distribution
         itemRow.addClass('partial-date-item');
         itemRow.attr('title', `Sales exist on some dates. New sales will be distributed only on: ${availableDates.join(', ')}`);
     } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+        console.log(`DEBUG: ${itemCode} - No backdated restriction or all dates available`);
         // No restrictions or all dates available - distribute across all dates
         const baseQty = Math.floor(totalQty / daysCount);
         const remainder = totalQty % daysCount;
-        
+
         distribution = new Array(daysCount).fill(baseQty);
-        
+
         // Distribute remainder evenly across days
         for (let i = 0; i < remainder; i++) {
             distribution[i]++;
         }
-        
+
         // Shuffle the distribution to make it look more natural
         for (let i = distribution.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
         }
-        
+
         itemRow.removeClass('partial-date-item');
         console.log(`Item ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
     } else {
+        console.log(`DEBUG: ${itemCode} - No available dates for distribution`);
         // No available dates - all zeros
         console.log(`Item ${itemCode}: No available dates for distribution`);
         itemRow.addClass('partial-date-item');
         itemRow.attr('title', 'No available dates in selected range');
     }
+
+    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
     
     // Remove any existing distribution cells
     itemRow.find('.date-distribution-cell').remove();
-    
+
+    console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
+
     // Add date distribution cells with proper styling
     distribution.forEach((qty, index) => {
         const date = dateArray[index];
-        const cell = $(`<td class="date-distribution-cell">${qty}</td>`);
-        
+        const cell = $(`<td class="date-distribution-cell"></td>`);
+
         // Check if this date is unavailable due to existing sales
-        const isUnavailable = hasBackdatedRestriction && 
-                             unavailableDates.length > 0 && 
-                             unavailableDates.includes(date);
-        
-        const isAvailable = hasBackdatedRestriction && 
-                           availableDates.length > 0 && 
-                           availableDates.includes(date);
-        
-        // Apply styling based on availability and quantity
+        const isUnavailable = hasBackdatedRestriction &&
+                              unavailableDates.length > 0 &&
+                              unavailableDates.includes(date);
+
+        const isAvailable = hasBackdatedRestriction &&
+                            availableDates.length > 0 &&
+                            availableDates.includes(date);
+
+        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+
+        // Apply styling and content based on availability and quantity
         if (isUnavailable) {
-            // Date has existing sales - should always be 0
+            // Date has existing sales - show ✗
             cell.addClass('unavailable-date');
             cell.html('<span class="text-danger">✗</span>');
             cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to UNAVAILABLE (✗)`);
+
         } else if (isAvailable && qty > 0) {
             // Date is available and has new sales
             cell.addClass('available-date-with-sales');
+            cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-            
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
+
         } else if (qty > 0) {
             // Normal distribution (no restrictions)
             cell.addClass('non-zero-distribution');
+            cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date}`);
-            
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
+
         } else {
             // Zero quantity
             cell.addClass('zero-distribution');
-            
+            cell.text('0');
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to ZERO DISTRIBUTION`);
+
             if (isAvailable) {
                 cell.attr('title', `Date ${date} is available but has 0 units assigned`);
             } else if (!hasBackdatedRestriction) {
                 cell.attr('title', `Date ${date} has 0 units assigned`);
             }
         }
-        
+
         // Insert distribution cells after the action column
         cell.insertAfter(itemRow.find('.action-column'));
     });
+
+    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
     
     // Update total distribution count
     const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
@@ -3498,58 +3495,45 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
 
 // FIXED: Enhanced distribution function for shuffle that correctly handles available dates
 function shuffleDistributionForItem(itemCode, totalQty) {
+    console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
     const availableDatesJson = inputField.data('available-dates');
     const unavailableDatesJson = inputField.data('unavailable-dates');
-    
-    let availableDates = [];
-    let unavailableDates = [];
-    
-    if (availableDatesJson) {
-        try {
-            availableDates = JSON.parse(availableDatesJson);
-        } catch (e) {
-            console.error('Error parsing available dates:', e);
-        }
-    }
-    
-    if (unavailableDatesJson) {
-        try {
-            unavailableDates = JSON.parse(unavailableDatesJson);
-        } catch (e) {
-            console.error('Error parsing unavailable dates:', e);
-        }
-    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - hasBackdatedRestriction: ${hasBackdatedRestriction}`);
+    console.log(`DEBUG: shuffle ${itemCode} - availableDates:`, availableDates);
+    console.log(`DEBUG: shuffle ${itemCode} - unavailableDates:`, unavailableDates);
     
     // Create date index map
     const dateIndexMap = {};
     dateArray.forEach((date, index) => {
         dateIndexMap[date] = index;
     });
-    
+
     let distribution = new Array(daysCount).fill(0);
-    
+
     if (hasBackdatedRestriction && availableDates.length > 0) {
+        console.log(`DEBUG: shuffle ${itemCode} - Distributing on ${availableDates.length} available dates`);
         // Distribute only on available dates
         const availableDaysCount = availableDates.length;
         const baseQty = Math.floor(totalQty / availableDaysCount);
         const remainder = totalQty % availableDaysCount;
-        
+
         const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-        
+
         // Distribute remainder
         for (let i = 0; i < remainder; i++) {
             dailySalesForAvailableDates[i]++;
         }
-        
+
         // Shuffle the distribution
         for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] = 
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
             [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
         }
-        
+
         // Place the distributed quantities in the correct date positions
         availableDates.forEach((date, index) => {
             const dateIndex = dateIndexMap[date];
@@ -3557,29 +3541,35 @@ function shuffleDistributionForItem(itemCode, totalQty) {
                 distribution[dateIndex] = dailySalesForAvailableDates[index];
             }
         });
-        
+
         console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates`);
+        console.log(`DEBUG: shuffle ${itemCode} - distribution:`, distribution);
     } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+        console.log(`DEBUG: shuffle ${itemCode} - Distributing across all dates`);
         // Distribute across all dates
         const baseQty = Math.floor(totalQty / daysCount);
         const remainder = totalQty % daysCount;
-        
+
         distribution = new Array(daysCount).fill(baseQty);
-        
+
         // Distribute remainder
         for (let i = 0; i < remainder; i++) {
             distribution[i]++;
         }
-        
+
         // Shuffle the distribution
         for (let i = distribution.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
         }
-        
+
         console.log(`Shuffled ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
+        console.log(`DEBUG: shuffle ${itemCode} - distribution:`, distribution);
+    } else {
+        console.log(`DEBUG: shuffle ${itemCode} - No available dates, returning zeros`);
     }
-    
+
+    console.log(`DEBUG: shuffle ${itemCode} - returning distribution:`, distribution);
     return distribution;
 }
 
@@ -4081,178 +4071,184 @@ function initializeDistributionPreview() {
 // FIXED: Individual shuffle button click event - correctly handles available dates
 $(document).on('click', '.btn-shuffle-item', async function() {
     const itemCode = $(this).data('code');
+    console.log(`DEBUG: Individual shuffle clicked for ${itemCode}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const totalQty = parseInt(inputField.val()) || 0;
-    
+
+    console.log(`DEBUG: Individual shuffle ${itemCode} - totalQty: ${totalQty}, disabled: ${inputField.prop('disabled')}`);
+
     // Only shuffle if quantity > 0 and not disabled
     if (totalQty > 0 && !inputField.prop('disabled')) {
         // Get new distribution based on backend logic
         const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
-        
+
         // Update the distribution cells
         const itemRow = inputField.closest('tr');
         const dateCells = itemRow.find('.date-distribution-cell');
-        
+
+        console.log(`DEBUG: Individual shuffle ${itemCode} - found ${dateCells.length} date cells`);
+
         // Get available/unavailable dates
-        const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
-        const availableDatesJson = inputField.data('available-dates');
-        const unavailableDatesJson = inputField.data('unavailable-dates');
-        
-        let availableDates = [];
-        let unavailableDates = [];
-        
-        if (availableDatesJson) {
-            try {
-                availableDates = JSON.parse(availableDatesJson);
-            } catch (e) {}
-        }
-        
-        if (unavailableDatesJson) {
-            try {
-                unavailableDates = JSON.parse(unavailableDatesJson);
-            } catch (e) {}
-        }
-        
+        const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+        const availableDates = inputField.data('available-dates') || [];
+        const unavailableDates = inputField.data('unavailable-dates') || [];
+
+        console.log(`DEBUG: Individual shuffle ${itemCode} - availableDates:`, availableDates);
+        console.log(`DEBUG: Individual shuffle ${itemCode} - unavailableDates:`, unavailableDates);
+
         // Create date index map
         const dateIndexMap = {};
         dateArray.forEach((date, index) => {
             dateIndexMap[date] = index;
         });
-        
+
         newDistribution.forEach((qty, index) => {
             if (dateCells.eq(index).length) {
                 const cell = dateCells.eq(index);
                 const date = dateArray[index];
-                
-                // Update the cell value
-                cell.text(qty);
-                
-                // Update styling based on value and availability
+
+                console.log(`DEBUG: Individual shuffle ${itemCode} - updating cell ${index} for date ${date} with qty ${qty}`);
+
+                // Update styling and content based on value and availability
                 cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
-                
+
                 // Check if this date is unavailable
-                const isUnavailable = hasBackdatedRestriction && 
-                                     unavailableDates.length > 0 && 
-                                     unavailableDates.includes(date);
-                
-                const isAvailable = hasBackdatedRestriction && 
-                                   availableDates.length > 0 && 
-                                   availableDates.includes(date);
-                
+                const isUnavailable = hasBackdatedRestriction &&
+                                      unavailableDates.length > 0 &&
+                                      unavailableDates.includes(date);
+
+                const isAvailable = hasBackdatedRestriction &&
+                                    availableDates.length > 0 &&
+                                    availableDates.includes(date);
+
+                console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+
                 if (isUnavailable) {
-                    // Date has existing sales - should always be 0
+                    // Date has existing sales - show ✗
                     cell.addClass('unavailable-date');
                     cell.html('<span class="text-danger">✗</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to UNAVAILABLE`);
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
+                    cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to AVAILABLE WITH SALES`);
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
+                    cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to NON-ZERO`);
                 } else {
                     cell.addClass('zero-distribution');
+                    cell.text('0');
                     cell.attr('title', `Date ${date} has 0 units assigned`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to ZERO`);
                 }
             }
         });
-        
+
         console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
+    } else {
+        console.log(`DEBUG: Individual shuffle ${itemCode} - not shuffling (qty=${totalQty}, disabled=${inputField.prop('disabled')})`);
     }
 });
 
 // FIXED: Shuffle all button click event - correctly handles available dates
 $('#shuffleBtn').off('click').on('click', async function() {
+    console.log('DEBUG: Shuffle all button clicked');
     // Show loader
     $('#ajaxLoader').show();
-    
+
     // Process all items with quantities
     const itemsToShuffle = [];
     $('input.qty-input').each(function() {
         const itemCode = $(this).data('code');
         const totalQty = parseInt($(this).val()) || 0;
-        
+
         // Only shuffle if quantity > 0, visible, and not disabled
         if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
             itemsToShuffle.push({ itemCode, totalQty });
         }
     });
-    
+
+    console.log(`DEBUG: Shuffle all - found ${itemsToShuffle.length} items to shuffle:`, itemsToShuffle);
+
     // Shuffle each item using backend-like logic
     for (const item of itemsToShuffle) {
+        console.log(`DEBUG: Shuffle all - processing item ${item.itemCode}`);
         const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
-        
+
         // Update the distribution cells
         const inputField = $(`input[name="sale_qty[${item.itemCode}]"]`);
         const itemRow = inputField.closest('tr');
         const dateCells = itemRow.find('.date-distribution-cell');
-        
+
+        console.log(`DEBUG: Shuffle all - ${item.itemCode} has ${dateCells.length} date cells`);
+
         // Get available/unavailable dates
-        const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
-        const availableDatesJson = inputField.data('available-dates');
-        const unavailableDatesJson = inputField.data('unavailable-dates');
-        
-        let availableDates = [];
-        let unavailableDates = [];
-        
-        if (availableDatesJson) {
-            try {
-                availableDates = JSON.parse(availableDatesJson);
-            } catch (e) {}
-        }
-        
-        if (unavailableDatesJson) {
-            try {
-                unavailableDates = JSON.parse(unavailableDatesJson);
-            } catch (e) {}
-        }
-        
+        const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+        const availableDates = inputField.data('available-dates') || [];
+        const unavailableDates = inputField.data('unavailable-dates') || [];
+
+        console.log(`DEBUG: Shuffle all - ${item.itemCode} availableDates:`, availableDates);
+        console.log(`DEBUG: Shuffle all - ${item.itemCode} unavailableDates:`, unavailableDates);
+
         newDistribution.forEach((qty, index) => {
             if (dateCells.eq(index).length) {
                 const cell = dateCells.eq(index);
                 const date = dateArray[index];
-                
-                // Update the cell value
-                cell.text(qty);
-                
-                // Update styling based on value and availability
+
+                console.log(`DEBUG: Shuffle all - ${item.itemCode} updating cell ${index} for date ${date} with qty ${qty}`);
+
+                // Update styling and content based on value and availability
                 cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
-                
+
                 // Check if this date is unavailable
-                const isUnavailable = hasBackdatedRestriction && 
-                                     unavailableDates.length > 0 && 
-                                     unavailableDates.includes(date);
-                
-                const isAvailable = hasBackdatedRestriction && 
-                                   availableDates.length > 0 && 
-                                   availableDates.includes(date);
-                
+                const isUnavailable = hasBackdatedRestriction &&
+                                      unavailableDates.length > 0 &&
+                                      unavailableDates.includes(date);
+
+                const isAvailable = hasBackdatedRestriction &&
+                                    availableDates.length > 0 &&
+                                    availableDates.includes(date);
+
+                console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+
                 if (isUnavailable) {
-                    // Date has existing sales - should always be 0
+                    // Date has existing sales - show ✗
                     cell.addClass('unavailable-date');
                     cell.html('<span class="text-danger">✗</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to UNAVAILABLE`);
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
+                    cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to AVAILABLE WITH SALES`);
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
+                    cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to NON-ZERO`);
                 } else {
                     cell.addClass('zero-distribution');
+                    cell.text('0');
                     cell.attr('title', `Date ${date} has 0 units assigned`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to ZERO`);
                 }
             }
         });
     }
-    
+
     // Hide loader
     $('#ajaxLoader').hide();
-    
+
     // Update total amount
     calculateTotalAmount();
+    console.log('DEBUG: Shuffle all completed');
 });
 
 // OPTIMIZED: Document ready - Only process items with quantities > 0

@@ -80237,3 +80237,3069 @@ Stack trace:
         }
     }
 }
+[11-Jan-2026 14:41:13 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[11-Jan-2026 14:41:13 Europe/Berlin] Processed 0 items into 0 TP numbers
+[11-Jan-2026 14:41:13 Europe/Berlin] Unique TP Numbers found: 
+[11-Jan-2026 14:41:13 Europe/Berlin] Final Summary Structure: []
+[11-Jan-2026 14:44:18 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[11-Jan-2026 14:44:18 Europe/Berlin] Processed 0 items into 0 TP numbers
+[11-Jan-2026 14:44:18 Europe/Berlin] Unique TP Numbers found: 
+[11-Jan-2026 14:44:18 Europe/Berlin] Final Summary Structure: []
+[11-Jan-2026 14:44:25 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 480
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 480
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 1680
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1680, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 180 ML: 1680
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 375 ML: 48
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:25 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:25 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size >1L: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1920
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1920, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 180 ML: 1920
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041501, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041503, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer .', Details2: '650 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: F
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category FERMENTED BEER, Size 650 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041500, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040930, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040931, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Vodka - Peppy Apple Flavoured, Code: SCMPL0040935, Class: 'K', Details: 'Premium Romanov Vodka - Peppy Apple Flavoured .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: SAMSON XXX PREMIUM QUALITY FORTIFIED WINE, Code: SCMWN0041743, Class: 'V', Details: 'SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: WINE, Volume: 180, Column: 180 W, Qty: 192, Class: V
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12943, Category WINE, Size 180 W: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Class: 'W', Details: '8 PM Special Whisky .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMON GRASS & GINGER, Code: SCMPL0038461, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMO', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 22
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 22, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 22
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028278, Class: 'W', Details: '8 PM Special Whisky .', Details2: '750 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOCOLATE, Code: SCMPL0038467, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOC', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + LEMONADE FLAVOURED, Code: SCMPL0031946, Class: 'R', Details: 'BACARDI + LEMONADE FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031272, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0036420, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Class: 'W', Details: '8 PM Special Whisky .', Details2: '1000 ML(Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORANGE, Code: SCMPL0038472, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031274, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036598, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Bacardi Limon Ultra Deluxe Original citrus Rum, Code: SCMPL0030963, Class: 'G', Details: 'Bacardi Limon Ultra Deluxe Original citrus Rum .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024580, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0039947, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031275, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024583, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036599, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 2
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 2, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 2
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0040014, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 288
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 288, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 288
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Tangy CRANBERRY FLAVOUR, Code: SCMPL0031817, Class: 'D', Details: 'BREEZER Tangy CRANBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Exotic JAMAICAN PASSION FLAVOUR, Code: SCMPL0031818, Class: 'D', Details: 'BREEZER Exotic JAMAICAN PASSION FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 48, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Tasty BLUEBERRY FLAVOUR, Code: SCMPL0031819, Class: 'D', Details: 'BREEZER Tasty BLUEBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Delicious BLACKBERRY CRUSH FLAVOUR, Code: SCMPL0031822, Class: 'D', Details: 'BREEZER Delicious BLACKBERRY CRUSH FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Processed 69 items into 10 TP numbers
+[11-Jan-2026 14:44:26 Europe/Berlin] Unique TP Numbers found: 4807, 4809, 4816, 4818, 4820, 5571, 9502, 12943, 12971, 12972
+[11-Jan-2026 14:44:26 Europe/Berlin] Final Summary Structure: {
+    "4807": {
+        "tp_no": "4807",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4809": {
+        "tp_no": "4809",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 6,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1680,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4816": {
+        "tp_no": "4816",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4818": {
+        "tp_no": "4818",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1920,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4820": {
+        "tp_no": "4820",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "5571": {
+        "tp_no": "5571",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 120,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "9502": {
+        "tp_no": "9502",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 432,
+                "170 ML": 0,
+                "90 ML": 96,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12943": {
+        "tp_no": "12943",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 192,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12971": {
+        "tp_no": "12971",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 72,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 96,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 360,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1056,
+                "170 ML": 0,
+                "90 ML": 580,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12972": {
+        "tp_no": "12972",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 312,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[11-Jan-2026 14:44:26 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 480
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 480
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1680
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1680, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 180 ML: 1680
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 375 ML: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size >1L: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 1920
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1920, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 180 ML: 1920
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041501, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041503, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer .', Details2: '650 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: F
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category FERMENTED BEER, Size 650 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041500, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040930, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040931, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Premium Romanov Vodka - Peppy Apple Flavoured, Code: SCMPL0040935, Class: 'K', Details: 'Premium Romanov Vodka - Peppy Apple Flavoured .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: SAMSON XXX PREMIUM QUALITY FORTIFIED WINE, Code: SCMWN0041743, Class: 'V', Details: 'SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: WINE, Volume: 180, Column: 180 W, Qty: 192, Class: V
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12943, Category WINE, Size 180 W: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Class: 'W', Details: '8 PM Special Whisky .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMON GRASS & GINGER, Code: SCMPL0038461, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMO', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 22
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 22, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 22
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028278, Class: 'W', Details: '8 PM Special Whisky .', Details2: '750 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOCOLATE, Code: SCMPL0038467, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOC', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + LEMONADE FLAVOURED, Code: SCMPL0031946, Class: 'R', Details: 'BACARDI + LEMONADE FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031272, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0036420, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Class: 'W', Details: '8 PM Special Whisky .', Details2: '1000 ML(Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORANGE, Code: SCMPL0038472, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031274, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036598, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Bacardi Limon Ultra Deluxe Original citrus Rum, Code: SCMPL0030963, Class: 'G', Details: 'Bacardi Limon Ultra Deluxe Original citrus Rum .', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024580, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0039947, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031275, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024583, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036599, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 2
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 2, Class: W
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 2
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0040014, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 288
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 288, Class: K
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 288
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Tangy CRANBERRY FLAVOUR, Code: SCMPL0031817, Class: 'D', Details: 'BREEZER Tangy CRANBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Exotic JAMAICAN PASSION FLAVOUR, Code: SCMPL0031818, Class: 'D', Details: 'BREEZER Exotic JAMAICAN PASSION FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 48, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 48
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Tasty BLUEBERRY FLAVOUR, Code: SCMPL0031819, Class: 'D', Details: 'BREEZER Tasty BLUEBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Item: BREEZER Delicious BLACKBERRY CRUSH FLAVOUR, Code: SCMPL0031822, Class: 'D', Details: 'BREEZER Delicious BLACKBERRY CRUSH FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:26 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:26 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:26 Europe/Berlin] Processed 69 items into 10 TP numbers
+[11-Jan-2026 14:44:26 Europe/Berlin] Unique TP Numbers found: 4807, 4809, 4816, 4818, 4820, 5571, 9502, 12943, 12971, 12972
+[11-Jan-2026 14:44:26 Europe/Berlin] Final Summary Structure: {
+    "4807": {
+        "tp_no": "4807",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4809": {
+        "tp_no": "4809",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 6,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1680,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4816": {
+        "tp_no": "4816",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4818": {
+        "tp_no": "4818",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1920,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4820": {
+        "tp_no": "4820",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "5571": {
+        "tp_no": "5571",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 120,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "9502": {
+        "tp_no": "9502",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 432,
+                "170 ML": 0,
+                "90 ML": 96,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12943": {
+        "tp_no": "12943",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 192,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12971": {
+        "tp_no": "12971",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 72,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 96,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 360,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1056,
+                "170 ML": 0,
+                "90 ML": 580,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12972": {
+        "tp_no": "12972",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 312,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[11-Jan-2026 14:44:26 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 480
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 480
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4807, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 6, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size >1L: 6
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 1680
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1680, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 180 ML: 1680
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 9
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 9, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4809, Category SPIRITS, Size 375 ML: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 180 ML: 720
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 500, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 90 ML: 500
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4816, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 1000
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1000, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 90 ML: 1000
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0035192, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '2000 ML Pet (6)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 2000, Column: >1L, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size >1L: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010113, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '1000 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 1920
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1920, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4818, Category SPIRITS, Size 180 ML: 1920
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Class: 'W', Details: 'Seagram\'s Imperial Blue Superior Grain Whisky .', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 4820, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041501, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041503, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer .', Details2: '650 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: F
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 5571, Category FERMENTED BEER, Size 650 ML: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY, Code: SCMPL0041500, Class: 'W', Details: 'ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY ', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 5571, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040930, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Premium Romanov Classic Vodka, Code: SCMPL0040931, Class: 'K', Details: 'Premium Romanov Classic Vodka .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Premium Romanov Vodka - Peppy Apple Flavoured, Code: SCMPL0040935, Class: 'K', Details: 'Premium Romanov Vodka - Peppy Apple Flavoured .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 9502, Category SPIRITS, Size 180 ML: 240
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: SAMSON XXX PREMIUM QUALITY FORTIFIED WINE, Code: SCMWN0041743, Class: 'V', Details: 'SAMSON XXX PREMIUM QUALITY FORTIFIED WINE .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: WINE, Volume: 180, Column: 180 W, Qty: 192, Class: V
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12943, Category WINE, Size 180 W: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Class: 'W', Details: '8 PM Special Whisky .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMON GRASS & GINGER, Code: SCMPL0038461, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA LEMO', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 22
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 22, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 22
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028278, Class: 'W', Details: '8 PM Special Whisky .', Details2: '750 ML (Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOCOLATE, Code: SCMPL0038467, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA CHOC', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BACARDI + LEMONADE FLAVOURED, Code: SCMPL0031946, Class: 'R', Details: 'BACARDI + LEMONADE FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031272, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0036420, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Class: 'W', Details: '8 PM Special Whisky .', Details2: '1000 ML(Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 18
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORANGE, Code: SCMPL0038472, Class: 'K', Details: 'M2 MAGIC MOMENTS REMIX SMOOTH FLAVOURED VODKA ORAN', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 192
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031274, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024582, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036598, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Bacardi Limon Ultra Deluxe Original citrus Rum, Code: SCMPL0030963, Class: 'G', Details: 'Bacardi Limon Ultra Deluxe Original citrus Rum .', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024580, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '90 ML(100)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 100
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0039947, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '90 ML (Pet)-96'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 96, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 90 ML: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031275, Class: 'W', Details: 'OAKSMITH GOLD INTERNATIONAL BLENDED WHISKY .', Details2: '375 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 375 ML: 24
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024583, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 12
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0036599, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 144
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BACARDI + CRANBERRY FLAVOURED, Code: SCMPL0031945, Class: 'R', Details: 'BACARDI + CRANBERRY FLAVOURED .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: R
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: OAKSMITH INTERNATIONAL BLENDED WHISKY, Code: SCMPL0031271, Class: 'W', Details: 'OAKSMITH INTERNATIONAL BLENDED WHISKY .', Details2: '750 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 2
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 2, Class: W
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 750 ML: 2
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: Black by Bacardi Ultra Deluxe Original Premium Crafted Rum, Code: SCMPL0024581, Class: 'G', Details: 'Black by Bacardi Ultra Deluxe Original Premium Cra', Details2: '180 ML'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: G
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 96
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0040014, Class: 'K', Details: 'MAGIC MOMENTS PURE GRAIN VODKA .', Details2: '180 ML (Pet)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 288
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 288, Class: K
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12971, Category SPIRITS, Size 180 ML: 288
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BREEZER Tangy CRANBERRY FLAVOUR, Code: SCMPL0031817, Class: 'D', Details: 'BREEZER Tangy CRANBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 120, Class: D
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 120
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BREEZER Exotic JAMAICAN PASSION FLAVOUR, Code: SCMPL0031818, Class: 'D', Details: 'BREEZER Exotic JAMAICAN PASSION FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 48, Class: D
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 48
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BREEZER Tasty BLUEBERRY FLAVOUR, Code: SCMPL0031819, Class: 'D', Details: 'BREEZER Tasty BLUEBERRY FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:27 Europe/Berlin] Item: BREEZER Delicious BLACKBERRY CRUSH FLAVOUR, Code: SCMPL0031822, Class: 'D', Details: 'BREEZER Delicious BLACKBERRY CRUSH FLAVOUR .', Details2: '275 ML(24)'
+[11-Jan-2026 14:44:27 Europe/Berlin] Using TotBott column: 72
+[11-Jan-2026 14:44:27 Europe/Berlin] Categorized as: SPIRITS, Volume: 275, Column: 275 ML, Qty: 72, Class: D
+[11-Jan-2026 14:44:27 Europe/Berlin] Added to TP 12972, Category SPIRITS, Size 275 ML: 72
+[11-Jan-2026 14:44:27 Europe/Berlin] Processed 69 items into 10 TP numbers
+[11-Jan-2026 14:44:27 Europe/Berlin] Unique TP Numbers found: 4807, 4809, 4816, 4818, 4820, 5571, 9502, 12943, 12971, 12972
+[11-Jan-2026 14:44:27 Europe/Berlin] Final Summary Structure: {
+    "4807": {
+        "tp_no": "4807",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4809": {
+        "tp_no": "4809",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 6,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1680,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4816": {
+        "tp_no": "4816",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1440,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4818": {
+        "tp_no": "4818",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 12,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1920,
+                "170 ML": 0,
+                "90 ML": 1000,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "4820": {
+        "tp_no": "4820",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "5571": {
+        "tp_no": "5571",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 12,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 24,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 240,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 120,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "9502": {
+        "tp_no": "9502",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 432,
+                "170 ML": 0,
+                "90 ML": 96,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12943": {
+        "tp_no": "12943",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 192,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12971": {
+        "tp_no": "12971",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 72,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 96,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 360,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1056,
+                "170 ML": 0,
+                "90 ML": 580,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "12972": {
+        "tp_no": "12972",
+        "tp_details": {
+            "purchase_date": "2025-11-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 312,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
