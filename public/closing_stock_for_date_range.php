@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once 'drydays_functions.php'; // Single include
-require_once 'license_functions.php'; // ADDED: Include license 
-require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
+require_once 'drydays_functions.php';
+require_once 'license_functions.php';
+require_once 'cash_memo_functions.php';
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
@@ -10,7 +10,6 @@ function logMessage($message, $level = 'INFO') {
     $timestamp = date('Y-m-d H:i:s');
     $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
     
-    // Create logs directory if it doesn't exist
     $logDir = dirname($logFile);
     if (!is_dir($logDir)) {
         mkdir($logDir, 0755, true);
@@ -19,7 +18,6 @@ function logMessage($message, $level = 'INFO') {
     file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
 }
 
-// Function to log array data in a readable format
 function logArray($data, $title = 'Array data') {
     ob_start();
     print_r($data);
@@ -27,13 +25,11 @@ function logArray($data, $title = 'Array data') {
     logMessage("$title:\n$output");
 }
 
-// DEBUG: Log page access and basic info
 logMessage("=== PAGE ACCESS ===");
 logMessage("Request method: " . $_SERVER['REQUEST_METHOD']);
 logMessage("Search term: '" . ($_GET['search'] ?? '') . "'");
 logMessage("Current session ID: " . session_id());
 
-// Function to clear session quantities - FOR COMPATIBILITY
 function clearSessionQuantities() {
     if (isset($_SESSION['sale_quantities'])) {
         unset($_SESSION['sale_quantities']);
@@ -41,7 +37,6 @@ function clearSessionQuantities() {
     }
 }
 
-// NEW: Function to clear session closing balances
 function clearSessionClosingBalances() {
     if (isset($_SESSION['closing_balances'])) {
         unset($_SESSION['closing_balances']);
@@ -49,15 +44,12 @@ function clearSessionClosingBalances() {
     }
 }
 
-// NEW: Enhanced validation function for closing balance
 function validateClosingBalance($current_stock, $closing_balance, $item_code) {
-    // Closing balance cannot be negative
     if ($closing_balance < 0) {
         logMessage("Negative closing balance for item $item_code: $closing_balance", 'WARNING');
         return false;
     }
     
-    // Closing balance cannot be greater than current stock
     if ($closing_balance > $current_stock) {
         logMessage("Closing balance ($closing_balance) exceeds current stock ($current_stock) for item $item_code", 'WARNING');
         return false;
@@ -66,16 +58,7 @@ function validateClosingBalance($current_stock, $closing_balance, $item_code) {
     return true;
 }
 
-// ============================================================================
-// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: ALLOW SALES ONLY AFTER LATEST SALE
-// ============================================================================
-
-/**
- * Check if a sale already exists for an item within or after the given date range
- * Returns array with allowed dates (after latest existing sale)
- */
 function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
-    // Query to get all sales for this item in or after the date range
     $query = "SELECT sh.BILL_DATE
               FROM tblsaleheader sh
               JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
@@ -96,10 +79,9 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
     }
     $stmt->close();
     
-    // Create date range array
     $begin = new DateTime($start_date);
     $end = new DateTime($end_date);
-    $end = $end->modify('+1 day'); // Include end date
+    $end = $end->modify('+1 day');
     $interval = new DateInterval('P1D');
     $date_range = new DatePeriod($begin, $interval, $end);
     
@@ -109,11 +91,9 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
     }
     
     if (!empty($existing_dates)) {
-        // Find the latest existing sale date
         $latest_existing = max($existing_dates);
         $latest_existing_date = new DateTime($latest_existing);
         
-        // Determine which dates are available (after latest sale date)
         $available_dates = [];
         $unavailable_dates = [];
         
@@ -131,31 +111,27 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
         logMessage("Unavailable dates (has existing sales): " . implode(', ', $unavailable_dates), 'INFO');
         
         return [
-            'restricted' => !empty($unavailable_dates), // Restricted if ANY dates are unavailable
+            'restricted' => !empty($unavailable_dates),
             'latest_existing_sale' => $latest_existing,
             'available_dates' => $available_dates,
             'unavailable_dates' => $unavailable_dates,
             'all_existing_dates' => $existing_dates,
             'message' => !empty($unavailable_dates) ? 
                 "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
-                "No sales restrictions"
+                "No sales restrictions for this item"
         ];
     }
     
     return [
         'restricted' => false,
         'latest_existing_sale' => null,
-        'available_dates' => $all_dates, // All dates available if no existing sales
+        'available_dates' => $all_dates,
         'unavailable_dates' => [],
         'all_existing_dates' => [],
         'message' => "No sales restrictions for this item"
     ];
 }
 
-/**
- * Check if sales exist for multiple items within specific date ranges
- * Returns detailed information about restrictions for each item
- */
 function checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id) {
     if (empty($items_with_dates)) return [];
     
@@ -165,10 +141,8 @@ function checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id) {
         $start_date = $date_range['start_date'];
         $end_date = $date_range['end_date'];
         
-        // Check for each item individually
         $result = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
         
-        // Only block if NO dates are available
         if ($result['restricted'] && empty($result['available_dates'])) {
             $restricted_items[$item_code] = [
                 'code' => $item_code,
@@ -185,55 +159,7 @@ function checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id) {
     return $restricted_items;
 }
 
-// ============================================================================
-// NEW: GET EXISTING SALES DATES FOR ITEMS WITHIN DATE RANGE
-// ============================================================================
 
-/**
- * Get existing sales dates for items within a date range
- * Returns array with item_code => [sale_dates]
- */
-function getExistingSalesDatesForItems($conn, $item_codes, $start_date, $end_date, $comp_id) {
-    if (empty($item_codes)) return [];
-    
-    $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
-    
-    $query = "SELECT sd.ITEM_CODE, sh.BILL_DATE
-              FROM tblsaleheader sh
-              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
-                AND sh.COMP_ID = sd.COMP_ID
-              WHERE sd.ITEM_CODE IN ($placeholders)
-              AND sh.BILL_DATE BETWEEN ? AND ?
-              AND sh.COMP_ID = ?
-              ORDER BY sd.ITEM_CODE, sh.BILL_DATE";
-    
-    $stmt = $conn->prepare($query);
-    
-    // Build parameters array
-    $params = array_merge($item_codes, [$start_date, $end_date, $comp_id]);
-    $types = str_repeat('s', count($item_codes)) . 'ssi';
-    
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $existing_sales = [];
-    while ($row = $result->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        $bill_date = $row['BILL_DATE'];
-        
-        if (!isset($existing_sales[$item_code])) {
-            $existing_sales[$item_code] = [];
-        }
-        
-        $existing_sales[$item_code][] = $bill_date;
-    }
-    
-    $stmt->close();
-    return $existing_sales;
-}
-
-// Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     logMessage('User not logged in, redirecting to index.php', 'WARNING');
     header("Location: index.php");
@@ -245,26 +171,17 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
     exit;
 }
 
-include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "../config/db.php";
 
-// ============================================================================
-// LICENSE-BASED FILTERING - ADDED FROM ITEM_MASTER.PHP
-// ============================================================================
-
-// Get company's license type and available classes
 $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
-// Extract class SGROUP values for filtering
 $allowed_classes = [];
 foreach ($available_classes as $class) {
     $allowed_classes[] = $class['SGROUP'];
 }
 
-// ============================================================================
-// PERFORMANCE OPTIMIZATION: DATABASE INDEXING
-// ============================================================================
 $index_queries = [
     "CREATE INDEX IF NOT EXISTS idx_itemmaster_liq_flag ON tblitemmaster(LIQ_FLAG)",
     "CREATE INDEX IF NOT EXISTS idx_itemmaster_code ON tblitemmaster(CODE)", 
@@ -281,30 +198,19 @@ foreach ($index_queries as $query) {
     }
 }
 
-// Include volume limit utilities
 include_once "volume_limit_utils.php";
 include_once "stock_functions.php";
 
-// Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
-
-// Sequence type selection (default user_defined)
 $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_defined';
-
-// Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-
-// Date range selection (default to current day only)
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
 
-// Get company ID
 $comp_id = $_SESSION['CompID'];
 $current_stock_column = "Current_Stock" . $comp_id;
 $opening_stock_column = "Opening_Stock" . $comp_id;
 
-// Check if the stock columns exist, if not create them
-// Cache this check in session to avoid repeated queries
 if (!isset($_SESSION['stock_columns_checked'])) {
     $check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
     $column_result = $conn->query($check_column_query);
@@ -320,52 +226,41 @@ if (!isset($_SESSION['stock_columns_checked'])) {
     $_SESSION['stock_columns_checked'] = true;
 }
 
-// NEW: Calculate the day number for the end_date to get current stock
 $end_date_day = date('d', strtotime($end_date));
 $closing_column = "DAY_" . sprintf('%02d', $end_date_day) . "_CLOSING";
 $end_date_month = date('Y-m', strtotime($end_date));
 
-// NEW: Determine which daily stock table to use based on end_date
-$current_month = date('Y-m'); // Current month in "YYYY-MM" format
-$end_date_month_year = date('m_Y', strtotime($end_date)); // e.g., "12_2025"
+$current_month = date('Y-m');
+$end_date_month_year = date('m_Y', strtotime($end_date));
 
 if ($end_date_month === $current_month) {
-    // Use current month table (no suffix)
     $daily_stock_table = "tbldailystock_" . $comp_id;
     $table_suffix = "";
 } else {
-    // Use archived month table (with suffix mm_yyyy)
-    $end_date_month_short = date('m', strtotime($end_date)); // e.g., "12"
-    $end_date_year_short = date('y', strtotime($end_date)); // e.g., "25"
+    $end_date_month_short = date('m', strtotime($end_date));
+    $end_date_year_short = date('y', strtotime($end_date));
     $daily_stock_table = "tbldailystock_" . $comp_id . "_" . $end_date_month_short . "_" . $end_date_year_short;
     $table_suffix = "_" . $end_date_month_short . "_" . $end_date_year_short;
 }
 
-// Build the order clause based on sequence type
 $order_clause = "";
 if ($sequence_type === 'system_defined') {
     $order_clause = "ORDER BY im.CODE ASC";
 } elseif ($sequence_type === 'group_defined') {
     $order_clause = "ORDER BY im.DETAILS2 ASC, im.DETAILS ASC";
 } else {
-    // User defined (default)
     $order_clause = "ORDER BY im.DETAILS ASC";
 }
 
-// ============================================================================
-// PERFORMANCE OPTIMIZATION: PAGINATION WITH LICENSE FILTERING
-// ============================================================================
-$items_per_page = 50; // Adjust based on your needs
+$items_per_page = 50;
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
-// Check if the required daily stock table exists
 $check_table_query = "SHOW TABLES LIKE '$daily_stock_table'";
 $table_result = $conn->query($check_table_query);
 $table_exists = $table_result->num_rows > 0;
 
 if (!$table_exists) {
-    // Table doesn't exist, create it with proper structure
     $create_table_query = "CREATE TABLE IF NOT EXISTS $daily_stock_table (
         ID INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
         ITEM_CODE VARCHAR(50) NOT NULL,
@@ -503,33 +398,25 @@ if (!$table_exists) {
     if ($conn->query($create_table_query)) {
         logMessage("Created daily stock table: $daily_stock_table");
         $table_exists = true;
-        
-        // Initialize the table with items from current month if it's an archive table
-        if ($end_date_month !== $current_month) {
-            initializeArchiveTable($conn, $comp_id, $end_date_month, $daily_stock_table);
-        }
     } else {
         logMessage("Failed to create daily stock table: " . $conn->error, 'ERROR');
     }
 }
 
-// MODIFIED: Get total count for pagination with license filtering AND stock > 0 condition
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    // UPDATED: Count query that checks for stock > 0 - CORRECTED FILTER
     $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
                     FROM tblitemmaster im
                     LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
                         AND ds.STK_MONTH = ?
                     WHERE im.LIQ_FLAG = ? 
                     AND im.CLASS IN ($class_placeholders)
-                    AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only show items with stock > 0
+                    AND COALESCE(ds.$closing_column, 0) > 0";
     
     $count_params = array_merge([$end_date_month, $mode], $allowed_classes);
     $count_types = str_repeat('s', count($count_params));
 } else {
-    // If no classes allowed or table doesn't exist, show empty result
     $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE 1 = 0";
     $count_params = [];
     $count_types = "";
@@ -551,11 +438,9 @@ $count_result = $count_stmt->get_result();
 $total_items = $count_result->fetch_assoc()['total'];
 $count_stmt->close();
 
-// MODIFIED: Main query with pagination, license filtering AND stock > 0 condition
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    // UPDATED: Query that fetches closing balance from daily stock table for end_date - WITH stock > 0 filter
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
@@ -564,12 +449,11 @@ if (!empty($allowed_classes) && $table_exists) {
                   AND ds.STK_MONTH = ?
               WHERE im.LIQ_FLAG = ? 
               AND im.CLASS IN ($class_placeholders)
-              AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only show items with stock > 0
+              AND COALESCE(ds.$closing_column, 0) > 0";
     
     $params = array_merge([$end_date_month, $mode], $allowed_classes);
     $types = str_repeat('s', count($params));
 } else {
-    // If no classes allowed or table doesn't exist, show empty result
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
@@ -602,79 +486,31 @@ $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
-// Calculate total pages
 $total_pages = ceil($total_items / $items_per_page);
 
-// ============================================================================
-// NEW: SESSION CLOSING BALANCES PRESERVATION WITH PAGINATION
-// ============================================================================
-
-// Initialize session if not exists
 if (!isset($_SESSION['closing_balances'])) {
     $_SESSION['closing_balances'] = [];
 }
 
-// Handle form submission to update session closing balances
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['closing_balance'])) {
     foreach ($_POST['closing_balance'] as $item_code => $closing_balance) {
         $closing_val = floatval($closing_balance);
         $_SESSION['closing_balances'][$item_code] = $closing_val;
     }
     
-    // Log the update
     logMessage("Session closing balances updated from POST: " . count($_SESSION['closing_balances']) . " items");
 }
 
-// Function to initialize archive table with data from current month
-function initializeArchiveTable($conn, $comp_id, $archive_month, $archive_table) {
-    $current_table = "tbldailystock_" . $comp_id;
-    
-    // Check if current table exists
-    $check_current = "SHOW TABLES LIKE '$current_table'";
-    $current_exists = $conn->query($check_current)->num_rows > 0;
-    
-    if (!$current_exists) {
-        logMessage("Current table $current_table doesn't exist, cannot initialize archive", 'WARNING');
-        return false;
-    }
-    
-    // Copy structure and data from current table for the previous month end
-    $prev_month = date('Y-m', strtotime($archive_month . ' -1 month'));
-    
-    // Get items from current table that have stock
-    $copy_query = "INSERT INTO $archive_table (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING)
-                   SELECT ITEM_CODE, ?, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING 
-                   FROM $current_table 
-                   WHERE STK_MONTH = ?";
-    
-    $copy_stmt = $conn->prepare($copy_query);
-    $copy_stmt->bind_param("ss", $archive_month, $prev_month);
-    
-    if ($copy_stmt->execute()) {
-        $affected_rows = $copy_stmt->affected_rows;
-        logMessage("Initialized archive table $archive_table with $affected_rows items from $prev_month");
-        $copy_stmt->close();
-        return true;
-    } else {
-        logMessage("Failed to initialize archive table: " . $copy_stmt->error, 'ERROR');
-        $copy_stmt->close();
-        return false;
-    }
-}
-
-// MODIFIED: Get ALL items data for JavaScript from ALL modes for Total Sales Summary
-// NEW: Also get stock from daily stock table for end_date - WITH stock > 0 filter
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
                                COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                                ds.STK_MONTH as stock_month
                         FROM tblitemmaster im
-                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE
                             AND ds.STK_MONTH = ?
-                        WHERE im.CLASS IN ($class_placeholders) 
-                        AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only include items with stock > 0
-    
+                        WHERE im.CLASS IN ($class_placeholders)";
+
     $all_items_stmt = $conn->prepare($all_items_query);
     $all_items_params = array_merge([$end_date_month], $allowed_classes);
     $all_items_types = str_repeat('s', count($all_items_params));
@@ -684,10 +520,10 @@ if (!empty($allowed_classes) && $table_exists) {
                                COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                                ds.STK_MONTH as stock_month
                         FROM tblitemmaster im
-                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE
                             AND ds.STK_MONTH = ?
                         WHERE 1 = 0";
-    
+
     $all_items_stmt = $conn->prepare($all_items_query);
     $all_items_params = [$end_date_month];
     $all_items_types = "s";
@@ -702,10 +538,9 @@ while ($row = $all_items_result->fetch_assoc()) {
 }
 $all_items_stmt->close();
 
-// Create date range array
 $begin = new DateTime($start_date);
 $end = new DateTime($end_date);
-$end = $end->modify('+1 day'); // Include end date
+$end = $end->modify('+1 day');
 
 $interval = new DateInterval('P1D');
 $date_range = new DatePeriod($begin, $interval, $end);
@@ -716,16 +551,13 @@ foreach ($date_range as $date) {
 }
 $days_count = count($date_array);
 
-// NEW: Function to update item stock based on closing balance
 function updateItemStockFromClosing($conn, $item_code, $closing_balance, $current_stock_column, $opening_stock_column, $fin_year_id, $current_stock) {
-    // Calculate sale quantity = current stock - closing balance
     $sale_qty = $current_stock - $closing_balance;
     
     if ($sale_qty <= 0) {
-        return 0; // No sales
+        return 0;
     }
     
-    // Check if record exists first
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_stock_query);
     $check_stmt->bind_param("s", $item_code);
@@ -744,7 +576,7 @@ function updateItemStockFromClosing($conn, $item_code, $closing_balance, $curren
         $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
                                VALUES (?, ?, ?, ?)";
         $insert_stock_stmt = $conn->prepare($insert_stock_query);
-        $new_current_stock = -$sale_qty; // Negative since we're deducting
+        $new_current_stock = -$sale_qty;
         $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $new_current_stock, $new_current_stock);
         $insert_stock_stmt->execute();
         $insert_stock_stmt->close();
@@ -753,43 +585,27 @@ function updateItemStockFromClosing($conn, $item_code, $closing_balance, $curren
     return $sale_qty;
 }
 
-// ============================================================================
-// NEW: ENHANCED DISTRIBUTION LOGIC FOR PARTIAL DATE RANGES
-// This version correctly distributes only on available dates
-// ============================================================================
-
-/**
- * Enhanced distribution function that handles items with existing sales in the date range
- * For items with existing sales: distribute only across available dates (after latest sale)
- * For items without existing sales: distribute across entire date range
- */
 function distributeSalesIntelligently($conn, $sale_qty, $item_code, $start_date, $end_date, $comp_id, $date_array) {
     if ($sale_qty <= 0) return array_fill(0, count($date_array), 0);
     
-    // Get available dates for this item
     $date_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
     $available_dates = $date_check['available_dates'];
     
-    // If no available dates, return zeros
     if (empty($available_dates)) {
         logMessage("Item $item_code has no available dates for distribution", 'INFO');
         return array_fill(0, count($date_array), 0);
     }
     
-    // Create a map of date to index
     $date_index_map = [];
     foreach ($date_array as $index => $date) {
         $date_index_map[$date] = $index;
     }
     
-    // Distribute only across available dates
     $available_days = count($available_dates);
     $distribution = distributeSalesUniformlyBasic($sale_qty, $available_days);
     
-    // Create full distribution array with zeros for all dates
     $full_distribution = array_fill(0, count($date_array), 0);
     
-    // Fill in the distribution for available dates
     foreach ($available_dates as $i => $date) {
         $index = $date_index_map[$date] ?? null;
         if ($index !== null) {
@@ -802,7 +618,6 @@ function distributeSalesIntelligently($conn, $sale_qty, $item_code, $start_date,
     return $full_distribution;
 }
 
-// Basic distribution function (renamed to avoid conflict)
 function distributeSalesUniformlyBasic($sale_qty, $days_count) {
     if ($sale_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
     
@@ -811,571 +626,21 @@ function distributeSalesUniformlyBasic($sale_qty, $days_count) {
     
     $daily_sales = array_fill(0, $days_count, $base_qty);
     
-    // Distribute remainder evenly across days
     for ($i = 0; $i < $remainder; $i++) {
         $daily_sales[$i]++;
     }
     
-    // Shuffle the distribution to make it look more natural
     shuffle($daily_sales);
     
     return $daily_sales;
 }
 
-// ENHANCED: Function to get the correct daily stock table for a specific date with validation
-function getDailyStockTableForDate($conn, $comp_id, $date) {
-    $current_date = new DateTime();
-    $sale_date = new DateTime($date);
-    
-    // If sale date is in the future, use current month table
-    if ($sale_date > $current_date) {
-        logMessage("Sale date $date is in future, using current month table", 'WARNING');
-        return "tbldailystock_" . $comp_id;
-    }
-    
-    $current_month = $current_date->format('Y-m'); // Current month in "YYYY-MM" format
-    $date_month = $sale_date->format('Y-m'); // Date month in "YYYY-MM" format
-    
-    if ($date_month === $current_month) {
-        // Use current month table (no suffix)
-        return "tbldailystock_" . $comp_id;
-    } else {
-        // Use archived month table (with suffix mm_yy)
-        $date_month_short = $sale_date->format('m'); // e.g., "12"
-        $date_year_short = $sale_date->format('y'); // e.g., "25"
-        return "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
-    }
-}
-
-// ENHANCED: Function to recalculate daily stock from a specific day onward with proper rollover
-function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month, $start_day = 1) {
-    logMessage("Recalculating stock from day $start_day for item $item_code in $stk_month in table $table_name", 'INFO');
-    
-    // Get the current date to know if we're dealing with current or future month
-    $current_date = new DateTime();
-    $table_month = new DateTime($stk_month . '-01');
-    
-    // Get last day of this month
-    $last_day_of_month = date('t', strtotime($stk_month . '-01'));
-    
-    // Start from the specified day and recalculate forward
-    for ($day = $start_day; $day <= 31; $day++) {
-        $day_num = sprintf('%02d', $day);
-        $opening_column = "DAY_{$day_num}_OPEN";
-        $purchase_column = "DAY_{$day_num}_PURCHASE";
-        $sales_column = "DAY_{$day_num}_SALES";
-        $closing_column = "DAY_{$day_num}_CLOSING";
-        
-        // Check if day columns exist
-        $check_columns = "SHOW COLUMNS FROM $table_name LIKE '$opening_column'";
-        $column_result = $conn->query($check_columns);
-        
-        if ($column_result->num_rows == 0) {
-            continue; // Day doesn't exist in table
-        }
-        
-        // Get current values for this day
-        $day_query = "SELECT $opening_column, $purchase_column, $sales_column 
-                      FROM $table_name 
-                      WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-        $day_stmt = $conn->prepare($day_query);
-        $day_stmt->bind_param("ss", $item_code, $stk_month);
-        $day_stmt->execute();
-        $day_result = $day_stmt->get_result();
-        
-        if ($day_result->num_rows > 0) {
-            $day_values = $day_result->fetch_assoc();
-            $opening = $day_values[$opening_column] ?? 0;
-            $purchase = $day_values[$purchase_column] ?? 0;
-            $sales = $day_values[$sales_column] ?? 0;
-            
-            // Calculate closing using the formula: Closing = Opening + Purchase - Sales
-            $closing = $opening + $purchase - $sales;
-            
-            // Update closing
-            $update_query = "UPDATE $table_name 
-                            SET $closing_column = ?,
-                                LAST_UPDATED = CURRENT_TIMESTAMP 
-                            WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-            $update_stmt = $conn->prepare($update_query);
-            $update_stmt->bind_param("dss", $closing, $item_code, $stk_month);
-            $update_stmt->execute();
-            $update_stmt->close();
-            
-            // Set next day's opening to this day's closing (but only within same month)
-            $next_day = $day + 1;
-            if ($next_day <= $last_day_of_month && $next_day <= 31) {
-                $next_day_num = sprintf('%02d', $next_day);
-                $next_opening_column = "DAY_{$next_day_num}_OPEN";
-                
-                // Check if next day exists
-                $check_next = "SHOW COLUMNS FROM $table_name LIKE '$next_opening_column'";
-                $next_result = $conn->query($check_next);
-                
-                if ($next_result->num_rows > 0) {
-                    $update_next_query = "UPDATE $table_name 
-                                         SET $next_opening_column = ?,
-                                             LAST_UPDATED = CURRENT_TIMESTAMP 
-                                         WHERE ITEM_CODE = ? AND STK_MONTH = ?";
-                    $update_next_stmt = $conn->prepare($update_next_query);
-                    $update_next_stmt->bind_param("dss", $closing, $item_code, $stk_month);
-                    $update_next_stmt->execute();
-                    $update_next_stmt->close();
-                }
-            }
-            
-            logMessage("Day $day: Opening=$opening, Purchase=$purchase, Sales=$sales, Closing=$closing", 'DEBUG');
-        }
-        $day_stmt->close();
-        
-        // Break if we've processed all days of the month
-        if ($day >= $last_day_of_month) {
-            break;
-        }
-    }
-    
-    // Handle month-to-month rollover
-    if ($start_day == 1) {
-        // If we're recalculating from day 1, we need to ensure consistency with previous month
-        $prev_month = date('Y-m', strtotime($stk_month . '-01 -1 month'));
-        if ($prev_month) {
-            $prev_table = getDailyStockTableForDate($conn, $_SESSION['CompID'], $prev_month . '-01');
-            
-            // Check if previous month table exists
-            $check_prev_table = "SHOW TABLES LIKE '$prev_table'";
-            if ($conn->query($check_prev_table)->num_rows > 0) {
-                // Get last day of previous month
-                $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-                $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-                
-                // Get previous month's closing
-                $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $prev_stmt = $conn->prepare($prev_query);
-                $prev_stmt->bind_param("ss", $prev_month, $item_code);
-                if ($prev_stmt->execute()) {
-                    $prev_result = $prev_stmt->get_result();
-                    if ($prev_result->num_rows > 0) {
-                        $prev_row = $prev_result->fetch_assoc();
-                        $prev_closing = $prev_row[$prev_closing_column] ?? 0;
-                        
-                        // Update current month's day 1 opening to match previous month's closing
-                        $update_opening_query = "UPDATE $table_name 
-                                                SET DAY_01_OPEN = ?,
-                                                    LAST_UPDATED = CURRENT_TIMESTAMP 
-                                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                        $update_opening_stmt = $conn->prepare($update_opening_query);
-                        $update_opening_stmt->bind_param("dss", $prev_closing, $stk_month, $item_code);
-                        $update_opening_stmt->execute();
-                        $update_opening_stmt->close();
-                        
-                        logMessage("Updated DAY_01_OPEN to $prev_closing based on previous month's closing", 'INFO');
-                    }
-                }
-                $prev_stmt->close();
-            }
-        }
-    }
-    
-    logMessage("Completed recalculating stock for $stk_month from day $start_day", 'INFO');
-}
-
-// ============================================================================
-// FIXED: ENHANCED Function to update daily stock table with MULTI-MONTH cascading updates
-// This version properly cascades from sale date to today's date
-// ============================================================================
-function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
-    logMessage("Starting daily stock update for item $item_code sold on $sale_date (Qty: $qty)", 'INFO');
-    
-    // Get the correct table for the sale date
-    $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
-    
-    // Extract day number from date (e.g., 2025-09-27 → day 27)
-    $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
-    $sales_column = "DAY_{$day_num}_SALES";
-    $closing_column = "DAY_{$day_num}_CLOSING";
-    $opening_column = "DAY_{$day_num}_OPEN";
-    $purchase_column = "DAY_{$day_num}_PURCHASE";
-    
-    $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
-    $sale_date_obj = new DateTime($sale_date);
-    $current_date = new DateTime();
-    $current_month = $current_date->format('Y-m');
-    
-    // ============================================================================
-    // STEP 1: UPDATE THE STOCK TABLE FOR THE SALE DATE
-    // ============================================================================
-    
-    // First, check if the required table exists
-    $check_table_query = "SHOW TABLES LIKE '$sale_daily_stock_table'";
-    $table_result = $conn->query($check_table_query);
-    
-    if ($table_result->num_rows == 0) {
-        // Table doesn't exist, create it
-        createDailyStockTable($conn, $sale_daily_stock_table);
-    }
-    
-    // Check if record exists for this month and item
-    $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
-                    FROM $sale_daily_stock_table 
-                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $month_year_full, $item_code);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    
-    if ($check_result->num_rows == 0) {
-        // Record doesn't exist, create it with initial values
-        $check_stmt->close();
-        
-        // Get previous month's closing if available
-        $prev_month = date('Y-m', strtotime($month_year_full . '-01 -1 month'));
-        $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
-        
-        $prev_closing = 0;
-        if ($prev_month) {
-            // Get last day of previous month
-            $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-            $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-            
-            $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $prev_stmt = $conn->prepare($prev_query);
-            $prev_stmt->bind_param("ss", $prev_month, $item_code);
-            if ($prev_stmt->execute()) {
-                $prev_result = $prev_stmt->get_result();
-                if ($prev_result->num_rows > 0) {
-                    $prev_row = $prev_result->fetch_assoc();
-                    $prev_closing = $prev_row[$prev_closing_column] ?? 0;
-                }
-            }
-            $prev_stmt->close();
-        }
-        
-        // Insert new record
-        $insert_query = "INSERT INTO $sale_daily_stock_table 
-                        (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                        VALUES (?, ?, ?, 0, 0, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssdd", $item_code, $month_year_full, $prev_closing, $prev_closing);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-        
-        // Now get the record
-        $check_stmt = $conn->prepare($check_query);
-        $check_stmt->bind_param("ss", $month_year_full, $item_code);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
-    }
-    
-    $current_values = $check_result->fetch_assoc();
-    $check_stmt->close();
-    
-    $current_closing = $current_values[$closing_column] ?? 0;
-    $current_opening = $current_values[$opening_column] ?? 0;
-    $current_purchase = $current_values[$purchase_column] ?? 0;
-    $current_sales = $current_values[$sales_column] ?? 0;
-    
-    // Calculate new sales and closing
-    $new_sales = $current_sales + $qty;
-    $new_closing = $current_opening + $current_purchase - $new_sales;
-    
-    // Update existing record with correct closing calculation
-    $update_query = "UPDATE $sale_daily_stock_table 
-                     SET $sales_column = ?, 
-                         $closing_column = ?,
-                         LAST_UPDATED = CURRENT_TIMESTAMP 
-                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $update_stmt = $conn->prepare($update_query);
-    $update_stmt->bind_param("ddss", $new_sales, $new_closing, $month_year_full, $item_code);
-    $update_stmt->execute();
-    
-    if ($update_stmt->affected_rows === 0) {
-        $update_stmt->close();
-        throw new Exception("Failed to update daily stock for item $item_code on $sale_date in table $sale_daily_stock_table");
-    }
-    $update_stmt->close();
-    
-    // ============================================================================
-    // STEP 2: CASCADE UPDATES TO SUBSEQUENT DAYS IN THE SAME MONTH
-    // ============================================================================
-    
-    recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
-    
-    // ============================================================================
-    // STEP 3: MULTI-MONTH CASCADING - Update ALL months from sale month to current month
-    // ============================================================================
-    
-    logMessage("Starting multi-month cascading for item $item_code sold on $sale_date", 'INFO');
-    
-    // Get the last day of the sale month
-    $last_day_of_sale_month = date('t', strtotime($sale_date));
-    $is_last_day_of_month = ($day_num == $last_day_of_sale_month);
-    
-    // If sale is on last day of month OR sale month is before current month, cascade to current month
-    if ($is_last_day_of_month || $month_year_full < $current_month) {
-        logMessage("Cascading from sale month $month_year_full to current month $current_month", 'INFO');
-        
-        // Create a month iterator starting from NEXT month after sale
-        $current_month_obj = new DateTime($month_year_full . '-01');
-        
-        // Move to next month
-        $current_month_obj->modify('+1 month');
-        
-        while (true) {
-            $next_month = $current_month_obj->format('Y-m');
-            
-            // Stop if we've reached beyond current month
-            if ($next_month > $current_month) {
-                logMessage("Reached month $next_month which is beyond current month $current_month, stopping cascade", 'INFO');
-                break;
-            }
-            
-            // Get the table for this month
-            $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
-            
-            // Check if table exists
-            $check_table = "SHOW TABLES LIKE '$next_month_table'";
-            if ($conn->query($check_table)->num_rows == 0) {
-                // Create the table
-                createDailyStockTable($conn, $next_month_table);
-                logMessage("Created table $next_month_table for cascading", 'INFO');
-            }
-            
-            // Get previous month's closing
-            $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
-            $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
-            $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-            $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-            
-            // Get previous month's closing
-            $prev_closing = 0;
-            if ($prev_month) {
-                $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $prev_stmt = $conn->prepare($prev_query);
-                $prev_stmt->bind_param("ss", $prev_month, $item_code);
-                if ($prev_stmt->execute()) {
-                    $prev_result = $prev_stmt->get_result();
-                    if ($prev_result->num_rows > 0) {
-                        $prev_row = $prev_result->fetch_assoc();
-                        $prev_closing = $prev_row[$prev_closing_column] ?? 0;
-                    } else {
-                        // If no record in previous month, use 0
-                        $prev_closing = 0;
-                    }
-                }
-                $prev_stmt->close();
-            }
-            
-            // Update or create record in next month
-            $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
-                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $check_stmt = $conn->prepare($check_record);
-            $check_stmt->bind_param("ss", $next_month, $item_code);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
-            
-            if ($check_result->num_rows == 0) {
-                // Create new record
-                $check_stmt->close();
-                $insert_query = "INSERT INTO $next_month_table 
-                                (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                                VALUES (?, ?, ?, 0, 0, ?)";
-                $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
-                $insert_stmt->execute();
-                $insert_stmt->close();
-                logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
-            } else {
-                // Update existing record
-                $check_stmt->close();
-                $update_query = "UPDATE $next_month_table 
-                               SET DAY_01_OPEN = ?,
-                                   LAST_UPDATED = CURRENT_TIMESTAMP 
-                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_stmt = $conn->prepare($update_query);
-                $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
-                $update_stmt->execute();
-                $update_stmt->close();
-                logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
-            }
-            
-            // Recalculate the entire month
-            recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
-            
-            logMessage("Completed cascading for month $next_month", 'INFO');
-            
-            // Move to next month
-            $current_month_obj->modify('+1 month');
-            
-            // If we've processed current month, also process it
-            if ($next_month == $current_month) {
-                break;
-            }
-        }
-    }
-    
-    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing", 'INFO');
-    
-    return true;
-}
-
-// Helper function to create daily stock table
-function createDailyStockTable($conn, $table_name) {
-    $create_query = "CREATE TABLE IF NOT EXISTS $table_name (
-        ID INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-        ITEM_CODE VARCHAR(50) NOT NULL,
-        STK_MONTH VARCHAR(7) NOT NULL,
-        DAY_01_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_01_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_01_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_01_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_02_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_02_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_02_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_02_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_03_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_03_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_03_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_03_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_04_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_04_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_04_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_04_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_05_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_05_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_05_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_05_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_06_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_06_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_06_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_06_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_07_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_07_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_07_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_07_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_08_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_08_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_08_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_08_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_09_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_09_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_09_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_09_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_10_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_10_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_10_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_10_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_11_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_11_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_11_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_11_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_12_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_12_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_12_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_12_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_13_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_13_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_13_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_13_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_14_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_14_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_14_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_14_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_15_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_15_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_15_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_15_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_16_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_16_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_16_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_18_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_18_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_19_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_19_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_19_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_19_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_20_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_20_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_20_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_20_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_21_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_21_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_21_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_21_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_22_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_22_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_22_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_22_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_23_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_23_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_23_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_23_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_24_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_24_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_24_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_24_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_25_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_25_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_25_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_25_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_26_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_26_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_26_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_26_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_27_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_27_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_27_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_27_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_28_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_28_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_28_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_28_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_29_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_29_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_29_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_29_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_30_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_30_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_30_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_30_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        DAY_31_OPEN DECIMAL(10,3) DEFAULT 0.000,
-        DAY_31_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_31_SALES DECIMAL(10,3) DEFAULT 0.000,
-        DAY_31_CLOSING DECIMAL(10,3) DEFAULT 0.000,
-        LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_item_month (ITEM_CODE, STK_MONTH),
-        KEY idx_item_code (ITEM_CODE),
-        KEY idx_stk_month (STK_MONTH)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
-    
-    if ($conn->query($create_query)) {
-        logMessage("Created daily stock table: $table_name", 'INFO');
-        return true;
-    } else {
-        logMessage("Failed to create daily stock table: " . $conn->error, 'ERROR');
-        return false;
-    }
-}
-
-// FIXED: Function to get next bill number with proper zero-padding
-// UPDATED: Function to get next bill number with proper zero-padding AND CompID consideration
 function getNextBillNumber($conn, $comp_id) {
     logMessage("Getting next bill number for CompID: $comp_id", 'INFO');
     
-    // Use transaction for atomic operation
     $conn->begin_transaction();
     
     try {
-        // Get the maximum numeric part of bill numbers FOR THIS COMPANY
         $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $comp_id);
@@ -1385,7 +650,6 @@ function getNextBillNumber($conn, $comp_id) {
         $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
         $stmt->close();
         
-        // Double-check this bill number doesn't exist FOR THIS COMPANY (prevent race conditions)
         $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $check_stmt = $conn->prepare($check_query);
         $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
@@ -1396,7 +660,6 @@ function getNextBillNumber($conn, $comp_id) {
         $check_stmt->close();
         
         if ($exists) {
-            // If it exists, increment and check again
             $next_bill++;
         }
         
@@ -1409,7 +672,6 @@ function getNextBillNumber($conn, $comp_id) {
         $conn->rollback();
         logMessage("Error getting next bill number for CompID $comp_id: " . $e->getMessage(), 'ERROR');
         
-        // Fallback method
         $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $comp_id);
@@ -1421,31 +683,20 @@ function getNextBillNumber($conn, $comp_id) {
     }
 }
 
-// ============================================================================
-// PERFORMANCE OPTIMIZATION: BULK OPERATION HANDLING
-// ============================================================================
-
-// Handle form submission for sales update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ============================================================================
-    // PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
-    // ============================================================================
-    set_time_limit(0); // No time limit
+    set_time_limit(0);
     ini_set('max_execution_time', 0);
-    ini_set('memory_limit', '1024M'); // 1GB memory
+    ini_set('memory_limit', '1024M');
     
-    // Database optimizations
     $conn->query("SET SESSION wait_timeout = 28800");
     $conn->query("SET autocommit = 0");
     
-    // Check if this is a bulk operation
     $bulk_operation = (count($_SESSION['closing_balances'] ?? []) > 100);
     
     if ($bulk_operation) {
         logMessage("Starting bulk sales operation with " . count($_SESSION['closing_balances']) . " items - Performance mode enabled", 'INFO');
     }
     
-    // Check if this is a duplicate submission
     if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
         $error_message = "Duplicate submission detected. Please wait a few seconds before trying again.";
         logMessage("Duplicate submission prevented for user " . $_SESSION['user_id'], 'WARNING');
@@ -1459,15 +710,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // NEW: Enhanced backdated sales check with specific dates for each item
             if (isset($_SESSION['closing_balances']) && !empty($_SESSION['closing_balances'])) {
                 $items_with_dates = [];
                 
-                // For each item with closing balance < current stock, check the entire date range
                 foreach ($_SESSION['closing_balances'] as $item_code => $closing_balance) {
                     if (isset($all_items_data[$item_code])) {
                         $current_stock = $all_items_data[$item_code]['CURRENT_STOCK'];
-                        if ($closing_balance < $current_stock) { // If there's a sale
+                        if ($closing_balance < $current_stock) {
                             $items_with_dates[$item_code] = [
                                 'start_date' => $start_date,
                                 'end_date' => $end_date
@@ -1483,7 +732,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $error_message = "<strong>Cannot enter sales for the following items in the selected date range:</strong><br><br>";
                         
                         foreach ($restricted_items as $item_code => $restriction) {
-                            // Get item name for better error message
                             $item_name = isset($all_items_data[$item_code]['DETAILS']) ? 
                                 $all_items_data[$item_code]['DETAILS'] : $item_code;
                             
@@ -1504,24 +752,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         logMessage("Backdated sales prevented for items with no available dates: " . implode(', ', array_keys($restricted_items)), 'WARNING');
                         
-                        // Skip further processing
                         goto render_page;
                     }
                 }
             }
             
-            // NEW: Get closing column for end_date
-            $end_date_day = date('d', strtotime($end_date));
-            $closing_column = "DAY_" . sprintf('%02d', $end_date_day) . "_CLOSING";
-            $end_date_month = date('Y-m', strtotime($end_date));
-            
-            // Enhanced closing balance validation before transaction
             $validation_errors = [];
             if (isset($_SESSION['closing_balances'])) {
                 $item_count = 0;
                 foreach ($_SESSION['closing_balances'] as $item_code => $closing_balance) {
                     $item_count++;
-                    // Reduce logging frequency for bulk operations
                     if ($bulk_operation && $item_count % 50 == 0) {
                         logMessage("Validation progress: $item_count/" . count($_SESSION['closing_balances']) . " items checked", 'INFO');
                     }
@@ -1529,7 +769,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (isset($all_items_data[$item_code])) {
                         $current_stock = $all_items_data[$item_code]['CURRENT_STOCK'];
                         
-                        // Enhanced closing balance validation
                         if (!validateClosingBalance($current_stock, $closing_balance, $item_code)) {
                             $validation_errors[] = "Item {$item_code}: Current stock {$current_stock}, Closing balance {$closing_balance}";
                         }
@@ -1537,14 +776,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // If validation errors found, stop processing
             if (!empty($validation_errors)) {
                 $error_message = "Closing balance validation failed:<br>" . implode("<br>", array_slice($validation_errors, 0, 5));
                 if (count($validation_errors) > 5) {
                     $error_message .= "<br>... and " . (count($validation_errors) - 5) . " more errors";
                 }
             } else {
-                // Start transaction
                 $conn->begin_transaction();
                 
                 try {
@@ -1552,12 +789,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $items_data = [];
                     $daily_sales_data = [];
                     
-                    // Process ALL closing balances (from ALL modes)
                     if (isset($_SESSION['closing_balances'])) {
                         $item_count = 0;
                         foreach ($_SESSION['closing_balances'] as $item_code => $closing_balance) {
                             $item_count++;
-                            // Reduce logging frequency for bulk operations
                             if ($bulk_operation && $item_count % 50 == 0) {
                                 logMessage("Processing progress: $item_count/" . count($_SESSION['closing_balances']) . " items processed", 'INFO');
                             }
@@ -1566,44 +801,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $item = $all_items_data[$item_code];
                                 $current_stock = $item['CURRENT_STOCK'];
                                 
-                                // Calculate sale quantity = current stock - closing balance
                                 $sale_qty = $current_stock - $closing_balance;
                                 
                                 if ($sale_qty > 0) {
-                                    // NEW: Use intelligent distribution based on available dates
                                     $daily_sales = distributeSalesIntelligently($conn, $sale_qty, $item_code, $start_date, $end_date, $comp_id, $date_array);
                                     $daily_sales_data[$item_code] = $daily_sales;
                                     
-                                    // Store item data
                                     $items_data[$item_code] = [
                                         'name' => $item['DETAILS'],
                                         'rate' => $item['RPRICE'],
                                         'total_qty' => $sale_qty,
-                                        'mode' => $item['LIQ_FLAG'] // Use item's actual mode
+                                        'mode' => $item['LIQ_FLAG']
                                     ];
                                 }
                             }
                         }
                     }
                     
-                    // Only proceed if we have items with sales
                     if (!empty($items_data)) {
-                        // FIXED: Use volume_limit_utils.php function for bill generation
                         $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
                         
-                        // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
                         $opening_stock_column = "Opening_Stock" . $comp_id;
                         
-                        // Get next bill number once to ensure proper numerical order
                         $next_bill_number = getNextBillNumber($conn, $comp_id);
                         
-                        // Process each bill in chronological AND numerical order
                         usort($bills, function($a, $b) {
                             return strtotime($a['bill_date']) - strtotime($b['bill_date']);
                         });
                         
-                        // Process each bill with proper zero-padded bill numbers
                         $bill_count = 0;
                         $total_bills = count($bills);
                         
@@ -1615,7 +841,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
                             
-                            // Insert sale header
                             $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
                                              VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
                             $header_stmt = $conn->prepare($header_query);
@@ -1624,7 +849,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $header_stmt->execute();
                             $header_stmt->close();
                             
-                            // Insert sale details for each item in the bill
                             foreach ($bill['items'] as $item) {
                                 $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
                                                  VALUES (?, ?, ?, ?, ?, ?, ?)";
@@ -1634,20 +858,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $detail_stmt->execute();
                                 $detail_stmt->close();
                                 
-                                // Update item stock based on closing balance
                                 $current_stock = $all_items_data[$item['code']]['CURRENT_STOCK'];
                                 updateItemStockFromClosing($conn, $item['code'], $_SESSION['closing_balances'][$item['code']], $current_stock_column, $opening_stock_column, $fin_year_id, $current_stock);
-
-                                // Update daily stock with cascading logic - USING FIXED VERSION
-                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
                             }
                             
                             $total_amount += $bill['total_amount'];
                         }
 
-                        // ============================================================================
-                        // OPTIMIZED CASH MEMO GENERATION - PERFORMANCE SAFE
-                        // ============================================================================
                         $cash_memos_generated = 0;
                         $cash_memo_errors = [];
 
@@ -1655,11 +872,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             logMessage("Starting optimized cash memo generation for " . count($bills) . " bills", 'INFO');
                             
                             $cash_memo_start_time = time();
-                            $MAX_CASH_MEMO_TIME = 30; // seconds - safety limit (increased for cascading updates)
+                            $MAX_CASH_MEMO_TIME = 30;
                             $cash_memo_count = 0;
                             
                             foreach ($bills as $bill_index => $bill) {
-                                // SAFETY: Break if cash memo generation takes too long
                                 if ((time() - $cash_memo_start_time) > $MAX_CASH_MEMO_TIME) {
                                     logMessage("Cash memo generation timeout after $MAX_CASH_MEMO_TIME seconds - skipping remaining bills", 'WARNING');
                                     break;
@@ -1679,27 +895,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 } catch (Exception $e) {
                                     $cash_memo_errors[] = $padded_bill_no;
                                     logMessage("Exception generating cash memo for $padded_bill_no: " . $e->getMessage(), 'ERROR');
-                                    // CONTINUE with next bill - don't stop entire process
                                 }
                                 
-                                // Small delay for large batches to prevent database overload
                                 if (count($bills) > 50 && $cash_memo_count % 10 == 0) {
-                                    usleep(100000); // 0.1 second delay
+                                    usleep(100000);
                                 }
                             }
                             
                             logMessage("Cash memo generation completed: $cash_memos_generated successful, " . count($cash_memo_errors) . " failed", 'INFO');
                         }
 
-                        // Commit transaction
                         $conn->commit();
 
-                        // CLEAR SESSION CLOSING BALANCES AFTER SUCCESS
                         clearSessionClosingBalances();
 
                         $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
 
-                        // Add cash memo info to success message
                         if ($cash_memos_generated > 0) {
                             $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
                         }
@@ -1711,7 +922,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
 
-                        // Clean up memory
                         unset($all_items);
                         unset($items_data);
                         unset($daily_sales_data);
@@ -1722,14 +932,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             logMessage("Bulk sales operation completed successfully", 'INFO');
                         }
 
-                        // Redirect to retail_sale.php
                         header("Location: retail_sale.php?success=" . urlencode($success_message));
                         exit;
                     } else {
                         $error_message = "No sales calculated from closing balances.";
                     }
                 } catch (Exception $e) {
-                    // Rollback transaction on error
                     $conn->rollback();
                     $error_message = "Error updating sales: " . $e->getMessage();
                     logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
@@ -1738,23 +946,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Re-enable database constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
     $conn->query("SET UNIQUE_CHECKS = 1");
 }
 
 render_page:
 
-// Check for success message in URL
 if (isset($_GET['success'])) {
     $success_message = $_GET['success'];
 }
 
-// Log final state for debugging
 logMessage("Final session closing balances count: " . count($_SESSION['closing_balances']), 'INFO');
 logMessage("Items in current view: " . count($items), 'INFO');
 
-// Debug info
 $debug_info = [
     'total_items' => $total_items,
     'current_page' => $current_page,
@@ -1765,15 +969,15 @@ $debug_info = [
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
     'comp_id' => $comp_id,
-    'license_type' => $license_type, // ADDED: License info in debug
-    'allowed_classes' => $allowed_classes, // ADDED: Allowed classes in debug
-    'end_date_day' => $end_date_day, // NEW: Added end date info
-    'closing_column' => $closing_column, // NEW: Added closing column info
-    'end_date_month' => $end_date_month, // NEW: Added month info
-    'stock_filter' => '> 0', // NEW: Added stock filter info
-    'daily_stock_table' => $daily_stock_table, // NEW: Added table name info
-    'table_suffix' => $table_suffix, // NEW: Added table suffix info
-    'current_month' => date('Y-m') // NEW: Added current month info
+    'license_type' => $license_type,
+    'allowed_classes' => $allowed_classes,
+    'end_date_day' => $end_date_day,
+    'closing_column' => $closing_column,
+    'end_date_month' => $end_date_month,
+    'stock_filter' => '> 0',
+    'daily_stock_table' => $daily_stock_table,
+    'table_suffix' => $table_suffix,
+    'current_month' => date('Y-m')
 ];
 logArray($debug_info, "Closing Stock Page Load Debug Info");
 ?>
@@ -1808,7 +1012,6 @@ logArray($debug_info, "Closing Stock Page Load Debug Info");
       100% { transform: rotate(360deg); }
     }
    
-    /* Remove spinner arrows from number inputs */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
       -webkit-appearance: none;
@@ -1818,13 +1021,11 @@ logArray($debug_info, "Closing Stock Page Load Debug Info");
       -moz-appearance: textfield;
     }
     
-    /* Highlight current row */
     .highlight-row {
       background-color: #f8f9fa !important;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
     
-    /* Volume limit info */
     .volume-limit-info {
       background-color: #e9ecef;
       padding: 10px;
@@ -1832,446 +1033,353 @@ logArray($debug_info, "Closing Stock Page Load Debug Info");
       margin-bottom: 15px;
     }
 
-    /* Closing balance warning styles */
-.text-warning {
-    color: #ffc107 !important;
-}
-
-.fw-bold {
-    font-weight: bold !important;
-}
-
-/* Negative closing balance (should never happen with validation) */
-.text-danger {
-    color: #dc3545 !important;
-    background-color: #f8d7da;
-}
-
-/* Reduce space between table rows */
-.styled-table tbody tr {
-    height: 35px !important; /* Reduced from default */
-    line-height: 1.2 !important;
-}
-
-.styled-table tbody td {
-    padding: 4px 8px !important; /* Reduced padding */
-}
-
-/* Reduce input field height */
-.closing-input {
-    height: 30px !important;
-    padding: 2px 6px !important;
-}
-
-/* Reduce button size */
-.btn-sm {
-    padding: 2px 6px !important;
-    font-size: 12px !important;
-}
-
-/* Highlight rows with closing balances */
-tr.has-closing {
-    background-color: #e8f5e8 !important; /* Light green background */
-    border-left: 3px solid #28a745 !important;
-}
-
-/* Make the highlight more noticeable */
-tr.has-closing td {
-    font-weight: 500;
-}
-
-/* Enhanced backdated restriction styles */
-tr.backdated-restriction {
-    background-color: #f8d7da !important;
-    border-left: 4px solid #dc3545 !important;
-}
-
-tr.backdated-restriction td {
-    color: #721c24 !important;
-    font-weight: 600;
-}
-
-tr.backdated-restriction .closing-input {
-    background-color: #f5c6cb !important;
-    border-color: #f5c6cb !important;
-    color: #721c24 !important;
-    cursor: not-allowed !important;
-}
-
-.badge.bg-danger {
-    font-size: 10px;
-    padding: 3px 8px;
-    max-width: 200px;
-    white-space: normal;
-    text-align: left;
-}
-
-/* Tooltip for backdated information */
-.backdated-tooltip {
-    max-width: 300px !important;
-    white-space: normal !important;
-}
-
-/* Enhanced validation styles */
-.is-invalid {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-}
-
-.closing-saving {
-    background-color: #e8f5e8 !important;
-    transition: background-color 0.3s ease;
-}
-
-.closing-error {
-    background-color: #f8d7da !important;
-    transition: background-color 0.3s ease;
-}
-
-/* Button loading state */
-.btn-loading {
-    position: relative;
-    color: transparent !important;
-}
-
-.btn-loading:after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    margin-left: -10px;
-    margin-top: -10px;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-}
-
-/* Enhanced Pagination Styles */
-.pagination {
-    margin: 15px 0;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.pagination .page-item .page-link {
-    color: #007bff;
-    border: 1px solid #dee2e6;
-    padding: 6px 12px;
-    font-size: 14px;
-    margin: 2px;
-}
-
-.pagination .page-item.active .page-link {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-
-.pagination .page-item.disabled .page-link {
-    color: #6c757d;
-    pointer-events: none;
-    background-color: #fff;
-    border-color: #dee2e6;
-}
-
-.pagination .page-link:hover {
-    background-color: #e9ecef;
-    border-color: #dee2e6;
-}
-
-.pagination-info {
-    text-align: center;
-    margin: 10px 0;
-    color: #6c757d;
-    font-size: 14px;
-}
-
-/* Smart pagination - show limited pages */
-.pagination-smart .page-item {
-    display: none;
-}
-
-.pagination-smart .page-item:first-child,
-.pagination-smart .page-item:last-child,
-.pagination-smart .page-item.active,
-.pagination-smart .page-item:nth-child(2),
-.pagination-smart .page-item:nth-last-child(2) {
-    display: block;
-}
-
-/* Show ellipsis for hidden pages */
-.pagination-ellipsis {
-    display: inline-block;
-    padding: 6px 12px;
-    margin: 2px;
-    color: #6c757d;
-}
-
-/* Total Sales Summary Table Styles */
-#totalSalesTable th {
-    font-size: 11px;
-    padding: 4px 2px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-#totalSalesTable td {
-    font-size: 11px;
-    padding: 4px 2px;
-    text-align: center;
-}
-
-.table-responsive {
-    max-height: 600px;
-    overflow: auto;
-}
-
-.table-success {
-    background-color: #d1edff !important;
-    font-weight: bold;
-}
-
-/* Client-side validation styles */
-.validation-alert {
-    display: none;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 500px;
-}
-
-.stock-checking {
-    background-color: #fff3cd !important;
-}
-
-/* Stock status indicator */
-.stock-status {
-    font-size: 11px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    margin-left: 5px;
-}
-
-.stock-available {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.stock-low {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.stock-out {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* Table source indicator */
-.table-source-indicator {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background-color: #e9ecef;
-    color: #495057;
-    margin-left: 5px;
-}
-
-.table-current {
-    background-color: #d1ecf1 !important;
-    color: #0c5460 !important;
-}
-
-.table-archive {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-}
-
-/* Simplified stock display - hide decimal points */
-.stock-integer {
-    font-weight: bold;
-}
-
-.stock-decimal {
-    display: none !important;
-}
-
-/* Compact info display */
-.compact-info {
-    font-size: 11px;
-    color: #6c757d;
-}
-
-/* Special styling for items with partial date distribution */
-.partial-date-item {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-}
-
-.partial-date-item td {
-    color: #856404 !important;
-}
-
-.partial-distribution-cell {
-    background-color: #e9ecef !important;
-    color: #6c757d !important;
-    font-style: italic;
-}
-
-/* Enhanced styling for unavailable date cells */
-.unavailable-date-cell {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-    text-align: center;
-    position: relative;
-    font-weight: bold;
-}
-
-.unavailable-date-cell span {
-    font-size: 14px;
-    display: block;
-}
-
-/* Available date cell with new sales */
-.available-date-cell {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-    text-align: center;
-    font-weight: bold;
-}
-
-/* Partial date item row styling */
-.partial-date-item {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-}
-
-.partial-date-item td {
-    color: #856404 !important;
-}
-
-/* Distribution column styles */
-.date-distribution-cell {
-    text-align: center !important;
-    font-weight: bold !important;
-    font-size: 12px !important;
-    padding: 3px 5px !important;
-    min-width: 35px !important;
-    border-left: 1px solid #dee2e6 !important;
-    border-right: 1px solid #dee2e6 !important;
-}
-
-.date-distribution-cell.zero-distribution {
-    color: #6c757d !important;
-    font-weight: normal !important;
-}
-
-.date-distribution-cell.non-zero-distribution {
-    color: #198754 !important;
-    background-color: rgba(25, 135, 84, 0.1) !important;
-}
-
-.date-header {
-    text-align: center !important;
-    font-size: 11px !important;
-    padding: 4px 6px !important;
-    min-width: 40px !important;
-    background-color: #f8f9fa !important;
-    border-left: 1px solid #dee2e6 !important;
-    border-right: 1px solid #dee2e6 !important;
-    font-weight: bold !important;
-    vertical-align: middle !important;
-}
-
-/* Make sure the table headers and columns are visible */
-.date-header, .date-distribution-cell {
-    display: table-cell !important;
-    visibility: visible !important;
-}
-
-/* Action column adjustment */
-.action-column {
-    width: 120px !important;
-    min-width: 120px !important;
-}
-
-/* Ensure the table layout doesn't break with date columns */
-.table-container {
-    overflow-x: auto;
-    max-width: 100%;
-}
-
-.styled-table {
-    min-width: 1200px; /* Minimum width to ensure all columns are visible */
-}
-
-/* Style for Shuffle button in action column */
-.btn-shuffle-item {
-    font-size: 11px !important;
-    padding: 2px 8px !important;
-}
-
-/* Sale quantity cell styling - CHANGED TO AUTO-CALCULATED STYLING */
-.sale-qty-cell {
-    font-weight: bold;
-    text-align: center;
-    background-color: #f8f9fa;
-    color: #198754; /* Green color for auto-calculated values */
-    background-color: rgba(25, 135, 84, 0.1); /* Light green background */
-}
-
-.sale-qty-cell.positive {
-    color: #198754;
-    background-color: rgba(25, 135, 84, 0.1);
-}
-
-.sale-qty-cell.zero {
-    color: #6c757d;
-    background-color: #f8f9fa;
-}
-
-/* NEW: Auto-calculated sale quantity cell */
-.auto-calculated-cell {
-    background-color: #e9ecef;
-    font-weight: bold;
-    text-align: center;
-}
-
-/* NEW: Input highlighting */
-.closing-input.highlight {
-    background-color: #fff3cd !important;
-    border-color: #ffc107 !important;
-}
-
-/* FIXED: Ensure unavailable date cells show X symbol */
-.unavailable-date-cell .x-symbol {
-    color: #dc3545;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-/* NEW: Workflow indicator */
-.workflow-indicator {
-    background-color: #d1ecf1;
-    border-left: 4px solid #17a2b8;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-}
-
-.workflow-indicator h6 {
-    color: #0c5460;
-    margin-bottom: 5px;
-}
-
-.workflow-indicator small {
-    color: #6c757d;
-    font-style: italic;
-}
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    .fw-bold {
+        font-weight: bold !important;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+        background-color: #f8d7da;
+    }
+
+    .styled-table tbody tr {
+        height: 35px !important;
+        line-height: 1.2 !important;
+    }
+
+    .styled-table tbody td {
+        padding: 4px 8px !important;
+    }
+
+    .closing-input {
+        height: 30px !important;
+        padding: 2px 6px !important;
+    }
+
+    .btn-sm {
+        padding: 2px 6px !important;
+        font-size: 12px !important;
+    }
+
+    tr.has-closing {
+        background-color: #e8f5e8 !important;
+        border-left: 3px solid #28a745 !important;
+    }
+
+    tr.has-closing td {
+        font-weight: 500;
+    }
+
+    tr.backdated-restriction {
+        background-color: #f8d7da !important;
+        border-left: 4px solid #dc3545 !important;
+    }
+
+    tr.backdated-restriction td {
+        color: #721c24 !important;
+        font-weight: 600;
+    }
+
+    tr.backdated-restriction .closing-input {
+        background-color: #f5c6cb !important;
+        border-color: #f5c6cb !important;
+        color: #721c24 !important;
+        cursor: not-allowed !important;
+    }
+
+    .badge.bg-danger {
+        font-size: 10px;
+        padding: 3px 8px;
+        max-width: 200px;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .backdated-tooltip {
+        max-width: 300px !important;
+        white-space: normal !important;
+    }
+
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .closing-saving {
+        background-color: #e8f5e8 !important;
+        transition: background-color 0.3s ease;
+    }
+
+    .closing-error {
+        background-color: #f8d7da !important;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-loading {
+        position: relative;
+        color: transparent !important;
+    }
+
+    .btn-loading:after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-left: -10px;
+        margin-top: -10px;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
+    }
+
+    .pagination {
+        margin: 15px 0;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .pagination .page-item .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 2px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination-info {
+        text-align: center;
+        margin: 10px 0;
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .pagination-smart .page-item {
+        display: none;
+    }
+
+    .pagination-smart .page-item:first-child,
+    .pagination-smart .page-item:last-child,
+    .pagination-smart .page-item.active,
+    .pagination-smart .page-item:nth-child(2),
+    .pagination-smart .page-item:nth-last-child(2) {
+        display: block;
+    }
+
+    .pagination-ellipsis {
+        display: inline-block;
+        padding: 6px 12px;
+        margin: 2px;
+        color: #6c757d;
+    }
+
+    .validation-alert {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 500px;
+    }
+
+    .stock-checking {
+        background-color: #fff3cd !important;
+    }
+
+    .stock-status {
+        font-size: 11px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        margin-left: 5px;
+    }
+
+    .stock-available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .stock-low {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .stock-out {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .table-source-indicator {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background-color: #e9ecef;
+        color: #495057;
+        margin-left: 5px;
+    }
+
+    .table-current {
+        background-color: #d1ecf1 !important;
+        color: #0c5460 !important;
+    }
+
+    .table-archive {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+
+    .stock-integer {
+        font-weight: bold;
+    }
+
+    .stock-decimal {
+        display: none !important;
+    }
+
+    .compact-info {
+        font-size: 11px;
+        color: #6c757d;
+    }
+
+    .workflow-indicator {
+        background-color: #d1ecf1;
+        border-left: 4px solid #17a2b8;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .workflow-indicator h6 {
+        color: #0c5460;
+        margin-bottom: 5px;
+    }
+
+    .workflow-indicator small {
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .sale-qty-cell {
+        font-weight: bold;
+        text-align: center;
+        background-color: #f8f9fa;
+        color: #198754;
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .sale-qty-cell.positive {
+        color: #198754;
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .sale-qty-cell.zero {
+        color: #6c757d;
+        background-color: #f8f9fa;
+    }
+
+    .auto-calculated-cell {
+        background-color: #e9ecef;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .closing-input.highlight {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+    }
+
+    /* Date distribution cell styling */
+    .date-distribution-cell {
+        text-align: center !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        padding: 3px 5px !important;
+        min-width: 35px !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+    }
+
+    .date-distribution-cell.zero-distribution {
+        color: #6c757d !important;
+        font-weight: normal !important;
+    }
+
+    .date-distribution-cell.non-zero-distribution {
+        color: #198754 !important;
+        background-color: rgba(25, 135, 84, 0.1) !important;
+    }
+
+    .date-distribution-cell.unavailable-date {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+
+    .date-distribution-cell.available-date-cell {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+        position: relative;
+    }
+
+    .date-distribution-cell.available-date-cell:after {
+        content: "✓";
+        position: absolute;
+        top: 0;
+        right: 2px;
+        font-size: 10px;
+        color: #28a745;
+    }
+
+    .date-header {
+        text-align: center !important;
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        min-width: 40px !important;
+        background-color: #f8f9fa !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    }
+
+    /* Make sure the table layout doesn't break with date columns */
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .styled-table {
+        min-width: 1200px; /* Minimum width to ensure all columns are visible */
+    }
+
+    /* Action column adjustment */
+    .action-column {
+        width: 120px !important;
+        min-width: 120px !important;
+    }
   </style>
 </head>
 <body>
@@ -2285,19 +1393,16 @@ tr.backdated-restriction .closing-input {
     <div class="content-area">
       <h3 class="mb-4">Closing Stock for Date Range - Enter Closing Balances</h3>
 
-      <!-- NEW: Workflow Indicator -->
       <div class="workflow-indicator">
         <h6><i class="fas fa-exchange-alt"></i> NEW WORKFLOW: Enter Closing Balance</h6>
         <small>Enter closing balance → System auto-calculates sale quantity (Sale Qty = Available Stock - Closing Balance)</small>
       </div>
 
-      <!-- SIMPLIFIED License Restriction Info -->
       <div class="alert alert-info mb-3 py-2">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
-      <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?= $success_message ?>
@@ -2312,13 +1417,6 @@ tr.backdated-restriction .closing-input {
       </div>
       <?php endif; ?>
 
-      <!-- Client-side Validation Alert -->
-      <div class="alert alert-warning validation-alert" id="clientValidationAlert">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span id="validationMessage"></span>
-      </div>
-
-      <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
         <label class="form-label">Liquor Mode:</label>
         <div class="btn-group" role="group">
@@ -2337,7 +1435,6 @@ tr.backdated-restriction .closing-input {
         </div>
       </div>
 
-      <!-- Sequence Type Selector -->
       <div class="mb-3">
         <label class="form-label">Sequence Type:</label>
         <div class="btn-group" role="group">
@@ -2356,7 +1453,6 @@ tr.backdated-restriction .closing-input {
         </div>
       </div>
 
-      <!-- Date Range Selection -->
       <div class="date-range-container mb-4">
         <form method="GET" class="row g-3 align-items-end">
           <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
@@ -2382,7 +1478,6 @@ tr.backdated-restriction .closing-input {
 <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
-              <!-- SIMPLIFIED: Removed stock source info -->
             </label>
           </div>
           
@@ -2392,7 +1487,6 @@ tr.backdated-restriction .closing-input {
         </form>
       </div>
 
-      <!-- Search -->
       <div class="row mb-3">
         <div class="col-md-6">
           <form method="GET" class="search-control">
@@ -2417,49 +1511,41 @@ tr.backdated-restriction .closing-input {
             <?php if (count($_SESSION['closing_balances']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['closing_balances']) ?> items with closing balances</span>
             <?php endif; ?>
-            <!-- SIMPLIFIED: Removed stock filter info -->
           </div>
         </div>
       </div>
 
-      <!-- Sales Form -->
       <form method="POST" id="salesForm" action="">
         <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
         <input type="hidden" name="update_sales" value="1">
 
-        <!-- Action Buttons - MODIFIED FOR CLOSING BALANCE WORKFLOW -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
-          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action">
-            <i class="fas fa-random"></i> Shuffle All
-          </button>
-          
-          <!-- Single Button with Dual Functionality -->
-          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
-            <i class="fas fa-save"></i> Generate Bills from Closing Balances
-          </button>
-          
-          <!-- Clear Session Button -->
-          <button type="button" id="clearSessionBtn" class="btn btn-danger">
-            <i class="fas fa-trash"></i> Clear All Closing Balances
-          </button>
-          
-          <!-- Sales Log Button -->
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
-              <i class="fas fa-file-alt"></i> View Sales Log
-          </button>
+           <button type="button" id="shuffleBtn" class="btn btn-warning btn-action">
+             <i class="fas fa-random"></i> Shuffle All
+           </button>
 
-          <!-- Total Sales Summary Button -->
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
-              <i class="fas fa-chart-bar"></i> View Total Sales Summary
-          </button>
-          
-          <a href="dashboard.php" class="btn btn-secondary ms-auto">
-            <i class="fas fa-sign-out-alt"></i> Exit
-          </a>
-        </div>
+           <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
+             <i class="fas fa-save"></i> Generate Bills from Closing Balances
+           </button>
 
-        <!-- Items Table with Integrated Distribution Preview -->
+           <button type="button" id="clearSessionBtn" class="btn btn-danger">
+             <i class="fas fa-trash"></i> Clear All Closing Balances
+           </button>
+
+           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
+               <i class="fas fa-file-alt"></i> View Sales Log
+           </button>
+
+           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
+               <i class="fas fa-chart-bar"></i> View Total Sales Summary
+           </button>
+
+           <a href="dashboard.php" class="btn btn-secondary ms-auto">
+             <i class="fas fa-sign-out-alt"></i> Exit
+           </a>
+         </div>
+
         <div class="table-container">
           <table class="styled-table table-striped" id="itemsTable">
             <thead class="table-header">
@@ -2472,9 +1558,9 @@ tr.backdated-restriction .closing-input {
                 <th class="text-primary">Enter Closing Balance</th>
                 <th class="text-success auto-calculated-header">Sale Qty (Auto-calculated)</th>
                 <th class="action-column">Action</th>
-                
+
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
-                
+
                 <th>Amount (₹)</th>
               </tr>
             </thead>
@@ -2482,27 +1568,23 @@ tr.backdated-restriction .closing-input {
 <?php if (!empty($items)): ?>
     <?php foreach ($items as $item): 
         $item_code = $item['CODE'];
-        $closing_balance = isset($_SESSION['closing_balances'][$item_code]) ? $_SESSION['closing_balances'][$item_code] : $item['CURRENT_STOCK']; // Default to current stock
+        $closing_balance = isset($_SESSION['closing_balances'][$item_code]) ? $_SESSION['closing_balances'][$item_code] : $item['CURRENT_STOCK'];
         $sale_qty = $item['CURRENT_STOCK'] - $closing_balance;
         $item_total = $sale_qty * $item['RPRICE'];
         
-        // Format numbers to remove decimals for display
         $display_stock = floor($item['CURRENT_STOCK']);
         $display_rate = intval($item['RPRICE']);
         $display_closing = floor($closing_balance);
         $display_sale_qty = floor($sale_qty);
         $display_amount = intval($item_total);
         
-        // Extract size from item details
         $size = 0;
         if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
             $size = $matches[1];
         }
         
-        // Get class code - now available from the query
-        $class_code = $item['CLASS'] ?? 'O'; // Default to 'O' if not set
+        $class_code = $item['CLASS'] ?? 'O';
         
-        // Determine stock status for styling
         $stock_status_class = '';
         if ($item['CURRENT_STOCK'] <= 0) {
             $stock_status_class = 'stock-out';
@@ -2512,17 +1594,14 @@ tr.backdated-restriction .closing-input {
             $stock_status_class = 'stock-available';
         }
         
-        // Enhanced backdated check for this specific item and date range
         $backdated_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
         $has_backdated_restriction = $backdated_check['restricted'];
         $latest_existing = $backdated_check['latest_existing_sale'] ?? null;
         $available_dates = $backdated_check['available_dates'] ?? [];
         $unavailable_dates = $backdated_check['unavailable_dates'] ?? [];
         
-        // Check if ANY dates are available
         $has_available_dates = !empty($available_dates);
         
-        // Disable input only if NO dates are available
         $should_disable_input = $has_backdated_restriction && !$has_available_dates;
         
         $backdated_class = $should_disable_input ? 'backdated-restriction' : '';
@@ -2532,10 +1611,8 @@ tr.backdated-restriction .closing-input {
                 "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) : 
                 '');
         
-        // Add partial date warning class if some dates are available
         $partial_class = ($has_backdated_restriction && $has_available_dates) ? 'partial-date-warning' : '';
         
-        // Determine if this item has sales (closing balance < current stock)
         $has_sales = $closing_balance < $item['CURRENT_STOCK'];
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
@@ -2589,25 +1666,26 @@ tr.backdated-restriction .closing-input {
             </td>
             <td class="action-column">
                 <?php if ($should_disable_input): ?>
-                    <span class="badge bg-danger" data-bs-toggle="tooltip" 
+                    <span class="badge bg-danger" data-bs-toggle="tooltip"
                           title="<?= htmlspecialchars($backdated_title) ?>">
                         <i class="fas fa-calendar-times"></i> No Available Dates
                     </span>
                 <?php elseif ($has_backdated_restriction && $has_available_dates): ?>
-                    <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                    <span class="badge bg-warning" data-bs-toggle="tooltip"
                           title="Sales exist on <?= implode(', ', $unavailable_dates) ?>. New sales will be distributed on available dates only.">
                         <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates) ?> dates
                     </span>
                 <?php else: ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                            data-code="<?= htmlspecialchars($item_code); ?>">
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item"
+                            data-code="<?= htmlspecialchars($item_code); ?>"
+                            title="Shuffle closing balance for this item">
                         <i class="fas fa-random"></i> Shuffle
                     </button>
                 <?php endif; ?>
             </td>
-            
+
             <!-- Date distribution cells will be inserted here by JavaScript -->
-            
+
             <td class="amount-cell" id="amount_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_amount) ?></span>
             </td>
@@ -2632,11 +1710,9 @@ tr.backdated-restriction .closing-input {
           </table>
         </div>
         
-        <!-- Pagination Controls -->
         <?php if ($total_pages > 1): ?>
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
-                <!-- Previous Button -->
                 <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page - 1])) ?>" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
@@ -2644,17 +1720,14 @@ tr.backdated-restriction .closing-input {
                 </li>
                 
                 <?php
-                // Smart pagination - show limited pages
-                $show_pages = 5; // Number of page links to show
+                $show_pages = 5;
                 $start_page = max(1, $current_page - floor($show_pages / 2));
                 $end_page = min($total_pages, $start_page + $show_pages - 1);
                 
-                // Adjust if we're near the end
                 if ($end_page - $start_page < $show_pages - 1) {
                     $start_page = max(1, $end_page - $show_pages + 1);
                 }
                 
-                // Always show first page
                 if ($start_page > 1): ?>
                     <li class="page-item <?= 1 == $current_page ? 'active' : '' ?>">
                         <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => 1])) ?>">1</a>
@@ -2666,14 +1739,12 @@ tr.backdated-restriction .closing-input {
                     <?php endif;
                 endif;
                 
-                // Show page numbers
                 for ($i = $start_page; $i <= $end_page; $i++): ?>
                     <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
                         <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
                     </li>
                 <?php endfor;
                 
-                // Always show last page
                 if ($end_page < $total_pages): ?>
                     <?php if ($end_page < $total_pages - 1): ?>
                         <li class="page-item disabled">
@@ -2685,7 +1756,6 @@ tr.backdated-restriction .closing-input {
                     </li>
                 <?php endif; ?>
                 
-                <!-- Next Button -->
                 <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page + 1])) ?>" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
@@ -2701,7 +1771,6 @@ tr.backdated-restriction .closing-input {
         </div>
         <?php endif; ?>
         
-        <!-- Ajax Loader -->
         <div id="ajaxLoader" class="ajax-loader">
           <div class="loader"></div>
           <p>Calculating distribution...</p>
@@ -2713,7 +1782,6 @@ tr.backdated-restriction .closing-input {
   </div>
 </div>
 
-<!-- Sales Log Modal -->
 <div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -2723,7 +1791,6 @@ tr.backdated-restriction .closing-input {
             </div>
             <div class="modal-body">
                 <div id="salesLogContent" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Sales log content will be loaded here -->
                     <div class="text-center py-3">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -2799,367 +1866,12 @@ tr.backdated-restriction .closing-input {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Global variables
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
-// Pass ALL session closing balances to JavaScript
 const allSessionClosingBalances = <?= json_encode($_SESSION['closing_balances'] ?? []) ?>;
-// NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
-// NEW: Function to get available dates for an item via AJAX
-function getAvailableDatesForItem(itemCode) {
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            url: 'get_available_dates.php',
-            type: 'POST',
-            data: {
-                item_code: itemCode,
-                start_date: '<?= $start_date ?>',
-                end_date: '<?= $end_date ?>',
-                comp_id: '<?= $comp_id ?>'
-            },
-            success: function(response) {
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(result.available_dates || []);
-                    } else {
-                        resolve([]); // Return empty array if error
-                    }
-                } catch (e) {
-                    resolve([]); // Return empty array if parsing error
-                }
-            },
-            error: function() {
-                resolve([]); // Return empty array if AJAX error
-            }
-        });
-    });
-}
-
-// FIXED: Enhanced distribution function that distributes only on available dates
-// Shows X on unavailable dates, numbers only on available dates
-function distributeSalesOnAvailableDates(saleQty, availableDates, unavailableDates) {
-    if (saleQty <= 0) return new Array(daysCount).fill(0);
-    
-    if (availableDates.length === 0) {
-        console.log(`No available dates for distribution`);
-        return new Array(daysCount).fill('X'); // Show X on all dates if no available dates
-    }
-    
-    // Create a map of date to index in the dateArray
-    const dateIndexMap = {};
-    dateArray.forEach((date, index) => {
-        dateIndexMap[date] = index;
-    });
-    
-    // Create distribution array - initialize with X for all dates
-    const distribution = new Array(daysCount).fill('X');
-    
-    // Distribute quantity only on available dates
-    const availableDaysCount = availableDates.length;
-    const baseQty = Math.floor(saleQty / availableDaysCount);
-    const remainder = saleQty % availableDaysCount;
-    
-    const dailySales = new Array(availableDaysCount).fill(baseQty);
-    
-    // Distribute remainder
-    for (let i = 0; i < remainder; i++) {
-        dailySales[i]++;
-    }
-    
-    // Shuffle the distribution
-    for (let i = dailySales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
-    }
-    
-    // Place the distributed quantities in the correct date positions
-    availableDates.forEach((date, index) => {
-        const dateIndex = dateIndexMap[date];
-        if (dateIndex !== undefined) {
-            distribution[dateIndex] = dailySales[index];
-        }
-    });
-    
-    console.log(`Distributing ${saleQty} on ${availableDaysCount} available dates:`, availableDates);
-    console.log(`Distribution:`, distribution);
-    
-    return distribution;
-}
-
-// Basic distribution function (client-side version)
-function distributeSalesUniformlyClientSide(saleQty, daysCount) {
-    if (saleQty <= 0 || daysCount <= 0) return new Array(daysCount).fill(0);
-    
-    const baseQty = Math.floor(saleQty / daysCount);
-    const remainder = saleQty % daysCount;
-    
-    const dailySales = new Array(daysCount).fill(baseQty);
-    
-    // Distribute remainder evenly across days
-    for (let i = 0; i < remainder; i++) {
-        dailySales[i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    for (let i = dailySales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
-    }
-    
-    return dailySales;
-}
-
-// NEW: Enhanced backdated sales check by specific dates
-function checkBackdatedSalesBySpecificDatesBeforeSubmit() {
-    return new Promise((resolve, reject) => {
-        // Check if we have any sales (closing balance < current stock)
-        let hasSales = false;
-        const itemsWithSales = [];
-        
-        for (const itemCode in allSessionClosingBalances) {
-            const closingBalance = allSessionClosingBalances[itemCode];
-            if (allItemsData[itemCode]) {
-                const currentStock = allItemsData[itemCode].CURRENT_STOCK;
-                if (closingBalance < currentStock) {
-                    hasSales = true;
-                    itemsWithSales.push(itemCode);
-                }
-            }
-        }
-        
-        if (!hasSales || itemsWithSales.length === 0) {
-            resolve(true);
-            return;
-        }
-        
-        // Show checking state
-        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-        
-        // Prepare detailed data for AJAX check - check each item for the entire date range
-        const checkData = {
-            start_date: '<?= $start_date ?>',
-            end_date: '<?= $end_date ?>',
-            comp_id: '<?= $comp_id ?>',
-            items: itemsWithSales,
-            check_specific_dates: true
-        };
-        
-        $.ajax({
-            url: 'check_backdated_sales.php',
-            type: 'POST',
-            data: JSON.stringify(checkData),
-            contentType: 'application/json',
-            success: function(response) {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(true);
-                    } else {
-                        let errorMessage = "Cannot enter sales for these items in the selected date range:\n\n";
-                        
-                        result.restricted_items.forEach(item => {
-                            errorMessage += `• ${item.name} (${item.code})\n`;
-                            errorMessage += `  Selected Date Range: ${item.start_date} to ${item.end_date}\n`;
-                            errorMessage += `  Latest Existing Sale: ${item.latest_existing_sale}\n`;
-                            errorMessage += `  Available Dates: ${item.available_dates.length > 0 ? item.available_dates.join(', ') : 'None'}\n`;
-                            errorMessage += `  ${item.message}\n\n`;
-                        });
-                        
-                        errorMessage += "Please adjust your date range to be after the latest existing sale date for each restricted item, or remove these items from your sales entry.";
-                        
-                        alert(errorMessage);
-                        reject('Backdated sales restriction for specific dates');
-                    }
-                } catch (e) {
-                    console.error('Error parsing backdated sales check:', e);
-                    resolve(true); // Allow submission if check fails
-                }
-            },
-            error: function() {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                console.error('Error checking backdated sales');
-                resolve(true); // Allow submission if check fails
-            }
-        });
-    });
-}
-
-// NEW: Function to check closing balance validity before submission
-function checkClosingBalanceValidityBeforeSubmit() {
-    return new Promise((resolve, reject) => {
-        // Check if we have any closing balances entered
-        let hasEntries = false;
-        for (const itemCode in allSessionClosingBalances) {
-            hasEntries = true;
-            break;
-        }
-        
-        if (!hasEntries) {
-            reject('Please enter closing balances for at least one item.');
-            return;
-        }
-
-        // Show checking state
-        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-        $('tr.has-closing').addClass('stock-checking');
-
-        // Prepare data for AJAX check
-        const checkData = {
-            start_date: '<?= $start_date ?>',
-            end_date: '<?= $end_date ?>',
-            mode: '<?= $mode ?>',
-            comp_id: '<?= $comp_id ?>',
-            closing_balances: allSessionClosingBalances,
-            daily_stock_table: '<?= $daily_stock_table ?>',
-            end_date_month: '<?= $end_date_month ?>'
-        };
-
-        $.ajax({
-            url: 'check_closing_balance_validity.php',
-            type: 'POST',
-            data: JSON.stringify(checkData),
-            contentType: 'application/json',
-            success: function(response) {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                $('tr.has-closing').removeClass('stock-checking');
-                
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(true);
-                    } else {
-                        showClientValidationAlert(result.message);
-                        reject(result.message);
-                    }
-                } catch (e) {
-                    showClientValidationAlert('Error checking closing balance validity. Please try again.');
-                    reject('Error checking closing balance validity.');
-                }
-            },
-            error: function() {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                $('tr.has-closing').removeClass('stock-checking');
-                showClientValidationAlert('Error connecting to server. Please try again.');
-                reject('Connection error');
-            }
-        });
-    });
-}
-
-// NEW: Function to show client-side validation alert
-function showClientValidationAlert(message) {
-    $('#validationMessage').text(message);
-    $('#clientValidationAlert').fadeIn();
-    
-    // Auto-hide after 10 seconds
-    setTimeout(() => {
-        $('#clientValidationAlert').fadeOut();
-    }, 10000);
-}
-
-// Function to clear session closing balances via AJAX
-function clearSessionClosingBalances() {
-    $.ajax({
-        url: 'clear_session_closing_balances.php',
-        type: 'POST',
-        success: function(response) {
-            console.log('Session closing balances cleared');
-            // Reload the page to reflect changes
-            location.reload();
-        },
-        error: function() {
-            console.log('Error clearing session closing balances');
-            alert('Error clearing closing balances. Please try again.');
-        }
-    });
-}
-
-// NEW: Enhanced closing balance validation function
-function validateClosingBalance(input) {
-    const itemCode = $(input).data('code');
-    const currentStock = parseFloat($(input).data('stock'));
-    let closingBalance = parseFloat($(input).val()) || 0;
-    
-    // If input is disabled due to backdated restriction, don't validate
-    if ($(input).prop('disabled')) {
-        return false;
-    }
-    
-    // Validate input
-    if (isNaN(closingBalance) || closingBalance < 0) {
-        closingBalance = 0;
-        $(input).val(0);
-    }
-    
-    // Prevent exceeding current stock with better feedback
-    if (closingBalance > currentStock) {
-        closingBalance = currentStock;
-        $(input).val(currentStock);
-        
-        // Show warning but don't prevent operation
-        $(input).addClass('is-invalid');
-        setTimeout(() => $(input).removeClass('is-invalid'), 2000);
-    } else {
-        $(input).removeClass('is-invalid');
-    }
-    
-    // Highlight input if closing balance is different from current stock
-    if (closingBalance !== currentStock) {
-        $(input).addClass('highlight');
-    } else {
-        $(input).removeClass('highlight');
-    }
-    
-    // Update UI immediately
-    updateItemUIFromClosing(itemCode, closingBalance, currentStock);
-    
-    // Save to session via AJAX to prevent data loss
-    saveClosingBalanceToSession(itemCode, closingBalance);
-    
-    // Update distribution preview
-    updateDistributionPreviewFromClosing(itemCode, closingBalance, currentStock);
-    
-    return true;
-}
-
-// NEW: Function to update all UI elements for an item based on closing balance
-function updateItemUIFromClosing(itemCode, closingBalance, currentStock) {
-    const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
-    const saleQty = currentStock - closingBalance;
-    const amount = saleQty * rate;
-    
-    // Format to remove decimals for display
-    const displaySaleQty = Math.floor(saleQty);
-    const displayAmount = Math.floor(amount);
-    const displayCurrentStock = Math.floor(currentStock);
-    const displayClosingBalance = Math.floor(closingBalance);
-    
-    // Update all related UI elements
-    $(`#sale_qty_${itemCode}`).html(`
-        <span class="stock-integer">${displaySaleQty}</span>
-        <div class="compact-info">
-            <small>= ${displayCurrentStock} - ${displayClosingBalance}</small>
-        </div>
-    `);
-    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
-    
-    // Update row styling
-    const row = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
-    row.toggleClass('has-closing', closingBalance < currentStock);
-    
-    // Update sale quantity cell styling
-    const saleQtyCell = $(`#sale_qty_${itemCode}`);
-    saleQtyCell.removeClass('positive zero').addClass(saleQty > 0 ? 'positive' : 'zero');
-}
-
-// NEW: Function to save closing balance to session via AJAX
 function saveClosingBalanceToSession(itemCode, closingBalance) {
-    // Debounce to prevent too many requests
     if (typeof saveClosingBalanceToSession.debounce === 'undefined') {
         saveClosingBalanceToSession.debounce = null;
     }
@@ -3167,262 +1879,104 @@ function saveClosingBalanceToSession(itemCode, closingBalance) {
     clearTimeout(saveClosingBalanceToSession.debounce);
     saveClosingBalanceToSession.debounce = setTimeout(() => {
         $.ajax({
-            url: 'update_session_closing_balance.php',
+            url: 'update_session_quantity.php',
             type: 'POST',
             data: {
                 item_code: itemCode,
-                closing_balance: closingBalance
+                quantity: closingBalance
             },
             success: function(response) {
                 console.log('Closing balance saved to session:', itemCode, closingBalance);
-                // Update global session closing balances object
                 allSessionClosingBalances[itemCode] = closingBalance;
             },
-            error: function() {
-                console.error('Failed to save closing balance to session');
+            error: function(xhr, status, error) {
+                console.error('Failed to save closing balance to session:', error);
+                alert('Error saving closing balance. Please try again.');
             }
         });
-    }, 200);
+    }, 500);
 }
 
-// NEW: Function to validate all closing balances before form submission
-function validateAllClosingBalances() {
-    let isValid = true;
-    let errorItems = [];
+function clearSessionClosingBalances() {
+    $.ajax({
+        url: 'clear_session_quantities.php',
+        type: 'POST',
+        dataType: 'json',
+        success: function(response) {
+            console.log('Session closing balances cleared:', response);
+            location.reload();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error clearing session closing balances:', error);
+            alert('Error clearing closing balances. Please try again.');
+        }
+    });
+}
+
+function saveToPendingSales() {
+    let hasEntries = false;
+    for (const itemCode in allSessionClosingBalances) {
+        hasEntries = true;
+        break;
+    }
     
-    // Validate ONLY closing balances < current stock (optimization)
+    if (!hasEntries) {
+        alert('Please enter closing balances for at least one item.');
+        return false;
+    }
+    
+    $('#ajaxLoader').show();
+    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+    
+    const formData = new FormData();
+    formData.append('save_pending', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    
     for (const itemCode in allSessionClosingBalances) {
         const closingBalance = allSessionClosingBalances[itemCode];
-        if (allItemsData[itemCode]) {
-            const currentStock = allItemsData[itemCode].CURRENT_STOCK;
+        const currentStock = allItemsData[itemCode]?.CURRENT_STOCK || 0;
+        const saleQty = currentStock - closingBalance;
+        formData.append(`all_sale_qty[${itemCode}]`, saleQty > 0 ? saleQty : 0);
+    }
+    
+    $.ajax({
+        url: 'save_pending_sales.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            $('#ajaxLoader').hide();
+            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
             
-            // Check for negative closing balance
-            if (closingBalance < 0) {
-                isValid = false;
-                errorItems.push({
-                    code: itemCode,
-                    closing: closingBalance,
-                    message: 'Negative closing balance'
-                });
+            try {
+                const result = JSON.parse(response);
+                if (result.success) {
+                    clearSessionClosingBalances();
+                    alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (e) {
+                console.error('Error parsing response:', e, response);
+                alert('Error saving to pending sales. Please check console for details.');
             }
-            
-            // Check for closing balance exceeding current stock
-            if (closingBalance > currentStock) {
-                isValid = false;
-                errorItems.push({
-                    code: itemCode,
-                    closing: closingBalance,
-                    stock: currentStock,
-                    message: 'Closing balance exceeds current stock'
-                });
-            }
-        }
-    }
-    
-    if (!isValid) {
-        let errorMessage = "Closing balance validation failed:\n\n";
-        errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: ${item.message}\n`;
-            if (item.stock !== undefined) {
-                errorMessage += `  Current Stock: ${Math.floor(item.stock)}, Closing Balance: ${item.closing}\n`;
-            }
-        });
-        errorMessage += "\nPlease adjust closing balances to valid values.";
-        alert(errorMessage);
-    }
-    
-    return isValid;
-}
-
-// FIXED: Enhanced function to update distribution preview based on closing balance
-// Shows X on unavailable dates, numbers only on available dates
-function updateDistributionPreviewFromClosing(itemCode, closingBalance, currentStock) {
-    const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
-    const itemRow = inputField.closest('tr');
-    
-    // Calculate sale quantity
-    const saleQty = currentStock - closingBalance;
-    
-    if (saleQty <= 0) {
-        // Remove distribution cells if no sales
-        itemRow.find('.date-distribution-cell').remove();
-        
-        // Hide date columns if no items have sales
-        if ($('input[name^="closing_balance"]').filter(function() { 
-            const itemCode = $(this).data('code');
-            const currentStock = $(this).data('stock');
-            const closingBalance = parseFloat($(this).val()) || 0;
-            const saleQty = currentStock - closingBalance;
-            return saleQty > 0 && !$(this).prop('disabled');
-        }).length === 0) {
-            $('.date-header, .date-distribution-cell').hide();
-        }
-        
-        return;
-    }
-    
-    // Check if item has backdated restrictions
-    const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
-    const availableDatesJson = inputField.data('available-dates');
-    const unavailableDatesJson = inputField.data('unavailable-dates');
-    
-    let availableDates = [];
-    let unavailableDates = [];
-    
-    if (availableDatesJson) {
-        try {
-            availableDates = JSON.parse(availableDatesJson);
-        } catch (e) {
-            console.error('Error parsing available dates:', e);
-        }
-    }
-    
-    if (unavailableDatesJson) {
-        try {
-            unavailableDates = JSON.parse(unavailableDatesJson);
-        } catch (e) {
-            console.error('Error parsing unavailable dates:', e);
-        }
-    }
-    
-    let dailySales;
-    
-    if (hasBackdatedRestriction && availableDates.length > 0) {
-        // Item has existing sales on some dates - distribute only on available dates, show X on unavailable dates
-        console.log(`Item ${itemCode}: Distributing ${saleQty} on available dates:`, availableDates);
-        console.log(`Unavailable dates:`, unavailableDates);
-        dailySales = distributeSalesOnAvailableDates(saleQty, availableDates, unavailableDates);
-        
-        // Add special class to row to indicate partial distribution
-        itemRow.addClass('partial-date-item');
-        itemRow.attr('title', `Sales exist on some dates. New sales will be distributed only on: ${availableDates.join(', ')}`);
-    } else {
-        // No restrictions - distribute across all dates
-        dailySales = distributeSalesUniformlyClientSide(saleQty, daysCount);
-        itemRow.removeClass('partial-date-item');
-    }
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-    
-    // Add date distribution cells with proper styling
-    dailySales.forEach((qty, index) => {
-        const date = dateArray[index];
-        const isUnavailable = hasBackdatedRestriction && 
-                             unavailableDates.length > 0 && 
-                             unavailableDates.includes(date);
-        
-        const isAvailable = hasBackdatedRestriction && 
-                           availableDates.length > 0 && 
-                           availableDates.includes(date);
-        
-        let cell;
-        
-        if (isUnavailable) {
-            // Date has existing sales - show X symbol
-            cell = $(`<td class="date-distribution-cell unavailable-date-cell"><span class="x-symbol">✗</span></td>`);
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-        } else if (qty === 'X') {
-            // This should only happen if no available dates at all
-            cell = $(`<td class="date-distribution-cell unavailable-date-cell"><span class="x-symbol">✗</span></td>`);
-            cell.attr('title', `No available dates for new sales`);
-        } else if (qty > 0) {
-            // Date has new sales (either available date or no restrictions)
-            cell = $(`<td class="date-distribution-cell non-zero-distribution">${qty}</td>`);
-            
-            if (isAvailable) {
-                cell.attr('title', `${qty} units scheduled for ${date} (Available date)`);
-                cell.addClass('available-date-cell');
-            } else {
-                cell.attr('title', `${qty} units scheduled for ${date}`);
-            }
-        } else {
-            // Zero quantity (available date but 0 units)
-            cell = $(`<td class="date-distribution-cell zero-distribution">0</td>`);
-            
-            if (isAvailable) {
-                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
-            }
-        }
-        
-        // Insert distribution cells after the action column
-        cell.insertAfter(itemRow.find('.action-column'));
-    });
-    
-    // Show date columns
-    $('.date-header, .date-distribution-cell').show();
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
-    $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
-    });
-    $('#totalAmount').text(Math.floor(total));
-}
-
-// Function to initialize date headers and closing balance column
-function initializeTableHeaders() {
-    // Remove existing date headers if any
-    $('.date-header').remove();
-    
-    // Add date headers after the action column header
-    dateArray.forEach(date => {
-        const dateObj = new Date(date);
-        const day = dateObj.getDate();
-        const month = dateObj.toLocaleString('default', { month: 'short' });
-        
-        // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
-    });
-}
-
-// Function to handle row navigation with arrow keys
-function setupRowNavigation() {
-    const closingInputs = $('input.closing-input');
-    let currentRowIndex = -1;
-    
-    // Highlight row when input is focused
-    $(document).on('focus', 'input.closing-input', function() {
-        // Remove highlight from all rows
-        $('tr').removeClass('highlight-row');
-        
-        // Add highlight to current row
-        $(this).closest('tr').addClass('highlight-row');
-        
-        // Update current row index
-        currentRowIndex = closingInputs.index(this);
-    });
-    
-    // Handle arrow key navigation
-    $(document).on('keydown', 'input.closing-input', function(e) {
-        // Only handle arrow keys
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        
-        e.preventDefault(); // Prevent default scrolling behavior
-        
-        // Calculate new row index
-        let newIndex;
-        if (e.key === 'ArrowUp') {
-            newIndex = currentRowIndex - 1;
-        } else { // ArrowDown
-            newIndex = currentRowIndex + 1;
-        }
-        
-        // Check if new index is valid
-        if (newIndex >= 0 && newIndex < closingInputs.length) {
-            // Focus the input in the new row
-            $(closingInputs[newIndex]).focus().select();
+        },
+        error: function(xhr, status, error) {
+            $('#ajaxLoader').hide();
+            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+            console.error('AJAX error:', error);
+            alert('Error saving data to pending. Please try again.');
         }
     });
 }
 
-// FIXED: Simple working version to generate bills
 function generateBills() {
     console.log('generateBills function called');
     
-    // Simple validation
     let hasEntries = false;
     let validationErrors = [];
     
@@ -3430,7 +1984,6 @@ function generateBills() {
         hasEntries = true;
         const closingBalance = allSessionClosingBalances[itemCode];
         
-        // Basic validation
         if (closingBalance < 0) {
             validationErrors.push(`Item ${itemCode}: Closing balance cannot be negative`);
         }
@@ -3455,11 +2008,9 @@ function generateBills() {
     
     console.log('Validation passed, submitting form...');
     
-    // Show loader
     $('#ajaxLoader').show();
     $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
     
-    // Submit the form after a small delay to show loader
     setTimeout(() => {
         console.log('Actually submitting form now');
         document.getElementById('salesForm').submit();
@@ -3468,73 +2019,72 @@ function generateBills() {
     return true;
 }
 
-// Function to save to pending sales via AJAX
-function saveToPendingSales() {
-    // Simple validation
-    let hasEntries = false;
-    for (const itemCode in allSessionClosingBalances) {
-        hasEntries = true;
-        break;
-    }
+function validateClosingBalance(input) {
+    const itemCode = $(input).data('code');
+    const currentStock = parseFloat($(input).data('stock'));
+    let closingBalance = parseFloat($(input).val()) || 0;
     
-    if (!hasEntries) {
-        alert('Please enter closing balances for at least one item.');
+    if ($(input).prop('disabled')) {
         return false;
     }
     
-    // Show loader and disable button
-    $('#ajaxLoader').show();
-    $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-    
-    // Collect all the data
-    const formData = new FormData();
-    formData.append('save_pending', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    
-    // Add each item's closing balance from session (not just visible ones)
-    for (const itemCode in allSessionClosingBalances) {
-        const closingBalance = allSessionClosingBalances[itemCode];
-        formData.append(`closing_balance[${itemCode}]`, closingBalance);
+    if (isNaN(closingBalance) || closingBalance < 0) {
+        closingBalance = 0;
+        $(input).val(0);
     }
     
-    // Send AJAX request
-    $.ajax({
-        url: 'save_pending_sales_closing.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        success: function(response) {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-            
-            try {
-                const result = JSON.parse(response);
-                if (result.success) {
-                    // Clear session closing balances
-                    clearSessionClosingBalances();
-                    alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            } catch (e) {
-                alert('Error processing response: ' + response);
-            }
-        },
-        error: function() {
-            $('#ajaxLoader').hide();
-            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-            alert('Error saving data to pending. Please try again.');
-        }
-    });
+    if (closingBalance > currentStock) {
+        closingBalance = currentStock;
+        $(input).val(currentStock);
+        
+        $(input).addClass('is-invalid');
+        setTimeout(() => $(input).removeClass('is-invalid'), 2000);
+    } else {
+        $(input).removeClass('is-invalid');
+    }
+    
+    if (closingBalance !== currentStock) {
+        $(input).addClass('highlight');
+    } else {
+        $(input).removeClass('highlight');
+    }
+    
+    updateItemUIFromClosing(itemCode, closingBalance, currentStock);
+
+    // Update distribution preview
+    updateDistributionPreviewWithAvailableDates(itemCode, closingBalance);
+
+    saveClosingBalanceToSession(itemCode, closingBalance);
+
+    return true;
 }
 
-// Single button with dual functionality - SIMPLIFIED VERSION
+function updateItemUIFromClosing(itemCode, closingBalance, currentStock) {
+    const rate = parseFloat($(`input[name="closing_balance[${itemCode}]"]`).data('rate'));
+    const saleQty = currentStock - closingBalance;
+    const amount = saleQty * rate;
+    
+    const displaySaleQty = Math.floor(saleQty);
+    const displayAmount = Math.floor(amount);
+    const displayCurrentStock = Math.floor(currentStock);
+    const displayClosingBalance = Math.floor(closingBalance);
+    
+    $(`#sale_qty_${itemCode}`).html(`
+        <span class="stock-integer">${displaySaleQty}</span>
+        <div class="compact-info">
+            <small>= ${displayCurrentStock} - ${displayClosingBalance}</small>
+        </div>
+    `);
+    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
+    
+    const row = $(`input[name="closing_balance[${itemCode}]"]`).closest('tr');
+    row.toggleClass('has-closing', closingBalance < currentStock);
+    
+    const saleQtyCell = $(`#sale_qty_${itemCode}`);
+    saleQtyCell.removeClass('positive zero').addClass(saleQty > 0 ? 'positive' : 'zero');
+}
+
 function handleGenerateBills() {
-    // Check if we have any closing balances entered
     let hasEntries = false;
     for (const itemCode in allSessionClosingBalances) {
         hasEntries = true;
@@ -3546,7 +2096,6 @@ function handleGenerateBills() {
         return false;
     }
     
-    // Show confirmation dialog with two options
     const userChoice = confirm(
         "Generate Bills Options:\n\n" +
         "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
@@ -3556,19 +2105,15 @@ function handleGenerateBills() {
     console.log('User choice:', userChoice);
     
     if (userChoice === true) {
-        // User clicked OK - Generate bills immediately
         console.log('Calling generateBills()');
         generateBills();
     } else {
-        // User clicked Cancel - Save to pending sales
         console.log('Calling saveToPendingSales()');
         saveToPendingSales();
     }
 }
 
-// Function to load sales log content
 function loadSalesLog() {
-    // Show loading state
     $('#salesLogContent').html(`
         <div class="text-center py-3">
             <div class="spinner-border text-primary" role="status">
@@ -3578,7 +2123,6 @@ function loadSalesLog() {
         </div>
     `);
     
-    // Load sales log content via AJAX
     $.ajax({
         url: 'sales_log_ajax.php',
         type: 'GET',
@@ -3586,7 +2130,8 @@ function loadSalesLog() {
         success: function(response) {
             $('#salesLogContent').html(response);
         },
-        error: function() {
+        error: function(xhr, status, error) {
+            console.error('Error loading sales log:', error);
             $('#salesLogContent').html(`
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle"></i>
@@ -3597,11 +2142,23 @@ function loadSalesLog() {
     });
 }
 
-// Function to print sales log
+function initializeClosingBalancesFromSession() {
+    $('input[name^="closing_balance"]').each(function() {
+        const itemCode = $(this).data('code');
+        if (allSessionClosingBalances[itemCode] !== undefined) {
+            const sessionClosing = allSessionClosingBalances[itemCode];
+            $(this).val(sessionClosing);
+            
+            const currentStock = parseFloat($(this).data('stock'));
+            updateItemUIFromClosing(itemCode, sessionClosing, currentStock);
+        }
+    });
+}
+
 function printSalesLog() {
     const printContent = $('#salesLogContent').html();
     const printWindow = window.open('', '_blank');
-    
+
     printWindow.document.write(`
         <!DOCTYPE html>
         <html>
@@ -3622,7 +2179,7 @@ function printSalesLog() {
         </body>
         </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
@@ -3641,16 +2198,16 @@ function getItemData(itemCode) {
             classCode: itemRow.data('class'),
             details: itemRow.data('details'),
             details2: itemRow.data('details2'),
-            closingBalance: parseFloat(inputField.val()) || 0
+            quantity: parseInt(allSessionClosingBalances[itemCode]) || 0
         };
     } else {
-        // If not in current view, get from allItemsData (now includes all modes)
+        // If not in current view, get from allItemsData
         if (allItemsData[itemCode]) {
             return {
                 classCode: allItemsData[itemCode].CLASS,
                 details: allItemsData[itemCode].DETAILS,
                 details2: allItemsData[itemCode].DETAILS2,
-                closingBalance: allSessionClosingBalances[itemCode] || allItemsData[itemCode].CURRENT_STOCK
+                quantity: allSessionClosingBalances[itemCode] || 0
             };
         }
     }
@@ -3678,35 +2235,35 @@ function extractVolume(details, details2) {
             let volume = parseFloat(literMatch[1]);
             return Math.round(volume * 1000); // Convert liters to ML
         }
-        
+
         // Handle ML sizes
         const mlMatch = details2.match(/(\d+)\s*ML\b/i);
         if (mlMatch) {
             return parseInt(mlMatch[1]);
         }
     }
-    
+
     // Fallback: parse details column
     if (details) {
         // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
-        
+
         // Handle liter sizes with decimal points
         const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
         if (literMatch) {
             let volume = parseFloat(literMatch[1]);
             return Math.round(volume * 1000); // Convert liters to ML
         }
-        
+
         // Handle ML sizes
         const mlMatch = details.match(/(\d+)\s*ML\b/i);
         if (mlMatch) {
             return parseInt(mlMatch[1]);
         }
     }
-    
+
     return 0; // Unknown volume
 }
 
@@ -3715,7 +2272,7 @@ function getVolumeColumn(volume) {
     const volumeMap = {
         // ML sizes
         50: '50 ML',
-        60: '60 ML', 
+        60: '60 ML',
         90: '90 ML',
         170: '170 ML',
         180: '180 ML',
@@ -3730,7 +2287,7 @@ function getVolumeColumn(volume) {
         700: '700 ML',
         750: '750 ML',
         1000: '1000 ML',
-        
+
         // Liter sizes (converted to ML for consistency)
         1500: '1.5L',    // 1.5L = 1500ML
         1750: '1.75L',   // 1.75L = 1750ML
@@ -3742,21 +2299,21 @@ function getVolumeColumn(volume) {
         30000: '30L',    // 30L = 30000ML
         50000: '50L'     // 50L = 50000ML
     };
-    
+
     return volumeMap[volume] || null;
 }
 
 // UPDATED: Function to update total sales module - PROCESS ALL ITEMS FROM ALL MODES
 function updateTotalSalesModule() {
     console.log('updateTotalSalesModule called - Processing ALL items from ALL modes');
-    
+
     // Initialize empty summary object with ALL sizes
     const allSizes = [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
         '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
-    
+
     // UPDATED: Added COUNTRY LIQUOR category in the requested order
     const salesSummary = {
         'SPIRITS': {},
@@ -3765,7 +2322,7 @@ function updateTotalSalesModule() {
         'MILD BEER': {},
         'COUNTRY LIQUOR': {} // ADDED COUNTRY LIQUOR AT THE END
     };
-    
+
     // Initialize all sizes to 0 for each category
     Object.keys(salesSummary).forEach(category => {
         allSizes.forEach(size => {
@@ -3773,34 +2330,31 @@ function updateTotalSalesModule() {
         });
     });
 
-    console.log('Processing ALL session closing balances from ALL modes:', allSessionClosingBalances);
+    console.log('Processing ALL session closing balances:', allSessionClosingBalances);
 
-    // Process ALL session closing balances (from ALL modes)
+    // Process ALL session quantities > 0 (from ALL modes)
     let processedItems = 0;
     for (const itemCode in allSessionClosingBalances) {
-        const closingBalance = allSessionClosingBalances[itemCode];
-        // Get item data from ALL items data (works for items from all modes)
-        const itemData = getItemData(itemCode);
-        if (itemData && allItemsData[itemCode]) {
-            const currentStock = allItemsData[itemCode].CURRENT_STOCK;
-            const saleQty = currentStock - closingBalance;
-            
-            if (saleQty > 0) {
+        const quantity = allSessionClosingBalances[itemCode];
+        if (quantity > 0) {
+            // Get item data from ALL items data (works for items from all modes)
+            const itemData = getItemData(itemCode);
+            if (itemData) {
                 const productType = getProductType(itemData.classCode);
                 const volume = extractVolume(itemData.details, itemData.details2);
                 const volumeColumn = getVolumeColumn(volume);
-                
-                console.log(`Item ${itemCode}: Class=${itemData.classCode}, ProductType=${productType}, Volume=${volume}, VolumeColumn=${volumeColumn}, SaleQty=${saleQty}`);
-                
+
+                console.log(`Item ${itemCode}: Class=${itemData.classCode}, ProductType=${productType}, Volume=${volume}, VolumeColumn=${volumeColumn}, Quantity=${quantity}`);
+
                 if (volumeColumn && salesSummary[productType]) {
-                    salesSummary[productType][volumeColumn] += saleQty;
+                    salesSummary[productType][volumeColumn] += quantity;
                     processedItems++;
                 }
             }
         }
     }
 
-    console.log(`Processed ${processedItems} items with sales from ALL modes`);
+    console.log(`Processed ${processedItems} items with quantities from ALL modes`);
     console.log('Final sales summary:', salesSummary);
 
     // Update the modal table
@@ -3811,218 +2365,382 @@ function updateTotalSalesModule() {
 function updateSalesModalTable(salesSummary, allSizes) {
     const tbody = $('#totalSalesTable tbody');
     tbody.empty();
-    
+
     console.log('Updating modal table with categories:', Object.keys(salesSummary));
-    
+
     // UPDATED: Added COUNTRY LIQUOR in the requested order
     const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
-    
+
     categories.forEach(category => {
         const row = $('<tr>');
         row.append($('<td>').text(category));
-        
+
         allSizes.forEach(size => {
             const value = salesSummary[category] ? (salesSummary[category][size] || 0) : 0;
             const cell = $('<td>').text(value > 0 ? value : '');
-            
+
             // Add subtle highlighting for non-zero values
             if (value > 0) {
                 cell.addClass('table-success');
             }
-            
+
             row.append(cell);
         });
-        
+
         tbody.append(row);
     });
-    
+
     console.log('Modal table updated successfully with data from ALL modes');
 }
 
-// Initialize enhanced tooltips
-function initializeBackdatedTooltips() {
-    $('[data-bs-toggle="tooltip"]').tooltip({
-        placement: 'top',
-        trigger: 'hover',
-        container: 'body',
-        template: '<div class="tooltip backdated-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+// Function to initialize date headers and closing balance column
+function initializeTableHeaders() {
+    // Remove existing date headers if any
+    $('.date-header').remove();
+
+    // Add date headers after the action column header
+    dateArray.forEach(date => {
+        const dateObj = new Date(date);
+        const day = dateObj.getDate();
+        const month = dateObj.toLocaleString('default', { month: 'short' });
+
+        // Insert date headers after the action column header
+        $(`<th class="date-header" title="${date}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
     });
+}
+
+// Function to handle row navigation with arrow keys
+function setupRowNavigation() {
+    const qtyInputs = $('input.closing-input');
+    let currentRowIndex = -1;
+
+    // Highlight row when input is focused
+    $(document).on('focus', 'input.closing-input', function() {
+        // Remove highlight from all rows
+        $('tr').removeClass('highlight-row');
+
+        // Add highlight to current row
+        $(this).closest('tr').addClass('highlight-row');
+
+        // Update current row index
+        currentRowIndex = qtyInputs.index(this);
+    });
+
+    // Handle arrow key navigation
+    $(document).on('keydown', 'input.closing-input', function(e) {
+        // Only handle arrow keys
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+
+        e.preventDefault(); // Prevent default scrolling behavior
+
+        // Calculate new row index
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+            newIndex = currentRowIndex - 1;
+        } else { // ArrowDown
+            newIndex = currentRowIndex + 1;
+        }
+
+        // Check if new index is valid
+        if (newIndex >= 0 && newIndex < qtyInputs.length) {
+            // Focus the input in the new row
+            $(qtyInputs[newIndex]).focus().select();
+        }
+    });
+}
+
+// FIXED: Enhanced function to update distribution preview - for closing stock, show potential sale distribution
+function updateDistributionPreviewWithAvailableDates(itemCode, closingBalance) {
+    console.log(`DEBUG: updateDistributionPreviewWithAvailableDates called for ${itemCode} with closing ${closingBalance}`);
+    const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
+    const itemRow = inputField.closest('tr');
+
+    const currentStock = parseFloat(inputField.data('stock'));
+    const saleQty = currentStock - closingBalance;
+
+    if (saleQty <= 0) {
+        // Remove distribution cells if no sales
+        itemRow.find('.date-distribution-cell').remove();
+
+        // Hide date columns if no items have sales
+        if ($('input[name^="closing_balance"]').filter(function() {
+            const stock = parseFloat($(this).data('stock'));
+            const balance = parseFloat($(this).val()) || stock;
+            return balance < stock;
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+
+        return;
+    }
+
+    // Get available and unavailable dates from data attributes
+    const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+    const availableDates = inputField.data('available-dates') || [];
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+
+    console.log(`DEBUG: ${itemCode} - hasBackdatedRestriction: ${hasBackdatedRestriction}`);
+    console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
+    console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
+
+    // Create date index map
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    // For closing stock, show a preview of how sales would be distributed
+    let distribution = new Array(daysCount).fill(0);
+
+    if (hasBackdatedRestriction && availableDates.length > 0) {
+        // Distribute only on available dates
+        const availableDaysCount = availableDates.length;
+        const baseQty = Math.floor(saleQty / availableDaysCount);
+        const remainder = saleQty % availableDaysCount;
+
+        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
+
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            dailySalesForAvailableDates[i]++;
+        }
+
+        // Shuffle the distribution
+        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] = [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+        }
+
+        // Place the distributed quantities in the correct date positions
+        availableDates.forEach((date, index) => {
+            const dateIndex = dateIndexMap[date];
+            if (dateIndex !== undefined) {
+                distribution[dateIndex] = dailySalesForAvailableDates[index];
+            }
+        });
+
+        console.log(`Item ${itemCode}: Preview distribution ${saleQty} on ${availableDaysCount} available dates`);
+    } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+        // Distribute across all dates
+        const baseQty = Math.floor(saleQty / daysCount);
+        const remainder = saleQty % daysCount;
+
+        distribution = new Array(daysCount).fill(baseQty);
+
+        // Distribute remainder evenly across days
+        for (let i = 0; i < remainder; i++) {
+            distribution[i]++;
+        }
+
+        // Shuffle the distribution
+        for (let i = distribution.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
+        }
+
+        console.log(`Item ${itemCode}: Preview distribution ${saleQty} across all ${daysCount} dates`);
+    } else {
+        console.log(`Item ${itemCode}: No available dates for distribution preview`);
+    }
+
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
+
+    // Add date distribution cells
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell"></td>`);
+
+        // Check if this date is unavailable due to existing sales
+        const isUnavailable = hasBackdatedRestriction &&
+                              unavailableDates.length > 0 &&
+                              unavailableDates.includes(date);
+
+        const isAvailable = hasBackdatedRestriction &&
+                            availableDates.length > 0 &&
+                            availableDates.includes(date);
+
+        if (isUnavailable) {
+            // Date has existing sales - show ✗
+            cell.addClass('unavailable-date');
+            cell.html('<span class="text-danger">✗</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+        } else if (isAvailable && qty > 0) {
+            // Date is available and has sales
+            cell.addClass('available-date-cell');
+            cell.text(qty);
+            cell.attr('title', `${qty} units would be sold on ${date} (available date)`);
+        } else if (qty > 0) {
+            // Normal distribution
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units would be sold on ${date}`);
+        } else {
+            // Zero quantity
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            cell.attr('title', `No sales on ${date}`);
+        }
+
+        // Insert distribution cells after the action column
+        cell.insertAfter(itemRow.find('.action-column'));
+    });
+
+    // Show date columns
+    $('.date-header, .date-distribution-cell').show();
 }
 
 // Function to initialize distribution preview for all items with sales
 function initializeDistributionPreview() {
     console.log('Initializing distribution preview for items with sales...');
-    
+
     let itemsWithSales = 0;
     $('input[name^="closing_balance"]').each(function() {
         const itemCode = $(this).data('code');
-        const currentStock = $(this).data('stock');
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const saleQty = currentStock - closingBalance;
-        
-        if (saleQty > 0 && !$(this).prop('disabled')) {
-            updateDistributionPreviewFromClosing(itemCode, closingBalance, currentStock);
+        const currentStock = parseFloat($(this).data('stock'));
+        const closingBalance = parseFloat($(this).val()) || currentStock;
+
+        if (closingBalance < currentStock) {
+            updateDistributionPreviewWithAvailableDates(itemCode, closingBalance);
             itemsWithSales++;
         }
     });
-    
+
     console.log(`Initialized distribution preview for ${itemsWithSales} items with sales`);
-    
-    // Show date headers if we have any items with sales
-    if (itemsWithSales > 0) {
-        $('.date-header, .date-distribution-cell').show();
-    }
 }
 
-// OPTIMIZED: Document ready - Only process items with sales > 0
 $(document).ready(function() {
-    console.log('Document ready - Initializing...');
-    
+    console.log('Document ready - Initializing with existing endpoints...');
+    console.log('Available session closing balances:', Object.keys(allSessionClosingBalances).length);
+
+    // DEBUG: Log missing functionalities
+    console.log("DEBUG: Checking for missing functionalities");
+    console.log("DEBUG: Shuffle all button exists: " + ($('#shuffleBtn').length > 0));
+    console.log("DEBUG: Shuffle single buttons exist: " + ($('.btn-shuffle-item').length > 0));
+    console.log("DEBUG: Total sales summary button exists: " + ($('button[data-bs-target="#totalSalesModal"]').length > 0));
+    console.log("DEBUG: Total sales modal exists: " + ($('#totalSalesModal').length > 0));
+
     // Initialize table headers and columns
     initializeTableHeaders();
-    
+
     // Set up row navigation with arrow keys
     setupRowNavigation();
-    
-    // Initialize closing balances in visible inputs from session
+
     initializeClosingBalancesFromSession();
-    
+
     // Initialize distribution preview for items with sales
     initializeDistributionPreview();
-    
-    // Initialize enhanced tooltips
-    initializeBackdatedTooltips();
-    
-    // Clear session button click event
+
+    $('[data-bs-toggle="tooltip"]').tooltip();
+
     $('#clearSessionBtn').click(function() {
         if (confirm('Are you sure you want to clear all closing balances? This action cannot be undone.')) {
             clearSessionClosingBalances();
         }
     });
-    
-    // Single button with dual functionality
+
     $('#generateBillsBtn').click(function(e) {
         e.preventDefault();
         handleGenerateBills();
     });
-    
-    // OPTIMIZED: Event delegation with debouncing
+
     let closingTimeout;
-    $(document).off('input', 'input.closing-input').on('input', 'input.closing-input', function(e) {
+    $(document).on('input', 'input.closing-input', function(e) {
         clearTimeout(closingTimeout);
         closingTimeout = setTimeout(() => {
             validateClosingBalance(this);
-        }, 200);
+        }, 300);
     });
-    
-    // Closing balance input change event
-    $(document).on('change', 'input[name^="closing_balance"]', function() {
-        // The validateClosingBalance function now handles distribution updates
-        validateClosingBalance(this);
-        
-        // Update total amount
-        calculateTotalAmount();
-        
-        // Also update total sales module if modal is open
-        if ($('#totalSalesModal').hasClass('show')) {
-            console.log('Modal is open, updating total sales module with ALL modes data...');
-            updateTotalSalesModule();
-        }
-    });
-    
-    // OPTIMIZED: Shuffle all button click event - Only shuffle items with sales > 0 and not disabled
-    $('#shuffleBtn').off('click').on('click', async function() {
-        // Show loader
-        $('#ajaxLoader').show();
-        
-        // Process all items with sales
-        const itemsToShuffle = [];
-        $('input.closing-input').each(function() {
-            const itemCode = $(this).data('code');
-            const currentStock = $(this).data('stock');
-            const closingBalance = parseFloat($(this).val()) || 0;
-            const saleQty = currentStock - closingBalance;
-            
-            // Only shuffle if sale quantity > 0, visible, and not disabled (optimization)
-            if (saleQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
-                itemsToShuffle.push({ itemCode, closingBalance, currentStock });
-            }
-        });
-        
-        // Shuffle each item
-        for (const item of itemsToShuffle) {
-            updateDistributionPreviewFromClosing(item.itemCode, item.closingBalance, item.currentStock);
-        }
-        
-        // Hide loader
-        $('#ajaxLoader').hide();
-        
-        // Update total amount
-        calculateTotalAmount();
-    });
-    
-    // Individual shuffle button click event
-    $(document).on('click', '.btn-shuffle-item', async function() {
-        const itemCode = $(this).data('code');
-        const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
-        const currentStock = inputField.data('stock');
-        const closingBalance = parseFloat(inputField.val()) || 0;
-        const saleQty = currentStock - closingBalance;
-        
-        // Only shuffle if sale quantity > 0 and not disabled
-        if (saleQty > 0 && !inputField.prop('disabled')) {
-            updateDistributionPreviewFromClosing(itemCode, closingBalance, currentStock);
-            
-            // Update total amount
-            calculateTotalAmount();
-        }
-    });
-    
-    // Auto-load sales log when modal is shown
+
     $('#salesLogModal').on('shown.bs.modal', function() {
         loadSalesLog();
     });
-    
+
     // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
         console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
     });
-    
+
     // Also update when modal is already shown but data changes
     $('#totalSalesModal').on('shown.bs.modal', function() {
         console.log('Total Sales Modal shown - refreshing data from ALL modes...');
         updateTotalSalesModule();
     });
-});
 
-// NEW FUNCTION: Initialize input values from session on page load
-function initializeClosingBalancesFromSession() {
-    $('input[name^="closing_balance"]').each(function() {
-        const itemCode = $(this).data('code');
-        if (allSessionClosingBalances[itemCode] !== undefined) {
-            const sessionClosing = allSessionClosingBalances[itemCode];
-            $(this).val(sessionClosing);
-            
-            // Update UI for this item
+    // Shuffle all functionality
+    $('#shuffleBtn').off('click').on('click', async function() {
+        console.log('Shuffle all button clicked');
+        $('#ajaxLoader').show();
+
+        // Process all items with closing balances
+        const itemsToShuffle = [];
+        $('input.closing-input').each(function() {
+            const itemCode = $(this).data('code');
+            const closingBalance = parseFloat($(this).val()) || 0;
             const currentStock = parseFloat($(this).data('stock'));
-            updateItemUIFromClosing(itemCode, sessionClosing, currentStock);
+
+            // Only shuffle if closing balance < current stock (meaning there are sales)
+            if (closingBalance < currentStock && !$(this).prop('disabled')) {
+                const saleQty = currentStock - closingBalance;
+                itemsToShuffle.push({ itemCode, saleQty, currentStock });
+            }
+        });
+
+        console.log('Shuffle all - found items to shuffle:', itemsToShuffle.length);
+
+        // For closing stock, shuffling means randomly redistributing the sale quantities across dates
+        // Since we don't have date distribution in closing stock, we'll just randomize the closing balances
+        // while maintaining the same total sales quantity
+
+        for (const item of itemsToShuffle) {
+            // Generate a new random closing balance between 0 and current stock
+            const newClosingBalance = Math.floor(Math.random() * (item.currentStock + 1));
+
+            // Update the input field
+            const inputField = $(`input[name="closing_balance[${item.itemCode}]"]`);
+            inputField.val(newClosingBalance);
+
+            // Update UI
+            updateItemUIFromClosing(item.itemCode, newClosingBalance, item.currentStock);
+
+            // Save to session
+            saveClosingBalanceToSession(item.itemCode, newClosingBalance);
+        }
+
+        $('#ajaxLoader').hide();
+        console.log('Shuffle all completed');
+    });
+
+    // Individual shuffle button functionality
+    $(document).on('click', '.btn-shuffle-item', function() {
+        const itemCode = $(this).data('code');
+        console.log('Individual shuffle clicked for:', itemCode);
+
+        const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
+        const currentStock = parseFloat(inputField.data('stock'));
+        const currentClosing = parseFloat(inputField.val()) || currentStock;
+
+        // Only shuffle if closing balance < current stock (meaning there are sales)
+        if (currentClosing < currentStock && !inputField.prop('disabled')) {
+            // Generate a new random closing balance
+            const newClosingBalance = Math.floor(Math.random() * (currentStock + 1));
+
+            // Update the input field
+            inputField.val(newClosingBalance);
+
+            // Update UI
+            updateItemUIFromClosing(itemCode, newClosingBalance, currentStock);
+
+            // Save to session
+            saveClosingBalanceToSession(itemCode, newClosingBalance);
+
+            console.log(`Shuffled item ${itemCode}: closing balance ${currentClosing} -> ${newClosingBalance}`);
+        } else {
+            console.log(`Cannot shuffle item ${itemCode}: closing=${currentClosing}, stock=${currentStock}, disabled=${inputField.prop('disabled')}`);
         }
     });
-    
-    // Show date headers if any items have sales > 0 and are not disabled
-    const hasSales = $('input[name^="closing_balance"]').filter(function() { 
-        const itemCode = $(this).data('code');
-        const currentStock = $(this).data('stock');
-        const closingBalance = parseFloat($(this).val()) || 0;
-        const saleQty = currentStock - closingBalance;
-        return saleQty > 0 && !$(this).prop('disabled');
-    }).length > 0;
-    
-    if (hasSales) {
-        $('.date-header').show();
-    }
-}
+});
 </script>
 </body>
 </html>

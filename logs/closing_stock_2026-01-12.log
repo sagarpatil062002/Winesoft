@@ -1,0 +1,114 @@
+[2026-01-12 03:19:31] [INFO] === PAGE ACCESS ===
+[2026-01-12 03:19:31] [INFO] Request method: GET
+[2026-01-12 03:19:31] [INFO] Search term: ''
+[2026-01-12 03:19:31] [INFO] Current session ID: 19k3a32vaa858oiajc9eqasutd
+[2026-01-12 03:19:32] [INFO] Final session closing balances count: 0
+[2026-01-12 03:19:32] [INFO] Items in current view: 50
+[2026-01-12 03:19:32] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-12 to 2026-01-12
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 12
+    [closing_column] => DAY_12_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-12 03:23:02] [INFO] === PAGE ACCESS ===
+[2026-01-12 03:23:02] [INFO] Request method: 
+[2026-01-12 03:23:02] [INFO] Search term: ''
+[2026-01-12 03:23:02] [INFO] Current session ID: 9ae95kkmq3bretq7aq6pnk87r9
+[2026-01-12 03:23:02] [WARNING] User not logged in, redirecting to index.php
+[2026-01-12 03:23:12] [INFO] === PAGE ACCESS ===
+[2026-01-12 03:23:12] [INFO] Request method: GET
+[2026-01-12 03:23:12] [INFO] Search term: ''
+[2026-01-12 03:23:12] [INFO] Current session ID: 19k3a32vaa858oiajc9eqasutd
+[2026-01-12 03:23:12] [INFO] Final session closing balances count: 0
+[2026-01-12 03:23:12] [INFO] Items in current view: 50
+[2026-01-12 03:23:12] [INFO] Closing Stock Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_closing_balances_count] => 0
+    [post_closing_balances_count] => 0
+    [date_range] => 2026-01-12 to 2026-01-12
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_date_day] => 12
+    [closing_column] => DAY_12_CLOSING
+    [end_date_month] => 2026-01
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-01
+)
+
+[2026-01-12 03:23:30] [INFO] === PAGE ACCESS ===
+[2026-01-12 03:23:30] [INFO] Request method: POST
+[2026-01-12 03:23:30] [INFO] Search term: ''
+[2026-01-12 03:23:30] [INFO] Current session ID: 19k3a32vaa858oiajc9eqasutd
+[2026-01-12 03:23:30] [INFO] Session closing balances updated from POST: 50 items
+[2026-01-12 03:23:30] [INFO] Item SCMPL0019030: Distributing 2 across 1 available dates: 2026-01-12
+[2026-01-12 03:23:30] [INFO] Getting next bill number for CompID: 1
+[2026-01-12 03:23:30] [INFO] Next bill number for CompID 1: 8
+[2026-01-12 03:23:30] [INFO] Starting optimized cash memo generation for 2 bills
+[2026-01-12 03:23:30] [INFO] Cash memo generated for bill: BL0008
+[2026-01-12 03:23:30] [INFO] Cash memo generated for bill: BL0009
+[2026-01-12 03:23:30] [INFO] Cash memo generation completed: 2 successful, 0 failed
+[2026-01-12 03:23:30] [INFO] Session closing balances cleared

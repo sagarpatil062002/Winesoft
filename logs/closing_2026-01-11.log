@@ -1,0 +1,148 @@
+[2026-01-11 16:57:19] [INFO] === BILL GENERATION STEP: DATE_SELECTION ===
+start_date: 2026-01-11
+end_date: 2026-01-11
+comp_id: 1
+mode: F
+sequence_type: user_defined
+search: 
+
+[2026-01-11 16:57:19] [INFO] === BILL GENERATION STEP: TABLE_SELECTION ===
+end_date: 2026-01-11
+end_day: 11
+end_day_column: DAY_11_CLOSING
+daily_stock_table: tbldailystock_1
+table_exists: YES
+
+[2026-01-11 16:57:19] [INFO] === BILL GENERATION STEP: ITEMS_LOADED ===
+total_items: 145
+items_on_page: 50
+current_page: 1
+items_per_page: 50
+
+[2026-01-11 16:57:19] [INFO] === BILL GENERATION STEP: AVAILABILITY_CHECK ===
+date_range: 2026-01-11 to 2026-01-11
+days_count: 1
+fully_available: 50
+partially_available: 0
+not_available: 0
+
+[2026-01-11 16:57:20] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-11 to 2026-01-11
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_11_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+    [availability_summary] => Array
+        (
+            [fully_available] => 50
+            [partially_available] => 0
+            [not_available] => 0
+            [total_items] => 50
+        )
+
+)
+
+[2026-01-11 16:57:42] [INFO] === BILL GENERATION STEP: DATE_SELECTION ===
+start_date: 2026-01-01
+end_date: 2026-01-03
+comp_id: 1
+mode: F
+sequence_type: user_defined
+search: 
+
+[2026-01-11 16:57:42] [INFO] === BILL GENERATION STEP: TABLE_SELECTION ===
+end_date: 2026-01-03
+end_day: 03
+end_day_column: DAY_03_CLOSING
+daily_stock_table: tbldailystock_1
+table_exists: YES
+
+[2026-01-11 16:57:42] [INFO] === BILL GENERATION STEP: ITEMS_LOADED ===
+total_items: 145
+items_on_page: 50
+current_page: 1
+items_per_page: 50
+
+[2026-01-11 16:57:43] [INFO] === BILL GENERATION STEP: AVAILABILITY_CHECK ===
+date_range: 2026-01-01 to 2026-01-03
+days_count: 3
+fully_available: 50
+partially_available: 0
+not_available: 0
+
+[2026-01-11 16:57:43] [INFO] Sales by Closing Balance Page Load Debug Info:
+Array
+(
+    [total_items] => 145
+    [current_page] => 1
+    [total_pages] => 3
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-01-01 to 2026-01-03
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => G
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => R
+            [7] => O
+            [8] => L
+            [9] => O
+            [10] => O
+            [11] => O
+            [12] => O
+            [13] => M
+            [14] => I
+            [15] => Q
+        )
+
+    [end_day_column] => DAY_03_CLOSING
+    [daily_stock_table] => tbldailystock_1
+    [table_exists] => 1
+    [availability_summary] => Array
+        (
+            [fully_available] => 50
+            [partially_available] => 0
+            [not_available] => 0
+            [total_items] => 50
+        )
+
+)
+
