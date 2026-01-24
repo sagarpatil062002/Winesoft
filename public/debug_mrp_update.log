@@ -148,3 +148,11 @@
 [2026-01-09 14:16:49] MRP Update Result - Success: 1, Affected Rows: 1
 [2026-01-09 14:16:50] MRP Update Request - Item: SCMPL0031817, MRP: 150, Company: 1
 [2026-01-09 14:16:50] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-01-12 03:48:48] MRP Update Request - Item: SCMBR0009846, MRP: 195, Company: 1
+[2026-01-12 03:48:48] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-01-12 03:48:48] MRP Update Request - Item: SCMBR0009847, MRP: 130, Company: 1
+[2026-01-12 03:48:48] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-01-12 03:48:48] MRP Update Request - Item: SCMBR0018149, MRP: 200, Company: 1
+[2026-01-12 03:48:48] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-01-12 03:48:48] MRP Update Request - Item: SCMBR0018145, MRP: 165, Company: 1
+[2026-01-12 03:48:48] MRP Update Result - Success: 1, Affected Rows: 1

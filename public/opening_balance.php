@@ -430,7 +430,195 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
     }
 }
 
-// ==================== OPENING BALANCE SUMMARY FUNCTION ====================
+// ==================== HELPER FUNCTIONS FOR NEW 4-LAYER STRUCTURE ====================
+// Function to get product type from class code (UPDATED FOR NEW STRUCTURE)
+function getProductTypeFromClass($classCode, $conn) {
+    // First check if it's a new class code
+    if (strpos($classCode, 'CLS') === 0) {
+        // It's a new class code, map to product type
+        $query = "SELECT cat.CATEGORY_NAME 
+                  FROM tblclass_new cn 
+                  JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE 
+                  WHERE cn.CLASS_CODE = ? LIMIT 1";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("s", $classCode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $categoryName = strtoupper($row['CATEGORY_NAME']);
+            $stmt->close();
+            // Map category names to standard product types
+            $categoryMap = [
+                'SPIRIT' => 'SPIRITS',
+                'WINE' => 'WINE',
+                'FERMENTED BEER' => 'FERMENTED BEER',
+                'MILD BEER' => 'MILD BEER',
+                'COUNTRY LIQUOR' => 'COUNTRY LIQUOR',
+                'COLD DRINKS' => 'OTHER',
+                'SODA' => 'OTHER',
+                'GENERAL' => 'OTHER'
+            ];
+            return $categoryMap[$categoryName] ?? 'OTHER';
+        }
+        $stmt->close();
+    }
+    
+    // Fallback to old class codes
+    $spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
+    if (in_array($classCode, $spirits)) return 'SPIRITS';
+    if ($classCode === 'V') return 'WINE';
+    if ($classCode === 'F') return 'FERMENTED BEER';
+    if ($classCode === 'M') return 'MILD BEER';
+    if ($classCode === 'L') return 'COUNTRY LIQUOR';
+    return 'OTHER';
+}
+
+// Helper function to get size description from size code
+function getSizeDescriptionFromCode($size_code, $conn) {
+    if (empty($size_code)) return 'N/A';
+    
+    try {
+        $query = "SELECT SIZE_DESC FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("s", $size_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $stmt->close();
+            return $row['SIZE_DESC'];
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error getting size description: " . $e->getMessage());
+    }
+    
+    return 'N/A';
+}
+
+// Helper function to get size code from size description
+function getSizeCodeFromDescription($size_desc, $conn) {
+    if (empty($size_desc)) return null;
+    
+    try {
+        $query = "SELECT SIZE_CODE FROM tblsize WHERE SIZE_DESC = ? LIMIT 1";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("s", $size_desc);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $stmt->close();
+            return $row['SIZE_CODE'];
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error getting size code: " . $e->getMessage());
+    }
+    
+    return null;
+}
+
+// Helper function to extract volume from item details (ENHANCED)
+function extractVolumeFromDetails($details, $details2, $item_code = null, $conn = null) {
+    // Priority: details2 column first
+    if ($details2) {
+        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details2, $matches);
+        if ($literMatch && isset($matches[1])) {
+            $volume = floatval($matches[1]);
+            return round($volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details2, $matches);
+        if ($mlMatch && isset($matches[1])) {
+            return intval($matches[1]);
+        }
+    }
+    
+    // Fallback: parse details column
+    if ($details) {
+        // Handle special cases
+        if (stripos($details, 'QUART') !== false) return 750;
+        if (stripos($details, 'PINT') !== false) return 375;
+        if (stripos($details, 'NIP') !== false) return 90;
+        
+        // Handle liter sizes with decimal points
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details, $matches);
+        if ($literMatch && isset($matches[1])) {
+            $volume = floatval($matches[1]);
+            return round($volume * 1000); // Convert liters to ML
+        }
+        
+        // Handle ML sizes
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details, $matches);
+        if ($mlMatch && isset($matches[1])) {
+            return intval($matches[1]);
+        }
+    }
+    
+    // New: Try to get volume from the size table if connection is available
+    if ($item_code && $conn) {
+        try {
+            $query = "SELECT sz.ML_VOLUME 
+                      FROM tblitemmaster im 
+                      LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE 
+                      WHERE im.CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $item_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                if ($row['ML_VOLUME']) {
+                    $stmt->close();
+                    return $row['ML_VOLUME'];
+                }
+            }
+            $stmt->close();
+        } catch (Exception $e) {
+            error_log("Error getting volume from size table: " . $e->getMessage());
+        }
+    }
+    
+    return 0; // Unknown volume
+}
+
+// Helper function to get volume label
+function getVolumeLabel($volume) {
+    $volumeMap = [
+        // ML sizes
+        50 => '50 ML',
+        60 => '60 ML', 
+        90 => '90 ML',
+        170 => '170 ML',
+        180 => '180 ML',
+        200 => '200 ML',
+        250 => '250 ML',
+        275 => '275 ML',
+        330 => '330 ML',
+        355 => '355 ML',
+        375 => '375 ML',
+        500 => '500 ML',
+        650 => '650 ML',
+        700 => '700 ML',
+        750 => '750 ML',
+        1000 => '1000 ML',
+        
+        // Liter sizes (converted to ML for consistency)
+        1500 => '1.5L',    // 1.5L = 1500ML
+        1750 => '1.75L',   // 1.75L = 1750ML
+        2000 => '2L',      // 2L = 2000ML
+        3000 => '3L',      // 3L = 3000ML
+        4500 => '4.5L',    // 4.5L = 4500ML
+        15000 => '15L',    // 15L = 15000ML
+        20000 => '20L',    // 20L = 20000ML
+        30000 => '30L',    // 30L = 30000ML
+        50000 => '50L'     // 50L = 50000ML
+    ];
+    
+    return $volumeMap[$volume] ?? $volume . ' ML';
+}
+
+// ==================== OPENING BALANCE SUMMARY FUNCTION (UPDATED) ====================
 // Function to get opening balance summary with volume breakdown
 function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = []) {
     $summary = [
@@ -446,7 +634,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
     ];
     
     try {
-        // Build query based on license filtering
+        // Build query based on license filtering - UPDATED FOR NEW STRUCTURE
         if (!empty($allowed_classes)) {
             $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
             $query = "SELECT 
@@ -454,6 +642,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
                         im.DETAILS,
                         im.DETAILS2,
                         im.CLASS,
+                        im.SIZE_CODE,
                         COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
@@ -467,6 +656,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
                         im.DETAILS,
                         im.DETAILS2,
                         im.CLASS,
+                        im.SIZE_CODE,
                         COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
@@ -496,18 +686,20 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
         
         foreach ($items as $item) {
             $current_stock = (int)$item['CURRENT_STOCK'];
-            $category = $item['CLASS'] ?? 'Uncategorized';
+            
+            // Get product type from class code
+            $productType = getProductTypeFromClass($item['CLASS'], $conn);
             
             // Initialize category arrays if not exists
-            if (!isset($category_totals[$category])) {
-                $category_totals[$category] = 0;
-                $category_counts[$category] = 0;
+            if (!isset($category_totals[$productType])) {
+                $category_totals[$productType] = 0;
+                $category_counts[$productType] = 0;
             }
             
             // Update statistics
             $total_stock += $current_stock;
-            $category_totals[$category] += $current_stock;
-            $category_counts[$category]++;
+            $category_totals[$productType] += $current_stock;
+            $category_counts[$productType]++;
             
             if ($current_stock > 0) {
                 $items_with_stock++;
@@ -522,7 +714,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
             }
             
             // Extract volume from item details for volume breakdown
-            $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2']);
+            $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2'], $item['CODE'], $conn);
             if ($volume > 0) {
                 if (!isset($volume_totals[$volume])) {
                     $volume_totals[$volume] = 0;
@@ -576,96 +768,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
     return $summary;
 }
 
-// Helper function to extract volume from item details
-function extractVolumeFromDetails($details, $details2) {
-    // Priority: details2 column first
-    if ($details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
-        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details2, $matches);
-        if ($literMatch && isset($matches[1])) {
-            $volume = floatval($matches[1]);
-            return round($volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details2, $matches);
-        if ($mlMatch && isset($matches[1])) {
-            return intval($matches[1]);
-        }
-    }
-    
-    // Fallback: parse details column
-    if ($details) {
-        // Handle special cases
-        if (stripos($details, 'QUART') !== false) return 750;
-        if (stripos($details, 'PINT') !== false) return 375;
-        if (stripos($details, 'NIP') !== false) return 90;
-        
-        // Handle liter sizes with decimal points
-        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details, $matches);
-        if ($literMatch && isset($matches[1])) {
-            $volume = floatval($matches[1]);
-            return round($volume * 1000); // Convert liters to ML
-        }
-        
-        // Handle ML sizes
-        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details, $matches);
-        if ($mlMatch && isset($matches[1])) {
-            return intval($matches[1]);
-        }
-    }
-    
-    return 0; // Unknown volume
-}
-
-// Helper function to get volume label
-function getVolumeLabel($volume) {
-    $volumeMap = [
-        // ML sizes
-        50 => '50 ML',
-        60 => '60 ML', 
-        90 => '90 ML',
-        170 => '170 ML',
-        180 => '180 ML',
-        200 => '200 ML',
-        250 => '250 ML',
-        275 => '275 ML',
-        330 => '330 ML',
-        355 => '355 ML',
-        375 => '375 ML',
-        500 => '500 ML',
-        650 => '650 ML',
-        700 => '700 ML',
-        750 => '750 ML',
-        1000 => '1000 ML',
-        
-        // Liter sizes (converted to ML for consistency)
-        1500 => '1.5L',    // 1.5L = 1500ML
-        1750 => '1.75L',   // 1.75L = 1750ML
-        2000 => '2L',      // 2L = 2000ML
-        3000 => '3L',      // 3L = 3000ML
-        4500 => '4.5L',    // 4.5L = 4500ML
-        15000 => '15L',    // 15L = 15000ML
-        20000 => '20L',    // 20L = 20000ML
-        30000 => '30L',    // 30L = 30000ML
-        50000 => '50L'     // 50L = 50000ML
-    ];
-    
-    return $volumeMap[$volume] ?? $volume . ' ML';
-}
-
-// Function to classify product type from class code
-function getProductTypeFromClass($classCode) {
-    $spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
-    if (in_array($classCode, $spirits)) return 'SPIRITS';
-    if ($classCode === 'V') return 'WINE';
-    if ($classCode === 'F') return 'FERMENTED BEER';
-    if ($classCode === 'M') return 'MILD BEER';
-    if ($classCode === 'L') return 'COUNTRY LIQUOR';
-    return 'OTHER';
-}
-
-// ==================== VOLUME SUMMARY FUNCTION ====================
+// ==================== VOLUME SUMMARY FUNCTION (UPDATED) ====================
 function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes = []) {
     $volumeSummary = [
         'SPIRITS' => [],
@@ -690,7 +793,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
     }
     
     try {
-        // Build query to get all items with their stock
+        // Build query to get all items with their stock - UPDATED
         if (!empty($allowed_classes)) {
             $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
             $query = "SELECT 
@@ -698,6 +801,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                         im.DETAILS,
                         im.DETAILS2,
                         im.CLASS,
+                        im.SIZE_CODE,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -710,6 +814,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                         im.DETAILS,
                         im.DETAILS2,
                         im.CLASS,
+                        im.SIZE_CODE,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -729,10 +834,10 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
             $current_stock = (int)$item['CURRENT_STOCK'];
             if ($current_stock > 0) {
                 $classCode = $item['CLASS'] ?? 'O';
-                $productType = getProductTypeFromClass($classCode);
+                $productType = getProductTypeFromClass($classCode, $conn);
                 
                 // Extract volume from item details
-                $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2']);
+                $volume = extractVolumeFromDetails($item['DETAILS'], $item['DETAILS2'], $item['CODE'], $conn);
                 $volumeColumn = getVolumeLabel($volume);
                 
                 // Add to summary
@@ -762,7 +867,7 @@ $volume_summary_data = getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $a
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
-    // Build query with license filtering
+    // Build query with license filtering - UPDATED FOR EXPORT
     $query_params = [$mode];
     $query_types = "s";
     
@@ -772,6 +877,8 @@ if (isset($_GET['export'])) {
                     im.CODE, 
                     im.DETAILS, 
                     im.DETAILS2,
+                    im.CLASS,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -783,6 +890,8 @@ if (isset($_GET['export'])) {
                     im.CODE, 
                     im.DETAILS, 
                     im.DETAILS2,
+                    im.CLASS,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -813,15 +922,23 @@ if (isset($_GET['export'])) {
         
         $output = fopen('php://output', 'w');
         fwrite($output, "\xEF\xBB\xBF");
-        fputcsv($output, ['Item_Code', 'Item_Name', 'Category', 'Current_Stock']);
+        
+        // Use comma as delimiter for consistent export
+        $delimiter = ',';
+        
+        // UPDATED HEADERS - Only 4 columns: Item_Code, Item_Name, Size, Current_Stock
+        fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'], $delimiter);
         
         foreach ($items as $item) {
+            // Get size description from SIZE_CODE
+            $size_desc = getSizeDescriptionFromCode($item['SIZE_CODE'], $conn);
+            
             fputcsv($output, [
                 $item['CODE'],
                 $item['DETAILS'],
-                $item['DETAILS2'],
+                $size_desc,
                 $item['CURRENT_STOCK']
-            ]);
+            ], $delimiter);
         }
         
         fclose($output);
@@ -829,14 +946,49 @@ if (isset($_GET['export'])) {
     }
 }
 
-// ==================== PERFORMANCE OPTIMIZATION #4: Bulk CSV Import ====================
+// ==================== PERFORMANCE OPTIMIZATION #4: Bulk CSV Import WITH DELIMITER DETECTION ====================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
     $start_date = $_POST['start_date'];
     $csv_file = $_FILES['csv_file']['tmp_name'];
+    
+    // ==================== NEW: DELIMITER DETECTION ====================
+    // Read first line to detect separator
+    $first_line = file_get_contents($csv_file, false, null, 0, 1000);
+    $first_line = trim($first_line);
+    
+    // Detect separator based on first line
+    $delimiter = ',';
+    if (strpos($first_line, "\t") !== false) {
+        $delimiter = "\t";
+    } elseif (strpos($first_line, ';') !== false) {
+        $delimiter = ';';
+    }
+    
     $handle = fopen($csv_file, "r");
 
-    // Skip header row
-    fgetcsv($handle);
+    // Read and validate header row with detected delimiter
+    $header = fgetcsv($handle, 1000, $delimiter);
+    
+    // Check if CSV has the correct format (4 columns)
+    $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'];
+    
+    // Normalize headers: trim whitespace and remove BOM
+    $header = array_map(function($h) {
+        // Remove UTF-8 BOM if present
+        $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
+        return trim($h);
+    }, $header);
+    
+    if ($header !== $expected_headers) {
+        $_SESSION['import_message'] = [
+            'success' => false,
+            'message' => "CSV format is incorrect. Expected headers: " . implode(', ', $expected_headers) . 
+                        ". Found: " . implode(', ', $header) . 
+                        ". Detected delimiter: " . ($delimiter === "\t" ? "TAB" : $delimiter)
+        ];
+        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+        exit;
+    }
 
     $imported_count = 0;
     $skipped_count = 0;
@@ -849,9 +1001,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     $valid_items = [];
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $valid_items_query = "SELECT CODE, DETAILS, DETAILS2, LIQ_FLAG 
-                             FROM tblitemmaster 
-                             WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+        // UPDATED QUERY TO INCLUDE SIZE_CODE and join with tblsize
+        $valid_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.LIQ_FLAG, im.CLASS, im.SIZE_CODE, sz.SIZE_DESC
+                             FROM tblitemmaster im
+                             LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
+                             WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders)";
         $valid_stmt = $conn->prepare($valid_items_query);
         $valid_params = array_merge([$mode], $allowed_classes);
         $valid_types = "s" . str_repeat('s', count($allowed_classes));
@@ -863,9 +1017,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         while ($row = $valid_result->fetch_assoc()) {
             // Create multiple lookup keys for flexibility
             $key1 = $row['CODE']; // Just by code
-            $key2 = $row['CODE'] . '|' . $row['DETAILS'] . '|' . $row['DETAILS2']; // Full match
-            $valid_items[$key1] = $row['CODE'];
-            $valid_items[$key2] = $row['CODE'];
+            $key2 = $row['CODE'] . '|' . $row['DETAILS'] . '|' . $row['SIZE_DESC']; // Code + Name + Size Description
+            $valid_items[$key1] = [
+                'code' => $row['CODE'],
+                'size_code' => $row['SIZE_CODE'],
+                'size_desc' => $row['SIZE_DESC'],
+                'class' => $row['CLASS']
+            ];
+            $valid_items[$key2] = [
+                'code' => $row['CODE'],
+                'size_code' => $row['SIZE_CODE'],
+                'size_desc' => $row['SIZE_DESC'],
+                'class' => $row['CLASS']
+            ];
         }
         $valid_stmt->close();
     }
@@ -882,45 +1046,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
         $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
         
-        while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+        while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
             if (count($data) >= 4) {
                 $code = trim($data[0]);
-                $details = trim($data[1]);
-                $details2 = trim($data[2]);
+                $name = trim($data[1]);
+                $size_desc = trim($data[2]);
                 $balance = intval(trim($data[3]));
                 
                 // Clean and normalize data for matching
                 $code = strtoupper($code);
-                $details = trim($details);
-                $details2 = trim($details2);
+                $name = trim($name);
+                $size_desc = trim($size_desc);
                 
                 // Try multiple matching strategies
                 $item_found = false;
-                $item_code_to_use = '';
+                $item_data = null;
                 
-                // Strategy 1: Try exact match with all fields
-                $full_key = $code . '|' . $details . '|' . $details2;
+                // Strategy 1: Try exact match with code + name + size description
+                $full_key = $code . '|' . $name . '|' . $size_desc;
                 if (isset($valid_items[$full_key])) {
                     $item_found = true;
-                    $item_code_to_use = $valid_items[$full_key];
+                    $item_data = $valid_items[$full_key];
                 }
                 // Strategy 2: Try matching just by code
                 elseif (isset($valid_items[$code])) {
                     $item_found = true;
-                    $item_code_to_use = $valid_items[$code];
+                    $item_data = $valid_items[$code];
+                    
+                    // Check if size matches
+                    if ($item_data['size_desc'] !== $size_desc) {
+                        // Size mismatch, but we'll still process with warning
+                        $error_messages[] = "Size mismatch for item '$code': CSV has '$size_desc', database has '{$item_data['size_desc']}'. Using database size.";
+                    }
                 }
-                // Strategy 3: Try fuzzy matching by code (case-insensitive)
+                // Strategy 3: Try fuzzy matching by name and size
                 else {
-                    foreach ($valid_items as $key => $valid_code) {
-                        if (strtoupper($key) === $code || $valid_code === $code) {
+                    foreach ($valid_items as $key => $valid_item) {
+                        if (strpos($key, $code) !== false || 
+                            (strpos($key, $name) !== false && strpos($key, $size_desc) !== false)) {
                             $item_found = true;
-                            $item_code_to_use = $valid_code;
+                            $item_data = $valid_item;
                             break;
                         }
                     }
                 }
                 
-                if ($item_found && $item_code_to_use) {
+                if ($item_found && $item_data) {
+                    $item_code_to_use = $item_data['code'];
                     $items_to_update[] = ['code' => $item_code_to_use, 'balance' => $balance];
                     $items_for_daily_stock[$item_code_to_use] = $balance;
                     $imported_count++;
@@ -951,14 +1123,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                     $skipped_count++;
                     $skipped_items[] = [
                         'code' => $code,
-                        'name' => $details,
-                        'category' => $details2,
+                        'name' => $name,
+                        'size' => $size_desc,
                         'reason' => 'Item not found in database or not allowed for your license type'
                     ];
                     
                     // Store in error messages (limit to first 10 to avoid huge messages)
                     if ($skipped_count <= 10) {
-                        $error_messages[] = "Skipped item: '$code' - '$details' - '$details2' (not found in database or not allowed for your license type)";
+                        $error_messages[] = "Skipped item: '$code' - '$name' - '$size_desc' (not found in database or not allowed for your license type)";
                     }
                 }
             }
@@ -1000,16 +1172,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         // Prepare success message
         $message = "Successfully imported $imported_count opening balances (only items allowed for your license type were processed). ";
         if ($skipped_count > 0) {
-            $message .= "$skipped_count items were skipped because they were not found in the database or not allowed for your license type. ";
+            $message .= "$skipped_count items were skipped because they were not found in the database or were not allowed for your license type. ";
         }
-        $message .= "Performance: ~" . round($imported_count / max(1, time() - $_SERVER['REQUEST_TIME']), 0) . " items/second";
+        if (!empty($error_messages)) {
+            $message .= "Note: Some items had size mismatches but were processed using database sizes.";
+        }
+        $message .= " Detected file format: " . ($delimiter === "\t" ? "Tab-Separated (TSV)" : ($delimiter === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)"));
+        $message .= " Performance: ~" . round($imported_count / max(1, time() - $_SERVER['REQUEST_TIME']), 0) . " items/second";
 
         $_SESSION['import_message'] = [
             'success' => true,
             'message' => $message,
             'errors' => $error_messages,
             'imported_count' => $imported_count,
-            'skipped_count' => $skipped_count
+            'skipped_count' => $skipped_count,
+            'delimiter' => $delimiter
         ];
 
         header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
@@ -1036,13 +1213,21 @@ if (isset($_GET['download_template'])) {
     // Fetch all items from tblitemmaster for the current liquor mode
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $template_query = "SELECT CODE, DETAILS, DETAILS2 FROM tblitemmaster WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders) ORDER BY DETAILS ASC";
+        // UPDATED QUERY TO GET SIZE_DESC instead of SIZE_CODE
+        $template_query = "SELECT im.CODE, im.DETAILS, sz.SIZE_DESC 
+                          FROM tblitemmaster im
+                          LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
+                          WHERE im.LIQ_FLAG = ? AND im.CLASS IN ($class_placeholders) 
+                          ORDER BY im.DETAILS ASC";
         $template_stmt = $conn->prepare($template_query);
         $template_params = array_merge([$mode], $allowed_classes);
         $template_types = "s" . str_repeat('s', count($allowed_classes));
         $template_stmt->bind_param($template_types, ...$template_params);
     } else {
-        $template_query = "SELECT CODE, DETAILS, DETAILS2 FROM tblitemmaster WHERE 1 = 0";
+        $template_query = "SELECT im.CODE, im.DETAILS, sz.SIZE_DESC 
+                          FROM tblitemmaster im
+                          LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
+                          WHERE 1 = 0";
         $template_stmt = $conn->prepare($template_query);
     }
     
@@ -1054,15 +1239,20 @@ if (isset($_GET['download_template'])) {
     
     $output = fopen('php://output', 'w');
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, ['Item_Code', 'Item_Name', 'Category', 'Current_Stock']);
+    
+    // Use comma as delimiter for consistent template
+    $delimiter = ',';
+    
+    // UPDATED HEADERS - Only 4 columns
+    fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'], $delimiter);
     
     while ($item = $template_result->fetch_assoc()) {
         fputcsv($output, [
             $item['CODE'],
             $item['DETAILS'],
-            $item['DETAILS2'],
+            $item['SIZE_DESC'] ?? '',
             ''
-        ]);
+        ], $delimiter);
     }
     
     fclose($output);
@@ -1156,6 +1346,7 @@ if ($view_type === 'with_stock') {
                     im.CLASS, 
                     im.SUB_CLASS, 
                     im.ITEM_GROUP,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
                     COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
                   FROM tblitemmaster im
@@ -1173,6 +1364,7 @@ if ($view_type === 'with_stock') {
                     im.CLASS, 
                     im.SUB_CLASS, 
                     im.ITEM_GROUP,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
                     COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
                   FROM tblitemmaster im
@@ -1193,6 +1385,7 @@ if ($view_type === 'with_stock') {
                     im.CLASS, 
                     im.SUB_CLASS, 
                     im.ITEM_GROUP,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
                     COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
                   FROM tblitemmaster im
@@ -1210,6 +1403,7 @@ if ($view_type === 'with_stock') {
                     im.CLASS, 
                     im.SUB_CLASS, 
                     im.ITEM_GROUP,
+                    im.SIZE_CODE,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
                     COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK
                   FROM tblitemmaster im
@@ -1338,6 +1532,109 @@ if (isset($_SESSION['import_message'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <style>
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 0;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .card {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card-header {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-bottom: none;
+      border-radius: 15px 15px 0 0 !important;
+      font-weight: 600;
+      padding: 15px 20px;
+    }
+    .btn-custom {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-custom:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      color: white;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .table {
+      background: white;
+    }
+    .table th {
+      background-color: #f8f9fa;
+      border-top: none;
+      font-weight: 600;
+      color: #495057;
+    }
+    .search-box {
+      max-width: 400px;
+    }
+    .alert-custom {
+      border-radius: 10px;
+      border: none;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    .modal-content {
+      border-radius: 15px;
+      border: none;
+    }
+    .nav-tabs .nav-link {
+      border: none;
+      color: #6c757d;
+      font-weight: 500;
+      padding: 10px 20px;
+    }
+    .nav-tabs .nav-link.active {
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      background: transparent;
+    }
+    .volume-table th {
+      background-color: #f0f2ff;
+    }
+    .badge-custom {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
     .company-info {
       background-color: #f8f9fa;
       padding: 10px;
@@ -1433,6 +1730,37 @@ if (isset($_SESSION['import_message'])) {
     .view-toggle-buttons {
         margin-bottom: 20px;
     }
+    .size-info {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .dashboard-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    .content-area {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .mode-selector {
+      margin-bottom: 20px;
+    }
+    .search-control {
+      margin-bottom: 20px;
+    }
+    .mode-selector .btn-group {
+      width: 100%;
+    }
+    .mode-selector .btn {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -1444,6 +1772,12 @@ if (isset($_SESSION['import_message'])) {
 
     <div class="content-area">
       <h3 class="mb-4">Opening Balance Management</h3>
+
+      <!-- Company Info -->
+      <div class="company-info">
+        <strong>Company:</strong> <?php echo htmlspecialchars($current_company['Comp_Name']); ?> | 
+        <strong>Mode:</strong> <?php echo $mode === 'F' ? 'Foreign Liquor' : ($mode === 'C' ? 'Country Liquor' : 'Others'); ?>
+      </div>
 
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
@@ -1459,11 +1793,16 @@ if (isset($_SESSION['import_message'])) {
 
       <!-- Import from CSV Section -->
       <div class="import-section mb-4">
-        <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV</h5>
+        <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV/TSV</h5>
+        <p class="text-muted small">
+          <strong>Supported formats:</strong> CSV (comma-separated), TSV (tab-separated), or semicolon-separated<br>
+          <strong>Format:</strong> Item_Code, Item_Name, Size, Current_Stock (4 columns only)<br>
+          <strong>System automatically detects:</strong> CSV (,), TSV (tab), or Semicolon (;) files
+        </p>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end" id="importForm">
           <div class="col-md-4">
-            <label for="csv_file" class="form-label">CSV File</label>
-            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+            <label for="csv_file" class="form-label">CSV/TSV File</label>
+            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv,.txt,.tsv" required>
           </div>
           <div class="col-md-3">
             <label for="start_date_import" class="form-label">Start Date</label>
@@ -1471,7 +1810,7 @@ if (isset($_SESSION['import_message'])) {
           </div>
           <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100" id="importBtn">
-              <i class="fas fa-upload"></i> Import CSV
+              <i class="fas fa-upload"></i> Import File
             </button>
           </div>
           <div class="col-md-3">
@@ -1489,11 +1828,14 @@ if (isset($_SESSION['import_message'])) {
                 <strong>Import Summary:</strong><br>
                 • Imported: <?= $import_message['imported_count'] ?> items<br>
                 • Skipped: <?= $import_message['skipped_count'] ?> items (not found in database)
+                <?php if (isset($import_message['delimiter'])): ?>
+                  <br>• File format: <?= $import_message['delimiter'] === "\t" ? "Tab-Separated (TSV)" : ($import_message['delimiter'] === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)") ?>
+                <?php endif; ?>
               </div>
             <?php endif; ?>
             <?php if (!empty($import_message['errors'])): ?>
               <div class="mt-2">
-                <strong>Skipped Items (first 10 shown):</strong>
+                <strong>Notes:</strong>
                 <ul class="mb-0 mt-2 small">
                   <?php foreach ($import_message['errors'] as $error): ?>
                     <li><?= $error ?></li>
@@ -1592,7 +1934,7 @@ if (isset($_SESSION['import_message'])) {
               <tr>
                 <th>Code</th>
                 <th>Item Name</th>
-                <th>Category</th>
+                <th>Size</th>
                 <th class="company-column">
                   Current Stock (CURRENT_STOCK<?= $comp_id ?>)
                 </th>
@@ -1600,11 +1942,19 @@ if (isset($_SESSION['import_message'])) {
             </thead>
             <tbody>
             <?php if (!empty($items)): ?>
-              <?php foreach ($items as $item): ?>
+              <?php foreach ($items as $item): 
+                  // Get product type for display
+                  $productType = getProductTypeFromClass($item['CLASS'], $conn);
+                  // Get size description
+                  $size_desc = getSizeDescriptionFromCode($item['SIZE_CODE'], $conn);
+              ?>
                 <tr>
                   <td><?= htmlspecialchars($item['CODE']); ?></td>
                   <td><?= htmlspecialchars($item['DETAILS']); ?></td>
-                  <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
+                  <td>
+                    <div><?= $size_desc ?></div>
+                    <div class="size-info">Category: <?= $productType ?></div>
+                  </td>
                   <td class="company-column">
                     <input type="number" name="opening_stock[<?= htmlspecialchars($item['CODE']); ?>]"
                            value="<?= (int)$item['CURRENT_STOCK']; ?>" min="0"
@@ -1865,7 +2215,7 @@ if (isset($_SESSION['import_message'])) {
     
     if (importForm) {
       importForm.addEventListener('submit', function() {
-        showProgress('Importing opening balances...');
+        showProgress('Importing opening balances... System will automatically detect CSV/TSV format.');
       });
     }
     
