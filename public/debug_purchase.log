@@ -91836,3 +91836,3666 @@
     "successful_items": 4
 }
 [2026-01-12 03:48:56] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-01-25 14:23:53] === NEW PURCHASE SESSION STARTED ===
+[2026-01-25 14:23:53] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "last_submission": 1769346014
+}
+[2026-01-25 14:23:53] POST data: []
+[2026-01-25 14:23:53] GET data: []
+[2026-01-25 14:23:53] Company ID from session: 1
+[2026-01-25 14:23:53] === NEW PURCHASE SESSION STARTED ===
+[2026-01-25 14:23:53] Database connection included
+[2026-01-25 14:23:53] License functions included
+[2026-01-25 14:23:53] License type: FL-II
+[2026-01-25 14:23:53] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "15",
+        "SGROUP": "I",
+        "DESC": "Imported",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "16",
+        "SGROUP": "Q",
+        "DESC": "Wine Imp",
+        "LIQ_FLAG": "F"
+    }
+]
+[2026-01-25 14:23:53] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M",
+    "I",
+    "Q"
+]
+[2026-01-25 14:23:53] Purchase mode: F
+[2026-01-25 14:23:53] Next voucher number: 1
+[2026-01-25 14:23:53] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-01-25 14:23:53] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M",
+        "I",
+        "Q"
+    ],
+    "types": "ssssssssssssssss"
+}
+[2026-01-25 14:23:53] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-01-25 14:23:53] Suppliers fetched: {
+    "count": 36
+}
+[2026-01-25 14:23:53] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "last_submission": 1769346014
+}
+[2026-01-25 14:23:53] POST data: []
+[2026-01-25 14:23:53] GET data: []
+[2026-01-25 14:23:53] Company ID from session: 1
+[2026-01-25 14:23:53] Database connection included
+[2026-01-25 14:23:53] License functions included
+[2026-01-25 14:23:53] License type: FL-II
+[2026-01-25 14:23:53] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "15",
+        "SGROUP": "I",
+        "DESC": "Imported",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "16",
+        "SGROUP": "Q",
+        "DESC": "Wine Imp",
+        "LIQ_FLAG": "F"
+    }
+]
+[2026-01-25 14:23:53] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M",
+    "I",
+    "Q"
+]
+[2026-01-25 14:23:53] Purchase mode: F
+[2026-01-25 14:23:53] Next voucher number: 1
+[2026-01-25 14:23:53] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-01-25 14:23:53] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M",
+        "I",
+        "Q"
+    ],
+    "types": "ssssssssssssssss"
+}
+[2026-01-25 14:23:53] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-01-25 14:23:53] Suppliers fetched: {
+    "count": 36
+}
+[2026-01-25 14:23:53] Database connection closed
+[2026-01-25 14:23:53] === PURCHASE SESSION ENDED ===
+[2026-01-25 14:24:51] === NEW PURCHASE SESSION STARTED ===
+[2026-01-25 14:24:51] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "last_submission": 1769346014
+}
+[2026-01-25 14:24:51] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-11-30",
+    "auto_tp_no": "FL119851-301125\/5571",
+    "tp_no": "5571",
+    "tp_date": "2025-11-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "supplier_code": "RAJ",
+    "items": [
+        {
+            "code": "SCMBR0018145",
+            "name": "London Pilsner Premium Strong Beer",
+            "size": "650 ML",
+            "bottles_per_case": "12",
+            "batch_no": "482",
+            "auto_batch": "BTBL7-131025\/482",
+            "mfg_month": "Oct-2025",
+            "bl": "78",
+            "vv": "8",
+            "tot_bott": "120",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "10",
+            "bottles": "0",
+            "case_rate": "1222.000",
+            "mrp": "165"
+        },
+        {
+            "code": "SCMPL0041500",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "23",
+            "auto_batch": "BTP64-190825\/23",
+            "mfg_month": "Aug-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4863.000",
+            "mrp": "1070"
+        },
+        {
+            "code": "SCMPL0041501",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "16",
+            "auto_batch": "BTP64-280625\/16",
+            "mfg_month": "Jul-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "2367.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0041503",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "24",
+            "auto_batch": "BTP64-230825\/24",
+            "mfg_month": "Aug-2025",
+            "bl": "43.2",
+            "vv": "25",
+            "tot_bott": "240",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "1576.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0042876",
+            "name": "MASTERS DELIGHT PREMIUM WHISKY",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "119",
+            "auto_batch": "BTP15-231125\/145",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "60",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "3322.000",
+            "mrp": "640"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "43940.00",
+    "tamt": "43940.00"
+}
+[2026-01-25 14:24:51] GET data: []
+[2026-01-25 14:24:51] Company ID from session: 1
+[2026-01-25 14:24:51] Database connection included
+[2026-01-25 14:24:51] License functions included
+[2026-01-25 14:24:51] License type: FL-II
+[2026-01-25 14:24:51] Available classes: [
+    {
+        "SRNO": "1",
+        "SGROUP": "W",
+        "DESC": "WHISKY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "2",
+        "SGROUP": "V",
+        "DESC": "WINES",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "3",
+        "SGROUP": "G",
+        "DESC": "GIN",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "4",
+        "SGROUP": "F",
+        "DESC": "FERMENTED BEER",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "5",
+        "SGROUP": "D",
+        "DESC": "BRANDY",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "6",
+        "SGROUP": "K",
+        "DESC": "VODKA",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "7",
+        "SGROUP": "R",
+        "DESC": "RUM",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "8",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "9",
+        "SGROUP": "L",
+        "DESC": "LIQUORS",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "10",
+        "SGROUP": "O",
+        "DESC": "OTHERS\/GENERAL",
+        "LIQ_FLAG": "C"
+    },
+    {
+        "SRNO": "11",
+        "SGROUP": "O",
+        "DESC": "COLD DRINKS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "12",
+        "SGROUP": "O",
+        "DESC": "SODA",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "13",
+        "SGROUP": "O",
+        "DESC": "EXTRA CLASS",
+        "LIQ_FLAG": "O"
+    },
+    {
+        "SRNO": "14",
+        "SGROUP": "M",
+        "DESC": "Mild Beer",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "15",
+        "SGROUP": "I",
+        "DESC": "Imported",
+        "LIQ_FLAG": "F"
+    },
+    {
+        "SRNO": "16",
+        "SGROUP": "Q",
+        "DESC": "Wine Imp",
+        "LIQ_FLAG": "F"
+    }
+]
+[2026-01-25 14:24:51] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "G",
+    "F",
+    "D",
+    "K",
+    "R",
+    "O",
+    "L",
+    "O",
+    "O",
+    "O",
+    "O",
+    "M",
+    "I",
+    "Q"
+]
+[2026-01-25 14:24:51] Purchase mode: F
+[2026-01-25 14:24:51] Next voucher number: 1
+[2026-01-25 14:24:51] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-01-25 14:24:51] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "G",
+        "F",
+        "D",
+        "K",
+        "R",
+        "O",
+        "L",
+        "O",
+        "O",
+        "O",
+        "O",
+        "M",
+        "I",
+        "Q"
+    ],
+    "types": "ssssssssssssssss"
+}
+[2026-01-25 14:24:51] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-01-25 14:24:51] Suppliers fetched: {
+    "count": 36
+}
+[2026-01-25 14:24:51] === FORM SUBMISSION STARTED ===
+[2026-01-25 14:24:51] Form data extracted: {
+    "date": "2025-11-30",
+    "voc_no": "1",
+    "auto_tp_no": "FL119851-301125\/5571",
+    "tp_no": "5571",
+    "tp_date": "2025-11-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "RAJ",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "basic_amt": "43940.00",
+    "total_amt": "43940.00"
+}
+[2026-01-25 14:24:51] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-01-25 14:24:51] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2026-01-25 14:24:51] Starting to process purchase items: {
+    "item_count": 5
+}
+[2026-01-25 14:24:51] Processing item 0: {
+    "item_code": "SCMBR0018145",
+    "mrp": 165,
+    "tot_bott": 120
+}
+[2026-01-25 14:24:51] cleanItemCode: 'SCMBR0018145' -> 'BR0018145'
+[2026-01-25 14:24:51] Updating MRP for item: {
+    "item_code": "BR0018145",
+    "mrp": 165
+}
+[2026-01-25 14:24:51] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "BR0018145",
+    "mrp": 165
+}
+[2026-01-25 14:24:51] Updating stock for item: {
+    "item_code": "SCMBR0018145",
+    "total_bottles": 120,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Month is archived, updating archive table with cascading
+[2026-01-25 14:24:51] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMBR0018145",
+    "dayOfMonth": "30",
+    "totalBottles": 120
+}
+[2026-01-25 14:24:51] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMBR0018145",
+    "purchaseDate": "2025-11-30"
+}
+[2026-01-25 14:24:51] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-01-25 14:24:51] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 120
+}
+[2026-01-25 14:24:51] Cascading completed up to current date
+[2026-01-25 14:24:51] Processing item 1: {
+    "item_code": "SCMPL0041500",
+    "mrp": 1070,
+    "tot_bott": 12
+}
+[2026-01-25 14:24:51] cleanItemCode: 'SCMPL0041500' -> 'PL0041500'
+[2026-01-25 14:24:51] Updating MRP for item: {
+    "item_code": "PL0041500",
+    "mrp": 1070
+}
+[2026-01-25 14:24:51] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041500",
+    "mrp": 1070
+}
+[2026-01-25 14:24:51] Updating stock for item: {
+    "item_code": "SCMPL0041500",
+    "total_bottles": 12,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Month is archived, updating archive table with cascading
+[2026-01-25 14:24:51] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041500",
+    "dayOfMonth": "30",
+    "totalBottles": 12
+}
+[2026-01-25 14:24:51] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041500",
+    "purchaseDate": "2025-11-30"
+}
+[2026-01-25 14:24:51] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-01-25 14:24:51] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 12
+}
+[2026-01-25 14:24:51] Cascading completed up to current date
+[2026-01-25 14:24:51] Processing item 2: {
+    "item_code": "SCMPL0041501",
+    "mrp": 520,
+    "tot_bott": 24
+}
+[2026-01-25 14:24:51] cleanItemCode: 'SCMPL0041501' -> 'PL0041501'
+[2026-01-25 14:24:51] Updating MRP for item: {
+    "item_code": "PL0041501",
+    "mrp": 520
+}
+[2026-01-25 14:24:51] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041501",
+    "mrp": 520
+}
+[2026-01-25 14:24:51] Updating stock for item: {
+    "item_code": "SCMPL0041501",
+    "total_bottles": 24,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Month is archived, updating archive table with cascading
+[2026-01-25 14:24:51] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041501",
+    "dayOfMonth": "30",
+    "totalBottles": 24
+}
+[2026-01-25 14:24:51] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041501",
+    "purchaseDate": "2025-11-30"
+}
+[2026-01-25 14:24:51] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-01-25 14:24:51] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 24
+}
+[2026-01-25 14:24:51] Cascading completed up to current date
+[2026-01-25 14:24:51] Processing item 3: {
+    "item_code": "SCMPL0041503",
+    "mrp": 250,
+    "tot_bott": 240
+}
+[2026-01-25 14:24:51] cleanItemCode: 'SCMPL0041503' -> 'PL0041503'
+[2026-01-25 14:24:51] Updating MRP for item: {
+    "item_code": "PL0041503",
+    "mrp": 250
+}
+[2026-01-25 14:24:51] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041503",
+    "mrp": 250
+}
+[2026-01-25 14:24:51] Updating stock for item: {
+    "item_code": "SCMPL0041503",
+    "total_bottles": 240,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Month is archived, updating archive table with cascading
+[2026-01-25 14:24:51] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041503",
+    "dayOfMonth": "30",
+    "totalBottles": 240
+}
+[2026-01-25 14:24:51] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041503",
+    "purchaseDate": "2025-11-30"
+}
+[2026-01-25 14:24:51] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-01-25 14:24:51] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 240
+}
+[2026-01-25 14:24:51] Cascading completed up to current date
+[2026-01-25 14:24:51] Processing item 4: {
+    "item_code": "SCMPL0042876",
+    "mrp": 640,
+    "tot_bott": 60
+}
+[2026-01-25 14:24:51] cleanItemCode: 'SCMPL0042876' -> 'PL0042876'
+[2026-01-25 14:24:51] Updating MRP for item: {
+    "item_code": "PL0042876",
+    "mrp": 640
+}
+[2026-01-25 14:24:51] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0042876",
+    "mrp": 640
+}
+[2026-01-25 14:24:51] Updating stock for item: {
+    "item_code": "SCMPL0042876",
+    "total_bottles": 60,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Month is archived, updating archive table with cascading
+[2026-01-25 14:24:51] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0042876",
+    "dayOfMonth": "30",
+    "totalBottles": 60
+}
+[2026-01-25 14:24:51] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0042876",
+    "purchaseDate": "2025-11-30"
+}
+[2026-01-25 14:24:51] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-01-25 14:24:51] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-01-25 14:24:51] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 60
+}
+[2026-01-25 14:24:51] Cascading completed up to current date
+[2026-01-25 14:24:51] Purchase items processing completed: {
+    "successful_items": 5
+}
+[2026-01-25 14:24:51] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-05 13:52:46] === NEW PURCHASE SESSION STARTED ===
+[2026-02-05 13:52:46] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "closing_balances": [],
+    "sale_quantities": []
+}
+[2026-02-05 13:52:46] POST data: []
+[2026-02-05 13:52:46] GET data: []
+[2026-02-05 13:52:46] Company ID from session: 1
+[2026-02-05 13:52:46] Database connection included
+[2026-02-05 13:52:46] License functions included
+[2026-02-05 13:52:46] License type: FL-II
+[2026-02-05 13:52:46] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-05 13:52:46] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-05 13:52:46] Purchase mode: F
+[2026-02-05 13:52:46] Next voucher number: 1
+[2026-02-05 13:52:46] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-05 13:52:46] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-05 13:52:46] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-05 13:52:46] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-05 13:52:46] Database connection closed
+[2026-02-05 13:52:46] === PURCHASE SESSION ENDED ===
+[2026-02-05 13:52:58] === NEW PURCHASE SESSION STARTED ===
+[2026-02-05 13:52:58] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "closing_balances": [],
+    "sale_quantities": []
+}
+[2026-02-05 13:52:58] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-11-30",
+    "auto_tp_no": "FL119851-301125\/5571",
+    "tp_no": "5571",
+    "tp_date": "2025-11-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "supplier_code": "RAJ",
+    "items": [
+        {
+            "code": "SCMBR0018145",
+            "name": "London Pilsner Premium Strong Beer",
+            "size": "650 ML",
+            "bottles_per_case": "12",
+            "batch_no": "482",
+            "auto_batch": "BTBL7-131025\/482",
+            "mfg_month": "Oct-2025",
+            "bl": "78",
+            "vv": "8",
+            "tot_bott": "120",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "10",
+            "bottles": "0",
+            "case_rate": "1222.000",
+            "mrp": "165"
+        },
+        {
+            "code": "SCMPL0041500",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "23",
+            "auto_batch": "BTP64-190825\/23",
+            "mfg_month": "Aug-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4863.000",
+            "mrp": "1070"
+        },
+        {
+            "code": "SCMPL0041501",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "16",
+            "auto_batch": "BTP64-280625\/16",
+            "mfg_month": "Jul-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "2367.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0041503",
+            "name": "ALL SEASONS DOUBLE CASK COLLECTION RESERVE WHISKY",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "24",
+            "auto_batch": "BTP64-230825\/24",
+            "mfg_month": "Aug-2025",
+            "bl": "43.2",
+            "vv": "25",
+            "tot_bott": "240",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "1576.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0042876",
+            "name": "MASTERS DELIGHT PREMIUM WHISKY",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "119",
+            "auto_batch": "BTP15-231125\/145",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "60",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "3322.000",
+            "mrp": "640"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "43940.00",
+    "tamt": "43940.00"
+}
+[2026-02-05 13:52:58] GET data: []
+[2026-02-05 13:52:58] Company ID from session: 1
+[2026-02-05 13:52:58] Database connection included
+[2026-02-05 13:52:58] License functions included
+[2026-02-05 13:52:58] License type: FL-II
+[2026-02-05 13:52:58] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-05 13:52:58] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-05 13:52:58] Purchase mode: F
+[2026-02-05 13:52:58] Next voucher number: 1
+[2026-02-05 13:52:58] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-05 13:52:58] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-05 13:52:58] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-05 13:52:58] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-05 13:52:58] === FORM SUBMISSION STARTED ===
+[2026-02-05 13:52:58] Form data extracted: {
+    "date": "2025-11-30",
+    "voc_no": "1",
+    "auto_tp_no": "FL119851-301125\/5571",
+    "tp_no": "5571",
+    "tp_date": "2025-11-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "RAJ",
+    "supplier_name": "RAJ MARKETING & CO.",
+    "basic_amt": "43940.00",
+    "total_amt": "43940.00"
+}
+[2026-02-05 13:52:58] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-05 13:52:58] Purchase header inserted successfully: {
+    "purchase_id": 2,
+    "affected_rows": 1
+}
+[2026-02-05 13:52:58] Starting to process purchase items: {
+    "item_count": 5
+}
+[2026-02-05 13:52:58] Processing item 0: {
+    "item_code": "SCMBR0018145",
+    "mrp": 165,
+    "tot_bott": 120
+}
+[2026-02-05 13:52:58] cleanItemCode: 'SCMBR0018145' -> 'BR0018145'
+[2026-02-05 13:52:58] Updating MRP for item: {
+    "item_code": "BR0018145",
+    "mrp": 165
+}
+[2026-02-05 13:52:58] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "BR0018145",
+    "mrp": 165
+}
+[2026-02-05 13:52:58] Updating stock for item: {
+    "item_code": "SCMBR0018145",
+    "total_bottles": 120,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-02-05 13:52:58] Month is archived, updating archive table with cascading
+[2026-02-05 13:52:58] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMBR0018145",
+    "dayOfMonth": "30",
+    "totalBottles": 120
+}
+[2026-02-05 13:52:58] Starting cascading updates in table: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMBR0018145",
+    "purchaseDay": "30"
+}
+[2026-02-05 13:52:58] Month has 30 days: {
+    "timestamp": "2025-11-01",
+    "daysInMonth": "30"
+}
+[2026-02-05 13:52:58] Cascading updates completed for all days after purchase day
+[2026-02-05 13:52:58] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMBR0018145",
+    "purchaseDate": "2025-11-30"
+}
+[2026-02-05 13:52:58] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-02-05 13:52:58] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-02-05 13:52:58] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 120
+}
+[2026-02-05 13:52:58] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-05 13:52:58] Starting cascading updates in table: {
+    "table": "tbldailystock_1_01_26",
+    "monthYear": "2026-01",
+    "itemCode": "SCMBR0018145",
+    "purchaseDay": 1
+}
+[2026-02-05 13:52:58] Month has 31 days: {
+    "timestamp": "2026-01-01",
+    "daysInMonth": "31"
+}
+[2026-02-05 13:52:59] Cascading update for day 2: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_02_OPEN = DAY_01_CLOSING,\n                               DAY_02_CLOSING = DAY_01_CLOSING + DAY_02_PURCHASE - DAY_02_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_01_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 3: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_03_OPEN = DAY_02_CLOSING,\n                               DAY_03_CLOSING = DAY_02_CLOSING + DAY_03_PURCHASE - DAY_03_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_02_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 29: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_29_OPEN = DAY_28_CLOSING,\n                               DAY_29_CLOSING = DAY_28_CLOSING + DAY_29_PURCHASE - DAY_29_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_28_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 30: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_30_OPEN = DAY_29_CLOSING,\n                               DAY_30_CLOSING = DAY_29_CLOSING + DAY_30_PURCHASE - DAY_30_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_29_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:52:59] Cascading updates completed for all days after purchase day
+[2026-02-05 13:52:59] Cascading completed up to current date
+[2026-02-05 13:52:59] Processing item 1: {
+    "item_code": "SCMPL0041500",
+    "mrp": 1070,
+    "tot_bott": 12
+}
+[2026-02-05 13:52:59] cleanItemCode: 'SCMPL0041500' -> 'PL0041500'
+[2026-02-05 13:52:59] Updating MRP for item: {
+    "item_code": "PL0041500",
+    "mrp": 1070
+}
+[2026-02-05 13:52:59] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041500",
+    "mrp": 1070
+}
+[2026-02-05 13:52:59] Updating stock for item: {
+    "item_code": "SCMPL0041500",
+    "total_bottles": 12,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-02-05 13:52:59] Month is archived, updating archive table with cascading
+[2026-02-05 13:52:59] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041500",
+    "dayOfMonth": "30",
+    "totalBottles": 12
+}
+[2026-02-05 13:52:59] Starting cascading updates in table: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041500",
+    "purchaseDay": "30"
+}
+[2026-02-05 13:52:59] Month has 30 days: {
+    "timestamp": "2025-11-01",
+    "daysInMonth": "30"
+}
+[2026-02-05 13:52:59] Cascading updates completed for all days after purchase day
+[2026-02-05 13:52:59] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041500",
+    "purchaseDate": "2025-11-30"
+}
+[2026-02-05 13:52:59] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-02-05 13:52:59] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-02-05 13:52:59] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 12
+}
+[2026-02-05 13:53:00] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-05 13:53:00] Starting cascading updates in table: {
+    "table": "tbldailystock_1_01_26",
+    "monthYear": "2026-01",
+    "itemCode": "SCMPL0041500",
+    "purchaseDay": 1
+}
+[2026-02-05 13:53:00] Month has 31 days: {
+    "timestamp": "2026-01-01",
+    "daysInMonth": "31"
+}
+[2026-02-05 13:53:00] Cascading update for day 2: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_02_OPEN = DAY_01_CLOSING,\n                               DAY_02_CLOSING = DAY_01_CLOSING + DAY_02_PURCHASE - DAY_02_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_01_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 3: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_03_OPEN = DAY_02_CLOSING,\n                               DAY_03_CLOSING = DAY_02_CLOSING + DAY_03_PURCHASE - DAY_03_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_02_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 29: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_29_OPEN = DAY_28_CLOSING,\n                               DAY_29_CLOSING = DAY_28_CLOSING + DAY_29_PURCHASE - DAY_29_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_28_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 30: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_30_OPEN = DAY_29_CLOSING,\n                               DAY_30_CLOSING = DAY_29_CLOSING + DAY_30_PURCHASE - DAY_30_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_29_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:00] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:00] Cascading completed up to current date
+[2026-02-05 13:53:00] Processing item 2: {
+    "item_code": "SCMPL0041501",
+    "mrp": 520,
+    "tot_bott": 24
+}
+[2026-02-05 13:53:00] cleanItemCode: 'SCMPL0041501' -> 'PL0041501'
+[2026-02-05 13:53:00] Updating MRP for item: {
+    "item_code": "PL0041501",
+    "mrp": 520
+}
+[2026-02-05 13:53:00] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041501",
+    "mrp": 520
+}
+[2026-02-05 13:53:00] Updating stock for item: {
+    "item_code": "SCMPL0041501",
+    "total_bottles": 24,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-02-05 13:53:00] Month is archived, updating archive table with cascading
+[2026-02-05 13:53:00] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041501",
+    "dayOfMonth": "30",
+    "totalBottles": 24
+}
+[2026-02-05 13:53:00] Starting cascading updates in table: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041501",
+    "purchaseDay": "30"
+}
+[2026-02-05 13:53:00] Month has 30 days: {
+    "timestamp": "2025-11-01",
+    "daysInMonth": "30"
+}
+[2026-02-05 13:53:00] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:00] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041501",
+    "purchaseDate": "2025-11-30"
+}
+[2026-02-05 13:53:00] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-02-05 13:53:00] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-02-05 13:53:00] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 24
+}
+[2026-02-05 13:53:01] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-05 13:53:01] Starting cascading updates in table: {
+    "table": "tbldailystock_1_01_26",
+    "monthYear": "2026-01",
+    "itemCode": "SCMPL0041501",
+    "purchaseDay": 1
+}
+[2026-02-05 13:53:01] Month has 31 days: {
+    "timestamp": "2026-01-01",
+    "daysInMonth": "31"
+}
+[2026-02-05 13:53:01] Cascading update for day 2: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_02_OPEN = DAY_01_CLOSING,\n                               DAY_02_CLOSING = DAY_01_CLOSING + DAY_02_PURCHASE - DAY_02_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_01_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 3: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_03_OPEN = DAY_02_CLOSING,\n                               DAY_03_CLOSING = DAY_02_CLOSING + DAY_03_PURCHASE - DAY_03_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_02_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 29: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_29_OPEN = DAY_28_CLOSING,\n                               DAY_29_CLOSING = DAY_28_CLOSING + DAY_29_PURCHASE - DAY_29_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_28_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 30: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_30_OPEN = DAY_29_CLOSING,\n                               DAY_30_CLOSING = DAY_29_CLOSING + DAY_30_PURCHASE - DAY_30_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_29_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:01] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:01] Cascading completed up to current date
+[2026-02-05 13:53:01] Processing item 3: {
+    "item_code": "SCMPL0041503",
+    "mrp": 250,
+    "tot_bott": 240
+}
+[2026-02-05 13:53:01] cleanItemCode: 'SCMPL0041503' -> 'PL0041503'
+[2026-02-05 13:53:01] Updating MRP for item: {
+    "item_code": "PL0041503",
+    "mrp": 250
+}
+[2026-02-05 13:53:01] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041503",
+    "mrp": 250
+}
+[2026-02-05 13:53:01] Updating stock for item: {
+    "item_code": "SCMPL0041503",
+    "total_bottles": 240,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-02-05 13:53:01] Month is archived, updating archive table with cascading
+[2026-02-05 13:53:01] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041503",
+    "dayOfMonth": "30",
+    "totalBottles": 240
+}
+[2026-02-05 13:53:01] Starting cascading updates in table: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0041503",
+    "purchaseDay": "30"
+}
+[2026-02-05 13:53:01] Month has 30 days: {
+    "timestamp": "2025-11-01",
+    "daysInMonth": "30"
+}
+[2026-02-05 13:53:01] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:01] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0041503",
+    "purchaseDate": "2025-11-30"
+}
+[2026-02-05 13:53:01] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-02-05 13:53:02] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-02-05 13:53:02] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 240
+}
+[2026-02-05 13:53:02] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-05 13:53:02] Starting cascading updates in table: {
+    "table": "tbldailystock_1_01_26",
+    "monthYear": "2026-01",
+    "itemCode": "SCMPL0041503",
+    "purchaseDay": 1
+}
+[2026-02-05 13:53:02] Month has 31 days: {
+    "timestamp": "2026-01-01",
+    "daysInMonth": "31"
+}
+[2026-02-05 13:53:02] Cascading update for day 2: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_02_OPEN = DAY_01_CLOSING,\n                               DAY_02_CLOSING = DAY_01_CLOSING + DAY_02_PURCHASE - DAY_02_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_01_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 3: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_03_OPEN = DAY_02_CLOSING,\n                               DAY_03_CLOSING = DAY_02_CLOSING + DAY_03_PURCHASE - DAY_03_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_02_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 29: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_29_OPEN = DAY_28_CLOSING,\n                               DAY_29_CLOSING = DAY_28_CLOSING + DAY_29_PURCHASE - DAY_29_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_28_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 30: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_30_OPEN = DAY_29_CLOSING,\n                               DAY_30_CLOSING = DAY_29_CLOSING + DAY_30_PURCHASE - DAY_30_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_29_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:02] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:02] Cascading completed up to current date
+[2026-02-05 13:53:02] Processing item 4: {
+    "item_code": "SCMPL0042876",
+    "mrp": 640,
+    "tot_bott": 60
+}
+[2026-02-05 13:53:02] cleanItemCode: 'SCMPL0042876' -> 'PL0042876'
+[2026-02-05 13:53:02] Updating MRP for item: {
+    "item_code": "PL0042876",
+    "mrp": 640
+}
+[2026-02-05 13:53:02] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0042876",
+    "mrp": 640
+}
+[2026-02-05 13:53:02] Updating stock for item: {
+    "item_code": "SCMPL0042876",
+    "total_bottles": 60,
+    "purchase_date": "2025-11-30",
+    "day_of_month": "30",
+    "month": "11",
+    "year": "2025"
+}
+[2026-02-05 13:53:02] Month is archived, updating archive table with cascading
+[2026-02-05 13:53:02] Updating archived month stock: {
+    "table": "tbldailystock_1_11_25",
+    "monthYear": "2025-11",
+    "itemCode": "SCMPL0042876",
+    "dayOfMonth": "30",
+    "totalBottles": 60
+}
+[2026-02-05 13:53:02] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0042876",
+    "purchaseDate": "2025-11-30"
+}
+[2026-02-05 13:53:02] Starting cascading from month: {
+    "startMonth": 12,
+    "startYear": "2025"
+}
+[2026-02-05 13:53:02] Found table for cascading: {
+    "table": "tbldailystock_1_12_25",
+    "month": 12,
+    "year": "2025"
+}
+[2026-02-05 13:53:02] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_11_25",
+    "prevClosingColumn": "DAY_30_CLOSING",
+    "openingValue": 60
+}
+[2026-02-05 13:53:03] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-05 13:53:03] Starting cascading updates in table: {
+    "table": "tbldailystock_1_01_26",
+    "monthYear": "2026-01",
+    "itemCode": "SCMPL0042876",
+    "purchaseDay": 1
+}
+[2026-02-05 13:53:03] Month has 31 days: {
+    "timestamp": "2026-01-01",
+    "daysInMonth": "31"
+}
+[2026-02-05 13:53:03] Cascading update for day 2: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_02_OPEN = DAY_01_CLOSING,\n                               DAY_02_CLOSING = DAY_01_CLOSING + DAY_02_PURCHASE - DAY_02_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_01_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 3: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_03_OPEN = DAY_02_CLOSING,\n                               DAY_03_CLOSING = DAY_02_CLOSING + DAY_03_PURCHASE - DAY_03_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_02_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 29: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_29_OPEN = DAY_28_CLOSING,\n                               DAY_29_CLOSING = DAY_28_CLOSING + DAY_29_PURCHASE - DAY_29_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_28_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 30: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_30_OPEN = DAY_29_CLOSING,\n                               DAY_30_CLOSING = DAY_29_CLOSING + DAY_30_PURCHASE - DAY_30_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_29_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_01_26 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-05 13:53:03] Cascading updates completed for all days after purchase day
+[2026-02-05 13:53:03] Cascading completed up to current date
+[2026-02-05 13:53:03] Purchase items processing completed: {
+    "successful_items": 5
+}
+[2026-02-05 13:53:03] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-06 05:05:17] === NEW PURCHASE SESSION STARTED ===
+[2026-02-06 05:05:17] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-06 05:05:17] POST data: []
+[2026-02-06 05:05:17] GET data: []
+[2026-02-06 05:05:17] Company ID from session: 1
+[2026-02-06 05:05:17] Database connection included
+[2026-02-06 05:05:17] License functions included
+[2026-02-06 05:05:17] License type: FL-II
+[2026-02-06 05:05:17] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-06 05:05:17] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-06 05:05:17] Purchase mode: F
+[2026-02-06 05:05:17] Next voucher number: 2
+[2026-02-06 05:05:17] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-06 05:05:17] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-06 05:05:17] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-06 05:05:17] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-06 05:05:17] Database connection closed
+[2026-02-06 05:05:17] === PURCHASE SESSION ENDED ===
+[2026-02-06 05:05:57] === NEW PURCHASE SESSION STARTED ===
+[2026-02-06 05:05:57] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-06 05:05:57] POST data: []
+[2026-02-06 05:05:57] GET data: []
+[2026-02-06 05:05:57] Company ID from session: 1
+[2026-02-06 05:05:57] Database connection included
+[2026-02-06 05:05:57] License functions included
+[2026-02-06 05:05:57] License type: FL-II
+[2026-02-06 05:05:57] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-06 05:05:57] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-06 05:05:57] Purchase mode: F
+[2026-02-06 05:05:57] Next voucher number: 2
+[2026-02-06 05:05:57] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-06 05:05:57] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-06 05:05:57] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-06 05:05:57] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-06 05:05:57] Database connection closed
+[2026-02-06 05:05:57] === PURCHASE SESSION ENDED ===
+[2026-02-06 05:08:32] === NEW PURCHASE SESSION STARTED ===
+[2026-02-06 05:08:32] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-06 05:08:32] POST data: {
+    "mode": "F",
+    "voc_no": "2",
+    "date": "2026-02-06",
+    "auto_tp_no": "FL1249-191125\/4540",
+    "tp_no": "4540",
+    "tp_date": "2026-02-06",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "GRAPE P & R INSTITUTE",
+    "supplier_code": "GRAP",
+    "items": {
+        "2": {
+            "code": "SCMPL0031944",
+            "name": "BACARDI + ORANGE FLAVOURED",
+            "size": "275 ML(24)",
+            "bottles_per_case": "12",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "0",
+            "vv": "0",
+            "tot_bott": "0",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "0",
+            "case_rate": "3192.000",
+            "mrp": "0"
+        }
+    },
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "0.00",
+    "tamt": "0.00"
+}
+[2026-02-06 05:08:32] GET data: []
+[2026-02-06 05:08:32] Company ID from session: 1
+[2026-02-06 05:08:32] Database connection included
+[2026-02-06 05:08:32] License functions included
+[2026-02-06 05:08:32] License type: FL-II
+[2026-02-06 05:08:32] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-06 05:08:32] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-06 05:08:32] Purchase mode: F
+[2026-02-06 05:08:32] Next voucher number: 2
+[2026-02-06 05:08:32] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-06 05:08:32] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-06 05:08:32] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-06 05:08:32] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-06 05:08:32] === FORM SUBMISSION STARTED ===
+[2026-02-06 05:08:32] Form data extracted: {
+    "date": "2026-02-06",
+    "voc_no": "2",
+    "auto_tp_no": "FL1249-191125\/4540",
+    "tp_no": "4540",
+    "tp_date": "2026-02-06",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "GRAP",
+    "supplier_name": "GRAPE P & R INSTITUTE",
+    "basic_amt": "0.00",
+    "total_amt": "0.00"
+}
+[2026-02-06 05:08:32] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-06 05:08:32] Purchase header inserted successfully: {
+    "purchase_id": 3,
+    "affected_rows": 1
+}
+[2026-02-06 05:08:32] Starting to process purchase items: {
+    "item_count": 1
+}
+[2026-02-06 05:08:32] Processing item 2: {
+    "item_code": "SCMPL0031944",
+    "mrp": 0,
+    "tot_bott": 0
+}
+[2026-02-06 05:08:32] cleanItemCode: 'SCMPL0031944' -> 'PL0031944'
+[2026-02-06 05:08:32] Updating MRP for item: {
+    "item_code": "PL0031944",
+    "mrp": 0
+}
+[2026-02-06 05:08:32] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0031944",
+    "mrp": 0
+}
+[2026-02-06 05:08:32] Updating stock for item: {
+    "item_code": "SCMPL0031944",
+    "total_bottles": 0,
+    "purchase_date": "2026-02-06",
+    "day_of_month": "6",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-06 05:08:32] Month is current, updating current table with cascading
+[2026-02-06 05:08:32] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0031944",
+    "dayOfMonth": "6",
+    "totalBottles": 0
+}
+[2026-02-06 05:08:32] Starting cascading updates in table: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0031944",
+    "purchaseDay": "6"
+}
+[2026-02-06 05:08:32] Month has 28 days: {
+    "timestamp": "2026-02-01",
+    "daysInMonth": "28"
+}
+[2026-02-06 05:08:32] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:32] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:08:33] Cascading updates completed for all days after purchase day
+[2026-02-06 05:08:33] Purchase items processing completed: {
+    "successful_items": 1
+}
+[2026-02-06 05:08:33] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-06 05:09:37] === NEW PURCHASE SESSION STARTED ===
+[2026-02-06 05:09:37] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-06 05:09:37] POST data: []
+[2026-02-06 05:09:37] GET data: {
+    "mode": "F"
+}
+[2026-02-06 05:09:37] Company ID from session: 1
+[2026-02-06 05:09:37] Database connection included
+[2026-02-06 05:09:37] License functions included
+[2026-02-06 05:09:37] License type: FL-II
+[2026-02-06 05:09:37] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-06 05:09:37] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-06 05:09:37] Purchase mode: F
+[2026-02-06 05:09:37] Next voucher number: 2
+[2026-02-06 05:09:37] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-06 05:09:37] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-06 05:09:37] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-06 05:09:37] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-06 05:09:38] Database connection closed
+[2026-02-06 05:09:38] === PURCHASE SESSION ENDED ===
+[2026-02-06 05:10:15] === NEW PURCHASE SESSION STARTED ===
+[2026-02-06 05:10:15] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-06 05:10:15] POST data: {
+    "mode": "F",
+    "voc_no": "2",
+    "date": "2026-02-06",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2026-02-06",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "KHODAY INDIA",
+    "supplier_code": "KHOD",
+    "items": [
+        {
+            "code": "SCMPL0021774",
+            "name": "Bacardi + Cranberry",
+            "size": "275 ML(24)",
+            "bottles_per_case": "12",
+            "batch_no": "",
+            "auto_batch": "",
+            "mfg_month": "",
+            "bl": "3.30",
+            "vv": "0",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "2659.000",
+            "mrp": "0"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "2659.00",
+    "tamt": "2659.00"
+}
+[2026-02-06 05:10:15] GET data: {
+    "mode": "F"
+}
+[2026-02-06 05:10:15] Company ID from session: 1
+[2026-02-06 05:10:15] Database connection included
+[2026-02-06 05:10:15] License functions included
+[2026-02-06 05:10:15] License type: FL-II
+[2026-02-06 05:10:15] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-06 05:10:15] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-06 05:10:15] Purchase mode: F
+[2026-02-06 05:10:15] Next voucher number: 2
+[2026-02-06 05:10:15] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-06 05:10:15] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-06 05:10:15] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-06 05:10:15] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-06 05:10:15] === FORM SUBMISSION STARTED ===
+[2026-02-06 05:10:15] Form data extracted: {
+    "date": "2026-02-06",
+    "voc_no": "2",
+    "auto_tp_no": "FL1305-310825\/7654",
+    "tp_no": "7654",
+    "tp_date": "2026-02-06",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "KHOD",
+    "supplier_name": "KHODAY INDIA",
+    "basic_amt": "2659.00",
+    "total_amt": "2659.00"
+}
+[2026-02-06 05:10:15] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-06 05:10:15] Purchase header inserted successfully: {
+    "purchase_id": 4,
+    "affected_rows": 1
+}
+[2026-02-06 05:10:15] Starting to process purchase items: {
+    "item_count": 1
+}
+[2026-02-06 05:10:15] Processing item 0: {
+    "item_code": "SCMPL0021774",
+    "mrp": 0,
+    "tot_bott": 12
+}
+[2026-02-06 05:10:15] cleanItemCode: 'SCMPL0021774' -> 'PL0021774'
+[2026-02-06 05:10:15] Updating MRP for item: {
+    "item_code": "PL0021774",
+    "mrp": 0
+}
+[2026-02-06 05:10:15] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0021774",
+    "mrp": 0
+}
+[2026-02-06 05:10:15] Updating stock for item: {
+    "item_code": "SCMPL0021774",
+    "total_bottles": 12,
+    "purchase_date": "2026-02-06",
+    "day_of_month": "6",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-06 05:10:15] Month is current, updating current table with cascading
+[2026-02-06 05:10:15] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0021774",
+    "dayOfMonth": "6",
+    "totalBottles": 12
+}
+[2026-02-06 05:10:15] Starting cascading updates in table: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0021774",
+    "purchaseDay": "6"
+}
+[2026-02-06 05:10:15] Month has 28 days: {
+    "timestamp": "2026-02-01",
+    "daysInMonth": "28"
+}
+[2026-02-06 05:10:15] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:15] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:15] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-06 05:10:16] Cascading updates completed for all days after purchase day
+[2026-02-06 05:10:16] Purchase items processing completed: {
+    "successful_items": 1
+}
+[2026-02-06 05:10:16] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-12 14:19:20] === NEW PURCHASE SESSION STARTED ===
+[2026-02-12 14:19:20] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "stock_columns_checked": true,
+    "sale_quantities": []
+}
+[2026-02-12 14:19:20] POST data: []
+[2026-02-12 14:19:20] GET data: []
+[2026-02-12 14:19:20] Company ID from session: 1
+[2026-02-12 14:19:20] Database connection included
+[2026-02-12 14:19:20] License functions included
+[2026-02-12 14:19:20] License type: FL-II
+[2026-02-12 14:19:20] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-12 14:19:20] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-12 14:19:20] Purchase mode: F
+[2026-02-12 14:19:20] Next voucher number: 3
+[2026-02-12 14:19:20] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-12 14:19:20] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-12 14:19:20] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-12 14:19:20] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-12 14:19:20] Database connection closed
+[2026-02-12 14:19:20] === PURCHASE SESSION ENDED ===

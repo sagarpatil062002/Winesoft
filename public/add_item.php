@@ -1,6 +1,82 @@
 <?php
 session_start();
 
+// Handle AJAX requests first
+if (isset($_GET['ajax'])) {
+    include_once "../config/db.php";
+    
+    switch ($_GET['ajax']) {
+        case 'get_classes':
+            $category_code = $_GET['category'] ?? '';
+            $mode = $_GET['mode'] ?? 'F';
+            $classes = [];
+            
+            if ($category_code) {
+                $stmt = $conn->prepare("
+                    SELECT CLASS_CODE, CLASS_NAME 
+                    FROM tblclass_new 
+                    WHERE CATEGORY_CODE = ? AND LIQ_FLAG = ?
+                    ORDER BY CLASS_NAME
+                ");
+                $stmt->bind_param("ss", $category_code, $mode);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $classes = $result->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode($classes);
+            exit;
+            
+        case 'get_subclasses':
+            $class_code = $_GET['class'] ?? '';
+            $subclasses = [];
+            
+            if ($class_code) {
+                $stmt = $conn->prepare("
+                    SELECT SUBCLASS_CODE, SUBCLASS_NAME 
+                    FROM tblsubclass_new 
+                    WHERE CLASS_CODE = ?
+                    ORDER BY SUBCLASS_NAME
+                ");
+                $stmt->bind_param("s", $class_code);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $subclasses = $result->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode($subclasses);
+            exit;
+            
+        case 'get_sizes':
+            $subclass_code = $_GET['subclass'] ?? '';
+            $sizes = [];
+            
+            if ($subclass_code) {
+                // Get all sizes for the current mode
+                $mode = $_GET['mode'] ?? 'F';
+                $stmt = $conn->prepare("
+                    SELECT SIZE_CODE, SIZE_DESC 
+                    FROM tblsize 
+                    WHERE LIQ_FLAG = ?
+                    ORDER BY ML_VOLUME
+                ");
+                $stmt->bind_param("s", $mode);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $sizes = $result->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode($sizes);
+            exit;
+    }
+}
+
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
@@ -36,63 +112,152 @@ if (!in_array($mode, $allowedModes, true)) {
     $mode = 'F';
 }
 
-// Fetch subclasses from database (by mode)
-$subclasses = [];
-
-// Subclasses - Include ITEM_GROUP in the query
-if ($stmt = $conn->prepare("SELECT DISTINCT `DESC` AS subclass_name, ITEM_GROUP FROM tblsubclass WHERE LIQ_FLAG = ? ORDER BY `DESC`")) {
-    $stmt->bind_param("s", $mode);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    if ($res) $subclasses = $res->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-}
-
-// Initialize variables
-$code = $Print_Name = $details = $details2 = $class = $sub_class = $BARCODE = '';
+// Initialize variables for form
+$code = $Print_Name = $details = $BARCODE = '';
+$category_code = $class_code = $subclass_code = $size_code = '';
+$category_name = $class_name = $subclass_name = $size_desc = '';
 $pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
 $success = $error = '';
 
-// Handle submit
+// Fetch categories based on mode
+$categories = [];
+if ($stmt = $conn->prepare("
+    SELECT CATEGORY_CODE, CATEGORY_NAME 
+    FROM tblcategory 
+    WHERE LIQ_FLAG = ? 
+    ORDER BY CATEGORY_NAME
+")) {
+    $stmt->bind_param("s", $mode);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    if ($res) $categories = $res->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+}
+
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Collect POST data safely
     $code = trim($_POST['code'] ?? '');
     $Print_Name = trim($_POST['Print_Name'] ?? '');
     $details = trim($_POST['details'] ?? '');
-    $details2 = trim($_POST['details2'] ?? '');
     $BARCODE = trim($_POST['BARCODE'] ?? '');
+    $category_code = trim($_POST['category_code'] ?? '');
+    $class_code = trim($_POST['class_code'] ?? '');
+    $subclass_code = trim($_POST['subclass_code'] ?? '');
+    $size_code = trim($_POST['size_code'] ?? '');
     $pprice = floatval($_POST['pprice'] ?? 0);
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
     $RPRICE = floatval($_POST['RPRICE'] ?? 0);
     $opening_balance = intval($_POST['opening_balance'] ?? 0);
-    $liq_flag = $mode; // use current mode
+    $liq_flag = $mode;
+
+    // Get names for display
+    if (!empty($category_code)) {
+        $stmt = $conn->prepare("SELECT CATEGORY_NAME FROM tblcategory WHERE CATEGORY_CODE = ?");
+        $stmt->bind_param("s", $category_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) $category_name = $result->fetch_assoc()['CATEGORY_NAME'];
+        $stmt->close();
+    }
     
-    // Auto-detect class from item name (same function as in item_master.php)
-    $class = detectClassFromItemName($details);
+    if (!empty($class_code)) {
+        $stmt = $conn->prepare("SELECT CLASS_NAME FROM tblclass_new WHERE CLASS_CODE = ?");
+        $stmt->bind_param("s", $class_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) $class_name = $result->fetch_assoc()['CLASS_NAME'];
+        $stmt->close();
+    }
+    
+    if (!empty($subclass_code)) {
+        $stmt = $conn->prepare("SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ?");
+        $stmt->bind_param("s", $subclass_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) $subclass_name = $result->fetch_assoc()['SUBCLASS_NAME'];
+        $stmt->close();
+    }
+    
+    if (!empty($size_code)) {
+        $stmt = $conn->prepare("SELECT SIZE_DESC FROM tblsize WHERE SIZE_CODE = ?");
+        $stmt->bind_param("s", $size_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) $size_desc = $result->fetch_assoc()['SIZE_DESC'];
+        $stmt->close();
+    }
+
+    // Get the class code from the selected class (not auto-detected)
+    $class = ''; // This will be the single-letter class code (W, V, D, etc.)
+    if (!empty($class_code)) {
+        // Get the OLD_CLASS_CODE from tblclass_new
+        $stmt = $conn->prepare("SELECT OLD_CLASS_CODE FROM tblclass_new WHERE CLASS_CODE = ?");
+        $stmt->bind_param("s", $class_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $class = $row['OLD_CLASS_CODE'];
+        }
+        $stmt->close();
+    }
+    
+    // If OLD_CLASS_CODE is not available, use a mapping based on class name
+    if (empty($class) && !empty($class_name)) {
+        $class_name_upper = strtoupper($class_name);
+        if (strpos($class_name_upper, 'WHISKY') !== false || strpos($class_name_upper, 'IMFL') !== false) {
+            $class = 'W';
+        } elseif (strpos($class_name_upper, 'WINE') !== false) {
+            $class = 'V';
+        } elseif (strpos($class_name_upper, 'BRANDY') !== false) {
+            $class = 'D';
+        } elseif (strpos($class_name_upper, 'VODKA') !== false) {
+            $class = 'K';
+        } elseif (strpos($class_name_upper, 'GIN') !== false) {
+            $class = 'G';
+        } elseif (strpos($class_name_upper, 'RUM') !== false) {
+            $class = 'R';
+        } elseif (strpos($class_name_upper, 'FERMENTED') !== false) {
+            $class = 'F';
+        } elseif (strpos($class_name_upper, 'MILD') !== false) {
+            $class = 'M';
+        } elseif (strpos($class_name_upper, 'COUNTRY') !== false) {
+            $class = 'C';
+        } else {
+            $class = 'O'; // Default to Others
+        }
+    }
     
     // Validate class against license restrictions
     if (!in_array($class, $allowed_classes)) {
-        $error = "Class '$class' detected from item name is not allowed for your license type '$license_type'.";
-    } else if ($code === '' || $details === '') {
-        $error = "Item Code and Item Name are required.";
+        $error = "Class '$class' is not allowed for your license type '$license_type'.";
+    } else if ($code === '' || $details === '' || $category_code === '' || $class_code === '' || $subclass_code === '') {
+        $error = "Item Code, Item Name, Category, Class, and Subclass are required.";
     } else {
         // Get ITEM_GROUP from selected subclass
         $item_group = 'O'; // Default to Others
-        if (!empty($details2)) {
-            $stmt = $conn->prepare("SELECT ITEM_GROUP FROM tblsubclass WHERE `DESC` = ? AND LIQ_FLAG = ? LIMIT 1");
-            $stmt->bind_param("ss", $details2, $mode);
+        if (!empty($subclass_code)) {
+            $stmt = $conn->prepare("SELECT OLD_ITEM_GROUP FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1");
+            $stmt->bind_param("s", $subclass_code);
             $stmt->execute();
             $result = $stmt->get_result();
             if ($result->num_rows > 0) {
                 $row = $result->fetch_assoc();
-                $item_group = $row['ITEM_GROUP'];
+                $item_group = $row['OLD_ITEM_GROUP'];
             }
             $stmt->close();
         }
 
         // For SUB_CLASS, use the first character of subclass or a default
-        $subClassField = !empty($details2) ? substr($details2, 0, 1) : 'O';
+        $subClassField = !empty($subclass_name) ? substr($subclass_name, 0, 1) : 'O';
+
+        // Build DETAILS2 from hierarchy
+        $details2 = $category_name . " > " . $class_name . " > " . $subclass_name;
+        if (!empty($size_desc)) {
+            $details2 .= " > " . $size_desc;
+        }
 
         // Start transaction
         $conn->begin_transaction();
@@ -126,7 +291,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $success = "Item added successfully!";
             // Reset form
-            $code = $Print_Name = $details = $details2 = $BARCODE = '';
+            $code = $Print_Name = $details = $BARCODE = '';
+            $category_code = $class_code = $subclass_code = $size_code = '';
+            $category_name = $class_name = $subclass_name = $size_desc = '';
             $pprice = $bprice = $mprice = $RPRICE = $opening_balance = 0;
             
         } catch (Exception $e) {
@@ -135,116 +302,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Error: " . $e->getMessage();
         }
     }
-}
-
-// Function to detect class from item name (same as in item_master.php)
-function detectClassFromItemName($itemName) {
-    $itemName = strtoupper($itemName);
-    
-    // WHISKY Detection
-    if (strpos($itemName, 'WHISKY') !== false || 
-        strpos($itemName, 'WHISKEY') !== false ||
-        strpos($itemName, 'SCOTCH') !== false ||
-        strpos($itemName, 'SINGLE MALT') !== false ||
-        strpos($itemName, 'BLENDED') !== false ||
-        strpos($itemName, 'BOURBON') !== false ||
-        strpos($itemName, 'RYE') !== false ||
-        preg_match('/\b(JOHNNIE WALKER|JACK DANIEL|CHIVAS|ROYAL CHALLENGE|8PM|OFFICER\'S CHOICE|MCDOWELL\'S|SIGNATURE|IMPERIAL BLUE)\b/', $itemName) ||
-        preg_match('/\b(\d+ YEARS?|AGED)\b/', $itemName)) {
-        return 'W';
-    }
-    
-    // WINE Detection
-    if (strpos($itemName, 'WINE') !== false ||
-        strpos($itemName, 'PORT') !== false ||
-        strpos($itemName, 'SHERRY') !== false ||
-        strpos($itemName, 'CHAMPAGNE') !== false ||
-        strpos($itemName, 'SPARKLING') !== false ||
-        strpos($itemName, 'MERLOT') !== false ||
-        strpos($itemName, 'CABERNET') !== false ||
-        strpos($itemName, 'CHARDONNAY') !== false ||
-        strpos($itemName, 'SAUVIGNON') !== false ||
-        strpos($itemName, 'RED WINE') !== false ||
-        strpos($itemName, 'WHITE WINE') !== false ||
-        strpos($itemName, 'ROSE WINE') !== false ||
-        strpos($itemName, 'DESSERT WINE') !== false ||
-        strpos($itemName, 'FORTIFIED WINE') !== false ||
-        preg_match('/\b(SULA|GROVER|FRATELLI|BORDEAUX|CHATEAU)\b/', $itemName)) {
-        return 'V';
-    }
-    
-    // BRANDY Detection
-    if (strpos($itemName, 'BRANDY') !== false ||
-        strpos($itemName, 'COGNAC') !== false ||
-        strpos($itemName, 'VSOP') !== false ||
-        strpos($itemName, 'XO') !== false ||
-        strpos($itemName, 'NAPOLEON') !== false ||
-        preg_match('/\b(HENNESSY|REMY MARTIN|MARTELL|COURVOISIER|MANSION HOUSE|OLD ADMIRAL|DUNHILL)\b/', $itemName) ||
-        strpos($itemName, 'VS ') !== false) {
-        return 'D';
-    }
-    
-    // VODKA Detection
-    if (strpos($itemName, 'VODKA') !== false ||
-        preg_match('/\b(SMIRNOFF|ABSOLUT|ROMANOV|GREY GOOSE|BELVEDERE|CIROC|FINLANDIA)\b/', $itemName) ||
-        strpos($itemName, 'LEMON VODKA') !== false ||
-        strpos($itemName, 'ORANGE VODKA') !== false ||
-        strpos($itemName, 'FLAVORED VODKA') !== false) {
-        return 'K';
-    }
-    
-    // GIN Detection
-    if (strpos($itemName, 'GIN') !== false ||
-        strpos($itemName, 'LONDON DRY') !== false ||
-        strpos($itemName, 'NAVY STRENGTH') !== false ||
-        preg_match('/\b(BOMBAY|GORDON\'S|TANQUERAY|BEEFEATER|HENDRICK\'S|BLUE RIBAND)\b/', $itemName) ||
-        strpos($itemName, 'JUNIPER') !== false ||
-        strpos($itemName, 'BOTANICAL GIN') !== false ||
-        strpos($itemName, 'DRY GIN') !== false) {
-        return 'G';
-    }
-    
-    // RUM Detection
-    if (strpos($itemName, 'RUM') !== false ||
-        strpos($itemName, 'DARK RUM') !== false ||
-        strpos($itemName, 'WHITE RUM') !== false ||
-        strpos($itemName, 'SPICED RUM') !== false ||
-        strpos($itemName, 'AGED RUM') !== false ||
-        preg_match('/\b(BACARDI|CAPTAIN MORGAN|OLD MONK|HAVANA CLUB|MCDOWELL\'S RUM|CONTESSA RUM)\b/', $itemName) ||
-        strpos($itemName, 'GOLD RUM') !== false ||
-        strpos($itemName, 'NAVY RUM') !== false) {
-        return 'R';
-    }
-    
-    // BEER Detection
-    if (strpos($itemName, 'BEER') !== false || 
-        strpos($itemName, 'LAGER') !== false ||
-        strpos($itemName, 'ALE') !== false ||
-        strpos($itemName, 'STOUT') !== false ||
-        strpos($itemName, 'PILSNER') !== false ||
-        strpos($itemName, 'DRAUGHT') !== false ||
-        preg_match('/\b(KINGFISHER|TUBORG|CARLSBERG|BUDWEISER|HEINEKEN|CORONA|FOSTER\'S)\b/', $itemName)) {
-        
-        $strongIndicators = ['STRONG', 'SUPER STRONG', 'EXTRA STRONG', 'BOLD', 'HIGH', 'POWER', 'XXX', '5000', '8000', '9000', '10000'];
-        $mildIndicators = ['MILD', 'SMOOTH', 'LIGHT', 'DRAUGHT', 'LAGER', 'PILSNER', 'REGULAR', 'PREMIUM', 'LITE'];
-        
-        $isStrongBeer = false;
-        foreach ($strongIndicators as $indicator) {
-            if (strpos($itemName, $indicator) !== false) {
-                $isStrongBeer = true;
-                break;
-            }
-        }
-        
-        if ($isStrongBeer) {
-            return 'F'; // FERMENTED BEER (Strong)
-        } else {
-            return 'M'; // MILD BEER
-        }
-    }
-    
-    // Default to Others if no match found
-    return 'O';
 }
 
 // Function to update item stock information for all tables
@@ -399,13 +456,6 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
             border-radius: 5px;
             margin-bottom: 15px;
         }
-        .class-detection-info {
-            background-color: #fff3cd;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            border-left: 4px solid #ffc107;
-        }
         .custom-dropdown {
             position: relative;
         }
@@ -425,6 +475,33 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
             transform: translateY(-50%);
             pointer-events: none;
             color: #6c757d;
+        }
+        .form-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .form-section h5 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .hierarchy-info {
+            font-size: 0.9rem;
+            color: #666;
+            font-style: italic;
+        }
+        .dropdown-loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+        .selected-class {
+            background-color: #e7f3ff;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #3498db;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -454,12 +531,6 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                 </p>
             </div>
 
-            <!-- Class Detection Info -->
-            <div class="class-detection-info mb-3">
-                <strong>Note:</strong> Class will be automatically detected from the Item Name using intelligent pattern matching.
-                You don't need to select a class manually.
-            </div>
-
             <?php if ($success): ?>
                 <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
             <?php endif; ?>
@@ -468,6 +539,12 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
             <?php endif; ?>
 
             <form method="POST" class="row g-3" id="add_item_form">
+                <!-- Hidden fields for names -->
+                <input type="hidden" id="category_name" name="category_name" value="<?= htmlspecialchars($category_name) ?>">
+                <input type="hidden" id="class_name" name="class_name" value="<?= htmlspecialchars($class_name) ?>">
+                <input type="hidden" id="subclass_name" name="subclass_name" value="<?= htmlspecialchars($subclass_name) ?>">
+                <input type="hidden" id="size_desc" name="size_desc" value="<?= htmlspecialchars($size_desc) ?>">
+                
                 <!-- Mode -->
                 <div class="col-md-3">
                     <label for="mode" class="form-label">Mode</label>
@@ -482,14 +559,14 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                     </select>
                 </div>
 
-                <!-- Code -->
+                <!-- Item Code -->
                 <div class="col-md-3">
                     <label for="code" class="form-label">Item Code *</label>
                     <input type="text" id="code" name="code" class="form-control"
                            value="<?= htmlspecialchars($code) ?>" required>
                 </div>
 
-                <!-- New Code -->
+                <!-- Print Name -->
                 <div class="col-md-3">
                     <label for="Print_Name" class="form-label">Print Name</label>
                     <input type="text" id="Print_Name" name="Print_Name" class="form-control"
@@ -500,33 +577,19 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                 <div class="col-md-3">
                     <label for="details" class="form-label">Item Name *</label>
                     <input type="text" id="details" name="details" class="form-control"
-                           value="<?= htmlspecialchars($details) ?>" required 
-                           onblur="detectClass()">
-                    <small class="text-muted">Class will be auto-detected from this field</small>
+                           value="<?= htmlspecialchars($details) ?>" required>
                 </div>
 
-                <!-- Detected Class Display (Readonly) -->
+                <!-- Selected Class Display -->
                 <div class="col-md-3">
-                    <label class="form-label">Detected Class</label>
-                    <input type="text" id="detected_class" class="form-control" readonly 
-                           placeholder="Class will appear here">
-                </div>
-
-                <!-- Additional Details (Subclass) - Changed to Dropdown -->
-                <div class="col-md-3">
-                    <label for="details2" class="form-label">Subclass/Description</label>
-                    <div class="custom-dropdown">
-                        <select id="details2" name="details2" class="form-select">
-                            <option value="">-- Select Subclass --</option>
-                            <?php foreach ($subclasses as $subclass): ?>
-                                <option value="<?= htmlspecialchars($subclass['subclass_name']) ?>" 
-                                    <?= $details2 === $subclass['subclass_name'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($subclass['subclass_name']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <label class="form-label">Selected Class</label>
+                    <div id="selected_class_display" class="selected-class">
+                        <?php if (!empty($class_name)): ?>
+                            <?= htmlspecialchars($class_name) ?>
+                        <?php else: ?>
+                            <span class="text-muted">Select Class to see here</span>
+                        <?php endif; ?>
                     </div>
-                    <small class="text-muted">Select from predefined subclasses</small>
                 </div>
 
                 <!-- Barcode -->
@@ -536,39 +599,117 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                            value="<?= htmlspecialchars($BARCODE) ?>">
                 </div>
 
-                <!-- Opening Balance -->
-                <div class="col-md-3">
-                    <label for="opening_balance" class="form-label">Opening Balance</label>
-                    <input type="number" id="opening_balance" name="opening_balance" class="form-control"
-                           value="<?= htmlspecialchars($opening_balance) ?>" min="0" step="1">
+                <!-- Category Section -->
+                <div class="col-12 form-section">
+                    <h5>Category & Classification</h5>
+                    <p class="hierarchy-info mb-3">Select in order: Category → Class → Subclass → Size</p>
+                    
+                    <div class="row g-3">
+                        <!-- Category -->
+                        <div class="col-md-3">
+                            <label for="category_code" class="form-label">Category *</label>
+                            <div class="custom-dropdown">
+                                <select id="category_code" name="category_code" class="form-select" required
+                                        onchange="loadClasses(this.value)">
+                                    <option value="">-- Select Category --</option>
+                                    <?php foreach ($categories as $category): ?>
+                                        <option value="<?= htmlspecialchars($category['CATEGORY_CODE']) ?>"
+                                            <?= $category_code === $category['CATEGORY_CODE'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($category['CATEGORY_NAME']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Class -->
+                        <div class="col-md-3">
+                            <label for="class_code" class="form-label">Class *</label>
+                            <div class="custom-dropdown">
+                                <select id="class_code" name="class_code" class="form-select" required
+                                        onchange="updateSelectedClass(); loadSubclasses(this.value)">
+                                    <option value="">-- Select Class --</option>
+                                    <?php if (!empty($class_code)): ?>
+                                        <option value="<?= htmlspecialchars($class_code) ?>" selected>
+                                            <?= htmlspecialchars($class_name) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Subclass -->
+                        <div class="col-md-3">
+                            <label for="subclass_code" class="form-label">Subclass *</label>
+                            <div class="custom-dropdown">
+                                <select id="subclass_code" name="subclass_code" class="form-select" required
+                                        onchange="loadSizes(this.value)">
+                                    <option value="">-- Select Subclass --</option>
+                                    <?php if (!empty($subclass_code)): ?>
+                                        <option value="<?= htmlspecialchars($subclass_code) ?>" selected>
+                                            <?= htmlspecialchars($subclass_name) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Size (Optional) -->
+                        <div class="col-md-3">
+                            <label for="size_code" class="form-label">Size (Optional)</label>
+                            <div class="custom-dropdown">
+                                <select id="size_code" name="size_code" class="form-select">
+                                    <option value="">-- Select Size --</option>
+                                    <?php if (!empty($size_code)): ?>
+                                        <option value="<?= htmlspecialchars($size_code) ?>" selected>
+                                            <?= htmlspecialchars($size_desc) ?>
+                                        </option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- P. Price -->
-                <div class="col-md-3">
-                    <label for="pprice" class="form-label">Purchase Price</label>
-                    <input type="number" step="0.001" id="pprice" name="pprice" class="form-control"
-                           value="<?= htmlspecialchars($pprice) ?>">
-                </div>
+                <!-- Stock & Pricing Section -->
+                <div class="col-12 form-section">
+                    <h5>Stock & Pricing</h5>
+                    <div class="row g-3">
+                        <!-- Opening Balance -->
+                        <div class="col-md-3">
+                            <label for="opening_balance" class="form-label">Opening Balance</label>
+                            <input type="number" id="opening_balance" name="opening_balance" class="form-control"
+                                   value="<?= htmlspecialchars($opening_balance) ?>" min="0" step="1">
+                        </div>
 
-                <!-- B. Price -->
-                <div class="col-md-3">
-                    <label for="bprice" class="form-label">Base Price</label>
-                    <input type="number" step="0.001" id="bprice" name="bprice" class="form-control"
-                           value="<?= htmlspecialchars($bprice) ?>">
-                </div>
+                        <!-- P. Price -->
+                        <div class="col-md-3">
+                            <label for="pprice" class="form-label">Purchase Price</label>
+                            <input type="number" step="0.001" id="pprice" name="pprice" class="form-control"
+                                   value="<?= htmlspecialchars($pprice) ?>">
+                        </div>
 
-                <!-- M. Price -->
-                <div class="col-md-3">
-                    <label for="mprice" class="form-label">MRP Price</label>
-                    <input type="number" step="0.001" id="mprice" name="mprice" class="form-control"
-                           value="<?= htmlspecialchars($mprice) ?>">
-                </div>
+                        <!-- B. Price -->
+                        <div class="col-md-3">
+                            <label for="bprice" class="form-label">Base Price</label>
+                            <input type="number" step="0.001" id="bprice" name="bprice" class="form-control"
+                                   value="<?= htmlspecialchars($bprice) ?>">
+                        </div>
 
-                <!-- R. Price -->
-                <div class="col-md-3">
-                    <label for="RPRICE" class="form-label">Retail Price</label>
-                    <input type="number" step="0.001" id="RPRICE" name="RPRICE" class="form-control"
-                           value="<?= htmlspecialchars($RPRICE) ?>">
+                        <!-- M. Price -->
+                        <div class="col-md-3">
+                            <label for="mprice" class="form-label">MRP Price</label>
+                            <input type="number" step="0.001" id="mprice" name="mprice" class="form-control"
+                                   value="<?= htmlspecialchars($mprice) ?>">
+                        </div>
+
+                        <!-- R. Price -->
+                        <div class="col-md-3">
+                            <label for="RPRICE" class="form-label">Retail Price</label>
+                            <input type="number" step="0.001" id="RPRICE" name="RPRICE" class="form-control"
+                                   value="<?= htmlspecialchars($RPRICE) ?>">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Buttons -->
@@ -589,44 +730,215 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Simple client-side class detection (basic version)
-function detectClass() {
-    const itemName = document.getElementById('details').value.toUpperCase();
-    const detectedClassField = document.getElementById('detected_class');
+// Update selected class display
+function updateSelectedClass() {
+    const classSelect = document.getElementById('class_code');
+    const selectedClassDisplay = document.getElementById('selected_class_display');
+    
+    if (classSelect.value) {
+        const selectedOption = classSelect.options[classSelect.selectedIndex];
+        selectedClassDisplay.textContent = selectedOption.textContent;
+        selectedClassDisplay.classList.remove('text-muted');
+    } else {
+        selectedClassDisplay.innerHTML = '<span class="text-muted">Select Class to see here</span>';
+    }
+}
 
-    if (!itemName) {
-        detectedClassField.value = '';
+// AJAX function to load classes
+function loadClasses(categoryCode) {
+    if (!categoryCode) {
+        document.getElementById('class_code').innerHTML = '<option value="">-- Select Class --</option>';
+        document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
+        document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        updateSelectedClass();
         return;
     }
 
-    // Basic detection logic (simplified version of server-side logic)
-    let detectedClass = 'O'; // Default to Others
-
-    if (itemName.includes('WHISKY') || itemName.includes('WHISKEY') || itemName.includes('SCOTCH')) {
-        detectedClass = 'W (Whisky)';
-    } else if (itemName.includes('WINE') || itemName.includes('CHAMPAGNE')) {
-        detectedClass = 'V (Wine)';
-    } else if (itemName.includes('BRANDY') || itemName.includes('COGNAC') || itemName.includes('VSOP')) {
-        detectedClass = 'D (Brandy)';
-    } else if (itemName.includes('VODKA')) {
-        detectedClass = 'K (Vodka)';
-    } else if (itemName.includes('GIN')) {
-        detectedClass = 'G (Gin)';
-    } else if (itemName.includes('RUM')) {
-        detectedClass = 'R (Rum)';
-    } else if (itemName.includes('BEER')) {
-        if (itemName.includes('STRONG') || itemName.includes('5000') || itemName.includes('8000')) {
-            detectedClass = 'F (Fermented Beer - Strong)';
-        } else {
-            detectedClass = 'M (Mild Beer)';
-        }
-    }
-
-    detectedClassField.value = detectedClass;
+    // Show loading
+    const classSelect = document.getElementById('class_code');
+    classSelect.innerHTML = '<option value="" class="dropdown-loading">Loading...</option>';
+    
+    fetch('add_item.php?ajax=get_classes&category=' + categoryCode + '&mode=<?= $mode ?>')
+        .then(response => response.json())
+        .then(data => {
+            classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+            
+            if (data.length > 0) {
+                data.forEach(cls => {
+                    const option = document.createElement('option');
+                    option.value = cls.CLASS_CODE;
+                    option.textContent = cls.CLASS_NAME;
+                    
+                    // Auto-select for specific cases (like Fermented Beer)
+                    if (cls.CLASS_NAME === 'Fermented Beer') {
+                        option.selected = true;
+                        // Trigger subclass loading
+                        setTimeout(() => {
+                            updateSelectedClass();
+                            loadSubclasses(cls.CLASS_CODE);
+                        }, 100);
+                    }
+                    classSelect.appendChild(option);
+                });
+                
+                // Update selected class display
+                updateSelectedClass();
+            }
+            
+            // Clear subclass and size dropdowns
+            document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
+            document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        })
+        .catch(error => {
+            console.error('Error loading classes:', error);
+            classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+            updateSelectedClass();
+        });
 }
 
+// AJAX function to load subclasses
+function loadSubclasses(classCode) {
+    if (!classCode) {
+        document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
+        document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        return;
+    }
+
+    // Show loading
+    const subclassSelect = document.getElementById('subclass_code');
+    subclassSelect.innerHTML = '<option value="" class="dropdown-loading">Loading...</option>';
+    
+    fetch('add_item.php?ajax=get_subclasses&class=' + classCode)
+        .then(response => response.json())
+        .then(data => {
+            subclassSelect.innerHTML = '<option value="">-- Select Subclass --</option>';
+            
+            if (data.length > 0) {
+                data.forEach(subclass => {
+                    const option = document.createElement('option');
+                    option.value = subclass.SUBCLASS_CODE;
+                    option.textContent = subclass.SUBCLASS_NAME;
+                    
+                    // Auto-select for specific cases
+                    const classSelect = document.getElementById('class_code');
+                    const selectedClass = classSelect.options[classSelect.selectedIndex].text;
+                    
+                    if (selectedClass === 'Fermented Beer' && subclass.SUBCLASS_NAME === 'Fermented Beer') {
+                        option.selected = true;
+                        // Trigger size loading
+                        setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
+                    }
+                    // Auto-select "Indian" for "Indian" class in Wine category
+                    else if (selectedClass === 'Indian' && subclass.SUBCLASS_NAME === 'Indian') {
+                        option.selected = true;
+                        // Trigger size loading
+                        setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
+                    }
+                    // Auto-select same name for Country Liquor
+                    else if (selectedClass === 'Country Liquor' && subclass.SUBCLASS_NAME === 'Country Liquor') {
+                        option.selected = true;
+                        // Trigger size loading
+                        setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
+                    }
+                    
+                    subclassSelect.appendChild(option);
+                });
+            }
+            
+            // Clear size dropdown
+            document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        })
+        .catch(error => {
+            console.error('Error loading subclasses:', error);
+            subclassSelect.innerHTML = '<option value="">-- Select Subclass --</option>';
+        });
+}
+
+// AJAX function to load sizes
+function loadSizes(subclassCode) {
+    if (!subclassCode) {
+        document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        return;
+    }
+
+    // Show loading
+    const sizeSelect = document.getElementById('size_code');
+    sizeSelect.innerHTML = '<option value="" class="dropdown-loading">Loading...</option>';
+    
+    fetch('add_item.php?ajax=get_sizes&subclass=' + subclassCode + '&mode=<?= $mode ?>')
+        .then(response => response.json())
+        .then(data => {
+            sizeSelect.innerHTML = '<option value="">-- Select Size --</option>';
+            
+            if (data.length > 0) {
+                data.forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size.SIZE_CODE;
+                    option.textContent = size.SIZE_DESC;
+                    sizeSelect.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sizes:', error);
+            sizeSelect.innerHTML = '<option value="">-- Select Size --</option>';
+        });
+}
+
+// Initialize dropdowns if values are already selected
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryCode = document.getElementById('category_code').value;
+    const classCode = document.getElementById('class_code').value;
+    const subclassCode = document.getElementById('subclass_code').value;
+    const sizeCode = document.getElementById('size_code').value;
+    
+    // Update selected class display
+    updateSelectedClass();
+    
+    // If we have category code but no class code loaded, load classes
+    if (categoryCode && (!classCode || document.getElementById('class_code').options.length <= 2)) {
+        loadClasses(categoryCode);
+        
+        // If we have class code, set it after loading
+        if (classCode) {
+            setTimeout(() => {
+                document.getElementById('class_code').value = classCode;
+                updateSelectedClass();
+                loadSubclasses(classCode);
+                
+                // If we have subclass code, set it after loading
+                if (subclassCode) {
+                    setTimeout(() => {
+                        document.getElementById('subclass_code').value = subclassCode;
+                        loadSizes(subclassCode);
+                        
+                        // If we have size code, set it after loading
+                        if (sizeCode) {
+                            setTimeout(() => {
+                                document.getElementById('size_code').value = sizeCode;
+                            }, 100);
+                        }
+                    }, 100);
+                }
+            }, 100);
+        }
+    }
+});
+
 // Show loading overlay during form submission
-document.getElementById('add_item_form').addEventListener('submit', function() {
+document.getElementById('add_item_form').addEventListener('submit', function(e) {
+    // Validate required fields
+    const requiredFields = ['category_code', 'class_code', 'subclass_code'];
+    for (const fieldId of requiredFields) {
+        const field = document.getElementById(fieldId);
+        if (!field.value) {
+            e.preventDefault();
+            alert(`Please select ${field.previousElementSibling.textContent.replace('*', '').trim()}`);
+            field.focus();
+            return;
+        }
+    }
+    
     // Show loading overlay
     const loadingOverlay = document.createElement('div');
     loadingOverlay.id = 'loading_overlay';

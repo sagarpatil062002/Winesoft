@@ -246,7 +246,8 @@ if (isset($_GET['generate'])) {
                              ds.{$day_column} as CLOSING_STOCK
                       FROM tblitemmaster im
                       LEFT JOIN $stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
-                      WHERE im.CLASS IN ($class_placeholders) AND im.PPRICE > 0";
+                      WHERE im.CLASS IN ($class_placeholders) AND im.PPRICE > 0
+                      AND COALESCE(ds.{$day_column}, 0) > 0";
             
             $params = array_merge([$stock_month], $allowed_classes);
             $types = str_repeat('s', count($params));

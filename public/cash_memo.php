@@ -471,8 +471,11 @@ $companyName = "DIAMOND WINE SHOP";
 $companyAddress = "Ishvanbag Sangli Tal Hiraj Dist Sangli";
 $licenseNumber = "";
 $companyAddress2 = "";
+$companyGST = '';
+$companyMVAT = '';
+$licenseDetails = [];
 
-$companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE FROM tblcompany WHERE CompID = ?";
+$companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE, GST_NO, MVAT_NO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
 $companyStmt->bind_param("i", $compID);
 $companyStmt->execute();
@@ -481,12 +484,30 @@ if ($row = $companyResult->fetch_assoc()) {
     $companyName = $row['COMP_NAME'];
     $companyAddress = $row['COMP_ADDR'] ?? $companyAddress;
     $licenseNumber = $row['COMP_FLNO'] ?? "";
+    $companyGST = $row['GST_NO'] ?? '';
+    $companyMVAT = $row['MVAT_NO'] ?? '';
     $companyAddress2 = $row['CF_LINE'] ?? "";
     if (!empty($row['CS_LINE'])) {
         $companyAddress2 .= (!empty($companyAddress2) ? " " : "") . $row['CS_LINE'];
     }
+    
+    // Collect license details (FLII, FLIII, FLBRII, CLIII, etc.)
+    if (!empty($licenseNumber)) {
+        $licenseDetails[] = $licenseNumber;
+    }
 }
 $companyStmt->close();
+
+// Also fetch additional license descriptions from tblclass
+$licenseQuery = "SELECT DISTINCT SGROUP, DESC FROM tblclass WHERE SGROUP IN ('FLII', 'FLIII', 'FLBRII', 'CLIII') LIMIT 4";
+$licenseResult = $conn->query($licenseQuery);
+if ($licenseResult && $licenseResult->num_rows > 0) {
+    while ($licRow = $licenseResult->fetch_assoc()) {
+        if (!empty($licRow['DESC'])) {
+            $licenseDetails[] = $licRow['DESC'];
+        }
+    }
+}
 
 // Get total bills and amount for the date range
 if (!isset($_GET['generate']) || empty($bill_no)) {
@@ -938,7 +959,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
           <div class="memos-container">
             <?php
             // Function to display a single cash memo
-            function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null) {
+            function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null, $companyGST = '', $companyMVAT = '', $licenseDetails = []) {
                 $billNo = $billData['BILL_NO'];
                 $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
                 $billNoShort = substr($billNo, -5);
@@ -956,10 +977,26 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                 $permitNo = $permitData['P_NO'] ?? '';
                 $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
                 $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
+                
+                // License details display
+                $licenseDisplay = !empty($licenseNumber) ? $licenseNumber : "FL-II 3";
+                if (!empty($licenseDetails)) {
+                    $licenseDisplay = implode(', ', $licenseDetails);
+                }
                 ?>
                 <div class="cash-memo-container">
                   <div class="cash-memo-header">
-                    <div class="license-info"><?= htmlspecialchars($licenseNumber ?: "FL-II 3") ?></div>
+                    <div class="license-info"><?= htmlspecialchars($licenseDisplay) ?></div>
+                    <?php if (!empty($companyGST) || !empty($companyMVAT)): ?>
+                    <div class="license-info" style="font-size: 9px;">
+                        <?php if (!empty($companyGST)): ?>
+                            GST: <?= htmlspecialchars($companyGST) ?>
+                        <?php endif; ?>
+                        <?php if (!empty($companyMVAT)): ?>
+                            | MVAT: <?= htmlspecialchars($companyMVAT) ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
                     <div class="shop-address"><?= htmlspecialchars($companyAddress) ?></div>
                   </div>
@@ -980,7 +1017,9 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                       <span>Permit No.: <?= htmlspecialchars($permitNo) ?></span>
                       <span>Exp.Dt.: <?= $permitExpDate ?></span>
                     </div>
-                    <div>Place: <?= htmlspecialchars($permitPlace) ?></div>
+                    <div class="permit-row" style="margin-top: 2px;">
+                      <span>Place: <?= htmlspecialchars($permitPlace) ?></span>
+                    </div>
                   </div>
                   <?php endif; ?>
                   
@@ -1011,10 +1050,10 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             
             // Display single bill or multiple bills
             if (!empty($bill_data)) {
-                displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null);
+                displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null, $companyGST ?? '', $companyMVAT ?? '', $licenseDetails);
             } elseif (!empty($all_bills)) {
                 foreach ($all_bills as $bill) {
-                    displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit']);
+                    displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit'], $companyGST ?? '', $companyMVAT ?? '', $licenseDetails);
                 }
             }
             ?>

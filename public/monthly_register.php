@@ -107,9 +107,6 @@ function getAvailableMonths($conn, $compID) {
                             }
                         }
                     }
-                } else {
-                    // If query fails, at least add current month
-                    $available_months[] = date('Y-m');
                 }
             } else {
                 // Archive table - extract from table name
@@ -972,12 +969,12 @@ if (!in_array($current_year_for_dropdown, $available_years) && !empty($available
                 <select name="year" class="form-control" id="yearSelect">
                   <?php
                   if (empty($available_years)) {
-                    echo '<option value="">No data available</option>';
+                      echo '<option value="">No data available</option>';
                   } else {
-                    foreach ($available_years as $avail_year) {
-                      $selected = ($current_year_for_dropdown == $avail_year) ? 'selected' : '';
-                      echo "<option value=\"$avail_year\" $selected>$avail_year</option>";
-                    }
+                      foreach ($available_years as $avail_year) {
+                          $selected = ($current_year_for_dropdown == $avail_year) ? 'selected' : '';
+                          echo "<option value=\"$avail_year\" $selected>$avail_year</option>";
+                      }
                   }
                   ?>
                 </select>
@@ -988,31 +985,22 @@ if (!in_array($current_year_for_dropdown, $available_years) && !empty($available
                 <select name="month" class="form-control" id="monthSelect">
                   <?php
                   if (isset($years_with_months[$current_year_for_dropdown])) {
-                    foreach ($years_with_months[$current_year_for_dropdown] as $month_info) {
-                      $selected = ($month == $month_info['value']) ? 'selected' : '';
-                      echo "<option value=\"{$month_info['value']}\" $selected>{$month_info['name']} $current_year_for_dropdown</option>";
-                    }
+                      foreach ($years_with_months[$current_year_for_dropdown] as $month_info) {
+                          $selected = ($month == $month_info['value']) ? 'selected' : '';
+                          echo "<option value=\"{$month_info['value']}\" $selected>{$month_info['name']} {$current_year_for_dropdown}</option>";
+                      }
                   } elseif (!empty($available_months)) {
-                    // Fallback: show all available months
-                    foreach ($available_months as $avail_month) {
-                      $selected = ($month == $avail_month) ? 'selected' : '';
-                      $month_name = date('F Y', strtotime($avail_month . '-01'));
-                      echo "<option value=\"$avail_month\" $selected>$month_name</option>";
-                    }
+                      // Fallback: show all available months
+                      foreach ($available_months as $avail_month) {
+                          $selected = ($month == $avail_month) ? 'selected' : '';
+                          $month_name = date('F Y', strtotime($avail_month . '-01'));
+                          echo "<option value=\"$avail_month\" $selected>$month_name</option>";
+                      }
                   } else {
-                    echo '<option value="">No months available</option>';
+                      echo '<option value="">No months available</option>';
                   }
                   ?>
                 </select>
-              </div>
-            </div>
-            
-            <div class="row mb-3">
-              <div class="col-md-12">
-                <div class="form-check">
-                  <input type="checkbox" class="form-check-input" name="debug" value="1" <?= isset($_GET['debug']) ? 'checked' : '' ?>>
-                  <label class="form-check-label">Show Debug Info</label>
-                </div>
               </div>
             </div>
             
@@ -1328,6 +1316,9 @@ if (!in_array($current_year_for_dropdown, $available_years) && !empty($available
 // Month data from PHP
 const monthData = <?= json_encode($years_with_months) ?>;
 let formSubmitted = false;
+let currentMonth = '<?= $month ?>';
+let urlMonth = '<?= isset($_GET['month']) ? $_GET['month'] : '' ?>';
+let urlYear = '<?= isset($_GET['year']) ? $_GET['year'] : '' ?>';
 
 function updateMonthOptions() {
     const yearSelect = document.getElementById('yearSelect');
@@ -1337,7 +1328,7 @@ function updateMonthOptions() {
     // Clear current options
     monthSelect.innerHTML = '';
     
-    if (monthData[selectedYear]) {
+    if (monthData[selectedYear] && monthData[selectedYear].length > 0) {
         // Add options for selected year
         monthData[selectedYear].forEach(month => {
             const option = document.createElement('option');
@@ -1346,8 +1337,23 @@ function updateMonthOptions() {
             monthSelect.appendChild(option);
         });
         
-        // Select first month if none selected
-        if (monthSelect.options.length > 0 && !formSubmitted) {
+        // Priority 1: Try to select month from URL if it exists in this year
+        if (urlMonth && urlYear == selectedYear) {
+            if (Array.from(monthSelect.options).some(opt => opt.value === urlMonth)) {
+                monthSelect.value = urlMonth;
+                return;
+            }
+        }
+        
+        // Priority 2: Try to select current month if it exists in this year
+        const currentMonthInYear = Array.from(monthSelect.options).find(opt => opt.value === currentMonth);
+        if (currentMonthInYear) {
+            monthSelect.value = currentMonth;
+            return;
+        }
+        
+        // Priority 3: Select first month of the year
+        if (monthSelect.options.length > 0) {
             monthSelect.selectedIndex = 0;
         }
     } else {
@@ -1361,32 +1367,63 @@ function updateMonthOptions() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Update month options based on selected year
+    const reportForm = document.getElementById('reportForm');
+    const yearSelect = document.getElementById('yearSelect');
+    const modeSelect = document.getElementById('modeSelect');
+    const monthSelect = document.getElementById('monthSelect');
+    
+    // Set year from URL if available
+    if (urlYear) {
+        if (Array.from(yearSelect.options).some(opt => opt.value === urlYear)) {
+            yearSelect.value = urlYear;
+        }
+    }
+    
+    // Initial setup - update month options
     updateMonthOptions();
     
     // Handle form submission
-    const reportForm = document.getElementById('reportForm');
-    reportForm.addEventListener('submit', function() {
+    reportForm.addEventListener('submit', function(e) {
+        // Ensure month has a value before submitting
+        if (!monthSelect.value) {
+            e.preventDefault();
+            if (monthSelect.options.length > 0) {
+                monthSelect.selectedIndex = 0;
+                setTimeout(() => reportForm.submit(), 50);
+            }
+            return;
+        }
         formSubmitted = true;
     });
     
-    // Auto-submit when year changes (but not on initial load)
-    const yearSelect = document.getElementById('yearSelect');
+    // Handle year change - update month options
     yearSelect.addEventListener('change', function() {
+        updateMonthOptions();
+        
+        // Update URL without page reload
+        const url = new URL(window.location.href);
+        url.searchParams.set('year', this.value);
+        if (monthSelect.value) {
+            url.searchParams.set('month', monthSelect.value);
+        }
+        window.history.replaceState({}, '', url);
+    });
+    
+    // Handle month change - update URL only, don't submit
+    monthSelect.addEventListener('change', function() {
         if (this.value) {
-            // Update month options first
-            updateMonthOptions();
-            // Small delay to ensure month options are updated
-            setTimeout(() => {
-                reportForm.submit();
-            }, 100);
+            const url = new URL(window.location.href);
+            url.searchParams.set('month', this.value);
+            url.searchParams.set('year', yearSelect.value);
+            window.history.replaceState({}, '', url);
         }
     });
     
-    // Auto-submit when mode changes
-    const modeSelect = document.getElementById('modeSelect');
+    // Handle mode change - update URL only, don't submit
     modeSelect.addEventListener('change', function() {
-        reportForm.submit();
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', this.value);
+        window.history.replaceState({}, '', url);
     });
 });
 </script>

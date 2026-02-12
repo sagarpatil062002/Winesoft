@@ -23,6 +23,8 @@ $mode = isset($_GET['mode']) ? $_GET['mode'] : 'Foreign Liquor';
 // Fetch company name and license number
 $companyName = "WANGANHAN HOTEL";
 $licenseNo = "FL-II 3";
+$licenseType = "FL-II"; // Default license type
+
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
 $companyStmt->bind_param("i", $compID);
@@ -31,8 +33,26 @@ $companyResult = $companyStmt->get_result();
 if ($row = $companyResult->fetch_assoc()) {
     $companyName = $row['COMP_NAME'];
     $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : $licenseNo;
+    
+    // Determine license type from license number
+    if (preg_match('/FLIII/i', $licenseNo)) {
+        $licenseType = "FLIII";
+    } elseif (preg_match('/FLBRII/i', $licenseNo)) {
+        $licenseType = "FLBRII";
+    } elseif (preg_match('/FLII/i', $licenseNo)) {
+        $licenseType = "FL-II";
+    }
 }
 $companyStmt->close();
+
+// Set register name based on license type
+if ($licenseType === "FLIII") {
+    $registerName = "FLR-6 Gate Register";
+} elseif ($licenseType === "FLBRII") {
+    $registerName = "FLR-5 Gate Register";
+} else {
+    $registerName = "FLR-5 Gate Register"; // Default for FLII
+}
 
 // Function to get base size for grouping
 function getBaseSize($size) {
@@ -562,7 +582,7 @@ if ($mode == 'Country Liquor') {
       <!-- Report Results -->
       <div class="print-section">
         <div class="company-header">
-          <h1>GATE REGISTER (FLR-3)</h1>
+          <h1><?= htmlspecialchars($registerName) ?></h1>
           <h5>Mode: <?= htmlspecialchars($mode) ?></h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>Date: <?= date('d-M-Y', strtotime($selected_date)) ?></h6>

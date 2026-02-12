@@ -125,8 +125,8 @@ if (isset($_GET['generate'])) {
             $types .= "s";
         }
         
-        // Only include items that have stock data
-        $itemQuery .= " AND (ds.{$dayField}_OPEN IS NOT NULL OR ds.{$dayField}_PURCHASE IS NOT NULL OR ds.{$dayField}_SALES IS NOT NULL OR ds.{$dayField}_CLOSING IS NOT NULL)";
+        // Only include items that have closing stock > 0
+        $itemQuery .= " AND ds.{$dayField}_CLOSING > 0";
         
         $itemQuery .= " ORDER BY im.DETAILS, im.DETAILS2";
         

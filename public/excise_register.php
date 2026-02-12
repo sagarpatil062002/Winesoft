@@ -634,6 +634,12 @@ if ($mode == 'Foreign Liquor') {
       font-weight: bold;
     }
     
+    .closing-balance {
+      font-weight: bold !important;
+      color: #000 !important;
+      background-color: #d3d3d3 !important;
+    }
+    
     /* Double line separators - using class-based approach */
     .double-line-right {
       border-right: 3px double #000 !important;
@@ -1249,47 +1255,47 @@ if ($mode == 'Foreign Liquor') {
                         <?php 
                         $last_country_index = count($display_sizes_country) - 1;
                         foreach ($display_sizes_country as $index => $size): ?>
-                          <td class="<?= $index == $last_country_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Country Liquor']['closing'][$size] > 0 ? $daily_data[$date]['Country Liquor']['closing'][$size] : '' ?></td>
+                          <td class="<?= $index == $last_country_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Country Liquor']['closing'][$size] > 0 ? $daily_data[$date]['Country Liquor']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                       <?php else: ?>
                         <!-- Spirits Closing Stock -->
                         <?php 
                         $last_spirit_index = count($display_sizes_s) - 1;
                         foreach ($display_sizes_s as $index => $size): ?>
-                          <td class="<?= $index == $last_spirit_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
+                          <td class="<?= $index == $last_spirit_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Spirits']['closing'][$size] > 0 ? $daily_data[$date]['Spirits']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Imported Spirit Closing Stock -->
                         <?php 
                         $last_imported_index = count($display_sizes_imported) - 1;
                         foreach ($display_sizes_imported as $index => $size): ?>
-                           <td class="<?= $index == $last_imported_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Imported Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['closing'][$size] : '' ?></td>
+                           <td class="<?= $index == $last_imported_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Imported Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Imported Spirit']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wines Closing Stock -->
                         <?php 
                         $last_wine_index = count($display_sizes_w) - 1;
                         foreach ($display_sizes_w as $index => $size): ?>
-                          <td class="<?= $index == $last_wine_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Wines']['closing'][$size] > 0 ? $daily_data[$date]['Wines']['closing'][$size] : '' ?></td>
+                          <td class="<?= $index == $last_wine_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Wines']['closing'][$size] > 0 ? $daily_data[$date]['Wines']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Wine Imp Closing Stock -->
                         <?php 
                         $last_wine_imp_index = count($display_sizes_wine_imp) - 1;
                         foreach ($display_sizes_wine_imp as $index => $size): ?>
-                          <td class="<?= $index == $last_wine_imp_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Wine Imp']['closing'][$size] > 0 ? $daily_data[$date]['Wine Imp']['closing'][$size] : '' ?></td>
+                          <td class="<?= $index == $last_wine_imp_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Wine Imp']['closing'][$size] > 0 ? $daily_data[$date]['Wine Imp']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Fermented Beer Closing Stock -->
                         <?php 
                         $last_fermented_index = count($display_sizes_fb) - 1;
                         foreach ($display_sizes_fb as $index => $size): ?>
-                          <td class="<?= $index == $last_fermented_index ? 'double-line-right' : '' ?>"><?= $daily_data[$date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['closing'][$size] : '' ?></td>
+                          <td class="<?= $index == $last_fermented_index ? 'double-line-right' : '' ?> closing-balance"><?= $daily_data[$date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                         
                         <!-- Mild Beer Closing Stock -->
                         <?php foreach ($display_sizes_mb as $size): ?>
-                          <td><?= $daily_data[$date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$date]['Mild Beer']['closing'][$size] : '' ?></td>
+                          <td class="closing-balance"><?= $daily_data[$date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$date]['Mild Beer']['closing'][$size] : '' ?></td>
                         <?php endforeach; ?>
                       <?php endif; ?>
                     </tr>

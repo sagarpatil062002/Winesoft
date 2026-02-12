@@ -367,6 +367,10 @@ if (isset($_GET['generate'])) {
       text-align: center;
     }
     
+    .report-table th.rowspan-header {
+      background-color: #e9ecef;
+    }
+    
     .report-table .text-right {
       text-align: right;
     }
@@ -397,6 +401,17 @@ if (isset($_GET['generate'])) {
     .report-table .amount-col {
       width: 120px;
       text-align: right;
+    }
+    
+    .report-table .category-col {
+      width: 100px;
+      text-align: center;
+    }
+    
+    .report-table .sub-col {
+      width: 60px;
+      text-align: center;
+      font-size: 11px;
     }
     
     .total-row {
@@ -524,7 +539,7 @@ if (isset($_GET['generate'])) {
                 <i class="fas fa-cog me-1"></i> Generate
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
-                <i class="fas fa-print me-1"></i> Print Report
+                <i class me-1">="fas fa-print</i> Print Report
               </button>
               <button type="button" class="btn btn-info" onclick="exportToExcel()">
                 <i class="fas fa-file-excel me-1"></i> Export to Excel
@@ -557,11 +572,26 @@ if (isset($_GET['generate'])) {
             <table class="report-table">
               <thead>
                 <tr>
-                  <th class="sr-no">Sr.No.</th>
-                  <th class="date-col">Date</th>
-                  <th class="particulars-col">Particulars</th>
-                  <th class="bills-col">[Bill's From - To]</th>
-                  <th class="amount-col">Amount</th>
+                  <th class="sr-no" rowspan="2">SR<br>No</th>
+                  <th class="date-col" rowspan="2">Date</th>
+                  <th class="category-col" colspan="5">IMFL</th>
+                  <th class="category-col" rowspan="2">IMP<br>Spirit</th>
+                  <th class="category-col" rowspan="2">Wine</th>
+                  <th class="category-col" rowspan="2">IMP<br>Wine</th>
+                  <th class="category-col" colspan="2">Fermented<br>Beer</th>
+                  <th class="category-col" colspan="2">Mild<br>Beer</th>
+                  <th class="amount-col" rowspan="2">Total</th>
+                </tr>
+                <tr>
+                  <th class="sub-col">1</th>
+                  <th class="sub-col">2</th>
+                  <th class="sub-col">3</th>
+                  <th class="sub-col">4</th>
+                  <th class="sub-col">5</th>
+                  <th class="sub-col">6</th>
+                  <th class="sub-col">7</th>
+                  <th class="sub-col">8</th>
+                  <th class="sub-col">9</th>
                 </tr>
               </thead>
               <tbody>
@@ -601,16 +631,12 @@ if (isset($_GET['generate'])) {
                     ?>
                       <tr>
                         <?php if (!$date_printed): ?>
-                          <td class="sr-no text-center"><?= $sr_no ?></td>
-                          <td class="date-col"><?= date('d/m/Y', strtotime($date)) ?></td>
+                          <td class="sr-no text-center" rowspan="<?= count(array_filter($categories_data, function($c) { return $c['amount'] > 0; })) + 1 ?>"><?= $sr_no ?></td>
+                          <td class="date-col" rowspan="<?= count(array_filter($categories_data, function($c) { return $c['amount'] > 0; })) + 1 ?>"><?= date('d/m/Y', strtotime($date)) ?></td>
                           <?php $date_printed = true; ?>
-                        <?php else: ?>
-                          <td class="sr-no"></td>
-                          <td class="date-col"></td>
                         <?php endif; ?>
                         
-                        <td class="particulars-col"><?= $category_name ?></td>
-                        <td class="bills-col text-center"><?= $min_bill ?> - <?= $max_bill ?></td>
+                        <td class="particulars-col" colspan="12"><?= $category_name ?></td>
                         <td class="amount-col text-right"><?= number_format($amount, 2) ?></td>
                       </tr>
                       
@@ -620,10 +646,7 @@ if (isset($_GET['generate'])) {
                   
                   <!-- Daily total row -->
                   <tr class="daily-total-row">
-                    <td class="sr-no"></td>
-                    <td class="date-col"></td>
-                    <td class="particulars-col"></td>
-                    <td class="bills-col text-center"><strong>Total</strong></td>
+                    <td colspan="13" class="text-center"><strong>Daily Total</strong></td>
                     <td class="amount-col text-right"><strong><?= number_format($date_total, 2) ?></strong></td>
                   </tr>
                   
@@ -638,8 +661,7 @@ if (isset($_GET['generate'])) {
                 <tr class="total-row">
                   <td class="sr-no"></td>
                   <td class="date-col"></td>
-                  <td class="particulars-col"></td>
-                  <td class="bills-col text-center"><strong>Grand Total</strong></td>
+                  <td class="particulars-col" colspan="12"><strong>Grand Total</strong></td>
                   <td class="amount-col text-right"><strong><?= number_format($grand_total, 2) ?></strong></td>
                 </tr>
               </tbody>
@@ -660,7 +682,7 @@ if (isset($_GET['generate'])) {
       <?php endif; ?>
     </div>
     
-  <?php include 'components/footer.php'; ?>
+    <?php include 'components/footer.php'; ?>
   </div>
   
 </div>
