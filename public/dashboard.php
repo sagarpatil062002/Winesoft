@@ -8,7 +8,7 @@ if(!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;
 }
-if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
+if(!isset($_SESSION['CompID'])) {
     header("Location: index.php");
     exit;
 }
@@ -16,11 +16,260 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php";
 require_once 'license_functions.php';
 
+// =============================================================================
+// AUTOMATIC FINANCIAL YEAR MANAGEMENT - REAL TRANSITION ONLY
+// =============================================================================
+
+function checkAndCreateFinancialYear($conn) {
+    $today = date('Y-m-d');
+    $currentMonth = date('m');
+    $currentYear = date('Y');
+    
+    // Determine current financial year based on date
+    if ($currentMonth >= 4) {
+        // After April 1, financial year is current_year to next_year
+        $fyStartYear = $currentYear;
+        $fyEndYear = $currentYear + 1;
+    } else {
+        // Before April 1, financial year is previous_year to current_year
+        $fyStartYear = $currentYear - 1;
+        $fyEndYear = $currentYear;
+    }
+    
+    $fyStartDate = $fyStartYear . '-04-01 00:00:00';
+    $fyEndDate = $fyEndYear . '-03-31 23:59:59';
+    $fyName = $fyStartYear . '-' . substr($fyEndYear, -2);
+    
+    // Check if this financial year exists in database
+    $checkQuery = "SELECT * FROM tblfinyear WHERE START_DATE = ? AND END_DATE = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    if (!$checkStmt) {
+        error_log("Failed to prepare check statement: " . $conn->error);
+        return getLatestFinancialYear($conn);
+    }
+    
+    $checkStmt->bind_param("ss", $fyStartDate, $fyEndDate);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        // Financial year exists, get its data
+        $fyData = $checkResult->fetch_assoc();
+        
+        // Add FIN_YEAR_NAME to the data if it doesn't exist
+        if (!isset($fyData['FIN_YEAR_NAME'])) {
+            // Calculate financial year name from dates
+            $startYear = date('Y', strtotime($fyData['START_DATE']));
+            $endYear = date('y', strtotime($fyData['END_DATE']));
+            $fyData['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+        }
+        
+        // Make sure it's active
+        if ($fyData['ACTIVE'] != 1) {
+            // Deactivate all other financial years
+            $conn->query("UPDATE tblfinyear SET ACTIVE = 0");
+            
+            // Activate this one
+            $activateQuery = "UPDATE tblfinyear SET ACTIVE = 1 WHERE ID = ?";
+            $activateStmt = $conn->prepare($activateQuery);
+            if ($activateStmt) {
+                $activateStmt->bind_param("i", $fyData['ID']);
+                $activateStmt->execute();
+                $activateStmt->close();
+                $fyData['ACTIVE'] = 1;
+                error_log("Financial year activated: {$fyName}");
+            }
+        }
+        
+        $checkStmt->close();
+        return $fyData;
+    } else {
+        // Financial year doesn't exist, check if it should be created
+        $checkStmt->close();
+        
+        // Only create if this is the logical next year
+        $latestFY = getLatestFinancialYear($conn);
+        
+        if ($latestFY) {
+            $latestEndYear = date('Y', strtotime($latestFY['END_DATE']));
+            
+            // If today is after the latest financial year's end date, create new
+            if (strtotime($today) > strtotime($latestFY['END_DATE'])) {
+                return createNewFinancialYear($conn, $latestFY);
+            } else {
+                // Add FIN_YEAR_NAME to the latest FY if it doesn't exist
+                if (!isset($latestFY['FIN_YEAR_NAME'])) {
+                    $startYear = date('Y', strtotime($latestFY['START_DATE']));
+                    $endYear = date('y', strtotime($latestFY['END_DATE']));
+                    $latestFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+                }
+                return $latestFY;
+            }
+        } else {
+            // No financial years exist, create current one
+            return createNewFinancialYear($conn, null, $fyStartDate, $fyEndDate, $fyName);
+        }
+    }
+}
+
+function getLatestFinancialYear($conn) {
+    $query = "SELECT * FROM tblfinyear ORDER BY END_DATE DESC LIMIT 1";
+    $result = $conn->query($query);
+    
+    if ($result && $result->num_rows > 0) {
+        $fyData = $result->fetch_assoc();
+        
+        // Add FIN_YEAR_NAME if it doesn't exist
+        if (!isset($fyData['FIN_YEAR_NAME'])) {
+            $startYear = date('Y', strtotime($fyData['START_DATE']));
+            $endYear = date('y', strtotime($fyData['END_DATE']));
+            $fyData['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+        }
+        
+        return $fyData;
+    }
+    
+    return null;
+}
+
+function createNewFinancialYear($conn, $previousFY = null, $startDate = null, $endDate = null, $name = null) {
+    try {
+        if ($previousFY) {
+            // Calculate next financial year based on previous
+            $prevEndDate = new DateTime($previousFY['END_DATE']);
+            $newStartDate = clone $prevEndDate;
+            $newStartDate->modify('+1 day');
+            
+            $newEndDate = clone $newStartDate;
+            $newEndDate->modify('+1 year');
+            $newEndDate->modify('-1 day');
+            
+            $startYear = $newStartDate->format('Y');
+            $endYear = $newEndDate->format('y');
+            $fyName = $startYear . '-' . $endYear;
+            
+            $startDateStr = $newStartDate->format('Y-m-d H:i:s');
+            $endDateStr = $newEndDate->format('Y-m-d 23:59:59');
+        } else {
+            // Use provided dates or calculate from current date
+            $startDateStr = $startDate;
+            $endDateStr = $endDate;
+            $fyName = $name;
+        }
+        
+        // Deactivate all existing financial years
+        $conn->query("UPDATE tblfinyear SET ACTIVE = 0");
+        
+        // Check if FIN_YEAR_NAME column exists
+        $columnCheck = $conn->query("SHOW COLUMNS FROM tblfinyear LIKE 'FIN_YEAR_NAME'");
+        $hasFinYearColumn = $columnCheck && $columnCheck->num_rows > 0;
+        
+        if ($hasFinYearColumn) {
+            // Insert with FIN_YEAR_NAME
+            $insertQuery = "INSERT INTO tblfinyear (FIN_YEAR_NAME, START_DATE, END_DATE, ACTIVE) 
+                            VALUES (?, ?, ?, 1)";
+            $insertStmt = $conn->prepare($insertQuery);
+            if (!$insertStmt) {
+                throw new Exception("Failed to prepare insert: " . $conn->error);
+            }
+            $insertStmt->bind_param("sss", $fyName, $startDateStr, $endDateStr);
+        } else {
+            // Insert without FIN_YEAR_NAME (table structure from your SQL)
+            $insertQuery = "INSERT INTO tblfinyear (START_DATE, END_DATE, ACTIVE) 
+                            VALUES (?, ?, 1)";
+            $insertStmt = $conn->prepare($insertQuery);
+            if (!$insertStmt) {
+                throw new Exception("Failed to prepare insert: " . $conn->error);
+            }
+            $insertStmt->bind_param("ss", $startDateStr, $endDateStr);
+        }
+        
+        $insertStmt->execute();
+        
+        if ($insertStmt->affected_rows > 0) {
+            $newFYId = $conn->insert_id;
+            $insertStmt->close();
+            
+            // Get the newly created financial year
+            $selectQuery = "SELECT * FROM tblfinyear WHERE ID = ?";
+            $selectStmt = $conn->prepare($selectQuery);
+            $selectStmt->bind_param("i", $newFYId);
+            $selectStmt->execute();
+            $result = $selectStmt->get_result();
+            $newFY = $result->fetch_assoc();
+            $selectStmt->close();
+            
+            // Add FIN_YEAR_NAME to the returned data
+            if (!isset($newFY['FIN_YEAR_NAME'])) {
+                $startYear = date('Y', strtotime($newFY['START_DATE']));
+                $endYear = date('y', strtotime($newFY['END_DATE']));
+                $newFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+            }
+            
+            error_log("New financial year created automatically: {$fyName}");
+            
+            return $newFY;
+        } else {
+            throw new Exception("Failed to insert new financial year");
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error creating financial year: " . $e->getMessage());
+        return getLatestFinancialYear($conn);
+    }
+}
+
+// Get the current financial year (real, no simulation)
+$currentFY = checkAndCreateFinancialYear($conn);
+
+// Update session with current financial year data
+if ($currentFY) {
+    // Ensure FIN_YEAR_NAME is set
+    if (!isset($currentFY['FIN_YEAR_NAME'])) {
+        $startYear = date('Y', strtotime($currentFY['START_DATE']));
+        $endYear = date('y', strtotime($currentFY['END_DATE']));
+        $currentFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+    }
+    
+    // Check if financial year has changed
+    if (!isset($_SESSION['FIN_YEAR_ID']) || $_SESSION['FIN_YEAR_ID'] != $currentFY['ID']) {
+        $_SESSION['FIN_YEAR_ID'] = $currentFY['ID'];
+        $_SESSION['FIN_YEAR_NAME'] = $currentFY['FIN_YEAR_NAME'];
+        $_SESSION['FIN_YEAR_START'] = $currentFY['START_DATE'];
+        $_SESSION['FIN_YEAR_END'] = $currentFY['END_DATE'];
+        
+        // Set flag to show transition message
+        $_SESSION['fy_transition'] = true;
+    }
+} else {
+    // This should never happen, but just in case
+    error_log("CRITICAL: No financial year found or created!");
+    
+    // Set default values based on current date
+    $currentMonth = date('m');
+    $currentYear = date('Y');
+    
+    if ($currentMonth >= 4) {
+        $fyStartYear = $currentYear;
+        $fyEndYear = $currentYear + 1;
+    } else {
+        $fyStartYear = $currentYear - 1;
+        $fyEndYear = $currentYear;
+    }
+    
+    $_SESSION['FIN_YEAR_ID'] = 0;
+    $_SESSION['FIN_YEAR_NAME'] = $fyStartYear . '-' . substr($fyEndYear, -2);
+    $_SESSION['FIN_YEAR_START'] = $fyStartYear . '-04-01 00:00:00';
+    $_SESSION['FIN_YEAR_END'] = $fyEndYear . '-03-31 23:59:59';
+    
+    error_log("Set default financial year values: " . $_SESSION['FIN_YEAR_NAME']);
+}
+
 $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 
 // =============================================================================
-// MONTH TRANSITION & GAP FILLING FUNCTIONS - IMPROVED VERSION WITH TABLE CREATION
+// MONTH TRANSITION & GAP FILLING FUNCTIONS
 // =============================================================================
 
 function getCurrentMonth() {
@@ -864,7 +1113,7 @@ function executeCompleteMonthTransition($conn) {
         
         // STEP 3: Initialize new month with previous month's closing stock
         $initResult = ['success' => false, 'error' => 'Archive creation failed'];
-        if ($archiveResult['success'] || $archiveResult['error'] && strpos($archiveResult['error'], 'already exists') !== false) {
+        if ($archiveResult['success'] || ($archiveResult['error'] && strpos($archiveResult['error'], 'already exists') !== false)) {
             $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
         } else {
             // Try to initialize even if archive creation failed but table might already exist
@@ -1488,6 +1737,34 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
             margin-left: 5px;
         }
         
+        .fy-indicator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .fy-indicator .alert {
+            margin-bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+        }
+        
+        .fy-indicator .alert .btn-close {
+            filter: brightness(0) invert(1);
+        }
+        
+        .current-day-highlight {
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
         @media (max-width: 1200px) {
             .stats-grid {
                 grid-template-columns: repeat(3, 1fr);
@@ -1514,14 +1791,6 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
             flex-wrap: wrap;
             gap: 10px;
         }
-        
-        .current-day-highlight {
-            background: #ff6b6b;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -1530,37 +1799,98 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
     
     <div class="main-content">
         <div class="content-area">
+            <!-- Financial Year Indicator - Real Mode Only -->
+            <div class="fy-indicator">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        <strong>Financial Year:</strong> 
+                        <?php 
+                        // Check if session variables exist before displaying
+                        if (isset($_SESSION['FIN_YEAR_NAME']) && !empty($_SESSION['FIN_YEAR_NAME'])) {
+                            echo htmlspecialchars($_SESSION['FIN_YEAR_NAME']); 
+                        } else {
+                            // Calculate from dates if name is missing but dates exist
+                            if (isset($_SESSION['FIN_YEAR_START']) && !empty($_SESSION['FIN_YEAR_START'])) {
+                                $startYear = date('Y', strtotime($_SESSION['FIN_YEAR_START']));
+                                $endYear = date('y', strtotime($_SESSION['FIN_YEAR_END']));
+                                $calculatedName = $startYear . '-' . $endYear;
+                                echo htmlspecialchars($calculatedName);
+                                // Update session for future use
+                                $_SESSION['FIN_YEAR_NAME'] = $calculatedName;
+                            } else {
+                                echo '<span class="text-warning">Not Available</span>';
+                                // Log for debugging
+                                error_log("Financial year name not set in session at display time");
+                            }
+                        }
+                        ?>
+                        (<?php 
+                        echo isset($_SESSION['FIN_YEAR_START']) && !empty($_SESSION['FIN_YEAR_START']) 
+                            ? date('d M Y', strtotime($_SESSION['FIN_YEAR_START'])) 
+                            : 'N/A'; 
+                        ?> - 
+                        <?php 
+                        echo isset($_SESSION['FIN_YEAR_END']) && !empty($_SESSION['FIN_YEAR_END']) 
+                            ? date('d M Y', strtotime($_SESSION['FIN_YEAR_END'])) 
+                            : 'N/A'; 
+                        ?>)
+                    </div>
+                    <div class="text-white-50">
+                        <i class="fas fa-calendar-day me-1"></i>
+                        <?php echo date('d M Y'); ?>
+                    </div>
+                </div>
+                
+                <?php if (isset($_SESSION['fy_transition']) && $_SESSION['fy_transition']): ?>
+                    <div class="alert alert-success alert-dismissible fade show mt-3 mb-0">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Financial Year Updated!</strong> 
+                        System has automatically transitioned to financial year 
+                        <?php 
+                        if (isset($_SESSION['FIN_YEAR_NAME']) && !empty($_SESSION['FIN_YEAR_NAME'])) {
+                            echo htmlspecialchars($_SESSION['FIN_YEAR_NAME']);
+                        } else {
+                            echo 'new year';
+                        }
+                        ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <?php unset($_SESSION['fy_transition']); ?>
+                <?php endif; ?>
+            </div>
+            
             <div class="header-info">
                 <h3 class="mb-0">Dashboard Overview</h3>
                 <?php if($license_type): ?>
                     <div class="d-flex align-items-center">
                         <span class="license-badge">License: <?php echo htmlspecialchars($license_type); ?></span>
                         <span class="allowed-badge">
-                            <?php echo count($classes); ?> Classes
+                            <?php echo isset($classes) ? count($classes) : 0; ?> Classes
                         </span>
                     </div>
                 <?php endif; ?>
             </div>
             
             <?php if(isset($error)): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
+                <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
             
             <?php if($successMessage): ?>
                 <?php if($messageType === 'success'): ?>
                     <div class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo $successMessage; ?>
+                        <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo htmlspecialchars($successMessage); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php else: ?>
                     <div class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>Error!</strong> <?php echo $successMessage; ?>
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Error!</strong> <?php echo htmlspecialchars($successMessage); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
             <?php endif; ?>
             
-            <?php if($show_transition_card && $transitionInfo && $transitionInfo['table_name']): ?>
+            <?php if($show_transition_card && $transitionInfo && isset($transitionInfo['table_name']) && $transitionInfo['table_name']): ?>
                 <div class="card transition-alert">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1570,12 +1900,12 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                                     Month Transition Failed - Manual Action Required
                                 </h4>
                                 <div class="mt-2">
-                                    <strong>Previous Month:</strong> <?php echo $transitionInfo['previous_month']; ?> 
-                                    (<?php echo $transitionInfo['previous_month_days']; ?> days) │
-                                    <strong>Current Month:</strong> <?php echo $transitionInfo['current_month']; ?> 
-                                    (<?php echo $transitionInfo['current_month_days']; ?> days) │
-                                    <strong>Today:</strong> <?php echo $transitionInfo['current_date']; ?> 
-                                    (Day <span class="current-day-highlight"><?php echo $transitionInfo['current_day']; ?></span>)
+                                    <strong>Previous Month:</strong> <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'N/A'; ?> 
+                                    (<?php echo isset($transitionInfo['previous_month_days']) ? (int)$transitionInfo['previous_month_days'] : '0'; ?> days) │
+                                    <strong>Current Month:</strong> <?php echo isset($transitionInfo['current_month']) ? htmlspecialchars($transitionInfo['current_month']) : 'N/A'; ?> 
+                                    (<?php echo isset($transitionInfo['current_month_days']) ? (int)$transitionInfo['current_month_days'] : '0'; ?> days) │
+                                    <strong>Today:</strong> <?php echo isset($transitionInfo['current_date']) ? htmlspecialchars($transitionInfo['current_date']) : date('Y-m-d'); ?> 
+                                    (Day <span class="current-day-highlight"><?php echo isset($transitionInfo['current_day']) ? (int)$transitionInfo['current_day'] : (int)date('j'); ?></span>)
                                 </div>
                             </div>
                             <form method="POST" id="transitionForm" style="display: inline;">
@@ -1607,23 +1937,23 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                                 </div>
                             </div>
                             
-                            <?php if(!$transitionInfo['previous_month_exists']): ?>
+                            <?php if(isset($transitionInfo['previous_month_exists']) && !$transitionInfo['previous_month_exists']): ?>
                             <div class="step-item">
                                 <strong>Step 2: Restore Previous Month Data</strong>
                                 <div class="mt-1">
-                                    <small>Restore <?php echo $transitionInfo['previous_month']; ?> data from archive</small>
+                                    <small>Restore <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'previous month'; ?> data from archive</small>
                                 </div>
                             </div>
                             <?php endif; ?>
                             
-                            <?php if($transitionInfo['has_previous_gaps']): ?>
+                            <?php if(isset($transitionInfo['has_previous_gaps']) && $transitionInfo['has_previous_gaps']): ?>
                             <div class="step-item">
                                 <strong>Step 3: Fill Previous Month Gaps</strong>
                                 <div class="mt-1">
-                                    <?php if(!empty($transitionInfo['previous_gap_info']['gaps'])): ?>
+                                    <?php if(isset($transitionInfo['previous_gap_info']['gaps']) && !empty($transitionInfo['previous_gap_info']['gaps'])): ?>
                                         <small>Missing days: </small>
                                         <?php foreach($transitionInfo['previous_gap_info']['gaps'] as $day): ?>
-                                            <span class="badge bg-warning gap-days">Day <?php echo $day; ?></span>
+                                            <span class="badge bg-warning gap-days">Day <?php echo (int)$day; ?></span>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
@@ -1633,25 +1963,31 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                             <div class="step-item">
                                 <strong>Step 4: Create Archive Table</strong>
                                 <div class="mt-1">
-                                    <small>Archive: <code><?php echo $transitionInfo['table_name'] . '_' . getMonthSuffix($transitionInfo['previous_month']); ?></code></small>
+                                    <small>Archive: <code><?php 
+                                        if(isset($transitionInfo['table_name']) && isset($transitionInfo['previous_month'])) {
+                                            echo htmlspecialchars($transitionInfo['table_name'] . '_' . getMonthSuffix($transitionInfo['previous_month'])); 
+                                        } else {
+                                            echo 'archive_table_name';
+                                        }
+                                    ?></code></small>
                                 </div>
                             </div>
                             
                             <div class="step-item">
                                 <strong>Step 5: Initialize New Month</strong>
                                 <div class="mt-1">
-                                    <small>Copy closing stock from <?php echo $transitionInfo['previous_month']; ?> to <?php echo $transitionInfo['current_month']; ?></small>
+                                    <small>Copy closing stock from <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'previous month'; ?> to <?php echo isset($transitionInfo['current_month']) ? htmlspecialchars($transitionInfo['current_month']) : 'current month'; ?></small>
                                 </div>
                             </div>
                             
-                            <?php if($transitionInfo['has_current_gaps']): ?>
+                            <?php if(isset($transitionInfo['has_current_gaps']) && $transitionInfo['has_current_gaps']): ?>
                             <div class="step-item">
                                 <strong>Step 6: Fill Current Month Gaps</strong>
                                 <div class="mt-1">
-                                    <?php if(!empty($transitionInfo['current_gap_info']['gaps'])): ?>
+                                    <?php if(isset($transitionInfo['current_gap_info']['gaps']) && !empty($transitionInfo['current_gap_info']['gaps'])): ?>
                                         <small>Missing days: </small>
                                         <?php foreach($transitionInfo['current_gap_info']['gaps'] as $day): ?>
-                                            <span class="badge bg-info gap-days">Day <?php echo $day; ?></span>
+                                            <span class="badge bg-info gap-days">Day <?php echo (int)$day; ?></span>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </div>
@@ -1676,7 +2012,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL ITEMS</h4>
-                        <p><?php echo $stats['total_items']; ?></p>
+                        <p><?php echo isset($stats['total_items']) ? htmlspecialchars($stats['total_items']) : '0'; ?></p>
                         <small class="text-muted">All Products</small>
                     </div>
                 </div>
@@ -1687,7 +2023,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>LICENSED ITEMS</h4>
-                        <p><?php echo $stats['licensed_items']; ?></p>
+                        <p><?php echo isset($stats['licensed_items']) ? htmlspecialchars($stats['licensed_items']) : '0'; ?></p>
                         <small class="text-muted"><?php echo htmlspecialchars($license_type ?: 'ALL'); ?> License</small>
                     </div>
                 </div>
@@ -1698,8 +2034,8 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL CUSTOMERS</h4>
-                        <p><?php echo $stats['total_customers']; ?></p>
-                        <small class="text-muted">Company <?php echo $company_id; ?></small>
+                        <p><?php echo isset($stats['total_customers']) ? htmlspecialchars($stats['total_customers']) : '0'; ?></p>
+                        <small class="text-muted">Company <?php echo isset($company_id) ? (int)$company_id : 'N/A'; ?></small>
                     </div>
                 </div>
                 
@@ -1709,7 +2045,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL SUPPLIERS</h4>
-                        <p><?php echo $stats['total_suppliers']; ?></p>
+                        <p><?php echo isset($stats['total_suppliers']) ? htmlspecialchars($stats['total_suppliers']) : '0'; ?></p>
                     </div>
                 </div>
                 
@@ -1719,7 +2055,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>ACTIVE PERMITS</h4>
-                        <p><?php echo $stats['total_permits']; ?></p>
+                        <p><?php echo isset($stats['total_permits']) ? htmlspecialchars($stats['total_permits']) : '0'; ?></p>
                     </div>
                 </div>
                 
@@ -1729,7 +2065,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                     </div>
                     <div class="stat-info">
                         <h4>DRY DAYS (<?php echo date('Y'); ?>)</h4>
-                        <p><?php echo $stats['total_dry_days']; ?></p>
+                        <p><?php echo isset($stats['total_dry_days']) ? htmlspecialchars($stats['total_dry_days']) : '0'; ?></p>
                     </div>
                 </div>
                 
@@ -1740,9 +2076,9 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                         $color = getCategoryColor($class['category_name'], $class['name']);
                         $icon = getCategoryIcon($class['category_name'], $class['name']);
                         ?>
-                        <div class="stat-card" style="border-left-color: <?php echo $color; ?>;">
-                            <div class="stat-icon" style="background: <?php echo $color; ?>;">
-                                <i class="<?php echo $icon; ?>"></i>
+                        <div class="stat-card" style="border-left-color: <?php echo htmlspecialchars($color); ?>;">
+                            <div class="stat-icon" style="background: <?php echo htmlspecialchars($color); ?>;">
+                                <i class="<?php echo htmlspecialchars($icon); ?>"></i>
                             </div>
                             <div class="stat-info">
                                 <h4><?php echo htmlspecialchars($display_name); ?></h4>
@@ -1759,8 +2095,6 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Only include shortcuts.js without any dashboard shortcut code -->
 <script src="components/shortcuts.js?v=<?= time() ?>"></script>
 
 <script>
@@ -1784,8 +2118,6 @@ $(document).ready(function() {
         }, 30000);
     <?php endif; ?>
 });
-
-// No dashboard shortcut code here - shortcuts.js will work independently
 </script>
 
 </body>

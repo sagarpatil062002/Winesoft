@@ -18,10 +18,31 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 $comp_id = $_SESSION['CompID'];
-$fin_year = $_SESSION['FIN_YEAR_ID'];
+$fin_year_id = $_SESSION['FIN_YEAR_ID']; // This is the ID from tblfinyear
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 require_once 'license_functions.php'; // ADDED: Include license functions
+
+// Helper function to get financial year start date from tblfinyear
+function getFinancialYearStartDate($fin_year_id, $conn) {
+    $query = "SELECT START_DATE FROM tblfinyear WHERE ID = ? LIMIT 1";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $fin_year_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($row = $result->fetch_assoc()) {
+        $start_date = $row['START_DATE'];
+        // Convert datetime to date format (Y-m-d)
+        return date('Y-m-d', strtotime($start_date));
+    }
+    
+    // Fallback: if no record found, use April 1st of current year
+    return date('Y') . '-04-01';
+}
+
+// Set default start date from financial year table
+$default_start_date = getFinancialYearStartDate($fin_year_id, $conn);
 
 // Get company's license type and available classes - ADDED LICENSE FILTERING
 $company_id = $_SESSION['CompID'];
@@ -51,6 +72,15 @@ $company_stmt->execute();
 $company_result = $company_stmt->get_result();
 $current_company = $company_result->fetch_assoc();
 $company_stmt->close();
+
+// Get financial year details for display
+$finyear_query = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ?";
+$finyear_stmt = $conn->prepare($finyear_query);
+$finyear_stmt->bind_param("i", $fin_year_id);
+$finyear_stmt->execute();
+$finyear_result = $finyear_stmt->get_result();
+$finyear_data = $finyear_result->fetch_assoc();
+$finyear_stmt->close();
 
 // ==================== PERFORMANCE OPTIMIZATION #1: Bulk Column Creation ====================
 // Check and create all needed columns in ONE query
@@ -320,6 +350,7 @@ if (!$current_month_exists) {
 
 // ==================== PERFORMANCE OPTIMIZATION #3: Bulk Daily Stock Updates ====================
 // Function to update daily stock range (OPTIMIZED for bulk operations)
+// ONLY called for items with stock > 0
 function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date) {
     $start = new DateTime($start_date);
     $end = new DateTime();
@@ -356,6 +387,16 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
         // Ensure columns exist for this month
         addDayColumnsForMonth($conn, $comp_id, $month);
         
+        // Get days in this month
+        $year_month = explode('-', $month);
+        $year = $year_month[0];
+        $month_num = $year_month[1];
+        $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+        $all_days_in_month = [];
+        for ($d = 1; $d <= $days_in_month; $d++) {
+            $all_days_in_month[] = str_pad($d, 2, '0', STR_PAD_LEFT);
+        }
+        
         // Process each item for this month
         foreach ($items_data as $item_code => $opening_balance) {
             // Check if record exists for this month
@@ -368,41 +409,57 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
             $check_stmt->close();
             
             if ($exists) {
-                // Build update query for all days at once
+                // Build update query for specific days in range
                 $update_parts = [];
                 $params = [];
                 $types = '';
                 
+                // Update only the days that are in our date range
                 foreach ($days as $day_padded) {
                     $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
-                    $update_parts[] = "DAY_{$day_padded}_PURCHASE = 0";
-                    $update_parts[] = "DAY_{$day_padded}_SALES = 0";
                     $update_parts[] = "DAY_{$day_padded}_CLOSING = ?";
                     $params[] = $opening_balance;
                     $params[] = $opening_balance;
                     $types .= 'ii';
                 }
                 
-                $update_query = "UPDATE $table_name SET " . implode(', ', $update_parts) . 
-                              " WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+                // Also set days before start_date to 0 if they're not already set
+                // But only if this is the start month (first month in range)
+                $first_month = array_key_first($monthly_data);
+                if ($month === $first_month) {
+                    $start_day = intval($days[0]);
+                    for ($d = 1; $d < $start_day; $d++) {
+                        $day_padded = str_pad($d, 2, '0', STR_PAD_LEFT);
+                        if (!in_array($day_padded, $days)) {
+                            $update_parts[] = "DAY_{$day_padded}_OPEN = 0";
+                            $update_parts[] = "DAY_{$day_padded}_CLOSING = 0";
+                        }
+                    }
+                }
                 
-                $params[] = $month;
-                $params[] = $item_code;
-                $params[] = $mode;
-                $types .= 'sss';
-                
-                $update_stmt = $conn->prepare($update_query);
-                $update_stmt->bind_param($types, ...$params);
-                $update_stmt->execute();
-                $update_stmt->close();
+                if (!empty($update_parts)) {
+                    $update_query = "UPDATE $table_name SET " . implode(', ', $update_parts) . 
+                                  " WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+                    
+                    $params[] = $month;
+                    $params[] = $item_code;
+                    $params[] = $mode;
+                    $types .= 'sss';
+                    
+                    $update_stmt = $conn->prepare($update_query);
+                    $update_stmt->bind_param($types, ...$params);
+                    $update_stmt->execute();
+                    $update_stmt->close();
+                }
             } else {
-                // Insert new record with all days at once
+                // Insert new record with ALL days in month
                 $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
                 $placeholders = ['?', '?', '?'];
                 $params = [$month, $item_code, $mode];
                 $types = 'sss';
                 
-                foreach ($days as $day_padded) {
+                // Set values for all days in the month
+                foreach ($all_days_in_month as $day_padded) {
                     $columns[] = "DAY_{$day_padded}_OPEN";
                     $columns[] = "DAY_{$day_padded}_PURCHASE";
                     $columns[] = "DAY_{$day_padded}_SALES";
@@ -411,10 +468,20 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
                     $placeholders[] = '?';
                     $placeholders[] = '?';
                     $placeholders[] = '?';
-                    $params[] = $opening_balance;
-                    $params[] = 0;
-                    $params[] = 0;
-                    $params[] = $opening_balance;
+                    
+                    // For days in our range, set opening and closing to opening_balance
+                    if (in_array($day_padded, $days)) {
+                        $params[] = $opening_balance;
+                        $params[] = 0;
+                        $params[] = 0;
+                        $params[] = $opening_balance;
+                    } else {
+                        // For days outside range, set to 0
+                        $params[] = 0;
+                        $params[] = 0;
+                        $params[] = 0;
+                        $params[] = 0;
+                    }
                     $types .= 'iiii';
                 }
                 
@@ -947,6 +1014,7 @@ if (isset($_GET['export'])) {
 }
 
 // ==================== PERFORMANCE OPTIMIZATION #4: Bulk CSV Import WITH DELIMITER DETECTION ====================
+// UPDATED: Only add items with stock > 0 to daily stock tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
     $start_date = $_POST['start_date'];
     $csv_file = $_FILES['csv_file']['tmp_name'];
@@ -993,8 +1061,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     $imported_count = 0;
     $skipped_count = 0;
     $error_messages = [];
-    $items_to_update = []; // Store items for bulk update
-    $items_for_daily_stock = []; // Store items for daily stock update
+    $items_to_update = []; // Store items for bulk update (ALL items)
+    $items_for_daily_stock = []; // Store items for daily stock update (ONLY items with stock > 0)
     $skipped_items = []; // Store skipped items for reporting
 
     // Get all valid items in one query for validation (optimization)
@@ -1093,8 +1161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 
                 if ($item_found && $item_data) {
                     $item_code_to_use = $item_data['code'];
+                    
+                    // Add to tblitem_stock update list (ALL items, even zero stock)
                     $items_to_update[] = ['code' => $item_code_to_use, 'balance' => $balance];
-                    $items_for_daily_stock[$item_code_to_use] = $balance;
+                    
+                    // IMPORTANT: Only add to daily stock if balance > 0
+                    if ($balance > 0) {
+                        $items_for_daily_stock[$item_code_to_use] = $balance;
+                    }
+                    
                     $imported_count++;
                     
                     // Process in batches
@@ -1111,7 +1186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                                 $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                                 $update_stmt->execute();
                             } else {
-                                $insert_stmt->bind_param("siii", $item['code'], $fin_year, $item['balance'], $item['balance']);
+                                $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                                 $insert_stmt->execute();
                             }
                         }
@@ -1149,7 +1224,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                     $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                     $update_stmt->execute();
                 } else {
-                    $insert_stmt->bind_param("siii", $item['code'], $fin_year, $item['balance'], $item['balance']);
+                    $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                     $insert_stmt->execute();
                 }
             }
@@ -1162,6 +1237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         fclose($handle);
         
         // ==================== PERFORMANCE OPTIMIZATION #5: Bulk Daily Stock Update ====================
+        // Only update daily stock for items with balance > 0
         if (!empty($items_for_daily_stock)) {
             updateDailyStockRange($conn, $comp_id, $items_for_daily_stock, $mode, $start_date);
         }
@@ -1435,6 +1511,7 @@ $items = $result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 // ==================== PERFORMANCE OPTIMIZATION #7: Bulk Form Submission ====================
+// UPDATED: Only add items with stock > 0 to daily stock tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
     $start_date = $_POST['start_date'];
     
@@ -1449,7 +1526,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             // Only update if the balance has changed
             if ($balance >= 0 && $balance !== $original_balance) {
                 $items_to_update[] = ['code' => $code, 'balance' => $balance];
-                $items_for_daily_stock[$code] = $balance;
+                
+                // IMPORTANT: Only add to daily stock if balance > 0
+                if ($balance > 0) {
+                    $items_for_daily_stock[$code] = $balance;
+                }
             }
         }
         
@@ -1477,7 +1558,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                             $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                             $update_stmt->execute();
                         } else {
-                            $insert_stmt->bind_param("siii", $item['code'], $fin_year, $item['balance'], $item['balance']);
+                            $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                             $insert_stmt->execute();
                         }
                     }
@@ -1488,7 +1569,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                 $update_stmt->close();
                 $insert_stmt->close();
                 
-                // Update daily stock in bulk
+                // Update daily stock in bulk (ONLY for items with stock > 0)
                 if (!empty($items_for_daily_stock)) {
                     updateDailyStockRange($conn, $comp_id, $items_for_daily_stock, $mode, $start_date);
                 }
@@ -1776,7 +1857,8 @@ if (isset($_SESSION['import_message'])) {
       <!-- Company Info -->
       <div class="company-info">
         <strong>Company:</strong> <?php echo htmlspecialchars($current_company['Comp_Name']); ?> | 
-        <strong>Mode:</strong> <?php echo $mode === 'F' ? 'Foreign Liquor' : ($mode === 'C' ? 'Country Liquor' : 'Others'); ?>
+        <strong>Mode:</strong> <?php echo $mode === 'F' ? 'Foreign Liquor' : ($mode === 'C' ? 'Country Liquor' : 'Others'); ?> |
+        <strong>Financial Year:</strong> <?php echo date('Y-m-d', strtotime($finyear_data['START_DATE'])) . ' to ' . date('Y-m-d', strtotime($finyear_data['END_DATE'])); ?>
       </div>
 
       <!-- Import/Export Buttons -->
@@ -1806,7 +1888,7 @@ if (isset($_SESSION['import_message'])) {
           </div>
           <div class="col-md-3">
             <label for="start_date_import" class="form-label">Start Date</label>
-            <input type="date" class="form-control" id="start_date_import" name="start_date" value="<?= date('Y-m-d') ?>" required>
+            <input type="date" class="form-control" id="start_date_import" name="start_date" value="<?= $default_start_date ?>" required>
           </div>
           <div class="col-md-2">
             <button type="submit" class="btn btn-primary w-100" id="importBtn">
@@ -1906,7 +1988,7 @@ if (isset($_SESSION['import_message'])) {
         <input type="hidden" name="view" value="<?= $view_type ?>">
         <div class="mb-3">
           <label for="start_date_balance" class="form-label">Start Date for Opening Balance</label>
-          <input type="date" class="form-control" id="start_date_balance" name="start_date" value="<?= date('Y-m-d') ?>" required style="max-width: 200px;">
+          <input type="date" class="form-control" id="start_date_balance" name="start_date" value="<?= $default_start_date ?>" required style="max-width: 200px;">
         </div>
 
         <div class="action-btn mb-3 d-flex gap-2">
@@ -2155,6 +2237,7 @@ if (isset($_SESSION['import_message'])) {
                 <h2>Opening Balance Volume Summary</h2>
                 <h4><?= htmlspecialchars($current_company['Comp_Name']) ?></h4>
                 <p>Mode: <?= $mode === 'F' ? 'Foreign Liquor' : ($mode === 'C' ? 'Country Liquor' : 'Others') ?></p>
+                <p>Financial Year: <?php echo date('Y-m-d', strtotime($finyear_data['START_DATE'])) . ' to ' . date('Y-m-d', strtotime($finyear_data['END_DATE'])); ?></p>
                 <p>Generated on: <?= date('Y-m-d H:i:s') ?></p>
                 <p>Column: CURRENT_STOCK<?= $comp_id ?> from tblitem_stock</p>
             </div>

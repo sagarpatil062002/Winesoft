@@ -5,6 +5,21 @@
 function getAllowedCategoriesByLicenseType($license_code, $conn) {
     $categories = [];
     
+    // Check if license should have access to ALL categories
+    $full_access_licenses = ['FL-II', 'CL-FL-III'];
+    
+    if (in_array($license_code, $full_access_licenses)) {
+        // Return ALL categories from database
+        $result = $conn->query("SELECT CATEGORY_CODE, CATEGORY_NAME, LIQ_FLAG FROM tblcategory WHERE 1=1 ORDER BY CATEGORY_NAME");
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+        }
+        return $categories;
+    }
+    
+    // Otherwise, determine allowed codes based on license type
     switch($license_code) {
         case 'FL-III':
             // Spirit, Wine, Fermented Beer, Mild Beer
@@ -14,17 +29,9 @@ function getAllowedCategoriesByLicenseType($license_code, $conn) {
             // Wine, Fermented Beer, Mild Beer
             $allowed_codes = ['CAT002', 'CAT003', 'CAT004'];
             break;
-        case 'FL-II':
-            // All categories allowed
-            $allowed_codes = ['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT005', 'CAT006', 'CAT007', 'CAT008'];
-            break;
         case 'CL-III':
             // Only Country Liquor
             $allowed_codes = ['CAT005'];
-            break;
-        case 'CL-FL-III':
-            // All categories allowed
-            $allowed_codes = ['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT005', 'CAT006', 'CAT007', 'CAT008'];
             break;
         case 'IMPORTED':
             // Imported spirits
@@ -41,7 +48,7 @@ function getAllowedCategoriesByLicenseType($license_code, $conn) {
     
     if (!empty($allowed_codes)) {
         $codes = implode("','", array_map([$conn, 'real_escape_string'], $allowed_codes));
-        $result = $conn->query("SELECT CATEGORY_CODE, CATEGORY_NAME, LIQ_FLAG FROM tblcategory WHERE CATEGORY_CODE IN ('$codes')");
+        $result = $conn->query("SELECT CATEGORY_CODE, CATEGORY_NAME, LIQ_FLAG FROM tblcategory WHERE CATEGORY_CODE IN ('$codes') ORDER BY CATEGORY_NAME");
         
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {

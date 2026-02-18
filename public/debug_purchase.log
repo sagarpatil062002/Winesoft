@@ -95499,3 +95499,2631 @@
 }
 [2026-02-12 14:19:20] Database connection closed
 [2026-02-12 14:19:20] === PURCHASE SESSION ENDED ===
+[2026-02-18 03:49:58] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 03:49:58] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "form_token": "7ddd70f600112cc0e59069e33b387761c43f695fa0739e3731caef5722767499",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-02-18 03:49:58] POST data: []
+[2026-02-18 03:49:58] GET data: {
+    "mode": "F"
+}
+[2026-02-18 03:49:58] Company ID from session: 1
+[2026-02-18 03:49:58] Database connection included
+[2026-02-18 03:49:58] License functions included
+[2026-02-18 03:49:58] License type: FL-II
+[2026-02-18 03:49:58] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 03:49:58] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 03:49:58] Purchase mode: F
+[2026-02-18 03:49:58] Next voucher number: 1
+[2026-02-18 03:49:58] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 03:49:58] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 03:49:58] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 03:49:58] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 03:49:58] Database connection closed
+[2026-02-18 03:49:58] === PURCHASE SESSION ENDED ===
+[2026-02-18 03:50:33] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 03:50:33] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "form_token": "7ddd70f600112cc0e59069e33b387761c43f695fa0739e3731caef5722767499",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-02-18 03:50:33] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-12-30",
+    "auto_tp_no": "FL1249-301225\/5579",
+    "tp_no": "5612",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "supplier_code": "EM2",
+    "items": [
+        {
+            "code": "SCMPL0010075",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "90 ML(100)",
+            "bottles_per_case": "12",
+            "batch_no": "2123",
+            "auto_batch": "BTP28-061125\/2123",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "500",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "4732.000",
+            "mrp": "140"
+        },
+        {
+            "code": "SCMPL0010075",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "90 ML(100)",
+            "bottles_per_case": "12",
+            "batch_no": "2123",
+            "auto_batch": "BTP28-061125\/2123",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "500",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "4732.000",
+            "mrp": "140"
+        },
+        {
+            "code": "SCMPL0010107",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2410",
+            "auto_batch": "BTP28-281125\/2410",
+            "mfg_month": "Nov-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4519.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0010107",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2410",
+            "auto_batch": "BTP28-281125\/2410",
+            "mfg_month": "Nov-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4519.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0010087",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2541",
+            "auto_batch": "BTP28-101225\/2541",
+            "mfg_month": "Dec-2025",
+            "bl": "129.6",
+            "vv": "25",
+            "tot_bott": "720",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "15",
+            "bottles": "0",
+            "case_rate": "3657.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0010087",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2541",
+            "auto_batch": "BTP28-101225\/2541",
+            "mfg_month": "Dec-2025",
+            "bl": "129.6",
+            "vv": "25",
+            "tot_bott": "720",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "15",
+            "bottles": "0",
+            "case_rate": "3657.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0010108",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2552",
+            "auto_batch": "BTP28-111225\/2552",
+            "mfg_month": "Dec-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4391.000",
+            "mrp": "1070"
+        },
+        {
+            "code": "SCMPL0010108",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2552",
+            "auto_batch": "BTP28-111225\/2552",
+            "mfg_month": "Dec-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4391.000",
+            "mrp": "1070"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "174850.00",
+    "tamt": "174850.00"
+}
+[2026-02-18 03:50:33] GET data: {
+    "mode": "F"
+}
+[2026-02-18 03:50:33] Company ID from session: 1
+[2026-02-18 03:50:33] Database connection included
+[2026-02-18 03:50:33] License functions included
+[2026-02-18 03:50:33] License type: FL-II
+[2026-02-18 03:50:33] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 03:50:33] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 03:50:33] Purchase mode: F
+[2026-02-18 03:50:33] Next voucher number: 1
+[2026-02-18 03:50:33] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 03:50:33] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 03:50:34] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 03:50:34] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 03:50:34] === FORM SUBMISSION STARTED ===
+[2026-02-18 03:50:34] Form data extracted: {
+    "date": "2025-12-30",
+    "voc_no": "1",
+    "auto_tp_no": "FL1249-301225\/5579",
+    "tp_no": "5612",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "EM2",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "basic_amt": "174850.00",
+    "total_amt": "174850.00"
+}
+[2026-02-18 03:50:34] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-18 03:50:34] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2026-02-18 03:50:34] Starting to process purchase items: {
+    "item_count": 8
+}
+[2026-02-18 03:50:34] Processing item 0: {
+    "item_code": "SCMPL0010075",
+    "mrp": 140,
+    "tot_bott": 500
+}
+[2026-02-18 03:50:34] cleanItemCode: 'SCMPL0010075' -> 'PL0010075'
+[2026-02-18 03:50:34] Updating MRP for item: {
+    "item_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:50:34] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:50:34] Updating stock for item: {
+    "item_code": "SCMPL0010075",
+    "total_bottles": 500,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:34] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:34] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010075",
+    "dayOfMonth": "30",
+    "totalBottles": 500
+}
+[2026-02-18 03:50:35] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010075",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:35] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:35] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:35] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:35] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010075",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:35] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:35] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:35] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 681
+}
+[2026-02-18 03:50:36] Cascading completed up to current date
+[2026-02-18 03:50:36] Processing item 1: {
+    "item_code": "SCMPL0010075",
+    "mrp": 140,
+    "tot_bott": 500
+}
+[2026-02-18 03:50:36] cleanItemCode: 'SCMPL0010075' -> 'PL0010075'
+[2026-02-18 03:50:36] Updating MRP for item: {
+    "item_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:50:36] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:50:36] Updating stock for item: {
+    "item_code": "SCMPL0010075",
+    "total_bottles": 500,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:36] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:36] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010075",
+    "dayOfMonth": "30",
+    "totalBottles": 500
+}
+[2026-02-18 03:50:36] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010075",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:36] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:36] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:36] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:36] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010075",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:36] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:36] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:36] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 1181
+}
+[2026-02-18 03:50:37] Cascading completed up to current date
+[2026-02-18 03:50:37] Processing item 2: {
+    "item_code": "SCMPL0010107",
+    "mrp": 520,
+    "tot_bott": 24
+}
+[2026-02-18 03:50:37] cleanItemCode: 'SCMPL0010107' -> 'PL0010107'
+[2026-02-18 03:50:37] Updating MRP for item: {
+    "item_code": "PL0010107",
+    "mrp": 520
+}
+[2026-02-18 03:50:37] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010107",
+    "mrp": 520
+}
+[2026-02-18 03:50:37] Updating stock for item: {
+    "item_code": "SCMPL0010107",
+    "total_bottles": 24,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:37] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:37] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010107",
+    "dayOfMonth": "30",
+    "totalBottles": 24
+}
+[2026-02-18 03:50:37] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010107",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:37] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:37] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:37] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 0
+}
+[2026-02-18 03:50:37] Cascading completed up to current date
+[2026-02-18 03:50:37] Processing item 3: {
+    "item_code": "SCMPL0010107",
+    "mrp": 520,
+    "tot_bott": 24
+}
+[2026-02-18 03:50:37] cleanItemCode: 'SCMPL0010107' -> 'PL0010107'
+[2026-02-18 03:50:37] Updating MRP for item: {
+    "item_code": "PL0010107",
+    "mrp": 520
+}
+[2026-02-18 03:50:37] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010107",
+    "mrp": 520
+}
+[2026-02-18 03:50:37] Updating stock for item: {
+    "item_code": "SCMPL0010107",
+    "total_bottles": 24,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:37] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:37] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010107",
+    "dayOfMonth": "30",
+    "totalBottles": 24
+}
+[2026-02-18 03:50:37] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010107",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:37] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:37] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:37] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:37] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010107",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:37] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:37] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:37] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 48
+}
+[2026-02-18 03:50:37] Cascading completed up to current date
+[2026-02-18 03:50:37] Processing item 4: {
+    "item_code": "SCMPL0010087",
+    "mrp": 250,
+    "tot_bott": 720
+}
+[2026-02-18 03:50:37] cleanItemCode: 'SCMPL0010087' -> 'PL0010087'
+[2026-02-18 03:50:37] Updating MRP for item: {
+    "item_code": "PL0010087",
+    "mrp": 250
+}
+[2026-02-18 03:50:37] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010087",
+    "mrp": 250
+}
+[2026-02-18 03:50:37] Updating stock for item: {
+    "item_code": "SCMPL0010087",
+    "total_bottles": 720,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:37] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:37] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010087",
+    "dayOfMonth": "30",
+    "totalBottles": 720
+}
+[2026-02-18 03:50:38] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010087",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:38] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:38] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:38] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:38] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010087",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:38] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:38] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:38] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 830
+}
+[2026-02-18 03:50:38] Cascading completed up to current date
+[2026-02-18 03:50:38] Processing item 5: {
+    "item_code": "SCMPL0010087",
+    "mrp": 250,
+    "tot_bott": 720
+}
+[2026-02-18 03:50:38] cleanItemCode: 'SCMPL0010087' -> 'PL0010087'
+[2026-02-18 03:50:38] Updating MRP for item: {
+    "item_code": "PL0010087",
+    "mrp": 250
+}
+[2026-02-18 03:50:38] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010087",
+    "mrp": 250
+}
+[2026-02-18 03:50:38] Updating stock for item: {
+    "item_code": "SCMPL0010087",
+    "total_bottles": 720,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:38] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:38] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010087",
+    "dayOfMonth": "30",
+    "totalBottles": 720
+}
+[2026-02-18 03:50:39] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010087",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:39] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:39] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:39] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:39] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010087",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:39] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:39] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:39] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 1550
+}
+[2026-02-18 03:50:39] Cascading completed up to current date
+[2026-02-18 03:50:39] Processing item 6: {
+    "item_code": "SCMPL0010108",
+    "mrp": 1070,
+    "tot_bott": 12
+}
+[2026-02-18 03:50:39] cleanItemCode: 'SCMPL0010108' -> 'PL0010108'
+[2026-02-18 03:50:39] Updating MRP for item: {
+    "item_code": "PL0010108",
+    "mrp": 1070
+}
+[2026-02-18 03:50:39] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010108",
+    "mrp": 1070
+}
+[2026-02-18 03:50:39] Updating stock for item: {
+    "item_code": "SCMPL0010108",
+    "total_bottles": 12,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:39] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:39] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010108",
+    "dayOfMonth": "30",
+    "totalBottles": 12
+}
+[2026-02-18 03:50:39] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010108",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:39] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:39] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:39] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 0
+}
+[2026-02-18 03:50:39] Cascading completed up to current date
+[2026-02-18 03:50:39] Processing item 7: {
+    "item_code": "SCMPL0010108",
+    "mrp": 1070,
+    "tot_bott": 12
+}
+[2026-02-18 03:50:39] cleanItemCode: 'SCMPL0010108' -> 'PL0010108'
+[2026-02-18 03:50:39] Updating MRP for item: {
+    "item_code": "PL0010108",
+    "mrp": 1070
+}
+[2026-02-18 03:50:39] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010108",
+    "mrp": 1070
+}
+[2026-02-18 03:50:39] Updating stock for item: {
+    "item_code": "SCMPL0010108",
+    "total_bottles": 12,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:50:39] Month is archived, updating archive table with cascading
+[2026-02-18 03:50:39] Updating archived month stock: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010108",
+    "dayOfMonth": "30",
+    "totalBottles": 12
+}
+[2026-02-18 03:50:39] Starting cascading updates in table: {
+    "table": "tbldailystock_1_12_25",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010108",
+    "purchaseDay": "30"
+}
+[2026-02-18 03:50:39] Month has 31 days: {
+    "timestamp": "2025-12-01",
+    "daysInMonth": "31"
+}
+[2026-02-18 03:50:39] Cascading update for day 31: {
+    "query": "UPDATE tbldailystock_1_12_25 \n                           SET DAY_31_OPEN = DAY_30_CLOSING,\n                               DAY_31_CLOSING = DAY_30_CLOSING + DAY_31_PURCHASE - DAY_31_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_30_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 03:50:39] Cascading updates completed for all days after purchase day
+[2026-02-18 03:50:39] Continuing cascading to current month: {
+    "comp_id": 1,
+    "itemCode": "SCMPL0010108",
+    "purchaseDate": "2025-12-30"
+}
+[2026-02-18 03:50:39] Starting cascading from month: {
+    "startMonth": 1,
+    "startYear": 2026
+}
+[2026-02-18 03:50:39] Found table for cascading: {
+    "table": "tbldailystock_1_01_26",
+    "month": 1,
+    "year": 2026
+}
+[2026-02-18 03:50:39] Got opening value from previous month: {
+    "prevTable": "tbldailystock_1_12_25",
+    "prevClosingColumn": "DAY_31_CLOSING",
+    "openingValue": 24
+}
+[2026-02-18 03:50:40] Cascading completed up to current date
+[2026-02-18 03:50:40] Purchase items processing completed: {
+    "successful_items": 8
+}
+[2026-02-18 03:50:40] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-18 03:53:49] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 03:53:49] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "form_token": "7ddd70f600112cc0e59069e33b387761c43f695fa0739e3731caef5722767499",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-02-18 03:53:49] POST data: []
+[2026-02-18 03:53:49] GET data: {
+    "mode": "F"
+}
+[2026-02-18 03:53:49] Company ID from session: 1
+[2026-02-18 03:53:49] Database connection included
+[2026-02-18 03:53:49] License functions included
+[2026-02-18 03:53:49] License type: FL-II
+[2026-02-18 03:53:49] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 03:53:49] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 03:53:49] Purchase mode: F
+[2026-02-18 03:53:49] Next voucher number: 1
+[2026-02-18 03:53:49] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 03:53:49] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 03:53:50] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 03:53:50] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 03:53:50] Database connection closed
+[2026-02-18 03:53:50] === PURCHASE SESSION ENDED ===
+[2026-02-18 03:53:59] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 03:53:59] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan",
+    "form_token": "7ddd70f600112cc0e59069e33b387761c43f695fa0739e3731caef5722767499",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-02-18 03:53:59] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2025-12-30",
+    "auto_tp_no": "FL1249-301225\/5579",
+    "tp_no": "5612",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "supplier_code": "EM2",
+    "items": [
+        {
+            "code": "SCMPL0010075",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "90 ML(100)",
+            "bottles_per_case": "12",
+            "batch_no": "2123",
+            "auto_batch": "BTP28-061125\/2123",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "500",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "4732.000",
+            "mrp": "140"
+        },
+        {
+            "code": "SCMPL0010075",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "90 ML(100)",
+            "bottles_per_case": "12",
+            "batch_no": "2123",
+            "auto_batch": "BTP28-061125\/2123",
+            "mfg_month": "Nov-2025",
+            "bl": "45",
+            "vv": "25",
+            "tot_bott": "500",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "5",
+            "bottles": "0",
+            "case_rate": "4732.000",
+            "mrp": "140"
+        },
+        {
+            "code": "SCMPL0010107",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2410",
+            "auto_batch": "BTP28-281125\/2410",
+            "mfg_month": "Nov-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4519.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0010107",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2410",
+            "auto_batch": "BTP28-281125\/2410",
+            "mfg_month": "Nov-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4519.000",
+            "mrp": "520"
+        },
+        {
+            "code": "SCMPL0010087",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2541",
+            "auto_batch": "BTP28-101225\/2541",
+            "mfg_month": "Dec-2025",
+            "bl": "129.6",
+            "vv": "25",
+            "tot_bott": "720",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "15",
+            "bottles": "0",
+            "case_rate": "3657.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0010087",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2541",
+            "auto_batch": "BTP28-101225\/2541",
+            "mfg_month": "Dec-2025",
+            "bl": "129.6",
+            "vv": "25",
+            "tot_bott": "720",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "15",
+            "bottles": "0",
+            "case_rate": "3657.000",
+            "mrp": "250"
+        },
+        {
+            "code": "SCMPL0010108",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2552",
+            "auto_batch": "BTP28-111225\/2552",
+            "mfg_month": "Dec-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4391.000",
+            "mrp": "1070"
+        },
+        {
+            "code": "SCMPL0010108",
+            "name": "Seagram's Royal Stag Deluxe Whisky",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "2552",
+            "auto_batch": "BTP28-111225\/2552",
+            "mfg_month": "Dec-2025",
+            "bl": "9",
+            "vv": "25",
+            "tot_bott": "12",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "1",
+            "bottles": "0",
+            "case_rate": "4391.000",
+            "mrp": "1070"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "174850.00",
+    "tamt": "174850.00"
+}
+[2026-02-18 03:53:59] GET data: {
+    "mode": "F"
+}
+[2026-02-18 03:53:59] Company ID from session: 1
+[2026-02-18 03:53:59] Database connection included
+[2026-02-18 03:53:59] License functions included
+[2026-02-18 03:53:59] License type: FL-II
+[2026-02-18 03:53:59] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 03:53:59] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 03:53:59] Purchase mode: F
+[2026-02-18 03:53:59] Next voucher number: 1
+[2026-02-18 03:53:59] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 03:53:59] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 03:53:59] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 03:53:59] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 03:53:59] === FORM SUBMISSION STARTED ===
+[2026-02-18 03:53:59] Form data extracted: {
+    "date": "2025-12-30",
+    "voc_no": "1",
+    "auto_tp_no": "FL1249-301225\/5579",
+    "tp_no": "5612",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "EM2",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "basic_amt": "174850.00",
+    "total_amt": "174850.00"
+}
+[2026-02-18 03:53:59] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-18 03:53:59] Purchase header inserted successfully: {
+    "purchase_id": 2,
+    "affected_rows": 1
+}
+[2026-02-18 03:53:59] Starting to process purchase items: {
+    "item_count": 8
+}
+[2026-02-18 03:53:59] Processing item 0: {
+    "item_code": "SCMPL0010075",
+    "mrp": 140,
+    "tot_bott": 500
+}
+[2026-02-18 03:53:59] cleanItemCode: 'SCMPL0010075' -> 'PL0010075'
+[2026-02-18 03:53:59] Updating MRP for item: {
+    "item_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:53:59] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0010075",
+    "mrp": 140
+}
+[2026-02-18 03:53:59] Updating stock for item: {
+    "item_code": "SCMPL0010075",
+    "total_bottles": 500,
+    "purchase_date": "2025-12-30",
+    "day_of_month": "30",
+    "month": "12",
+    "year": "2025"
+}
+[2026-02-18 03:53:59] Month is current, updating current table with cascading
+[2026-02-18 03:53:59] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2025-12",
+    "itemCode": "SCMPL0010075",
+    "dayOfMonth": "30",
+    "totalBottles": 500
+}
+[2026-02-18 06:33:06] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 06:33:06] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 06:33:06] POST data: []
+[2026-02-18 06:33:06] GET data: []
+[2026-02-18 06:33:06] Company ID from session: 1
+[2026-02-18 06:33:07] Database connection included
+[2026-02-18 06:33:07] License functions included
+[2026-02-18 06:33:07] License type: FL-II
+[2026-02-18 06:33:07] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 06:33:07] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 06:33:07] Purchase mode: F
+[2026-02-18 06:33:07] Next voucher number: 2
+[2026-02-18 06:33:07] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 06:33:07] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 06:33:07] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 06:33:07] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 06:33:07] Database connection closed
+[2026-02-18 06:33:07] === PURCHASE SESSION ENDED ===
+[2026-02-18 06:33:37] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 06:33:37] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 06:33:37] POST data: []
+[2026-02-18 06:33:37] GET data: []
+[2026-02-18 06:33:37] Company ID from session: 1
+[2026-02-18 06:33:37] Database connection included
+[2026-02-18 06:33:37] License functions included
+[2026-02-18 06:33:37] License type: FL-II
+[2026-02-18 06:33:37] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 06:33:37] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 06:33:37] Purchase mode: F
+[2026-02-18 06:33:37] Next voucher number: 2
+[2026-02-18 06:33:37] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 06:33:37] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 06:33:37] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 06:33:37] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 06:33:37] Database connection closed
+[2026-02-18 06:33:37] === PURCHASE SESSION ENDED ===
+[2026-02-18 06:33:55] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 06:33:55] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 06:33:55] POST data: {
+    "mode": "F",
+    "voc_no": "2",
+    "date": "2026-02-18",
+    "auto_tp_no": "FL177-301225\/12156",
+    "tp_no": "12156",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "ROCKY TRADERS",
+    "supplier_code": "ROCK",
+    "items": [
+        {
+            "code": "SCMPL0036919",
+            "name": "Old Monk Very Old Vatted XXX Rum",
+            "size": "750 ML",
+            "bottles_per_case": "12",
+            "batch_no": "599",
+            "auto_batch": "BTP31-251225\/599",
+            "mfg_month": "Dec-2025",
+            "bl": "18",
+            "vv": "25",
+            "tot_bott": "24",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "2",
+            "bottles": "0",
+            "case_rate": "2646.000",
+            "mrp": "880"
+        },
+        {
+            "code": "SCMPL0041326",
+            "name": "Old Monk Very Old Vatted XXX Rum",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "611",
+            "auto_batch": "BTP31-271225\/611",
+            "mfg_month": "Dec-2025",
+            "bl": "86.4",
+            "vv": "25",
+            "tot_bott": "480",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "10",
+            "bottles": "0",
+            "case_rate": "968.000",
+            "mrp": "215"
+        },
+        {
+            "code": "SCMPL0041328",
+            "name": "Old Monk Very Old Vatted XXX Rum",
+            "size": "1000 ML",
+            "bottles_per_case": "12",
+            "batch_no": "598",
+            "auto_batch": "BTP31-241225\/598",
+            "mfg_month": "Dec-2025",
+            "bl": "18",
+            "vv": "25",
+            "tot_bott": "18",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "2",
+            "bottles": "0",
+            "case_rate": "2398.000",
+            "mrp": "1140"
+        },
+        {
+            "code": "SCMPL0041327",
+            "name": "Old Monk Very Old Vatted XXX Rum",
+            "size": "375 ML",
+            "bottles_per_case": "12",
+            "batch_no": "610",
+            "auto_batch": "BTP31-261225\/610",
+            "mfg_month": "Dec-2025",
+            "bl": "18",
+            "vv": "25",
+            "tot_bott": "48",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "2",
+            "bottles": "0",
+            "case_rate": "3166.000",
+            "mrp": "440"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "26100.00",
+    "tamt": "26100.00"
+}
+[2026-02-18 06:33:55] GET data: []
+[2026-02-18 06:33:55] Company ID from session: 1
+[2026-02-18 06:33:55] Database connection included
+[2026-02-18 06:33:55] License functions included
+[2026-02-18 06:33:55] License type: FL-II
+[2026-02-18 06:33:55] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 06:33:55] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 06:33:55] Purchase mode: F
+[2026-02-18 06:33:55] Next voucher number: 2
+[2026-02-18 06:33:55] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 06:33:55] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 06:33:56] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 06:33:56] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 06:33:56] === FORM SUBMISSION STARTED ===
+[2026-02-18 06:33:56] Form data extracted: {
+    "date": "2026-02-18",
+    "voc_no": "2",
+    "auto_tp_no": "FL177-301225\/12156",
+    "tp_no": "12156",
+    "tp_date": "2025-12-30",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "ROCK",
+    "supplier_name": "ROCKY TRADERS",
+    "basic_amt": "26100.00",
+    "total_amt": "26100.00"
+}
+[2026-02-18 06:33:56] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-18 06:33:56] Purchase header inserted successfully: {
+    "purchase_id": 3,
+    "affected_rows": 1
+}
+[2026-02-18 06:33:56] Starting to process purchase items: {
+    "item_count": 4
+}
+[2026-02-18 06:33:56] Processing item 0: {
+    "item_code": "SCMPL0036919",
+    "mrp": 880,
+    "tot_bott": 24
+}
+[2026-02-18 06:33:56] cleanItemCode: 'SCMPL0036919' -> 'PL0036919'
+[2026-02-18 06:33:56] Updating MRP for item: {
+    "item_code": "PL0036919",
+    "mrp": 880
+}
+[2026-02-18 06:33:56] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0036919",
+    "mrp": 880
+}
+[2026-02-18 06:33:56] Updating stock for item: {
+    "item_code": "SCMPL0036919",
+    "total_bottles": 24,
+    "purchase_date": "2026-02-18",
+    "day_of_month": "18",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-18 06:33:56] Month is current, updating current table with cascading
+[2026-02-18 06:33:56] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0036919",
+    "dayOfMonth": "18",
+    "totalBottles": 24
+}
+[2026-02-18 06:33:56] Processing item 1: {
+    "item_code": "SCMPL0041326",
+    "mrp": 215,
+    "tot_bott": 480
+}
+[2026-02-18 06:33:56] cleanItemCode: 'SCMPL0041326' -> 'PL0041326'
+[2026-02-18 06:33:56] Updating MRP for item: {
+    "item_code": "PL0041326",
+    "mrp": 215
+}
+[2026-02-18 06:33:56] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041326",
+    "mrp": 215
+}
+[2026-02-18 06:33:56] Updating stock for item: {
+    "item_code": "SCMPL0041326",
+    "total_bottles": 480,
+    "purchase_date": "2026-02-18",
+    "day_of_month": "18",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-18 06:33:56] Month is current, updating current table with cascading
+[2026-02-18 06:33:56] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0041326",
+    "dayOfMonth": "18",
+    "totalBottles": 480
+}
+[2026-02-18 06:33:56] Processing item 2: {
+    "item_code": "SCMPL0041328",
+    "mrp": 1140,
+    "tot_bott": 18
+}
+[2026-02-18 06:33:56] cleanItemCode: 'SCMPL0041328' -> 'PL0041328'
+[2026-02-18 06:33:56] Updating MRP for item: {
+    "item_code": "PL0041328",
+    "mrp": 1140
+}
+[2026-02-18 06:33:56] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041328",
+    "mrp": 1140
+}
+[2026-02-18 06:33:56] Updating stock for item: {
+    "item_code": "SCMPL0041328",
+    "total_bottles": 18,
+    "purchase_date": "2026-02-18",
+    "day_of_month": "18",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-18 06:33:56] Month is current, updating current table with cascading
+[2026-02-18 06:33:56] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0041328",
+    "dayOfMonth": "18",
+    "totalBottles": 18
+}
+[2026-02-18 06:33:56] Processing item 3: {
+    "item_code": "SCMPL0041327",
+    "mrp": 440,
+    "tot_bott": 48
+}
+[2026-02-18 06:33:56] cleanItemCode: 'SCMPL0041327' -> 'PL0041327'
+[2026-02-18 06:33:56] Updating MRP for item: {
+    "item_code": "PL0041327",
+    "mrp": 440
+}
+[2026-02-18 06:33:56] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "PL0041327",
+    "mrp": 440
+}
+[2026-02-18 06:33:56] Updating stock for item: {
+    "item_code": "SCMPL0041327",
+    "total_bottles": 48,
+    "purchase_date": "2026-02-18",
+    "day_of_month": "18",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-18 06:33:56] Month is current, updating current table with cascading
+[2026-02-18 06:33:56] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMPL0041327",
+    "dayOfMonth": "18",
+    "totalBottles": 48
+}
+[2026-02-18 06:33:56] Purchase items processing completed: {
+    "successful_items": 4
+}
+[2026-02-18 06:33:56] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-18 09:41:44] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 09:41:44] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 09:41:44] POST data: []
+[2026-02-18 09:41:44] GET data: []
+[2026-02-18 09:41:44] Company ID from session: 1
+[2026-02-18 09:41:44] Database connection included
+[2026-02-18 09:41:44] License functions included
+[2026-02-18 09:41:44] License type: FL-II
+[2026-02-18 09:41:44] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 09:41:44] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 09:41:44] Purchase mode: F
+[2026-02-18 09:41:44] Next voucher number: 1
+[2026-02-18 09:41:44] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 09:41:44] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 09:41:45] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 09:41:45] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 09:41:46] Database connection closed
+[2026-02-18 09:41:46] === PURCHASE SESSION ENDED ===
+[2026-02-18 09:41:59] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 09:41:59] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 09:41:59] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2026-02-03",
+    "auto_tp_no": "FL167-020226\/25292",
+    "tp_no": "25298",
+    "tp_date": "2026-02-02",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "SAMBARAGI TRADERS",
+    "supplier_code": "SAMB",
+    "items": [
+        {
+            "code": "SCMKS0036602",
+            "name": "Greater Than London Dry Gin Small Batch",
+            "size": "180 ML",
+            "bottles_per_case": "12",
+            "batch_no": "021",
+            "auto_batch": "BTOS190-1349",
+            "mfg_month": "Dec-2025",
+            "bl": "0.54",
+            "vv": "25",
+            "tot_bott": "3",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "0",
+            "bottles": "3",
+            "case_rate": "2660.000",
+            "mrp": "500"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "665.00",
+    "tamt": "665.00"
+}
+[2026-02-18 09:41:59] GET data: []
+[2026-02-18 09:41:59] Company ID from session: 1
+[2026-02-18 09:41:59] Database connection included
+[2026-02-18 09:41:59] License functions included
+[2026-02-18 09:41:59] License type: FL-II
+[2026-02-18 09:41:59] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 09:41:59] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 09:41:59] Purchase mode: F
+[2026-02-18 09:41:59] Next voucher number: 1
+[2026-02-18 09:41:59] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 09:41:59] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 09:41:59] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 09:41:59] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 09:41:59] === FORM SUBMISSION STARTED ===
+[2026-02-18 09:41:59] Form data extracted: {
+    "date": "2026-02-03",
+    "voc_no": "1",
+    "auto_tp_no": "FL167-020226\/25292",
+    "tp_no": "25298",
+    "tp_date": "2026-02-02",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_code": "SAMB",
+    "supplier_name": "SAMBARAGI TRADERS",
+    "basic_amt": "665.00",
+    "total_amt": "665.00"
+}
+[2026-02-18 09:41:59] Purchase header insert query: {
+    "query": "INSERT INTO tblpurchases (\n        DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, \n        TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, \n        TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID\n    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+}
+[2026-02-18 09:41:59] Purchase header inserted successfully: {
+    "purchase_id": 1,
+    "affected_rows": 1
+}
+[2026-02-18 09:41:59] Starting to process purchase items: {
+    "item_count": 1
+}
+[2026-02-18 09:41:59] Processing item 0: {
+    "item_code": "SCMKS0036602",
+    "mrp": 500,
+    "tot_bott": 3
+}
+[2026-02-18 09:41:59] cleanItemCode: 'SCMKS0036602' -> 'KS0036602'
+[2026-02-18 09:41:59] Updating MRP for item: {
+    "item_code": "KS0036602",
+    "mrp": 500
+}
+[2026-02-18 09:41:59] MRP update result: {
+    "success": true,
+    "affected_rows": 0,
+    "clean_code": "KS0036602",
+    "mrp": 500
+}
+[2026-02-18 09:41:59] Updating stock for item: {
+    "item_code": "SCMKS0036602",
+    "total_bottles": 3,
+    "purchase_date": "2026-02-03",
+    "day_of_month": "3",
+    "month": "2",
+    "year": "2026"
+}
+[2026-02-18 09:41:59] Month is current, updating current table with cascading
+[2026-02-18 09:41:59] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMKS0036602",
+    "dayOfMonth": "3",
+    "totalBottles": 3
+}
+[2026-02-18 09:41:59] Starting cascading updates in table: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-02",
+    "itemCode": "SCMKS0036602",
+    "purchaseDay": "3"
+}
+[2026-02-18 09:41:59] Month has 28 days: {
+    "timestamp": "2026-02-01",
+    "daysInMonth": "28"
+}
+[2026-02-18 09:41:59] Cascading update for day 4: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_04_OPEN = DAY_03_CLOSING,\n                               DAY_04_CLOSING = DAY_03_CLOSING + DAY_04_PURCHASE - DAY_04_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_03_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 5: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_05_OPEN = DAY_04_CLOSING,\n                               DAY_05_CLOSING = DAY_04_CLOSING + DAY_05_PURCHASE - DAY_05_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_04_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 6: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_06_OPEN = DAY_05_CLOSING,\n                               DAY_06_CLOSING = DAY_05_CLOSING + DAY_06_PURCHASE - DAY_06_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_05_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 7: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_07_OPEN = DAY_06_CLOSING,\n                               DAY_07_CLOSING = DAY_06_CLOSING + DAY_07_PURCHASE - DAY_07_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_06_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 8: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_08_OPEN = DAY_07_CLOSING,\n                               DAY_08_CLOSING = DAY_07_CLOSING + DAY_08_PURCHASE - DAY_08_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_07_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 9: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_09_OPEN = DAY_08_CLOSING,\n                               DAY_09_CLOSING = DAY_08_CLOSING + DAY_09_PURCHASE - DAY_09_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_08_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 10: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_10_OPEN = DAY_09_CLOSING,\n                               DAY_10_CLOSING = DAY_09_CLOSING + DAY_10_PURCHASE - DAY_10_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_09_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 11: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_11_OPEN = DAY_10_CLOSING,\n                               DAY_11_CLOSING = DAY_10_CLOSING + DAY_11_PURCHASE - DAY_11_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_10_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 12: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_12_OPEN = DAY_11_CLOSING,\n                               DAY_12_CLOSING = DAY_11_CLOSING + DAY_12_PURCHASE - DAY_12_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_11_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 13: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_13_OPEN = DAY_12_CLOSING,\n                               DAY_13_CLOSING = DAY_12_CLOSING + DAY_13_PURCHASE - DAY_13_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_12_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 14: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_14_OPEN = DAY_13_CLOSING,\n                               DAY_14_CLOSING = DAY_13_CLOSING + DAY_14_PURCHASE - DAY_14_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_13_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 15: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_15_OPEN = DAY_14_CLOSING,\n                               DAY_15_CLOSING = DAY_14_CLOSING + DAY_15_PURCHASE - DAY_15_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_14_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 16: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_16_OPEN = DAY_15_CLOSING,\n                               DAY_16_CLOSING = DAY_15_CLOSING + DAY_16_PURCHASE - DAY_16_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_15_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 17: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_17_OPEN = DAY_16_CLOSING,\n                               DAY_17_CLOSING = DAY_16_CLOSING + DAY_17_PURCHASE - DAY_17_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_16_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 18: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_18_OPEN = DAY_17_CLOSING,\n                               DAY_18_CLOSING = DAY_17_CLOSING + DAY_18_PURCHASE - DAY_18_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_17_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 19: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_19_OPEN = DAY_18_CLOSING,\n                               DAY_19_CLOSING = DAY_18_CLOSING + DAY_19_PURCHASE - DAY_19_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_18_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 20: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_20_OPEN = DAY_19_CLOSING,\n                               DAY_20_CLOSING = DAY_19_CLOSING + DAY_20_PURCHASE - DAY_20_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_19_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 21: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_21_OPEN = DAY_20_CLOSING,\n                               DAY_21_CLOSING = DAY_20_CLOSING + DAY_21_PURCHASE - DAY_21_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_20_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 22: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_22_OPEN = DAY_21_CLOSING,\n                               DAY_22_CLOSING = DAY_21_CLOSING + DAY_22_PURCHASE - DAY_22_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_21_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 23: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_23_OPEN = DAY_22_CLOSING,\n                               DAY_23_CLOSING = DAY_22_CLOSING + DAY_23_PURCHASE - DAY_23_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_22_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 24: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_24_OPEN = DAY_23_CLOSING,\n                               DAY_24_CLOSING = DAY_23_CLOSING + DAY_24_PURCHASE - DAY_24_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_23_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 25: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_25_OPEN = DAY_24_CLOSING,\n                               DAY_25_CLOSING = DAY_24_CLOSING + DAY_25_PURCHASE - DAY_25_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_24_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 26: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_26_OPEN = DAY_25_CLOSING,\n                               DAY_26_CLOSING = DAY_25_CLOSING + DAY_26_PURCHASE - DAY_26_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_25_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 27: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_27_OPEN = DAY_26_CLOSING,\n                               DAY_27_CLOSING = DAY_26_CLOSING + DAY_27_PURCHASE - DAY_27_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_26_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading update for day 28: {
+    "query": "UPDATE tbldailystock_1 \n                           SET DAY_28_OPEN = DAY_27_CLOSING,\n                               DAY_28_CLOSING = DAY_27_CLOSING + DAY_28_PURCHASE - DAY_28_SALES\n                           WHERE STK_MONTH = ? AND ITEM_CODE = ?",
+    "prevDayClosing": "DAY_27_CLOSING",
+    "columns_exist": true
+}
+[2026-02-18 09:41:59] Cascading updates completed for all days after purchase day
+[2026-02-18 09:41:59] Purchase items processing completed: {
+    "successful_items": 1
+}
+[2026-02-18 09:41:59] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-02-18 14:12:17] === NEW PURCHASE SESSION STARTED ===
+[2026-02-18 14:12:17] Session data: {
+    "user_id": "1",
+    "username": "admin",
+    "CompID": 1,
+    "FIN_YEAR_ID": "1",
+    "FIN_YEAR_START": "2025-04-01 12:24:30",
+    "FIN_YEAR_END": "2026-03-31 12:24:30",
+    "FIN_YEAR_DISPLAY": "2025-2026",
+    "COMP_NAME": "Nandanwan"
+}
+[2026-02-18 14:12:17] POST data: []
+[2026-02-18 14:12:17] GET data: []
+[2026-02-18 14:12:17] Company ID from session: 1
+[2026-02-18 14:12:18] Database connection included
+[2026-02-18 14:12:18] License functions included
+[2026-02-18 14:12:18] License type: FL-II
+[2026-02-18 14:12:18] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-02-18 14:12:18] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-02-18 14:12:18] Purchase mode: F
+[2026-02-18 14:12:18] Next voucher number: 2
+[2026-02-18 14:12:18] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-02-18 14:12:18] Items query parameters: {
+    "query": "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,\n                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                          CONCAT('SCM', im.CODE) AS SCM_CODE\n                     FROM tblitemmaster im\n                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG\n                    WHERE im.CLASS IN (?,?,?,?,?,?,?,?,?)\n                 ORDER BY im.DETAILS",
+    "params": [
+        "W",
+        "V",
+        "M",
+        "F",
+        "D",
+        "K",
+        "G",
+        "R",
+        "O"
+    ],
+    "types": "sssssssss"
+}
+[2026-02-18 14:12:18] Items fetched from database: {
+    "count": 4693,
+    "license_filter_applied": true
+}
+[2026-02-18 14:12:18] Suppliers fetched: {
+    "count": 36
+}
+[2026-02-18 14:12:18] Database connection closed
+[2026-02-18 14:12:18] === PURCHASE SESSION ENDED ===

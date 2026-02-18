@@ -83330,3 +83330,315 @@ Stack trace:
 [06-Feb-2026 05:09:35 Europe/Berlin] Processed 0 items into 0 TP numbers
 [06-Feb-2026 05:09:35 Europe/Berlin] Unique TP Numbers found: 
 [06-Feb-2026 05:09:35 Europe/Berlin] Final Summary Structure: []
+[18-Feb-2026 09:01:13 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[18-Feb-2026 09:01:13 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum, Code: SCMPL0041328, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum', Details2: '1000 ML'
+[18-Feb-2026 09:01:13 Europe/Berlin] Using TotBott column: 18
+[18-Feb-2026 09:01:13 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: , Qty: 18, Class: R
+[18-Feb-2026 09:01:13 Europe/Berlin] ERROR: Category not found: SPIRITS or invalid volume column: 
+[18-Feb-2026 09:01:13 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum, Code: SCMPL0036919, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum', Details2: '750 ML'
+[18-Feb-2026 09:01:13 Europe/Berlin] Using TotBott column: 24
+[18-Feb-2026 09:01:13 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 24, Class: R
+[18-Feb-2026 09:01:13 Europe/Berlin] Added to TP 12156, Category SPIRITS, Size 750 ML: 24
+[18-Feb-2026 09:01:13 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum, Code: SCMPL0041326, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum', Details2: '180 ML'
+[18-Feb-2026 09:01:13 Europe/Berlin] Using TotBott column: 480
+[18-Feb-2026 09:01:13 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: R
+[18-Feb-2026 09:01:13 Europe/Berlin] Added to TP 12156, Category SPIRITS, Size 180 ML: 480
+[18-Feb-2026 09:01:13 Europe/Berlin] Item: Old Monk Very Old Vatted XXX Rum, Code: SCMPL0041327, Class: 'R', Details: 'Old Monk Very Old Vatted XXX Rum', Details2: '375 ML'
+[18-Feb-2026 09:01:13 Europe/Berlin] Using TotBott column: 48
+[18-Feb-2026 09:01:13 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: R
+[18-Feb-2026 09:01:13 Europe/Berlin] Added to TP 12156, Category SPIRITS, Size 375 ML: 48
+[18-Feb-2026 09:01:13 Europe/Berlin] Processed 3 items into 1 TP numbers
+[18-Feb-2026 09:01:13 Europe/Berlin] Unique TP Numbers found: 12156
+[18-Feb-2026 09:01:13 Europe/Berlin] Final Summary Structure: {
+    "12156": {
+        "tp_no": "12156",
+        "tp_details": {
+            "purchase_date": "2026-02-18",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 24,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 480,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[18-Feb-2026 09:42:01 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[18-Feb-2026 09:42:01 Europe/Berlin] Item: Greater Than London Dry Gin Small Batch, Code: SCMKS0036602, Class: 'G', Details: 'Greater Than London Dry Gin Small Batch', Details2: '180 ML'
+[18-Feb-2026 09:42:01 Europe/Berlin] Using TotBott column: 3
+[18-Feb-2026 09:42:01 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 3, Class: G
+[18-Feb-2026 09:42:01 Europe/Berlin] Added to TP 25298, Category SPIRITS, Size 180 ML: 3
+[18-Feb-2026 09:42:01 Europe/Berlin] Processed 1 items into 1 TP numbers
+[18-Feb-2026 09:42:01 Europe/Berlin] Unique TP Numbers found: 25298
+[18-Feb-2026 09:42:01 Europe/Berlin] Final Summary Structure: {
+    "25298": {
+        "tp_no": "25298",
+        "tp_details": {
+            "purchase_date": "2026-02-03",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 3,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[18-Feb-2026 09:42:06 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[18-Feb-2026 09:42:06 Europe/Berlin] Item: Greater Than London Dry Gin Small Batch, Code: SCMKS0036602, Class: 'G', Details: 'Greater Than London Dry Gin Small Batch', Details2: '180 ML'
+[18-Feb-2026 09:42:06 Europe/Berlin] Using TotBott column: 3
+[18-Feb-2026 09:42:06 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 3, Class: G
+[18-Feb-2026 09:42:06 Europe/Berlin] Added to TP 25298, Category SPIRITS, Size 180 ML: 3
+[18-Feb-2026 09:42:06 Europe/Berlin] Processed 1 items into 1 TP numbers
+[18-Feb-2026 09:42:06 Europe/Berlin] Unique TP Numbers found: 25298
+[18-Feb-2026 09:42:06 Europe/Berlin] Final Summary Structure: {
+    "25298": {
+        "tp_no": "25298",
+        "tp_details": {
+            "purchase_date": "2026-02-03",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 3,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}

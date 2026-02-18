@@ -469,6 +469,7 @@ function updateDailyStockFromDate($conn, $comp_id, $items_data, $start_date) {
 }
 
 // Function to bulk insert items with FIXED stock table handling
+// MODIFIED: Only adds items with opening_balance > 0 to daily stock tables
 function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
     if (empty($items)) return ['imported' => 0, 'updated' => 0];
     
@@ -476,7 +477,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
     $updated = 0;
     $batch_size = 100;
     
-    // Prepare daily stock data
+    // Prepare daily stock data - ONLY for items with opening_balance > 0
     $daily_stock_data = [];
     
     // Split items into batches
@@ -601,19 +602,21 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
                 $stock_stmt->close();
             }
             
-            // Prepare data for daily stock update
-            $daily_stock_data[$code] = [
-                'balance' => $opening_balance,
-                'liq_flag' => $liq_flag,
-                'category_code' => $item['category_code'],
-                'class_code_new' => $item['class_code_new'],
-                'subclass_code_new' => $item['subclass_code_new'],
-                'size_code' => $item['size_code']
-            ];
+            // MODIFIED: Prepare data for daily stock update - ONLY FOR ITEMS WITH OPENING BALANCE > 0
+            if ($opening_balance > 0) {
+                $daily_stock_data[$code] = [
+                    'balance' => $opening_balance,
+                    'liq_flag' => $liq_flag,
+                    'category_code' => $item['category_code'],
+                    'class_code_new' => $item['class_code_new'],
+                    'subclass_code_new' => $item['subclass_code_new'],
+                    'size_code' => $item['size_code']
+                ];
+            }
         }
     }
     
-    // Update daily stock for all items
+    // MODIFIED: Update daily stock for items with opening_balance > 0 only
     if (!empty($daily_stock_data)) {
         updateDailyStockFromDate($conn, $comp_id, $daily_stock_data, $start_date);
     }
