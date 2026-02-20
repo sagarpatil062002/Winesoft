@@ -28,6 +28,144 @@ foreach ($available_classes as $class) {
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
+// Cache for hierarchy data (same as opening_balance.php)
+$hierarchy_cache = [];
+
+/**
+ * Get complete hierarchy information for an item (copied from opening_balance.php)
+ */
+function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
+    global $hierarchy_cache;
+    
+    // Create cache key
+    $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
+    
+    if (isset($hierarchy_cache[$cache_key])) {
+        return $hierarchy_cache[$cache_key];
+    }
+    
+    $hierarchy = [
+        'class_code' => $class_code,
+        'class_name' => '',
+        'subclass_code' => $subclass_code,
+        'subclass_name' => '',
+        'category_code' => '',
+        'category_name' => '',
+        'display_category' => 'OTHER',
+        'display_type' => 'OTHER',
+        'size_code' => $size_code,
+        'size_desc' => '',
+        'ml_volume' => 0,
+        'full_hierarchy' => ''
+    ];
+    
+    try {
+        // Get class and category information
+        if (!empty($class_code)) {
+            $query = "SELECT cn.CLASS_NAME, cn.CATEGORY_CODE, cat.CATEGORY_NAME 
+                      FROM tblclass_new cn
+                      LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+                      WHERE cn.CLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $class_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['class_name'] = $row['CLASS_NAME'];
+                $hierarchy['category_code'] = $row['CATEGORY_CODE'];
+                $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
+                
+                // Map category name to display category
+                $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
+                $display_category = 'OTHER';
+                
+                if ($category_name == 'SPIRIT') {
+                    $display_category = 'SPIRITS';
+                    
+                    // Determine spirit type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED SPIRIT';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'MML';
+                    } else {
+                        $hierarchy['display_type'] = 'SPIRITS';
+                    }
+                } elseif ($category_name == 'WINE') {
+                    $display_category = 'WINE';
+                    
+                    // Determine wine type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED WINE';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'WINE MML';
+                    } else {
+                        $hierarchy['display_type'] = 'WINES';
+                    }
+                } elseif ($category_name == 'FERMENTED BEER') {
+                    $display_category = 'FERMENTED BEER';
+                    $hierarchy['display_type'] = 'FERMENTED BEER';
+                } elseif ($category_name == 'MILD BEER') {
+                    $display_category = 'MILD BEER';
+                    $hierarchy['display_type'] = 'MILD BEER';
+                } elseif ($category_name == 'COUNTRY LIQUOR') {
+                    $display_category = 'COUNTRY LIQUOR';
+                    $hierarchy['display_type'] = 'COUNTRY LIQUOR';
+                }
+                
+                $hierarchy['display_category'] = $display_category;
+            }
+            $stmt->close();
+        }
+        
+        // Get subclass information
+        if (!empty($subclass_code)) {
+            $query = "SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $subclass_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['subclass_name'] = $row['SUBCLASS_NAME'];
+            }
+            $stmt->close();
+        }
+        
+        // Get size information
+        if (!empty($size_code)) {
+            $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $size_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['size_desc'] = $row['SIZE_DESC'];
+                $hierarchy['ml_volume'] = (int)($row['ML_VOLUME'] ?? 0);
+            }
+            $stmt->close();
+        }
+        
+        // Build full hierarchy string
+        $parts = [];
+        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
+        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
+        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
+        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
+        
+        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
+        
+    } catch (Exception $e) {
+        error_log("Error in getItemHierarchy: " . $e->getMessage());
+    }
+    
+    $hierarchy_cache[$cache_key] = $hierarchy;
+    return $hierarchy;
+}
+
 // Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -48,6 +186,70 @@ if ($row = $companyResult->fetch_assoc()) {
     $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : $licenseNo;
 }
 $companyStmt->close();
+
+// Define display categories based on hierarchy
+$display_categories = [
+    'SPIRITS',
+    'IMPORTED SPIRIT',
+    'MML',
+    'WINES',
+    'IMPORTED WINE',
+    'WINE MML',
+    'FERMENTED BEER',
+    'MILD BEER'
+];
+
+$category_display_names = [
+    'SPIRITS' => 'SPIRITS',
+    'IMPORTED SPIRIT' => 'IMPORTED SPIRIT',
+    'MML' => 'MML',
+    'WINES' => 'WINES',
+    'IMPORTED WINE' => 'IMPORTED WINE',
+    'WINE MML' => 'WINE MML',
+    'FERMENTED BEER' => 'FERMENTED BEER',
+    'MILD BEER' => 'MILD BEER'
+];
+
+// Function to get volume label (copied from opening_balance.php)
+function getVolumeLabel($volume) {
+    static $volume_label_cache = [];
+    
+    if (isset($volume_label_cache[$volume])) {
+        return $volume_label_cache[$volume];
+    }
+    
+    // Format volume based on size
+    if ($volume >= 1000) {
+        $liters = $volume / 1000;
+        // Check if it's a whole number
+        if ($liters == intval($liters)) {
+            $label = intval($liters) . 'L';
+        } else {
+            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
+        }
+    } else {
+        $label = $volume . ' ML';
+    }
+    
+    $volume_label_cache[$volume] = $label;
+    return $label;
+}
+
+// Define all display sizes (from opening_balance.php volume summary)
+$all_display_sizes = [
+    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
+    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+];
+
+// Function to extract brand name from item details
+function getBrandName($details) {
+    // Remove size patterns (ML, CL, L, etc. with numbers)
+    $brandName = preg_replace('/\s*\d+\s*(ML|CL|L).*$/i', '', $details);
+    $brandName = preg_replace('/\s*\([^)]*\)\s*$/', '', $brandName); // Remove trailing parentheses
+    $brandName = preg_replace('/\s*-\s*\d+$/', '', $brandName); // Remove trailing - numbers
+    return trim($brandName);
+}
 
 // Function to get table name for a specific date
 function getTableForDate($conn, $compID, $date) {
@@ -141,107 +343,15 @@ function tableHasDayColumns($conn, $table_name, $day) {
             $salesResult->num_rows > 0 && $closingResult->num_rows > 0);
 }
 
-// Function to group sizes by base size (remove suffixes after ML and trim)
-function getBaseSize($size) {
-    // Extract the base size (everything before any special characters after ML)
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
-    return trim($baseSize);
-}
-
-// Function to extract brand name from item details
-function getBrandName($details) {
-    // Remove size patterns (ML, CL, L, etc. with numbers)
-    $brandName = preg_replace('/\s*\d+\s*(ML|CL|L).*$/i', '', $details);
-    $brandName = preg_replace('/\s*\([^)]*\)\s*$/', '', $brandName); // Remove trailing parentheses
-    $brandName = preg_replace('/\s*-\s*\d+$/', '', $brandName); // Remove trailing - numbers
-    return trim($brandName);
-}
-
-// Define display sizes for each liquor type (using base sizes)
-$display_sizes_s = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
-$display_sizes_imported = $display_sizes_s; // Imported uses same sizes as Spirit
-$display_sizes_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
-$display_sizes_wine_imp = $display_sizes_w; // Wine Imp uses same sizes as Wine
-$display_sizes_fb = ['650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-$display_sizes_mb = ['650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-
-// Combine all sizes in the required order for display (without duplicates)
-$all_display_sizes = array_merge(
-    $display_sizes_s,
-    $display_sizes_imported,
-    $display_sizes_w,
-    $display_sizes_wine_imp,
-    $display_sizes_fb,
-    $display_sizes_mb
-);
-
-// Remove duplicates while preserving order
-$all_display_sizes = array_values(array_unique($all_display_sizes));
-
-// Map database sizes to display sizes
-$size_mapping = [
-    // Spirits
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    '90 ML' => '90 ML',
-    '90 ML-100' => '90 ML',
-    '90 ML-96' => '90 ML',
-    '2000 ML' => '2000 ML',
-    '2000 ML Pet' => '2000 ML',
-    '1000 ML' => '1000 ML',
-    '700 ML' => '700 ML',
-    '500 ML' => '500 ML',
-    '350 ML' => '350 ML',
-    '275 ML' => '275 ML',
-    '200 ML' => '200 ML',
-    '180 ML' => '180 ML',
-    '170 ML' => '180 ML',
-    '60 ML' => '60 ML',
-    '50 ML' => '50 ML',
-    
-    // Wines
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    '180 ML' => '180 ML',
-    '90 ML' => '90 ML',
-    
-    // Fermented Beer
-    '650 ML' => '650 ML',
-    '500 ML' => '500 ML',
-    '500 ML (CAN)' => '500 ML',
-    '330 ML' => '330 ML',
-    '330 ML (CAN)' => '330 ML',
-    '275 ML' => '275 ML',
-    '250 ML' => '250 ML',
-    
-    // Mild Beer
-    '650 ML' => '650 ML',
-    '500 ML (CAN)' => '500 ML',
-    '330 ML' => '330 ML',
-    '330 ML (CAN)' => '330 ML',
-    '275 ML' => '275 ML',
-    '250 ML' => '250 ML'
-];
-
-// Fetch class data to map liquor types
-$classData = [];
-$classQuery = "SELECT SGROUP, `DESC`, LIQ_FLAG FROM tblclass";
-$classStmt = $conn->prepare($classQuery);
-$classStmt->execute();
-$classResult = $classStmt->get_result();
-while ($row = $classResult->fetch_assoc()) {
-    $classData[$row['SGROUP']] = $row;
-}
-$classStmt->close();
-
-// Fetch item master data with size information and extract brand names - WITH LICENSE FILTERING
+// Fetch item master data with size information - USING NEW HIERARCHY FIELDS
 $items = [];
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    
+    // Updated query to use CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                  FROM tblitemmaster 
+                  WHERE CLASS IN ($class_placeholders)";
     
     $stmt = $conn->prepare($itemQuery);
     $stmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
@@ -249,126 +359,51 @@ if (!empty($allowed_classes)) {
     $itemResult = $stmt->get_result();
 } else {
     // If no classes allowed, return empty result
-    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE 1 = 0";
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                  FROM tblitemmaster WHERE 1 = 0";
     $itemResult = $conn->query($itemQuery);
 }
 
 while ($row = $itemResult->fetch_assoc()) {
-    $items[$row['CODE']] = $row;
+    // Get hierarchy information
+    $hierarchy = getItemHierarchy(
+        $row['CLASS_CODE_NEW'], 
+        $row['SUBCLASS_CODE_NEW'], 
+        $row['SIZE_CODE'], 
+        $conn
+    );
+    
+    $items[$row['CODE']] = [
+        'code' => $row['CODE'],
+        'details' => $row['DETAILS'],
+        'details2' => $row['DETAILS2'],
+        'class' => $row['CLASS'],
+        'class_code_new' => $row['CLASS_CODE_NEW'],
+        'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
+        'size_code' => $row['SIZE_CODE'],
+        'liq_flag' => $row['LIQ_FLAG'],
+        'hierarchy' => $hierarchy
+    ];
 }
 if (isset($stmt)) {
     $stmt->close();
 }
 
-// Function to determine liquor type based on CLASS and LIQ_FLAG (from excise_register.php)
-function getLiquorType($class, $liq_flag, $desc = '') {
-    if ($liq_flag == 'F') {
-        switch ($class) {
-            case 'I':
-                return 'Imported Spirit';
-            case 'W':
-                if (stripos($desc, 'Wine') !== false || stripos($desc, 'Imp') !== false) {
-                    return 'Wine Imp';
-                } else {
-                    return 'Spirits';
-                }
-            case 'V':
-                return 'Wines';
-            case 'F':
-                return 'Fermented Beer';
-            case 'M':
-                return 'Mild Beer';
-            case 'G':
-            case 'D':
-            case 'K':
-            case 'R':
-            case 'O':
-                return 'Spirits';
-            default:
-                return 'Spirits';
-        }
-    }
-    return 'Spirits'; // Default for non-F items
+// NEW: Restructure data by display type -> brand
+$brand_data_by_category = [];
+foreach ($display_categories as $category) {
+    $brand_data_by_category[$category] = [];
 }
-
-// Function to get grouped size based on liquor type
-function getGroupedSize($size, $liquor_type) {
-    global $display_sizes_s, $display_sizes_w, $display_sizes_fb, $display_sizes_mb;
-    
-    $baseSize = getBaseSize($size);
-    
-    // Check if this base size exists in the appropriate group
-    switch ($liquor_type) {
-        case 'Spirits':
-        case 'Imported Spirit':
-            if (in_array($baseSize, $display_sizes_s)) {
-                return $baseSize;
-            }
-            break;
-        case 'Wines':
-        case 'Wine Imp':
-            if (in_array($baseSize, $display_sizes_w)) {
-                return $baseSize;
-            }
-            break;
-        case 'Fermented Beer':
-            if (in_array($baseSize, $display_sizes_fb)) {
-                return $baseSize;
-            }
-            break;
-        case 'Mild Beer':
-            if (in_array($baseSize, $display_sizes_mb)) {
-                return $baseSize;
-            }
-            break;
-    }
-    
-    return $baseSize; // Return base size even if not found in predefined groups
-}
-
-// NEW: Restructure data by liquor type -> brand
-$brand_data_by_category = [
-    'Spirits' => [],
-    'Imported Spirit' => [],
-    'Wines' => [],
-    'Wine Imp' => [],
-    'Fermented Beer' => [],
-    'Mild Beer' => []
-];
 
 // Initialize category totals
-$category_totals = [
-    'Spirits' => [
+$category_totals = [];
+foreach ($display_categories as $category) {
+    $category_totals[$category] = [
         'purchase' => array_fill_keys($all_display_sizes, 0),
         'sales' => array_fill_keys($all_display_sizes, 0),
         'closing' => array_fill_keys($all_display_sizes, 0)
-    ],
-    'Imported Spirit' => [
-        'purchase' => array_fill_keys($all_display_sizes, 0),
-        'sales' => array_fill_keys($all_display_sizes, 0),
-        'closing' => array_fill_keys($all_display_sizes, 0)
-    ],
-    'Wines' => [
-        'purchase' => array_fill_keys($all_display_sizes, 0),
-        'sales' => array_fill_keys($all_display_sizes, 0),
-        'closing' => array_fill_keys($all_display_sizes, 0)
-    ],
-    'Wine Imp' => [
-        'purchase' => array_fill_keys($all_display_sizes, 0),
-        'sales' => array_fill_keys($all_display_sizes, 0),
-        'closing' => array_fill_keys($all_display_sizes, 0)
-    ],
-    'Fermented Beer' => [
-        'purchase' => array_fill_keys($all_display_sizes, 0),
-        'sales' => array_fill_keys($all_display_sizes, 0),
-        'closing' => array_fill_keys($all_display_sizes, 0)
-    ],
-    'Mild Beer' => [
-        'purchase' => array_fill_keys($all_display_sizes, 0),
-        'sales' => array_fill_keys($all_display_sizes, 0),
-        'closing' => array_fill_keys($all_display_sizes, 0)
-    ]
-];
+    ];
+}
 
 // Store TP Nos data by brand (only for items with purchase)
 $brand_tp_nos = [];
@@ -491,27 +526,67 @@ foreach ($cumulative_stock_data as $item_code => $stock_data) {
         continue; // Skip items with no stock activity
     }
     
-    $item_details = $items[$item_code];
-    $size = $item_details['DETAILS2'];
-    $class = $item_details['CLASS'];
-    $liq_flag = $stock_data['liq_flag'];
+    $item = $items[$item_code];
+    $hierarchy = $item['hierarchy'];
+    $display_type = $hierarchy['display_type'];
+    
+    // Skip if display type is not in our categories
+    if (!in_array($display_type, $display_categories)) {
+        continue;
+    }
     
     // Extract brand name
-    $brandName = getBrandName($item_details['DETAILS']);
+    $brandName = getBrandName($item['details']);
     if (empty($brandName)) continue;
     
-    // Determine liquor type using the improved logic from excise_register.php
-    $liquor_type = getLiquorType($class, $liq_flag, $classData[$class]['DESC'] ?? '');
+    // Get volume label for size grouping
+    $volume_label = getVolumeLabel($hierarchy['ml_volume']);
     
-    // Map database size to display size
-    $display_size = isset($size_mapping[$size]) ? $size_mapping[$size] : getBaseSize($size);
+    // Find matching size in all_display_sizes
+    $matched_size = null;
     
-    // Get grouped size based on liquor type
-    $grouped_size = getGroupedSize($display_size, $liquor_type);
+    // Try exact match first
+    if (in_array($volume_label, $all_display_sizes)) {
+        $matched_size = $volume_label;
+    } else {
+        // Try partial match
+        foreach ($all_display_sizes as $size_col) {
+            // Extract numeric part for comparison
+            preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
+            preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
+            
+            if (isset($vol_parts[1]) && isset($col_parts[1])) {
+                $vol_num = floatval($vol_parts[1]);
+                $col_num = floatval($col_parts[1]);
+                
+                // Check if units match (ML vs L)
+                $vol_unit = strtoupper($vol_parts[2]);
+                $col_unit = strtoupper($col_parts[2]);
+                
+                // Convert to ML for comparison if needed
+                if ($vol_unit == 'L' && $col_unit == 'ML') {
+                    $vol_num *= 1000;
+                } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
+                    $col_num *= 1000;
+                }
+                
+                // Allow small rounding differences
+                if (abs($vol_num - $col_num) < 1) {
+                    $matched_size = $size_col;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // If still no match, use first size as fallback
+    if (!$matched_size && !empty($all_display_sizes)) {
+        $matched_size = $all_display_sizes[0];
+    }
     
     // Initialize brand data if not exists
-    if (!isset($brand_data_by_category[$liquor_type][$brandName])) {
-        $brand_data_by_category[$liquor_type][$brandName] = [
+    if (!isset($brand_data_by_category[$display_type][$brandName])) {
+        $brand_data_by_category[$display_type][$brandName] = [
             'tp_nos' => [],
             'sizes' => array_fill_keys($all_display_sizes, [
                 'purchase' => 0,
@@ -524,22 +599,22 @@ foreach ($cumulative_stock_data as $item_code => $stock_data) {
     // Add TP Nos (only for items with purchases)
     if (isset($brand_tp_nos[$item_code])) {
         foreach ($brand_tp_nos[$item_code] as $tp_no) {
-            if (!in_array($tp_no, $brand_data_by_category[$liquor_type][$brandName]['tp_nos'])) {
-                $brand_data_by_category[$liquor_type][$brandName]['tp_nos'][] = $tp_no;
+            if (!in_array($tp_no, $brand_data_by_category[$display_type][$brandName]['tp_nos'])) {
+                $brand_data_by_category[$display_type][$brandName]['tp_nos'][] = $tp_no;
             }
         }
     }
     
     // Add to brand data
-    if (isset($brand_data_by_category[$liquor_type][$brandName]['sizes'][$grouped_size])) {
-        $brand_data_by_category[$liquor_type][$brandName]['sizes'][$grouped_size]['purchase'] += $stock_data['purchase'];
-        $brand_data_by_category[$liquor_type][$brandName]['sizes'][$grouped_size]['sales'] += $stock_data['sales'];
-        $brand_data_by_category[$liquor_type][$brandName]['sizes'][$grouped_size]['closing'] = $stock_data['closing'];
+    if (isset($brand_data_by_category[$display_type][$brandName]['sizes'][$matched_size])) {
+        $brand_data_by_category[$display_type][$brandName]['sizes'][$matched_size]['purchase'] += $stock_data['purchase'];
+        $brand_data_by_category[$display_type][$brandName]['sizes'][$matched_size]['sales'] += $stock_data['sales'];
+        $brand_data_by_category[$display_type][$brandName]['sizes'][$matched_size]['closing'] = $stock_data['closing'];
         
         // Update category totals
-        $category_totals[$liquor_type]['purchase'][$grouped_size] += $stock_data['purchase'];
-        $category_totals[$liquor_type]['sales'][$grouped_size] += $stock_data['sales'];
-        $category_totals[$liquor_type]['closing'][$grouped_size] += $stock_data['closing'];
+        $category_totals[$display_type]['purchase'][$matched_size] += $stock_data['purchase'];
+        $category_totals[$display_type]['sales'][$matched_size] += $stock_data['sales'];
+        $category_totals[$display_type]['closing'][$matched_size] += $stock_data['closing'];
     }
 }
 
@@ -993,12 +1068,15 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
             <tbody>
               <?php $sr_no = 1; ?>
 
-              <!-- Spirits Section -->
-              <?php if (!empty($brand_data_by_category['Spirits'])): ?>
+              <!-- SPIRITS Section -->
+              <?php if (!empty($brand_data_by_category['SPIRITS'])): ?>
               <tr class="category-header">
                 <td colspan="<?= (3 + ($total_columns)) ?>">SPIRITS</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Spirits'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['SPIRITS']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['SPIRITS'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1015,48 +1093,51 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Spirits Category Total -->
+              <!-- SPIRITS Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Spirits']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['SPIRITS']['purchase'][$size] ?? 0) > 0 ? $category_totals['SPIRITS']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Spirits']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['SPIRITS']['sales'][$size] ?? 0) > 0 ? $category_totals['SPIRITS']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Spirits']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['SPIRITS']['closing'][$size] ?? 0) > 0 ? $category_totals['SPIRITS']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>
 
-              <!-- Imported Spirit Section -->
-              <?php if (!empty($brand_data_by_category['Imported Spirit'])): ?>
+              <!-- IMPORTED SPIRIT Section -->
+              <?php if (!empty($brand_data_by_category['IMPORTED SPIRIT'])): ?>
               <tr class="category-header">
                 <td colspan="<?= (3 + ($total_columns)) ?>">IMPORTED SPIRIT</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Imported Spirit'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['IMPORTED SPIRIT']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['IMPORTED SPIRIT'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1073,48 +1154,112 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Imported Spirit Category Total -->
+              <!-- IMPORTED SPIRIT Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Imported Spirit']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED SPIRIT']['purchase'][$size] ?? 0) > 0 ? $category_totals['IMPORTED SPIRIT']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Imported Spirit']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED SPIRIT']['sales'][$size] ?? 0) > 0 ? $category_totals['IMPORTED SPIRIT']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Imported Spirit']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED SPIRIT']['closing'][$size] ?? 0) > 0 ? $category_totals['IMPORTED SPIRIT']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>
 
-              <!-- Wines Section -->
-              <?php if (!empty($brand_data_by_category['Wines'])): ?>
+              <!-- MML Section -->
+              <?php if (!empty($brand_data_by_category['MML'])): ?>
+              <tr class="category-header">
+                <td colspan="<?= (3 + ($total_columns)) ?>">MML</td>
+              </tr>
+              <?php 
+              ksort($brand_data_by_category['MML']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['MML'] as $brand => $brand_info): 
+              ?>
+                <tr>
+                  <td><?= $sr_no++ ?></td>
+                  <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
+                  <td class="tp-nos-list">
+                    <?php if (!empty($brand_info['tp_nos'])): ?>
+                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                        <span><?= htmlspecialchars($tp_no) ?></span>
+                      <?php endforeach; ?>
+                      <?php if (count($brand_info['tp_nos']) > 3): ?>
+                        <span>...</span>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                  </td>
+
+                  <!-- RECEIVED Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- SOLD Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- CLOSING BALANCE Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
+                  <?php endforeach; ?>
+                </tr>
+              <?php endforeach; ?>
+              
+              <!-- MML Category Total -->
+              <tr class="category-total-row">
+                <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
+                
+                <!-- RECEIVED Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['MML']['purchase'][$size] ?? 0) > 0 ? $category_totals['MML']['purchase'][$size] : '' ?></td>
+                <?php endforeach; ?>
+
+                <!-- SOLD Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['MML']['sales'][$size] ?? 0) > 0 ? $category_totals['MML']['sales'][$size] : '' ?></td>
+                <?php endforeach; ?>
+
+                <!-- CLOSING BALANCE Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['MML']['closing'][$size] ?? 0) > 0 ? $category_totals['MML']['closing'][$size] : '' ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <?php endif; ?>
+
+              <!-- WINES Section -->
+              <?php if (!empty($brand_data_by_category['WINES'])): ?>
               <tr class="category-header">
                 <td colspan="<?= (3 + ($total_columns)) ?>">WINES</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Wines'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['WINES']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['WINES'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1131,48 +1276,51 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Wines Category Total -->
+              <!-- WINES Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wines']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['WINES']['purchase'][$size] ?? 0) > 0 ? $category_totals['WINES']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wines']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['WINES']['sales'][$size] ?? 0) > 0 ? $category_totals['WINES']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wines']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['WINES']['closing'][$size] ?? 0) > 0 ? $category_totals['WINES']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>
 
-              <!-- Wine Imp Section -->
-              <?php if (!empty($brand_data_by_category['Wine Imp'])): ?>
+              <!-- IMPORTED WINE Section -->
+              <?php if (!empty($brand_data_by_category['IMPORTED WINE'])): ?>
               <tr class="category-header">
-                <td colspan="<?= (3 + ($total_columns)) ?>">WINE IMP</td>
+                <td colspan="<?= (3 + ($total_columns)) ?>">IMPORTED WINE</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Wine Imp'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['IMPORTED WINE']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['IMPORTED WINE'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1189,48 +1337,112 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Wine Imp Category Total -->
+              <!-- IMPORTED WINE Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wine Imp']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED WINE']['purchase'][$size] ?? 0) > 0 ? $category_totals['IMPORTED WINE']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wine Imp']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED WINE']['sales'][$size] ?? 0) > 0 ? $category_totals['IMPORTED WINE']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Wine Imp']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['IMPORTED WINE']['closing'][$size] ?? 0) > 0 ? $category_totals['IMPORTED WINE']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>
 
-              <!-- Fermented Beer Section -->
-              <?php if (!empty($brand_data_by_category['Fermented Beer'])): ?>
+              <!-- WINE MML Section -->
+              <?php if (!empty($brand_data_by_category['WINE MML'])): ?>
+              <tr class="category-header">
+                <td colspan="<?= (3 + ($total_columns)) ?>">WINE MML</td>
+              </tr>
+              <?php 
+              ksort($brand_data_by_category['WINE MML']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['WINE MML'] as $brand => $brand_info): 
+              ?>
+                <tr>
+                  <td><?= $sr_no++ ?></td>
+                  <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
+                  <td class="tp-nos-list">
+                    <?php if (!empty($brand_info['tp_nos'])): ?>
+                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                        <span><?= htmlspecialchars($tp_no) ?></span>
+                      <?php endforeach; ?>
+                      <?php if (count($brand_info['tp_nos']) > 3): ?>
+                        <span>...</span>
+                      <?php endif; ?>
+                    <?php endif; ?>
+                  </td>
+
+                  <!-- RECEIVED Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- SOLD Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
+                  <?php endforeach; ?>
+
+                  <!-- CLOSING BALANCE Section -->
+                  <?php foreach ($all_display_sizes as $size): ?>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
+                  <?php endforeach; ?>
+                </tr>
+              <?php endforeach; ?>
+              
+              <!-- WINE MML Category Total -->
+              <tr class="category-total-row">
+                <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
+                
+                <!-- RECEIVED Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['WINE MML']['purchase'][$size] ?? 0) > 0 ? $category_totals['WINE MML']['purchase'][$size] : '' ?></td>
+                <?php endforeach; ?>
+
+                <!-- SOLD Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['WINE MML']['sales'][$size] ?? 0) > 0 ? $category_totals['WINE MML']['sales'][$size] : '' ?></td>
+                <?php endforeach; ?>
+
+                <!-- CLOSING BALANCE Section Totals -->
+                <?php foreach ($all_display_sizes as $size): ?>
+                  <td><?= ($category_totals['WINE MML']['closing'][$size] ?? 0) > 0 ? $category_totals['WINE MML']['closing'][$size] : '' ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <?php endif; ?>
+
+              <!-- FERMENTED BEER Section -->
+              <?php if (!empty($brand_data_by_category['FERMENTED BEER'])): ?>
               <tr class="category-header">
                 <td colspan="<?= (3 + ($total_columns)) ?>">FERMENTED BEER</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Fermented Beer'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['FERMENTED BEER']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['FERMENTED BEER'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1247,48 +1459,51 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Fermented Beer Category Total -->
+              <!-- FERMENTED BEER Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Fermented Beer']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['FERMENTED BEER']['purchase'][$size] ?? 0) > 0 ? $category_totals['FERMENTED BEER']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Fermented Beer']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['FERMENTED BEER']['sales'][$size] ?? 0) > 0 ? $category_totals['FERMENTED BEER']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Fermented Beer']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['FERMENTED BEER']['closing'][$size] ?? 0) > 0 ? $category_totals['FERMENTED BEER']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>
               
-              <!-- Mild Beer Section -->
-              <?php if (!empty($brand_data_by_category['Mild Beer'])): ?>
+              <!-- MILD BEER Section -->
+              <?php if (!empty($brand_data_by_category['MILD BEER'])): ?>
               <tr class="category-header">
                 <td colspan="<?= (3 + ($total_columns)) ?>">MILD BEER</td>
               </tr>
-              <?php foreach ($brand_data_by_category['Mild Beer'] as $brand => $brand_info): ?>
+              <?php 
+              ksort($brand_data_by_category['MILD BEER']); // Sort brands alphabetically
+              foreach ($brand_data_by_category['MILD BEER'] as $brand => $brand_info): 
+              ?>
                 <tr>
                   <td><?= $sr_no++ ?></td>
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
@@ -1305,38 +1520,38 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
 
                   <!-- RECEIVED Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['purchase']) ? $brand_info['sizes'][$size]['purchase'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['purchase']) && $brand_info['sizes'][$size]['purchase'] > 0 ? $brand_info['sizes'][$size]['purchase'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- SOLD Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['sales']) ? $brand_info['sizes'][$size]['sales'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['sales']) && $brand_info['sizes'][$size]['sales'] > 0 ? $brand_info['sizes'][$size]['sales'] : '' ?></td>
                   <?php endforeach; ?>
 
                   <!-- CLOSING BALANCE Section -->
                   <?php foreach ($all_display_sizes as $size): ?>
-                    <td><?= isset($brand_info['sizes'][$size]['closing']) ? $brand_info['sizes'][$size]['closing'] : 0 ?></td>
+                    <td><?= isset($brand_info['sizes'][$size]['closing']) && $brand_info['sizes'][$size]['closing'] > 0 ? $brand_info['sizes'][$size]['closing'] : '' ?></td>
                   <?php endforeach; ?>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Mild Beer Category Total -->
+              <!-- MILD BEER Category Total -->
               <tr class="category-total-row">
                 <td colspan="3" style="text-align: right; font-weight: bold;">Category Total:</td>
                 
                 <!-- RECEIVED Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Mild Beer']['purchase'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['MILD BEER']['purchase'][$size] ?? 0) > 0 ? $category_totals['MILD BEER']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- SOLD Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Mild Beer']['sales'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['MILD BEER']['sales'][$size] ?? 0) > 0 ? $category_totals['MILD BEER']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- CLOSING BALANCE Section Totals -->
                 <?php foreach ($all_display_sizes as $size): ?>
-                  <td><?= $category_totals['Mild Beer']['closing'][$size] ?? 0 ?></td>
+                  <td><?= ($category_totals['MILD BEER']['closing'][$size] ?? 0) > 0 ? $category_totals['MILD BEER']['closing'][$size] : '' ?></td>
                 <?php endforeach; ?>
               </tr>
               <?php endif; ?>

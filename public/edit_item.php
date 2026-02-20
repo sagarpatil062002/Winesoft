@@ -219,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_code = $_POST['category_code'];
     $class_code = $_POST['class_code'];
     $subclass_code = $_POST['subclass_code'];
-    $size_code = $_POST['size_code'];
+    $size_code = $_POST['size_code']; // This will save to SIZE_CODE column
     $pprice = floatval($_POST['pprice'] ?? 0);
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
@@ -279,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Get ITEM_GROUP from selected subclass or size
+    // Get ITEM_GROUP from selected subclass (default)
     $item_group = 'O'; // Default to Others
     if (!empty($subclass_code)) {
         $stmt = $conn->prepare("SELECT OLD_ITEM_GROUP FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1");
@@ -293,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->close();
     }
     
-    // Override with size if selected
+    // Override with size's item group if size is selected
     if (!empty($size_code)) {
         $stmt = $conn->prepare("SELECT OLD_ITEM_GROUP FROM tblsize WHERE SIZE_CODE = ? LIMIT 1");
         $stmt->bind_param("s", $size_code);
@@ -315,6 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $details2 .= " > " . $size_desc;
     }
 
+    // Update tblitemmaster with all fields including SIZE_CODE
     $stmt = $conn->prepare("UPDATE tblitemmaster SET 
                           Print_Name = ?, 
                           DETAILS = ?, 
@@ -330,16 +331,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                           CATEGORY_CODE = ?,
                           CLASS_CODE_NEW = ?,
                           SUBCLASS_CODE_NEW = ?,
-                          SIZE_CODE = ?
+                          SIZE_CODE = ?  /* This column name is correct as per database */
                           WHERE CODE = ?");
+    
     $stmt->bind_param("ssssssddddssssss", 
-        $Print_Name, $details, $details2, $class, $subClassField, $item_group, 
-        $pprice, $bprice, $mprice, $RPRICE, $BARCODE, 
-        $category_code, $class_code, $subclass_code, $size_code, $item_code);
+        $Print_Name, 
+        $details, 
+        $details2, 
+        $class, 
+        $subClassField, 
+        $item_group, 
+        $pprice, 
+        $bprice, 
+        $mprice, 
+        $RPRICE, 
+        $BARCODE, 
+        $category_code, 
+        $class_code, 
+        $subclass_code, 
+        $size_code,  // This maps to SIZE_CODE column
+        $item_code
+    );
     
     if ($stmt->execute()) {
-        // Update stock information using the same function as in item_master.php
-        updateItemStock($conn, $company_id, $item_code, $mode, $opening_balance);
+        // Update stock information using the same function as in add_item.php
+        updateItemStockAllTables($conn, $company_id, $item_code, $mode, $opening_balance);
         
         $_SESSION['success_message'] = "Item updated successfully!";
         header("Location: item_master.php?mode=" . $mode);
@@ -350,9 +366,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->close();
 }
 
-// Function to update item stock information (same as in item_master.php)
-function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
-    // Update tblitem_stock
+// Function to update item stock information for all tables (same as in add_item.php)
+function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $opening_balance) {
+    $current_year = date('Y');
+    
+    // 1. Update tblitem_stock
     $check_stock_query = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_stock_query);
     $check_stmt->bind_param("s", $item_code);
@@ -366,26 +384,26 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
     
     if ($stock_exists) {
         // Update existing stock record
-        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ? WHERE ITEM_CODE = ?";
+        $update_query = "UPDATE tblitem_stock SET $opening_col = ?, $current_col = ?, FIN_YEAR = ? WHERE ITEM_CODE = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iis", $opening_balance, $opening_balance, $item_code);
+        $update_stmt->bind_param("iiis", $opening_balance, $opening_balance, $current_year, $item_code);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
         // Insert new stock record
-        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, $opening_col, $current_col) VALUES (?, ?, ?)";
+        $insert_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_col, $current_col) VALUES (?, ?, ?, ?)";
         $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("sii", $item_code, $opening_balance, $opening_balance);
+        $insert_stmt->bind_param("siii", $item_code, $current_year, $opening_balance, $opening_balance);
         $insert_stmt->execute();
         $insert_stmt->close();
     }
     
-    // Update daily stock for today
+    // 2. Update current month's daily stock table (tbldailystock_$comp_id)
     $today = date('d');
     $today_padded = str_pad($today, 2, '0', STR_PAD_LEFT);
     $current_month = date('Y-m');
     
-    // Check if daily stock record exists
+    // Check if current month daily stock record exists
     $check_daily_query = "SELECT COUNT(*) as count FROM tbldailystock_$comp_id 
                          WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
     $check_daily_stmt = $conn->prepare($check_daily_query);
@@ -415,6 +433,48 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
         $insert_daily_stmt->bind_param("sssii", $current_month, $item_code, $liqFlag, $opening_balance, $opening_balance);
         $insert_daily_stmt->execute();
         $insert_daily_stmt->close();
+    }
+    
+    // 3. Update monthly table (tbldailystock_{comp_id}_{mm_yy})
+    $month_short = date('m_y'); // Format: 01_26 for January 2026
+    $monthly_table_name = "tbldailystock_{$comp_id}_{$month_short}";
+    
+    // Check if monthly table exists
+    $check_table_query = "SHOW TABLES LIKE '$monthly_table_name'";
+    $table_result = $conn->query($check_table_query);
+    
+    if ($table_result->num_rows > 0) {
+        // Monthly table exists, update it
+        $check_monthly_query = "SELECT COUNT(*) as count FROM $monthly_table_name 
+                               WHERE ITEM_CODE = ? AND LIQ_FLAG = ?";
+        $check_monthly_stmt = $conn->prepare($check_monthly_query);
+        $check_monthly_stmt->bind_param("ss", $item_code, $liqFlag);
+        $check_monthly_stmt->execute();
+        $monthly_result = $check_monthly_stmt->get_result();
+        $monthly_exists = $monthly_result->fetch_assoc()['count'] > 0;
+        $check_monthly_stmt->close();
+        
+        if ($monthly_exists) {
+            // Update existing monthly record
+            $update_monthly_query = "UPDATE $monthly_table_name 
+                                    SET DAY_{$today_padded}_OPEN = ?, 
+                                        DAY_{$today_padded}_CLOSING = ?,
+                                        LAST_UPDATED = CURRENT_TIMESTAMP 
+                                    WHERE ITEM_CODE = ? AND LIQ_FLAG = ?";
+            $update_monthly_stmt = $conn->prepare($update_monthly_query);
+            $update_monthly_stmt->bind_param("iiss", $opening_balance, $opening_balance, $item_code, $liqFlag);
+            $update_monthly_stmt->execute();
+            $update_monthly_stmt->close();
+        } else {
+            // Insert new monthly record
+            $insert_monthly_query = "INSERT INTO $monthly_table_name 
+                                    (ITEM_CODE, LIQ_FLAG, DAY_{$today_padded}_OPEN, DAY_{$today_padded}_CLOSING) 
+                                    VALUES (?, ?, ?, ?)";
+            $insert_monthly_stmt = $conn->prepare($insert_monthly_query);
+            $insert_monthly_stmt->bind_param("ssii", $item_code, $liqFlag, $opening_balance, $opening_balance);
+            $insert_monthly_stmt->execute();
+            $insert_monthly_stmt->close();
+        }
     }
 }
 ?>
@@ -515,6 +575,11 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
             content: " *";
             color: red;
         }
+        .size-info {
+            font-size: 0.85rem;
+            color: #28a745;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -580,7 +645,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                 <div class="col-md-3">
                     <label for="code" class="form-label">Item Code</label>
                     <input type="text" id="code" class="form-control" 
-                           value="<?= htmlspecialchars($item['CODE']) ?>" required>
+                           value="<?= htmlspecialchars($item['CODE']) ?>" readonly disabled>
                 </div>
 
                 <!-- Print Name -->
@@ -660,7 +725,7 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                             <label for="subclass_code" class="form-label required-field">Subclass</label>
                             <div class="custom-dropdown">
                                 <select id="subclass_code" name="subclass_code" class="form-select" required
-                                        onchange="loadSizes(this.value)">
+                                        onchange="loadSizes(this.value); updateSubclassName(this)">
                                     <option value="">-- Select Subclass --</option>
                                     <?php if (!empty($item_subclass_code)): ?>
                                         <option value="<?= htmlspecialchars($item_subclass_code) ?>" selected>
@@ -675,7 +740,8 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                         <div class="col-md-3">
                             <label for="size_code" class="form-label">Size (Optional)</label>
                             <div class="custom-dropdown">
-                                <select id="size_code" name="size_code" class="form-select">
+                                <select id="size_code" name="size_code" class="form-select"
+                                        onchange="updateSizeDesc(this)">
                                     <option value="">-- Select Size --</option>
                                     <?php if (!empty($item_size_code)): ?>
                                         <option value="<?= htmlspecialchars($item_size_code) ?>" selected>
@@ -683,6 +749,11 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
                                         </option>
                                     <?php endif; ?>
                                 </select>
+                            </div>
+                            <div id="selected_size_display" class="size-info">
+                                <?php if (!empty($size_desc)): ?>
+                                    Selected: <?= htmlspecialchars($size_desc) ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -701,16 +772,16 @@ function updateItemStock($conn, $comp_id, $item_code, $liqFlag, $opening_balance
 
                         <!-- P. Price -->
                         <div class="col-md-3">
-                            <label for="pprice" class="form-label required-field">Purchase Price</label>
+                            <label for="pprice" class="form-label">Purchase Price</label>
                             <input type="number" step="0.001" id="pprice" name="pprice" class="form-control"
-                                   value="<?= htmlspecialchars($item['PPRICE']) ?>" required>
+                                   value="<?= htmlspecialchars($item['PPRICE']) ?>">
                         </div>
 
                         <!-- B. Price -->
                         <div class="col-md-3">
-                            <label for="bprice" class="form-label required-field">Base Price</label>
+                            <label for="bprice" class="form-label">Base Price</label>
                             <input type="number" step="0.001" id="bprice" name="bprice" class="form-control"
-                                   value="<?= htmlspecialchars($item['BPRICE']) ?>" required>
+                                   value="<?= htmlspecialchars($item['BPRICE']) ?>">
                         </div>
 
                         <!-- M. Price -->
@@ -768,22 +839,42 @@ function updateSelectedClass() {
     }
 }
 
+// Update subclass name hidden field
+function updateSubclassName(selectElement) {
+    if (selectElement.value) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        document.getElementById('subclass_name').value = selectedOption.textContent;
+    } else {
+        document.getElementById('subclass_name').value = '';
+    }
+}
+
+// Update size description hidden field and display
+function updateSizeDesc(selectElement) {
+    const sizeDisplay = document.getElementById('selected_size_display');
+    
+    if (selectElement.value) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        document.getElementById('size_desc').value = selectedOption.textContent;
+        sizeDisplay.innerHTML = 'Selected: ' + selectedOption.textContent;
+        sizeDisplay.style.color = '#28a745';
+    } else {
+        document.getElementById('size_desc').value = '';
+        sizeDisplay.innerHTML = '';
+    }
+}
+
 // AJAX function to load classes
 function loadClasses(categoryCode) {
     if (!categoryCode) {
         document.getElementById('class_code').innerHTML = '<option value="">-- Select Class --</option>';
         document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
         updateSelectedClass();
         
         // Update hidden field
-        const categorySelect = document.getElementById('category_code');
-        if (categorySelect.value) {
-            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-            document.getElementById('category_name').value = selectedOption.textContent;
-        } else {
-            document.getElementById('category_name').value = '';
-        }
+        document.getElementById('category_name').value = '';
         return;
     }
 
@@ -838,6 +929,9 @@ function loadClasses(categoryCode) {
             // Clear subclass and size dropdowns
             document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
             document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+            document.getElementById('selected_size_display').innerHTML = '';
+            document.getElementById('subclass_name').value = '';
+            document.getElementById('size_desc').value = '';
         })
         .catch(error => {
             console.error('Error loading classes:', error);
@@ -851,6 +945,8 @@ function loadSubclasses(classCode) {
     if (!classCode) {
         document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
+        document.getElementById('subclass_name').value = '';
         return;
     }
 
@@ -917,6 +1013,8 @@ function loadSubclasses(classCode) {
             
             // Clear size dropdown
             document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+            document.getElementById('selected_size_display').innerHTML = '';
+            document.getElementById('size_desc').value = '';
         })
         .catch(error => {
             console.error('Error loading subclasses:', error);
@@ -929,6 +1027,7 @@ function loadSubclasses(classCode) {
 function loadSizes(subclassCode) {
     if (!subclassCode) {
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
         return;
     }
 
@@ -952,6 +1051,11 @@ function loadSizes(subclassCode) {
                     if (size.SIZE_CODE === currentSizeCode) {
                         option.selected = true;
                         document.getElementById('size_desc').value = size.SIZE_DESC;
+                        
+                        // Update size display
+                        const sizeDisplay = document.getElementById('selected_size_display');
+                        sizeDisplay.innerHTML = 'Selected: ' + size.SIZE_DESC;
+                        sizeDisplay.style.color = '#28a745';
                     }
                     
                     sizeSelect.appendChild(option);
@@ -961,8 +1065,12 @@ function loadSizes(subclassCode) {
                 if (sizeSelect.value) {
                     const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
                     document.getElementById('size_desc').value = selectedOption.textContent;
+                    const sizeDisplay = document.getElementById('selected_size_display');
+                    sizeDisplay.innerHTML = 'Selected: ' + selectedOption.textContent;
+                    sizeDisplay.style.color = '#28a745';
                 } else {
                     document.getElementById('size_desc').value = '';
+                    document.getElementById('selected_size_display').innerHTML = '';
                 }
             }
         })
@@ -970,6 +1078,7 @@ function loadSizes(subclassCode) {
             console.error('Error loading sizes:', error);
             sizeSelect.innerHTML = '<option value="">-- Select Size --</option>';
             document.getElementById('size_desc').value = '';
+            document.getElementById('selected_size_display').innerHTML = '';
         });
 }
 
@@ -979,9 +1088,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const classCode = document.getElementById('class_code').value;
     const subclassCode = document.getElementById('subclass_code').value;
     const sizeCode = document.getElementById('size_code').value;
+    const sizeDesc = document.getElementById('size_desc').value;
     
     // Update selected class display
     updateSelectedClass();
+    
+    // Update size display if size is selected
+    if (sizeCode && sizeDesc) {
+        const sizeDisplay = document.getElementById('selected_size_display');
+        sizeDisplay.innerHTML = 'Selected: ' + sizeDesc;
+        sizeDisplay.style.color = '#28a745';
+    }
     
     // If we have category code but no class code loaded, load classes
     if (categoryCode && (!classCode || document.getElementById('class_code').options.length <= 2)) {
@@ -1000,17 +1117,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (subclassCode) {
                         setTimeout(() => {
                             document.getElementById('subclass_code').value = subclassCode;
+                            
+                            // Update subclass hidden field
+                            const subclassSelect = document.getElementById('subclass_code');
+                            if (subclassSelect.value) {
+                                const selectedOption = subclassSelect.options[subclassSelect.selectedIndex];
+                                document.getElementById('subclass_name').value = selectedOption.textContent;
+                            }
+                            
                             loadSizes(subclassCode);
                             
                             // If we have size code, set it after loading
                             if (sizeCode) {
                                 setTimeout(() => {
                                     document.getElementById('size_code').value = sizeCode;
-                                    // Update size_desc hidden field
+                                    // Update size_desc hidden field and display
                                     const sizeSelect = document.getElementById('size_code');
                                     if (sizeSelect.value) {
                                         const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
                                         document.getElementById('size_desc').value = selectedOption.textContent;
+                                        const sizeDisplay = document.getElementById('selected_size_display');
+                                        sizeDisplay.innerHTML = 'Selected: ' + selectedOption.textContent;
+                                        sizeDisplay.style.color = '#28a745';
                                     }
                                 }, 100);
                             }

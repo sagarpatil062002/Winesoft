@@ -22,6 +22,20 @@ $fin_year = $_SESSION['FIN_YEAR_ID'];
 include_once "../config/db.php"; // MySQLi connection in $conn
 require_once 'license_functions.php';
 
+// Include PhpSpreadsheet if available (with error handling)
+$phpspreadsheet_loaded = false;
+if (file_exists('../vendor/autoload.php')) {
+    require_once '../vendor/autoload.php';
+    
+    // Check if ZipArchive class exists (PHP zip extension)
+    if (class_exists('ZipArchive')) {
+        // PhpSpreadsheet classes will be used with fully qualified names
+        $phpspreadsheet_loaded = true;
+    } else {
+        error_log("ZipArchive class not found. Please enable PHP zip extension.");
+    }
+}
+
 // Get company's license type and available classes
 $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
@@ -88,13 +102,13 @@ function getSubclassNameNew($subclass_code_new, $conn) {
     return $subclass_code_new;
 }
 
-// Function to get size description from size_code
-function getSizeDescription($size_code, $conn) {
-    if (empty($size_code)) return 'N/A';
+// IMPROVED: Function to get size description from size_code with LIQ_FLAG consideration
+function getSizeDescription($size_code, $conn, $liq_flag = 'F') {
+    if (empty($size_code)) return '';
     
-    $query = "SELECT SIZE_DESC FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+    $query = "SELECT SIZE_DESC FROM tblsize WHERE SIZE_CODE = ? AND LIQ_FLAG = ? LIMIT 1";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("s", $size_code);
+    $stmt->bind_param("ss", $size_code, $liq_flag);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -102,7 +116,51 @@ function getSizeDescription($size_code, $conn) {
         $row = $result->fetch_assoc();
         return $row['SIZE_DESC'];
     }
-    return $size_code;
+    return '';
+}
+
+// IMPROVED: Function to get size code from description with proper LIQ_FLAG matching
+function getSizeCodeByDescription($size_desc, $liq_flag, $conn) {
+    if (empty($size_desc)) return '';
+    
+    // First try exact match with LIQ_FLAG
+    $query = "SELECT SIZE_CODE FROM tblsize WHERE UPPER(SIZE_DESC) = UPPER(?) AND LIQ_FLAG = ? LIMIT 1";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $size_desc, $liq_flag);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['SIZE_CODE'];
+    }
+    
+    // If not found with LIQ_FLAG, try without LIQ_FLAG
+    $query2 = "SELECT SIZE_CODE FROM tblsize WHERE UPPER(SIZE_DESC) = UPPER(?) LIMIT 1";
+    $stmt2 = $conn->prepare($query2);
+    $stmt2->bind_param("s", $size_desc);
+    $stmt2->execute();
+    $result2 = $stmt2->get_result();
+    
+    if ($result2->num_rows > 0) {
+        $row2 = $result2->fetch_assoc();
+        return $row2['SIZE_CODE'];
+    }
+    
+    // Try partial match as last resort
+    $query3 = "SELECT SIZE_CODE FROM tblsize WHERE UPPER(SIZE_DESC) LIKE UPPER(?) AND LIQ_FLAG = ? LIMIT 1";
+    $like_desc = "%$size_desc%";
+    $stmt3 = $conn->prepare($query3);
+    $stmt3->bind_param("ss", $like_desc, $liq_flag);
+    $stmt3->execute();
+    $result3 = $stmt3->get_result();
+    
+    if ($result3->num_rows > 0) {
+        $row3 = $result3->fetch_assoc();
+        return $row3['SIZE_CODE'];
+    }
+    
+    return '';
 }
 
 // Function to detect class from item name
@@ -219,22 +277,6 @@ function getSubclassCodeByName($subclass_name, $conn) {
     return '';
 }
 
-function getSizeCodeByDescription($size_desc, $conn) {
-    if (empty($size_desc)) return '';
-    
-    $query = "SELECT SIZE_CODE FROM tblsize WHERE UPPER(SIZE_DESC) = UPPER(?) OR SIZE_CODE = ? LIMIT 1";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("ss", $size_desc, $size_desc);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        return $row['SIZE_CODE'];
-    }
-    return '';
-}
-
 // ====================================================================
 // OPTIMIZED FUNCTIONS FOR BULK OPERATIONS
 // ====================================================================
@@ -330,7 +372,7 @@ function ensureDayColumns($conn, $table_name, $days_in_month) {
     }
 }
 
-// Function to update daily stock from start date to today (FIXED VERSION)
+// Function to update daily stock from start date to today
 function updateDailyStockFromDate($conn, $comp_id, $items_data, $start_date) {
     if (empty($items_data)) return;
     
@@ -468,8 +510,380 @@ function updateDailyStockFromDate($conn, $comp_id, $items_data, $start_date) {
     }
 }
 
-// Function to bulk insert items with FIXED stock table handling
-// MODIFIED: Only adds items with opening_balance > 0 to daily stock tables
+// IMPROVED: Function to parse CSV file with better size handling
+function parseCSVFile($filePath, $mode, $allowed_classes, $conn) {
+    $items = [];
+    $errors = 0;
+    $errorDetails = [];
+    $rowCount = 0;
+    
+    $handle = fopen($filePath, 'r');
+    if ($handle === FALSE) {
+        throw new Exception("Could not open CSV file.");
+    }
+    
+    // Read and normalize headers
+    $header = fgetcsv($handle);
+    $normalized_header = array_map(function($col) {
+        $col = trim($col);
+        $col = preg_replace('/^\xEF\xBB\xBF/', '', $col);
+        $col = strtolower($col);
+        $col = str_replace([' ', '_', '-'], '', $col);
+        return $col;
+    }, $header);
+    
+    $headerMap = array_flip($normalized_header);
+    
+    // Define expected columns with flexible matching
+    $expected_columns = [
+        'code' => ['code'],
+        'itemname' => ['itemname', 'item'],
+        'printname' => ['printname', 'printname'],
+        'size' => ['size', 'details2'],
+        'pprice' => ['pprice', 'purchaseprice'],
+        'bprice' => ['bprice', 'baseprice'],
+        'mprice' => ['mprice', 'mrp'],
+        'rprice' => ['rprice', 'retailprice'],
+        'liqflag' => ['liqflag', 'liq_flag'],
+        'openingbalance' => ['openingbalance', 'opening_stock'],
+        'category' => ['category', 'cat'],
+        'class' => ['class', 'class_name'],
+        'subclass' => ['subclass', 'subclass', 'sub_class'],
+        'barcode' => ['barcode', 'bar_code', 'barcodeno']
+    ];
+    
+    // Find actual column indices
+    $column_indices = [];
+    foreach ($expected_columns as $col_name => $possible_names) {
+        $column_indices[$col_name] = -1;
+        foreach ($possible_names as $possible_name) {
+            if (isset($headerMap[$possible_name])) {
+                $column_indices[$col_name] = $headerMap[$possible_name];
+                break;
+            }
+        }
+    }
+    
+    // Check essential columns
+    if ($column_indices['code'] === -1 || $column_indices['itemname'] === -1) {
+        throw new Exception("CSV must contain 'Code' and 'ItemName' columns");
+    }
+    
+    while (($data = fgetcsv($handle)) !== FALSE) {
+        $rowCount++;
+        
+        if (count($data) >= 10) {
+            $code = isset($data[$column_indices['code']]) ? trim($data[$column_indices['code']]) : '';
+            if (empty($code)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: Code is required";
+                continue;
+            }
+            
+            $itemName = isset($data[$column_indices['itemname']]) ? trim($data[$column_indices['itemname']]) : '';
+            if (empty($itemName)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: ItemName is required for code $code";
+                continue;
+            }
+            
+            $printName = isset($data[$column_indices['printname']]) ? trim($data[$column_indices['printname']]) : '';
+            $size_desc = isset($data[$column_indices['size']]) ? trim($data[$column_indices['size']]) : '';
+            $pprice = isset($data[$column_indices['pprice']]) ? floatval(trim($data[$column_indices['pprice']])) : 0;
+            $bprice = isset($data[$column_indices['bprice']]) ? floatval(trim($data[$column_indices['bprice']])) : 0;
+            $mprice = isset($data[$column_indices['mprice']]) ? floatval(trim($data[$column_indices['mprice']])) : 0;
+            $rprice = isset($data[$column_indices['rprice']]) ? floatval(trim($data[$column_indices['rprice']])) : 0;
+            
+            $liqFlag = '';
+            if (isset($data[$column_indices['liqflag']]) && !empty(trim($data[$column_indices['liqflag']]))) {
+                $liqFlag = strtoupper(trim($data[$column_indices['liqflag']]));
+            } else {
+                $liqFlag = $mode;
+            }
+            
+            if (empty($liqFlag)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: LIQ_FLAG cannot be empty for item $code";
+                continue;
+            }
+            
+            $openingBalance = isset($data[$column_indices['openingbalance']]) ? intval(trim($data[$column_indices['openingbalance']])) : 0;
+            
+            // Get barcode
+            $barcode = '';
+            if (isset($data[$column_indices['barcode']])) {
+                $barcode = trim($data[$column_indices['barcode']]);
+                if (strlen($barcode) > 15) {
+                    $barcode = substr($barcode, 0, 15);
+                }
+            }
+            
+            // Detect class from item name
+            $detectedClass = detectClassFromItemName($itemName, $liqFlag);
+            
+            // Validate against license
+            if (!in_array($detectedClass, $allowed_classes)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: Item $code: Class '$detectedClass' not allowed for license";
+                continue;
+            }
+            
+            // Get 4-layer classification data from CSV
+            $categoryName = isset($data[$column_indices['category']]) ? trim($data[$column_indices['category']]) : '';
+            $className = isset($data[$column_indices['class']]) ? trim($data[$column_indices['class']]) : '';
+            $subclassName = isset($data[$column_indices['subclass']]) ? trim($data[$column_indices['subclass']]) : '';
+            
+            // Convert names to codes
+            $categoryCode = !empty($categoryName) ? getCategoryCodeByName($categoryName, $conn) : '';
+            $classCodeNew = !empty($className) ? getClassCodeByName($className, $conn) : '';
+            $subclassCodeNew = !empty($subclassName) ? getSubclassCodeByName($subclassName, $conn) : '';
+            
+            // IMPROVED: Get size code from size description with LIQ_FLAG consideration
+            $sizeCode = !empty($size_desc) ? getSizeCodeByDescription($size_desc, $liqFlag, $conn) : '';
+            
+            // Add to items to process
+            $items[] = [
+                'code' => $code,
+                'print_name' => $printName,
+                'item_name' => $itemName,
+                'size_desc' => $size_desc,
+                'class' => $detectedClass,
+                'item_group' => 'SC001', // Default item group
+                'pprice' => $pprice,
+                'bprice' => $bprice,
+                'mprice' => $mprice,
+                'rprice' => $rprice,
+                'liq_flag' => $liqFlag,
+                'opening_balance' => $openingBalance,
+                'category_code' => $categoryCode,
+                'class_code_new' => $classCodeNew,
+                'subclass_code_new' => $subclassCodeNew,
+                'size_code' => $sizeCode,
+                'size_desc' => $size_desc,
+                'barcode' => $barcode
+            ];
+        } else {
+            $errors++;
+            $errorDetails[] = "Row $rowCount: Insufficient columns";
+        }
+    }
+    fclose($handle);
+    
+    return [
+        'items' => $items,
+        'errors' => $errors,
+        'errorDetails' => $errorDetails,
+        'rowCount' => $rowCount
+    ];
+}
+
+// IMPROVED: Function to parse Excel file with better size handling
+function parseExcelFile($filePath, $mode, $allowed_classes, $conn) {
+    global $phpspreadsheet_loaded;
+    
+    if (!$phpspreadsheet_loaded) {
+        throw new Exception("Excel import is not available. Please install PhpSpreadsheet and enable PHP zip extension.");
+    }
+    
+    $items = [];
+    $errors = 0;
+    $errorDetails = [];
+    $rowCount = 0;
+    
+    try {
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+        
+        if (empty($rows)) {
+            throw new Exception("Excel file is empty");
+        }
+        
+        // Get headers (first row)
+        $header = array_shift($rows);
+        $normalized_header = array_map(function($col) {
+            $col = trim($col ?? '');
+            $col = strtolower($col);
+            $col = str_replace([' ', '_', '-'], '', $col);
+            return $col;
+        }, $header);
+        
+        $headerMap = array_flip($normalized_header);
+        
+        // Define expected columns
+        $expected_columns = [
+            'code' => ['code'],
+            'itemname' => ['itemname', 'item'],
+            'printname' => ['printname', 'printname'],
+            'size' => ['size', 'details2'],
+            'pprice' => ['pprice', 'purchaseprice'],
+            'bprice' => ['bprice', 'baseprice'],
+            'mprice' => ['mprice', 'mrp'],
+            'rprice' => ['rprice', 'retailprice'],
+            'liqflag' => ['liqflag', 'liq_flag'],
+            'openingbalance' => ['openingbalance', 'opening_stock'],
+            'category' => ['category', 'cat'],
+            'class' => ['class', 'class_name'],
+            'subclass' => ['subclass', 'subclass', 'sub_class'],
+            'barcode' => ['barcode', 'bar_code', 'barcodeno']
+        ];
+        
+        // Find actual column indices
+        $column_indices = [];
+        foreach ($expected_columns as $col_name => $possible_names) {
+            $column_indices[$col_name] = -1;
+            foreach ($possible_names as $possible_name) {
+                if (isset($headerMap[$possible_name])) {
+                    $column_indices[$col_name] = $headerMap[$possible_name];
+                    break;
+                }
+            }
+        }
+        
+        // Check essential columns
+        if ($column_indices['code'] === -1 || $column_indices['itemname'] === -1) {
+            throw new Exception("Excel must contain 'Code' and 'ItemName' columns. Found headers: " . implode(', ', $header));
+        }
+        
+        foreach ($rows as $rowIndex => $row) {
+            $rowCount = $rowIndex + 2; // +2 because we removed header and 0-index
+            
+            // Ensure row has enough columns
+            if (count($row) <= max(array_filter($column_indices))) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: Insufficient columns";
+                continue;
+            }
+            
+            $code = isset($row[$column_indices['code']]) ? trim($row[$column_indices['code']]) : '';
+            if (empty($code)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: Code is required";
+                continue;
+            }
+            
+            $itemName = isset($row[$column_indices['itemname']]) ? trim($row[$column_indices['itemname']]) : '';
+            if (empty($itemName)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: ItemName is required for code $code";
+                continue;
+            }
+            
+            $printName = isset($row[$column_indices['printname']]) ? trim($row[$column_indices['printname']]) : '';
+            $size_desc = isset($row[$column_indices['size']]) ? trim($row[$column_indices['size']]) : '';
+            
+            // Handle numeric values
+            $pprice = 0;
+            if (isset($row[$column_indices['pprice']])) {
+                $val = $row[$column_indices['pprice']];
+                $pprice = is_numeric($val) ? floatval($val) : 0;
+            }
+            
+            $bprice = 0;
+            if (isset($row[$column_indices['bprice']])) {
+                $val = $row[$column_indices['bprice']];
+                $bprice = is_numeric($val) ? floatval($val) : 0;
+            }
+            
+            $mprice = 0;
+            if (isset($row[$column_indices['mprice']])) {
+                $val = $row[$column_indices['mprice']];
+                $mprice = is_numeric($val) ? floatval($val) : 0;
+            }
+            
+            $rprice = 0;
+            if (isset($row[$column_indices['rprice']])) {
+                $val = $row[$column_indices['rprice']];
+                $rprice = is_numeric($val) ? floatval($val) : 0;
+            }
+            
+            $liqFlag = '';
+            if (isset($row[$column_indices['liqflag']]) && !empty(trim($row[$column_indices['liqflag']]))) {
+                $liqFlag = strtoupper(trim($row[$column_indices['liqflag']]));
+            } else {
+                $liqFlag = $mode;
+            }
+            
+            if (empty($liqFlag)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: LIQ_FLAG cannot be empty for item $code";
+                continue;
+            }
+            
+            $openingBalance = 0;
+            if (isset($row[$column_indices['openingbalance']])) {
+                $val = $row[$column_indices['openingbalance']];
+                $openingBalance = is_numeric($val) ? intval($val) : 0;
+            }
+            
+            // Get barcode
+            $barcode = '';
+            if (isset($row[$column_indices['barcode']])) {
+                $barcode = trim($row[$column_indices['barcode']]);
+                if (strlen($barcode) > 15) {
+                    $barcode = substr($barcode, 0, 15);
+                }
+            }
+            
+            // Detect class from item name
+            $detectedClass = detectClassFromItemName($itemName, $liqFlag);
+            
+            // Validate against license
+            if (!in_array($detectedClass, $allowed_classes)) {
+                $errors++;
+                $errorDetails[] = "Row $rowCount: Item $code: Class '$detectedClass' not allowed for license";
+                continue;
+            }
+            
+            // Get 4-layer classification data from Excel
+            $categoryName = isset($row[$column_indices['category']]) ? trim($row[$column_indices['category']]) : '';
+            $className = isset($row[$column_indices['class']]) ? trim($row[$column_indices['class']]) : '';
+            $subclassName = isset($row[$column_indices['subclass']]) ? trim($row[$column_indices['subclass']]) : '';
+            
+            // Convert names to codes
+            $categoryCode = !empty($categoryName) ? getCategoryCodeByName($categoryName, $conn) : '';
+            $classCodeNew = !empty($className) ? getClassCodeByName($className, $conn) : '';
+            $subclassCodeNew = !empty($subclassName) ? getSubclassCodeByName($subclassName, $conn) : '';
+            
+            // IMPROVED: Get size code from size description with LIQ_FLAG consideration
+            $sizeCode = !empty($size_desc) ? getSizeCodeByDescription($size_desc, $liqFlag, $conn) : '';
+            
+            // Add to items to process
+            $items[] = [
+                'code' => $code,
+                'print_name' => $printName,
+                'item_name' => $itemName,
+                'size_desc' => $size_desc,
+                'class' => $detectedClass,
+                'item_group' => 'SC001', // Default item group
+                'pprice' => $pprice,
+                'bprice' => $bprice,
+                'mprice' => $mprice,
+                'rprice' => $rprice,
+                'liq_flag' => $liqFlag,
+                'opening_balance' => $openingBalance,
+                'category_code' => $categoryCode,
+                'class_code_new' => $classCodeNew,
+                'subclass_code_new' => $subclassCodeNew,
+                'size_code' => $sizeCode,
+                'size_desc' => $size_desc,
+                'barcode' => $barcode
+            ];
+        }
+        
+    } catch (Exception $e) {
+        throw new Exception("Error parsing Excel file: " . $e->getMessage());
+    }
+    
+    return [
+        'items' => $items,
+        'errors' => $errors,
+        'errorDetails' => $errorDetails,
+        'rowCount' => $rowCount
+    ];
+}
+
+// Function to bulk insert items
 function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
     if (empty($items)) return ['imported' => 0, 'updated' => 0];
     
@@ -477,7 +891,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
     $updated = 0;
     $batch_size = 100;
     
-    // Prepare daily stock data - ONLY for items with opening_balance > 0
+    // Prepare daily stock data
     $daily_stock_data = [];
     
     // Split items into batches
@@ -492,6 +906,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
             $liq_flag = $item['liq_flag'];
             $opening_balance = $item['opening_balance'];
             $barcode = $item['barcode'] ?? '';
+            $size_desc = $item['size_desc'] ?? '';
             
             // Check if item exists in tblitemmaster
             $check_sql = "SELECT CODE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ? LIMIT 1";
@@ -502,30 +917,58 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
             $exists = $check_result->num_rows > 0;
             $check_stmt->close();
             
+            // Use DETAILS2 for size display if we have a size_code
+            $details2 = $size_desc;
+            
             if ($exists) {
-                // Update existing item in tblitemmaster (INCLUDING BARCODE)
+                // Update existing item in tblitemmaster
                 $update_sql = "UPDATE tblitemmaster SET 
-                    Print_Name = ?, DETAILS = ?, DETAILS2 = ?, CLASS = ?, ITEM_GROUP = ?,
-                    PPRICE = ?, BPRICE = ?, MPRICE = ?, RPRICE = ?,
-                    CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ?, BARCODE = ?
+                    Print_Name = ?, 
+                    DETAILS = ?, 
+                    DETAILS2 = ?, 
+                    CLASS = ?, 
+                    ITEM_GROUP = ?,
+                    PPRICE = ?, 
+                    BPRICE = ?, 
+                    MPRICE = ?, 
+                    RPRICE = ?,
+                    CATEGORY_CODE = ?, 
+                    CLASS_CODE_NEW = ?, 
+                    SUBCLASS_CODE_NEW = ?, 
+                    SIZE_CODE = ?, 
+                    BARCODE = ?
                     WHERE CODE = ? AND LIQ_FLAG = ?";
                 
                 $update_stmt = $conn->prepare($update_sql);
+                
                 $update_stmt->bind_param(
-                    "sssssddddssssssss",
-                    $item['print_name'], $item['item_name'], $item['size'], $item['class'],
-                    $item['item_group'], $item['pprice'], $item['bprice'], $item['mprice'], $item['rprice'],
-                    $item['category_code'], $item['class_code_new'], $item['subclass_code_new'], $item['size_code'],
+                    "sssssdddssssssss",
+                    $item['print_name'], 
+                    $item['item_name'], 
+                    $details2, 
+                    $item['class'], 
+                    $item['item_group'],
+                    $item['pprice'], 
+                    $item['bprice'], 
+                    $item['mprice'], 
+                    $item['rprice'],
+                    $item['category_code'], 
+                    $item['class_code_new'], 
+                    $item['subclass_code_new'], 
+                    $item['size_code'],
                     $barcode,
-                    $code, $liq_flag
+                    $code, 
+                    $liq_flag
                 );
                 
                 if ($update_stmt->execute()) {
                     $updated++;
+                } else {
+                    error_log("Update error for item $code: " . $update_stmt->error);
                 }
                 $update_stmt->close();
             } else {
-                // Insert new item into tblitemmaster (INCLUDING BARCODE)
+                // Insert new item into tblitemmaster
                 $insert_sql = "INSERT INTO tblitemmaster 
                     (CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
                      PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE,
@@ -533,39 +976,53 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 
                 $insert_stmt = $conn->prepare($insert_sql);
+                
                 $insert_stmt->bind_param(
-                    "sssssddddsssssss",
-                    $code, $item['print_name'], $item['item_name'], $item['size'], 
-                    $item['class'], $item['item_group'],
-                    $item['pprice'], $item['bprice'], $item['mprice'], $item['rprice'], $liq_flag, $barcode,
-                    $item['category_code'], $item['class_code_new'], $item['subclass_code_new'], $item['size_code']
+                    "sssssdddssssssss",
+                    $code, 
+                    $item['print_name'], 
+                    $item['item_name'], 
+                    $details2, 
+                    $item['class'], 
+                    $item['item_group'],
+                    $item['pprice'], 
+                    $item['bprice'], 
+                    $item['mprice'], 
+                    $item['rprice'], 
+                    $liq_flag, 
+                    $barcode,
+                    $item['category_code'], 
+                    $item['class_code_new'], 
+                    $item['subclass_code_new'], 
+                    $item['size_code']
                 );
                 
                 if ($insert_stmt->execute()) {
                     $imported++;
+                } else {
+                    error_log("Insert error for item $code: " . $insert_stmt->error);
                 }
                 $insert_stmt->close();
             }
             
-            // FIXED: Update stock table with proper ON DUPLICATE KEY UPDATE
-            // First, check if tblitem_stock has the right columns
-            $check_col_sql = "SHOW COLUMNS FROM tblitem_stock LIKE 'OPENING_STOCK$comp_id'";
+            // Check and create stock columns if needed
+            $check_col_sql = "SHOW COLUMNS FROM tblitem_stock LIKE 'OPENING_STOCK{$comp_id}'";
             $col_result = $conn->query($check_col_sql);
             if ($col_result->num_rows == 0) {
-                // Add column if it doesn't exist
-                $add_col_sql = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK$comp_id INT DEFAULT 0, ADD COLUMN CURRENT_STOCK$comp_id INT DEFAULT 0";
+                $add_col_sql = "ALTER TABLE tblitem_stock 
+                               ADD COLUMN OPENING_STOCK{$comp_id} INT DEFAULT 0, 
+                               ADD COLUMN CURRENT_STOCK{$comp_id} INT DEFAULT 0";
                 $conn->query($add_col_sql);
             }
             
-            // Now insert/update with proper ON DUPLICATE KEY UPDATE
-            // Note: tblitem_stock should have a unique key on ITEM_CODE
+            // Update stock table
             $stock_sql = "INSERT INTO tblitem_stock 
-                (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id,
+                (ITEM_CODE, FIN_YEAR, OPENING_STOCK{$comp_id}, CURRENT_STOCK{$comp_id},
                  CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
-                OPENING_STOCK$comp_id = VALUES(OPENING_STOCK$comp_id),
-                CURRENT_STOCK$comp_id = VALUES(CURRENT_STOCK$comp_id),
+                OPENING_STOCK{$comp_id} = VALUES(OPENING_STOCK{$comp_id}),
+                CURRENT_STOCK{$comp_id} = VALUES(CURRENT_STOCK{$comp_id}),
                 CATEGORY_CODE = VALUES(CATEGORY_CODE),
                 CLASS_CODE_NEW = VALUES(CLASS_CODE_NEW),
                 SUBCLASS_CODE_NEW = VALUES(SUBCLASS_CODE_NEW),
@@ -574,35 +1031,21 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
             $stock_stmt = $conn->prepare($stock_sql);
             if ($stock_stmt) {
                 $stock_stmt->bind_param(
-                    "siiissss",
-                    $code, $fin_year, $opening_balance, $opening_balance,
-                    $item['category_code'], $item['class_code_new'], $item['subclass_code_new'], $item['size_code']
+                    "ssiissss",
+                    $code, 
+                    $fin_year, 
+                    $opening_balance, 
+                    $opening_balance,
+                    $item['category_code'], 
+                    $item['class_code_new'], 
+                    $item['subclass_code_new'], 
+                    $item['size_code']
                 );
                 $stock_stmt->execute();
-                
-                // Check if duplicate entry error
-                if ($stock_stmt->errno == 1062) {
-                    // Duplicate key - update instead
-                    $update_stock_sql = "UPDATE tblitem_stock SET 
-                        OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ?,
-                        CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ?
-                        WHERE ITEM_CODE = ?";
-                    
-                    $update_stock_stmt = $conn->prepare($update_stock_sql);
-                    $update_stock_stmt->bind_param(
-                        "iisssss",
-                        $opening_balance, $opening_balance,
-                        $item['category_code'], $item['class_code_new'], $item['subclass_code_new'], $item['size_code'],
-                        $code
-                    );
-                    $update_stock_stmt->execute();
-                    $update_stock_stmt->close();
-                }
-                
                 $stock_stmt->close();
             }
             
-            // MODIFIED: Prepare data for daily stock update - ONLY FOR ITEMS WITH OPENING BALANCE > 0
+            // Prepare data for daily stock update
             if ($opening_balance > 0) {
                 $daily_stock_data[$code] = [
                     'balance' => $opening_balance,
@@ -616,7 +1059,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
         }
     }
     
-    // MODIFIED: Update daily stock for items with opening_balance > 0 only
+    // Update daily stock
     if (!empty($daily_stock_data)) {
         updateDailyStockFromDate($conn, $comp_id, $daily_stock_data, $start_date);
     }
@@ -647,8 +1090,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_code']) && iss
             $delete_stock_stmt->execute();
             $delete_stock_stmt->close();
 
-            // Delete from all daily stock tables (current and archive)
-            // First, get all tables starting with tbldailystock_
+            // Delete from all daily stock tables
             $tables_query = "SHOW TABLES LIKE 'tbldailystock_%'";
             $tables_result = $conn->query($tables_query);
             
@@ -671,18 +1113,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_code']) && iss
     }
 }
 
-// Mode selection (default Foreign Liquor = 'F')
+// Mode selection
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // Pagination setup
-$limit = 50; // Items per page
+$limit = isset($_GET['limit']) ? intval($_GET['limit']) : 50;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
-// Check if company columns exist in tblitem_stock, if not create them
+// Check if company columns exist in tblitem_stock
 $check_columns_query = "SELECT COUNT(*) as count FROM information_schema.columns
                        WHERE table_name = 'tblitem_stock'
                        AND column_name = 'OPENING_STOCK$comp_id'";
@@ -705,7 +1147,7 @@ if ($check_main_table->num_rows == 0) {
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
-    // Fetch items from tblitemmaster - FILTERED BY LICENSE TYPE
+    // Fetch items from tblitemmaster
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
         $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -750,15 +1192,15 @@ if (isset($_GET['export'])) {
         
         $output = fopen('php://output', 'w');
         
-        // CSV headers - INCLUDING BARCODE as last column
-        fputcsv($output, array('Code', 'ItemName', 'PrintName', 'Size', 
+        // CSV headers
+        fputcsv($output, array('Code', 'ItemName', 'PrintName', 'Size',
                                'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG', 
                                'OpeningBalance', 'Category', 'Class', 'Subclass', 'Barcode'));
         
         foreach ($items as $item) {
             // Get opening balance
             $opening_balance = 0;
-            $stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
+            $stock_query = "SELECT OPENING_STOCK{$comp_id} as opening 
                            FROM tblitem_stock 
                            WHERE ITEM_CODE = ?";
             $stock_stmt = $conn->prepare($stock_query);
@@ -776,16 +1218,16 @@ if (isset($_GET['export'])) {
             $category_name = getCategoryName($item['CATEGORY_CODE'], $conn);
             $class_name = getClassNameNew($item['CLASS_CODE_NEW'], $conn);
             $subclass_name = getSubclassNameNew($item['SUBCLASS_CODE_NEW'], $conn);
-            $size_desc = getSizeDescription($item['SIZE_CODE'], $conn);
+            $size_desc = getSizeDescription($item['SIZE_CODE'], $conn, $item['LIQ_FLAG']);
             
-            // Use DETAILS2 as Size (330 ML, 650 ML, etc.)
-            $size_column = $item['DETAILS2'];
+            // Use size_desc if available, otherwise use DETAILS2
+            $size_display = !empty($size_desc) ? $size_desc : $item['DETAILS2'];
             
             $exportRow = [
                 'Code' => $item['CODE'],
                 'ItemName' => $item['DETAILS'],
                 'PrintName' => $item['Print_Name'],
-                'Size' => $size_column, // Changed from 'Subclass' to 'Size'
+                'Size' => $size_display,
                 'PPrice' => $item['PPRICE'],
                 'BPrice' => $item['BPRICE'],
                 'MPrice' => $item['MPRICE'],
@@ -794,8 +1236,8 @@ if (isset($_GET['export'])) {
                 'OpeningBalance' => $opening_balance,
                 'Category' => $category_name,
                 'Class' => $class_name,
-                'Subclass' => $subclass_name, // This is now the actual subclass (Whisky, Vodka, etc.)
-                'Barcode' => $item['BARCODE'] ?? '' // Include barcode as last column
+                'Subclass' => $subclass_name,
+                'Barcode' => $item['BARCODE'] ?? ''
             ];
             fputcsv($output, $exportRow);
         }
@@ -807,6 +1249,8 @@ if (isset($_GET['export'])) {
 
 // Handle import if form submitted
 $importMessage = '';
+$importSuccess = false;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && isset($_POST['import_type'])) {
     $importType = $_POST['import_type'];
     $file = $_FILES['import_file'];
@@ -821,220 +1265,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
     if ($file['error'] === UPLOAD_ERR_OK) {
         $filePath = $file['tmp_name'];
         $fileName = $file['name'];
-        $fileExt = pathinfo($fileName, PATHINFO_EXTENSION);
+        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         
         try {
+            // Start transaction
+            $conn->begin_transaction();
+            
+            // Set MySQL timeouts
+            $conn->query("SET SESSION wait_timeout = 28800");
+            $conn->query("SET SESSION interactive_timeout = 28800");
+            $conn->query("SET SESSION net_read_timeout = 28800");
+            $conn->query("SET SESSION net_write_timeout = 28800");
+            
+            // Disable foreign key checks temporarily
+            $conn->query("SET FOREIGN_KEY_CHECKS = 0");
+            $conn->query("SET UNIQUE_CHECKS = 0");
+            $conn->query("SET AUTOCOMMIT = 0");
+            
+            $items_to_process = [];
+            $errors = 0;
+            $errorDetails = [];
+            
             if ($importType === 'csv' && $fileExt === 'csv') {
-                // Start transaction
-                $conn->begin_transaction();
+                // Process CSV file
+                $csvResult = parseCSVFile($filePath, $mode, $allowed_classes, $conn);
+                $items_to_process = $csvResult['items'];
+                $errors = $csvResult['errors'];
+                $errorDetails = $csvResult['errorDetails'];
                 
-                // IMPORTANT: Set MySQL timeouts for long operations
-                $conn->query("SET SESSION wait_timeout = 28800");
-                $conn->query("SET SESSION interactive_timeout = 28800");
-                $conn->query("SET SESSION net_read_timeout = 28800");
-                $conn->query("SET SESSION net_write_timeout = 28800");
+            } elseif ($importType === 'excel' && in_array($fileExt, ['xls', 'xlsx'])) {
+                // Process Excel file
+                $excelResult = parseExcelFile($filePath, $mode, $allowed_classes, $conn);
+                $items_to_process = $excelResult['items'];
+                $errors = $excelResult['errors'];
+                $errorDetails = $excelResult['errorDetails'];
                 
-                // Disable foreign key checks temporarily
-                $conn->query("SET FOREIGN_KEY_CHECKS = 0");
-                $conn->query("SET UNIQUE_CHECKS = 0");
-                $conn->query("SET AUTOCOMMIT = 0");
-                
-                $handle = fopen($filePath, 'r');
-                if ($handle !== FALSE) {
-                    // Read and normalize headers (case-insensitive)
-                    $header = fgetcsv($handle);
-                    $normalized_header = array_map(function($col) {
-                        $col = trim($col);
-                        $col = preg_replace('/^\xEF\xBB\xBF/', '', $col); // Remove UTF-8 BOM
-                        $col = strtolower($col);
-                        $col = str_replace([' ', '_', '-'], '', $col); // Remove spaces, underscores, hyphens
-                        return $col;
-                    }, $header);
-                    
-                    $headerMap = array_flip($normalized_header);
-                    
-                    // Define expected columns with flexible matching - INCLUDING BARCODE
-                    $expected_columns = [
-                        'code' => ['code'],
-                        'itemname' => ['itemname', 'item'],
-                        'printname' => ['printname', 'printname'],
-                        'size' => ['size', 'details2'],
-                        'pprice' => ['pprice', 'purchaseprice'],
-                        'bprice' => ['bprice', 'baseprice'],
-                        'mprice' => ['mprice', 'mrp'],
-                        'rprice' => ['rprice', 'retailprice'],
-                        'liqflag' => ['liqflag', 'liq_flag'],
-                        'openingbalance' => ['openingbalance', 'opening_stock'],
-                        'category' => ['category', 'cat'],
-                        'class' => ['class', 'class_name'],
-                        'subclass' => ['subclass', 'subclass', 'sub_class'],
-                        'barcode' => ['barcode', 'bar_code', 'barcodeno'] // BARCODE column
-                    ];
-                    
-                    // Find actual column indices
-                    $column_indices = [];
-                    foreach ($expected_columns as $col_name => $possible_names) {
-                        $column_indices[$col_name] = -1;
-                        foreach ($possible_names as $possible_name) {
-                            if (isset($headerMap[$possible_name])) {
-                                $column_indices[$col_name] = $headerMap[$possible_name];
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Check essential columns
-                    if ($column_indices['code'] === -1 || $column_indices['itemname'] === -1) {
-                        throw new Exception("CSV must contain 'Code' and 'ItemName' columns");
-                    }
-                    
-                    $items_to_process = [];
-                    $errors = 0;
-                    $errorDetails = [];
-                    $rowCount = 0;
-
-                    while (($data = fgetcsv($handle)) !== FALSE) {
-                        $rowCount++;
-
-                        if (count($data) >= 10) {
-                            $code = isset($data[$column_indices['code']]) ? trim($data[$column_indices['code']]) : '';
-                            $itemName = isset($data[$column_indices['itemname']]) ? trim($data[$column_indices['itemname']]) : '';
-                            $printName = isset($data[$column_indices['printname']]) ? trim($data[$column_indices['printname']]) : '';
-                            $size = isset($data[$column_indices['size']]) ? trim($data[$column_indices['size']]) : '';
-                            $pprice = isset($data[$column_indices['pprice']]) ? floatval(trim($data[$column_indices['pprice']])) : 0;
-                            $bprice = isset($data[$column_indices['bprice']]) ? floatval(trim($data[$column_indices['bprice']])) : 0;
-                            $mprice = isset($data[$column_indices['mprice']]) ? floatval(trim($data[$column_indices['mprice']])) : 0;
-                            $rprice = isset($data[$column_indices['rprice']]) ? floatval(trim($data[$column_indices['rprice']])) : 0;
-                            
-                            $liqFlag = '';
-                            if (isset($data[$column_indices['liqflag']]) && !empty(trim($data[$column_indices['liqflag']]))) {
-                                $liqFlag = strtoupper(trim($data[$column_indices['liqflag']]));
-                            } else {
-                                $liqFlag = $mode;
-                            }
-
-                            if (empty($liqFlag)) {
-                                $errors++;
-                                $errorDetails[] = "Row $rowCount: LIQ_FLAG cannot be empty for item $code";
-                                continue;
-                            }
-
-                            $openingBalance = isset($data[$column_indices['openingbalance']]) ? intval(trim($data[$column_indices['openingbalance']])) : 0;
-
-                            // Get barcode (last column) - can be empty
-                            $barcode = '';
-                            if (isset($data[$column_indices['barcode']])) {
-                                $barcode = trim($data[$column_indices['barcode']]);
-                                // Trim to 15 characters as per database schema
-                                if (strlen($barcode) > 15) {
-                                    $barcode = substr($barcode, 0, 15);
-                                }
-                            }
-
-                            // Detect class from item name
-                            $detectedClass = detectClassFromItemName($itemName, $liqFlag);
-                            
-                            // Validate against license
-                            if (!in_array($detectedClass, $allowed_classes)) {
-                                $errors++;
-                                $errorDetails[] = "Row $rowCount: Item $code: Class '$detectedClass' not allowed for license '$license_type'";
-                                continue;
-                            }
-
-                            // Get ITEM_GROUP from tblsubclass based on size description
-                            $itemGroup = 'SC001'; // Default
-                            if (!empty($size)) {
-                                $groupQuery = "SELECT ITEM_GROUP FROM tblsubclass WHERE UPPER(`DESC`) = UPPER(?) AND LIQ_FLAG = ? LIMIT 1";
-                                $groupStmt = $conn->prepare($groupQuery);
-                                $groupStmt->bind_param("ss", $size, $liqFlag);
-                                $groupStmt->execute();
-                                $groupResult = $groupStmt->get_result();
-                                if ($groupResult->num_rows > 0) {
-                                    $groupRow = $groupResult->fetch_assoc();
-                                    $itemGroup = $groupRow['ITEM_GROUP'];
-                                }
-                                $groupStmt->close();
-                            }
-
-                            // Get 4-layer classification data from CSV (CASE-INSENSITIVE)
-                            $categoryName = isset($data[$column_indices['category']]) ? trim($data[$column_indices['category']]) : '';
-                            $className = isset($data[$column_indices['class']]) ? trim($data[$column_indices['class']]) : '';
-                            $subclassName = isset($data[$column_indices['subclass']]) ? trim($data[$column_indices['subclass']]) : '';
-
-                            // Convert names to codes (CASE-INSENSITIVE)
-                            $categoryCode = !empty($categoryName) ? getCategoryCodeByName($categoryName, $conn) : '';
-                            $classCodeNew = !empty($className) ? getClassCodeByName($className, $conn) : '';
-                            $subclassCodeNew = !empty($subclassName) ? getSubclassCodeByName($subclassName, $conn) : '';
-                            
-                            // Get size code from size description (CASE-INSENSITIVE)
-                            $sizeCode = !empty($size) ? getSizeCodeByDescription($size, $conn) : '';
-
-                            // Add to items to process
-                            $items_to_process[] = [
-                                'code' => $code,
-                                'print_name' => $printName,
-                                'item_name' => $itemName,
-                                'size' => $size,
-                                'class' => $detectedClass,
-                                'item_group' => $itemGroup,
-                                'pprice' => $pprice,
-                                'bprice' => $bprice,
-                                'mprice' => $mprice,
-                                'rprice' => $rprice,
-                                'liq_flag' => $liqFlag,
-                                'opening_balance' => $openingBalance,
-                                'category_code' => $categoryCode,
-                                'class_code_new' => $classCodeNew,
-                                'subclass_code_new' => $subclassCodeNew,
-                                'size_code' => $sizeCode,
-                                'barcode' => $barcode // Include barcode
-                            ];
-                        } else {
-                            $errors++;
-                            $errorDetails[] = "Row $rowCount: Insufficient columns";
-                        }
-                    }
-                    fclose($handle);
-                    
-                    // Bulk process items
-                    $result = bulkInsertItems($conn, $items_to_process, $comp_id, $fin_year, $start_date);
-                    $imported = $result['imported'];
-                    $updated = $result['updated'];
-                    
-                    // Re-enable constraints
-                    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
-                    $conn->query("SET UNIQUE_CHECKS = 1");
-                    $conn->query("SET AUTOCOMMIT = 1");
-                    
-                    // Commit transaction
-                    $conn->commit();
-                    
-                    $importMessage = "Import completed: $imported new items imported, $updated items updated, $errors errors. Opening balances set from $start_date to today.";
-                    if ($errors > 0) {
-                        $importMessage .= " First few errors: " . implode("; ", array_slice($errorDetails, 0, 5));
-                    }
-                    
-                    // Add performance info
-                    $execution_time = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
-                    $items_per_second = round(($imported + $updated) / $execution_time, 2);
-                    $importMessage .= " [Performance: $items_per_second items/second]";
-                    
-                    // Debug info about tables used
-                    $current_month = date('Y-m');
-                    if ($start_date < $current_month) {
-                        $start_month = date('Y-m', strtotime($start_date));
-                        $importMessage .= " [Tables used: Main table for $current_month, Archive tables for $start_month to " . date('Y-m', strtotime('-1 month', strtotime($current_month))) . "]";
-                    } else {
-                        $importMessage .= " [Table used: Main table only for $current_month]";
-                    }
-                    
-                } else {
-                    $conn->rollback();
-                    $importMessage = "Error: Could not open CSV file.";
-                }
             } else {
-                $importMessage = "Error: Please upload a valid CSV file.";
+                throw new Exception("Please upload a valid file (.csv, .xls, .xlsx)");
             }
+            
+            // Bulk process items
+            if (!empty($items_to_process)) {
+                $result = bulkInsertItems($conn, $items_to_process, $comp_id, $fin_year, $start_date);
+                $imported = $result['imported'];
+                $updated = $result['updated'];
+            } else {
+                $imported = 0;
+                $updated = 0;
+            }
+            
+            // Re-enable constraints
+            $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+            $conn->query("SET UNIQUE_CHECKS = 1");
+            $conn->query("SET AUTOCOMMIT = 1");
+            
+            // Commit transaction
+            $conn->commit();
+            
+            $importSuccess = true;
+            $importMessage = "Import completed: $imported new items imported, $updated items updated, $errors errors. Opening balances set from $start_date to today.";
+            if ($errors > 0 && !empty($errorDetails)) {
+                $_SESSION['import_errors'] = array_slice($errorDetails, 0, 10);
+            }
+            
+            // Redirect to avoid form resubmission
+            header("Location: item_master.php?mode=$mode&import_success=1&message=" . urlencode($importMessage));
+            exit;
+            
         } catch (Exception $e) {
             // Rollback on error
             if ($conn) {
@@ -1043,11 +1340,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                 $conn->query("SET UNIQUE_CHECKS = 1");
                 $conn->query("SET AUTOCOMMIT = 1");
             }
-            $importMessage = "Error during import: " . $e->getMessage() . " (Line: " . $e->getLine() . ")";
+            $importMessage = "Error during import: " . $e->getMessage();
         }
     } else {
         $importMessage = "Error uploading file: " . $file['error'];
     }
+}
+
+// Check for import success in URL
+if (isset($_GET['import_success'])) {
+    $importSuccess = true;
+    $importMessage = urldecode($_GET['message']);
+}
+
+// Check for session import errors
+if (isset($_SESSION['import_errors'])) {
+    $importErrors = $_SESSION['import_errors'];
+    unset($_SESSION['import_errors']);
 }
 
 // Get total count for pagination
@@ -1087,7 +1396,7 @@ $count_stmt->close();
 // Calculate total pages
 $total_pages = ceil($total_items / $limit);
 
-// Fetch items for display with pagination - FILTERED BY LICENSE TYPE
+// Fetch items for display with pagination
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -1163,7 +1472,6 @@ $stmt->close();
     .download-template {
         margin-top: 10px;
     }
-    /* Compact table styling with original colors */
     .table-container {
         overflow-x: auto;
         max-width: 100%;
@@ -1178,7 +1486,7 @@ $stmt->close();
     .styled-table th {
         white-space: nowrap;
         padding: 8px 5px;
-        background-color: #f8f9fa; /* Original header color */
+        background-color: #f8f9fa;
         border-bottom: 2px solid #dee2e6;
         font-weight: 600;
         position: sticky;
@@ -1191,46 +1499,41 @@ $stmt->close();
         border-bottom: 1px solid #dee2e6;
     }
     .styled-table tbody tr:nth-child(even) {
-        background-color: #f8f9fa; /* Original striped color */
+        background-color: #f8f9fa;
     }
     .styled-table tbody tr:hover {
-        background-color: #e9ecef; /* Original hover color */
+        background-color: #e9ecef;
     }
     
-    /* Column width classes (similar to original) */
+    /* Column width classes */
     .col-code { width: 80px; }
     .col-item-name { width: 200px; }
     .col-print-name { width: 100px; }
     .col-category { width: 120px; }
     .col-class { width: 120px; }
     .col-subclass { width: 120px; }
-    .col-size { width: 100px; }
+    .col-size { width: 120px; }
     .col-price { width: 70px; text-align: right; }
     .col-stock { width: 60px; text-align: center; }
     .col-barcode { width: 100px; }
     .col-actions { width: 100px; }
     
-    /* Compact text (similar to original) */
     .compact-text {
         font-size: 0.8rem;
         line-height: 1.2;
     }
     
-    /* Original color for classification data */
-    .new-system {
-        color: #198754; /* Original green color */
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    
-    /* Classification data without labels */
     .classification-data {
         font-size: 0.8rem;
-        color: #198754; /* Same green as original new-system */
+        color: #198754;
         font-weight: 500;
     }
     
-    /* Remove the hierarchy-label class that was showing "Category:", "Class:", etc. */
+    .size-info {
+        font-size: 0.8rem;
+        color: #0d6efd;
+        font-weight: 500;
+    }
     
     .date-field {
         max-width: 200px;
@@ -1261,51 +1564,17 @@ function downloadTemplate() {
                     'PPrice', 'BPrice', 'MPrice', 'RPrice', 'LIQFLAG', 
                     'OpeningBalance', 'Category', 'Class', 'Subclass', 'Barcode'];
     
-    // Create examples with actual NAMES
+    // Create examples
     const exampleRows = [
-        // Beer Examples with proper subclasses
-        ['SCMBR0009735', 'Budweiser Premium King of Beer', '', '330 ML', 
-         '80.000', '70.000', '100.000', '120.000', 'F', '0',
-         'Mild Beer', 'Mild Beer', 'Mild Beer', '8901234567890'],
-        ['SCMBR0009846', 'Kingfisher Strong Premium Beer', '', '650 ML', 
-         '120.000', '100.000', '130.000', '150.000', 'F', '0',
-         'Fermented Beer', 'Fermented Beer', 'Fermented Beer', '8901234567891'],
-        ['SCMBR0009787', 'FOSTERS LAGAR BEER', '', '50 Ltr', 
-         '80.000', '70.000', '100.000', '120.000', 'F', '0',
-         'Mild Beer', 'Mild Beer', 'Mild Beer', ''],
-        
-        // Whisky Examples with proper subclasses
-        ['WHISKY001', 'Johnnie Walker Red Label Whisky', 'JW Red Label', '750ML', 
+        ['WHISKY001', 'Johnnie Walker Red Label Whisky', 'JW Red Label', '750 ML', 
          '2500.000', '2200.000', '2800.000', '2600.000', 'F', '50',
          'Spirit', 'IMFL', 'Whisky', '8901234567892'],
-        ['WHISKY002', '8PM Premium Whisky', '8PM Premium', '90ML', 
-         '120.000', '100.000', '150.000', '130.000', 'F', '100',
-         'Spirit', 'IMFL', 'Whisky', ''],
-        
-        // Wine Example with proper subclass
-        ['WINE001', 'Sula Chenin Blanc White Wine', 'Sula White', '750ML', 
+        ['WINE001', 'Sula Chenin Blanc White Wine', 'Sula White', '750 ML', 
          '800.000', '700.000', '1000.000', '900.000', 'F', '30',
          'Wine', 'Indian', 'Indian', '8901234567893'],
-        
-        // Brandy Example with proper subclass
-        ['BRANDY001', 'Hennessy VSOP Cognac', 'Hennessy VSOP', '750ML', 
-         '8500.000', '8000.000', '10000.000', '9500.000', 'F', '15',
-         'Spirit', 'IMFL', 'Brandy', ''],
-        
-        // Vodka Example with proper subclass
-        ['VODKA001', 'Smirnoff Red Label Vodka', 'Smirnoff Red', '750ML', 
-         '900.000', '800.000', '1100.000', '1000.000', 'F', '40',
-         'Spirit', 'IMFL', 'Vodka', '8901234567894'],
-        
-        // Rum Example with proper subclass
-        ['RUM001', 'Old Monk Supreme Rum', 'Old Monk', '750ML', 
-         '600.000', '500.000', '750.000', '650.000', 'F', '60',
-         'Spirit', 'IMFL', 'Rum', ''],
-        
-        // Minimal example (4-layer fields optional)
-        ['LIQ001', 'Generic Liquor', 'Generic', '180 ML', 
-         '100.000', '90.000', '120.000', '110.000', 'F', '50',
-         '', '', '', '8901234567895']
+        ['SCMBR0009735', 'Kingfisher Strong Beer', '', '650 ML', 
+         '120.000', '100.000', '130.000', '150.000', 'F', '0',
+         'Fermented Beer', 'Fermented Beer', 'Fermented Beer', '8901234567891']
     ];
     
     let csvContent = "Opening Balance Start Date: YYYY-MM-DD\n";
@@ -1320,7 +1589,7 @@ function downloadTemplate() {
     const link = document.createElement('a');
     
     link.setAttribute('href', url);
-    link.setAttribute('download', 'item_import_template_with_barcode.csv');
+    link.setAttribute('download', 'item_import_template.csv');
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);
@@ -1332,15 +1601,13 @@ function downloadTemplate() {
     }, 100);
 }
 
-// Change page size
 function changePageSize(size) {
     const url = new URL(window.location.href);
     url.searchParams.set('limit', size);
-    url.searchParams.set('page', 1); // Reset to first page
+    url.searchParams.set('page', 1);
     window.location.href = url.toString();
 }
 
-// Jump to page
 function goToPage(page) {
     const url = new URL(window.location.href);
     url.searchParams.set('page', page);
@@ -1378,19 +1645,43 @@ function goToPage(page) {
           </p>
       </div>
 
+      <!-- Import/Export Messages -->
+      <?php if ($importSuccess): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="fa-solid fa-circle-check me-2"></i> <?= htmlspecialchars($importMessage) ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php elseif (!empty($importMessage)): ?>
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+          <i class="fa-solid fa-triangle-exclamation me-2"></i> <?= htmlspecialchars($importMessage) ?>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <?php endif; ?>
+
+      <?php if (isset($importErrors) && !empty($importErrors)): ?>
+        <div class="alert alert-danger">
+          <strong><i class="fa-solid fa-exclamation-circle me-2"></i> Import Errors:</strong>
+          <ul class="mb-0 mt-2">
+            <?php foreach ($importErrors as $error): ?>
+              <li><?= htmlspecialchars($error) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
+
       <!-- Liquor Mode Selector -->
       <div class="mode-selector mb-3">
         <label class="form-label">Liquor Mode:</label>
         <div class="btn-group" role="group">
-          <a href="?mode=F&search=<?= urlencode($search) ?>&page=1"
+          <a href="?mode=F&search=<?= urlencode($search) ?>&page=1&limit=<?= $limit ?>"
              class="btn btn-outline-primary <?= $mode === 'F' ? 'mode-active' : '' ?>">
             Foreign Liquor
           </a>
-          <a href="?mode=C&search=<?= urlencode($search) ?>&page=1"
+          <a href="?mode=C&search=<?= urlencode($search) ?>&page=1&limit=<?= $limit ?>"
              class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
             Country Liquor
           </a>
-          <a href="?mode=O&search=<?= urlencode($search) ?>&page=1"
+          <a href="?mode=O&search=<?= urlencode($search) ?>&page=1&limit=<?= $limit ?>"
              class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
             Others
           </a>
@@ -1400,8 +1691,8 @@ function goToPage(page) {
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
         <div class="btn-group">
-          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal" onclick="prepareImport()">
-            <i class="fas fa-file-import"></i> Import with Opening Balance Date
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+            <i class="fas fa-file-import"></i> Import (CSV/Excel)
           </button>
           <a href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&export=csv" class="btn btn-info">
             <i class="fas fa-file-export"></i> Export CSV
@@ -1410,22 +1701,20 @@ function goToPage(page) {
       </div>
 
       <div class="import-template">
-          <p><strong>Fixed Import Features with Barcode Support:</strong></p>
+          <p><strong>Import Features:</strong></p>
           <ul>
+              <li><strong>Excel/CSV Support:</strong> Supports both CSV and Excel files (.xls, .xlsx)</li>
+              <li><strong>Size Mapping:</strong> Sizes are mapped using LIQ_FLAG for accurate matching</li>
               <li><strong>Barcode Support:</strong> Accepts barcode as last column (15 chars max, can be empty)</li>
-              <li><strong>No Duplicates:</strong> Proper ON DUPLICATE KEY UPDATE for tblitem_stock</li>
-              <li><strong>Archive Tables:</strong> Creates archive tables for past months (tbldailystock_<?= $comp_id ?>_mm_yy)</li>
-              <li><strong>Correct Distribution:</strong> Dates go to correct monthly tables</li>
-              <li><strong>Bulk Processing:</strong> Processes items in batches of 100</li>
-              <li><strong>Required columns:</strong> Code, ItemName, PrintName, Size, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance</li>
-              <li><strong>Optional columns:</strong> Category, Class, Subclass, Barcode</li>
+              <li><strong>Required columns:</strong> Code, ItemName, Size, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance</li>
+              <li><strong>Optional columns:</strong> PrintName, Category, Class, Subclass, Barcode</li>
           </ul>
        
           <div class="download-template">
               <a href="javascript:void(0);" onclick="downloadTemplate()" class="btn btn-sm btn-outline-secondary">
-                  <i class="fas fa-download"></i> Download Template with Barcode
+                  <i class="fas fa-download"></i> Download Template
               </a>
-              <small class="text-muted ms-2">Barcode support added - can be empty</small>
+              <small class="text-muted ms-2">Works with both CSV and Excel</small>
           </div>
       </div>
 
@@ -1433,6 +1722,7 @@ function goToPage(page) {
       <form method="GET" class="search-control mb-3">
         <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
         <input type="hidden" name="page" value="1">
+        <input type="hidden" name="limit" value="<?= $limit ?>">
         <div class="input-group">
           <input type="text" name="search" class="form-control"
                  placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
@@ -1440,7 +1730,7 @@ function goToPage(page) {
             <i class="fas fa-search"></i> Find
           </button>
           <?php if ($search !== ''): ?>
-            <a href="?mode=<?= $mode ?>&page=1" class="btn btn-secondary">Clear</a>
+            <a href="?mode=<?= $mode ?>&page=1&limit=<?= $limit ?>" class="btn btn-secondary">Clear</a>
           <?php endif; ?>
         </div>
       </form>
@@ -1466,14 +1756,7 @@ function goToPage(page) {
         </a>
       </div>
 
-      <!-- Import/Delete Messages -->
-      <?php if (!empty($importMessage)): ?>
-      <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <?= $importMessage ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      <?php endif; ?>
-
+      <!-- Delete Message -->
       <?php if (!empty($deleteMessage)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?= $deleteMessage ?>
@@ -1498,7 +1781,7 @@ function goToPage(page) {
               <th class="col-price">MRP</th>
               <th class="col-price">R.Price</th>
               <th class="col-stock">Open Stock</th>
-              <th class="col-barcode">Barcode</th> <!-- New Barcode column -->
+              <th class="col-barcode">Barcode</th>
               <th class="col-actions">Actions</th>
             </tr>
           </thead>
@@ -1508,7 +1791,7 @@ function goToPage(page) {
               <?php
               // Get opening balance
               $opening_balance = 0;
-              $stock_query = "SELECT OPENING_STOCK{$company_id} as opening 
+              $stock_query = "SELECT OPENING_STOCK{$comp_id} as opening 
                            FROM tblitem_stock 
                            WHERE ITEM_CODE = ?";
               $stock_stmt = $conn->prepare($stock_query);
@@ -1527,7 +1810,13 @@ function goToPage(page) {
               $class_name = getClassNameNew($item['CLASS_CODE_NEW'], $conn);
               $subclass_name = getSubclassNameNew($item['SUBCLASS_CODE_NEW'], $conn);
               
-              // Format prices as integers (remove decimals)
+              // IMPROVED: Get size description from SIZE_CODE with LIQ_FLAG
+              $size_desc = getSizeDescription($item['SIZE_CODE'], $conn, $item['LIQ_FLAG']);
+              
+              // Always use size_desc if available, never show fallback message
+              $size_display = !empty($size_desc) ? $size_desc : $item['DETAILS2'];
+              
+              // Format prices as integers
               $pprice_int = intval($item['PPRICE']);
               $bprice_int = intval($item['BPRICE']);
               $mprice_int = intval($item['MPRICE']);
@@ -1538,24 +1827,24 @@ function goToPage(page) {
                 <td class="col-item-name"><?= htmlspecialchars($item['DETAILS']); ?></td>
                 <td class="col-print-name"><?= htmlspecialchars($item['Print_Name']); ?></td>
                 
-                <!-- Category Column - Show NAME only (no label) -->
+                <!-- Category Column -->
                 <td class="col-category classification-data">
                     <?= htmlspecialchars($category_name); ?>
                 </td>
                 
-                <!-- Class Column - Show NAME only (no label) -->
+                <!-- Class Column -->
                 <td class="col-class classification-data">
                     <?= htmlspecialchars($class_name); ?>
                 </td>
                 
-                <!-- Subclass Column - Show NAME only (no label) -->
+                <!-- Subclass Column -->
                 <td class="col-subclass classification-data">
                     <?= htmlspecialchars($subclass_name); ?>
                 </td>
                 
-                <!-- Size Column - Show from DETAILS2 (no label) -->
-                <td class="col-size classification-data">
-                    <?= htmlspecialchars($item['DETAILS2']); ?>
+                <!-- Size Column - Show only the size description, no indicators -->
+                <td class="col-size">
+                    <?= htmlspecialchars($size_display); ?>
                 </td>
                 
                 <!-- Prices as integers -->
@@ -1567,7 +1856,7 @@ function goToPage(page) {
                 <td class="col-stock"><?= $opening_balance; ?></td>
                 
                 <!-- Barcode Column -->
-                <td class="col-barcode classification-data">
+                <td class="col-barcode">
                     <?= htmlspecialchars($item['BARCODE'] ?? ''); ?>
                 </td>
                 
@@ -1604,14 +1893,14 @@ function goToPage(page) {
           <ul class="pagination">
             <!-- First Page -->
             <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=1" aria-label="First">
+              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=1&limit=<?= $limit ?>" aria-label="First">
                 <span aria-hidden="true">&laquo;&laquo;</span>
               </a>
             </li>
             
             <!-- Previous Page -->
             <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= max(1, $page - 1) ?>" aria-label="Previous">
+              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= max(1, $page - 1) ?>&limit=<?= $limit ?>" aria-label="Previous">
                 <span aria-hidden="true">&laquo;</span>
               </a>
             </li>
@@ -1624,7 +1913,7 @@ function goToPage(page) {
             for ($i = $start_page; $i <= $end_page; $i++): 
             ?>
               <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $i ?>">
+                <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $i ?>&limit=<?= $limit ?>">
                   <?= $i ?>
                 </a>
               </li>
@@ -1632,14 +1921,14 @@ function goToPage(page) {
             
             <!-- Next Page -->
             <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= min($total_pages, $page + 1) ?>" aria-label="Next">
+              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= min($total_pages, $page + 1) ?>&limit=<?= $limit ?>" aria-label="Next">
                 <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             
             <!-- Last Page -->
             <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $total_pages ?>" aria-label="Last">
+              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $total_pages ?>&limit=<?= $limit ?>" aria-label="Last">
                 <span aria-hidden="true">&raquo;&raquo;</span>
               </a>
             </li>
@@ -1668,48 +1957,70 @@ function goToPage(page) {
   </div>
 </div>
 
-<!-- Import Modal with Opening Balance Date Field -->
+<!-- Import Modal -->
 <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="importModalLabel">Bulk Import Items
-          <span class="badge bg-success">Fixed Table Distribution</span>
-          <span class="badge bg-info">Barcode Support</span>
+        <h5 class="modal-title" id="importModalLabel">
+          <i class="fa-solid fa-file-import me-2 text-success"></i>
+          Bulk Import Items (CSV/Excel)
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" enctype="multipart/form-data" id="importForm">
         <div class="modal-body">
-          <div class="mb-3">
-            <label for="importFile" class="form-label">Select CSV file to import</label>
-            <input class="form-control" type="file" id="importFile" name="import_file" required accept=".csv">
-            <div class="form-text">Supports CSV files with thousands of items</div>
+          <div class="alert alert-info">
+            <i class="fa-solid fa-info-circle me-2"></i>
+            <strong>Import Format:</strong> Upload a CSV or Excel file with columns: 
+            <code>Code</code>, <code>ItemName</code>, <code>PrintName</code>, <code>Size</code>, 
+            <code>PPrice</code>, <code>BPrice</code>, <code>MPrice</code>, <code>RPrice</code>, 
+            <code>LIQFLAG</code>, <code>OpeningBalance</code>, <code>Category</code>, 
+            <code>Class</code>, <code>Subclass</code>, <code>Barcode</code>
+          </div>
+          
+          <div class="alert alert-warning">
+            <strong><i class="fas fa-info-circle"></i> Important:</strong>
+            <ul class="mb-0 mt-1">
+              <li>Size descriptions are matched with LIQ_FLAG for accuracy</li>
+              <li>If size not found, it will be stored in DETAILS2 but SIZE_CODE will be empty</li>
+              <li>Both Foreign Liquor (F) and Country Liquor (C) sizes are handled separately</li>
+            </ul>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label for="importType" class="form-label fw-semibold">File Type</label>
+              <select class="form-select" id="importType" name="import_type" required>
+                <option value="csv">CSV File (.csv)</option>
+                <option value="excel">Excel File (.xls, .xlsx)</option>
+              </select>
+            </div>
+            
+            <div class="col-md-12 mb-3">
+              <label for="importFile" class="form-label fw-semibold">Select File</label>
+              <input class="form-control" type="file" id="importFile" name="import_file" required>
+              <div class="form-text">Maximum file size: <?= ini_get('upload_max_filesize') ?></div>
+            </div>
           </div>
           
           <!-- Opening Balance Date Field -->
           <div class="mb-3">
-            <label for="start_date" class="form-label">Opening Balance Start Date</label>
+            <label for="start_date" class="form-label fw-semibold">Opening Balance Start Date</label>
             <input type="date" class="form-control date-field" id="start_date" name="start_date" value="<?= date('Y-m-d') ?>" required>
-            <div class="form-text">Opening balance will be cascaded from this date through today (uses correct monthly tables)</div>
+            <div class="form-text">Opening balance will be cascaded from this date through today</div>
           </div>
           
-          <input type="hidden" name="import_type" value="csv">
-          <div class="alert alert-warning">
-            <strong><i class="fas fa-database"></i> Fixed Table System with Barcode Support</strong>
-            <ul class="mb-0 mt-2">
-              <li>Barcode column is optional (15 characters max)</li>
-              <li>Current month: tbldailystock_<?= $comp_id ?></li>
-              <li>Archive months: tbldailystock_<?= $comp_id ?>_mm_yy</li>
-              <li>No duplicate entries in tblitem_stock</li>
-              <li>Proper ON DUPLICATE KEY UPDATE handling</li>
-            </ul>
+          <div class="mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="downloadTemplate()">
+              <i class="fa-solid fa-download me-1"></i> Download Template
+            </button>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="importSubmitBtn">
-            <i class="fas fa-rocket"></i> Start Fixed Import
+          <button type="submit" class="btn btn-success" id="importSubmitBtn">
+            <i class="fa-solid fa-cloud-upload-alt me-1"></i> Start Import
           </button>
         </div>
       </form>
@@ -1724,104 +2035,75 @@ function confirmDelete(itemName) {
     return confirm('Are you sure you want to delete the item "' + itemName + '"? This action cannot be undone.');
 }
 
+// Update file input accept attribute based on import type
+document.getElementById('importType').addEventListener('change', function() {
+    const fileInput = document.getElementById('importFile');
+    if (this.value === 'csv') {
+        fileInput.accept = '.csv';
+    } else {
+        fileInput.accept = '.xls,.xlsx';
+    }
+    fileInput.value = ''; // Clear selected file
+});
+
 // Show loading indicator during import
-function prepareImport() {
-    const importForm = document.getElementById('importForm');
-    if (importForm) {
-        importForm.addEventListener('submit', function(e) {
-            const fileInput = document.getElementById('importFile');
-            const startDate = document.getElementById('start_date');
-            
-            if (!fileInput.files.length) {
-                e.preventDefault();
-                alert('Please select a CSV file to import.');
-                return;
-            }
-            
-            if (!startDate.value) {
-                e.preventDefault();
-                alert('Please select an opening balance start date.');
-                return;
-            }
-            
-            // Show loading overlay
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.style.position = 'fixed';
-            loadingOverlay.style.top = '0';
-            loadingOverlay.style.left = '0';
-            loadingOverlay.style.width = '100%';
-            loadingOverlay.style.height = '100%';
-            loadingOverlay.style.backgroundColor = 'rgba(255,255,255,0.98)';
-            loadingOverlay.style.zIndex = '9999';
-            loadingOverlay.style.display = 'flex';
-            loadingOverlay.style.justifyContent = 'center';
-            loadingOverlay.style.alignItems = 'center';
-            loadingOverlay.innerHTML = `
-                <div class="text-center p-5" style="max-width: 600px;">
-                    <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <h3 class="mt-4">Fixed Import in Progress</h3>
-                    <div class="mt-4">
-                        <div class="progress" style="height: 30px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
-                                 role="progressbar" style="width: 100%">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <i class="fas fa-database fa-2x text-primary mb-2"></i>
-                                        <h5>No Duplicates</h5>
-                                        <p class="small">Proper tblitem_stock handling</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <i class="fas fa-barcode fa-2x text-success mb-2"></i>
-                                        <h5>Barcode Support</h5>
-                                        <p class="small">Optional barcode import</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4 alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>Fixed Import System</strong><br>
-                        • Barcode support added (optional)<br>
-                        • No duplicate entries in stock table<br>
-                        • Dates distributed to correct monthly tables<br>
-                        • Archive tables created automatically
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(loadingOverlay);
-            
-            // Disable submit button
-            const submitBtn = document.getElementById('importSubmitBtn');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-sync fa-spin"></i> Processing...';
-            }
-        });
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('importFile');
+    const startDate = document.getElementById('start_date');
+    
+    if (!fileInput.files.length) {
+        e.preventDefault();
+        alert('Please select a file to import.');
+        return;
     }
     
-    // Set max date to today
-    const startDateInput = document.getElementById('start_date');
-    if (startDateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        startDateInput.max = today;
-        if (!startDateInput.value) {
-            startDateInput.value = today;
-        }
+    if (!startDate.value) {
+        e.preventDefault();
+        alert('Please select an opening balance start date.');
+        return;
     }
-}
+    
+    // Show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.position = 'fixed';
+    loadingOverlay.style.top = '0';
+    loadingOverlay.style.left = '0';
+    loadingOverlay.style.width = '100%';
+    loadingOverlay.style.height = '100%';
+    loadingOverlay.style.backgroundColor = 'rgba(255,255,255,0.98)';
+    loadingOverlay.style.zIndex = '9999';
+    loadingOverlay.style.display = 'flex';
+    loadingOverlay.style.justifyContent = 'center';
+    loadingOverlay.style.alignItems = 'center';
+    loadingOverlay.innerHTML = `
+        <div class="text-center p-5" style="max-width: 600px;">
+            <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h3 class="mt-4">Import in Progress</h3>
+            <div class="mt-4">
+                <div class="progress" style="height: 30px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                         role="progressbar" style="width: 100%">
+                        Processing...
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 alert alert-info">
+                <i class="fa-solid fa-info-circle"></i>
+                <strong>Processing items with LIQ_FLAG-specific size matching...</strong>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+    
+    // Disable submit button
+    const submitBtn = document.getElementById('importSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    }
+});
 
 // Auto-hide alerts after 5 seconds
 document.addEventListener('DOMContentLoaded', function() {
@@ -1833,8 +2115,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 5000);
     
-    // Initialize import form
-    prepareImport();
+    // Set max date to today
+    const startDateInput = document.getElementById('start_date');
+    if (startDateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        startDateInput.max = today;
+    }
+});
+
+// Reset modal on close
+$('#importModal').on('hidden.bs.modal', function() {
+    $('#importSubmitBtn').prop('disabled', false);
+    $('#importSubmitBtn').html('<i class="fa-solid fa-cloud-upload-alt me-1"></i> Start Import');
+    $('#importFile').val('');
 });
 </script>
 

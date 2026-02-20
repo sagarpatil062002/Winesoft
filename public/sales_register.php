@@ -27,6 +27,144 @@ foreach ($available_classes as $class) {
     $allowed_classes[] = $class['SGROUP'];
 }
 
+// Cache for hierarchy data
+$hierarchy_cache = [];
+
+/**
+ * Get complete hierarchy information for an item (copied from excise_register.php)
+ */
+function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
+    global $hierarchy_cache;
+    
+    // Create cache key
+    $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
+    
+    if (isset($hierarchy_cache[$cache_key])) {
+        return $hierarchy_cache[$cache_key];
+    }
+    
+    $hierarchy = [
+        'class_code' => $class_code,
+        'class_name' => '',
+        'subclass_code' => $subclass_code,
+        'subclass_name' => '',
+        'category_code' => '',
+        'category_name' => '',
+        'display_category' => 'OTHER',
+        'display_type' => 'OTHER', // Field for IMFL/Imported/MML differentiation
+        'size_code' => $size_code,
+        'size_desc' => '',
+        'ml_volume' => 0,
+        'full_hierarchy' => ''
+    ];
+    
+    try {
+        // Get class and category information
+        if (!empty($class_code)) {
+            $query = "SELECT cn.CLASS_NAME, cn.CATEGORY_CODE, cat.CATEGORY_NAME 
+                      FROM tblclass_new cn
+                      LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+                      WHERE cn.CLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $class_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['class_name'] = $row['CLASS_NAME'];
+                $hierarchy['category_code'] = $row['CATEGORY_CODE'];
+                $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
+                
+                // Map category name to display category
+                $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
+                $display_category = 'OTHER';
+                
+                if ($category_name == 'SPIRIT') {
+                    $display_category = 'SPIRITS';
+                    
+                    // Determine spirit type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'MML';
+                    } else {
+                        $hierarchy['display_type'] = 'IMFL';
+                    }
+                } elseif ($category_name == 'WINE') {
+                    $display_category = 'WINE';
+                    
+                    // Determine wine type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED WINE';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'WINE MML';
+                    } else {
+                        $hierarchy['display_type'] = 'INDIAN WINE';
+                    }
+                } elseif ($category_name == 'FERMENTED BEER') {
+                    $display_category = 'FERMENTED BEER';
+                    $hierarchy['display_type'] = 'FERMENTED BEER';
+                } elseif ($category_name == 'MILD BEER') {
+                    $display_category = 'MILD BEER';
+                    $hierarchy['display_type'] = 'MILD BEER';
+                } elseif ($category_name == 'COUNTRY LIQUOR') {
+                    $display_category = 'COUNTRY LIQUOR';
+                    $hierarchy['display_type'] = 'COUNTRY LIQUOR';
+                }
+                
+                $hierarchy['display_category'] = $display_category;
+            }
+            $stmt->close();
+        }
+        
+        // Get subclass information
+        if (!empty($subclass_code)) {
+            $query = "SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $subclass_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['subclass_name'] = $row['SUBCLASS_NAME'];
+            }
+            $stmt->close();
+        }
+        
+        // Get size information
+        if (!empty($size_code)) {
+            $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $size_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['size_desc'] = $row['SIZE_DESC'];
+                $hierarchy['ml_volume'] = (int)($row['ML_VOLUME'] ?? 0);
+            }
+            $stmt->close();
+        }
+        
+        // Build full hierarchy string
+        $parts = [];
+        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
+        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
+        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
+        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
+        
+        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
+        
+    } catch (Exception $e) {
+        error_log("Error in getItemHierarchy: " . $e->getMessage());
+    }
+    
+    $hierarchy_cache[$cache_key] = $hierarchy;
+    return $hierarchy;
+}
+
 // Default values
 $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d');
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
@@ -97,21 +235,103 @@ function getSalesTablesForDateRange($conn, $compID, $date_from, $date_to) {
     return $tables;
 }
 
-// Define categories based on the image format - UPDATED WITH LICENSE RESTRICTIONS - ORDER: Spirit, Imported Spirit, Wine, Wine Imp, Fermented Beer, Mild Beer
-$categories = [
-    'IMFL Sales' => ['classes' => array_intersect(['W', 'G', 'K', 'D', 'R', 'O'], $allowed_classes), 'liq_flag' => 'F'],
-    'Imported Spirit Sales' => ['classes' => array_intersect(['I'], $allowed_classes), 'liq_flag' => 'F'],
-    'Wine Sales' => ['classes' => array_intersect(['V'], $allowed_classes), 'liq_flag' => 'F'],
-    'Imported Wine Sales' => ['classes' => array_intersect(['W'], $allowed_classes), 'liq_flag' => 'F'],
-    'Fermented Beer Sales' => ['classes' => array_intersect(['F'], $allowed_classes), 'liq_flag' => 'F'],
-    'Mild Beer Sales' => ['classes' => array_intersect(['M'], $allowed_classes), 'liq_flag' => 'F'],
-    'Country Sales' => ['classes' => array_intersect(['L', 'O'], $allowed_classes), 'liq_flag' => 'C']
+// Define display categories based on the classification from excise_register.php
+$display_categories = [
+    'IMFL',
+    'IMPORTED', 
+    'MML',
+    'INDIAN WINE',
+    'IMPORTED WINE',
+    'WINE MML',
+    'FERMENTED BEER',
+    'MILD BEER',
+    'COUNTRY LIQUOR'
 ];
 
-// Remove empty categories (where no classes are allowed by license)
-$categories = array_filter($categories, function($category) {
-    return !empty($category['classes']);
-});
+$category_display_names = [
+    'IMFL' => 'IMFL Sales',
+    'IMPORTED' => 'Imported Spirit Sales',
+    'MML' => 'MML Sales',
+    'INDIAN WINE' => 'Indian Wine Sales',
+    'IMPORTED WINE' => 'Imported Wine Sales',
+    'WINE MML' => 'Wine MML Sales',
+    'FERMENTED BEER' => 'Fermented Beer Sales',
+    'MILD BEER' => 'Mild Beer Sales',
+    'COUNTRY LIQUOR' => 'Country Liquor Sales'
+];
+
+// Filter categories based on allowed classes
+// First, fetch all items to determine which display_types are actually present
+$filtered_categories = [];
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    
+    // Fetch items to get their display types
+    $itemQuery = "SELECT CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                  FROM tblitemmaster 
+                  WHERE CLASS IN ($class_placeholders)";
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    
+    $display_types_present = [];
+    while ($row = $itemResult->fetch_assoc()) {
+        // Get hierarchy information
+        $hierarchy = getItemHierarchy(
+            $row['CLASS_CODE_NEW'], 
+            $row['SUBCLASS_CODE_NEW'], 
+            $row['SIZE_CODE'], 
+            $conn
+        );
+        
+        $display_type = $hierarchy['display_type'];
+        $display_types_present[$display_type] = true;
+    }
+    $itemStmt->close();
+    
+    // Filter categories to only include those present in items
+    foreach ($display_categories as $category) {
+        if (isset($display_types_present[$category])) {
+            $filtered_categories[] = $category;
+        }
+    }
+    
+    // If no categories found, include all that might be relevant based on allowed_classes
+    if (empty($filtered_categories)) {
+        // Map allowed classes to potential display types
+        foreach ($allowed_classes as $class) {
+            switch ($class) {
+                case 'W':
+                case 'G':
+                case 'K':
+                case 'D':
+                case 'R':
+                    if (!in_array('IMFL', $filtered_categories)) $filtered_categories[] = 'IMFL';
+                    break;
+                case 'I':
+                    if (!in_array('IMPORTED', $filtered_categories)) $filtered_categories[] = 'IMPORTED';
+                    break;
+                case 'V':
+                    if (!in_array('INDIAN WINE', $filtered_categories)) $filtered_categories[] = 'INDIAN WINE';
+                    break;
+                case 'F':
+                    if (!in_array('FERMENTED BEER', $filtered_categories)) $filtered_categories[] = 'FERMENTED BEER';
+                    break;
+                case 'M':
+                    if (!in_array('MILD BEER', $filtered_categories)) $filtered_categories[] = 'MILD BEER';
+                    break;
+                case 'L':
+                case 'O':
+                    if (!in_array('COUNTRY LIQUOR', $filtered_categories)) $filtered_categories[] = 'COUNTRY LIQUOR';
+                    break;
+            }
+        }
+    }
+} else {
+    $filtered_categories = $display_categories;
+}
 
 // Generate report data based on filters
 $report_data = [];
@@ -144,9 +364,9 @@ if (isset($_GET['generate'])) {
                 $report_data[$sale_date] = [];
                 $daily_totals[$sale_date] = 0;
                 
-                // Initialize all categories for this date
-                foreach ($categories as $category_name => $category_info) {
-                    $report_data[$sale_date][$category_name] = [
+                // Initialize all filtered categories for this date
+                foreach ($filtered_categories as $category) {
+                    $report_data[$sale_date][$category] = [
                         'min_bill' => null,
                         'max_bill' => null,
                         'amount' => 0
@@ -166,11 +386,13 @@ if (isset($_GET['generate'])) {
         $headerTable = $tables['header'];
         $detailsTable = $tables['details'];
         
-        // Build query with license restrictions
+        // Build query with license restrictions - join with tblitemmaster to get hierarchy data
         $query = "SELECT 
                     DATE(s.BILL_DATE) as sale_date,
-                    i.CLASS as SGROUP,
-                    i.LIQ_FLAG,
+                    i.CODE as item_code,
+                    i.CLASS_CODE_NEW,
+                    i.SUBCLASS_CODE_NEW,
+                    i.SIZE_CODE,
                     MIN(s.BILL_NO) as min_bill,
                     MAX(s.BILL_NO) as max_bill,
                     SUM(COALESCE(i.$rate_field, sd.RATE) * sd.QTY) as total_sale
@@ -188,8 +410,8 @@ if (isset($_GET['generate'])) {
             $query .= " AND 1 = 0";
         }
         
-        $query .= " GROUP BY DATE(s.BILL_DATE), i.CLASS, i.LIQ_FLAG
-                  ORDER BY sale_date, i.CLASS";
+        $query .= " GROUP BY DATE(s.BILL_DATE), i.CODE, i.CLASS_CODE_NEW, i.SUBCLASS_CODE_NEW, i.SIZE_CODE
+                  ORDER BY sale_date";
         
         $stmt = $conn->prepare($query);
         
@@ -206,49 +428,41 @@ if (isset($_GET['generate'])) {
         $result = $stmt->get_result();
         
         while ($row = $result->fetch_assoc()) {
-            $sgroup = isset($row['SGROUP']) ? $row['SGROUP'] : 'O';
-            $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F';
+            // Get hierarchy information for this item
+            $hierarchy = getItemHierarchy(
+                $row['CLASS_CODE_NEW'],
+                $row['SUBCLASS_CODE_NEW'],
+                $row['SIZE_CODE'],
+                $conn
+            );
+            
+            $display_type = $hierarchy['display_type'];
             $amount = (float)$row['total_sale'];
             $sale_date = $row['sale_date'];
             $min_bill = $row['min_bill'];
             $max_bill = $row['max_bill'];
             
-            // Determine which category this item belongs to
-            $item_category = null;
-            foreach ($categories as $category_name => $category_info) {
-                if ($category_info['liq_flag'] === $liq_flag && in_array($sgroup, $category_info['classes'])) {
-                    $item_category = $category_name;
-                    break;
-                }
-            }
-            
-            // If we couldn't classify the item, assign to IMFL Sales as default (if allowed)
-            if ($item_category === null && in_array($sgroup, $categories['IMFL Sales']['classes'] ?? [])) {
-                $item_category = 'IMFL Sales';
-            }
-            
-            // Update category data only if category exists and is allowed
-            if ($item_category !== null && isset($report_data[$sale_date][$item_category])) {
-                // If this category already has data, update min/max bills and amount
-                if ($report_data[$sale_date][$item_category]['min_bill'] === null || 
-                    $min_bill < $report_data[$sale_date][$item_category]['min_bill']) {
-                    $report_data[$sale_date][$item_category]['min_bill'] = $min_bill;
+            // Only process if this display type is in our filtered categories
+            if (in_array($display_type, $filtered_categories) && isset($report_data[$sale_date][$display_type])) {
+                // Update category data
+                if ($report_data[$sale_date][$display_type]['min_bill'] === null || 
+                    $min_bill < $report_data[$sale_date][$display_type]['min_bill']) {
+                    $report_data[$sale_date][$display_type]['min_bill'] = $min_bill;
                 }
                 
-                if ($report_data[$sale_date][$item_category]['max_bill'] === null || 
-                    $max_bill > $report_data[$sale_date][$item_category]['max_bill']) {
-                    $report_data[$sale_date][$item_category]['max_bill'] = $max_bill;
+                if ($report_data[$sale_date][$display_type]['max_bill'] === null || 
+                    $max_bill > $report_data[$sale_date][$display_type]['max_bill']) {
+                    $report_data[$sale_date][$display_type]['max_bill'] = $max_bill;
                 }
                 
-                $report_data[$sale_date][$item_category]['amount'] += $amount;
+                $report_data[$sale_date][$display_type]['amount'] += $amount;
+                $daily_totals[$sale_date] += $amount;
             }
-            
-            $daily_totals[$sale_date] += $amount;
         }
         $stmt->close();
     }
 
-    // Get bill ranges for categories with zero sales but have bills on that date from all relevant tables
+    // Get bill ranges for categories with zero sales but have bills on that date
     foreach ($salesTables as $month => $tables) {
         $headerTable = $tables['header'];
         
@@ -272,13 +486,15 @@ if (isset($_GET['generate'])) {
             $overall_max_bill = $billRow['max_bill'];
             
             // For categories with zero sales but bills exist on that date, set the bill range
-            foreach ($categories as $category_name => $category_info) {
-                if (isset($report_data[$sale_date][$category_name]) && 
-                    $report_data[$sale_date][$category_name]['amount'] == 0 &&
-                    $report_data[$sale_date][$category_name]['min_bill'] === null) {
-                    
-                    $report_data[$sale_date][$category_name]['min_bill'] = $overall_min_bill;
-                    $report_data[$sale_date][$category_name]['max_bill'] = $overall_max_bill;
+            if (isset($report_data[$sale_date])) {
+                foreach ($filtered_categories as $category) {
+                    if (isset($report_data[$sale_date][$category]) && 
+                        $report_data[$sale_date][$category]['amount'] == 0 &&
+                        $report_data[$sale_date][$category]['min_bill'] === null) {
+                        
+                        $report_data[$sale_date][$category]['min_bill'] = $overall_min_bill;
+                        $report_data[$sale_date][$category]['max_bill'] = $overall_max_bill;
+                    }
                 }
             }
         }
@@ -367,10 +583,6 @@ if (isset($_GET['generate'])) {
       text-align: center;
     }
     
-    .report-table th.rowspan-header {
-      background-color: #e9ecef;
-    }
-    
     .report-table .text-right {
       text-align: right;
     }
@@ -401,17 +613,6 @@ if (isset($_GET['generate'])) {
     .report-table .amount-col {
       width: 120px;
       text-align: right;
-    }
-    
-    .report-table .category-col {
-      width: 100px;
-      text-align: center;
-    }
-    
-    .report-table .sub-col {
-      width: 60px;
-      text-align: center;
-      font-size: 11px;
     }
     
     .total-row {
@@ -539,7 +740,7 @@ if (isset($_GET['generate'])) {
                 <i class="fas fa-cog me-1"></i> Generate
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
-                <i class me-1">="fas fa-print</i> Print Report
+                <i class="fas fa-print me-1"></i> Print Report
               </button>
               <button type="button" class="btn btn-info" onclick="exportToExcel()">
                 <i class="fas fa-file-excel me-1"></i> Export to Excel
@@ -572,26 +773,11 @@ if (isset($_GET['generate'])) {
             <table class="report-table">
               <thead>
                 <tr>
-                  <th class="sr-no" rowspan="2">SR<br>No</th>
-                  <th class="date-col" rowspan="2">Date</th>
-                  <th class="category-col" colspan="5">IMFL</th>
-                  <th class="category-col" rowspan="2">IMP<br>Spirit</th>
-                  <th class="category-col" rowspan="2">Wine</th>
-                  <th class="category-col" rowspan="2">IMP<br>Wine</th>
-                  <th class="category-col" colspan="2">Fermented<br>Beer</th>
-                  <th class="category-col" colspan="2">Mild<br>Beer</th>
-                  <th class="amount-col" rowspan="2">Total</th>
-                </tr>
-                <tr>
-                  <th class="sub-col">1</th>
-                  <th class="sub-col">2</th>
-                  <th class="sub-col">3</th>
-                  <th class="sub-col">4</th>
-                  <th class="sub-col">5</th>
-                  <th class="sub-col">6</th>
-                  <th class="sub-col">7</th>
-                  <th class="sub-col">8</th>
-                  <th class="sub-col">9</th>
+                  <th class="sr-no">Sr.No.</th>
+                  <th class="date-col">Date</th>
+                  <th class="particulars-col">Particulars</th>
+                  <th class="bills-col">[Bill's From - To]</th>
+                  <th class="amount-col">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -619,9 +805,9 @@ if (isset($_GET['generate'])) {
                   if ($has_sales): 
                   ?>
                   
-                  <?php foreach ($categories as $category_name => $category_info): ?>
+                  <?php foreach ($filtered_categories as $category): ?>
                     <?php 
-                    $category_data = $categories_data[$category_name];
+                    $category_data = $categories_data[$category];
                     $min_bill = $category_data['min_bill'];
                     $max_bill = $category_data['max_bill'];
                     $amount = $category_data['amount'];
@@ -631,12 +817,16 @@ if (isset($_GET['generate'])) {
                     ?>
                       <tr>
                         <?php if (!$date_printed): ?>
-                          <td class="sr-no text-center" rowspan="<?= count(array_filter($categories_data, function($c) { return $c['amount'] > 0; })) + 1 ?>"><?= $sr_no ?></td>
-                          <td class="date-col" rowspan="<?= count(array_filter($categories_data, function($c) { return $c['amount'] > 0; })) + 1 ?>"><?= date('d/m/Y', strtotime($date)) ?></td>
+                          <td class="sr-no text-center"><?= $sr_no ?></td>
+                          <td class="date-col"><?= date('d/m/Y', strtotime($date)) ?></td>
                           <?php $date_printed = true; ?>
+                        <?php else: ?>
+                          <td class="sr-no"></td>
+                          <td class="date-col"></td>
                         <?php endif; ?>
                         
-                        <td class="particulars-col" colspan="12"><?= $category_name ?></td>
+                        <td class="particulars-col"><?= $category_display_names[$category] ?></td>
+                        <td class="bills-col text-center"><?= $min_bill ?> - <?= $max_bill ?></td>
                         <td class="amount-col text-right"><?= number_format($amount, 2) ?></td>
                       </tr>
                       
@@ -646,7 +836,10 @@ if (isset($_GET['generate'])) {
                   
                   <!-- Daily total row -->
                   <tr class="daily-total-row">
-                    <td colspan="13" class="text-center"><strong>Daily Total</strong></td>
+                    <td class="sr-no"></td>
+                    <td class="date-col"></td>
+                    <td class="particulars-col"></td>
+                    <td class="bills-col text-center"><strong>Total</strong></td>
                     <td class="amount-col text-right"><strong><?= number_format($date_total, 2) ?></strong></td>
                   </tr>
                   
@@ -661,7 +854,8 @@ if (isset($_GET['generate'])) {
                 <tr class="total-row">
                   <td class="sr-no"></td>
                   <td class="date-col"></td>
-                  <td class="particulars-col" colspan="12"><strong>Grand Total</strong></td>
+                  <td class="particulars-col"></td>
+                  <td class="bills-col text-center"><strong>Grand Total</strong></td>
                   <td class="amount-col text-right"><strong><?= number_format($grand_total, 2) ?></strong></td>
                 </tr>
               </tbody>
@@ -682,7 +876,7 @@ if (isset($_GET['generate'])) {
       <?php endif; ?>
     </div>
     
-    <?php include 'components/footer.php'; ?>
+  <?php include 'components/footer.php'; ?>
   </div>
   
 </div>

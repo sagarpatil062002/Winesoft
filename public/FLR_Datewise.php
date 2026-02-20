@@ -36,6 +36,113 @@ if (is_array($available_classes) && !empty($available_classes)) {
     }
 }
 
+// Cache for hierarchy data
+$hierarchy_cache = [];
+
+/**
+ * Get complete hierarchy information for an item
+ */
+function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
+    global $hierarchy_cache;
+    
+    // Create cache key
+    $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
+    
+    if (isset($hierarchy_cache[$cache_key])) {
+        return $hierarchy_cache[$cache_key];
+    }
+    
+    $hierarchy = [
+        'class_code' => $class_code,
+        'class_name' => '',
+        'subclass_code' => $subclass_code,
+        'subclass_name' => '',
+        'category_code' => '',
+        'category_name' => '',
+        'display_category' => 'OTHER',
+        'display_type' => 'Spirit', // Default to Spirit for FLR Datewise
+        'size_code' => $size_code,
+        'size_desc' => '',
+        'ml_volume' => 0,
+        'full_hierarchy' => ''
+    ];
+    
+    try {
+        // Get class and category information
+        if (!empty($class_code)) {
+            $query = "SELECT cn.CLASS_NAME, cn.CATEGORY_CODE, cat.CATEGORY_NAME 
+                      FROM tblclass_new cn
+                      LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+                      WHERE cn.CLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $class_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['class_name'] = $row['CLASS_NAME'];
+                $hierarchy['category_code'] = $row['CATEGORY_CODE'];
+                $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
+                
+                // Map category name to FLR Datewise display categories
+                $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
+                
+                if ($category_name == 'SPIRIT') {
+                    $hierarchy['display_type'] = 'Spirit';
+                } elseif ($category_name == 'WINE') {
+                    $hierarchy['display_type'] = 'Wine';
+                } elseif ($category_name == 'FERMENTED BEER') {
+                    $hierarchy['display_type'] = 'Fermented Beer';
+                } elseif ($category_name == 'MILD BEER') {
+                    $hierarchy['display_type'] = 'Mild Beer';
+                } elseif ($category_name == 'COUNTRY LIQUOR') {
+                    $hierarchy['display_type'] = 'Spirit'; // Map Country Liquor to Spirit for FLR
+                } else {
+                    $hierarchy['display_type'] = 'Spirit';
+                }
+                
+                $hierarchy['display_category'] = $hierarchy['display_type'];
+            }
+            $stmt->close();
+        }
+        
+        // Get subclass information
+        if (!empty($subclass_code)) {
+            $query = "SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $subclass_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['subclass_name'] = $row['SUBCLASS_NAME'];
+            }
+            $stmt->close();
+        }
+        
+        // Get size information
+        if (!empty($size_code)) {
+            $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $size_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['size_desc'] = $row['SIZE_DESC'];
+                $hierarchy['ml_volume'] = (int)($row['ML_VOLUME'] ?? 0);
+            }
+            $stmt->close();
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error in getItemHierarchy: " . $e->getMessage());
+    }
+    
+    $hierarchy_cache[$cache_key] = $hierarchy;
+    return $hierarchy;
+}
+
 // Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -61,71 +168,43 @@ if ($companyStmt) {
     $companyStmt->close();
 }
 
-// Function to get base size (from excise_register)
-function getBaseSize($size) {
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize);
-    return trim($baseSize);
-}
-
-// Define size columns for each liquor type (from excise_register)
-$size_columns_s = [
-    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
-    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
-    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
-    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '170 ML (48)', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96',
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
-    '50 ML (24)', '50 ML (192)'
-];
-$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
-$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-
-// Group sizes by base size
-function groupSizes($sizes) {
-    $grouped = [];
-    foreach ($sizes as $size) {
-        $baseSize = getBaseSize($size);
-        if (!isset($grouped[$baseSize])) {
-            $grouped[$baseSize] = [];
-        }
-        $grouped[$baseSize][] = $size;
+// Function to get volume label
+function getVolumeLabel($volume) {
+    static $volume_label_cache = [];
+    
+    if (isset($volume_label_cache[$volume])) {
+        return $volume_label_cache[$volume];
     }
-    return $grouped;
+    
+    if ($volume >= 1000) {
+        $liters = $volume / 1000;
+        if ($liters == intval($liters)) {
+            $label = intval($liters) . 'L';
+        } else {
+            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
+        }
+    } else {
+        $label = $volume . ' ML';
+    }
+    
+    $volume_label_cache[$volume] = $label;
+    return $label;
 }
-
-$grouped_sizes_s = groupSizes($size_columns_s);
-$grouped_sizes_w = groupSizes($size_columns_w);
-$grouped_sizes_fb = groupSizes($size_columns_fb);
-$grouped_sizes_mb = groupSizes($size_columns_mb);
 
 // Display sizes for each liquor type - keeping original FLR Datewise layout
 $display_sizes_spirit = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
 $display_sizes_wine = ['750 ML', '375 ML', '180 ML', '90 ML'];
 $display_sizes_beer = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
-// Fetch class data to map liquor types
-$classData = [];
-$classQuery = "SELECT SGROUP, `DESC`, LIQ_FLAG FROM tblclass";
-$classStmt = $conn->prepare($classQuery);
-if ($classStmt) {
-    $classStmt->execute();
-    $classResult = $classStmt->get_result();
-    while ($row = $classResult->fetch_assoc()) {
-        $classData[$row['SGROUP']] = $row;
-    }
-    $classStmt->close();
-}
-
-// Fetch item master data - FILTERED BY LICENSE TYPE
+// Fetch item master data - FILTERED BY LICENSE TYPE using new hierarchy
 $items = [];
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
+    // Updated query to use new hierarchy fields
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                  FROM tblitemmaster 
+                  WHERE CLASS IN ($class_placeholders)";
     
     $itemStmt = $conn->prepare($itemQuery);
     if ($itemStmt) {
@@ -134,93 +213,28 @@ if (!empty($allowed_classes)) {
         $itemResult = $itemStmt->get_result();
         
         while ($row = $itemResult->fetch_assoc()) {
-            $items[$row['CODE']] = $row;
+            // Get hierarchy information
+            $hierarchy = getItemHierarchy(
+                $row['CLASS_CODE_NEW'], 
+                $row['SUBCLASS_CODE_NEW'], 
+                $row['SIZE_CODE'], 
+                $conn
+            );
+            
+            $items[$row['CODE']] = [
+                'code' => $row['CODE'],
+                'details' => $row['DETAILS'],
+                'details2' => $row['DETAILS2'],
+                'class' => $row['CLASS'],
+                'class_code_new' => $row['CLASS_CODE_NEW'],
+                'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
+                'size_code' => $row['SIZE_CODE'],
+                'liq_flag' => $row['LIQ_FLAG'],
+                'hierarchy' => $hierarchy
+            ];
         }
         $itemStmt->close();
     }
-}
-
-// Function to determine liquor type - mapping to 4 categories for FLR Datewise
-function getLiquorType($class, $liq_flag, $classData) {
-    if ($liq_flag == 'F') {
-        switch ($class) {
-            case 'I':
-            case 'W':
-            case 'G':
-            case 'D':
-            case 'K':
-            case 'R':
-            case 'O':
-                return 'Spirit';
-            case 'V':
-                return 'Wine';
-            case 'F':
-                return 'Fermented Beer';
-            case 'M':
-                return 'Mild Beer';
-            default:
-                return 'Spirit';
-        }
-    }
-    return 'Spirit'; // Default for non-F items
-}
-
-// Map database sizes to display sizes
-$size_mapping = [
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    '170 ML' => '180 ML',
-    '90 ML' => '90 ML',
-    '90 ML-100' => '90 ML',
-    '90 ML-96' => '90 ML',
-    '2000 ML' => '2000 ML',
-    '2000 ML Pet' => '2000 ML',
-    '1000 ML' => '1000 ML',
-    '1000 ML(Pet)' => '1000 ML',
-    '700 ML' => '700 ML',
-    '500 ML' => '500 ML',
-    '650 ML' => '650 ML',
-    '330 ML' => '330 ML',
-    '275 ML' => '275 ML',
-    '250 ML' => '250 ML',
-    '200 ML' => '200 ML',
-    '180 ML' => '180 ML',
-    '60 ML' => '60 ML',
-    '50 ML' => '50 ML',
-    '500 ML (CAN)' => '500 ML',
-    '330 ML (CAN)' => '330 ML'
-];
-
-// Function to get grouped size
-function getGroupedSize($size, $liquor_type) {
-    global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
-    
-    $baseSize = getBaseSize($size);
-    
-    switch ($liquor_type) {
-        case 'Spirit':
-            if (in_array($baseSize, array_keys($grouped_sizes_s))) {
-                return $baseSize;
-            }
-            break;
-        case 'Wine':
-            if (in_array($baseSize, array_keys($grouped_sizes_w))) {
-                return $baseSize;
-            }
-            break;
-        case 'Fermented Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_fb))) {
-                return $baseSize;
-            }
-            break;
-        case 'Mild Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_mb))) {
-                return $baseSize;
-            }
-            break;
-    }
-    
-    return $baseSize;
 }
 
 // Function to get table name for a specific date
@@ -331,34 +345,6 @@ foreach ($dates as $date) {
     // Get appropriate table for this date
     $dailyStockTable = getTableForDate($conn, $compID, $date);
     
-    // Check if table has columns for this day
-    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
-        // Initialize empty data for this date
-        $daily_data[$date] = [
-            'Spirit' => [
-                'purchase' => array_fill_keys($display_sizes_spirit, 0),
-                'sales' => array_fill_keys($display_sizes_spirit, 0),
-                'closing' => array_fill_keys($display_sizes_spirit, 0)
-            ],
-            'Wine' => [
-                'purchase' => array_fill_keys($display_sizes_wine, 0),
-                'sales' => array_fill_keys($display_sizes_wine, 0),
-                'closing' => array_fill_keys($display_sizes_wine, 0)
-            ],
-            'Fermented Beer' => [
-                'purchase' => array_fill_keys($display_sizes_beer, 0),
-                'sales' => array_fill_keys($display_sizes_beer, 0),
-                'closing' => array_fill_keys($display_sizes_beer, 0)
-            ],
-            'Mild Beer' => [
-                'purchase' => array_fill_keys($display_sizes_beer, 0),
-                'sales' => array_fill_keys($display_sizes_beer, 0),
-                'closing' => array_fill_keys($display_sizes_beer, 0)
-            ]
-        ];
-        continue;
-    }
-    
     // Initialize daily data for this date
     $daily_data[$date] = [
         'Spirit' => [
@@ -383,6 +369,11 @@ foreach ($dates as $date) {
         ]
     ];
     
+    // Check if table has columns for this day
+    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
+        continue;
+    }
+    
     // Fetch stock data for this specific day
     $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
                   DAY_{$day_padded}_OPEN as opening,
@@ -404,54 +395,94 @@ foreach ($dates as $date) {
             // Skip if item not found in master
             if (!isset($items[$item_code])) continue;
             
-            $item_details = $items[$item_code];
-            $size = $item_details['DETAILS2'];
-            $class = $item_details['CLASS'];
-            $liq_flag = $item_details['LIQ_FLAG'];
+            $item = $items[$item_code];
+            $hierarchy = $item['hierarchy'];
+            $liquor_type = $hierarchy['display_type']; // Spirit, Wine, Fermented Beer, Mild Beer
             
-            // Determine liquor type (mapped to 4 categories)
-            $liquor_type = getLiquorType($class, $liq_flag, $classData);
+            // Get volume
+            $volume = $hierarchy['ml_volume'];
             
-            // Map database size to display size
-            $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
-            
-            // Get grouped size for display
-            $grouped_size = getGroupedSize($excel_size, $liquor_type);
+            // Skip if volume is 0
+            if ($volume <= 0) continue;
             
             // Determine which display sizes to use based on liquor type
-            $target_sizes = [];
+            $target_display_sizes = [];
             switch ($liquor_type) {
                 case 'Spirit':
-                    $target_sizes = $display_sizes_spirit;
+                    $target_display_sizes = $display_sizes_spirit;
                     break;
                 case 'Wine':
-                    $target_sizes = $display_sizes_wine;
+                    $target_display_sizes = $display_sizes_wine;
                     break;
                 case 'Fermented Beer':
                 case 'Mild Beer':
-                    $target_sizes = $display_sizes_beer;
+                    $target_display_sizes = $display_sizes_beer;
                     break;
                 default:
-                    $target_sizes = $display_sizes_spirit;
+                    $target_display_sizes = $display_sizes_spirit;
             }
             
-            // Add to daily data and totals
-            if (in_array($grouped_size, $target_sizes)) {
-                // For opening balance (first date only)
-                if ($date == $from_date) {
-                    $opening_balance_data[$liquor_type][$grouped_size] += $row['opening'];
+            // Find closest matching display size based on volume
+            $matched_size = null;
+            $closest_size = null;
+            $closest_diff = PHP_INT_MAX;
+            
+            foreach ($target_display_sizes as $display_size) {
+                // Extract numeric value from display size
+                preg_match('/(\d+\.?\d*)/', $display_size, $display_matches);
+                if (isset($display_matches[1])) {
+                    $display_volume = floatval($display_matches[1]);
+                    
+                    // Convert to ML if needed
+                    if (strpos($display_size, 'L') !== false && strpos($display_size, 'ML') === false) {
+                        $display_volume *= 1000;
+                    }
+                    
+                    // Calculate absolute difference
+                    $diff = abs($volume - $display_volume);
+                    
+                    // If this is closer than previous closest, update
+                    if ($diff < $closest_diff) {
+                        $closest_diff = $diff;
+                        $closest_size = $display_size;
+                    }
+                    
+                    // Exact match found
+                    if ($diff == 0) {
+                        $matched_size = $display_size;
+                        break;
+                    }
                 }
-                
-                // Daily data
-                $daily_data[$date][$liquor_type]['purchase'][$grouped_size] += $row['purchase'];
-                $daily_data[$date][$liquor_type]['sales'][$grouped_size] += $row['sales'];
-                $daily_data[$date][$liquor_type]['closing'][$grouped_size] += $row['closing'];
-                
-                // Totals
-                $totals[$liquor_type]['purchase'][$grouped_size] += $row['purchase'];
-                $totals[$liquor_type]['sales'][$grouped_size] += $row['sales'];
-                $totals[$liquor_type]['closing'][$grouped_size] += $row['closing'];
             }
+            
+            // If no exact match found, use the closest size
+            if (!$matched_size && $closest_size) {
+                $matched_size = $closest_size;
+                
+                // Log for debugging (optional)
+                error_log("Item {$item_code} ({$item['details']}) with volume {$volume} ML matched to closest size {$closest_size} (diff: {$closest_diff})");
+            }
+            
+            // If still no match, skip this item
+            if (!$matched_size) {
+                error_log("Item {$item_code} with volume {$volume} ML could not be matched to any size in category {$liquor_type}");
+                continue;
+            }
+            
+            // For opening balance (first date only)
+            if ($date == $from_date) {
+                $opening_balance_data[$liquor_type][$matched_size] += $row['opening'];
+            }
+            
+            // Daily data
+            $daily_data[$date][$liquor_type]['purchase'][$matched_size] += $row['purchase'];
+            $daily_data[$date][$liquor_type]['sales'][$matched_size] += $row['sales'];
+            $daily_data[$date][$liquor_type]['closing'][$matched_size] += $row['closing'];
+            
+            // Totals
+            $totals[$liquor_type]['purchase'][$matched_size] += $row['purchase'];
+            $totals[$liquor_type]['sales'][$matched_size] += $row['sales'];
+            $totals[$liquor_type]['closing'][$matched_size] += $row['closing'];
         }
         
         $stockStmt->close();

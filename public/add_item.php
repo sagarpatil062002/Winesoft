@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $category_code = trim($_POST['category_code'] ?? '');
     $class_code = trim($_POST['class_code'] ?? '');
     $subclass_code = trim($_POST['subclass_code'] ?? '');
-    $size_code = trim($_POST['size_code'] ?? '');
+    $size_code = trim($_POST['size_code'] ?? ''); // This will now save to SIZE_CODE column
     $pprice = floatval($_POST['pprice'] ?? 0);
     $bprice = floatval($_POST['bprice'] ?? 0);
     $mprice = floatval($_POST['mprice'] ?? 0);
@@ -152,13 +152,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $opening_balance = intval($_POST['opening_balance'] ?? 0);
     $liq_flag = $mode;
 
-    // Get names for display
+    // Get names for display and hidden fields
     if (!empty($category_code)) {
         $stmt = $conn->prepare("SELECT CATEGORY_NAME FROM tblcategory WHERE CATEGORY_CODE = ?");
         $stmt->bind_param("s", $category_code);
         $stmt->execute();
         $result = $stmt->get_result();
-        if ($result->num_rows > 0) $category_name = $result->fetch_assoc()['CATEGORY_NAME'];
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $category_name = $row['CATEGORY_NAME'];
+        }
         $stmt->close();
     }
     
@@ -167,7 +170,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("s", $class_code);
         $stmt->execute();
         $result = $stmt->get_result();
-        if ($result->num_rows > 0) $class_name = $result->fetch_assoc()['CLASS_NAME'];
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $class_name = $row['CLASS_NAME'];
+        }
         $stmt->close();
     }
     
@@ -176,23 +182,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("s", $subclass_code);
         $stmt->execute();
         $result = $stmt->get_result();
-        if ($result->num_rows > 0) $subclass_name = $result->fetch_assoc()['SUBCLASS_NAME'];
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $subclass_name = $row['SUBCLASS_NAME'];
+        }
         $stmt->close();
     }
     
     if (!empty($size_code)) {
-        $stmt = $conn->prepare("SELECT SIZE_DESC FROM tblsize WHERE SIZE_CODE = ?");
+        $stmt = $conn->prepare("SELECT SIZE_DESC, OLD_ITEM_GROUP FROM tblsize WHERE SIZE_CODE = ?");
         $stmt->bind_param("s", $size_code);
         $stmt->execute();
         $result = $stmt->get_result();
-        if ($result->num_rows > 0) $size_desc = $result->fetch_assoc()['SIZE_DESC'];
+        if ($result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            $size_desc = $row['SIZE_DESC'];
+            // If size is selected, use its item group
+            if (!empty($row['OLD_ITEM_GROUP'])) {
+                $item_group_from_size = $row['OLD_ITEM_GROUP'];
+            }
+        }
         $stmt->close();
     }
 
-    // Get the class code from the selected class (not auto-detected)
+    // Get the OLD_CLASS_CODE from tblclass_new
     $class = ''; // This will be the single-letter class code (W, V, D, etc.)
     if (!empty($class_code)) {
-        // Get the OLD_CLASS_CODE from tblclass_new
         $stmt = $conn->prepare("SELECT OLD_CLASS_CODE FROM tblclass_new WHERE CLASS_CODE = ?");
         $stmt->bind_param("s", $class_code);
         $stmt->execute();
@@ -236,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else if ($code === '' || $details === '' || $category_code === '' || $class_code === '' || $subclass_code === '') {
         $error = "Item Code, Item Name, Category, Class, and Subclass are required.";
     } else {
-        // Get ITEM_GROUP from selected subclass
+        // Get ITEM_GROUP from selected subclass (default)
         $item_group = 'O'; // Default to Others
         if (!empty($subclass_code)) {
             $stmt = $conn->prepare("SELECT OLD_ITEM_GROUP FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1");
@@ -248,6 +263,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item_group = $row['OLD_ITEM_GROUP'];
             }
             $stmt->close();
+        }
+        
+        // Override with size's item group if size is selected and has item group
+        if (!empty($size_code) && isset($item_group_from_size) && !empty($item_group_from_size)) {
+            $item_group = $item_group_from_size;
         }
 
         // For SUB_CLASS, use the first character of subclass or a default
@@ -263,19 +283,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->begin_transaction();
         
         try {
-            // Insert into tblitemmaster
+            // Insert into tblitemmaster with category, class, subclass, and size IDs
+            // Note: Using SIZE_CODE column (not size_id) as per database structure
             $sql = "INSERT INTO tblitemmaster 
-                (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, BARCODE, LIQ_FLAG) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                (CODE, Print_Name, DETAILS, DETAILS2, CLASS, SUB_CLASS, ITEM_GROUP, 
+                 PPRICE, BPRICE, MPRICE, RPRICE, BARCODE, LIQ_FLAG,
+                 CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            
             $stmt = $conn->prepare($sql);
             if (!$stmt) {
                 throw new Exception("Prepare failed: " . $conn->error);
             }
             
+            // Bind parameters - note: 17 parameters total
             $stmt->bind_param(
-                "sssssssddddss",
-                $code, $Print_Name, $details, $details2, $class, $subClassField, $item_group,
-                $pprice, $bprice, $mprice, $RPRICE, $BARCODE, $liq_flag
+                "sssssssddddssssss",
+                $code, 
+                $Print_Name, 
+                $details, 
+                $details2, 
+                $class, 
+                $subClassField, 
+                $item_group,
+                $pprice, 
+                $bprice, 
+                $mprice, 
+                $RPRICE, 
+                $BARCODE, 
+                $liq_flag,
+                $category_code, 
+                $class_code, 
+                $subclass_code, 
+                $size_code  // This now correctly maps to SIZE_CODE column
             );
 
             if (!$stmt->execute()) {
@@ -503,6 +543,15 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
             border: 1px solid #3498db;
             font-weight: 500;
         }
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+        .size-info {
+            font-size: 0.85rem;
+            color: #28a745;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -561,7 +610,7 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
 
                 <!-- Item Code -->
                 <div class="col-md-3">
-                    <label for="code" class="form-label">Item Code *</label>
+                    <label for="code" class="form-label required-field">Item Code</label>
                     <input type="text" id="code" name="code" class="form-control"
                            value="<?= htmlspecialchars($code) ?>" required>
                 </div>
@@ -575,7 +624,7 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
 
                 <!-- Item Name -->
                 <div class="col-md-3">
-                    <label for="details" class="form-label">Item Name *</label>
+                    <label for="details" class="form-label required-field">Item Name</label>
                     <input type="text" id="details" name="details" class="form-control"
                            value="<?= htmlspecialchars($details) ?>" required>
                 </div>
@@ -607,7 +656,7 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                     <div class="row g-3">
                         <!-- Category -->
                         <div class="col-md-3">
-                            <label for="category_code" class="form-label">Category *</label>
+                            <label for="category_code" class="form-label required-field">Category</label>
                             <div class="custom-dropdown">
                                 <select id="category_code" name="category_code" class="form-select" required
                                         onchange="loadClasses(this.value)">
@@ -624,7 +673,7 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
 
                         <!-- Class -->
                         <div class="col-md-3">
-                            <label for="class_code" class="form-label">Class *</label>
+                            <label for="class_code" class="form-label required-field">Class</label>
                             <div class="custom-dropdown">
                                 <select id="class_code" name="class_code" class="form-select" required
                                         onchange="updateSelectedClass(); loadSubclasses(this.value)">
@@ -640,10 +689,10 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
 
                         <!-- Subclass -->
                         <div class="col-md-3">
-                            <label for="subclass_code" class="form-label">Subclass *</label>
+                            <label for="subclass_code" class="form-label required-field">Subclass</label>
                             <div class="custom-dropdown">
                                 <select id="subclass_code" name="subclass_code" class="form-select" required
-                                        onchange="loadSizes(this.value)">
+                                        onchange="loadSizes(this.value); updateSubclassName(this)">
                                     <option value="">-- Select Subclass --</option>
                                     <?php if (!empty($subclass_code)): ?>
                                         <option value="<?= htmlspecialchars($subclass_code) ?>" selected>
@@ -658,7 +707,8 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                         <div class="col-md-3">
                             <label for="size_code" class="form-label">Size (Optional)</label>
                             <div class="custom-dropdown">
-                                <select id="size_code" name="size_code" class="form-select">
+                                <select id="size_code" name="size_code" class="form-select"
+                                        onchange="updateSizeDesc(this)">
                                     <option value="">-- Select Size --</option>
                                     <?php if (!empty($size_code)): ?>
                                         <option value="<?= htmlspecialchars($size_code) ?>" selected>
@@ -666,6 +716,11 @@ function updateItemStockAllTables($conn, $comp_id, $item_code, $liqFlag, $openin
                                         </option>
                                     <?php endif; ?>
                                 </select>
+                            </div>
+                            <div id="selected_size_display" class="size-info">
+                                <?php if (!empty($size_desc)): ?>
+                                    Selected: <?= htmlspecialchars($size_desc) ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -739,8 +794,37 @@ function updateSelectedClass() {
         const selectedOption = classSelect.options[classSelect.selectedIndex];
         selectedClassDisplay.textContent = selectedOption.textContent;
         selectedClassDisplay.classList.remove('text-muted');
+        
+        // Update hidden field
+        document.getElementById('class_name').value = selectedOption.textContent;
     } else {
         selectedClassDisplay.innerHTML = '<span class="text-muted">Select Class to see here</span>';
+        document.getElementById('class_name').value = '';
+    }
+}
+
+// Update subclass name hidden field
+function updateSubclassName(selectElement) {
+    if (selectElement.value) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        document.getElementById('subclass_name').value = selectedOption.textContent;
+    } else {
+        document.getElementById('subclass_name').value = '';
+    }
+}
+
+// Update size description hidden field and display
+function updateSizeDesc(selectElement) {
+    const sizeDisplay = document.getElementById('selected_size_display');
+    
+    if (selectElement.value) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        document.getElementById('size_desc').value = selectedOption.textContent;
+        sizeDisplay.innerHTML = 'Selected: ' + selectedOption.textContent;
+        sizeDisplay.style.color = '#28a745';
+    } else {
+        document.getElementById('size_desc').value = '';
+        sizeDisplay.innerHTML = '';
     }
 }
 
@@ -750,13 +834,22 @@ function loadClasses(categoryCode) {
         document.getElementById('class_code').innerHTML = '<option value="">-- Select Class --</option>';
         document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
         updateSelectedClass();
+        
+        // Update hidden field for category name
+        document.getElementById('category_name').value = '';
         return;
     }
 
     // Show loading
     const classSelect = document.getElementById('class_code');
     classSelect.innerHTML = '<option value="" class="dropdown-loading">Loading...</option>';
+    
+    // Update hidden field for category name
+    const categorySelect = document.getElementById('category_code');
+    const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
+    document.getElementById('category_name').value = selectedCategoryOption.textContent;
     
     fetch('add_item.php?ajax=get_classes&category=' + categoryCode + '&mode=<?= $mode ?>')
         .then(response => response.json())
@@ -788,6 +881,9 @@ function loadClasses(categoryCode) {
             // Clear subclass and size dropdowns
             document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
             document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+            document.getElementById('selected_size_display').innerHTML = '';
+            document.getElementById('subclass_name').value = '';
+            document.getElementById('size_desc').value = '';
         })
         .catch(error => {
             console.error('Error loading classes:', error);
@@ -801,6 +897,8 @@ function loadSubclasses(classCode) {
     if (!classCode) {
         document.getElementById('subclass_code').innerHTML = '<option value="">-- Select Subclass --</option>';
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
+        document.getElementById('subclass_name').value = '';
         return;
     }
 
@@ -825,32 +923,43 @@ function loadSubclasses(classCode) {
                     
                     if (selectedClass === 'Fermented Beer' && subclass.SUBCLASS_NAME === 'Fermented Beer') {
                         option.selected = true;
+                        document.getElementById('subclass_name').value = subclass.SUBCLASS_NAME;
                         // Trigger size loading
                         setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
                     }
                     // Auto-select "Indian" for "Indian" class in Wine category
                     else if (selectedClass === 'Indian' && subclass.SUBCLASS_NAME === 'Indian') {
                         option.selected = true;
+                        document.getElementById('subclass_name').value = subclass.SUBCLASS_NAME;
                         // Trigger size loading
                         setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
                     }
                     // Auto-select same name for Country Liquor
                     else if (selectedClass === 'Country Liquor' && subclass.SUBCLASS_NAME === 'Country Liquor') {
                         option.selected = true;
+                        document.getElementById('subclass_name').value = subclass.SUBCLASS_NAME;
                         // Trigger size loading
                         setTimeout(() => loadSizes(subclass.SUBCLASS_CODE), 100);
                     }
                     
                     subclassSelect.appendChild(option);
                 });
+                
+                // If no subclass selected, clear hidden field
+                if (!subclassSelect.value) {
+                    document.getElementById('subclass_name').value = '';
+                }
             }
             
             // Clear size dropdown
             document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+            document.getElementById('selected_size_display').innerHTML = '';
+            document.getElementById('size_desc').value = '';
         })
         .catch(error => {
             console.error('Error loading subclasses:', error);
             subclassSelect.innerHTML = '<option value="">-- Select Subclass --</option>';
+            document.getElementById('subclass_name').value = '';
         });
 }
 
@@ -858,6 +967,7 @@ function loadSubclasses(classCode) {
 function loadSizes(subclassCode) {
     if (!subclassCode) {
         document.getElementById('size_code').innerHTML = '<option value="">-- Select Size --</option>';
+        document.getElementById('selected_size_display').innerHTML = '';
         return;
     }
 
@@ -878,10 +988,16 @@ function loadSizes(subclassCode) {
                     sizeSelect.appendChild(option);
                 });
             }
+            
+            // Clear size description
+            document.getElementById('size_desc').value = '';
+            document.getElementById('selected_size_display').innerHTML = '';
         })
         .catch(error => {
             console.error('Error loading sizes:', error);
             sizeSelect.innerHTML = '<option value="">-- Select Size --</option>';
+            document.getElementById('size_desc').value = '';
+            document.getElementById('selected_size_display').innerHTML = '';
         });
 }
 
@@ -891,37 +1007,65 @@ document.addEventListener('DOMContentLoaded', function() {
     const classCode = document.getElementById('class_code').value;
     const subclassCode = document.getElementById('subclass_code').value;
     const sizeCode = document.getElementById('size_code').value;
+    const sizeDesc = document.getElementById('size_desc').value;
     
     // Update selected class display
     updateSelectedClass();
     
+    // Update size display if size is selected
+    if (sizeCode && sizeDesc) {
+        const sizeDisplay = document.getElementById('selected_size_display');
+        sizeDisplay.innerHTML = 'Selected: ' + sizeDesc;
+        sizeDisplay.style.color = '#28a745';
+    }
+    
     // If we have category code but no class code loaded, load classes
     if (categoryCode && (!classCode || document.getElementById('class_code').options.length <= 2)) {
-        loadClasses(categoryCode);
-        
-        // If we have class code, set it after loading
-        if (classCode) {
-            setTimeout(() => {
-                document.getElementById('class_code').value = classCode;
-                updateSelectedClass();
-                loadSubclasses(classCode);
-                
-                // If we have subclass code, set it after loading
-                if (subclassCode) {
-                    setTimeout(() => {
-                        document.getElementById('subclass_code').value = subclassCode;
-                        loadSizes(subclassCode);
-                        
-                        // If we have size code, set it after loading
-                        if (sizeCode) {
-                            setTimeout(() => {
-                                document.getElementById('size_code').value = sizeCode;
-                            }, 100);
-                        }
-                    }, 100);
-                }
-            }, 100);
-        }
+        // Set a timeout to ensure DOM is ready
+        setTimeout(() => {
+            loadClasses(categoryCode);
+            
+            // If we have class code, set it after loading
+            if (classCode) {
+                setTimeout(() => {
+                    document.getElementById('class_code').value = classCode;
+                    updateSelectedClass();
+                    loadSubclasses(classCode);
+                    
+                    // If we have subclass code, set it after loading
+                    if (subclassCode) {
+                        setTimeout(() => {
+                            document.getElementById('subclass_code').value = subclassCode;
+                            
+                            // Update subclass hidden field
+                            const subclassSelect = document.getElementById('subclass_code');
+                            if (subclassSelect.value) {
+                                const selectedOption = subclassSelect.options[subclassSelect.selectedIndex];
+                                document.getElementById('subclass_name').value = selectedOption.textContent;
+                            }
+                            
+                            loadSizes(subclassCode);
+                            
+                            // If we have size code, set it after loading
+                            if (sizeCode) {
+                                setTimeout(() => {
+                                    document.getElementById('size_code').value = sizeCode;
+                                    // Update size_desc hidden field and display
+                                    const sizeSelect = document.getElementById('size_code');
+                                    if (sizeSelect.value) {
+                                        const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+                                        document.getElementById('size_desc').value = selectedOption.textContent;
+                                        const sizeDisplay = document.getElementById('selected_size_display');
+                                        sizeDisplay.innerHTML = 'Selected: ' + selectedOption.textContent;
+                                        sizeDisplay.style.color = '#28a745';
+                                    }
+                                }, 100);
+                            }
+                        }, 100);
+                    }
+                }, 100);
+            }
+        }, 100);
     }
 });
 

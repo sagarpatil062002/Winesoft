@@ -519,14 +519,19 @@ function createArchiveTable($conn, $sourceTable, $archiveTable, $month) {
             throw new Exception("Failed to create archive table structure: " . $conn->error);
         }
         
-        $copyQuery = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}`";
-        if (!$conn->query($copyQuery)) {
+        $copyQuery = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}` WHERE STK_MONTH = ?";
+        $stmt = $conn->prepare($copyQuery);
+        $stmt->bind_param("s", $month);
+        if (!$stmt->execute()) {
             $dropQuery = "DROP TABLE IF EXISTS `{$archiveTable}`";
             $conn->query($dropQuery);
-            throw new Exception("Failed to copy data to archive: " . $conn->error);
+            throw new Exception("Failed to copy data to archive: " . $stmt->error);
         }
         
-        $copiedRows = $conn->affected_rows;
+        $copiedRows = $stmt->affected_rows;
+        $stmt->close();
+        
+        error_log("Created archive table {$archiveTable} with {$copiedRows} rows for month {$month}");
         
         return [
             'success' => true,
@@ -536,6 +541,7 @@ function createArchiveTable($conn, $sourceTable, $archiveTable, $month) {
         ];
         
     } catch (Exception $e) {
+        error_log("Archive creation failed: " . $e->getMessage());
         return [
             'success' => false,
             'error' => $e->getMessage()
@@ -841,6 +847,7 @@ function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
         $closingData = getLastDayClosing($conn, $tableName, $previousMonth);
         
         if (empty($closingData)) {
+            error_log("No closing stock data found for previous month {$previousMonth}");
             return [
                 'success' => false,
                 'error' => "No closing stock data found for previous month {$previousMonth}",
@@ -851,55 +858,118 @@ function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
         $totalItems = count($closingData);
         $clearColumnsQuery = buildDayColumnsClearingQuery($conn, $tableName, $newMonth);
         
-        $updateCount = 0;
+        // First, check if records for new month already exist
+        $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
+        $checkStmt->bind_param("s", $newMonth);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        $checkRow = $checkResult->fetch_assoc();
+        $checkStmt->close();
+        
+        if ($checkRow['count'] > 0) {
+            error_log("Records for new month {$newMonth} already exist, skipping initialization");
+            return [
+                'success' => true,
+                'message' => 'Records already exist',
+                'updated_items' => 0,
+                'total_items_found' => $totalItems
+            ];
+        }
+        
+        // Insert new records for each item
+        $insertCount = 0;
         $errorCount = 0;
-        $itemDetails = [];
         
         foreach ($closingData as $itemCode => $closingStock) {
-            $updateQuery = "
-                UPDATE `{$tableName}` 
-                SET 
-                    STK_MONTH = ?,
-                    DAY_01_OPEN = ?,
-                    DAY_01_PURCHASE = 0,
-                    DAY_01_SALES = 0,
-                    DAY_01_CLOSING = ?,
-                    {$clearColumnsQuery}
-                WHERE STK_MONTH = ? 
-                AND ITEM_CODE = ?
-            ";
+            // Get item details from existing record
+            $itemStmt = $conn->prepare("
+                SELECT ITEM_NAME, CLASS, `GROUP` 
+                FROM `{$tableName}` 
+                WHERE STK_MONTH = ? AND ITEM_CODE = ? 
+                LIMIT 1
+            ");
+            $itemStmt->bind_param("ss", $previousMonth, $itemCode);
+            $itemStmt->execute();
+            $itemResult = $itemStmt->get_result();
+            $itemRow = $itemResult->fetch_assoc();
+            $itemStmt->close();
             
-            $updateStmt = $conn->prepare($updateQuery);
-            $updateStmt->bind_param("sdsss", $newMonth, $closingStock, $closingStock, $previousMonth, $itemCode);
+            if (!$itemRow) {
+                error_log("Could not find item details for {$itemCode} in previous month");
+                continue;
+            }
             
-            if ($updateStmt->execute()) {
-                if ($updateStmt->affected_rows > 0) {
-                    $updateCount++;
-                    $itemDetails[$itemCode] = ['success' => true, 'stock' => $closingStock];
-                } else {
-                    $errorCount++;
-                    $itemDetails[$itemCode] = ['success' => false, 'error' => 'No rows affected'];
+            // Build INSERT query
+            $columns = ["STK_MONTH", "ITEM_CODE", "ITEM_NAME", "CLASS", "`GROUP`", "DAY_01_OPEN", "DAY_01_PURCHASE", "DAY_01_SALES", "DAY_01_CLOSING"];
+            $values = ["?", "?", "?", "?", "?", "?", "0", "0", "?"];
+            
+            // Add cleared columns
+            for ($day = 2; $day <= 31; $day++) {
+                if (doesDayColumnsExist($conn, $tableName, $day)) {
+                    $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                    $columns[] = "DAY_{$dayPadded}_OPEN";
+                    $columns[] = "DAY_{$dayPadded}_PURCHASE";
+                    $columns[] = "DAY_{$dayPadded}_SALES";
+                    $columns[] = "DAY_{$dayPadded}_CLOSING";
+                    $values[] = "0";
+                    $values[] = "0";
+                    $values[] = "0";
+                    $values[] = "0";
+                }
+            }
+            
+            $insertQuery = "INSERT INTO `{$tableName}` (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $values) . ")";
+            $insertStmt = $conn->prepare($insertQuery);
+            
+            // Bind parameters
+            $types = "sssssd";
+            $params = [$newMonth, $itemCode, $itemRow['ITEM_NAME'], $itemRow['CLASS'], $itemRow['GROUP'], $closingStock, $closingStock];
+            
+            // Add zeros for other days
+            for ($day = 2; $day <= 31; $day++) {
+                if (doesDayColumnsExist($conn, $tableName, $day)) {
+                    $types .= "dddd";
+                    $params[] = 0;
+                    $params[] = 0;
+                    $params[] = 0;
+                    $params[] = 0;
+                }
+            }
+            
+            // Dynamically bind parameters
+            $bindParams = [$types];
+            for ($i = 0; $i < count($params); $i++) {
+                $bindParams[] = &$params[$i];
+            }
+            
+            call_user_func_array([$insertStmt, 'bind_param'], $bindParams);
+            
+            if ($insertStmt->execute()) {
+                if ($insertStmt->affected_rows > 0) {
+                    $insertCount++;
                 }
             } else {
                 $errorCount++;
-                $itemDetails[$itemCode] = ['success' => false, 'error' => $updateStmt->error];
+                error_log("Failed to insert item {$itemCode}: " . $insertStmt->error);
             }
-            $updateStmt->close();
+            $insertStmt->close();
         }
+        
+        error_log("Initialized new month {$newMonth}: inserted {$insertCount} items, errors: {$errorCount}");
         
         return [
             'success' => true,
-            'updated_items' => $updateCount,
+            'updated_items' => $insertCount,
             'error_items' => $errorCount,
             'total_items_found' => $totalItems,
             'previous_month' => $previousMonth,
             'new_month' => $newMonth,
             'previous_month_days' => getDaysInMonth($previousMonth),
-            'new_month_days' => getDaysInMonth($newMonth),
-            'item_details' => $itemDetails
+            'new_month_days' => getDaysInMonth($newMonth)
         ];
         
     } catch (Exception $e) {
+        error_log("Month initialization failed: " . $e->getMessage());
         return [
             'success' => false,
             'error' => $e->getMessage()
@@ -937,6 +1007,8 @@ function ensureDay1Data($conn, $tableName, $month) {
                 $affectedRows = $updateStmt->affected_rows;
                 $updateStmt->close();
                 
+                error_log("Ensured Day 1 data for {$month}: updated {$affectedRows} rows");
+                
                 return [
                     'success' => true,
                     'affected_rows' => $affectedRows,
@@ -951,6 +1023,7 @@ function ensureDay1Data($conn, $tableName, $month) {
         ];
         
     } catch (Exception $e) {
+        error_log("Ensure Day 1 data failed: " . $e->getMessage());
         return [
             'success' => false,
             'error' => $e->getMessage()
@@ -959,7 +1032,7 @@ function ensureDay1Data($conn, $tableName, $month) {
 }
 
 // =============================================================================
-// TRANSITION CHECK AND EXECUTION
+// TRANSITION CHECK AND EXECUTION - FIXED VERSION
 // =============================================================================
 
 function checkMonthTransitionWithGaps($conn) {
@@ -1011,11 +1084,14 @@ function checkMonthTransitionWithGaps($conn) {
                 $currentMonthGaps = $currentGapInfo;
             }
 
+            // FIXED: Correct logic for transition detection
             $needsTransition = false;
-            if ($prevMonthRow['count'] > 0 && !$currentMonthRow['count'] > 0) {
+            if ($prevMonthRow['count'] > 0 && $currentMonthRow['count'] == 0) {
                 $needsTransition = true;
+                error_log("Month transition needed: Previous month {$previousMonth} exists, current month {$currentMonth} missing");
             } elseif ($currentMonthRow['count'] > 0 && $hasCurrentGaps) {
                 $needsTransition = true;
+                error_log("Gap filling needed for current month {$currentMonth}");
             }
 
             $transitionInfo = [
@@ -1038,6 +1114,13 @@ function checkMonthTransitionWithGaps($conn) {
                 'current_month_days' => getDaysInMonth($currentMonth),
                 'previous_month_days' => getDaysInMonth($previousMonth)
             ];
+            
+            // Log the transition info for debugging
+            error_log("Transition check: Table={$tableName}, Prev month exists=" . ($prevMonthRow['count'] > 0 ? 'Yes' : 'No') . 
+                     ", Curr month exists=" . ($currentMonthRow['count'] > 0 ? 'Yes' : 'No') . 
+                     ", Needs transition=" . ($needsTransition ? 'Yes' : 'No'));
+        } else {
+            error_log("Table {$tableName} does not exist");
         }
     }
 
@@ -1066,6 +1149,8 @@ function executeCompleteMonthTransition($conn) {
     
     $tableName = $companyTables[$currentCompanyId];
     
+    error_log("Starting month transition for company {$currentCompanyId}, table {$tableName}");
+    
     try {
         // STEP 0: ENSURE MAIN TABLE EXISTS
         $ensureTableResult = ensureMainTableExists($conn, $tableName);
@@ -1073,7 +1158,7 @@ function executeCompleteMonthTransition($conn) {
             throw new Exception("Failed to ensure main table exists: " . $ensureTableResult['error']);
         }
         
-        // STEP 0.5: RESTORE PREVIOUS MONTH DATA IF NEEDED
+        // STEP 0.5: CHECK PREVIOUS MONTH DATA
         $prevMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
         $prevMonthStmt->bind_param("s", $previousMonth);
         $prevMonthStmt->execute();
@@ -1083,13 +1168,11 @@ function executeCompleteMonthTransition($conn) {
         
         $restoreResult = null;
         if ($prevMonthRow['count'] == 0) {
+            error_log("Previous month {$previousMonth} data missing, attempting to restore from archive");
             $restoreResult = restorePreviousMonthFromArchive($conn, $tableName, $previousMonth);
             if (!$restoreResult['success']) {
-                // Try to restore current month if previous month doesn't exist
-                $restoreResult = restorePreviousMonthFromArchive($conn, $tableName, $currentMonth);
-                if (!$restoreResult['success']) {
-                    throw new Exception("No data found for previous month and no archive available");
-                }
+                error_log("Failed to restore previous month: " . ($restoreResult['error'] ?? 'Unknown error'));
+                // Don't throw exception yet, try to continue
             }
         }
         
@@ -1098,6 +1181,7 @@ function executeCompleteMonthTransition($conn) {
         $transitionInfo = checkMonthTransitionWithGaps($conn);
         
         if ($transitionInfo && $transitionInfo['has_previous_gaps'] && !empty($transitionInfo['previous_gap_info']['gaps'])) {
+            error_log("Filling gaps in previous month {$previousMonth}");
             $previousGapFillResult = autoPopulateMonthGaps(
                 $conn, 
                 $tableName, 
@@ -1107,27 +1191,44 @@ function executeCompleteMonthTransition($conn) {
             );
         }
         
-        // STEP 2: Create archive table for previous month
+        // STEP 2: Create archive table for previous month (if data exists)
+        $archiveResult = ['success' => false, 'error' => 'No data to archive'];
         $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
-        $archiveResult = createArchiveTable($conn, $tableName, $archiveTable, $previousMonth);
+        
+        $prevMonthDataCheck = $conn->query("SELECT COUNT(*) as cnt FROM `{$tableName}` WHERE STK_MONTH = '{$previousMonth}'");
+        $prevDataRow = $prevMonthDataCheck->fetch_assoc();
+        
+        if ($prevDataRow && $prevDataRow['cnt'] > 0) {
+            error_log("Creating archive for previous month {$previousMonth}");
+            $archiveResult = createArchiveTable($conn, $tableName, $archiveTable, $previousMonth);
+        } else {
+            error_log("No data to archive for previous month {$previousMonth}");
+        }
         
         // STEP 3: Initialize new month with previous month's closing stock
-        $initResult = ['success' => false, 'error' => 'Archive creation failed'];
-        if ($archiveResult['success'] || ($archiveResult['error'] && strpos($archiveResult['error'], 'already exists') !== false)) {
-            $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
+        $initResult = ['success' => false, 'error' => 'Initialization failed'];
+        
+        // Check if current month already has data
+        $currMonthCheck = $conn->query("SELECT COUNT(*) as cnt FROM `{$tableName}` WHERE STK_MONTH = '{$currentMonth}'");
+        $currDataRow = $currMonthCheck->fetch_assoc();
+        
+        if ($currDataRow && $currDataRow['cnt'] > 0) {
+            error_log("Current month {$currentMonth} already has data, skipping initialization");
+            $initResult = ['success' => true, 'message' => 'Data already exists', 'updated_items' => 0];
         } else {
-            // Try to initialize even if archive creation failed but table might already exist
+            error_log("Initializing new month {$currentMonth} from previous month {$previousMonth}");
             $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
         }
         
         // STEP 4: Fill gaps in current month if any
         $currentGapFillResult = ['success' => true, 'message' => 'No current month gaps to fill', 'gaps_filled' => 0];
         
-        sleep(1);
+        sleep(1); // Small delay to ensure data is written
         
         $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
         
         if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] > 0) {
+            error_log("Filling gaps in current month {$currentMonth}");
             $currentGapFillResult = autoPopulateMonthGaps(
                 $conn, 
                 $tableName, 
@@ -1138,6 +1239,7 @@ function executeCompleteMonthTransition($conn) {
         } else if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] === 0) {
             $firstGapDay = min($currentGapInfo['gaps']);
             if ($firstGapDay === 1) {
+                error_log("Ensuring Day 1 data for current month {$currentMonth}");
                 $ensureDay1Result = ensureDay1Data($conn, $tableName, $currentMonth);
                 if ($ensureDay1Result['success']) {
                     sleep(1);
@@ -1154,6 +1256,8 @@ function executeCompleteMonthTransition($conn) {
                 }
             }
         }
+        
+        error_log("Month transition completed successfully");
         
         return [
             'success' => true,
@@ -1459,6 +1563,10 @@ if (isset($_POST['complete_month_transition']) && $_POST['complete_month_transit
                 }
             }
             
+            if (isset($transitionResults['init_result']['updated_items']) && $transitionResults['init_result']['updated_items'] > 0) {
+                $successMsg .= " | New month: " . $transitionResults['init_result']['updated_items'] . " items";
+            }
+            
             $_SESSION['transition_message'] = $successMsg;
             $_SESSION['message_type'] = 'success';
         } else {
@@ -1492,12 +1600,13 @@ if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['
                 $_SESSION['transition_message'] = $successMsg;
                 $_SESSION['message_type'] = 'success';
                 $_SESSION[$transitionKey] = true;
+                
+                // Refresh transition info after successful auto transition
+                $transitionInfo = checkMonthTransitionWithGaps($conn);
             }
         } catch (Exception $e) {
             error_log("Automatic month transition exception: " . $e->getMessage());
         }
-        
-        $transitionInfo = checkMonthTransitionWithGaps($conn);
     }
 }
 
@@ -1579,14 +1688,28 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
     // Only show if auto processing didn't run or failed
     $transitionKey = 'auto_transition_' . $transitionInfo['current_month'] . '_' . date('Y-m-d');
     if (!isset($_SESSION[$transitionKey])) {
-        // Auto processing hasn't been attempted yet, don't show card yet
-        // Wait for auto processing to try first
+        // Auto processing hasn't been attempted yet on this page load
+        // But we're at the end of the script, so if we got here and still need transition,
+        // it means auto processing either didn't run or failed silently
+        if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && !$autoTransitionResults['complete_process']) {
+            $show_transition_card = true;
+        } else if (!$autoTransitionResults) {
+            // Auto transition wasn't attempted (maybe due to condition) but we still need it
+            $show_transition_card = true;
+        }
     } else {
         // Auto processing was attempted, check if it succeeded
         if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && !$autoTransitionResults['complete_process']) {
             $show_transition_card = true;
         }
     }
+}
+
+// Debug logging
+error_log("Dashboard loaded - Show transition card: " . ($show_transition_card ? 'Yes' : 'No'));
+if ($transitionInfo) {
+    error_log("Transition info - Needs transition: " . ($transitionInfo['needs_transition'] ? 'Yes' : 'No') . 
+              ", Needs gap fill: " . ($transitionInfo['needs_current_gap_fill'] ? 'Yes' : 'No'));
 }
 ?>
 <!DOCTYPE html>
@@ -1897,7 +2020,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                             <div>
                                 <h4 class="mb-0">
                                     <i class="fas fa-exclamation-triangle"></i>
-                                    Month Transition Failed - Manual Action Required
+                                    Month Transition Required
                                 </h4>
                                 <div class="mt-2">
                                     <strong>Previous Month:</strong> <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'N/A'; ?> 
@@ -1911,24 +2034,29 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                             <form method="POST" id="transitionForm" style="display: inline;">
                                 <input type="hidden" name="complete_month_transition" value="1">
                                 <button type="submit" class="btn btn-warning btn-transition">
-                                    <i class="fas fa-redo"></i> Manual Re-process
+                                    <i class="fas fa-redo"></i> Process Month Transition
                                 </button>
                             </form>
                         </div>
                         
-                        <div class="alert alert-danger">
-                            <i class="fas fa-times-circle"></i>
-                            <strong>Automatic Processing Failed:</strong>
-                            The system was unable to automatically complete the month transition.
-                            <?php if($autoTransitionResults && isset($autoTransitionResults['error'])): ?>
-                                <br><small>Error: <?php echo htmlspecialchars($autoTransitionResults['error']); ?></small>
-                            <?php elseif($transitionResults && isset($transitionResults['error'])): ?>
-                                <br><small>Error: <?php echo htmlspecialchars($transitionResults['error']); ?></small>
-                            <?php endif; ?>
+                        <?php if($transitionInfo['needs_transition']): ?>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Month transition needed:</strong> 
+                            The system needs to transition from <?php echo $transitionInfo['previous_month']; ?> to <?php echo $transitionInfo['current_month']; ?>.
                         </div>
+                        <?php endif; ?>
+                        
+                        <?php if($transitionInfo['has_current_gaps']): ?>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Gaps detected in current month:</strong> 
+                            Days <?php echo implode(', ', $transitionInfo['current_gap_info']['gaps']); ?> need to be filled.
+                        </div>
+                        <?php endif; ?>
                         
                         <div class="process-steps">
-                            <h6><i class="fas fa-list-ol"></i> Manual Process Steps:</h6>
+                            <h6><i class="fas fa-list-ol"></i> Process Steps:</h6>
                             
                             <div class="step-item">
                                 <strong>Step 1: Ensure Table Exists</strong>
@@ -1997,7 +2125,7 @@ else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionI
                             <div class="mt-3">
                                 <small class="text-muted">
                                     <i class="fas fa-info-circle"></i> 
-                                    Click "Manual Re-process" to attempt the transition again.
+                                    Click "Process Month Transition" to start the transition process.
                                 </small>
                             </div>
                         </div>

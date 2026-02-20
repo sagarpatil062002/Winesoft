@@ -12,18 +12,212 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php";
+require_once 'license_functions.php'; // Add license functions
 
 // Get company ID from session
 $compID = $_SESSION['CompID'];
+
+// Get company's license type and available classes
+$license_type = getCompanyLicenseType($compID, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
+}
+
+// Cache for hierarchy data
+$hierarchy_cache = [];
+
+/**
+ * Get complete hierarchy information for an item
+ */
+function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
+    global $hierarchy_cache;
+    
+    // Create cache key
+    $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
+    
+    if (isset($hierarchy_cache[$cache_key])) {
+        return $hierarchy_cache[$cache_key];
+    }
+    
+    $hierarchy = [
+        'class_code' => $class_code,
+        'class_name' => '',
+        'subclass_code' => $subclass_code,
+        'subclass_name' => '',
+        'category_code' => '',
+        'category_name' => '',
+        'display_category' => 'OTHER',
+        'display_type' => 'OTHER',
+        'size_code' => $size_code,
+        'size_desc' => '',
+        'ml_volume' => 0,
+        'full_hierarchy' => ''
+    ];
+    
+    try {
+        // Get class and category information
+        if (!empty($class_code)) {
+            $query = "SELECT cn.CLASS_NAME, cn.CATEGORY_CODE, cat.CATEGORY_NAME 
+                      FROM tblclass_new cn
+                      LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+                      WHERE cn.CLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $class_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['class_name'] = $row['CLASS_NAME'];
+                $hierarchy['category_code'] = $row['CATEGORY_CODE'];
+                $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
+                
+                // Map category name to display category
+                $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
+                $display_category = 'OTHER';
+                
+                if ($category_name == 'SPIRIT') {
+                    $display_category = 'SPIRITS';
+                    
+                    // Determine spirit type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'MML';
+                    } else {
+                        $hierarchy['display_type'] = 'IMFL';
+                    }
+                } elseif ($category_name == 'WINE') {
+                    $display_category = 'WINE';
+                    
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED WINE';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'WINE MML';
+                    } else {
+                        $hierarchy['display_type'] = 'INDIAN WINE';
+                    }
+                } elseif ($category_name == 'FERMENTED BEER') {
+                    $display_category = 'FERMENTED BEER';
+                    $hierarchy['display_type'] = 'FERMENTED BEER';
+                } elseif ($category_name == 'MILD BEER') {
+                    $display_category = 'MILD BEER';
+                    $hierarchy['display_type'] = 'MILD BEER';
+                } elseif ($category_name == 'COUNTRY LIQUOR') {
+                    $display_category = 'COUNTRY LIQUOR';
+                    $hierarchy['display_type'] = 'COUNTRY LIQUOR';
+                }
+                
+                $hierarchy['display_category'] = $display_category;
+            }
+            $stmt->close();
+        }
+        
+        // Get subclass information
+        if (!empty($subclass_code)) {
+            $query = "SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $subclass_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['subclass_name'] = $row['SUBCLASS_NAME'];
+            }
+            $stmt->close();
+        }
+        
+        // Get size information
+        if (!empty($size_code)) {
+            $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $size_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['size_desc'] = $row['SIZE_DESC'];
+                $hierarchy['ml_volume'] = (int)($row['ML_VOLUME'] ?? 0);
+            }
+            $stmt->close();
+        }
+        
+        // Build full hierarchy string
+        $parts = [];
+        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
+        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
+        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
+        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
+        
+        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
+        
+    } catch (Exception $e) {
+        error_log("Error in getItemHierarchy: " . $e->getMessage());
+    }
+    
+    $hierarchy_cache[$cache_key] = $hierarchy;
+    return $hierarchy;
+}
+
+/**
+ * Group sizes - volumes above 1000ml are grouped together
+ */
+function getGroupedSizeLabel($volume) {
+    if ($volume >= 1000) {
+        return 'ABOVE 1000 ML';
+    }
+    
+    // Format volume based on size
+    if ($volume >= 1000) {
+        $liters = $volume / 1000;
+        if ($liters == intval($liters)) {
+            return intval($liters) . 'L';
+        } else {
+            return rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
+        }
+    } else {
+        return $volume . ' ML';
+    }
+}
+
+/**
+ * Get volume label (maintains original for exact matching)
+ */
+function getVolumeLabel($volume) {
+    static $volume_label_cache = [];
+    
+    if (isset($volume_label_cache[$volume])) {
+        return $volume_label_cache[$volume];
+    }
+    
+    // Format volume based on size
+    if ($volume >= 1000) {
+        $liters = $volume / 1000;
+        if ($liters == intval($liters)) {
+            $label = intval($liters) . 'L';
+        } else {
+            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
+        }
+    } else {
+        $label = $volume . ' ML';
+    }
+    
+    $volume_label_cache[$volume] = $label;
+    return $label;
+}
 
 // Default values
 $selected_date = isset($_GET['selected_date']) ? $_GET['selected_date'] : date('Y-m-d');
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'Foreign Liquor';
 
 // Fetch company name and license number
-$companyName = "WANGANHAN HOTEL";
-$licenseNo = "FL-II 3";
-$licenseType = "FL-II"; // Default license type
+$companyName = "";
+$licenseNo = "";
 
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
@@ -32,100 +226,106 @@ $companyStmt->execute();
 $companyResult = $companyStmt->get_result();
 if ($row = $companyResult->fetch_assoc()) {
     $companyName = $row['COMP_NAME'];
-    $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : $licenseNo;
-    
-    // Determine license type from license number
-    if (preg_match('/FLIII/i', $licenseNo)) {
-        $licenseType = "FLIII";
-    } elseif (preg_match('/FLBRII/i', $licenseNo)) {
-        $licenseType = "FLBRII";
-    } elseif (preg_match('/FLII/i', $licenseNo)) {
-        $licenseType = "FL-II";
-    }
+    $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : '';
 }
 $companyStmt->close();
 
-// Set register name based on license type
-if ($licenseType === "FLIII") {
-    $registerName = "FLR-6 Gate Register";
-} elseif ($licenseType === "FLBRII") {
-    $registerName = "FLR-5 Gate Register";
-} else {
-    $registerName = "FLR-5 Gate Register"; // Default for FLII
-}
+// Set register name
+$registerName = "FLR-5 Gate Register";
 
-// Function to get base size for grouping
-function getBaseSize($size) {
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize);
-    $baseSize = trim($baseSize);
-
-    // Map specific sizes to display columns
-    $size_mapping = [
-        '170 ML' => '180 ML'
-    ];
-
-    return isset($size_mapping[$baseSize]) ? $size_mapping[$baseSize] : $baseSize;
-}
-
-// Define size columns for each liquor type
-$size_columns_s = [
-    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
-    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
-    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
-    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '170 ML (48)', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96',
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
-    '50 ML (24)', '50 ML (192)'
-];
-$size_columns_w = ['750 ML', '375 ML', '180 ML', '90 ML'];
-$size_columns_fb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-$size_columns_mb = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-
-// For Country Liquor - use Spirits sizes
-$size_columns_country = $size_columns_s;
-
-// Group sizes by base size for each liquor type
-function groupSizes($sizes) {
-    $grouped = [];
-    foreach ($sizes as $size) {
-        $baseSize = getBaseSize($size);
-        if (!isset($grouped[$baseSize])) {
-            $grouped[$baseSize] = [];
-        }
-        $grouped[$baseSize][] = $size;
-    }
-    return $grouped;
-}
-
-$grouped_sizes_s = groupSizes($size_columns_s);
-$grouped_sizes_w = groupSizes($size_columns_w);
-$grouped_sizes_fb = groupSizes($size_columns_fb);
-$grouped_sizes_mb = groupSizes($size_columns_mb);
-$grouped_sizes_country = groupSizes($size_columns_country);
-
-// Get display sizes (base sizes) for each liquor type
-$display_sizes_s = array_keys($grouped_sizes_s);
-$display_sizes_w = array_keys($grouped_sizes_w);
-$display_sizes_fb = array_keys($grouped_sizes_fb);
-$display_sizes_mb = array_keys($grouped_sizes_mb);
-$display_sizes_country = array_keys($grouped_sizes_country);
-
-// Fetch gate register data from tbl_cash_memo_prints with permit details
-$gate_data = [];
-$liquor_summary = [];
-
-// Initialize liquor summary based on mode
+// Define display categories based on mode
 if ($mode == 'Country Liquor') {
-    $liquor_summary['Country Liquor'] = array_fill_keys($display_sizes_country, 0);
+    $display_categories = ['COUNTRY LIQUOR'];
+    $category_display_names = ['COUNTRY LIQUOR' => 'COUNTRY LIQUOR'];
 } else {
-    $liquor_summary['Spirits'] = array_fill_keys($display_sizes_s, 0);
-    $liquor_summary['Wines'] = array_fill_keys($display_sizes_w, 0);
-    $liquor_summary['Fermented Beer'] = array_fill_keys($display_sizes_fb, 0);
-    $liquor_summary['Mild Beer'] = array_fill_keys($display_sizes_mb, 0);
+    $display_categories = [
+        'IMFL',
+        'IMPORTED', 
+        'MML',
+        'INDIAN WINE',
+        'IMPORTED WINE',
+        'WINE MML',
+        'FERMENTED BEER',
+        'MILD BEER'
+    ];
+    $category_display_names = [
+        'IMFL' => 'IMFL',
+        'IMPORTED' => 'IMPORTED',
+        'MML' => 'MML',
+        'INDIAN WINE' => 'INDIAN WINE',
+        'IMPORTED WINE' => 'IMPORTED WINE',
+        'WINE MML' => 'WINE MML',
+        'FERMENTED BEER' => 'FERMENTED BEER',
+        'MILD BEER' => 'MILD BEER'
+    ];
 }
+
+// Define size columns - include ABOVE 1000 ML as a grouped column
+$size_columns_def = [
+    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
+    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+    'ABOVE 1000 ML' // Grouped column for all sizes above 1000ml
+];
+
+// All categories use the same size columns with grouped above 1000ml
+$size_columns = [];
+foreach ($display_categories as $category) {
+    $size_columns[$category] = $size_columns_def;
+}
+
+// Fetch item master data with hierarchy information
+$items = [];
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    
+    if ($mode == 'Country Liquor') {
+        $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                      FROM tblitemmaster 
+                      WHERE CLASS IN ($class_placeholders) AND LIQ_FLAG = 'C'";
+    } else {
+        $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                      FROM tblitemmaster 
+                      WHERE CLASS IN ($class_placeholders)";
+    }
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+    $itemStmt->execute();
+    $itemResult = $itemStmt->get_result();
+    
+    while ($row = $itemResult->fetch_assoc()) {
+        // Get hierarchy information
+        $hierarchy = getItemHierarchy(
+            $row['CLASS_CODE_NEW'], 
+            $row['SUBCLASS_CODE_NEW'], 
+            $row['SIZE_CODE'], 
+            $conn
+        );
+        
+        $items[$row['CODE']] = [
+            'code' => $row['CODE'],
+            'details' => $row['DETAILS'],
+            'details2' => $row['DETAILS2'],
+            'class' => $row['CLASS'],
+            'class_code_new' => $row['CLASS_CODE_NEW'],
+            'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
+            'size_code' => $row['SIZE_CODE'],
+            'liq_flag' => $row['LIQ_FLAG'],
+            'hierarchy' => $hierarchy
+        ];
+    }
+    $itemStmt->close();
+}
+
+// Initialize liquor summary based on categories
+$liquor_summary = [];
+foreach ($display_categories as $category) {
+    $liquor_summary[$category] = array_fill_keys($size_columns_def, 0);
+}
+
+// Fetch gate register data from tbl_cash_memo_prints
+$gate_data = [];
+$total_amount = 0;
 
 $gateQuery = "SELECT
                 cmp.bill_date,
@@ -146,7 +346,6 @@ $gateQuery = "SELECT
               WHERE cmp.comp_id = ?
               AND cmp.bill_date = ?";
 
-// Add mode filter based on permit LIQ_FLAG
 if ($mode == 'Country Liquor') {
     $gateQuery .= " AND (tp.LIQ_FLAG = 'C' OR tp.LIQ_FLAG IS NULL)";
 } else {
@@ -161,12 +360,11 @@ $gateStmt->execute();
 $gateResult = $gateStmt->get_result();
 
 $serial_no = 1;
-$total_amount = 0;
 
 while ($row = $gateResult->fetch_assoc()) {
     $total_amount += $row['total_amount'];
 
-    // Use permit holder name from tblpermit if available, otherwise use customer name
+    // Use permit holder name from tblpermit if available
     $permit_holder_name = $row['permit_holder_name'] ?: $row['customer_name'];
 
     // Format permit validity
@@ -180,36 +378,98 @@ while ($row = $gateResult->fetch_assoc()) {
     // Get permit district
     $permit_district = $row['permit_issue_place'] ?: $row['permit_place'] ?: 'N/A';
 
-    // Process items for liquor summary
-    $items = json_decode($row['items_json'], true);
-    if (is_array($items)) {
-        foreach ($items as $item) {
-            $baseSize = getBaseSize($item['DETAILS2']);
-            $qty = floatval($item['QTY']);
-
-            if ($mode == 'Country Liquor') {
-                // For Country Liquor mode, add all to Country Liquor category
-                if (isset($liquor_summary['Country Liquor'][$baseSize])) {
-                    $liquor_summary['Country Liquor'][$baseSize] += $qty;
-                }
+    // Process items for this entry
+    $entry_summary = [];
+    foreach ($display_categories as $category) {
+        $entry_summary[$category] = array_fill_keys($size_columns_def, 0);
+    }
+    
+    $items_json = $row['items_json'];
+    $bill_items = json_decode($items_json, true);
+    
+    if (is_array($bill_items)) {
+        foreach ($bill_items as $item) {
+            // Try to find item by code first
+            $item_code = $item['CODE'] ?? '';
+            $item_found = false;
+            
+            if (isset($items[$item_code])) {
+                $item_found = true;
+                $hierarchy = $items[$item_code]['hierarchy'];
+                $display_type = $hierarchy['display_type'];
+                $ml_volume = $hierarchy['ml_volume'];
             } else {
-                // For Foreign Liquor mode, categorize properly
-                $liquor_type = 'Spirits'; // Default
-                $item_name = strtolower($item['DETAILS']);
+                // If item not found in master, try to determine from DETAILS
+                // This is a fallback - you might want to adjust based on your data structure
+                $details = $item['DETAILS'] ?? '';
+                $details2 = $item['DETAILS2'] ?? '';
+                
+                // Default values
+                $display_type = 'IMFL'; // Default
+                $ml_volume = 0;
+                
+                // Try to extract volume from DETAILS2
+                if (preg_match('/(\d+)\s*ML/i', $details2, $matches)) {
+                    $ml_volume = intval($matches[1]);
+                }
+                
+                // Determine type from item name
+                $item_name = strtolower($details);
                 if (strpos($item_name, 'beer') !== false) {
                     if (strpos($item_name, 'mild') !== false) {
-                        $liquor_type = 'Mild Beer';
+                        $display_type = 'MILD BEER';
                     } else {
-                        $liquor_type = 'Fermented Beer';
+                        $display_type = 'FERMENTED BEER';
                     }
                 } elseif (strpos($item_name, 'wine') !== false) {
-                    $liquor_type = 'Wines';
+                    if (strpos($item_name, 'imported') !== false) {
+                        $display_type = 'IMPORTED WINE';
+                    } else {
+                        $display_type = 'INDIAN WINE';
+                    }
                 }
-
-                // Add to liquor summary
-                if (isset($liquor_summary[$liquor_type][$baseSize])) {
-                    $liquor_summary[$liquor_type][$baseSize] += $qty;
+            }
+            
+            if ($mode == 'Country Liquor') {
+                $display_type = 'COUNTRY LIQUOR';
+            }
+            
+            if (!in_array($display_type, $display_categories)) {
+                continue;
+            }
+            
+            // Get volume and determine display size
+            $ml_volume = isset($hierarchy) ? $hierarchy['ml_volume'] : $ml_volume;
+            $qty = floatval($item['QTY'] ?? 0);
+            
+            // Determine which size column to use
+            $size_key = '';
+            if ($ml_volume >= 1000) {
+                $size_key = 'ABOVE 1000 ML';
+            } else {
+                $size_key = $ml_volume . ' ML';
+                // Check if this exact size exists in our columns, otherwise find closest match
+                if (!in_array($size_key, $size_columns_def)) {
+                    // Find closest standard size
+                    $standard_sizes = [50, 60, 90, 170, 180, 200, 250, 275, 330, 355, 375, 500, 650, 700, 750, 1000];
+                    $closest = 750; // Default
+                    $min_diff = PHP_INT_MAX;
+                    
+                    foreach ($standard_sizes as $std_size) {
+                        $diff = abs($ml_volume - $std_size);
+                        if ($diff < $min_diff) {
+                            $min_diff = $diff;
+                            $closest = $std_size;
+                        }
+                    }
+                    $size_key = $closest . ' ML';
                 }
+            }
+            
+            // Add to entry summary and overall summary
+            if (isset($entry_summary[$display_type][$size_key])) {
+                $entry_summary[$display_type][$size_key] += $qty;
+                $liquor_summary[$display_type][$size_key] += $qty;
             }
         }
     }
@@ -222,6 +482,8 @@ while ($row = $gateResult->fetch_assoc()) {
         'permit_validity' => $permit_validity,
         'permit_district' => $permit_district,
         'amount' => $row['total_amount'],
+        'items_json' => $row['items_json'],
+        'entry_summary' => $entry_summary,
         'liq_flag' => $row['permit_liq_flag']
     ];
 }
@@ -229,141 +491,74 @@ $gateStmt->close();
 
 $total_records = count($gate_data);
 
-// Calculate number of liquor columns for table structure
-$liquor_columns_count = $mode == 'Country Liquor' ? count($display_sizes_country) + 1 : count($display_sizes_s) + count($display_sizes_w) + count($display_sizes_fb) + count($display_sizes_mb) + 1;
-
-// Calculate liquor category totals
-if ($mode == 'Country Liquor') {
-    $liquor_totals = [
-        'Country Liquor' => array_sum($liquor_summary['Country Liquor'])
-    ];
-} else {
-    $liquor_totals = [
-        'Spirits' => array_sum($liquor_summary['Spirits']),
-        'Wines' => array_sum($liquor_summary['Wines']),
-        'Fermented Beer' => array_sum($liquor_summary['Fermented Beer']),
-        'Mild Beer' => array_sum($liquor_summary['Mild Beer'])
-    ];
+// Calculate total columns count for table formatting
+$total_columns = 0;
+foreach ($display_categories as $category) {
+    $total_columns += count($size_columns[$category]);
 }
+
+// Calculate category totals
+$category_totals = [];
+foreach ($display_categories as $category) {
+    $category_totals[$category] = array_sum($liquor_summary[$category]);
+}
+$grand_total = array_sum($category_totals);
+
+// Debug output (remove in production)
+// echo "<!-- Total Records: $total_records -->";
+// echo "<!-- Categories: " . implode(', ', $display_categories) . " -->";
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gate Register (FLR-3) - WineSoft</title>
+  <title>Gate Register - WineSoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
   <style>
-    /* Screen styles */
+    /* Screen styles - matching excise register */
     body {
-      font-size: 14px;
+      font-size: 12px;
       background-color: #f8f9fa;
-      font-family: Arial, sans-serif;
     }
     .company-header {
       text-align: center;
-      margin-bottom: 20px;
-      padding: 15px;
-      border-bottom: 2px solid #000;
+      margin-bottom: 15px;
+      padding: 10px;
     }
     .company-header h1 {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
-      margin-bottom: 8px;
-      text-transform: uppercase;
+      margin-bottom: 5px;
     }
     .company-header h5 {
-      font-size: 16px;
-      margin-bottom: 5px;
-      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 3px;
     }
     .company-header h6 {
-      font-size: 14px;
-      margin-bottom: 8px;
+      font-size: 12px;
+      margin-bottom: 5px;
     }
     .report-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
-      font-size: 13px;
-      table-layout: fixed;
+      margin-bottom: 15px;
+      font-size: 10px;
     }
     .report-table th, .report-table td {
       border: 1px solid #000;
-      padding: 8px 6px;
-      text-align: left;
-      line-height: 1.3;
-      vertical-align: top;
-      word-wrap: break-word;
+      padding: 4px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      line-height: 1.2;
     }
     .report-table th {
-      background-color: #e0e0e0;
+      background-color: #f0f0f0;
       font-weight: bold;
-      text-align: center;
-      font-size: 12px;
-    }
-    .liquor-col {
-      width: 40px;
-      text-align: center;
-      font-size: 11px;
-      padding: 4px 2px;
-    }
-    .filter-card {
-      background-color: #f8f9fa;
-      margin-bottom: 20px;
-    }
-    .serial-col {
-      width: 50px;
-      text-align: center;
-    }
-    .billno-col {
-      width: 80px;
-      text-align: center;
-    }
-    .permitno-col {
-      width: 80px;
-      text-align: center;
-    }
-    .name-col {
-      width: 150px;
-    }
-    .validity-col {
-      width: 80px;
-      text-align: center;
-    }
-    .district-col {
-      width: 100px;
-      text-align: center;
-    }
-    .summary-row {
-      background-color: #d0d0d0;
-      font-weight: bold;
-      font-size: 14px;
-    }
-    /* Double line separators after each subcategory ends */
-    /* Gate register structure: SrNo(1), BillNo(2), PermitNo(3), Name(4), Validity(5), District(6), Sizes[Spirits(11)+Wine(4)+FB(6)+MB(6)=27], Total(28) */
-
-    /* After Spirits (50ml) - column 6+11=17 */
-    .report-table td:nth-child(17) {
-      border-right: double 3px #000;
-    }
-    /* After Wine (90ml) - column 17+4=21 */
-    .report-table td:nth-child(21) {
-      border-right: double 3px #000;
-    }
-    /* After Fermented Beer (250ml) - column 21+6=27 */
-    .report-table td:nth-child(27) {
-      border-right: double 3px #000;
-    }
-    /* After Mild Beer (250ml) - column 27+6=33 */
-    .report-table td:nth-child(33) {
-      border-right: double 3px #000;
-    }
-    .liquor-category {
-      background-color: #f8f9fa;
-      font-weight: bold;
+      padding: 6px 3px;
     }
     .vertical-text {
       writing-mode: vertical-lr;
@@ -371,19 +566,91 @@ if ($mode == 'Country Liquor') {
       text-align: center;
       white-space: nowrap;
       padding: 8px 2px;
-      font-size: 10px;
+      min-width: 25px;
+      max-width: 25px;
+      width: 25px;
+      font-size: 9px;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+    .vertical-text-full {
+      writing-mode: vertical-lr;
+      transform: rotate(180deg);
+      text-align: center;
+      white-space: nowrap;
+      padding: 8px 2px;
+      min-width: 25px;
+      max-width: 25px;
+      width: 25px;
+      font-size: 9px;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+    /* Double line separators */
+    .double-line-right {
+      border-right: 3px double #000 !important;
+    }
+    .filter-card {
+      background-color: #f8f9fa;
+    }
+    .table-responsive {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+    .action-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
     .no-print {
       display: block;
     }
+    .serial-col {
+      width: 40px;
+      min-width: 40px;
+    }
+    .billno-col {
+      width: 70px;
+      min-width: 70px;
+    }
+    .permitno-col {
+      width: 80px;
+      min-width: 80px;
+    }
+    .name-col {
+      width: 150px;
+      min-width: 150px;
+    }
+    .validity-col {
+      width: 70px;
+      min-width: 70px;
+    }
+    .district-col {
+      width: 80px;
+      min-width: 80px;
+    }
+    .category-header {
+      font-weight: bold;
+      background-color: #e9ecef !important;
+    }
+    .summary-row {
+      background-color: #e9ecef;
+      font-weight: bold;
+    }
+    .license-info {
+      margin-bottom: 15px;
+      padding: 8px;
+      background-color: #e9ecef;
+      border-left: 4px solid #0d6efd;
+    }
 
-    /* Print styles */
+    /* Print styles - matching excise register */
     @media print {
       @page {
         size: legal landscape;
         margin: 0.2in;
       }
-
+      
       body {
         margin: 0;
         padding: 0;
@@ -392,23 +659,20 @@ if ($mode == 'Country Liquor') {
         background: white;
         width: 100%;
         height: 100%;
-        transform: scale(0.8);
-        transform-origin: 0 0;
-        width: 125%;
       }
-
+      
       .no-print {
         display: none !important;
       }
-
+      
       body * {
         visibility: hidden;
       }
-
+      
       .print-section, .print-section * {
         visibility: visible;
       }
-
+      
       .print-section {
         position: absolute;
         left: 0;
@@ -418,110 +682,109 @@ if ($mode == 'Country Liquor') {
         margin: 0;
         padding: 0;
       }
-
+      
       .company-header {
         text-align: center;
         margin-bottom: 5px;
         padding: 2px;
         page-break-after: avoid;
       }
-
+      
       .company-header h1 {
         font-size: 12px !important;
         margin-bottom: 1px !important;
       }
-
+      
       .company-header h5 {
         font-size: 9px !important;
         margin-bottom: 1px !important;
       }
-
+      
       .company-header h6 {
         font-size: 8px !important;
         margin-bottom: 2px !important;
       }
-
+      
       .table-responsive {
         overflow: visible;
         width: 100%;
         height: auto;
       }
-
+      
       .report-table {
         width: 100% !important;
-        font-size: 6px !important;
+        font-size: 7px !important;
         table-layout: fixed;
         border-collapse: collapse;
         page-break-inside: avoid;
       }
-
+      
       .report-table th, .report-table td {
-        padding: 1px !important;
+        padding: 2px 1px !important;
         line-height: 1;
-        height: 14px;
-        min-width: 18px;
+        height: 16px;
+        min-width: 20px;
         max-width: 22px;
-        font-size: 6px !important;
-        border: 0.5px solid #000 !important;
+        font-size: 7px !important;
+        border: 1px solid #000 !important;
       }
-
+      
       .report-table th {
         background-color: #f0f0f0 !important;
-        padding: 2px 1px !important;
+        padding: 3px 1px !important;
         font-weight: bold;
       }
-
-      .vertical-text {
+      
+      .vertical-text, .vertical-text-full {
         writing-mode: vertical-lr;
         transform: rotate(180deg);
         text-align: center;
         white-space: nowrap;
-        padding: 1px !important;
-        font-size: 5px !important;
-        min-width: 15px;
-        max-width: 18px;
+        padding: 2px !important;
+        font-size: 6px !important;
+        min-width: 18px;
+        max-width: 20px;
+        width: 20px !important;
         line-height: 1;
-        height: 25px !important;
+        height: auto !important;
       }
-
+      
       .serial-col, .billno-col, .permitno-col, .validity-col, .district-col {
-        width: 25px !important;
-        min-width: 25px !important;
-        max-width: 25px !important;
+        width: 30px !important;
+        min-width: 30px !important;
+        max-width: 30px !important;
       }
-
+      
       .name-col {
-        width: 60px !important;
-        min-width: 60px !important;
-        max-width: 60px !important;
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
       }
-
-      .liquor-col {
-        width: 18px !important;
-        min-width: 18px !important;
-        max-width: 18px !important;
-        font-size: 5px !important;
-      }
-
+      
       .summary-row {
         background-color: #f8f9fa !important;
         font-weight: bold;
       }
-
+      
       .footer-info {
         text-align: center;
         margin-top: 3px;
-        font-size: 6px;
+        font-size: 7px;
         page-break-before: avoid;
       }
-
+      
       tr {
         page-break-inside: avoid;
         page-break-after: auto;
       }
-
-      .alert {
-        display: none !important;
+      
+      .double-line-right {
+        border-right: 3px double #000 !important;
+      }
+      
+      .category-header {
+        background-color: #e9ecef !important;
+        font-weight: bold;
       }
     }
   </style>
@@ -534,7 +797,25 @@ if ($mode == 'Country Liquor') {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Gate Register (FLR-3) Printing Module</h3>
+      <h3 class="mb-4">Gate Register Printing Module</h3>
+
+      <!-- License Restriction Info -->
+      <div class="license-info no-print">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
+      </div>
 
       <!-- Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -585,6 +866,7 @@ if ($mode == 'Country Liquor') {
           <h1><?= htmlspecialchars($registerName) ?></h1>
           <h5>Mode: <?= htmlspecialchars($mode) ?></h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
+          <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>Date: <?= date('d-M-Y', strtotime($selected_date)) ?></h6>
         </div>
 
@@ -594,37 +876,31 @@ if ($mode == 'Country Liquor') {
             No gate register data available for the selected date and mode.
           </div>
         <?php else: ?>
-          <!-- Combined Gate Register and Liquor Summary Table -->
           <div class="table-responsive">
             <table class="report-table" id="gate-register-table">
               <thead>
                 <tr>
-                  <th class="serial-col">Sr No.</th>
-                  <th class="billno-col">Bill No.</th>
-                  <th class="permitno-col">Permit No.</th>
-                  <th class="name-col">Permit Holder Name</th>
-                  <th class="validity-col">Permit Validity</th>
-                  <th class="district-col">Permit District</th>
-                  <?php if ($mode == 'Country Liquor'): ?>
-                    <?php foreach ($display_sizes_country as $size): ?>
-                      <th class="liquor-col vertical-text"><?= $size ?></th>
+                  <th rowspan="2" class="serial-col">Sr No.</th>
+                  <th rowspan="2" class="billno-col">Bill No.</th>
+                  <th rowspan="2" class="permitno-col">Permit No.</th>
+                  <th rowspan="2" class="name-col">Permit Holder Name</th>
+                  <th rowspan="2" class="validity-col">Permit Validity</th>
+                  <th rowspan="2" class="district-col">Permit District</th>
+                  
+                  <?php foreach ($display_categories as $category): ?>
+                    <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                  <?php endforeach; ?>
+                </tr>
+                <tr>
+                  <?php foreach ($display_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <th class="vertical-text-full <?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                     <?php endforeach; ?>
-                    <th class="liquor-col">Total</th>
-                  <?php else: ?>
-                    <?php foreach ($display_sizes_s as $size): ?>
-                      <th class="liquor-col vertical-text">S: <?= $size ?></th>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_w as $size): ?>
-                      <th class="liquor-col vertical-text">W: <?= $size ?></th>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_fb as $size): ?>
-                      <th class="liquor-col vertical-text">FB: <?= $size ?></th>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_mb as $size): ?>
-                      <th class="liquor-col vertical-text">MB: <?= $size ?></th>
-                    <?php endforeach; ?>
-                    <th class="liquor-col">Total</th>
-                  <?php endif; ?>
+                  <?php endforeach; ?>
                 </tr>
               </thead>
               <tbody>
@@ -633,114 +909,47 @@ if ($mode == 'Country Liquor') {
                     <td class="serial-col"><?= $entry['serial_no'] ?></td>
                     <td class="billno-col"><?= htmlspecialchars($entry['bill_no']) ?></td>
                     <td class="permitno-col"><?= htmlspecialchars($entry['permit_no']) ?></td>
-                    <td class="name-col"><?= htmlspecialchars($entry['permit_holder_name']) ?></td>
+                    <td class="name-col text-start"><?= htmlspecialchars($entry['permit_holder_name']) ?></td>
                     <td class="validity-col"><?= htmlspecialchars($entry['permit_validity']) ?></td>
                     <td class="district-col"><?= htmlspecialchars($entry['permit_district']) ?></td>
+                    
                     <?php
-                    // Initialize liquor quantities for this entry
-                    $entry_liquor_summary = [];
-                    if ($mode == 'Country Liquor') {
-                      $entry_liquor_summary['Country Liquor'] = array_fill_keys($display_sizes_country, 0);
-                    } else {
-                      $entry_liquor_summary['Spirits'] = array_fill_keys($display_sizes_s, 0);
-                      $entry_liquor_summary['Wines'] = array_fill_keys($display_sizes_w, 0);
-                      $entry_liquor_summary['Fermented Beer'] = array_fill_keys($display_sizes_fb, 0);
-                      $entry_liquor_summary['Mild Beer'] = array_fill_keys($display_sizes_mb, 0);
-                    }
-
-                    // Get items for this specific bill
-                    $bill_items = [];
-                    $billQuery = "SELECT items_json FROM tbl_cash_memo_prints WHERE bill_no = ? AND comp_id = ?";
-                    $billStmt = $conn->prepare($billQuery);
-                    $billStmt->bind_param("si", $entry['bill_no'], $compID);
-                    $billStmt->execute();
-                    $billResult = $billStmt->get_result();
-                    if ($billRow = $billResult->fetch_assoc()) {
-                      $bill_items = json_decode($billRow['items_json'], true);
-                    }
-                    $billStmt->close();
-
-                    // Process items for this bill
-                    if (is_array($bill_items)) {
-                      foreach ($bill_items as $item) {
-                        $baseSize = getBaseSize($item['DETAILS2']);
-                        $qty = floatval($item['QTY']);
-
-                        if ($mode == 'Country Liquor') {
-                          if (isset($entry_liquor_summary['Country Liquor'][$baseSize])) {
-                            $entry_liquor_summary['Country Liquor'][$baseSize] += $qty;
-                          }
-                        } else {
-                          $liquor_type = 'Spirits';
-                          $item_name = strtolower($item['DETAILS']);
-                          if (strpos($item_name, 'beer') !== false) {
-                            if (strpos($item_name, 'mild') !== false) {
-                              $liquor_type = 'Mild Beer';
-                            } else {
-                              $liquor_type = 'Fermented Beer';
-                            }
-                          } elseif (strpos($item_name, 'wine') !== false) {
-                            $liquor_type = 'Wines';
-                          }
-
-                          if (isset($entry_liquor_summary[$liquor_type][$baseSize])) {
-                            $entry_liquor_summary[$liquor_type][$baseSize] += $qty;
-                          }
-                        }
-                      }
-                    }
-
-                    // Display liquor quantities for this entry
-                    if ($mode == 'Country Liquor') {
-                      foreach ($display_sizes_country as $size) {
-                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Country Liquor'][$size] > 0 ? $entry_liquor_summary['Country Liquor'][$size] : '') . '</td>';
-                      }
-                      echo '<td class="liquor-col liquor-category">' . array_sum($entry_liquor_summary['Country Liquor']) . '</td>';
-                    } else {
-                      foreach ($display_sizes_s as $size) {
-                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Spirits'][$size] > 0 ? $entry_liquor_summary['Spirits'][$size] : '') . '</td>';
-                      }
-                      foreach ($display_sizes_w as $size) {
-                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Wines'][$size] > 0 ? $entry_liquor_summary['Wines'][$size] : '') . '</td>';
-                      }
-                      foreach ($display_sizes_fb as $size) {
-                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Fermented Beer'][$size] > 0 ? $entry_liquor_summary['Fermented Beer'][$size] : '') . '</td>';
-                      }
-                      foreach ($display_sizes_mb as $size) {
-                        echo '<td class="liquor-col">' . ($entry_liquor_summary['Mild Beer'][$size] > 0 ? $entry_liquor_summary['Mild Beer'][$size] : '') . '</td>';
-                      }
-                      $entry_total = array_sum($entry_liquor_summary['Spirits']) + array_sum($entry_liquor_summary['Wines']) + array_sum($entry_liquor_summary['Fermented Beer']) + array_sum($entry_liquor_summary['Mild Beer']);
-                      echo '<td class="liquor-col liquor-category">' . $entry_total . '</td>';
-                    }
+                    // Display entry quantities using pre-calculated entry_summary
+                    foreach ($display_categories as $cat_index => $category):
+                        $sizes = $size_columns[$category];
+                        $last_index = count($sizes) - 1;
+                        foreach ($sizes as $size_index => $size):
+                            $value = isset($entry['entry_summary'][$category][$size]) ? $entry['entry_summary'][$category][$size] : 0;
+                    ?>
+                            <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                                <?= $value > 0 ? $value : '' ?>
+                            </td>
+                    <?php
+                        endforeach;
+                    endforeach;
                     ?>
                   </tr>
                 <?php endforeach; ?>
 
                 <!-- Summary Row -->
                 <tr class="summary-row">
-                  <td colspan="6" class="text-center">
-                    <strong>Total Records: <?= $total_records ?> | Date: <?= date('d-M-Y', strtotime($selected_date)) ?> | Mode: <?= htmlspecialchars($mode) ?></strong>
+                  <td colspan="6" class="text-start">
+                    <strong>Total Records: <?= $total_records ?> | Date: <?= date('d-M-Y', strtotime($selected_date)) ?></strong>
                   </td>
-                  <?php if ($mode == 'Country Liquor'): ?>
-                    <?php foreach ($display_sizes_country as $size): ?>
-                      <td class="liquor-col liquor-category"><?= $liquor_summary['Country Liquor'][$size] > 0 ? $liquor_summary['Country Liquor'][$size] : '' ?></td>
-                    <?php endforeach; ?>
-                    <td class="liquor-col liquor-category"><strong><?= $liquor_totals['Country Liquor'] ?></strong></td>
-                  <?php else: ?>
-                    <?php foreach ($display_sizes_s as $size): ?>
-                      <td class="liquor-col liquor-category"><?= $liquor_summary['Spirits'][$size] > 0 ? $liquor_summary['Spirits'][$size] : '' ?></td>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_w as $size): ?>
-                      <td class="liquor-col liquor-category"><?= $liquor_summary['Wines'][$size] > 0 ? $liquor_summary['Wines'][$size] : '' ?></td>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_fb as $size): ?>
-                      <td class="liquor-col liquor-category"><?= $liquor_summary['Fermented Beer'][$size] > 0 ? $liquor_summary['Fermented Beer'][$size] : '' ?></td>
-                    <?php endforeach; ?>
-                    <?php foreach ($display_sizes_mb as $size): ?>
-                      <td class="liquor-col liquor-category"><?= $liquor_summary['Mild Beer'][$size] > 0 ? $liquor_summary['Mild Beer'][$size] : '' ?></td>
-                    <?php endforeach; ?>
-                    <td class="liquor-col liquor-category"><strong><?= array_sum($liquor_totals) ?></strong></td>
-                  <?php endif; ?>
+                  <?php 
+                  foreach ($display_categories as $cat_index => $category):
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size):
+                          $value = isset($liquor_summary[$category][$size]) ? $liquor_summary[$category][$size] : 0;
+                  ?>
+                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                              <?= $value > 0 ? $value : '' ?>
+                          </td>
+                  <?php
+                      endforeach;
+                  endforeach;
+                  ?>
                 </tr>
               </tbody>
             </table>

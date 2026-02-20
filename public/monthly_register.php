@@ -36,6 +36,169 @@ if (is_array($available_classes) && !empty($available_classes)) {
     }
 }
 
+// Cache for hierarchy data
+$hierarchy_cache = [];
+
+/**
+ * Get complete hierarchy information for an item (copied from excise_register.php)
+ */
+function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
+    global $hierarchy_cache;
+    
+    // Create cache key
+    $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
+    
+    if (isset($hierarchy_cache[$cache_key])) {
+        return $hierarchy_cache[$cache_key];
+    }
+    
+    $hierarchy = [
+        'class_code' => $class_code,
+        'class_name' => '',
+        'subclass_code' => $subclass_code,
+        'subclass_name' => '',
+        'category_code' => '',
+        'category_name' => '',
+        'display_category' => 'OTHER',
+        'display_type' => 'OTHER',
+        'size_code' => $size_code,
+        'size_desc' => '',
+        'ml_volume' => 0,
+        'full_hierarchy' => ''
+    ];
+    
+    try {
+        // Get class and category information
+        if (!empty($class_code)) {
+            $query = "SELECT cn.CLASS_NAME, cn.CATEGORY_CODE, cat.CATEGORY_NAME 
+                      FROM tblclass_new cn
+                      LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+                      WHERE cn.CLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $class_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['class_name'] = $row['CLASS_NAME'];
+                $hierarchy['category_code'] = $row['CATEGORY_CODE'];
+                $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
+                
+                // Map category name to display category
+                $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
+                $display_category = 'OTHER';
+                
+                if ($category_name == 'SPIRIT') {
+                    $display_category = 'SPIRITS';
+                    
+                    // Determine spirit type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'MML';
+                    } else {
+                        $hierarchy['display_type'] = 'IMFL';
+                    }
+                } elseif ($category_name == 'WINE') {
+                    $display_category = 'WINE';
+                    
+                    // Determine wine type based on class name
+                    $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
+                    if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
+                        $hierarchy['display_type'] = 'IMPORTED WINE';
+                    } elseif (strpos($class_name_upper, 'MML') !== false) {
+                        $hierarchy['display_type'] = 'WINE MML';
+                    } else {
+                        $hierarchy['display_type'] = 'INDIAN WINE';
+                    }
+                } elseif ($category_name == 'FERMENTED BEER') {
+                    $display_category = 'FERMENTED BEER';
+                    $hierarchy['display_type'] = 'FERMENTED BEER';
+                } elseif ($category_name == 'MILD BEER') {
+                    $display_category = 'MILD BEER';
+                    $hierarchy['display_type'] = 'MILD BEER';
+                } elseif ($category_name == 'COUNTRY LIQUOR') {
+                    $display_category = 'COUNTRY LIQUOR';
+                    $hierarchy['display_type'] = 'COUNTRY LIQUOR';
+                }
+                
+                $hierarchy['display_category'] = $display_category;
+            }
+            $stmt->close();
+        }
+        
+        // Get subclass information
+        if (!empty($subclass_code)) {
+            $query = "SELECT SUBCLASS_NAME FROM tblsubclass_new WHERE SUBCLASS_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $subclass_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['subclass_name'] = $row['SUBCLASS_NAME'];
+            }
+            $stmt->close();
+        }
+        
+        // Get size information
+        if (!empty($size_code)) {
+            $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ? LIMIT 1";
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("s", $size_code);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($row = $result->fetch_assoc()) {
+                $hierarchy['size_desc'] = $row['SIZE_DESC'];
+                $hierarchy['ml_volume'] = (int)($row['ML_VOLUME'] ?? 0);
+            }
+            $stmt->close();
+        }
+        
+        // Build full hierarchy string
+        $parts = [];
+        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
+        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
+        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
+        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
+        
+        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
+        
+    } catch (Exception $e) {
+        error_log("Error in getItemHierarchy: " . $e->getMessage());
+    }
+    
+    $hierarchy_cache[$cache_key] = $hierarchy;
+    return $hierarchy;
+}
+
+// Function to get volume label
+function getVolumeLabel($volume) {
+    static $volume_label_cache = [];
+    
+    if (isset($volume_label_cache[$volume])) {
+        return $volume_label_cache[$volume];
+    }
+    
+    // Format volume based on size
+    if ($volume >= 1000) {
+        $liters = $volume / 1000;
+        // Check if it's a whole number
+        if ($liters == intval($liters)) {
+            $label = intval($liters) . 'L';
+        } else {
+            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
+        }
+    } else {
+        $label = $volume . ' ML';
+    }
+    
+    $volume_label_cache[$volume] = $label;
+    return $label;
+}
+
 // Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -61,197 +224,56 @@ if ($companyStmt) {
     $companyStmt->close();
 }
 
-// Function to get base size (from excise_register)
-function getBaseSize($size) {
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize);
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize);
-    return trim($baseSize);
-}
-
-// Define size columns for each liquor type (from excise_register)
-$size_columns_s = [
-    '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
-    '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
-    '375 ML (12)', '375 ML', '375 ML (Pet)', '350 ML (12)', '275 ML(24)',
-    '200 ML (48)', '200 ML (24)', '200 ML (30)', '200 ML (12)', '180 ML(24)',
-    '180 ML (Pet)', '180 ML', '170 ML (48)', '90 ML(100)', '90 ML (Pet)-100', '90 ML (Pet)-96',
-    '90 ML-(96)', '90 ML', '60 ML', '60 ML (75)', '50 ML(120)', '50 ML (180)',
-    '50 ML (24)', '50 ML (192)'
-];
-$size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'];
-$size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-$size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
-
-// Group sizes by base size
-function groupSizes($sizes) {
-    $grouped = [];
-    foreach ($sizes as $size) {
-        $baseSize = getBaseSize($size);
-        if (!isset($grouped[$baseSize])) {
-            $grouped[$baseSize] = [];
-        }
-        $grouped[$baseSize][] = $size;
-    }
-    return $grouped;
-}
-
-$grouped_sizes_s = groupSizes($size_columns_s);
-$grouped_sizes_w = groupSizes($size_columns_w);
-$grouped_sizes_fb = groupSizes($size_columns_fb);
-$grouped_sizes_mb = groupSizes($size_columns_mb);
-
-// Display sizes for each liquor type
-$display_sizes_spirit = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'];
-$display_sizes_wine = ['750 ML', '375 ML', '180 ML', '90 ML'];
-$display_sizes_beer = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
-
-// Fetch class data to map liquor types
-$classData = [];
-$classQuery = "SELECT SGROUP, `DESC`, LIQ_FLAG FROM tblclass";
-$classStmt = $conn->prepare($classQuery);
-if ($classStmt) {
-    $classStmt->execute();
-    $classResult = $classStmt->get_result();
-    while ($row = $classResult->fetch_assoc()) {
-        $classData[$row['SGROUP']] = $row;
-    }
-    $classStmt->close();
-}
-
-// Fetch item master data - FILTERED BY LICENSE TYPE
-$items = [];
-if (!empty($allowed_classes)) {
-    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    
-    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, LIQ_FLAG FROM tblitemmaster WHERE CLASS IN ($class_placeholders)";
-    
-    $itemStmt = $conn->prepare($itemQuery);
-    if ($itemStmt) {
-        $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
-        $itemStmt->execute();
-        $itemResult = $itemStmt->get_result();
-        
-        while ($row = $itemResult->fetch_assoc()) {
-            $items[$row['CODE']] = $row;
-        }
-        $itemStmt->close();
-    }
-}
-
-// Function to determine liquor type - EXACT LOGIC FROM EXCISE REGISTER
-function getLiquorType($class, $liq_flag, $mode = 'Foreign Liquor', $desc = '') {
-    if ($mode == 'Country Liquor') {
-        return 'Country Liquor';
-    }
-
-    if ($liq_flag == 'F') {
-        switch ($class) {
-            case 'I':
-                return 'Imported Spirit';
-            case 'W':
-                if (stripos($desc, 'Wine') !== false || stripos($desc, 'Imp') !== false) {
-                    return 'Wine Imp';
-                } else {
-                    return 'Spirits';
-                }
-            case 'V':
-                return 'Wines';
-            case 'F':
-                return 'Fermented Beer';
-            case 'M':
-                return 'Mild Beer';
-            case 'G':
-            case 'D':
-            case 'K':
-            case 'R':
-            case 'O':
-                return 'Spirits';
-            default:
-                return 'Spirits';
-        }
-    }
-    return 'Spirits'; // Default for non-F items
-}
-
-// Map to FLR Datewise categories
-function mapToFLRCategories($liquor_type) {
-    switch ($liquor_type) {
-        case 'Spirits':
-        case 'Imported Spirit':
-            return 'Spirit';
-        case 'Wines':
-        case 'Wine Imp':
-            return 'Wine';
-        case 'Fermented Beer':
-            return 'Fermented Beer';
-        case 'Mild Beer':
-            return 'Mild Beer';
-        default:
-            return 'Spirit';
-    }
-}
-
-// Map database sizes to display sizes
-$size_mapping = [
-    '750 ML' => '750 ML',
-    '375 ML' => '375 ML',
-    '170 ML' => '180 ML',
-    '90 ML' => '90 ML',
-    '90 ML-100' => '90 ML',
-    '90 ML-96' => '90 ML',
-    '2000 ML' => '2000 ML',
-    '2000 ML Pet' => '2000 ML',
-    '1000 ML' => '1000 ML',
-    '1000 ML(Pet)' => '1000 ML',
-    '700 ML' => '700 ML',
-    '500 ML' => '500 ML',
-    '650 ML' => '650 ML',
-    '330 ML' => '330 ML',
-    '275 ML' => '275 ML',
-    '250 ML' => '250 ML',
-    '200 ML' => '200 ML',
-    '180 ML' => '180 ML',
-    '60 ML' => '60 ML',
-    '50 ML' => '50 ML',
-    '500 ML (CAN)' => '500 ML',
-    '330 ML (CAN)' => '330 ML'
+// Define display categories for main table (EXCLUDING MML)
+$main_display_categories = [
+    'IMFL',
+    'IMPORTED', 
+    'INDIAN WINE',
+    'IMPORTED WINE',
+    'FERMENTED BEER',
+    'MILD BEER'
 ];
 
-// Function to get grouped size
-function getGroupedSize($size, $liquor_type) {
-    global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
-    
-    $baseSize = getBaseSize($size);
-    
-    switch ($liquor_type) {
-        case 'Spirits':
-        case 'Imported Spirit':
-            if (in_array($baseSize, array_keys($grouped_sizes_s))) {
-                return $baseSize;
-            }
-            break;
-        case 'Wines':
-        case 'Wine Imp':
-            if (in_array($baseSize, array_keys($grouped_sizes_w))) {
-                return $baseSize;
-            }
-            break;
-        case 'Fermented Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_fb))) {
-                return $baseSize;
-            }
-            break;
-        case 'Mild Beer':
-            if (in_array($baseSize, array_keys($grouped_sizes_mb))) {
-                return $baseSize;
-            }
-            break;
-    }
-    
-    return $baseSize;
-}
+$category_display_names = [
+    'IMFL' => 'IMFL',
+    'IMPORTED' => 'IMPORTED',
+    'INDIAN WINE' => 'INDIAN WINE',
+    'IMPORTED WINE' => 'IMPORTED WINE',
+    'FERMENTED BEER' => 'FERMENTED BEER',
+    'MILD BEER' => 'MILD BEER'
+];
+
+// MML specific categories for second table
+$mml_categories = ['MML', 'WINE MML'];
+$mml_display_names = [
+    'MML' => 'Spirit MML',
+    'WINE MML' => 'Wine MML'
+];
+
+// Define size columns for each category
+$spirit_sizes = [
+    '50 ML', '60 ML', '90 ML', '180 ML', '200 ML', '275 ML', '330 ML', 
+    '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML', '2000 ML'
+];
+
+$wine_sizes = [
+    '90 ML', '180 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1000 ML'
+];
+
+$beer_sizes = [
+    '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1000 ML'
+];
+
+$size_columns = [
+    'IMFL' => $spirit_sizes,
+    'IMPORTED' => $spirit_sizes,
+    'MML' => $spirit_sizes,
+    'INDIAN WINE' => $wine_sizes,
+    'IMPORTED WINE' => $wine_sizes,
+    'WINE MML' => $wine_sizes,
+    'FERMENTED BEER' => $beer_sizes,
+    'MILD BEER' => $beer_sizes
+];
 
 // Function to get table name for a specific date
 function getTableForDate($conn, $compID, $date) {
@@ -309,7 +331,7 @@ function tableHasDayColumns($conn, $tableName, $day) {
     return true;
 }
 
-// Initialize report data structure
+// Initialize dates array
 $dates = [];
 $current_date = $from_date;
 while (strtotime($current_date) <= strtotime($to_date)) {
@@ -317,101 +339,107 @@ while (strtotime($current_date) <= strtotime($to_date)) {
     $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
 }
 
-// Initialize daily data structure for each date - using 4 categories
-$daily_data = [];
+// Fetch item master data with hierarchy information
+$items = [];
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    
+    $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
+                  FROM tblitemmaster 
+                  WHERE CLASS IN ($class_placeholders)";
+    
+    $itemStmt = $conn->prepare($itemQuery);
+    if ($itemStmt) {
+        $itemStmt->bind_param(str_repeat('s', count($allowed_classes)), ...$allowed_classes);
+        $itemStmt->execute();
+        $itemResult = $itemStmt->get_result();
+        
+        while ($row = $itemResult->fetch_assoc()) {
+            // Get hierarchy information
+            $hierarchy = getItemHierarchy(
+                $row['CLASS_CODE_NEW'], 
+                $row['SUBCLASS_CODE_NEW'], 
+                $row['SIZE_CODE'], 
+                $conn
+            );
+            
+            $items[$row['CODE']] = [
+                'code' => $row['CODE'],
+                'details' => $row['DETAILS'],
+                'details2' => $row['DETAILS2'],
+                'class' => $row['CLASS'],
+                'class_code_new' => $row['CLASS_CODE_NEW'],
+                'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
+                'size_code' => $row['SIZE_CODE'],
+                'liq_flag' => $row['LIQ_FLAG'],
+                'hierarchy' => $hierarchy
+            ];
+        }
+        $itemStmt->close();
+    }
+}
 
-// Initialize totals
-$totals = [
-    'Spirit' => [
-        'purchase' => array_fill_keys($display_sizes_spirit, 0),
-        'sales' => array_fill_keys($display_sizes_spirit, 0),
-        'closing' => array_fill_keys($display_sizes_spirit, 0)
-    ],
-    'Wine' => [
-        'purchase' => array_fill_keys($display_sizes_wine, 0),
-        'sales' => array_fill_keys($display_sizes_wine, 0),
-        'closing' => array_fill_keys($display_sizes_wine, 0)
-    ],
-    'Fermented Beer' => [
-        'purchase' => array_fill_keys($display_sizes_beer, 0),
-        'sales' => array_fill_keys($display_sizes_beer, 0),
-        'closing' => array_fill_keys($display_sizes_beer, 0)
-    ],
-    'Mild Beer' => [
-        'purchase' => array_fill_keys($display_sizes_beer, 0),
-        'sales' => array_fill_keys($display_sizes_beer, 0),
-        'closing' => array_fill_keys($display_sizes_beer, 0)
-    ]
-];
+// Initialize main report data structure (excluding MML)
+$main_daily_data = [];
+$main_totals = [];
+$main_opening_balance = [];
 
-// Initialize opening balance data
-$opening_balance_data = [
-    'Spirit' => array_fill_keys($display_sizes_spirit, 0),
-    'Wine' => array_fill_keys($display_sizes_wine, 0),
-    'Fermented Beer' => array_fill_keys($display_sizes_beer, 0),
-    'Mild Beer' => array_fill_keys($display_sizes_beer, 0)
-];
+foreach ($main_display_categories as $category) {
+    $main_totals[$category] = [
+        'purchase' => array_fill_keys($size_columns[$category], 0),
+        'sales' => array_fill_keys($size_columns[$category], 0),
+        'closing' => array_fill_keys($size_columns[$category], 0)
+    ];
+    $main_opening_balance[$category] = array_fill_keys($size_columns[$category], 0);
+}
 
-// Process each date in the range
+// Initialize MML report data structure (only MML categories)
+$mml_daily_data = [];
+$mml_totals = [];
+$mml_opening_balance = [];
+
+foreach ($mml_categories as $category) {
+    $mml_totals[$category] = [
+        'purchase' => array_fill_keys($size_columns[$category], 0),
+        'sales' => array_fill_keys($size_columns[$category], 0),
+        'closing' => array_fill_keys($size_columns[$category], 0)
+    ];
+    $mml_opening_balance[$category] = array_fill_keys($size_columns[$category], 0);
+}
+
+// Process each date
 foreach ($dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
     $day_padded = sprintf('%02d', $day);
+    
+    // Initialize daily data for this date
+    $main_daily_data[$date] = [];
+    $mml_daily_data[$date] = [];
+    
+    foreach ($main_display_categories as $category) {
+        $main_daily_data[$date][$category] = [
+            'purchase' => array_fill_keys($size_columns[$category], 0),
+            'sales' => array_fill_keys($size_columns[$category], 0),
+            'closing' => array_fill_keys($size_columns[$category], 0)
+        ];
+    }
+    
+    foreach ($mml_categories as $category) {
+        $mml_daily_data[$date][$category] = [
+            'purchase' => array_fill_keys($size_columns[$category], 0),
+            'sales' => array_fill_keys($size_columns[$category], 0),
+            'closing' => array_fill_keys($size_columns[$category], 0)
+        ];
+    }
     
     // Get appropriate table for this date
     $dailyStockTable = getTableForDate($conn, $compID, $date);
     
     // Check if table has columns for this day
     if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
-        // Initialize empty data for this date
-        $daily_data[$date] = [
-            'Spirit' => [
-                'purchase' => array_fill_keys($display_sizes_spirit, 0),
-                'sales' => array_fill_keys($display_sizes_spirit, 0),
-                'closing' => array_fill_keys($display_sizes_spirit, 0)
-            ],
-            'Wine' => [
-                'purchase' => array_fill_keys($display_sizes_wine, 0),
-                'sales' => array_fill_keys($display_sizes_wine, 0),
-                'closing' => array_fill_keys($display_sizes_wine, 0)
-            ],
-            'Fermented Beer' => [
-                'purchase' => array_fill_keys($display_sizes_beer, 0),
-                'sales' => array_fill_keys($display_sizes_beer, 0),
-                'closing' => array_fill_keys($display_sizes_beer, 0)
-            ],
-            'Mild Beer' => [
-                'purchase' => array_fill_keys($display_sizes_beer, 0),
-                'sales' => array_fill_keys($display_sizes_beer, 0),
-                'closing' => array_fill_keys($display_sizes_beer, 0)
-            ]
-        ];
         continue;
     }
-    
-    // Initialize daily data for this date
-    $daily_data[$date] = [
-        'Spirit' => [
-            'purchase' => array_fill_keys($display_sizes_spirit, 0),
-            'sales' => array_fill_keys($display_sizes_spirit, 0),
-            'closing' => array_fill_keys($display_sizes_spirit, 0)
-        ],
-        'Wine' => [
-            'purchase' => array_fill_keys($display_sizes_wine, 0),
-            'sales' => array_fill_keys($display_sizes_wine, 0),
-            'closing' => array_fill_keys($display_sizes_wine, 0)
-        ],
-        'Fermented Beer' => [
-            'purchase' => array_fill_keys($display_sizes_beer, 0),
-            'sales' => array_fill_keys($display_sizes_beer, 0),
-            'closing' => array_fill_keys($display_sizes_beer, 0)
-        ],
-        'Mild Beer' => [
-            'purchase' => array_fill_keys($display_sizes_beer, 0),
-            'sales' => array_fill_keys($display_sizes_beer, 0),
-            'closing' => array_fill_keys($display_sizes_beer, 0)
-        ]
-    ];
     
     // Fetch stock data for this specific day
     $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
@@ -434,57 +462,85 @@ foreach ($dates as $date) {
             // Skip if item not found in master
             if (!isset($items[$item_code])) continue;
             
-            $item_details = $items[$item_code];
-            $size = $item_details['DETAILS2'];
-            $class = $item_details['CLASS'];
-            $liq_flag = $item_details['LIQ_FLAG'];
-            $desc = isset($classData[$class]['DESC']) ? $classData[$class]['DESC'] : '';
+            $item = $items[$item_code];
+            $hierarchy = $item['hierarchy'];
+            $display_type = $hierarchy['display_type'];
             
-            // Determine liquor type using EXACT LOGIC FROM EXCISE REGISTER
-            $detailed_liquor_type = getLiquorType($class, $liq_flag, 'Foreign Liquor', $desc);
+            // Get volume label for size matching
+            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
             
-            // Map to FLR Datewise categories
-            $flr_category = mapToFLRCategories($detailed_liquor_type);
-            
-            // Map database size to display size
-            $excel_size = isset($size_mapping[$size]) ? $size_mapping[$size] : $size;
-            
-            // Get grouped size for display
-            $grouped_size = getGroupedSize($excel_size, $detailed_liquor_type);
-            
-            // Determine which display sizes to use based on FLR category
-            $target_sizes = [];
-            switch ($flr_category) {
-                case 'Spirit':
-                    $target_sizes = $display_sizes_spirit;
-                    break;
-                case 'Wine':
-                    $target_sizes = $display_sizes_wine;
-                    break;
-                case 'Fermented Beer':
-                case 'Mild Beer':
-                    $target_sizes = $display_sizes_beer;
-                    break;
-                default:
-                    $target_sizes = $display_sizes_spirit;
+            // Find matching size column
+            $matched_size = null;
+            if (isset($size_columns[$display_type])) {
+                // Try exact match
+                if (in_array($volume_label, $size_columns[$display_type])) {
+                    $matched_size = $volume_label;
+                } else {
+                    // Try numeric matching
+                    foreach ($size_columns[$display_type] as $size_col) {
+                        preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
+                        preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
+                        
+                        if (isset($vol_parts[1]) && isset($col_parts[1])) {
+                            $vol_num = floatval($vol_parts[1]);
+                            $col_num = floatval($col_parts[1]);
+                            
+                            $vol_unit = strtoupper($vol_parts[2]);
+                            $col_unit = strtoupper($col_parts[2]);
+                            
+                            // Convert to ML for comparison
+                            if ($vol_unit == 'L' && $col_unit == 'ML') {
+                                $vol_num *= 1000;
+                            } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
+                                $col_num *= 1000;
+                            }
+                            
+                            if (abs($vol_num - $col_num) < 1) {
+                                $matched_size = $size_col;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
             
-            // Add to daily data and totals
-            if (in_array($grouped_size, $target_sizes)) {
-                // For opening balance (first date only)
-                if ($date == $from_date) {
-                    $opening_balance_data[$flr_category][$grouped_size] += $row['opening'];
+            if (!$matched_size && !empty($size_columns[$display_type])) {
+                $matched_size = $size_columns[$display_type][0];
+            }
+            
+            // Check if this is an MML category
+            $is_mml = in_array($display_type, $mml_categories);
+            
+            // Add to appropriate data structure
+            if ($matched_size) {
+                if (!$is_mml && in_array($display_type, $main_display_categories)) {
+                    // Add to main table (non-MML)
+                    if ($date == $from_date) {
+                        $main_opening_balance[$display_type][$matched_size] += (int)$row['opening'];
+                    }
+                    
+                    $main_daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
+                    $main_daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
+                    $main_daily_data[$date][$display_type]['closing'][$matched_size] += (int)$row['closing'];
+                    
+                    $main_totals[$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
+                    $main_totals[$display_type]['sales'][$matched_size] += (int)$row['sales'];
+                    $main_totals[$display_type]['closing'][$matched_size] += (int)$row['closing'];
+                    
+                } elseif ($is_mml) {
+                    // Add to MML table
+                    if ($date == $from_date) {
+                        $mml_opening_balance[$display_type][$matched_size] += (int)$row['opening'];
+                    }
+                    
+                    $mml_daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
+                    $mml_daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
+                    $mml_daily_data[$date][$display_type]['closing'][$matched_size] += (int)$row['closing'];
+                    
+                    $mml_totals[$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
+                    $mml_totals[$display_type]['sales'][$matched_size] += (int)$row['sales'];
+                    $mml_totals[$display_type]['closing'][$matched_size] += (int)$row['closing'];
                 }
-                
-                // Daily data
-                $daily_data[$date][$flr_category]['purchase'][$grouped_size] += $row['purchase'];
-                $daily_data[$date][$flr_category]['sales'][$grouped_size] += $row['sales'];
-                $daily_data[$date][$flr_category]['closing'][$grouped_size] += $row['closing'];
-                
-                // Totals
-                $totals[$flr_category]['purchase'][$grouped_size] += $row['purchase'];
-                $totals[$flr_category]['sales'][$grouped_size] += $row['sales'];
-                $totals[$flr_category]['closing'][$grouped_size] += $row['closing'];
             }
         }
         
@@ -492,8 +548,17 @@ foreach ($dates as $date) {
     }
 }
 
-// Calculate total columns count for table formatting
-$total_columns_per_section = count($display_sizes_spirit) + count($display_sizes_wine) + (count($display_sizes_beer) * 2);
+// Calculate total columns for main table
+$total_main_columns = 0;
+foreach ($main_display_categories as $category) {
+    $total_main_columns += count($size_columns[$category]);
+}
+
+// Calculate total columns for MML table
+$total_mml_columns = 0;
+foreach ($mml_categories as $category) {
+    $total_mml_columns += count($size_columns[$category]);
+}
 ?>
 
 <!DOCTYPE html>
@@ -552,11 +617,24 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
       text-align: center;
       white-space: nowrap;
       padding: 8px 2px;
-      min-width: 20px;
+      min-width: 25px;
+      max-width: 25px;
+      width: 25px;
+      font-size: 9px;
+      line-height: 1.1;
+      font-weight: bold;
     }
     .summary-row {
       background-color: #e9ecef;
       font-weight: bold;
+    }
+    .closing-balance {
+      font-weight: bold !important;
+      color: #000 !important;
+      background-color: #d3d3d3 !important;
+    }
+    .double-line-right {
+      border-right: 3px double #000 !important;
     }
     .filter-card {
       background-color: #f8f9fa;
@@ -588,6 +666,49 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
         margin-bottom: 10px;
         font-size: 11px;
     }
+    .type-col {
+      width: 40px;
+      min-width: 40px;
+    }
+    .date-col {
+      width: 30px;
+      min-width: 30px;
+    }
+    .permit-col, .signature-col {
+      width: 50px;
+      min-width: 50px;
+    }
+    .size-col {
+      width: 25px;
+      min-width: 25px;
+      max-width: 25px;
+    }
+    .date-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      line-height: 1;
+    }
+    .date-display span {
+      display: block;
+      line-height: 1;
+      margin: 0;
+      padding: 0;
+    }
+    .mml-section {
+      margin-top: 30px;
+      page-break-before: always;
+    }
+    .mml-header {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      font-weight: bold;
+    }
 
     @media print {
       @page {
@@ -603,9 +724,6 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
         background: white;
         width: 100%;
         height: 100%;
-        transform: scale(0.8);
-        transform-origin: 0 0;
-        width: 125%;
       }
       
       .no-print {
@@ -660,25 +778,25 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
       
       .report-table {
         width: 100% !important;
-        font-size: 6px !important;
+        font-size: 7px !important;
         table-layout: fixed;
         border-collapse: collapse;
         page-break-inside: avoid;
       }
       
       .report-table th, .report-table td {
-        padding: 1px !important;
+        padding: 2px 1px !important;
         line-height: 1;
-        height: 14px;
-        min-width: 18px;
+        height: 16px;
+        min-width: 20px;
         max-width: 22px;
-        font-size: 6px !important;
-        border: 0.5px solid #000 !important;
+        font-size: 7px !important;
+        border: 1px solid #000 !important;
       }
       
       .report-table th {
         background-color: #f0f0f0 !important;
-        padding: 2px 1px !important;
+        padding: 3px 1px !important;
         font-weight: bold;
       }
       
@@ -687,12 +805,13 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
         transform: rotate(180deg);
         text-align: center;
         white-space: nowrap;
-        padding: 1px !important;
-        font-size: 5px !important;
-        min-width: 15px;
-        max-width: 18px;
+        padding: 2px !important;
+        font-size: 6px !important;
+        min-width: 18px;
+        max-width: 20px;
+        width: 20px !important;
         line-height: 1;
-        height: 25px !important;
+        height: auto !important;
       }
       
       .date-col, .permit-col, .signature-col {
@@ -715,13 +834,24 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
       .footer-info {
         text-align: center;
         margin-top: 3px;
-        font-size: 6px;
+        font-size: 7px;
         page-break-before: avoid;
       }
       
       tr {
         page-break-inside: avoid;
         page-break-after: auto;
+      }
+      
+      .mml-section {
+        margin-top: 20px;
+        page-break-before: always;
+      }
+      
+      .mml-header {
+        background-color: #d4edda !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
     }
   </style>
@@ -756,13 +886,16 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
           </p>
       </div>
 
-      <!-- Classification Note (Based on Excise Register logic) -->
+      <!-- Classification Note -->
       <div class="classification-note no-print">
           <strong>Classification Logic (as per Excise Register):</strong><br>
-          • <strong>Spirit:</strong> Classes I (Imported Spirit), W (if not Wine), G, D, K, R, O<br>
-          • <strong>Wine:</strong> Class V (Wines) and Class W (Wine Imp)<br>
-          • <strong>Fermented Beer:</strong> Class F<br>
-          • <strong>Mild Beer:</strong> Class M<br>
+          • <strong>IMFL:</strong> Indian Made Foreign Liquor - Spirits<br>
+          • <strong>IMPORTED:</strong> Imported Spirits<br>
+          • <strong>INDIAN WINE:</strong> Indian Made Wine<br>
+          • <strong>IMPORTED WINE:</strong> Imported Wine<br>
+          • <strong>FERMENTED BEER:</strong> Fermented Beer (Class F)<br>
+          • <strong>MILD BEER:</strong> Mild Beer (Class M)<br>
+          • <strong>MML Items (Spirit & Wine):</strong> Shown in separate table below
       </div>
 
       <!-- Report Filters -->
@@ -811,7 +944,7 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
         </div>
       </div>
 
-      <!-- Report Results -->
+      <!-- Main Report Table (Without MML) -->
       <div class="print-section">
         <div class="company-header">
           <h1>Form F.L.R. 1A/2A/3A (See Rule 15)</h1>
@@ -827,276 +960,201 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
               <tr>
                 <th rowspan="3" class="date-col">Date</th>
                 <th rowspan="3" class="permit-col">Permit No</th>
-                <th colspan="<?= $total_columns_per_section ?>">Received</th>
-                <th colspan="<?= $total_columns_per_section ?>">Sold</th>
-                <th colspan="<?= $total_columns_per_section ?>">Closing Balance</th>
+                <th colspan="<?= $total_main_columns ?>">Received</th>
+                <th colspan="<?= $total_main_columns ?>">Sold</th>
+                <th colspan="<?= $total_main_columns ?>">Closing Balance</th>
                 <th rowspan="3" class="signature-col">Signature</th>
               </tr>
               <tr>
-                <th colspan="<?= count($display_sizes_spirit) ?>">Spirit</th>
-                <th colspan="<?= count($display_sizes_wine) ?>">Wine</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Fermented Beer</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Mild Beer</th>
-                <th colspan="<?= count($display_sizes_spirit) ?>">Spirit</th>
-                <th colspan="<?= count($display_sizes_wine) ?>">Wine</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Fermented Beer</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Mild Beer</th>
-                <th colspan="<?= count($display_sizes_spirit) ?>">Spirit</th>
-                <th colspan="<?= count($display_sizes_wine) ?>">Wine</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Fermented Beer</th>
-                <th colspan="<?= count($display_sizes_beer) ?>">Mild Beer</th>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                <?php endforeach; ?>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                <?php endforeach; ?>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                <?php endforeach; ?>
               </tr>
               <tr>
-                <!-- Received - Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <!-- Received sizes -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
 
-                <!-- Received - Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <!-- Sold sizes -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
 
-                <!-- Received - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Received - Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Sold - Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Sold - Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Sold - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Sold - Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Closing - Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Closing - Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Closing - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
-                <?php endforeach; ?>
-
-                <!-- Closing - Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <!-- Closing sizes -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
               </tr>
             </thead>
             <tbody>
               <?php foreach ($dates as $date): ?>
-                <?php if (!isset($daily_data[$date])) continue; ?>
+                <?php if (!isset($main_daily_data[$date])) continue; ?>
                 <tr>
                   <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
                   <td class="permit-col"></td>
                   
-                  <!-- Received - Spirit -->
-                  <?php foreach ($display_sizes_spirit as $size): ?>
-                    <td><?= isset($daily_data[$date]['Spirit']['purchase'][$size]) && $daily_data[$date]['Spirit']['purchase'][$size] > 0 ? $daily_data[$date]['Spirit']['purchase'][$size] : '' ?></td>
+                  <!-- Received -->
+                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                        <?= isset($main_daily_data[$date][$category]['purchase'][$size]) && $main_daily_data[$date][$category]['purchase'][$size] > 0 ? $main_daily_data[$date][$category]['purchase'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
                   <?php endforeach; ?>
 
-                  <!-- Received - Wine -->
-                  <?php foreach ($display_sizes_wine as $size): ?>
-                    <td><?= isset($daily_data[$date]['Wine']['purchase'][$size]) && $daily_data[$date]['Wine']['purchase'][$size] > 0 ? $daily_data[$date]['Wine']['purchase'][$size] : '' ?></td>
+                  <!-- Sold -->
+                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                        <?= isset($main_daily_data[$date][$category]['sales'][$size]) && $main_daily_data[$date][$category]['sales'][$size] > 0 ? $main_daily_data[$date][$category]['sales'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
                   <?php endforeach; ?>
 
-                  <!-- Received - Fermented Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Fermented Beer']['purchase'][$size]) && $daily_data[$date]['Fermented Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['purchase'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Received - Mild Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Mild Beer']['purchase'][$size]) && $daily_data[$date]['Mild Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Mild Beer']['purchase'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Sold - Spirit -->
-                  <?php foreach ($display_sizes_spirit as $size): ?>
-                    <td><?= isset($daily_data[$date]['Spirit']['sales'][$size]) && $daily_data[$date]['Spirit']['sales'][$size] > 0 ? $daily_data[$date]['Spirit']['sales'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Sold - Wine -->
-                  <?php foreach ($display_sizes_wine as $size): ?>
-                    <td><?= isset($daily_data[$date]['Wine']['sales'][$size]) && $daily_data[$date]['Wine']['sales'][$size] > 0 ? $daily_data[$date]['Wine']['sales'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Sold - Fermented Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Fermented Beer']['sales'][$size]) && $daily_data[$date]['Fermented Beer']['sales'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['sales'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Sold - Mild Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Mild Beer']['sales'][$size]) && $daily_data[$date]['Mild Beer']['sales'][$size] > 0 ? $daily_data[$date]['Mild Beer']['sales'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Closing - Spirit -->
-                  <?php foreach ($display_sizes_spirit as $size): ?>
-                    <td><?= isset($daily_data[$date]['Spirit']['closing'][$size]) && $daily_data[$date]['Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Spirit']['closing'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Closing - Wine -->
-                  <?php foreach ($display_sizes_wine as $size): ?>
-                    <td><?= isset($daily_data[$date]['Wine']['closing'][$size]) && $daily_data[$date]['Wine']['closing'][$size] > 0 ? $daily_data[$date]['Wine']['closing'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Closing - Fermented Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Fermented Beer']['closing'][$size]) && $daily_data[$date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['closing'][$size] : '' ?></td>
-                  <?php endforeach; ?>
-
-                  <!-- Closing - Mild Beer -->
-                  <?php foreach ($display_sizes_beer as $size): ?>
-                    <td><?= isset($daily_data[$date]['Mild Beer']['closing'][$size]) && $daily_data[$date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$date]['Mild Beer']['closing'][$size] : '' ?></td>
+                  <!-- Closing -->
+                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?> <?= ($size_index == $last_index) ? 'closing-balance' : '' ?>">
+                        <?= isset($main_daily_data[$date][$category]['closing'][$size]) && $main_daily_data[$date][$category]['closing'][$size] > 0 ? $main_daily_data[$date][$category]['closing'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
                   <?php endforeach; ?>
                   
                   <td class="signature-col"></td>
                 </tr>
               <?php endforeach; ?>
               
-              <!-- Summary rows - Opening Balance -->
+              <!-- Opening Balance Row -->
               <tr class="summary-row">
                 <td>Opening Balance</td>
                 <td></td>
-
-                <!-- Received Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Sold Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Closing Balance Section - Show opening balance -->
-                <!-- Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($opening_balance_data['Spirit'][$size]) && $opening_balance_data['Spirit'][$size] > 0 ? $opening_balance_data['Spirit'][$size] : '' ?></td>
+                
+                <!-- Opening Balance values in Closing section -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($main_opening_balance[$category][$size]) && $main_opening_balance[$category][$size] > 0 ? $main_opening_balance[$category][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($opening_balance_data['Wine'][$size]) && $opening_balance_data['Wine'][$size] > 0 ? $opening_balance_data['Wine'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($opening_balance_data['Fermented Beer'][$size]) && $opening_balance_data['Fermented Beer'][$size] > 0 ? $opening_balance_data['Fermented Beer'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($opening_balance_data['Mild Beer'][$size]) && $opening_balance_data['Mild Beer'][$size] > 0 ? $opening_balance_data['Mild Beer'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
+                
                 <td></td>
               </tr>
 
-              <!-- Summary rows - Total Received -->
+              <!-- Total Received Row -->
               <tr class="summary-row">
                 <td>Total Received</td>
                 <td></td>
-
-                <!-- Received Section - Show purchase totals -->
-                <!-- Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($totals['Spirit']['purchase'][$size]) && $totals['Spirit']['purchase'][$size] > 0 ? $totals['Spirit']['purchase'][$size] : '' ?></td>
+                
+                <!-- Received totals -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($main_totals[$category]['purchase'][$size]) && $main_totals[$category]['purchase'][$size] > 0 ? $main_totals[$category]['purchase'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($totals['Wine']['purchase'][$size]) && $totals['Wine']['purchase'][$size] > 0 ? $totals['Wine']['purchase'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($totals['Fermented Beer']['purchase'][$size]) && $totals['Fermented Beer']['purchase'][$size] > 0 ? $totals['Fermented Beer']['purchase'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($totals['Mild Beer']['purchase'][$size]) && $totals['Mild Beer']['purchase'][$size] > 0 ? $totals['Mild Beer']['purchase'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Sold Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Closing Balance Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Closing -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
+                
                 <td></td>
               </tr>
 
-              <!-- Summary rows - Total Sold -->
+              <!-- Total Sold Row -->
               <tr class="summary-row">
                 <td>Total Sold</td>
                 <td></td>
-
-                <!-- Received Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Sold Section - Show sales totals -->
-                <!-- Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($totals['Spirit']['sales'][$size]) && $totals['Spirit']['sales'][$size] > 0 ? $totals['Spirit']['sales'][$size] : '' ?></td>
+                
+                <!-- Sold totals -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($main_totals[$category]['sales'][$size]) && $main_totals[$category]['sales'][$size] > 0 ? $main_totals[$category]['sales'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($totals['Wine']['sales'][$size]) && $totals['Wine']['sales'][$size] > 0 ? $totals['Wine']['sales'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($totals['Fermented Beer']['sales'][$size]) && $totals['Fermented Beer']['sales'][$size] > 0 ? $totals['Fermented Beer']['sales'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($totals['Mild Beer']['sales'][$size]) && $totals['Mild Beer']['sales'][$size] > 0 ? $totals['Mild Beer']['sales'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Closing Balance Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Closing -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
+                
                 <td></td>
               </tr>
 
-              <!-- Summary rows - Grand Total (Last Day Closing) -->
+              <!-- Grand Total Row -->
               <?php 
               $last_date = end($dates);
               reset($dates);
@@ -1104,38 +1162,30 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
               <tr class="summary-row">
                 <td>Grand Total</td>
                 <td></td>
-
-                <!-- Received Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Sold Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Closing Balance Section - Show last date's closing -->
-                <!-- Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Spirit']['closing'][$size]) && $daily_data[$last_date]['Spirit']['closing'][$size] > 0 ? $daily_data[$last_date]['Spirit']['closing'][$size] : '' ?></td>
+                
+                <!-- Last day closing in Closing section -->
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($main_daily_data[$last_date][$category]['closing'][$size]) && $main_daily_data[$last_date][$category]['closing'][$size] > 0 ? $main_daily_data[$last_date][$category]['closing'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Wine']['closing'][$size]) && $daily_data[$last_date]['Wine']['closing'][$size] > 0 ? $daily_data[$last_date]['Wine']['closing'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Fermented Beer']['closing'][$size]) && $daily_data[$last_date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$last_date]['Fermented Beer']['closing'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Mild Beer']['closing'][$size]) && $daily_data[$last_date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$last_date]['Mild Beer']['closing'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
+                
                 <td></td>
               </tr>
             </tbody>
@@ -1147,6 +1197,263 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
           <p>Generated on: <?= date('d-M-Y h:i A') ?> | Total Days: <?= count($dates) ?></p>
         </div>
       </div>
+
+      <!-- MML Section - Second Table (Only MML Data) -->
+      <div class="mml-section print-section">
+        <div class="mml-header">
+          <h4 class="mb-0">MML Summary Report (Spirit MML & Wine MML Only)</h4>
+        </div>
+        
+        <div class="company-header">
+          <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
+          <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="report-table" id="mml-datewise-table">
+            <thead>
+              <tr>
+                <th rowspan="3" class="date-col">Date</th>
+                <th rowspan="3" class="permit-col">Permit No</th>
+                <th colspan="<?= $total_mml_columns ?>">Received</th>
+                <th colspan="<?= $total_mml_columns ?>">Sold</th>
+                <th colspan="<?= $total_mml_columns ?>">Closing Balance</th>
+                <th rowspan="3" class="signature-col">Signature</th>
+              </tr>
+              <tr>
+                <?php foreach ($mml_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
+                <?php endforeach; ?>
+                <?php foreach ($mml_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
+                <?php endforeach; ?>
+                <?php foreach ($mml_categories as $category): ?>
+                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
+                <?php endforeach; ?>
+              </tr>
+              <tr>
+                <!-- Received sizes -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+
+                <!-- Sold sizes -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+
+                <!-- Closing sizes -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($dates as $date): ?>
+                <?php if (!isset($mml_daily_data[$date])) continue; ?>
+                <tr>
+                  <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
+                  <td class="permit-col"></td>
+                  
+                  <!-- Received -->
+                  <?php foreach ($mml_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                        <?= isset($mml_daily_data[$date][$category]['purchase'][$size]) && $mml_daily_data[$date][$category]['purchase'][$size] > 0 ? $mml_daily_data[$date][$category]['purchase'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
+                  <?php endforeach; ?>
+
+                  <!-- Sold -->
+                  <?php foreach ($mml_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                        <?= isset($mml_daily_data[$date][$category]['sales'][$size]) && $mml_daily_data[$date][$category]['sales'][$size] > 0 ? $mml_daily_data[$date][$category]['sales'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
+                  <?php endforeach; ?>
+
+                  <!-- Closing -->
+                  <?php foreach ($mml_categories as $cat_index => $category): ?>
+                    <?php 
+                    $sizes = $size_columns[$category];
+                    $last_index = count($sizes) - 1;
+                    foreach ($sizes as $size_index => $size): 
+                    ?>
+                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?> <?= ($size_index == $last_index) ? 'closing-balance' : '' ?>">
+                        <?= isset($mml_daily_data[$date][$category]['closing'][$size]) && $mml_daily_data[$date][$category]['closing'][$size] > 0 ? $mml_daily_data[$date][$category]['closing'][$size] : '' ?>
+                      </td>
+                    <?php endforeach; ?>
+                  <?php endforeach; ?>
+                  
+                  <td class="signature-col"></td>
+                </tr>
+              <?php endforeach; ?>
+              
+              <!-- MML Opening Balance Row -->
+              <tr class="summary-row">
+                <td>Opening Balance</td>
+                <td></td>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Opening Balance values in Closing section -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($mml_opening_balance[$category][$size]) && $mml_opening_balance[$category][$size] > 0 ? $mml_opening_balance[$category][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+                
+                <td></td>
+              </tr>
+
+              <!-- MML Total Received Row -->
+              <tr class="summary-row">
+                <td>Total Received (MML)</td>
+                <td></td>
+                
+                <!-- Received totals -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($mml_totals[$category]['purchase'][$size]) && $mml_totals[$category]['purchase'][$size] > 0 ? $mml_totals[$category]['purchase'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Empty for Closing -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <td></td>
+              </tr>
+
+              <!-- MML Total Sold Row -->
+              <tr class="summary-row">
+                <td>Total Sold (MML)</td>
+                <td></td>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Sold totals -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($mml_totals[$category]['sales'][$size]) && $mml_totals[$category]['sales'][$size] > 0 ? $mml_totals[$category]['sales'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+                
+                <!-- Empty for Closing -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <td></td>
+              </tr>
+
+              <!-- MML Grand Total Row -->
+              <tr class="summary-row">
+                <td>Grand Total (MML)</td>
+                <td></td>
+                
+                <!-- Empty for Received -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Empty for Sold -->
+                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
+                  <td></td>
+                <?php endfor; ?>
+                
+                <!-- Last day closing -->
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($mml_daily_data[$last_date][$category]['closing'][$size]) && $mml_daily_data[$last_date][$category]['closing'][$size] > 0 ? $mml_daily_data[$last_date][$category]['closing'][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+                
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="footer-info mt-3">
+          <p><strong>MML Summary:</strong> 
+             Spirit MML Total Received: <?= array_sum($mml_totals['MML']['purchase'] ?? []) ?> | 
+             Spirit MML Total Sold: <?= array_sum($mml_totals['MML']['sales'] ?? []) ?> | 
+             Spirit MML Closing: <?= array_sum($mml_daily_data[$last_date]['MML']['closing'] ?? []) ?><br>
+             Wine MML Total Received: <?= array_sum($mml_totals['WINE MML']['purchase'] ?? []) ?> | 
+             Wine MML Total Sold: <?= array_sum($mml_totals['WINE MML']['sales'] ?? []) ?> | 
+             Wine MML Closing: <?= array_sum($mml_daily_data[$last_date]['WINE MML']['closing'] ?? []) ?>
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1154,12 +1461,21 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function exportToExcel() {
-    var table = document.getElementById('flr-datewise-table');
+    var mainTable = document.getElementById('flr-datewise-table');
+    var mmlTable = document.getElementById('mml-datewise-table');
     var wb = XLSX.utils.book_new();
-    var tableClone = table.cloneNode(true);
-    var ws = XLSX.utils.table_to_sheet(tableClone);
-    XLSX.utils.book_append_sheet(wb, ws, 'FLR Datewise');
-    var fileName = 'FLR_Datewise_<?= date('Y-m-d') ?>.xlsx';
+    
+    // Add main table
+    var mainClone = mainTable.cloneNode(true);
+    var ws1 = XLSX.utils.table_to_sheet(mainClone);
+    XLSX.utils.book_append_sheet(wb, ws1, 'FLR Datewise');
+    
+    // Add MML table
+    var mmlClone = mmlTable.cloneNode(true);
+    var ws2 = XLSX.utils.table_to_sheet(mmlClone);
+    XLSX.utils.book_append_sheet(wb, ws2, 'MML Summary');
+    
+    var fileName = 'FLR_Datewise_MML_<?= date('Y-m-d') ?>.xlsx';
     XLSX.writeFile(wb, fileName);
 }
 
@@ -1174,7 +1490,7 @@ function exportToPDF() {
     const element = document.querySelector('.print-section');
     const opt = {
         margin: 0.5,
-        filename: 'FLR_Datewise_<?= date('Y-m-d') ?>.pdf',
+        filename: 'FLR_Datewise_MML_<?= date('Y-m-d') ?>.pdf',
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }

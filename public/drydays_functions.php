@@ -8,12 +8,13 @@ class DryDaysManager {
         $this->conn = $conn;
     }
     
-    public function getDryDaysInRange($start_date, $end_date) { // ✅ Only 2 parameters
+    public function getDryDaysInRange($start_date, $end_date) {
         $dry_days = [];
         
-        $query = "SELECT dry_date, description FROM dry_days 
-                 WHERE dry_date BETWEEN ? AND ? 
-                 ORDER BY dry_date";
+        // FIXED: Changed table name from 'dry_days' to 'tbldrydays' to match your database
+        $query = "SELECT DDATE as dry_date, DDESC as description FROM tbldrydays 
+                 WHERE DATE(DDATE) BETWEEN ? AND ? 
+                 ORDER BY DDATE";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("ss", $start_date, $end_date);
         
@@ -21,16 +22,19 @@ class DryDaysManager {
         $result = $stmt->get_result();
         
         while ($row = $result->fetch_assoc()) {
-            $dry_days[$row['dry_date']] = $row['description'];
+            // Convert datetime to date for consistent comparison
+            $dry_date = date('Y-m-d', strtotime($row['dry_date']));
+            $dry_days[$dry_date] = $row['description'];
         }
         $stmt->close();
         
         return $dry_days;
     }
     
-    public function isDryDay($date) { // ✅ Only 1 parameter
-        $query = "SELECT COUNT(*) as count FROM dry_days 
-                 WHERE dry_date = ?";
+    public function isDryDay($date) {
+        // FIXED: Changed table name from 'dry_days' to 'tbldrydays'
+        $query = "SELECT COUNT(*) as count FROM tbldrydays 
+                 WHERE DATE(DDATE) = ?";
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $date);
         
@@ -42,7 +46,7 @@ class DryDaysManager {
         return $row['count'] > 0;
     }
     
-    public function validateDateRangeExcludingDryDays($start_date, $end_date) { // ✅ Only 2 parameters
+    public function validateDateRangeExcludingDryDays($start_date, $end_date) {
         $dry_days = $this->getDryDaysInRange($start_date, $end_date);
         $has_dry_days = !empty($dry_days);
         
@@ -59,7 +63,7 @@ class DryDaysManager {
 // Dry Day Auto-Restriction Class
 class DryDayAutoRestrict {
     private $conn;
-    private $companyId; // Still need companyId for session/redirect purposes
+    private $companyId;
     private $alwaysRestrictPages = [
         'closing_stock_for_date_range.php',
         'sale_for_date_range.php',
@@ -79,12 +83,11 @@ class DryDayAutoRestrict {
 
         $scriptName = basename($_SERVER['SCRIPT_NAME']);
 
-        // NEW: Check if this is one of our special pages first
+        // Check if this is one of our special pages first
         if (in_array($scriptName, $this->alwaysRestrictPages)) {
             return $this->checkForDryDayOnSpecialPages($scriptName);
         }
 
-        // ... rest of existing autoCheck() code ...
         // Skip restriction for reports and date range operations
         if ($this->isDateRangeOperation($scriptName)) {
             return true;
@@ -110,7 +113,7 @@ class DryDayAutoRestrict {
     }
     
     private function isDateRangeOperation($scriptName) {
-        // NEW: Exclude our special pages first
+        // Exclude our special pages first
         if (in_array($scriptName, $this->alwaysRestrictPages)) {
             return false;
         }
@@ -130,7 +133,7 @@ class DryDayAutoRestrict {
     }
     
     private function isExcludedOperation($scriptName, $postData) {
-        // NEW: Exclude our special pages first
+        // Exclude our special pages first
         if (in_array($scriptName, $this->alwaysRestrictPages)) {
             return false;
         }
@@ -206,7 +209,7 @@ class DryDayAutoRestrict {
     }
     
     /**
-     * NEW: Special check for pages that use date ranges but should still be restricted
+     * Special check for pages that use date ranges but should still be restricted
      */
     private function checkForDryDayOnSpecialPages($scriptName) {
         $dryDaysManager = new DryDaysManager($this->conn);
@@ -216,7 +219,8 @@ class DryDayAutoRestrict {
 
         switch ($scriptName) {
             case 'closing_stock_for_date_range.php':
-                // This page has start_date and end_date, but we need to check ALL dates in the range
+            case 'sale_for_date_range.php':
+                // For date range pages, check ALL dates in the range
                 if (isset($_POST['start_date']) && isset($_POST['end_date'])) {
                     $start_date = $_POST['start_date'];
                     $end_date = $_POST['end_date'];
@@ -230,10 +234,6 @@ class DryDayAutoRestrict {
                     }
                 }
                 return true;
-
-            case 'sale_for_date_range.php':
-                $date = $this->extractDateForSaleRange();
-                break;
 
             case 'purchases.php':
                 $date = $this->extractDateForPurchases();
@@ -252,49 +252,7 @@ class DryDayAutoRestrict {
     }
 
     /**
-     * NEW: Extract date for closing stock page
-     */
-    private function extractDateForClosingStock() {
-        // Try common field names for closing stock
-        $fields = ['as_on_date', 'closing_date', 'stock_date', 'date', 'sale_date'];
-
-        foreach ($fields as $field) {
-            if (!empty($_POST[$field])) {
-                return $_POST[$field];
-            }
-        }
-
-        // If no single date, check for start_date (beginning of range)
-        if (!empty($_POST['start_date'])) {
-            return $_POST['start_date'];
-        }
-
-        return null;
-    }
-
-    /**
-     * NEW: Extract date for sale range page
-     */
-    private function extractDateForSaleRange() {
-        // Try common field names for sales
-        $fields = ['sale_date', 'transaction_date', 'invoice_date', 'date'];
-
-        foreach ($fields as $field) {
-            if (!empty($_POST[$field])) {
-                return $_POST[$field];
-            }
-        }
-
-        // Check for start_date as fallback
-        if (!empty($_POST['start_date'])) {
-            return $_POST['start_date'];
-        }
-
-        return null;
-    }
-
-    /**
-     * NEW: Extract date for purchases page
+     * Extract date for purchases page
      */
     private function extractDateForPurchases() {
         // Try common field names for purchases

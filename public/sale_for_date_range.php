@@ -60,26 +60,23 @@ function validateStock($current_stock, $requested_qty, $item_code) {
 }
 
 // ============================================================================
-// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: ALLOW SALES ONLY AFTER LATEST SALE
+// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: GLOBAL BLOCKING
 // ============================================================================
 
 /**
- * Check if a sale already exists for an item within or after the given date range
- * Returns array with allowed dates (after latest existing sale)
+ * Check if ANY sales exist for ANY item within or after the given date range
+ * Returns array with allowed dates (after latest global sale)
  */
-function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id) {
-    // Query to get all sales for this item in or after the date range
-    $query = "SELECT sh.BILL_DATE
+function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
+    // Query to get all sales in or after the date range for ANY item
+    $query = "SELECT DISTINCT sh.BILL_DATE
               FROM tblsaleheader sh
-              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
-                AND sh.COMP_ID = sd.COMP_ID
-              WHERE sd.ITEM_CODE = ? 
-              AND sh.BILL_DATE >= ? 
+              WHERE sh.BILL_DATE >= ? 
               AND sh.COMP_ID = ?
               ORDER BY sh.BILL_DATE ASC";
     
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("ssi", $item_code, $start_date, $comp_id);
+    $stmt->bind_param("si", $start_date, $comp_id);
     $stmt->execute();
     $result = $stmt->get_result();
     
@@ -119,7 +116,7 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
             }
         }
         
-        logMessage("Item $item_code: Latest existing sale: $latest_existing", 'INFO');
+        logMessage("GLOBAL CHECK: Latest existing sale: $latest_existing", 'INFO');
         logMessage("Available dates: " . implode(', ', $available_dates), 'INFO');
         logMessage("Unavailable dates (has existing sales): " . implode(', ', $unavailable_dates), 'INFO');
         
@@ -130,8 +127,8 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
             'unavailable_dates' => $unavailable_dates,
             'all_existing_dates' => $existing_dates,
             'message' => !empty($unavailable_dates) ? 
-                "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
-                "No sales restrictions for this item"
+                "Global sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
+                "No sales restrictions"
         ];
     }
     
@@ -141,89 +138,103 @@ function checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $
         'available_dates' => $all_dates, // All dates available if no existing sales
         'unavailable_dates' => [],
         'all_existing_dates' => [],
-        'message' => "No sales restrictions for this item"
+        'message' => "No global sales restrictions"
+    ];
+}
+
+// ============================================================================
+// DRY DAY VALIDATION
+// ============================================================================
+
+/**
+ * Check if any dry days fall within the date range
+ */
+function checkDryDaysInRange($conn, $start_date, $end_date) {
+    $dryDaysManager = new DryDaysManager($conn);
+    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
+    
+    if (!empty($dry_days)) {
+        logMessage("DRY DAYS FOUND: " . implode(', ', array_keys($dry_days)), 'INFO');
+    }
+    
+    return [
+        'has_dry_days' => !empty($dry_days),
+        'dry_days' => $dry_days,
+        'dry_dates' => array_keys($dry_days),
+        'message' => !empty($dry_days) ? 
+            "Dry days found: " . implode(', ', array_keys($dry_days)) : 
+            "No dry days in selected range"
     ];
 }
 
 /**
- * Check if sales exist for multiple items within specific date ranges
- * Returns detailed information about restrictions for each item
+ * Validate both global sales and dry days restrictions
  */
-function checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id) {
-    if (empty($items_with_dates)) return [];
+function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
+    // Check global sales restrictions
+    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
     
-    $restricted_items = [];
+    // Check dry days
+    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
     
-    foreach ($items_with_dates as $item_code => $date_range) {
-        $start_date = $date_range['start_date'];
-        $end_date = $date_range['end_date'];
-        
-        // Check for each item individually
-        $result = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
-        
-        // Only block if NO dates are available
-        if ($result['restricted'] && empty($result['available_dates'])) {
-            $restricted_items[$item_code] = [
-                'code' => $item_code,
-                'start_date' => $start_date,
-                'end_date' => $end_date,
-                'latest_existing_sale' => $result['latest_existing_sale'],
-                'available_dates' => $result['available_dates'],
-                'unavailable_dates' => $result['unavailable_dates'],
-                'message' => $result['message']
-            ];
-        }
+    // Combine restrictions - a date is unavailable if it has sales OR is a dry day
+    $all_unavailable_dates = array_merge(
+        $global_check['unavailable_dates'],
+        $dry_days_check['dry_dates']
+    );
+    
+    // Remove duplicates
+    $all_unavailable_dates = array_unique($all_unavailable_dates);
+    sort($all_unavailable_dates);
+    
+    // Calculate available dates (all dates minus unavailable)
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day');
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
     }
     
-    return $restricted_items;
+    $available_dates = array_diff($all_dates, $all_unavailable_dates);
+    $available_dates = array_values($available_dates); // Re-index
+    
+    // Prepare messages
+    $messages = [];
+    if ($global_check['restricted']) {
+        $messages[] = "Existing sales on: " . implode(', ', $global_check['unavailable_dates']);
+    }
+    if ($dry_days_check['has_dry_days']) {
+        $messages[] = "Dry days: " . implode(', ', $dry_days_check['dry_dates']);
+    }
+    
+    return [
+        'restricted' => !empty($all_unavailable_dates),
+        'global_restricted' => $global_check['restricted'],
+        'has_dry_days' => $dry_days_check['has_dry_days'],
+        'latest_existing_sale' => $global_check['latest_existing_sale'],
+        'available_dates' => $available_dates,
+        'unavailable_dates' => $all_unavailable_dates,
+        'unavailable_sales_dates' => $global_check['unavailable_dates'],
+        'dry_dates' => $dry_days_check['dry_dates'],
+        'dry_days_info' => $dry_days_check['dry_days'],
+        'message' => !empty($messages) ? implode(' | ', $messages) : "No restrictions",
+        'full_message' => !empty($messages) ? 
+            "<strong>Date Range Restrictions:</strong><br>" . implode('<br>', $messages) . 
+            "<br><strong>Available dates:</strong> " . (empty($available_dates) ? 'None' : implode(', ', $available_dates)) :
+            "No date range restrictions"
+    ];
 }
 
-// ============================================================================
-// NEW: GET EXISTING SALES DATES FOR ITEMS WITHIN DATE RANGE
-// ============================================================================
-
 /**
- * Get existing sales dates for items within a date range
- * Returns array with item_code => [sale_dates]
+ * NEW: Get unavailable dates due to global sales and dry days
  */
-function getExistingSalesDatesForItems($conn, $item_codes, $start_date, $end_date, $comp_id) {
-    if (empty($item_codes)) return [];
-    
-    $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
-    
-    $query = "SELECT sd.ITEM_CODE, sh.BILL_DATE
-              FROM tblsaleheader sh
-              JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO 
-                AND sh.COMP_ID = sd.COMP_ID
-              WHERE sd.ITEM_CODE IN ($placeholders)
-              AND sh.BILL_DATE BETWEEN ? AND ?
-              AND sh.COMP_ID = ?
-              ORDER BY sd.ITEM_CODE, sh.BILL_DATE";
-    
-    $stmt = $conn->prepare($query);
-    
-    // Build parameters array
-    $params = array_merge($item_codes, [$start_date, $end_date, $comp_id]);
-    $types = str_repeat('s', count($item_codes)) . 'ssi';
-    
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $existing_sales = [];
-    while ($row = $result->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        $bill_date = $row['BILL_DATE'];
-        
-        if (!isset($existing_sales[$item_code])) {
-            $existing_sales[$item_code] = [];
-        }
-        
-        $existing_sales[$item_code][] = $bill_date;
-    }
-    
-    $stmt->close();
-    return $existing_sales;
+function getUnavailableDates($conn, $start_date, $end_date, $comp_id) {
+    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+    return $restrictions['unavailable_dates'];
 }
 
 // Ensure user is logged in and company is selected
@@ -714,6 +725,15 @@ foreach ($date_range as $date) {
 }
 $days_count = count($date_array);
 
+// ============================================================================
+// NEW: GET UNAVAILABLE DATES (GLOBAL SALES + DRY DAYS)
+// ============================================================================
+$restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+$unavailable_dates_global = $restrictions['unavailable_dates'];
+$dry_dates = $restrictions['dry_dates'];
+$has_restrictions = $restrictions['restricted'];
+$available_dates_global = $restrictions['available_dates'];
+
 // Function to update item stock
 function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
     // Check if record exists first
@@ -743,53 +763,55 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
 }
 
 // ============================================================================
-// NEW: ENHANCED DISTRIBUTION LOGIC FOR PARTIAL DATE RANGES
+// NEW: ENHANCED DISTRIBUTION LOGIC WITH GLOBAL BLOCKING AND DRY DAYS
 // ============================================================================
 
 /**
- * Enhanced distribution function that handles items with existing sales in the date range
- * For items with existing sales: distribute only across available dates (after latest sale)
- * For items without existing sales: distribute across entire date range
+ * Enhanced distribution function that handles global restrictions
+ * Distributes only across available dates (after latest global sale, excluding dry days)
  */
-function distributeSalesIntelligently($conn, $total_qty, $item_code, $start_date, $end_date, $comp_id) {
-    if ($total_qty <= 0) return array_fill(0, count($date_array), 0);
+function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
+    if ($total_qty <= 0 || empty($available_dates)) return [];
     
-    // Get available dates for this item
-    $date_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
-    $available_dates = $date_check['available_dates'];
+    $available_days_count = count($available_dates);
     
-    // If no available dates, return zeros
-    if (empty($available_dates)) {
-        logMessage("Item $item_code has no available dates for distribution", 'INFO');
-        return array_fill(0, count($date_array), 0);
+    // Distribute across available dates
+    $base_qty = floor($total_qty / $available_days_count);
+    $remainder = $total_qty % $available_days_count;
+    
+    $distribution = array_fill(0, $available_days_count, $base_qty);
+    
+    // Distribute remainder evenly
+    for ($i = 0; $i < $remainder; $i++) {
+        $distribution[$i]++;
     }
     
-    // Create date array
-    $begin = new DateTime($start_date);
-    $end = new DateTime($end_date);
-    $end = $end->modify('+1 day'); // Include end date
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($begin, $interval, $end);
+    // Shuffle the distribution to make it look more natural
+    shuffle($distribution);
     
-    $all_dates = [];
-    foreach ($date_range as $date) {
-        $all_dates[] = $date->format("Y-m-d");
+    return $distribution;
+}
+
+/**
+ * Get final distribution array for all dates (with zeros for unavailable dates)
+ */
+function getFullDistribution($total_qty, $date_array, $available_dates) {
+    $full_distribution = array_fill(0, count($date_array), 0);
+    
+    if ($total_qty <= 0 || empty($available_dates)) {
+        return $full_distribution;
     }
     
-    // Create a map of date to index
+    // Create date index map
     $date_index_map = [];
-    foreach ($all_dates as $index => $date) {
+    foreach ($date_array as $index => $date) {
         $date_index_map[$date] = $index;
     }
     
-    // Distribute only across available dates
-    $available_days = count($available_dates);
-    $distribution = distributeSalesUniformlyBasic($total_qty, $available_days);
+    // Get distribution for available dates
+    $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
     
-    // Create full distribution array with zeros for all dates
-    $full_distribution = array_fill(0, count($all_dates), 0);
-    
-    // Fill in the distribution for available dates
+    // Fill in the distribution
     foreach ($available_dates as $i => $date) {
         $index = $date_index_map[$date] ?? null;
         if ($index !== null) {
@@ -797,32 +819,10 @@ function distributeSalesIntelligently($conn, $total_qty, $item_code, $start_date
         }
     }
     
-    logMessage("Item $item_code: Distributing $total_qty across $available_days available dates: " . implode(', ', $available_dates), 'INFO');
-    
     return $full_distribution;
 }
 
-// Basic distribution function (renamed to avoid conflict)
-function distributeSalesUniformlyBasic($total_qty, $days_count) {
-    if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
-    
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
-    
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($daily_sales);
-    
-    return $daily_sales;
-}
-
-// ENHANCED: Function to get the correct daily stock table for a specific date with validation
+// Function to get the correct daily stock table for a specific date with validation
 function getDailyStockTableForDate($conn, $comp_id, $date) {
     $current_date = new DateTime();
     $sale_date = new DateTime($date);
@@ -1506,52 +1506,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
             
-            // NEW: Enhanced backdated sales check with specific dates for each item
-            if (isset($_SESSION['sale_quantities']) && !empty($_SESSION['sale_quantities'])) {
-                $items_with_dates = [];
+            // NEW: Enhanced global backdated sales check with dry days
+            $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+            
+            if ($restrictions['restricted'] && empty($restrictions['available_dates'])) {
+                $error_message = "<strong>Cannot enter sales in the selected date range:</strong><br><br>";
                 
-                // For each item with quantity > 0, check the entire date range
-                foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
-                    if ($total_qty > 0) {
-                        $items_with_dates[$item_code] = [
-                            'start_date' => $start_date,
-                            'end_date' => $end_date
-                        ];
-                    }
+                if (!empty($restrictions['unavailable_sales_dates'])) {
+                    $error_message .= "<div class='mb-2'>";
+                    $error_message .= "<strong>Existing Sales Dates:</strong> " . implode(', ', $restrictions['unavailable_sales_dates']) . "<br>";
+                    $error_message .= "</div>";
                 }
                 
-                if (!empty($items_with_dates)) {
-                    $restricted_items = checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id);
+                if (!empty($restrictions['dry_dates'])) {
+                    $dryDaysManager = new DryDaysManager($conn);
+                    $dry_days_info = $restrictions['dry_days_info'];
                     
-                    if (!empty($restricted_items)) {
-                        $error_message = "<strong>Cannot enter sales for the following items in the selected date range:</strong><br><br>";
-                        
-                        foreach ($restricted_items as $item_code => $restriction) {
-                            // Get item name for better error message
-                            $item_name = isset($all_items_data[$item_code]['DETAILS']) ? 
-                                $all_items_data[$item_code]['DETAILS'] : $item_code;
-                            
-                            $error_message .= "<div class='mb-2'>";
-                            $error_message .= "<strong>$item_name ($item_code)</strong><br>";
-                            $error_message .= "<small>Selected Date Range: <span class='text-primary'>{$restriction['start_date']} to {$restriction['end_date']}</span></small><br>";
-                            $error_message .= "<small>Latest Existing Sale: <span class='text-danger'>{$restriction['latest_existing_sale']}</span></small><br>";
-                            $error_message .= "<small>Available Dates: <span class='text-success'>" . 
-                                (empty($restriction['available_dates']) ? 'None' : implode(', ', $restriction['available_dates'])) . 
-                                "</span></small><br>";
-                            $error_message .= "<small><em>{$restriction['message']}</em></small>";
-                            $error_message .= "</div>";
-                        }
-                        
-                        $error_message .= "<br><div class='alert alert-warning mt-2'>";
-                        $error_message .= "<strong>Solution:</strong> Please adjust your date range to be after the latest existing sale date for each restricted item, or remove these items from your sales entry.";
-                        $error_message .= "</div>";
-                        
-                        logMessage("Backdated sales prevented for items with no available dates: " . implode(', ', array_keys($restricted_items)), 'WARNING');
-                        
-                        // Skip further processing
-                        goto render_page;
+                    $error_message .= "<div class='mb-2'>";
+                    $error_message .= "<strong>Dry Days in Range:</strong><br>";
+                    foreach ($restrictions['dry_dates'] as $dry_date) {
+                        $description = $dry_days_info[$dry_date] ?? 'Dry Day';
+                        $error_message .= "<span class='text-danger'>• $dry_date - $description</span><br>";
                     }
+                    $error_message .= "</div>";
                 }
+                
+                $error_message .= "<br><div class='alert alert-warning mt-2'>";
+                $error_message .= "<strong>Latest Global Sale:</strong> " . ($restrictions['latest_existing_sale'] ?? 'None') . "<br>";
+                $error_message .= "<strong>Available Dates:</strong> " . (empty($restrictions['available_dates']) ? 'None' : implode(', ', $restrictions['available_dates']));
+                $error_message .= "</div>";
+                
+                logMessage("Global backdated/dry day sales prevented - No available dates", 'WARNING');
+                
+                // Skip further processing
+                goto render_page;
             }
             
             // NEW: Get closing column for end_date
@@ -1649,9 +1637,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
-                                // NEW: Use intelligent distribution based on available dates
-                                $daily_sales = distributeSalesIntelligently($conn, $total_qty, $item_code, $start_date, $end_date, $comp_id);
-                                $daily_sales_data[$item_code] = $daily_sales;
+                                // NEW: Use global restrictions for distribution
+                                $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
+                                $daily_sales_data[$item_code] = $full_distribution;
                                 
                                 // Store item data
                                 $items_data[$item_code] = [
@@ -1850,7 +1838,12 @@ $debug_info = [
     'stock_filter' => '> 0', // NEW: Added stock filter info
     'daily_stock_table' => $daily_stock_table, // NEW: Added table name info
     'table_suffix' => $table_suffix, // NEW: Added table suffix info
-    'current_month' => date('Y-m') // NEW: Added current month info
+    'current_month' => date('Y-m'), // NEW: Added current month info
+    'has_restrictions' => $has_restrictions, // NEW: Global restriction info
+    'available_dates' => $available_dates_global, // NEW: Available dates
+    'unavailable_dates' => $unavailable_dates_global, // NEW: Unavailable dates
+    'dry_dates' => $dry_dates, // NEW: Dry dates
+    'latest_global_sale' => $restrictions['latest_existing_sale'] ?? null // NEW: Latest global sale
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
@@ -1957,21 +1950,38 @@ tr.has-quantity td {
     font-weight: 500;
 }
 
-/* Enhanced backdated restriction styles */
-tr.backdated-restriction {
+/* Global restriction styles */
+tr.global-restriction {
     background-color: #f8d7da !important;
     border-left: 4px solid #dc3545 !important;
 }
 
-tr.backdated-restriction td {
+tr.global-restriction td {
     color: #721c24 !important;
     font-weight: 600;
 }
 
-tr.backdated-restriction .qty-input {
+tr.global-restriction .qty-input {
     background-color: #f5c6cb !important;
     border-color: #f5c6cb !important;
     color: #721c24 !important;
+    cursor: not-allowed !important;
+}
+
+/* Dry day specific styling */
+.dry-date {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107 !important;
+}
+
+.dry-date td {
+    color: #856404 !important;
+}
+
+.dry-date .qty-input {
+    background-color: #fff3cd !important;
+    border-color: #ffc107 !important;
+    color: #856404 !important;
     cursor: not-allowed !important;
 }
 
@@ -1983,9 +1993,17 @@ tr.backdated-restriction .qty-input {
     text-align: left;
 }
 
-/* Tooltip for backdated information */
-.backdated-tooltip {
-    max-width: 300px !important;
+.badge.bg-warning {
+    font-size: 10px;
+    padding: 3px 8px;
+    max-width: 200px;
+    white-space: normal;
+    text-align: left;
+}
+
+/* Tooltip for restriction information */
+.restriction-tooltip {
+    max-width: 350px !important;
     white-space: normal !important;
 }
 
@@ -2183,20 +2201,14 @@ tr.backdated-restriction .qty-input {
     color: #6c757d;
 }
 
-/* Special styling for items with partial date distribution */
-.partial-date-item {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
+/* Special styling for items with partial date distribution due to global restrictions */
+.global-restriction-item {
+    background-color: #f8d7da !important;
+    border-left: 3px solid #dc3545 !important;
 }
 
-.partial-date-item td {
-    color: #856404 !important;
-}
-
-.partial-distribution-cell {
-    background-color: #e9ecef !important;
-    color: #6c757d !important;
-    font-style: italic;
+.global-restriction-item td {
+    color: #721c24 !important;
 }
 
 /* Enhanced styling for unavailable date cells */
@@ -2213,6 +2225,27 @@ tr.backdated-restriction .qty-input {
     display: block;
 }
 
+.unavailable-date-cell .small-icon {
+    font-size: 12px;
+    display: block;
+    margin-top: 2px;
+}
+
+/* Dry day cell styling */
+.dry-date-cell {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    text-align: center;
+    font-weight: bold;
+    border-left: 2px solid #ffc107 !important;
+}
+
+.dry-date-cell .small-icon {
+    font-size: 12px;
+    display: block;
+    margin-top: 2px;
+}
+
 /* Available date cell with new sales */
 .available-date-cell {
     background-color: #d4edda !important;
@@ -2221,13 +2254,13 @@ tr.backdated-restriction .qty-input {
     font-weight: bold;
 }
 
-/* Partial date item row styling */
-.partial-date-item {
+/* Partial distribution item row styling */
+.partial-distribution-item {
     background-color: #fff3cd !important;
     border-left: 3px solid #ffc107 !important;
 }
 
-.partial-date-item td {
+.partial-distribution-item td {
     color: #856404 !important;
 }
 
@@ -2252,9 +2285,14 @@ tr.backdated-restriction .qty-input {
     background-color: rgba(25, 135, 84, 0.1) !important;
 }
 
-.date-distribution-cell.unavailable-date {
+.date-distribution-cell.global-unavailable-date {
     background-color: #f8d7da !important;
     color: #721c24 !important;
+}
+
+.date-distribution-cell.dry-unavailable-date {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
 }
 
 .date-header {
@@ -2324,6 +2362,16 @@ tr.backdated-restriction .qty-input {
     font-size: 14px;
 }
 
+.date-distribution-cell.dry-date-cell {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+}
+
+.date-distribution-cell.dry-date-cell span {
+    display: block;
+    font-size: 14px;
+}
+
 .date-distribution-cell.non-zero-distribution {
     background-color: #cce5ff !important;
     color: #004085 !important;
@@ -2342,19 +2390,27 @@ tr.backdated-restriction .qty-input {
 }
 
 /* Visual indicator for partial date items */
-.partial-date-item {
+.partial-distribution-item {
     background-color: #fff3cd !important;
     border-left: 3px solid #ffc107 !important;
 }
 
-.partial-date-item td {
+.partial-distribution-item td {
     color: #856404 !important;
 }
 
-/* FIXED: Special styling for unavailable dates */
+/* FIXED: Special styling for unavailable dates (global sales) */
 .unavailable-date {
     background-color: #f8d7da !important;
     color: #721c24 !important;
+    font-weight: bold;
+    position: relative;
+}
+
+/* FIXED: Dry date styling */
+.dry-date {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
     font-weight: bold;
     position: relative;
 }
@@ -2364,6 +2420,25 @@ tr.backdated-restriction .qty-input {
     background-color: #d4edda !important;
     color: #155724 !important;
     font-weight: bold;
+}
+
+/* Restriction info banner */
+.restriction-banner {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.dry-day-banner {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
 }
   </style>
 </head>
@@ -2383,6 +2458,33 @@ tr.backdated-restriction .qty-input {
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
+
+      <!-- NEW: Global Restriction Banner -->
+      <?php if ($has_restrictions): ?>
+        <div class="restriction-banner mb-3">
+          <strong><i class="fas fa-exclamation-triangle"></i> Date Range Restrictions:</strong><br>
+          <?php if (!empty($restrictions['unavailable_sales_dates'])): ?>
+            <span class="badge bg-danger">Existing Sales: <?= implode(', ', $restrictions['unavailable_sales_dates']) ?></span><br>
+          <?php endif; ?>
+          <?php if (!empty($dry_dates)): ?>
+            <span class="badge bg-warning">Dry Days: 
+              <?php 
+              $dryDaysManager = new DryDaysManager($conn);
+              $dry_days_info = $restrictions['dry_days_info'];
+              foreach ($dry_dates as $dry_date): 
+                $description = $dry_days_info[$dry_date] ?? 'Dry Day';
+              ?>
+                <span title="<?= htmlspecialchars($description) ?>"><?= $dry_date ?></span><?= !next($dry_dates) ? '' : ', ' ?>
+              <?php endforeach; ?>
+            </span><br>
+          <?php endif; ?>
+          <?php if (!empty($available_dates_global)): ?>
+            <span class="badge bg-success">Available Dates: <?= implode(', ', $available_dates_global) ?></span>
+          <?php else: ?>
+            <span class="badge bg-danger">No available dates in selected range!</span>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -2469,7 +2571,9 @@ tr.backdated-restriction .qty-input {
 <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
-              <!-- SIMPLIFIED: Removed stock source info -->
+              <?php if ($has_restrictions): ?>
+                <span class="badge bg-warning"><?= count($available_dates_global) ?> available</span>
+              <?php endif; ?>
             </label>
           </div>
           
@@ -2504,7 +2608,6 @@ tr.backdated-restriction .qty-input {
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities</span>
             <?php endif; ?>
-            <!-- SIMPLIFIED: Removed stock filter info -->
           </div>
         </div>
       </div>
@@ -2517,12 +2620,12 @@ tr.backdated-restriction .qty-input {
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
-          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action">
+          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
             <i class="fas fa-random"></i> Shuffle All
           </button>
           
           <!-- Single Button with Dual Functionality -->
-          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action">
+          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
             <i class="fas fa-save"></i> Generate Bills
           </button>
           
@@ -2544,6 +2647,14 @@ tr.backdated-restriction .qty-input {
             <i class="fas fa-sign-out-alt"></i> Exit
           </a>
         </div>
+
+        <?php if (empty($available_dates_global) && $has_restrictions): ?>
+          <div class="alert alert-danger mb-3">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>No available dates in selected range!</strong><br>
+            Please select a different date range.
+          </div>
+        <?php endif; ?>
 
         <!-- Items Table with Integrated Distribution Preview -->
         <div class="table-container">
@@ -2597,37 +2708,26 @@ tr.backdated-restriction .qty-input {
             $stock_status_class = 'stock-available';
         }
         
-        // Enhanced backdated check for this specific item and date range
-        $backdated_check = checkBackdatedSalesForItem($conn, $item_code, $start_date, $end_date, $comp_id);
-        $has_backdated_restriction = $backdated_check['restricted'];
-        $latest_existing = $backdated_check['latest_existing_sale'] ?? null;
-        $available_dates = $backdated_check['available_dates'] ?? [];
-        $unavailable_dates = $backdated_check['unavailable_dates'] ?? [];
+        // Check if there are any available dates
+        $has_available_dates = !empty($available_dates_global);
         
-        // Check if ANY dates are available
-        $has_available_dates = !empty($available_dates);
+        // Disable input if NO available dates
+        $should_disable_input = !$has_available_dates;
         
-        // Disable input only if NO dates are available
-        $should_disable_input = $has_backdated_restriction && !$has_available_dates;
-        
-        $backdated_class = $should_disable_input ? 'backdated-restriction' : '';
-        $backdated_title = $should_disable_input ? 
-            "Sales exist on: " . implode(', ', $unavailable_dates) . ". No available dates in selected range." : 
-            ($has_backdated_restriction ? 
-                "Sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) : 
-                '');
-        
-        // Add partial date warning class if some dates are available
-        $partial_class = ($has_backdated_restriction && $has_available_dates) ? 'partial-date-warning' : '';
+        $restriction_class = $should_disable_input ? 'global-restriction' : '';
+        $restriction_title = $should_disable_input ? 
+            "No available dates in selected range due to existing sales or dry days." : 
+            '';
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
     data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
     data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?> <?= $partial_class ?>"
-    data-has-backdated-restriction='<?= $has_backdated_restriction ? 'true' : 'false' ?>'
-    data-available-dates='<?= json_encode($available_dates) ?>'
-    data-unavailable-dates='<?= json_encode($unavailable_dates) ?>'
-    data-latest-existing='<?= json_encode($latest_existing ?? '') ?>'>
+    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $restriction_class ?>"
+    data-has-global-restriction='<?= $should_disable_input ? 'true' : 'false' ?>'
+    data-available-dates='<?= json_encode($available_dates_global) ?>'
+    data-unavailable-dates='<?= json_encode($unavailable_dates_global) ?>'
+    data-dry-dates='<?= json_encode($dry_dates) ?>'
+    data-latest-global-sale='<?= json_encode($restrictions['latest_existing_sale'] ?? '') ?>'>
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
@@ -2640,10 +2740,10 @@ tr.backdated-restriction .qty-input {
                         <?php elseif ($item['CURRENT_STOCK'] < 10): ?>Low
                         <?php else: ?>Available<?php endif; ?>
                     </span>
-                    <?php if ($has_backdated_restriction && $has_available_dates): ?>
+                    <?php if ($has_restrictions && $has_available_dates): ?>
                         <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                              title="Sales exist on <?= implode(', ', $unavailable_dates) ?>. New sales will be distributed on available dates only.">
-                            <i class="fas fa-calendar-day"></i> Partial Dates
+                              title="Only <?= count($available_dates_global) ?> of <?= $days_count ?> dates are available due to existing sales or dry days.">
+                            <i class="fas fa-calendar-day"></i> Partial Range
                         </span>
                     <?php endif; ?>
                 </span>
@@ -2657,11 +2757,12 @@ tr.backdated-restriction .qty-input {
                        data-code="<?= htmlspecialchars($item_code); ?>"
                        data-stock="<?= $item['CURRENT_STOCK'] ?>"
                        data-size="<?= $size ?>"
-                       data-has-backdated-restriction="<?= $has_backdated_restriction ? 'true' : 'false' ?>"
-                       data-available-dates="<?= htmlspecialchars(json_encode($available_dates)) ?>"
-                       data-unavailable-dates="<?= htmlspecialchars(json_encode($unavailable_dates)) ?>"
+                       data-has-global-restriction="<?= $should_disable_input ? 'true' : 'false' ?>"
+                       data-available-dates='<?= htmlspecialchars(json_encode($available_dates_global)) ?>'
+                       data-unavailable-dates='<?= htmlspecialchars(json_encode($unavailable_dates_global)) ?>'
+                       data-dry-dates='<?= htmlspecialchars(json_encode($dry_dates)) ?>'
                        oninput="validateQuantity(this)"
-                       <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
+                       <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($restriction_title) . '"' : '' ?>>
             </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_closing) ?></span>
@@ -2675,13 +2776,13 @@ tr.backdated-restriction .qty-input {
             <td class="action-column">
                 <?php if ($should_disable_input): ?>
                     <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                          title="<?= htmlspecialchars($backdated_title) ?>">
+                          title="<?= htmlspecialchars($restriction_title) ?>">
                         <i class="fas fa-calendar-times"></i> No Available Dates
                     </span>
-                <?php elseif ($has_backdated_restriction && $has_available_dates): ?>
+                <?php elseif ($has_restrictions && $has_available_dates): ?>
                     <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                          title="Sales exist on <?= implode(', ', $unavailable_dates) ?>. New sales will be distributed on available dates only.">
-                        <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates) ?> dates
+                          title="Only <?= count($available_dates_global) ?> of <?= $days_count ?> dates are available due to existing sales or dry days.">
+                        <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates_global) ?> dates
                     </span>
                 <?php else: ?>
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
@@ -2781,6 +2882,9 @@ tr.backdated-restriction .qty-input {
             Showing <?= count($items) ?> of <?= $total_items ?> items with stock > 0 (Page <?= $current_page ?> of <?= $total_pages ?>)
             <?php if (count($_SESSION['sale_quantities']) > 0): ?>
               | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages</span>
+            <?php endif; ?>
+            <?php if ($has_restrictions): ?>
+              | <span class="text-warning"><?= count($available_dates_global) ?> available dates</span>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -2891,39 +2995,18 @@ const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? [])
 // NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
-// NEW: Function to get available dates for an item via AJAX
-function getAvailableDatesForItem(itemCode) {
-    return new Promise((resolve, reject) => {
-        $.ajax({
-            url: 'get_available_dates.php',
-            type: 'POST',
-            data: {
-                item_code: itemCode,
-                start_date: '<?= $start_date ?>',
-                end_date: '<?= $end_date ?>',
-                comp_id: '<?= $comp_id ?>'
-            },
-            success: function(response) {
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(result.available_dates || []);
-                    } else {
-                        resolve([]); // Return empty array if error
-                    }
-                } catch (e) {
-                    resolve([]); // Return empty array if parsing error
-                }
-            },
-            error: function() {
-                resolve([]); // Return empty array if AJAX error
-            }
-        });
-    });
-}
+// NEW: Global restriction variables
+const globalAvailableDates = <?= json_encode($available_dates_global) ?>;
+const globalUnavailableDates = <?= json_encode($unavailable_dates_global) ?>;
+const globalDryDates = <?= json_encode($dry_dates) ?>;
+const hasGlobalRestrictions = <?= json_encode($has_restrictions) ?>;
+const latestGlobalSale = <?= json_encode($restrictions['latest_existing_sale'] ?? null) ?>;
 
-// FIXED: Enhanced distribution function that correctly handles available/unavailable dates
-function distributeSalesOnAvailableDates(totalQty, availableDates, unavailableDates) {
+// NEW: Dry days info
+const dryDaysInfo = <?= json_encode($restrictions['dry_days_info'] ?? []) ?>;
+
+// FIXED: Enhanced distribution function that correctly handles global restrictions and dry days
+function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDates, unavailableDates) {
     if (totalQty <= 0) return new Array(daysCount).fill(0);
     
     // Create a map of date to index in the dateArray
@@ -2973,99 +3056,34 @@ function distributeSalesOnAvailableDates(totalQty, availableDates, unavailableDa
     return distribution;
 }
 
-// Basic distribution function (client-side version) - for items with no restrictions
-function distributeSalesUniformlyClientSide(totalQty, daysCount) {
-    if (totalQty <= 0 || daysCount <= 0) return new Array(daysCount).fill(0);
-    
-    const baseQty = Math.floor(totalQty / daysCount);
-    const remainder = totalQty % daysCount;
-    
-    const dailySales = new Array(daysCount).fill(baseQty);
-    
-    // Distribute remainder evenly across days
-    for (let i = 0; i < remainder; i++) {
-        dailySales[i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    for (let i = dailySales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
-    }
-    
-    return dailySales;
-}
-
-// NEW: Enhanced backdated sales check by specific dates
-function checkBackdatedSalesBySpecificDatesBeforeSubmit() {
+// Function to validate global restrictions before submission
+function checkGlobalRestrictionsBeforeSubmit() {
     return new Promise((resolve, reject) => {
+        // Check if there are any available dates
+        if (globalAvailableDates.length === 0) {
+            const errorMessage = "No available dates in the selected range due to existing sales or dry days.";
+            showClientValidationAlert(errorMessage);
+            reject(errorMessage);
+            return;
+        }
+
         // Check if we have any quantities > 0
         let hasQuantity = false;
-        const itemsWithQuantity = [];
-        
         for (const itemCode in allSessionQuantities) {
             if (allSessionQuantities[itemCode] > 0) {
                 hasQuantity = true;
-                itemsWithQuantity.push(itemCode);
+                break;
             }
         }
         
-        if (!hasQuantity || itemsWithQuantity.length === 0) {
-            resolve(true);
+        if (!hasQuantity) {
+            const errorMessage = "Please enter quantities for at least one item.";
+            showClientValidationAlert(errorMessage);
+            reject(errorMessage);
             return;
         }
-        
-        // Show checking state
-        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-        
-        // Prepare detailed data for AJAX check - check each item for the entire date range
-        const checkData = {
-            start_date: '<?= $start_date ?>',
-            end_date: '<?= $end_date ?>',
-            comp_id: '<?= $comp_id ?>',
-            items: itemsWithQuantity,
-            check_specific_dates: true
-        };
-        
-        $.ajax({
-            url: 'check_backdated_sales.php',
-            type: 'POST',
-            data: JSON.stringify(checkData),
-            contentType: 'application/json',
-            success: function(response) {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(true);
-                    } else {
-                        let errorMessage = "Cannot enter sales for these items in the selected date range:\n\n";
-                        
-                        result.restricted_items.forEach(item => {
-                            errorMessage += `• ${item.name} (${item.code})\n`;
-                            errorMessage += `  Selected Date Range: ${item.start_date} to ${item.end_date}\n`;
-                            errorMessage += `  Latest Existing Sale: ${item.latest_existing_sale}\n`;
-                            errorMessage += `  Available Dates: ${item.available_dates.length > 0 ? item.available_dates.join(', ') : 'None'}\n`;
-                            errorMessage += `  ${item.message}\n\n`;
-                        });
-                        
-                        errorMessage += "Please adjust your date range to be after the latest existing sale date for each restricted item, or remove these items from your sales entry.";
-                        
-                        alert(errorMessage);
-                        reject('Backdated sales restriction for specific dates');
-                    }
-                } catch (e) {
-                    console.error('Error parsing backdated sales check:', e);
-                    resolve(true); // Allow submission if check fails
-                }
-            },
-            error: function() {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                console.error('Error checking backdated sales');
-                resolve(true); // Allow submission if check fails
-            }
-        });
+
+        resolve(true);
     });
 }
 
@@ -3167,7 +3185,7 @@ function validateQuantity(input) {
     const currentStock = parseFloat($(input).data('stock'));
     let enteredQty = parseInt($(input).val()) || 0;
     
-    // If input is disabled due to backdated restriction, don't validate
+    // If input is disabled due to global restrictions, don't validate
     if ($(input).prop('disabled')) {
         return false;
     }
@@ -3197,8 +3215,8 @@ function validateQuantity(input) {
     // Save to session via AJAX to prevent data loss
     saveQuantityToSession(itemCode, enteredQty);
     
-    // Update distribution preview with backend-like logic
-    updateDistributionPreviewWithAvailableDates(itemCode, enteredQty);
+    // Update distribution preview with global restrictions
+    updateDistributionPreviewWithGlobalRestrictions(itemCode, enteredQty);
     
     return true;
 }
@@ -3309,9 +3327,9 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// FIXED: Enhanced function to update distribution preview - correctly shows only available dates
-function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
-    console.log(`DEBUG: updateDistributionPreviewWithAvailableDates called for ${itemCode} with qty ${totalQty}`);
+// FIXED: Enhanced function to update distribution preview - correctly shows available dates with global restrictions
+function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
+    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const itemRow = inputField.closest('tr');
 
@@ -3335,14 +3353,16 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
         return;
     }
 
-    // Get available and unavailable dates from data attributes
-    const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+    // Get global available/unavailable dates
+    const hasGlobalRestriction = inputField.data('has-global-restriction');
     const availableDates = inputField.data('available-dates') || [];
     const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
 
-    console.log(`DEBUG: ${itemCode} - hasBackdatedRestriction: ${hasBackdatedRestriction}`);
+    console.log(`DEBUG: ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
     console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
     console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
+    console.log(`DEBUG: ${itemCode} - dryDates:`, dryDates);
     
     // Create date index map
     const dateIndexMap = {};
@@ -3352,12 +3372,12 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
 
     console.log(`DEBUG: ${itemCode} - dateIndexMap:`, dateIndexMap);
 
-    // Calculate distribution based on availability
+    // Calculate distribution based on global availability
     let distribution = new Array(daysCount).fill(0);
 
-    if (hasBackdatedRestriction && availableDates.length > 0) {
-        console.log(`DEBUG: ${itemCode} - Has backdated restriction with ${availableDates.length} available dates`);
-        // Distribute only on available dates (backend logic)
+    if (hasGlobalRestriction && availableDates.length > 0) {
+        console.log(`DEBUG: ${itemCode} - Has global restriction with ${availableDates.length} available dates`);
+        // Distribute only on available dates
         const availableDaysCount = availableDates.length;
         const baseQty = Math.floor(totalQty / availableDaysCount);
         const remainder = totalQty % availableDaysCount;
@@ -3388,11 +3408,11 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
         console.log(`Distribution array:`, distribution);
 
         // Add special class to row to indicate partial distribution
-        itemRow.addClass('partial-date-item');
-        itemRow.attr('title', `Sales exist on some dates. New sales will be distributed only on: ${availableDates.join(', ')}`);
-    } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
-        console.log(`DEBUG: ${itemCode} - No backdated restriction or all dates available`);
-        // No restrictions or all dates available - distribute across all dates
+        itemRow.addClass('partial-distribution-item');
+        itemRow.attr('title', `Only ${availableDates.length} of ${daysCount} dates are available. New sales will be distributed only on available dates.`);
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        console.log(`DEBUG: ${itemCode} - No restrictions or all dates available`);
+        // No restrictions - distribute across all dates
         const baseQty = Math.floor(totalQty / daysCount);
         const remainder = totalQty % daysCount;
 
@@ -3409,13 +3429,13 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
             [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
         }
 
-        itemRow.removeClass('partial-date-item');
+        itemRow.removeClass('partial-distribution-item');
         console.log(`Item ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
     } else {
         console.log(`DEBUG: ${itemCode} - No available dates for distribution`);
         // No available dates - all zeros
         console.log(`Item ${itemCode}: No available dates for distribution`);
-        itemRow.addClass('partial-date-item');
+        itemRow.addClass('partial-distribution-item');
         itemRow.attr('title', 'No available dates in selected range');
     }
 
@@ -3431,24 +3451,34 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
         const date = dateArray[index];
         const cell = $(`<td class="date-distribution-cell"></td>`);
 
-        // Check if this date is unavailable due to existing sales
-        const isUnavailable = hasBackdatedRestriction &&
-                              unavailableDates.length > 0 &&
-                              unavailableDates.includes(date);
+        // Check if this date is unavailable due to global sales
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        
+        // Check if this date is a dry day
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        
+        // Check if this date is available
+        const isAvailable = availableDates.length > 0 && availableDates.includes(date);
 
-        const isAvailable = hasBackdatedRestriction &&
-                            availableDates.length > 0 &&
-                            availableDates.includes(date);
-
-        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
         // Apply styling and content based on availability and quantity
-        if (isUnavailable) {
-            // Date has existing sales - show ✗
-            cell.addClass('unavailable-date');
-            cell.html('<span class="text-danger">✗</span>');
+        if (isGlobalUnavailable && !isDryDate) {
+            // Date has existing global sales - show ✗
+            cell.addClass('global-unavailable-date');
+            cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
             cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to UNAVAILABLE (✗)`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
+
+        } else if (isDryDate) {
+            // Date is a dry day - show 🌙
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            
+            // Get dry day description
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
 
         } else if (isAvailable && qty > 0) {
             // Date is available and has new sales
@@ -3472,7 +3502,7 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
 
             if (isAvailable) {
                 cell.attr('title', `Date ${date} is available but has 0 units assigned`);
-            } else if (!hasBackdatedRestriction) {
+            } else if (!hasGlobalRestriction) {
                 cell.attr('title', `Date ${date} has 0 units assigned`);
             }
         }
@@ -3493,17 +3523,31 @@ function updateDistributionPreviewWithAvailableDates(itemCode, totalQty) {
     $('.date-header, .date-distribution-cell').show();
 }
 
-// FIXED: Enhanced distribution function for shuffle that correctly handles available dates
+// FIXED: Enhanced distribution function for shuffle that correctly handles global restrictions
 function shuffleDistributionForItem(itemCode, totalQty) {
     console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const hasBackdatedRestriction = inputField.data('has-backdated-restriction') === 'true';
+    const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
     const availableDatesJson = inputField.data('available-dates');
     const unavailableDatesJson = inputField.data('unavailable-dates');
+    const dryDatesJson = inputField.data('dry-dates');
 
-    console.log(`DEBUG: shuffle ${itemCode} - hasBackdatedRestriction: ${hasBackdatedRestriction}`);
+    let availableDates = [];
+    let unavailableDates = [];
+    let dryDates = [];
+    
+    try {
+        availableDates = availableDatesJson || [];
+        unavailableDates = unavailableDatesJson || [];
+        dryDates = dryDatesJson || [];
+    } catch (e) {
+        console.error('Error parsing date arrays:', e);
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
     console.log(`DEBUG: shuffle ${itemCode} - availableDates:`, availableDates);
     console.log(`DEBUG: shuffle ${itemCode} - unavailableDates:`, unavailableDates);
+    console.log(`DEBUG: shuffle ${itemCode} - dryDates:`, dryDates);
     
     // Create date index map
     const dateIndexMap = {};
@@ -3513,7 +3557,7 @@ function shuffleDistributionForItem(itemCode, totalQty) {
 
     let distribution = new Array(daysCount).fill(0);
 
-    if (hasBackdatedRestriction && availableDates.length > 0) {
+    if (hasGlobalRestriction && availableDates.length > 0) {
         console.log(`DEBUG: shuffle ${itemCode} - Distributing on ${availableDates.length} available dates`);
         // Distribute only on available dates
         const availableDaysCount = availableDates.length;
@@ -3544,7 +3588,7 @@ function shuffleDistributionForItem(itemCode, totalQty) {
 
         console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates`);
         console.log(`DEBUG: shuffle ${itemCode} - distribution:`, distribution);
-    } else if (!hasBackdatedRestriction || availableDates.length === daysCount) {
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
         console.log(`DEBUG: shuffle ${itemCode} - Distributing across all dates`);
         // Distribute across all dates
         const baseQty = Math.floor(totalQty / daysCount);
@@ -3593,18 +3637,33 @@ function initializeTableHeaders() {
         const day = dateObj.getDate();
         const month = dateObj.toLocaleString('default', { month: 'short' });
         
+        // Add tooltip to show if date is a dry day or has sales
+        let title = date;
+        let headerClass = '';
+        
+        if (globalDryDates.includes(date)) {
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            title = `${date} - DRY DAY: ${dryDescription}`;
+            headerClass = 'dry-date-header';
+        } else if (globalUnavailableDates.includes(date) && !globalDryDates.includes(date)) {
+            title = `${date} - Has existing sales`;
+            headerClass = 'unavailable-date-header';
+        } else {
+            title = `${date} - Available for new sales`;
+        }
+        
         // Insert date headers after the action column header
-        $(`<th class="date-header" title="${date}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+        $(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
     });
 }
 
 // Function to handle row navigation with arrow keys
 function setupRowNavigation() {
-    const qtyInputs = $('input.qty-input');
+    const qtyInputs = $('input.qty-input:enabled');
     let currentRowIndex = -1;
     
     // Highlight row when input is focused
-    $(document).on('focus', 'input.qty-input', function() {
+    $(document).on('focus', 'input.qty-input:enabled', function() {
         // Remove highlight from all rows
         $('tr').removeClass('highlight-row');
         
@@ -3616,7 +3675,7 @@ function setupRowNavigation() {
     });
     
     // Handle arrow key navigation
-    $(document).on('keydown', 'input.qty-input', function(e) {
+    $(document).on('keydown', 'input.qty-input:enabled', function(e) {
         // Only handle arrow keys
         if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
         
@@ -3640,14 +3699,14 @@ function setupRowNavigation() {
 
 // UPDATED: Function to generate bills immediately with enhanced client-side validation
 function generateBills() {
-    // First validate basic quantities
-    if (!validateAllQuantities()) {
-        return false;
-    }
-    
-    // Then check backdated sales by specific dates
-    checkBackdatedSalesBySpecificDatesBeforeSubmit()
+    // First check global restrictions
+    checkGlobalRestrictionsBeforeSubmit()
         .then(() => {
+            // Then validate basic quantities
+            if (!validateAllQuantities()) {
+                throw new Error('Quantity validation failed');
+            }
+            
             // Then check stock availability
             return checkStockAvailabilityBeforeSubmit();
         })
@@ -3664,14 +3723,14 @@ function generateBills() {
 
 // Function to save to pending sales via AJAX
 function saveToPendingSales() {
-    // First validate basic quantities
-    if (!validateAllQuantities()) {
-        return false;
-    }
-    
-    // Then check backdated sales by specific dates
-    checkBackdatedSalesBySpecificDatesBeforeSubmit()
+    // First check global restrictions
+    checkGlobalRestrictionsBeforeSubmit()
         .then(() => {
+            // Then validate basic quantities
+            if (!validateAllQuantities()) {
+                throw new Error('Quantity validation failed');
+            }
+            
             // Then check stock availability
             return checkStockAvailabilityBeforeSubmit();
         })
@@ -3735,6 +3794,12 @@ function saveToPendingSales() {
 
 // Single button with dual functionality
 function handleGenerateBills() {
+    // Check if there are any available dates
+    if (globalAvailableDates.length === 0) {
+        alert('No available dates in the selected range due to existing sales or dry days.');
+        return false;
+    }
+    
     // Check if we have any quantities > 0 (optimized check)
     let hasQuantity = false;
     for (const itemCode in allSessionQuantities) {
@@ -4036,12 +4101,12 @@ function updateSalesModalTable(salesSummary, allSizes) {
 }
 
 // Initialize enhanced tooltips
-function initializeBackdatedTooltips() {
+function initializeRestrictionTooltips() {
     $('[data-bs-toggle="tooltip"]').tooltip({
         placement: 'top',
         trigger: 'hover',
         container: 'body',
-        template: '<div class="tooltip backdated-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+        template: '<div class="tooltip restriction-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
     });
 }
 
@@ -4055,7 +4120,7 @@ function initializeDistributionPreview() {
         const totalQty = parseInt($(this).val()) || 0;
         
         if (totalQty > 0 && !$(this).prop('disabled')) {
-            updateDistributionPreviewWithAvailableDates(itemCode, totalQty);
+            updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty);
             itemsWithQuantity++;
         }
     });
@@ -4068,7 +4133,7 @@ function initializeDistributionPreview() {
     }
 }
 
-// FIXED: Individual shuffle button click event - correctly handles available dates
+// FIXED: Individual shuffle button click event - correctly handles global restrictions
 $(document).on('click', '.btn-shuffle-item', async function() {
     const itemCode = $(this).data('code');
     console.log(`DEBUG: Individual shuffle clicked for ${itemCode}`);
@@ -4079,7 +4144,7 @@ $(document).on('click', '.btn-shuffle-item', async function() {
 
     // Only shuffle if quantity > 0 and not disabled
     if (totalQty > 0 && !inputField.prop('disabled')) {
-        // Get new distribution based on backend logic
+        // Get new distribution based on global restrictions
         const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
 
         // Update the distribution cells
@@ -4088,13 +4153,15 @@ $(document).on('click', '.btn-shuffle-item', async function() {
 
         console.log(`DEBUG: Individual shuffle ${itemCode} - found ${dateCells.length} date cells`);
 
-        // Get available/unavailable dates
-        const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+        // Get global available/unavailable dates
+        const hasGlobalRestriction = inputField.data('has-global-restriction');
         const availableDates = inputField.data('available-dates') || [];
         const unavailableDates = inputField.data('unavailable-dates') || [];
+        const dryDates = inputField.data('dry-dates') || [];
 
         console.log(`DEBUG: Individual shuffle ${itemCode} - availableDates:`, availableDates);
         console.log(`DEBUG: Individual shuffle ${itemCode} - unavailableDates:`, unavailableDates);
+        console.log(`DEBUG: Individual shuffle ${itemCode} - dryDates:`, dryDates);
 
         // Create date index map
         const dateIndexMap = {};
@@ -4110,36 +4177,49 @@ $(document).on('click', '.btn-shuffle-item', async function() {
                 console.log(`DEBUG: Individual shuffle ${itemCode} - updating cell ${index} for date ${date} with qty ${qty}`);
 
                 // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
+                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
 
-                // Check if this date is unavailable
-                const isUnavailable = hasBackdatedRestriction &&
-                                      unavailableDates.length > 0 &&
-                                      unavailableDates.includes(date);
+                // Check if this date is unavailable due to global sales
+                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+                
+                // Check if this date is a dry day
+                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
 
-                const isAvailable = hasBackdatedRestriction &&
-                                    availableDates.length > 0 &&
-                                    availableDates.includes(date);
+                // Check if this date is available
+                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
 
-                console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+                console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
-                if (isUnavailable) {
-                    // Date has existing sales - show ✗
-                    cell.addClass('unavailable-date');
-                    cell.html('<span class="text-danger">✗</span>');
+                if (isGlobalUnavailable && !isDryDate) {
+                    // Date has existing global sales - show ✗
+                    cell.addClass('global-unavailable-date');
+                    cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to UNAVAILABLE`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
+
+                } else if (isDryDate) {
+                    // Date is a dry day - show 🌙
+                    cell.addClass('dry-unavailable-date');
+                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                    
+                    // Get dry day description
+                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to DRY DAY`);
+
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to AVAILABLE WITH SALES`);
+
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to NON-ZERO`);
+
                 } else {
                     cell.addClass('zero-distribution');
                     cell.text('0');
@@ -4155,7 +4235,7 @@ $(document).on('click', '.btn-shuffle-item', async function() {
     }
 });
 
-// FIXED: Shuffle all button click event - correctly handles available dates
+// FIXED: Shuffle all button click event - correctly handles global restrictions
 $('#shuffleBtn').off('click').on('click', async function() {
     console.log('DEBUG: Shuffle all button clicked');
     // Show loader
@@ -4175,7 +4255,7 @@ $('#shuffleBtn').off('click').on('click', async function() {
 
     console.log(`DEBUG: Shuffle all - found ${itemsToShuffle.length} items to shuffle:`, itemsToShuffle);
 
-    // Shuffle each item using backend-like logic
+    // Shuffle each item using global restrictions
     for (const item of itemsToShuffle) {
         console.log(`DEBUG: Shuffle all - processing item ${item.itemCode}`);
         const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
@@ -4187,13 +4267,15 @@ $('#shuffleBtn').off('click').on('click', async function() {
 
         console.log(`DEBUG: Shuffle all - ${item.itemCode} has ${dateCells.length} date cells`);
 
-        // Get available/unavailable dates
-        const hasBackdatedRestriction = inputField.data('has-backdated-restriction');
+        // Get global available/unavailable dates
+        const hasGlobalRestriction = inputField.data('has-global-restriction');
         const availableDates = inputField.data('available-dates') || [];
         const unavailableDates = inputField.data('unavailable-dates') || [];
+        const dryDates = inputField.data('dry-dates') || [];
 
         console.log(`DEBUG: Shuffle all - ${item.itemCode} availableDates:`, availableDates);
         console.log(`DEBUG: Shuffle all - ${item.itemCode} unavailableDates:`, unavailableDates);
+        console.log(`DEBUG: Shuffle all - ${item.itemCode} dryDates:`, dryDates);
 
         newDistribution.forEach((qty, index) => {
             if (dateCells.eq(index).length) {
@@ -4203,36 +4285,49 @@ $('#shuffleBtn').off('click').on('click', async function() {
                 console.log(`DEBUG: Shuffle all - ${item.itemCode} updating cell ${index} for date ${date} with qty ${qty}`);
 
                 // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution unavailable-date available-date-with-sales');
+                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
 
-                // Check if this date is unavailable
-                const isUnavailable = hasBackdatedRestriction &&
-                                      unavailableDates.length > 0 &&
-                                      unavailableDates.includes(date);
+                // Check if this date is unavailable due to global sales
+                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+                
+                // Check if this date is a dry day
+                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
 
-                const isAvailable = hasBackdatedRestriction &&
-                                    availableDates.length > 0 &&
-                                    availableDates.includes(date);
+                // Check if this date is available
+                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
 
-                console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isUnavailable=${isUnavailable}, isAvailable=${isAvailable}`);
+                console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
-                if (isUnavailable) {
-                    // Date has existing sales - show ✗
-                    cell.addClass('unavailable-date');
-                    cell.html('<span class="text-danger">✗</span>');
+                if (isGlobalUnavailable && !isDryDate) {
+                    // Date has existing global sales - show ✗
+                    cell.addClass('global-unavailable-date');
+                    cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to UNAVAILABLE`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
+
+                } else if (isDryDate) {
+                    // Date is a dry day - show 🌙
+                    cell.addClass('dry-unavailable-date');
+                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                    
+                    // Get dry day description
+                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to DRY DAY`);
+
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to AVAILABLE WITH SALES`);
+
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to NON-ZERO`);
+
                 } else {
                     cell.addClass('zero-distribution');
                     cell.text('0');
@@ -4268,7 +4363,7 @@ $(document).ready(function() {
     initializeDistributionPreview();
     
     // Initialize enhanced tooltips
-    initializeBackdatedTooltips();
+    initializeRestrictionTooltips();
     
     // Clear session button click event
     $('#clearSessionBtn').click(function() {
