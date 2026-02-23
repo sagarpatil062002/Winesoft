@@ -199,6 +199,12 @@ function getVolumeLabel($volume) {
     return $label;
 }
 
+// Function to extract ML value from size string
+function extractMLFromSize($size) {
+    preg_match('/(\d+)/', $size, $matches);
+    return isset($matches[1]) ? (int)$matches[1] : 0;
+}
+
 // Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -548,6 +554,48 @@ foreach ($dates as $date) {
     }
 }
 
+// Calculate summary in liters for main categories
+$summary_liters_main = [];
+foreach ($main_display_categories as $category) {
+    $summary_liters_main[$category] = [
+        'opening' => 0,
+        'received' => 0,
+        'sold' => 0,
+        'closing' => 0
+    ];
+    
+    foreach ($size_columns[$category] as $size) {
+        $ml = extractMLFromSize($size);
+        $liters_factor = $ml / 1000;
+        
+        $summary_liters_main[$category]['opening'] += ($main_opening_balance[$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['received'] += ($main_totals[$category]['purchase'][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['sold'] += ($main_totals[$category]['sales'][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['closing'] += ($main_totals[$category]['closing'][$size] ?? 0) * $liters_factor;
+    }
+}
+
+// Calculate summary in liters for MML categories
+$summary_liters_mml = [];
+foreach ($mml_categories as $category) {
+    $summary_liters_mml[$category] = [
+        'opening' => 0,
+        'received' => 0,
+        'sold' => 0,
+        'closing' => 0
+    ];
+    
+    foreach ($size_columns[$category] as $size) {
+        $ml = extractMLFromSize($size);
+        $liters_factor = $ml / 1000;
+        
+        $summary_liters_mml[$category]['opening'] += ($mml_opening_balance[$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['received'] += ($mml_totals[$category]['purchase'][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['sold'] += ($mml_totals[$category]['sales'][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['closing'] += ($mml_totals[$category]['closing'][$size] ?? 0) * $liters_factor;
+    }
+}
+
 // Calculate total columns for main table
 $total_main_columns = 0;
 foreach ($main_display_categories as $category) {
@@ -559,6 +607,10 @@ $total_mml_columns = 0;
 foreach ($mml_categories as $category) {
     $total_mml_columns += count($size_columns[$category]);
 }
+
+// Get last date for grand total
+$last_date = end($dates);
+reset($dates);
 ?>
 
 <!DOCTYPE html>
@@ -696,6 +748,14 @@ foreach ($mml_categories as $category) {
       line-height: 1;
       margin: 0;
       padding: 0;
+    }
+    .summary-table {
+      margin-top: 20px;
+      margin-bottom: 30px;
+      width: 100%;
+    }
+    .summary-table th {
+      background-color: #e9ecef;
     }
     .mml-section {
       margin-top: 30px;
@@ -843,6 +903,10 @@ foreach ($mml_categories as $category) {
         page-break-after: auto;
       }
       
+      .summary-table {
+        page-break-inside: avoid;
+      }
+      
       .mml-section {
         margin-top: 20px;
         page-break-before: always;
@@ -864,7 +928,7 @@ foreach ($mml_categories as $category) {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">FLR 1A/2A/3A Datewise Register</h3>
+      <h3 class="mb-4">Monthly Register</h3>
 
       <!-- License Restriction Info -->
       <div class="license-info no-print">
@@ -1155,10 +1219,6 @@ foreach ($mml_categories as $category) {
               </tr>
 
               <!-- Grand Total Row -->
-              <?php 
-              $last_date = end($dates);
-              reset($dates);
-              ?>
               <tr class="summary-row">
                 <td>Grand Total</td>
                 <td></td>
@@ -1187,6 +1247,47 @@ foreach ($mml_categories as $category) {
                 <?php endforeach; ?>
                 
                 <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary in Liters Table -->
+        <div class="summary-table">
+          <h5 class="text-center mb-3">MONTHLY SUMMARY (IN LITERS)</h5>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <th><?= $category_display_names[$category] ?></th>
+                <?php endforeach; ?>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-start fw-bold">Opening Balance (Liters)</td>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <td><?= number_format($summary_liters_main[$category]['opening'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr>
+                <td class="text-start fw-bold">Received (Liters)</td>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <td><?= number_format($summary_liters_main[$category]['received'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr>
+                <td class="text-start fw-bold">Sold (Liters)</td>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <td><?= number_format($summary_liters_main[$category]['sold'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr class="summary-row">
+                <td class="text-start fw-bold">Closing Balance (Liters)</td>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <td><?= number_format($summary_liters_main[$category]['closing'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
               </tr>
             </tbody>
           </table>
@@ -1442,6 +1543,47 @@ foreach ($mml_categories as $category) {
             </tbody>
           </table>
         </div>
+
+        <!-- MML Summary in Liters -->
+        <div class="summary-table mt-3">
+          <h5 class="text-center mb-3">MML MONTHLY SUMMARY (IN LITERS)</h5>
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <?php foreach ($mml_categories as $category): ?>
+                  <th><?= $mml_display_names[$category] ?></th>
+                <?php endforeach; ?>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-start fw-bold">Opening Balance (Liters)</td>
+                <?php foreach ($mml_categories as $category): ?>
+                  <td><?= number_format($summary_liters_mml[$category]['opening'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr>
+                <td class="text-start fw-bold">Received (Liters)</td>
+                <?php foreach ($mml_categories as $category): ?>
+                  <td><?= number_format($summary_liters_mml[$category]['received'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr>
+                <td class="text-start fw-bold">Sold (Liters)</td>
+                <?php foreach ($mml_categories as $category): ?>
+                  <td><?= number_format($summary_liters_mml[$category]['sold'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+              <tr class="summary-row">
+                <td class="text-start fw-bold">Closing Balance (Liters)</td>
+                <?php foreach ($mml_categories as $category): ?>
+                  <td><?= number_format($summary_liters_mml[$category]['closing'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         
         <div class="footer-info mt-3">
           <p><strong>MML Summary:</strong> 
@@ -1521,3 +1663,4 @@ document.querySelectorAll('input[type="date"]').forEach(input => {
 </script>
 </body>
 </html>
+<?php $conn->close(); ?>

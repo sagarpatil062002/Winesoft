@@ -45,11 +45,11 @@ if ($fin_result) {
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $comp_name = trim($_POST['comp_name']);
-    $cf_line = trim($_POST['cf_line']);
-    $cs_line = trim($_POST['cs_line']);
     $fin_year = intval($_POST['fin_year']);
     $comp_addr = trim($_POST['comp_addr']);
     $comp_flno = trim($_POST['comp_flno']);
+    $gst_no = trim($_POST['gst_no']);
+    $mvat_no = trim($_POST['mvat_no']);
     $imfl_limit = isset($_POST['imfl_limit']) ? floatval($_POST['imfl_limit']) : 0;
     $beer_limit = isset($_POST['beer_limit']) ? floatval($_POST['beer_limit']) : 0;
     $cl_limit = isset($_POST['cl_limit']) ? floatval($_POST['cl_limit']) : 0;
@@ -73,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Update company information
         $update_query = "UPDATE tblcompany SET 
                         COMP_NAME = ?, 
-                        CF_LINE = ?, 
-                        CS_LINE = ?, 
                         FIN_YEAR = ?, 
                         COMP_ADDR = ?, 
                         COMP_FLNO = ?,
+                        GST_NO = ?,
+                        MVAT_NO = ?,
                         IMFLLimit = ?,
                         BEERLimit = ?,
                         CLLimit = ?,
@@ -95,14 +95,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         WHERE CompID = ?";
         
         $stmt = $conn->prepare($update_query);
-        // Fixed parameter count: 20 parameters total (19 fields + 1 WHERE clause)
-        $stmt->bind_param("sssisddddddddddddddi", 
+        // 20 parameters total (19 fields + 1 WHERE clause)
+        $stmt->bind_param("sissssdddddddddddddi", 
             $comp_name,       // s
-            $cf_line,         // s
-            $cs_line,         // s
             $fin_year,        // i
             $comp_addr,       // s
             $comp_flno,       // s
+            $gst_no,          // s
+            $mvat_no,         // s
             $imfl_limit,      // d
             $beer_limit,      // d
             $cl_limit,        // d
@@ -146,8 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-    <!-- Include shortcuts functionality -->
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
+  <!-- Include shortcuts functionality -->
+  <script src="components/shortcuts.js?v=<?= time() ?>"></script>
   <style>
     .dashboard-container {
       display: flex;
@@ -228,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <div class="col-md-6">
                 <label for="comp_name" class="form-label">Company Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="comp_name" name="comp_name" 
-                       value="<?= htmlspecialchars($company['COMP_NAME'] ?? 'Diamond Wine Shop') ?>" required>
+                       value="<?= htmlspecialchars($company['COMP_NAME'] ?? 'Nandanwan') ?>" required>
               </div>
               <div class="col-md-6">
                 <label for="fin_year" class="form-label">Financial Year <span class="text-danger">*</span></label>
@@ -243,40 +243,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </div>
             </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label for="cf_line" class="form-label">CF Line</label>
-                <input type="text" class="form-control" id="cf_line" name="cf_line" 
-                       value="<?= htmlspecialchars($company['CF_LINE'] ?? '') ?>">
-              </div>
-              <div class="col-md-6">
-                <label for="cs_line" class="form-label">CS Line</label>
-                <input type="text" class="form-control" id="cs_line" name="cs_line" 
-                       value="<?= htmlspecialchars($company['CS_LINE'] ?? '') ?>">
-              </div>
-            </div>
-
             <div class="mb-3">
               <label for="comp_addr" class="form-label">Company Address</label>
-              <textarea class="form-control" id="comp_addr" name="comp_addr" rows="3"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Vishrambag Sangli') ?></textarea>
+              <textarea class="form-control" id="comp_addr" name="comp_addr" rows="3"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Sangli') ?></textarea>
             </div>
 
-            <div class="mb-3">
-              <label for="comp_flno" class="form-label">FL Number</label>
-              <input type="text" class="form-control" id="comp_flno" name="comp_flno" 
-                     value="<?= htmlspecialchars($company['COMP_FLNO'] ?? 'FL-II 3') ?>">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <label for="comp_flno" class="form-label">FL Number</label>
+                <input type="text" class="form-control" id="comp_flno" name="comp_flno" 
+                       value="<?= htmlspecialchars($company['COMP_FLNO'] ?? '0') ?>">
+              </div>
+              <div class="col-md-4">
+                <label for="gst_no" class="form-label">GST Number</label>
+                <input type="text" class="form-control" id="gst_no" name="gst_no" 
+                       value="<?= htmlspecialchars($company['GST_NO'] ?? '') ?>">
+              </div>
+              <div class="col-md-4">
+                <label for="mvat_no" class="form-label">MVAT Number</label>
+                <input type="text" class="form-control" id="mvat_no" name="mvat_no" 
+                       value="<?= htmlspecialchars($company['MVAT_NO'] ?? '') ?>">
+              </div>
             </div>
 
             <div class="row mb-3">
               <div class="col-md-4">
                 <label for="imfl_limit" class="form-label">IMFL Limit</label>
                 <input type="number" step="0.01" class="form-control" id="imfl_limit" name="imfl_limit" 
-                       value="<?= htmlspecialchars($company['IMFLLimit'] ?? '5000.00') ?>">
+                       value="<?= htmlspecialchars($company['IMFLLimit'] ?? '1000.00') ?>">
               </div>
               <div class="col-md-4">
                 <label for="beer_limit" class="form-label">BEER Limit</label>
                 <input type="number" step="0.01" class="form-control" id="beer_limit" name="beer_limit" 
-                       value="<?= htmlspecialchars($company['BEERLimit'] ?? '3000.00') ?>">
+                       value="<?= htmlspecialchars($company['BEERLimit'] ?? '4000.00') ?>">
               </div>
               <div class="col-md-4">
                 <label for="cl_limit" class="form-label">CL Limit</label>
@@ -360,97 +359,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
         </div>
       </form>
-
-      <!-- Company Information Display -->
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">Current Company Information</h5>
-        </div>
-        <div class="card-body">
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Company Name:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_NAME'] ?? 'Diamond Wine Shop') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Financial Year:</div>
-            <div class="col-md-9"><?= htmlspecialchars($fin_years[$company['FIN_YEAR']] ?? '2024-2025') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">CF Line:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['CF_LINE'] ?? 'Not set') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">CS Line:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['CS_LINE'] ?? 'Not set') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Address:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_ADDR'] ?? 'Vishrambag Sangli') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">FL Number:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['COMP_FLNO'] ?? 'FL-II 3') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">IMFL Limit:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['IMFLLimit'] ?? '5000.00') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">BEER Limit:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['BEERLimit'] ?? '3000.00') ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">CL Limit:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['CLLimit'] ?? '2000.00') ?></div>
-          </div>
-          
-          <!-- Tax Information Display -->
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Sales Tax:</div>
-            <div class="col-md-9"><?= number_format($company['sales_tax_percent'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">CL Tax:</div>
-            <div class="col-md-9"><?= number_format($company['cl_tax'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">IMFL Tax:</div>
-            <div class="col-md-9"><?= number_format($company['imfl_tax'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Wine Tax:</div>
-            <div class="col-md-9"><?= number_format($company['wine_tax'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Mid Beer Tax:</div>
-            <div class="col-md-9"><?= number_format($company['mid_beer_tax'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Strong Beer Tax:</div>
-            <div class="col-md-9"><?= number_format($company['strong_beer_tax'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">TCS:</div>
-            <div class="col-md-9"><?= number_format($company['tcs_percent'] ?? 1.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Surcharges:</div>
-            <div class="col-md-9"><?= number_format($company['surcharges_percent'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Education Cess:</div>
-            <div class="col-md-9"><?= number_format($company['educ_cess_percent'] ?? 0.00, 2) ?>%</div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Court Fees:</div>
-            <div class="col-md-9">₹<?= number_format($company['court_fees'] ?? 10.00, 2) ?></div>
-          </div>
-          <div class="row mb-2">
-            <div class="col-md-3 fw-bold">Last Updated:</div>
-            <div class="col-md-9"><?= htmlspecialchars($company['UPDATED_AT'] ?? 'Not available') ?></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>

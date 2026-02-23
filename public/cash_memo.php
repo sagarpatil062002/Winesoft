@@ -33,39 +33,60 @@ $date_from = isset($_GET['date_from']) ? $_GET['date_from'] : date('Y-m-d');
 $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
 $bill_no = isset($_GET['bill_no']) ? $_GET['bill_no'] : '';
 
-// Function to generate cash memo text exactly as shown in image
+// Function to generate cash memo text exactly as shown in image - UPDATED for license type
 function generateCashMemoText($companyData, $billData, $billItems, $permitData) {
     $text = "";
     
-    // License info - centered
-    $license = !empty($companyData['licenseNumber']) ? $companyData['licenseNumber'] : "FL-II 3";
-    $text .= str_pad($license, 40, " ", STR_PAD_BOTH) . "\n";
+    // License info with type - centered - FIXED: Now uses license_type and licenseNumber
+    $licenseText = "License No: ";
+    if (!empty($companyData['license_type'])) {
+        $licenseText .= $companyData['license_type'] . " ";
+    }
+    $licenseText .= !empty($companyData['licenseNumber']) ? $companyData['licenseNumber'] : "FL-II 3";
+    $text .= str_pad($licenseText, 40, " ", STR_PAD_BOTH) . "\n";
+    
+    // GST and MVAT info if available
+    if (!empty($companyData['gst_no']) || !empty($companyData['mvat_no'])) {
+        $taxInfo = [];
+        if (!empty($companyData['gst_no'])) {
+            $taxInfo[] = "GST: " . $companyData['gst_no'];
+        }
+        if (!empty($companyData['mvat_no'])) {
+            $taxInfo[] = "MVAT: " . $companyData['mvat_no'];
+        }
+        $text .= str_pad(implode(" | ", $taxInfo), 40, " ", STR_PAD_BOTH) . "\n";
+    }
     
     // Shop name and address - centered
     $text .= str_pad($companyData['name'], 40, " ", STR_PAD_BOTH) . "\n";
     $text .= str_pad($companyData['address'], 40, " ", STR_PAD_BOTH) . "\n\n";
     
     // Bill number and date
-    $billNoShort = substr($billData['BILL_NO'], -5);
+    $billNoShort = $billData['BILL_NO']; // Keep full bill number
     $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
-    $text .= "No : " . $billNoShort . str_repeat(" ", 10) . "CASH MEMO" . str_repeat(" ", 10) . "Date: " . $billDate . "\n\n";
+    $text .= "No : " . $billNoShort . str_repeat(" ", 5) . "CASH MEMO" . str_repeat(" ", 5) . "Date: " . $billDate . "\n\n";
     
-    // Customer name
+    // Customer name with permit on same line
     $customerName = 'A.N. PARAB'; // Default
+    $permitNo = '';
     if (!empty($permitData) && !empty($permitData['DETAILS'])) {
         $customerName = $permitData['DETAILS'];
+        $permitNo = $permitData['P_NO'] ?? '';
     } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
         $customerName = $billData['CUST_CODE'];
     }
-    $text .= "Name: " . $customerName . "\n";
     
-    // Permit information
+    $text .= "Name: " . $customerName;
+    if (!empty($permitNo)) {
+        $text .= str_repeat(" ", 15) . "Permit No: " . $permitNo;
+    }
+    $text .= "\n";
+    
+    // Place and Expiry on next line
     if (!empty($permitData)) {
-        $permitNo = $permitData['P_NO'] ?? '';
         $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
         $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
         
-        $text .= "Permit No.: " . $permitNo . "\n";
         $text .= "Place: " . $permitPlace . str_repeat(" ", 15) . "Exp.Dt.: " . $permitExpDate . "\n";
     }
     $text .= "\n";
@@ -112,20 +133,22 @@ function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permi
     }
     $checkStmt->close();
     
-    // Prepare data
+    // Prepare data - FIXED: Now includes license_type
     $licenseNumber = !empty($companyData['licenseNumber']) ? $companyData['licenseNumber'] : "FL-II 3";
+    $licenseType = !empty($companyData['license_type']) ? $companyData['license_type'] : "";
     $shopName = $companyData['name'];
     $shopAddress = $companyData['address'];
     $billDate = $billData['BILL_DATE'];
     
     $customerName = 'A.N. PARAB';
+    $permitNo = null;
     if (!empty($permitData) && !empty($permitData['DETAILS'])) {
         $customerName = $permitData['DETAILS'];
+        $permitNo = $permitData['P_NO'] ?? null;
     } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
         $customerName = $billData['CUST_CODE'];
     }
     
-    $permitNo = $permitData['P_NO'] ?? null;
     $permitPlace = $permitData['PLACE_ISS'] ?? null;
     $permitExpDate = !empty($permitData['P_EXP_DT']) ? $permitData['P_EXP_DT'] : null;
     
@@ -138,15 +161,15 @@ function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permi
     // Insert complete data
     $insertQuery = "INSERT INTO tbl_cash_memo_prints 
                    (bill_no, comp_id, print_date, printed_by, 
-                    license_number, shop_name, shop_address, bill_date, 
+                    license_number, license_type, shop_name, shop_address, bill_date, 
                     customer_name, permit_no, permit_place, permit_exp_date,
                     items_json, total_amount, cash_memo_text) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $insertStmt = $conn->prepare($insertQuery);
-    $insertStmt->bind_param("sisisssssssssds", 
+    $insertStmt->bind_param("sisisssssssssssds", 
         $billNo, $compID, $printDate, $userID,
-        $licenseNumber, $shopName, $shopAddress, $billDate,
+        $licenseNumber, $licenseType, $shopName, $shopAddress, $billDate,
         $customerName, $permitNo, $permitPlace, $permitExpDate,
         $itemsJson, $totalAmount, $cashMemoText
     );
@@ -195,14 +218,18 @@ if (isset($_GET['generate'])) {
     $print_date = date('Y-m-d H:i:s');
     $bill_numbers_to_store = [];
     
-    // Fetch company details for saving
+    // Fetch company details for saving - UPDATED to include License_Type
     $companyDataForSave = [
         'name' => "DIAMOND WINE SHOP",
         'address' => "Ishvanbag Sangli Tal Hiraj Dist Sangli",
-        'licenseNumber' => ""
+        'licenseNumber' => "",
+        'gst_no' => "",
+        'mvat_no' => "",
+        'license_type' => ""
     ];
     
-    $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE FROM tblcompany WHERE CompID = ?";
+    // Updated query to include GST_NO, MVAT_NO, and License_Type
+    $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE, GST_NO, MVAT_NO, License_Type FROM tblcompany WHERE CompID = ?";
     $companyStmt = $conn->prepare($companyQuery);
     $companyStmt->bind_param("i", $compID);
     $companyStmt->execute();
@@ -211,6 +238,9 @@ if (isset($_GET['generate'])) {
         $companyDataForSave['name'] = $row['COMP_NAME'];
         $companyDataForSave['address'] = $row['COMP_ADDR'] ?? $companyDataForSave['address'];
         $companyDataForSave['licenseNumber'] = $row['COMP_FLNO'] ?? "";
+        $companyDataForSave['gst_no'] = $row['GST_NO'] ?? "";
+        $companyDataForSave['mvat_no'] = $row['MVAT_NO'] ?? "";
+        $companyDataForSave['license_type'] = $row['License_Type'] ?? ""; // FIXED: Get license type
         $addressLine = $row['CF_LINE'] ?? "";
         if (!empty($row['CS_LINE'])) {
             $addressLine .= (!empty($addressLine) ? " " : "") . $row['CS_LINE'];
@@ -466,7 +496,7 @@ if (isset($_SESSION['all_bills_data']) && !empty($_SESSION['all_bills_data'])) {
     $all_bills = $_SESSION['all_bills_data'];
 }
 
-// Fetch company details for display
+// Fetch company details for display - UPDATED to include GST_NO, MVAT_NO, and License_Type
 $companyName = "DIAMOND WINE SHOP";
 $companyAddress = "Ishvanbag Sangli Tal Hiraj Dist Sangli";
 $licenseNumber = "";
@@ -474,32 +504,37 @@ $companyAddress2 = "";
 $companyGST = '';
 $companyMVAT = '';
 $licenseDetails = [];
+$licenseType = ''; // Add license type
 
-$companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE, GST_NO, MVAT_NO FROM tblcompany WHERE CompID = ?";
+// Updated query to include GST_NO and MVAT_NO and License_Type
+$companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE, GST_NO, MVAT_NO, License_Type FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
-$companyStmt->bind_param("i", $compID);
-$companyStmt->execute();
-$companyResult = $companyStmt->get_result();
-if ($row = $companyResult->fetch_assoc()) {
-    $companyName = $row['COMP_NAME'];
-    $companyAddress = $row['COMP_ADDR'] ?? $companyAddress;
-    $licenseNumber = $row['COMP_FLNO'] ?? "";
-    $companyGST = $row['GST_NO'] ?? '';
-    $companyMVAT = $row['MVAT_NO'] ?? '';
-    $companyAddress2 = $row['CF_LINE'] ?? "";
-    if (!empty($row['CS_LINE'])) {
-        $companyAddress2 .= (!empty($companyAddress2) ? " " : "") . $row['CS_LINE'];
+if ($companyStmt) {
+    $companyStmt->bind_param("i", $compID);
+    $companyStmt->execute();
+    $companyResult = $companyStmt->get_result();
+    if ($row = $companyResult->fetch_assoc()) {
+        $companyName = $row['COMP_NAME'];
+        $companyAddress = $row['COMP_ADDR'] ?? $companyAddress;
+        $licenseNumber = $row['COMP_FLNO'] ?? "";
+        $companyGST = $row['GST_NO'] ?? '';
+        $companyMVAT = $row['MVAT_NO'] ?? '';
+        $licenseType = $row['License_Type'] ?? ''; // Get license type
+        $companyAddress2 = $row['CF_LINE'] ?? "";
+        if (!empty($row['CS_LINE'])) {
+            $companyAddress2 .= (!empty($companyAddress2) ? " " : "") . $row['CS_LINE'];
+        }
+        
+        // Collect license details (FLII, FLIII, FLBRII, CLIII, etc.)
+        if (!empty($licenseNumber)) {
+            $licenseDetails[] = $licenseNumber;
+        }
     }
-    
-    // Collect license details (FLII, FLIII, FLBRII, CLIII, etc.)
-    if (!empty($licenseNumber)) {
-        $licenseDetails[] = $licenseNumber;
-    }
+    $companyStmt->close();
 }
-$companyStmt->close();
 
-// Also fetch additional license descriptions from tblclass
-$licenseQuery = "SELECT DISTINCT SGROUP, DESC FROM tblclass WHERE SGROUP IN ('FLII', 'FLIII', 'FLBRII', 'CLIII') LIMIT 4";
+// Also fetch additional license descriptions from tblclass - FIXED with backticks around DESC
+$licenseQuery = "SELECT DISTINCT SGROUP, `DESC` FROM tblclass WHERE SGROUP IN ('FLII', 'FLIII', 'FLBRII', 'CLIII') LIMIT 4";
 $licenseResult = $conn->query($licenseQuery);
 if ($licenseResult && $licenseResult->num_rows > 0) {
     while ($licRow = $licenseResult->fetch_assoc()) {
@@ -589,6 +624,14 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
         font-size: 10px;
     }
     
+    .license-type {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 2px;
+        font-size: 10px;
+        text-transform: uppercase;
+    }
+    
     .shop-name {
         font-weight: bold;
         text-transform: uppercase;
@@ -614,19 +657,22 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     .customer-info {
         margin-bottom: 5px;
         font-size: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
-    .permit-info {
-        margin-bottom: 5px;
-        font-size: 9px;
-        line-height: 1;
-        border-bottom: 1px solid #000;
-        padding-bottom: 2px;
+    .customer-info span {
+        white-space: nowrap;
     }
     
     .permit-row {
         display: flex;
         justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 9px;
+        border-bottom: 1px solid #000;
+        padding-bottom: 2px;
     }
     
     .items-table {
@@ -738,7 +784,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
     /* PRINT STYLES - SAME SIZE AS SCREEN */
     @media print {
         @page {
-            size: A4 landscape; /* Changed to landscape to fit screen size */
+            size: A4 landscape;
             margin: 10mm;
         }
         
@@ -760,7 +806,6 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             padding: 0 !important;
         }
         
-        /* Memos container takes full page */
         .memos-container {
             width: 100% !important;
             margin: 0 !important;
@@ -770,31 +815,28 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             page-break-inside: avoid !important;
         }
         
-        /* Cash memo container for print - EXACT SAME SIZE AS SCREEN */
         .cash-memo-container {
-            width: 280px !important; /* Same as screen */
-            height: auto !important; /* Auto height */
-            margin: 8px !important; /* Same as screen */
-            padding: 6px !important; /* Same as screen */
-            border: 1px solid #000 !important; /* Same as screen */
+            width: 280px !important;
+            height: auto !important;
+            margin: 8px !important;
+            padding: 6px !important;
+            border: 1px solid #000 !important;
             background: white !important;
             display: inline-block !important;
             vertical-align: top !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            font-size: 11px !important; /* Same as screen */
-            line-height: 1.1 !important; /* Same as screen */
+            font-size: 11px !important;
+            line-height: 1.1 !important;
             box-sizing: border-box !important;
             float: none !important;
         }
         
-        /* Ensure proper page breaks - 4 per page in landscape */
         .cash-memo-container:nth-child(4n+1) {
             page-break-before: always;
         }
         
-        /* All other styles remain exactly the same as screen */
-        .license-info {
+        .license-info, .license-type {
             font-size: 10px !important;
             margin-bottom: 2px !important;
         }
@@ -820,10 +862,9 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             margin-bottom: 5px !important;
         }
         
-        .permit-info {
+        .permit-row {
             font-size: 9px !important;
             margin-bottom: 5px !important;
-            line-height: 1 !important;
         }
         
         .items-table {
@@ -842,14 +883,12 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             padding-right: 4px !important;
         }
         
-        /* Remove any page headers/footers */
         @page {
             margin-header: 0;
             margin-footer: 0;
         }
     }
 
-    /* Screen responsive styles */
     @media screen and (max-width: 767px) {
         .cash-memo-container {
             width: 100%;
@@ -958,27 +997,27 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
           <!-- Cash Memos Container -->
           <div class="memos-container">
             <?php
-            // Function to display a single cash memo
-            function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null, $companyGST = '', $companyMVAT = '', $licenseDetails = []) {
-                $billNo = $billData['BILL_NO'];
+            // FIXED: Function to display a single cash memo - with license type before number
+            function displayCashMemo($billData, $companyName, $companyAddress, $licenseNumber, $billItems, $permitData = null, $companyGST = '', $companyMVAT = '', $licenseDetails = [], $licenseType = '') {
+                $billNo = $billData['BILL_NO']; // Keep full bill number
                 $billDate = date('d/m/Y', strtotime($billData['BILL_DATE']));
-                $billNoShort = substr($billNo, -5);
                 $totalAmount = $billData['NET_AMOUNT'];
                 
-                // Customer name logic
+                // Customer name logic - from permit or bill
                 $customerName = 'A.N. PARAB'; // Default
+                $permitNo = '';
                 if (!empty($permitData) && !empty($permitData['DETAILS'])) {
                     $customerName = $permitData['DETAILS'];
+                    $permitNo = $permitData['P_NO'] ?? '';
                 } elseif (!empty($billData['CUST_CODE']) && $billData['CUST_CODE'] != 'RETAIL') {
                     $customerName = $billData['CUST_CODE'];
                 }
                 
-                // Permit information
-                $permitNo = $permitData['P_NO'] ?? '';
+                // Permit information for place and expiry
                 $permitPlace = $permitData['PLACE_ISS'] ?? 'SANGLI';
                 $permitExpDate = !empty($permitData['P_EXP_DT']) ? date('d/m/Y', strtotime($permitData['P_EXP_DT'])) : '04/11/2026';
                 
-                // License details display
+                // FIXED: License details display with heading - NOW INCLUDES LICENSE TYPE BEFORE NUMBER
                 $licenseDisplay = !empty($licenseNumber) ? $licenseNumber : "FL-II 3";
                 if (!empty($licenseDetails)) {
                     $licenseDisplay = implode(', ', $licenseDetails);
@@ -986,43 +1025,60 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                 ?>
                 <div class="cash-memo-container">
                   <div class="cash-memo-header">
-                    <div class="license-info"><?= htmlspecialchars($licenseDisplay) ?></div>
+                    <!-- FIXED: License No heading with type and number combined -->
+                    <div class="license-info">
+                        <strong>License No: 
+                        <?php 
+                        if (!empty($licenseType)) {
+                            echo htmlspecialchars($licenseType) . ' ';
+                        }
+                        echo htmlspecialchars($licenseDisplay); 
+                        ?>
+                        </strong>
+                    </div>
+                    
+                    <!-- GST and MVAT info -->
                     <?php if (!empty($companyGST) || !empty($companyMVAT)): ?>
                     <div class="license-info" style="font-size: 9px;">
                         <?php if (!empty($companyGST)): ?>
                             GST: <?= htmlspecialchars($companyGST) ?>
                         <?php endif; ?>
                         <?php if (!empty($companyMVAT)): ?>
-                            | MVAT: <?= htmlspecialchars($companyMVAT) ?>
+                            <?php if (!empty($companyGST)): ?> | <?php endif; ?>
+                            MVAT: <?= htmlspecialchars($companyMVAT) ?>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
+                    
+                    <!-- Shop name and address -->
                     <div class="shop-name"><?= htmlspecialchars($companyName) ?></div>
                     <div class="shop-address"><?= htmlspecialchars($companyAddress) ?></div>
                   </div>
                   
+                  <!-- Bill number with full value -->
                   <div class="memo-info">
-                    <span>No: <?= $billNoShort ?></span>
+                    <span>No: <?= $billNo ?></span>
                     <span>CASH MEMO</span>
                     <span>Date: <?= $billDate ?></span>
                   </div>
                   
+                  <!-- Customer Name with Permit No on same line -->
                   <div class="customer-info">
-                    Name: <?= htmlspecialchars($customerName) ?>
+                    <span><strong>Name:</strong> <?= htmlspecialchars($customerName) ?></span>
+                    <?php if (!empty($permitNo)): ?>
+                        <span><strong>Permit No:</strong> <?= htmlspecialchars($permitNo) ?></span>
+                    <?php endif; ?>
                   </div>
                   
+                  <!-- Place and Expiry Date line -->
                   <?php if (!empty($permitData)): ?>
-                  <div class="permit-info">
-                    <div class="permit-row">
-                      <span>Permit No.: <?= htmlspecialchars($permitNo) ?></span>
-                      <span>Exp.Dt.: <?= $permitExpDate ?></span>
-                    </div>
-                    <div class="permit-row" style="margin-top: 2px;">
-                      <span>Place: <?= htmlspecialchars($permitPlace) ?></span>
-                    </div>
+                  <div class="permit-row">
+                    <span>Place: <?= htmlspecialchars($permitPlace) ?></span>
+                    <span>Exp.Dt.: <?= $permitExpDate ?></span>
                   </div>
                   <?php endif; ?>
                   
+                  <!-- Table header -->
                   <div class="table-header">
                     <div class="header-particulars">Particulars</div>
                     <div class="header-qty">Qty</div>
@@ -1030,6 +1086,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                     <div class="header-amount">Amount</div>
                   </div>
                   
+                  <!-- Items table -->
                   <table class="items-table">
                     <?php foreach ($billItems as $item): ?>
                     <tr>
@@ -1041,6 +1098,7 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
                     <?php endforeach; ?>
                   </table>
                   
+                  <!-- Total amount -->
                   <div class="total-section">
                     Total: ₹<?= number_format($totalAmount, 2) ?>
                   </div>
@@ -1050,10 +1108,10 @@ if (isset($_GET['date_from']) || isset($_GET['date_to']) || isset($_GET['bill_no
             
             // Display single bill or multiple bills
             if (!empty($bill_data)) {
-                displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null, $companyGST ?? '', $companyMVAT ?? '', $licenseDetails);
+                displayCashMemo($bill_data, $companyName, $companyAddress, $licenseNumber, $bill_items, $bill_data['permit'] ?? null, $companyGST ?? '', $companyMVAT ?? '', $licenseDetails, $licenseType);
             } elseif (!empty($all_bills)) {
                 foreach ($all_bills as $bill) {
-                    displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit'], $companyGST ?? '', $companyMVAT ?? '', $licenseDetails);
+                    displayCashMemo($bill['header'], $companyName, $companyAddress, $licenseNumber, $bill['items'], $bill['permit'], $companyGST ?? '', $companyMVAT ?? '', $licenseDetails, $licenseType);
                 }
             }
             ?>

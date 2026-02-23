@@ -1952,19 +1952,19 @@ tr.has-quantity td {
 
 /* Global restriction styles */
 tr.global-restriction {
-    background-color: #f8d7da !important;
-    border-left: 4px solid #dc3545 !important;
+    background-color: #ffffff !important;
+    border-left: 4px solid #6c757d !important;
 }
 
 tr.global-restriction td {
-    color: #721c24 !important;
-    font-weight: 600;
+    color: #6c757d !important;
+    font-weight: normal;
 }
 
 tr.global-restriction .qty-input {
-    background-color: #f5c6cb !important;
-    border-color: #f5c6cb !important;
-    color: #721c24 !important;
+    background-color: #f8f9fa !important;
+    border-color: #dee2e6 !important;
+    color: #6c757d !important;
     cursor: not-allowed !important;
 }
 
@@ -2182,8 +2182,8 @@ tr.global-restriction .qty-input {
 }
 
 .table-archive {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
+    background-color: #ffffff !important;
+    color: #6c757d !important;
 }
 
 /* Simplified stock display - hide decimal points */
@@ -2203,21 +2203,21 @@ tr.global-restriction .qty-input {
 
 /* Special styling for items with partial date distribution due to global restrictions */
 .global-restriction-item {
-    background-color: #f8d7da !important;
-    border-left: 3px solid #dc3545 !important;
+    background-color: #ffffff !important;
+    border-left: 3px solid #6c757d !important;
 }
 
 .global-restriction-item td {
-    color: #721c24 !important;
+    color: #6c757d !important;
 }
 
 /* Enhanced styling for unavailable date cells */
 .unavailable-date-cell {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
+    background-color: #ffffff !important;
+    color: #6c757d !important;
     text-align: center;
     position: relative;
-    font-weight: bold;
+    font-weight: normal;
 }
 
 .unavailable-date-cell span {
@@ -2229,6 +2229,7 @@ tr.global-restriction .qty-input {
     font-size: 12px;
     display: block;
     margin-top: 2px;
+    color: #6c757d;
 }
 
 /* Dry day cell styling */
@@ -2286,8 +2287,8 @@ tr.global-restriction .qty-input {
 }
 
 .date-distribution-cell.global-unavailable-date {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
+    background-color: #ffffff !important;
+    color: #6c757d !important;
 }
 
 .date-distribution-cell.dry-unavailable-date {
@@ -2353,8 +2354,8 @@ tr.global-restriction .qty-input {
 }
 
 .date-distribution-cell.unavailable-date-cell {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
+    background-color: #ffffff !important;
+    color: #6c757d !important;
 }
 
 .date-distribution-cell.unavailable-date-cell span {
@@ -2401,9 +2402,9 @@ tr.global-restriction .qty-input {
 
 /* FIXED: Special styling for unavailable dates (global sales) */
 .unavailable-date {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-    font-weight: bold;
+    background-color: #ffffff !important;
+    color: #6c757d !important;
+    font-weight: normal;
     position: relative;
 }
 
@@ -2424,9 +2425,9 @@ tr.global-restriction .qty-input {
 
 /* Restriction info banner */
 .restriction-banner {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
     padding: 10px;
     border-radius: 5px;
     margin-bottom: 15px;
@@ -3466,7 +3467,7 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
         if (isGlobalUnavailable && !isDryDate) {
             // Date has existing global sales - show ✗
             cell.addClass('global-unavailable-date');
-            cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
             cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
 
@@ -4193,7 +4194,7 @@ $(document).on('click', '.btn-shuffle-item', async function() {
                 if (isGlobalUnavailable && !isDryDate) {
                     // Date has existing global sales - show ✗
                     cell.addClass('global-unavailable-date');
-                    cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
+                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
 
@@ -4301,7 +4302,7 @@ $('#shuffleBtn').off('click').on('click', async function() {
                 if (isGlobalUnavailable && !isDryDate) {
                     // Date has existing global sales - show ✗
                     cell.addClass('global-unavailable-date');
-                    cell.html('<span class="text-danger">✗</span><span class="small-icon">(sale)</span>');
+                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
                     cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
 

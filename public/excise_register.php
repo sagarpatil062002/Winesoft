@@ -621,12 +621,6 @@ foreach ($display_categories as $category) {
       font-weight: bold;
     }
     
-    .closing-balance {
-      font-weight: bold !important;
-      color: #000 !important;
-      background-color: #d3d3d3 !important;
-    }
-    
     /* Double line separators - using class-based approach */
     .double-line-right {
       border-right: 3px double #000 !important;
@@ -1081,7 +1075,7 @@ foreach ($display_categories as $category) {
                         $last_index = count($sizes) - 1;
                         foreach ($sizes as $size_index => $size): 
                         ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?> closing-balance">
+                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
                             <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
                           </td>
                         <?php endforeach; ?>
@@ -1149,7 +1143,7 @@ foreach ($display_categories as $category) {
                         $last_index = count($sizes) - 1;
                         foreach ($sizes as $size_index => $size): 
                         ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?> closing-balance">
+                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
                             <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
                           </td>
                         <?php endforeach; ?>
