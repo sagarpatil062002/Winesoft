@@ -49,6 +49,32 @@ $companyResult = $stmt->get_result();
 $company = $companyResult->fetch_assoc();
 $companyName = $company['COMP_NAME'] ?? 'DIAMOND WINE SHOP';
 
+// Fetch all categories from tblcategory
+$categoryQuery = "SELECT CATEGORY_CODE, CATEGORY_NAME, LIQ_FLAG FROM tblcategory ORDER BY CATEGORY_CODE";
+$categoryResult = $conn->query($categoryQuery);
+$categories = [];
+while ($row = $categoryResult->fetch_assoc()) {
+    $categories[$row['CATEGORY_CODE']] = $row;
+}
+
+// Fetch all classes from tblclass_new with their category mapping
+$classQuery = "SELECT CLASS_CODE, CLASS_NAME, CATEGORY_CODE, OLD_CLASS_CODE FROM tblclass_new";
+$classResult = $conn->query($classQuery);
+$classes = [];
+$class_to_category = [];
+$class_to_name = [];
+while ($row = $classResult->fetch_assoc()) {
+    $classes[$row['CLASS_CODE']] = $row;
+    $class_to_category[$row['CLASS_CODE']] = $row['CATEGORY_CODE'];
+    $class_to_name[$row['CLASS_CODE']] = $row['CLASS_NAME'];
+    
+    // Also map by OLD_CLASS_CODE if available (for backward compatibility)
+    if (!empty($row['OLD_CLASS_CODE'])) {
+        $class_to_category[$row['OLD_CLASS_CODE']] = $row['CATEGORY_CODE'];
+        $class_to_name[$row['OLD_CLASS_CODE']] = $row['CLASS_NAME'];
+    }
+}
+
 // Function to extract brand name from item details
 function getBrandName($details) {
     // Remove size patterns (ML, CL, L, etc. with numbers)
@@ -106,17 +132,37 @@ $display_sizes_w = array_keys($grouped_sizes_w);
 $display_sizes_fb = array_keys($grouped_sizes_fb);
 $display_sizes_mb = array_keys($grouped_sizes_mb);
 
-// Function to determine liquor type based on CLASS and LIQ_FLAG
-function getLiquorType($class, $liq_flag) {
+// Function to determine liquor type based on CLASS and LIQ_FLAG using new database structure
+function getLiquorType($class_code, $liq_flag, $class_to_category, $categories) {
     if ($liq_flag == 'F') {
-        switch ($class) {
-            case 'F': return 'Fermented Beer';
-            case 'M': return 'Mild Beer';
-            case 'V': return 'Wines';
-            default: return 'Spirits';
+        // Get category for this class
+        $category_code = isset($class_to_category[$class_code]) ? $class_to_category[$class_code] : '';
+        
+        // Map category to liquor type
+        switch ($category_code) {
+            case 'CAT001': return 'Spirits';
+            case 'CAT002': return 'Wines';
+            case 'CAT003': return 'Fermented Beer';
+            case 'CAT004': return 'Mild Beer';
+            case 'CAT005': return 'Country Liquor';
+            default: 
+                // Fallback to old logic if category mapping fails
+                switch ($class_code) {
+                    case 'F': return 'Fermented Beer';
+                    case 'M': return 'Mild Beer';
+                    case 'V': return 'Wines';
+                    default: return 'Spirits';
+                }
         }
+    } elseif ($liq_flag == 'C') {
+        return 'Country Liquor';
     }
-    return 'Spirits'; // Default for non-F items
+    return 'Others';
+}
+
+// Function to get class display name
+function getClassDisplayName($class_code, $class_to_name) {
+    return isset($class_to_name[$class_code]) ? $class_to_name[$class_code] : $class_code;
 }
 
 // Function to get grouped size for display
@@ -199,128 +245,116 @@ $stmt->execute();
 $result = $stmt->get_result();
 $items = $result->fetch_all(MYSQLI_ASSOC);
 
-// Initialize variables for detailed and summary reports
-$detailed_data = [];
-$brand_data_by_category = [
-    'Spirits' => [],
-    'Wines' => [],
-    'Fermented Beer' => [],
-    'Mild Beer' => []
+// Initialize organized data structure by Category and Class
+$organized_data = [
+    'categories' => []
 ];
 
-// Define display sizes for each liquor type
-$liquor_type_sizes = [
-    'Spirits' => $display_sizes_s,
-    'Wines' => $display_sizes_w,
-    'Fermented Beer' => $display_sizes_fb,
-    'Mild Beer' => $display_sizes_mb
-];
+foreach ($categories as $category_code => $category) {
+    $organized_data['categories'][$category_code] = [
+        'category_name' => $category['CATEGORY_NAME'],
+        'liq_flag' => $category['LIQ_FLAG'],
+        'classes' => []
+    ];
+}
 
-// Process items for both detailed and summary reports
+// Process items and organize by category and class
 foreach ($items as $item) {
-    $liquor_type = getLiquorType($item['CLASS'], $item['LIQ_FLAG']);
-    $size = $item['DETAILS2'] ?? '';
     $closing_stock = (float)$item['CLOSING_STOCK'];
     
     // Skip items with zero closing stock
     if ($closing_stock <= 0) continue;
     
-    // Get rate based on selected rate type
+    $class_code = $item['CLASS'];
+    $liq_flag = $item['LIQ_FLAG'];
+    
+    // Get category for this class
+    $category_code = isset($class_to_category[$class_code]) ? $class_to_category[$class_code] : '';
+    
+    // If category not found, try to determine from liquor type
+    if (empty($category_code)) {
+        if ($liq_flag == 'C') {
+            $category_code = 'CAT005'; // Country Liquor
+        } elseif ($liq_flag == 'F') {
+            // Determine based on class name or default to Spirits
+            $liquor_type = getLiquorType($class_code, $liq_flag, $class_to_category, $categories);
+            switch ($liquor_type) {
+                case 'Spirits': $category_code = 'CAT001'; break;
+                case 'Wines': $category_code = 'CAT002'; break;
+                case 'Fermented Beer': $category_code = 'CAT003'; break;
+                case 'Mild Beer': $category_code = 'CAT004'; break;
+                default: $category_code = 'CAT001';
+            }
+        } else {
+            $category_code = 'CAT008'; // General/Others
+        }
+    }
+    
+    // Ensure category exists in organized data
+    if (!isset($organized_data['categories'][$category_code])) {
+        $organized_data['categories'][$category_code] = [
+            'category_name' => isset($categories[$category_code]) ? $categories[$category_code]['CATEGORY_NAME'] : 'Others',
+            'liq_flag' => isset($categories[$category_code]) ? $categories[$category_code]['LIQ_FLAG'] : 'O',
+            'classes' => []
+        ];
+    }
+    
+    // Get class display name
+    $class_display_name = getClassDisplayName($class_code, $class_to_name);
+    
+    // Initialize class if not exists
+    if (!isset($organized_data['categories'][$category_code]['classes'][$class_code])) {
+        $organized_data['categories'][$category_code]['classes'][$class_code] = [
+            'class_name' => $class_display_name,
+            'items' => [],
+            'totals' => ['stock' => 0, 'amount' => 0]
+        ];
+    }
+    
+    // Get rate and amount
     $rate = getItemRate($item, $rate_type);
     $amount = $rate * $closing_stock;
     
     // Extract brand name
     $brandName = getBrandName($item['DETAILS']);
-    if (empty($brandName)) continue;
+    if (empty($brandName)) $brandName = "Unknown";
     
-    // Get grouped size for display
-    $grouped_size = getGroupedSize($size, $liquor_type);
+    // Get grouped size
+    $liquor_type = getLiquorType($class_code, $liq_flag, $class_to_category, $categories);
+    $grouped_size = getGroupedSize($item['DETAILS2'] ?? '', $liquor_type);
     
-    // Add to detailed data
-    $detailed_data[] = [
+    // Add item to class
+    $item_data = [
         'CODE' => $item['CODE'],
         'ItemName' => $item['Print_Name'] ?: $item['DETAILS'],
-        'ItemSize' => $size,
+        'ItemSize' => $item['DETAILS2'] ?? '',
         'GroupedSize' => $grouped_size,
         'BrandName' => $brandName,
         'LiquorType' => $liquor_type,
-        'CLASS' => $item['CLASS'],
-        'SUB_CLASS' => $item['SUB_CLASS'],
-        'ITEM_GROUP' => $item['ITEM_GROUP'],
+        'CLASS' => $class_code,
+        'ClassDisplayName' => $class_display_name,
         'ClosingStock' => $closing_stock,
         'Rate' => $rate,
-        'Amount' => $amount,
-        'PPRICE' => $item['PPRICE'] ?? 0,
-        'BPRICE' => $item['BPRICE'] ?? 0,
-        'MPRICE' => $item['MPRICE'] ?? 0,
-        'RPRICE' => $item['RPRICE'] ?? 0
+        'Amount' => $amount
     ];
     
-    // Add to summary data (only if the grouped size exists in our display sizes for this liquor type)
-    if (in_array($grouped_size, $liquor_type_sizes[$liquor_type])) {
-        // Initialize brand data if not exists
-        if (!isset($brand_data_by_category[$liquor_type][$brandName])) {
-            $brand_data_by_category[$liquor_type][$brandName] = array_fill_keys($liquor_type_sizes[$liquor_type], 0);
-        }
-        
-        // Add closing stock to the brand and size
-        $brand_data_by_category[$liquor_type][$brandName][$grouped_size] += $closing_stock;
+    $organized_data['categories'][$category_code]['classes'][$class_code]['items'][] = $item_data;
+    $organized_data['categories'][$category_code]['classes'][$class_code]['totals']['stock'] += $closing_stock;
+    $organized_data['categories'][$category_code]['classes'][$class_code]['totals']['amount'] += $amount;
+}
+
+// Calculate grand totals
+$grand_total_stock = 0;
+$grand_total_amount = 0;
+foreach ($organized_data['categories'] as $category) {
+    foreach ($category['classes'] as $class) {
+        $grand_total_stock += $class['totals']['stock'];
+        $grand_total_amount += $class['totals']['amount'];
     }
 }
 
-// Calculate totals for each liquor type in summary report
-$liquor_type_totals = [
-    'Spirits' => array_fill_keys($display_sizes_s, 0),
-    'Wines' => array_fill_keys($display_sizes_w, 0),
-    'Fermented Beer' => array_fill_keys($display_sizes_fb, 0),
-    'Mild Beer' => array_fill_keys($display_sizes_mb, 0)
-];
-
-foreach ($brand_data_by_category as $liquor_type => $brands) {
-    foreach ($brands as $brand => $sizes) {
-        foreach ($sizes as $size => $quantity) {
-            if (isset($liquor_type_totals[$liquor_type][$size])) {
-                $liquor_type_totals[$liquor_type][$size] += $quantity;
-            }
-        }
-    }
-}
-
-// Calculate totals for detailed report
-$detailed_total_stock = 0;
-$detailed_total_amount = 0;
-foreach ($detailed_data as $item) {
-    $detailed_total_stock += $item['ClosingStock'];
-    $detailed_total_amount += $item['Amount'];
-}
-
-// Country liquor items (if any)
-$country_liquor_items = array_filter($items, function($item) {
-    return $item['LIQ_FLAG'] === 'C';
-});
-
-$country_brands = [];
-$country_sizes = [];
-
-foreach ($country_liquor_items as $item) {
-    $brandName = getBrandName($item['DETAILS']);
-    $size = getBaseSize($item['DETAILS2'] ?? '');
-    
-    if (!isset($country_brands[$brandName])) {
-        $country_brands[$brandName] = [];
-    }
-    if (!in_array($size, $country_sizes)) {
-        $country_sizes[] = $size;
-    }
-    
-    if (!isset($country_brands[$brandName][$size])) {
-        $country_brands[$brandName][$size] = 0;
-    }
-    
-    $country_brands[$brandName][$size] += (float)$item['CLOSING_STOCK'];
-}
-
-sort($country_sizes);
+// Define category display order
+$category_order = ['CAT001', 'CAT002', 'CAT003', 'CAT004', 'CAT005', 'CAT006', 'CAT007', 'CAT008'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -340,32 +374,56 @@ sort($country_sizes);
         text-align: center;
         min-width: 60px;
     }
-    .brand-header {
+    .category-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 20px;
+        margin: 25px 0 15px 0;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+    .class-header {
         background-color: #f0f0f0;
-        padding: 8px;
-        margin-top: 20px;
+        padding: 8px 15px;
+        margin: 15px 0 10px 0;
         border-left: 4px solid #007bff;
+        font-weight: bold;
+        font-size: 1.1rem;
     }
     .total-row {
         background-color: #e9ecef;
         font-weight: bold;
     }
+    .grand-total-row {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
     .table-container {
         overflow-x: auto;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
     }
     .report-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 20px;
-    }
-    .report-table th, .report-table td {
-        border: 1px solid #ddd;
-        padding: 6px;
-        text-align: left;
+        margin-bottom: 0;
     }
     .report-table th {
-        background-color: #f8f9fa;
-        font-weight: bold;
+        background-color: #495b6b;
+        color: white;
+        padding: 8px;
+        font-weight: 500;
+    }
+    .report-table th, .report-table td {
+        border: 1px solid #dee2e6;
+        padding: 6px;
+    }
+    .report-table td {
+        background-color: white;
     }
     .print-content {
         display: none;
@@ -383,6 +441,16 @@ sort($country_sizes);
     .text-center {
         text-align: center;
     }
+    .company-header {
+        text-align: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #333;
+    }
+    .company-header h2 {
+        color: #333;
+        margin-bottom: 5px;
+    }
     @media print {
         .no-print {
             display: none !important;
@@ -391,10 +459,20 @@ sort($country_sizes);
             display: block !important;
         }
         .report-table {
-            font-size: 10px;
+            font-size: 9px;
         }
         .report-table th, .report-table td {
             padding: 3px;
+        }
+        .category-header {
+            background: #667eea !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .report-table th {
+            background-color: #495b6b !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
     }
   </style>
@@ -449,11 +527,11 @@ sort($country_sizes);
               <label class="form-label">Sequence:</label>
               <div class="btn-group w-100" role="group">
                 <button type="submit" name="sequence" value="U" 
-                        class="btn btn-outline-primary <?= $sequence === 'U' ? 'sequence-active' : '' ?>">
+                        class="btn btn-outline-primary <?= $sequence === 'U' ? 'active' : '' ?>">
                   User Defined
                 </button>
                 <button type="submit" name="sequence" value="S" 
-                        class="btn btn-outline-primary <?= $sequence === 'S' ? 'sequence-active' : '' ?>">
+                        class="btn btn-outline-primary <?= $sequence === 'S' ? 'active' : '' ?>">
                   System Defined
                 </button>
               </div>
@@ -463,11 +541,11 @@ sort($country_sizes);
               <label class="form-label">Mode:</label>
               <div class="btn-group w-100" role="group">
                 <button type="submit" name="mode" value="D" 
-                        class="btn btn-outline-primary <?= $mode === 'D' ? 'sequence-active' : '' ?>">
+                        class="btn btn-outline-primary <?= $mode === 'D' ? 'active' : '' ?>">
                   Detailed
                 </button>
                 <button type="submit" name="mode" value="S" 
-                        class="btn btn-outline-primary <?= $mode === 'S' ? 'sequence-active' : '' ?>">
+                        class="btn btn-outline-primary <?= $mode === 'S' ? 'active' : '' ?>">
                   Summary
                 </button>
               </div>
@@ -500,208 +578,209 @@ sort($country_sizes);
 
       <!-- Report Content -->
       <div id="reportContent" class="print-content">
-        <div class="report-header">
-          <div class="print-header">
-            <h2><?= htmlspecialchars($companyName) ?></h2>
-            <p>License Type: <?= htmlspecialchars($license_type) ?></p>
-            <p>Item Wise Closing Stock Statement As On <?= date('d-M-Y', strtotime($db_date)) ?></p>
-            <p>Rate Type: <?= 
-                $rate_type === 'mrp' ? 'MRP Rate' : 
-                ($rate_type === 'brate' ? 'Base Rate' : 
-                ($rate_type === 'prate' ? 'Purchase Rate' : 'Retail Rate'))
-            ?></p>
-          </div>
+        <div class="company-header">
+          <h2><?= htmlspecialchars($companyName) ?></h2>
+          <p>License Type: <?= htmlspecialchars($license_type) ?></p>
+          <p>Item Wise Closing Stock Statement As On <?= date('d-M-Y', strtotime($db_date)) ?></p>
+          <p>Rate Type: <?= 
+              $rate_type === 'mrp' ? 'MRP Rate' : 
+              ($rate_type === 'brate' ? 'Base Rate' : 
+              ($rate_type === 'prate' ? 'Purchase Rate' : 'Retail Rate'))
+          ?></p>
         </div>
 
         <?php if ($mode === 'D'): ?>
-          <!-- Detailed Report -->
-          <div class="table-container">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Sr. No.</th>
-                  <th>Item Code</th>
-                  <th>Item Description</th>
-                  <th>Size</th>
-                  <th>Brand Name</th>
-                  <th>Liquor Type</th>
-                  <th>Closing Stock</th>
-                  <th class="text-right">Rate (<?= 
-                      $rate_type === 'mrp' ? 'MRP' : 
-                      ($rate_type === 'brate' ? 'Base' : 
-                      ($rate_type === 'prate' ? 'Purchase' : 'Retail'))
-                  ?>)</th>
-                  <th class="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php
-                $sr_no = 1;
-                // Sort detailed data based on sequence
+          <!-- Detailed Report with Category and Class Grouping -->
+          <?php 
+          $global_sr_no = 1;
+          foreach ($category_order as $cat_code): 
+              if (!isset($organized_data['categories'][$cat_code]) || empty($organized_data['categories'][$cat_code]['classes'])) continue;
+              
+              $category = $organized_data['categories'][$cat_code];
+          ?>
+            <div class="category-header"><?= strtoupper($category['category_name']) ?></div>
+            
+            <?php foreach ($category['classes'] as $class_code => $class): 
+                if (empty($class['items'])) continue;
+                
+                // Sort items based on sequence
+                $items = $class['items'];
                 if ($sequence === 'S') {
-                    usort($detailed_data, function($a, $b) {
-                        return strcmp($a['LiquorType'], $b['LiquorType']) ?: 
-                               strcmp($a['BrandName'], $b['BrandName']) ?:
+                    usort($items, function($a, $b) {
+                        return strcmp($a['BrandName'], $b['BrandName']) ?:
                                strcmp($a['ItemName'], $b['ItemName']);
                     });
                 }
-                
-                $current_liquor_type = '';
-                foreach ($detailed_data as $item):
-                    if ($current_liquor_type !== $item['LiquorType']):
-                        $current_liquor_type = $item['LiquorType'];
-                ?>
-                <tr class="subclass-header">
-                  <td colspan="9" style="background-color: #f0f0f0; font-weight: bold;">
-                    <?= strtoupper($current_liquor_type) ?>
-                  </td>
-                </tr>
-                <?php endif; ?>
-                
-                <tr>
-                  <td><?= $sr_no++ ?></td>
-                  <td><?= htmlspecialchars($item['CODE']) ?></td>
-                  <td><?= htmlspecialchars($item['ItemName']) ?></td>
-                  <td class="text-center"><?= htmlspecialchars($item['ItemSize']) ?></td>
-                  <td><?= htmlspecialchars($item['BrandName']) ?></td>
-                  <td><?= htmlspecialchars($item['LiquorType']) ?></td>
-                  <td class="text-right"><?= number_format($item['ClosingStock'], 0) ?></td>
-                  <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
-                  <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                
-                <!-- Total Row -->
-                <tr class="total-row">
-                  <td colspan="6" class="text-end"><strong>Grand Total:</strong></td>
-                  <td class="text-right"><strong><?= number_format($detailed_total_stock, 0) ?></strong></td>
-                  <td></td>
-                  <td class="text-right"><strong><?= number_format($detailed_total_amount, 2) ?></strong></td>
-                </tr>
-              </tbody>
+            ?>
+              <div class="class-header"><?= strtoupper($class['class_name']) ?></div>
+              
+              <div class="table-container">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Sr. No.</th>
+                      <th>Item Code</th>
+                      <th>Item Description</th>
+                      <th>Size</th>
+                      <th>Brand Name</th>
+                      <th class="text-right">Closing Stock</th>
+                      <th class="text-right">Rate (<?= 
+                          $rate_type === 'mrp' ? 'MRP' : 
+                          ($rate_type === 'brate' ? 'Base' : 
+                          ($rate_type === 'prate' ? 'Purchase' : 'Retail'))
+                      ?>)</th>
+                      <th class="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php foreach ($items as $item): ?>
+                      <tr>
+                        <td class="text-center"><?= $global_sr_no++ ?></td>
+                        <td><?= htmlspecialchars($item['CODE']) ?></td>
+                        <td><?= htmlspecialchars($item['ItemName']) ?></td>
+                        <td class="text-center"><?= htmlspecialchars($item['ItemSize']) ?></td>
+                        <td><?= htmlspecialchars($item['BrandName']) ?></td>
+                        <td class="text-right"><?= number_format($item['ClosingStock'], 0) ?></td>
+                        <td class="text-right"><?= number_format($item['Rate'], 2) ?></td>
+                        <td class="text-right"><?= number_format($item['Amount'], 2) ?></td>
+                      </tr>
+                    <?php endforeach; ?>
+                    
+                    <!-- Class Total Row -->
+                    <tr class="total-row">
+                      <td colspan="5" class="text-end"><strong>Total <?= $class['class_name'] ?>:</strong></td>
+                      <td class="text-right"><strong><?= number_format($class['totals']['stock'], 0) ?></strong></td>
+                      <td></td>
+                      <td class="text-right"><strong><?= number_format($class['totals']['amount'], 2) ?></strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            <?php endforeach; ?>
+          <?php endforeach; ?>
+          
+          <!-- Grand Total -->
+          <div class="table-container" style="margin-top: 25px;">
+            <table class="report-table">
+              <tr class="grand-total-row">
+                <td colspan="5" class="text-end"><strong>GRAND TOTAL:</strong></td>
+                <td class="text-right"><strong><?= number_format($grand_total_stock, 0) ?></strong></td>
+                <td></td>
+                <td class="text-right"><strong><?= number_format($grand_total_amount, 2) ?></strong></td>
+              </tr>
             </table>
           </div>
-        <?php else: ?>
-          <!-- Summary Report -->
-          <?php foreach ($brand_data_by_category as $liquor_type => $brands): 
-              if (!empty($brands)): 
-                  $display_sizes = $liquor_type_sizes[$liquor_type];
-          ?>
-          <div class="category-section">
-            <h4 class="brand-header"><?= strtoupper($liquor_type) ?></h4>
-            <div class="table-container">
-              <table class="report-table">
-                <thead>
-                  <tr>
-                    <th>Sr. No.</th>
-                    <th>Brand Name</th>
-                    <?php foreach ($display_sizes as $size): ?>
-                      <th class="size-column"><?= $size ?></th>
-                    <?php endforeach; ?>
-                    <th class="size-column">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php
-                  $sr_no = 1;
-                  ksort($brands);
-                  foreach ($brands as $brand => $sizes):
-                      $brand_total = 0;
-                  ?>
-                  <tr>
-                    <td><?= $sr_no++ ?></td>
-                    <td><?= htmlspecialchars($brand) ?></td>
-                    <?php foreach ($display_sizes as $size): 
-                        $quantity = $sizes[$size] ?? 0;
-                        $brand_total += $quantity;
-                    ?>
-                      <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
-                    <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
-                  </tr>
-                  <?php endforeach; ?>
-                  
-                  <!-- Total Row -->
-                  <tr class="total-row">
-                    <td colspan="2" style="font-weight: bold;">Total</td>
-                    <?php 
-                    $category_total = 0;
-                    foreach ($display_sizes as $size): 
-                        $size_total = $liquor_type_totals[$liquor_type][$size] ?? 0;
-                        $category_total += $size_total;
-                    ?>
-                      <td class="size-column" style="font-weight: bold;">
-                        <?= $size_total > 0 ? number_format($size_total, 0) : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;"><?= $category_total > 0 ? number_format($category_total, 0) : '' ?></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <?php endif; endforeach; ?>
           
-          <!-- Country Liquor Section (if needed) -->
-          <?php if (!empty($country_brands)): ?>
-          <div class="category-section">
-            <h4 class="brand-header">COUNTRY LIQUOR</h4>
-            <div class="table-container">
-              <table class="report-table">
-                <thead>
-                  <tr>
-                    <th>Sr. No.</th>
-                    <th>Brand Name</th>
-                    <?php foreach ($country_sizes as $size): ?>
-                      <th class="size-column"><?= $size ?></th>
-                    <?php endforeach; ?>
-                    <th class="size-column">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php
-                  $sr_no = 1;
-                  ksort($country_brands);
-                  $country_totals = array_fill_keys($country_sizes, 0);
-                  $country_grand_total = 0;
-                  
-                  foreach ($country_brands as $brand => $sizes):
-                      $brand_total = 0;
-                  ?>
-                  <tr>
-                    <td><?= $sr_no++ ?></td>
-                    <td><?= htmlspecialchars($brand) ?></td>
-                    <?php foreach ($country_sizes as $size): 
-                        $quantity = $sizes[$size] ?? 0;
-                        $brand_total += $quantity;
-                        $country_totals[$size] += $quantity;
+        <?php else: ?>
+          <!-- Summary Report with Category and Class Grouping -->
+          <?php 
+          $global_sr_no = 1;
+          foreach ($category_order as $cat_code): 
+              if (!isset($organized_data['categories'][$cat_code]) || empty($organized_data['categories'][$cat_code]['classes'])) continue;
+              
+              $category = $organized_data['categories'][$cat_code];
+          ?>
+            <div class="category-header"><?= strtoupper($category['category_name']) ?></div>
+            
+            <?php foreach ($category['classes'] as $class_code => $class): 
+                if (empty($class['items'])) continue;
+                
+                // Group items by brand for summary
+                $brands = [];
+                $size_list = [];
+                
+                foreach ($class['items'] as $item) {
+                    $brand = $item['BrandName'];
+                    $size = $item['GroupedSize'] ?: $item['ItemSize'];
+                    
+                    if (!isset($brands[$brand])) {
+                        $brands[$brand] = [];
+                    }
+                    
+                    if (!isset($brands[$brand][$size])) {
+                        $brands[$brand][$size] = 0;
+                    }
+                    
+                    $brands[$brand][$size] += $item['ClosingStock'];
+                    
+                    if (!in_array($size, $size_list)) {
+                        $size_list[] = $size;
+                    }
+                }
+                
+                // Sort sizes naturally
+                natsort($size_list);
+                $size_list = array_values($size_list);
+            ?>
+              <div class="class-header"><?= strtoupper($class['class_name']) ?></div>
+              
+              <div class="table-container">
+                <table class="report-table">
+                  <thead>
+                    <tr>
+                      <th>Sr. No.</th>
+                      <th>Brand Name</th>
+                      <?php foreach ($size_list as $size): ?>
+                        <th class="size-column"><?= htmlspecialchars($size) ?></th>
+                      <?php endforeach; ?>
+                      <th class="size-column">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php 
+                    ksort($brands);
+                    foreach ($brands as $brand => $sizes):
+                        $brand_total = 0;
                     ?>
-                      <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '' ?></td>
+                      <tr>
+                        <td class="text-center"><?= $global_sr_no++ ?></td>
+                        <td><strong><?= htmlspecialchars($brand) ?></strong></td>
+                        <?php foreach ($size_list as $size): 
+                            $quantity = isset($sizes[$size]) ? $sizes[$size] : 0;
+                            $brand_total += $quantity;
+                        ?>
+                          <td class="size-column"><?= $quantity > 0 ? number_format($quantity, 0) : '-' ?></td>
+                        <?php endforeach; ?>
+                        <td class="size-column" style="font-weight: bold;"><?= number_format($brand_total, 0) ?></td>
+                      </tr>
                     <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;"><?= $brand_total > 0 ? number_format($brand_total, 0) : '' ?></td>
-                  </tr>
-                  <?php 
-                      $country_grand_total += $brand_total;
-                  endforeach; ?>
-                  
-                  <!-- Country Liquor Total Row -->
-                  <tr class="total-row">
-                    <td colspan="2" style="font-weight: bold;">Total</td>
-                    <?php foreach ($country_sizes as $size): ?>
-                      <td class="size-column" style="font-weight: bold;">
-                        <?= $country_totals[$size] > 0 ? number_format($country_totals[$size], 0) : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                    <td class="size-column" style="font-weight: bold;"><?= $country_grand_total > 0 ? number_format($country_grand_total, 0) : '' ?></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    
+                    <!-- Class Total Row -->
+                    <tr class="total-row">
+                      <td colspan="2" style="font-weight: bold;">Total <?= $class['class_name'] ?></td>
+                      <?php 
+                      $class_total = 0;
+                      foreach ($size_list as $size):
+                          $size_total = 0;
+                          foreach ($brands as $sizes) {
+                              if (isset($sizes[$size])) {
+                                  $size_total += $sizes[$size];
+                              }
+                          }
+                          $class_total += $size_total;
+                      ?>
+                        <td class="size-column" style="font-weight: bold;"><?= $size_total > 0 ? number_format($size_total, 0) : '-' ?></td>
+                      <?php endforeach; ?>
+                      <td class="size-column" style="font-weight: bold;"><?= number_format($class_total, 0) ?></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            <?php endforeach; ?>
+          <?php endforeach; ?>
+          
+          <!-- Grand Total -->
+          <div class="table-container" style="margin-top: 25px;">
+            <table class="report-table">
+              <tr class="grand-total-row">
+                <td colspan="2" class="text-end"><strong>GRAND TOTAL:</strong></td>
+                <td class="text-right" colspan="<?= count($size_list) ?>"><strong><?= number_format($grand_total_stock, 0) ?></strong></td>
+              </tr>
+            </table>
           </div>
-          <?php endif; ?>
         <?php endif; ?>
         
-        <div class="footer-info">
+        <div class="footer-info text-center mt-3">
           Generated on: <?= date('d-M-Y h:i A') ?> | Generated by: <?= $_SESSION['username'] ?? 'System' ?>
         </div>
       </div>

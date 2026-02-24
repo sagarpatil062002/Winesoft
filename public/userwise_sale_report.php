@@ -213,18 +213,6 @@ if (isset($_GET['generate'])) {
   
 </div>
 
-<!-- System Info Bar (similar to your screenshot) -->
-<div class="system-info no-print">
-  <div>
-    <span><?= $_SESSION['user_name'] ?? 'ADMIN' ?></span>
-  </div>
-  <div>
-    <span>CAPS</span> | 
-    <span>NUM</span> | 
-    <span><?= date('g:i A') ?></span> | 
-    <span><?= date('d-M-Y') ?></span>
-  </div>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

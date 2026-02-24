@@ -532,6 +532,28 @@ foreach ($dates as $date) {
     $stockStmt->close();
 }
 
+// NEW: Recalculate closing balance to ensure Clo. = Op. + Rec. - Sale
+foreach ($dates as $date) {
+    // Skip if this date was not processed
+    if (!isset($daily_data[$date])) continue;
+    
+    foreach ($display_categories as $category) {
+        if (!isset($daily_data[$date][$category])) continue;
+        
+        foreach ($size_columns[$category] as $size) {
+            $opening = $daily_data[$date][$category]['opening'][$size] ?? 0;
+            $purchase = $daily_data[$date][$category]['purchase'][$size] ?? 0;
+            $sales = $daily_data[$date][$category]['sales'][$size] ?? 0;
+            
+            // Recalculate closing: Op. + Rec. - Sale
+            $calculated_closing = $opening + $purchase - $sales;
+            
+            // Update with calculated value (ensure non-negative)
+            $daily_data[$date][$category]['closing'][$size] = max(0, $calculated_closing);
+        }
+    }
+}
+
 // Calculate total columns count for table formatting
 $total_columns = 0;
 foreach ($display_categories as $category) {

@@ -33,38 +33,18 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Define groups based on tblclass - UPDATED FOR BEER CLASSES
-$groups = [
-    'SPIRITS' => [
-        'name' => 'SPIRITS',
-        'classes' => ['W', 'G', 'K', 'D', 'R', 'O'], // Whisky, Gin, Vodka, Brandy, Rum, Other/General
-        'liq_flag' => 'F'
-    ],
-    'WINE' => [
-        'name' => 'WINE',
-        'classes' => ['V'], // Wines
-        'liq_flag' => 'F'
-    ],
-    'FERMENTED BEER' => [
-        'name' => 'FERMENTED BEER',
-        'classes' => ['F'], // Fermented Beer
-        'liq_flag' => 'F'
-    ],
-    'MILD BEER' => [
-        'name' => 'MILD BEER', 
-        'classes' => ['M'], // Mild Beer
-        'liq_flag' => 'F'
-    ],
-    'COUNTRY LIQUOR' => [
-        'name' => 'COUNTRY LIQUOR',
-        'classes' => ['L', 'O'], // Liquors, Other/General
-        'liq_flag' => 'C'
-    ]
+// Define categories based on tblcategory
+$categories = [
+    'CAT001' => 'SPIRITS',
+    'CAT002' => 'WINE',
+    'CAT003' => 'FERMENTED BEER',
+    'CAT004' => 'MILD BEER',
+    'CAT005' => 'COUNTRY LIQUOR'
 ];
 
 // Generate report data based on filters
 $report_data = [];
-// Initialize group totals with the updated beer groups
+// Initialize group totals
 $group_totals = [
     'SPIRITS' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
     'WINE' => ['with_tax' => 0, 'without_tax' => 0, 'tax' => 0],
@@ -102,7 +82,7 @@ if (isset($_GET['generate'])) {
     $use_customer_sales = ($check_tables['tblcustomersales'] > 0);
     
     if ($use_customer_sales) {
-        // Use tblcustomersales table
+        // Use tblcustomersales table with proper joins to new tables
         $sales_query = "SELECT 
                     cs.BillNo as BILL_NO,
                     cs.BillDate as BILL_DATE,
@@ -111,36 +91,52 @@ if (isset($_GET['generate'])) {
                     cs.Rate as RATE,
                     cs.Quantity as QTY,
                     cs.Amount as AMOUNT,
-                    i.CLASS as SGROUP,
-                    c.DESC as CLASS_DESC,
-                    i.LIQ_FLAG
+                    i.CLASS as OLD_CLASS,
+                    i.SUB_CLASS as OLD_SUB_CLASS,
+                    i.LIQ_FLAG,
+                    cat.CATEGORY_CODE,
+                    cat.CATEGORY_NAME,
+                    cls.CLASS_CODE,
+                    cls.CLASS_NAME,
+                    sub.SUBCLASS_CODE,
+                    sub.SUBCLASS_NAME
                   FROM tblcustomersales cs
                   LEFT JOIN tblitemmaster i ON cs.ItemCode = i.CODE
-                  LEFT JOIN tblclass c ON i.CLASS = c.SGROUP AND i.LIQ_FLAG = c.LIQ_FLAG
+                  LEFT JOIN tblcategory cat ON i.CATEGORY_CODE = cat.CATEGORY_CODE
+                  LEFT JOIN tblclass_new cls ON i.CLASS_CODE_NEW = cls.CLASS_CODE
+                  LEFT JOIN tblsubclass_new sub ON i.SUBCLASS_CODE_NEW = sub.SUBCLASS_CODE
                   WHERE cs.BillDate BETWEEN ? AND ? AND cs.CompID = ?
-                  ORDER BY cs.BillDate, cs.BillNo";
+                  ORDER BY cat.CATEGORY_NAME, cls.CLASS_NAME, cs.BillDate, cs.BillNo";
         
         $stmt = $conn->prepare($sales_query);
         $stmt->bind_param("ssi", $date_from, $date_to, $compID);
     } else {
-        // Use tblsaleheader and tblsaledetails tables
+        // Use tblsaleheader and tblsaledetails tables with proper joins to new tables
         $sales_query = "SELECT
                     sh.BILL_NO,
                     sh.BILL_DATE,
                     sd.ITEM_CODE,
                     CASE WHEN i.Print_Name != '' THEN i.Print_Name ELSE i.DETAILS END as ITEM_NAME,
-                    i.CLASS as SGROUP,
-                    c.DESC as CLASS_DESC,
+                    i.CLASS as OLD_CLASS,
+                    i.SUB_CLASS as OLD_SUB_CLASS,
                     i.LIQ_FLAG,
+                    cat.CATEGORY_CODE,
+                    cat.CATEGORY_NAME,
+                    cls.CLASS_CODE,
+                    cls.CLASS_NAME,
+                    sub.SUBCLASS_CODE,
+                    sub.SUBCLASS_NAME,
                     sd.QTY,
                     sd.RATE,
                     sd.AMOUNT
                   FROM tblsaleheader sh
                   INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
                   LEFT JOIN tblitemmaster i ON sd.ITEM_CODE = i.CODE
-                  LEFT JOIN tblclass c ON i.CLASS = c.SGROUP AND i.LIQ_FLAG = c.LIQ_FLAG
+                  LEFT JOIN tblcategory cat ON i.CATEGORY_CODE = cat.CATEGORY_CODE
+                  LEFT JOIN tblclass_new cls ON i.CLASS_CODE_NEW = cls.CLASS_CODE
+                  LEFT JOIN tblsubclass_new sub ON i.SUBCLASS_CODE_NEW = sub.SUBCLASS_CODE
                   WHERE sh.BILL_DATE BETWEEN ? AND ? AND sh.COMP_ID = ?
-                  ORDER BY sh.BILL_DATE, sh.BILL_NO";
+                  ORDER BY cat.CATEGORY_NAME, cls.CLASS_NAME, sh.BILL_DATE, sh.BILL_NO";
         
         $stmt = $conn->prepare($sales_query);
         $stmt->bind_param("ssi", $date_from, $date_to, $compID);
@@ -152,36 +148,86 @@ if (isset($_GET['generate'])) {
     // Debug: Check if we got any results
     $row_count = $result->num_rows;
     
-    // Organize sales data by group
+    // Class mapping for old class codes (as fallback)
+    $class_mapping = [
+        'W' => ['class_name' => 'IMFL', 'category' => 'CAT001', 'liq_flag' => 'F'],
+        'G' => ['class_name' => 'IMFL', 'category' => 'CAT001', 'liq_flag' => 'F'],
+        'K' => ['class_name' => 'IMFL', 'category' => 'CAT001', 'liq_flag' => 'F'],
+        'D' => ['class_name' => 'IMFL', 'category' => 'CAT001', 'liq_flag' => 'F'],
+        'R' => ['class_name' => 'IMFL', 'category' => 'CAT001', 'liq_flag' => 'F'],
+        'V' => ['class_name' => 'INDIAN', 'category' => 'CAT002', 'liq_flag' => 'F'],
+        'F' => ['class_name' => 'FERMENTED BEER', 'category' => 'CAT003', 'liq_flag' => 'F'],
+        'M' => ['class_name' => 'MILD BEER', 'category' => 'CAT004', 'liq_flag' => 'F'],
+        'L' => ['class_name' => 'COUNTRY LIQUOR', 'category' => 'CAT005', 'liq_flag' => 'C'],
+        'O' => ['class_name' => 'GENERAL', 'category' => 'CAT001', 'liq_flag' => 'F']
+    ];
+    
+    // Organize sales data by category and class
     while ($row = $result->fetch_assoc()) {
-        $sgroup = isset($row['SGROUP']) ? $row['SGROUP'] : 'O'; // Default to 'O' if not set
-        $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F'; // Default to 'F' if not set
         $amount = (float)$row['AMOUNT'];
         
-        // Determine which group this item belongs to
-        $item_group = null;
-        foreach ($groups as $group_key => $group_info) {
-            if ($group_info['liq_flag'] === $liq_flag && in_array($sgroup, $group_info['classes'])) {
-                $item_group = $group_key;
-                break;
+        // Get classification from new columns first
+        $category_code = isset($row['CATEGORY_CODE']) ? $row['CATEGORY_CODE'] : '';
+        $category_name = isset($row['CATEGORY_NAME']) ? $row['CATEGORY_NAME'] : '';
+        $class_code = isset($row['CLASS_CODE']) ? $row['CLASS_CODE'] : '';
+        $class_name = isset($row['CLASS_NAME']) ? $row['CLASS_NAME'] : '';
+        $subclass_name = isset($row['SUBCLASS_NAME']) ? $row['SUBCLASS_NAME'] : 'Unknown';
+        
+        // If new columns are not set, use old columns as fallback
+        if (empty($category_code) || empty($class_name)) {
+            $old_class = isset($row['OLD_CLASS']) ? $row['OLD_CLASS'] : 'O';
+            $liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : 'F';
+            
+            if (isset($class_mapping[$old_class])) {
+                $mapping = $class_mapping[$old_class];
+                $category_code = $mapping['category'];
+                $category_name = isset($categories[$category_code]) ? $categories[$category_code] : 'SPIRITS';
+                $class_name = $mapping['class_name'];
+            } else {
+                // Default to SPIRITS
+                $category_code = 'CAT001';
+                $category_name = 'SPIRITS';
+                $class_name = 'IMFL';
             }
         }
         
-        // If we couldn't classify the item, assign to SPIRITS as default
-        if ($item_group === null) {
-            $item_group = 'SPIRITS';
+        // Ensure category name is set
+        if (empty($category_name) && isset($categories[$category_code])) {
+            $category_name = $categories[$category_code];
+        } elseif (empty($category_name)) {
+            $category_name = 'SPIRITS';
         }
         
-        // For simplicity, assuming tax rate of 0% (as shown in sample reports)
+        // Initialize arrays if not exists
+        if (!isset($report_data[$category_code])) {
+            $report_data[$category_code] = [
+                'name' => $category_name,
+                'classes' => []
+            ];
+        }
+        
+        $class_key = !empty($class_code) ? $class_code : $class_name;
+        if (!isset($report_data[$category_code]['classes'][$class_key])) {
+            $report_data[$category_code]['classes'][$class_key] = [
+                'name' => $class_name,
+                'bills' => [],
+                'total' => 0
+            ];
+        }
+        
+        // For simplicity, assuming tax rate of 0%
         $tax_amount = 0;
         $amount_without_tax = $amount;
         $amount_with_tax = $amount;
         
         if ($mode == 'summary') {
             // For summary mode, just accumulate totals by group
-            $group_totals[$item_group]['with_tax'] += $amount_with_tax;
-            $group_totals[$item_group]['without_tax'] += $amount_without_tax;
-            $group_totals[$item_group]['tax'] += $tax_amount;
+            $group_key = $category_name;
+            if (isset($group_totals[$group_key])) {
+                $group_totals[$group_key]['with_tax'] += $amount_with_tax;
+                $group_totals[$group_key]['without_tax'] += $amount_without_tax;
+                $group_totals[$group_key]['tax'] += $tax_amount;
+            }
             
             $grand_total['with_tax'] += $amount_with_tax;
             $grand_total['without_tax'] += $amount_without_tax;
@@ -190,33 +236,35 @@ if (isset($_GET['generate'])) {
             // For detailed mode, store bill information
             $bill_no = $row['BILL_NO'];
             
-            if (!isset($report_data[$item_group][$bill_no])) {
-                $report_data[$item_group][$bill_no] = [
+            if (!isset($report_data[$category_code]['classes'][$class_key]['bills'][$bill_no])) {
+                $report_data[$category_code]['classes'][$class_key]['bills'][$bill_no] = [
                     'BILL_DATE' => $row['BILL_DATE'],
                     'items' => [],
-                    'with_tax' => 0,
-                    'without_tax' => 0,
-                    'tax' => 0
+                    'total' => 0
                 ];
             }
             
-            $report_data[$item_group][$bill_no]['items'][] = [
+            $report_data[$category_code]['classes'][$class_key]['bills'][$bill_no]['items'][] = [
                 'ITEM_CODE' => $row['ITEM_CODE'],
                 'ITEM_NAME' => $row['ITEM_NAME'],
-                'CLASS_DESC' => isset($row['CLASS_DESC']) ? $row['CLASS_DESC'] : 'Unknown',
+                'SUBCLASS_NAME' => $subclass_name,
+                'CLASS_NAME' => $class_name,
+                'CATEGORY_NAME' => $category_name,
                 'QTY' => $row['QTY'],
                 'RATE' => $row['RATE'],
                 'AMOUNT' => $amount
             ];
             
-            $report_data[$item_group][$bill_no]['with_tax'] += $amount_with_tax;
-            $report_data[$item_group][$bill_no]['without_tax'] += $amount_without_tax;
-            $report_data[$item_group][$bill_no]['tax'] += $tax_amount;
+            $report_data[$category_code]['classes'][$class_key]['bills'][$bill_no]['total'] += $amount;
+            $report_data[$category_code]['classes'][$class_key]['total'] += $amount;
             
-            // Also update group totals
-            $group_totals[$item_group]['with_tax'] += $amount_with_tax;
-            $group_totals[$item_group]['without_tax'] += $amount_without_tax;
-            $group_totals[$item_group]['tax'] += $tax_amount;
+            // Update group totals
+            $group_key = $category_name;
+            if (isset($group_totals[$group_key])) {
+                $group_totals[$group_key]['with_tax'] += $amount_with_tax;
+                $group_totals[$group_key]['without_tax'] += $amount_without_tax;
+                $group_totals[$group_key]['tax'] += $tax_amount;
+            }
             
             $grand_total['with_tax'] += $amount_with_tax;
             $grand_total['without_tax'] += $amount_without_tax;
@@ -238,6 +286,95 @@ if (isset($_GET['generate'])) {
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/reports.css?v=<?=time()?>">
+  <style>
+    /* Keep the original CSS styling */
+    .group-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 25px;
+      margin-bottom: 15px;
+      padding: 8px 15px;
+      background-color: #2c3e50;
+      color: white;
+      border-radius: 5px;
+    }
+    .class-header {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      padding: 5px 15px;
+      background-color: #34495e;
+      color: white;
+      border-radius: 5px;
+      margin-left: 20px;
+    }
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+      margin-left: 30px;
+      width: calc(100% - 30px);
+    }
+    .report-table th {
+      background-color: #f2f2f2;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+    }
+    .report-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .text-right {
+      text-align: right;
+    }
+    .group-total-row {
+      background-color: #f9f9f9;
+      font-weight: bold;
+    }
+    .group-total-row td {
+      border-top: 2px solid #999;
+    }
+    .total-row {
+      background-color: #e9e9e9;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .total-row td {
+      border-top: 3px double #333;
+    }
+    .company-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .company-header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    .company-header h5 {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .company-header p {
+      font-size: 14px;
+      color: #999;
+      margin-bottom: 0;
+    }
+    .no-print {
+      margin-bottom: 20px;
+    }
+    .subclass-name {
+      font-weight: 500;
+      color: #2980b9;
+    }
+    .text-muted {
+      color: #6c757d;
+      font-style: italic;
+      margin-left: 30px;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -297,6 +434,18 @@ if (isset($_GET['generate'])) {
           tblsaleheader: <?= $check_tables['tblsaleheader'] ?>, 
           tblcustomersales: <?= $check_tables['tblcustomersales'] ?>
         </p>
+        <p>Sample data from first row: 
+          <?php
+          if ($row_count > 0) {
+              $result->data_seek(0);
+              $sample = $result->fetch_assoc();
+              echo "Item: " . ($sample['ITEM_NAME'] ?? 'N/A');
+              echo ", Category: " . ($sample['CATEGORY_NAME'] ?? 'N/A');
+              echo ", Class: " . ($sample['CLASS_NAME'] ?? 'N/A');
+              echo ", Subclass: " . ($sample['SUBCLASS_NAME'] ?? 'N/A');
+          }
+          ?>
+        </p>
       </div>
       <?php endif; ?>
 
@@ -324,12 +473,12 @@ if (isset($_GET['generate'])) {
                   </tr>
                 </thead>
                 <tbody>
-                  <?php foreach ($groups as $group_key => $group_info): ?>
+                  <?php foreach ($group_totals as $group_key => $totals): ?>
                   <tr>
-                    <td><strong><?= $group_info['name'] ?></strong></td>
-                    <td class="text-right"><?= number_format($group_totals[$group_key]['with_tax'], 2) ?></td>
-                    <td class="text-right"><?= number_format($group_totals[$group_key]['without_tax'], 2) ?></td>
-                    <td class="text-right"><?= number_format($group_totals[$group_key]['tax'], 2) ?></td>
+                    <td><strong><?= $group_key ?></strong></td>
+                    <td class="text-right"><?= number_format($totals['with_tax'], 2) ?></td>
+                    <td class="text-right"><?= number_format($totals['without_tax'], 2) ?></td>
+                    <td class="text-right"><?= number_format($totals['tax'], 2) ?></td>
                   </tr>
                   <?php endforeach; ?>
                   <tr class="total-row">
@@ -341,59 +490,69 @@ if (isset($_GET['generate'])) {
                 </tbody>
               </table>
             <?php else: ?>
-              <!-- Detailed Report -->
-              <?php foreach ($groups as $group_key => $group_info): ?>
-                <?php if (isset($report_data[$group_key]) && !empty($report_data[$group_key])): ?>
-                <h5 class="group-header"><?= $group_info['name'] ?></h5>
-
-                <table class="report-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Bill No</th>
-                      <th>Item Code</th>
-                      <th>Item Description</th>
-                      <th>Category</th>
-                      <th class="text-right">Rate</th>
-                      <th class="text-right">Qty</th>
-                      <th class="text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($report_data[$group_key] as $bill_no => $bill_data): ?>
-                      <?php foreach ($bill_data['items'] as $item): ?>
-                      <tr>
-                        <td><?= date('d/m/Y', strtotime($bill_data['BILL_DATE'])) ?></td>
-                        <td><?= htmlspecialchars($bill_no) ?></td>
-                        <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
-                        <td><?= htmlspecialchars($item['ITEM_NAME']) ?></td>
-                        <td><?= htmlspecialchars($item['CLASS_DESC']) ?></td>
-                        <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
-                        <td class="text-right"><?= $item['QTY'] ?></td>
-                        <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
-                      </tr>
-                      <?php endforeach; ?>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-
-                <!-- Group Subtotal -->
-                <table class="report-table">
-                  <tr class="group-total-row">
-                    <td colspan="7" class="text-end"><?= $group_info['name'] ?> Sub Total:</td>
-                    <td class="text-right"><?= number_format($group_totals[$group_key]['without_tax'], 2) ?></td>
-                  </tr>
-                </table>
+              <!-- Detailed Report with Category and Class Hierarchy -->
+              <?php foreach ($report_data as $category_code => $category): ?>
+                <!-- Category Header -->
+                <h5 class="group-header"><?= htmlspecialchars($category['name']) ?></h5>
+                
+                <?php if (!empty($category['classes'])): ?>
+                  <?php foreach ($category['classes'] as $class_code => $class): ?>
+                    <!-- Class Header -->
+                    <h6 class="class-header"><?= htmlspecialchars($class['name']) ?></h6>
+                    
+                    <?php if (!empty($class['bills'])): ?>
+                      <!-- Sales Details Table -->
+                      <table class="report-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Bill No</th>
+                            <th>Item Code</th>
+                            <th>Item Description</th>
+                            <th>Sub Class</th>
+                            <th class="text-right">Rate (Rs.)</th>
+                            <th class="text-right">Qty</th>
+                            <th class="text-right">Amount (Rs.)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <?php foreach ($class['bills'] as $bill_no => $bill_data): ?>
+                            <?php foreach ($bill_data['items'] as $item): ?>
+                            <tr>
+                              <td><?= date('d/m/Y', strtotime($bill_data['BILL_DATE'])) ?></td>
+                              <td><?= htmlspecialchars($bill_no) ?></td>
+                              <td><?= htmlspecialchars($item['ITEM_CODE']) ?></td>
+                              <td><?= htmlspecialchars($item['ITEM_NAME']) ?></td>
+                              <td><span class="subclass-name"><?= htmlspecialchars($item['SUBCLASS_NAME']) ?></span></td>
+                              <td class="text-right"><?= number_format($item['RATE'], 2) ?></td>
+                              <td class="text-right"><?= number_format($item['QTY'], 3) ?></td>
+                              <td class="text-right"><?= number_format($item['AMOUNT'], 2) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                          <?php endforeach; ?>
+                        </tbody>
+                      </table>
+                      
+                      <!-- Class Subtotal -->
+                      <table class="report-table">
+                        <tr class="group-total-row">
+                          <td colspan="7" class="text-end"><?= htmlspecialchars($class['name']) ?> Sub Total:</td>
+                          <td class="text-right"><?= number_format($class['total'], 2) ?></td>
+                        </tr>
+                      </table>
+                    <?php else: ?>
+                      <p class="text-muted">No sales found for <?= htmlspecialchars($class['name']) ?></p>
+                    <?php endif; ?>
+                  <?php endforeach; ?>
                 <?php else: ?>
-                <h5 class="group-header"><?= $group_info['name'] ?></h5>
-                <p class="text-muted">No sales found for this group</p>
+                  <p class="text-muted">No sales found for <?= htmlspecialchars($category['name']) ?></p>
                 <?php endif; ?>
               <?php endforeach; ?>
               
               <!-- Grand Total -->
               <table class="report-table">
                 <tr class="total-row">
-                  <td colspan="5" class="text-end">Grand Total:</td>
+                  <td colspan="7" class="text-end">Grand Total:</td>
                   <td class="text-right"><?= number_format($grand_total['without_tax'], 2) ?></td>
                 </tr>
               </table>

@@ -492,8 +492,12 @@ foreach ($tables_needed as $table_name => $table_info) {
                 // Accumulate sales (cumulative)
                 $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
                 
-                // For closing balance, always take the latest value (last day in range)
-                $cumulative_stock_data[$item_code]['closing'] = $row['closing'];
+                // FIX: Calculate closing balance using the formula: Closing = Opening + Purchase - Sales
+                // This ensures the closing balance is correctly calculated regardless of what's in the DB
+                $calculated_closing = $row['opening'] + $row['purchase'] - $row['sales'];
+                
+                // For closing balance, always take the latest calculated value (last day in range)
+                $cumulative_stock_data[$item_code]['closing'] = $calculated_closing;
                 $cumulative_stock_data[$item_code]['last_date'] = $current_date;
                 
                 // Update LIQ_FLAG if not set
@@ -1035,7 +1039,7 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
         
         <!-- Stock Info Note -->
         <div class="stock-info-note">
-          <strong><i class="fas fa-info-circle"></i> Note:</strong> Only brands with stock > 0 are displayed in this report. TP Nos shown only for purchases made during the period.
+          <strong><i class="fas fa-info-circle"></i> Note:</strong> Only brands with stock > 0 are displayed in this report. TP Nos shown only for purchases made during the period. Closing balance is calculated as Opening + Purchases - Sales.
         </div>
         
         <!-- FIXED SCROLLING CONTAINER -->

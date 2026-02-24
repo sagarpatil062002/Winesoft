@@ -19,10 +19,17 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
-// Extract class SGROUP values for filtering
-$allowed_classes = [];
-foreach ($available_classes as $class) {
-    $allowed_classes[] = $class['SGROUP'];
+// Extract class SGROUP values for filtering (since the function returns SGROUP)
+$allowed_sgroups = [];
+$class_descriptions = [];
+
+if (!empty($available_classes) && is_array($available_classes)) {
+    foreach ($available_classes as $class) {
+        if (isset($class['SGROUP'])) {
+            $allowed_sgroups[] = $class['SGROUP'];
+            $class_descriptions[$class['SGROUP']] = $class['DESC'] ?? 'Unknown';
+        }
+    }
 }
 
 // Get company ID from session
@@ -89,136 +96,123 @@ function getRateField($rate_type) {
     }
 }
 
-// Function to group sizes by base size (remove suffixes after ML and trim)
-function getBaseSize($size) {
-    // Extract the base size (everything before any special characters after ML)
-    $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
-    $baseSize = preg_replace('/\s*-\s*\d+$/', '', $baseSize); // Remove trailing - numbers
-    $baseSize = preg_replace('/\s*\(\d+\)$/', '', $baseSize); // Remove trailing (numbers)
-    $baseSize = preg_replace('/\s*\([^)]*\)/', '', $baseSize); // Remove anything in parentheses
-    return trim($baseSize);
+// Function to get size description from size code by joining with tblsize
+function getSizeDescription($conn, $size_code) {
+    if (empty($size_code)) return '';
+    
+    $query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE SIZE_CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $size_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        return $row['SIZE_DESC'];
+    }
+    return $size_code;
 }
 
-// Function to get category name based on class and details (updated with comprehensive size mapping)
-function getCategoryName($class, $details, $details2) {
-    $details_upper = strtoupper($details);
-    $details2_upper = strtoupper($details2);
+// Function to get category name based on class from DETAILS and DETAILS2
+function getCategoryName($conn, $details, $details2, $class_field, $size_code = null, $old_item_group = null) {
+    static $size_cache = [];
     
-    // Define size mappings similar to brand_register.php
-    $spirit_sizes = [
-        '2000 ML Pet (6)' => '2000 ML',
-        '2000 ML(4)' => '2000 ML',
-        '2000 ML(6)' => '2000 ML',
-        '1000 ML(Pet)' => '1000 ML',
-        '1000 ML' => '1000 ML',
-        '750 ML(6)' => '750 ML',
-        '750 ML (Pet)' => '750 ML',
-        '750 ML' => '750 ML',
-        '700 ML' => '700 ML',
-        '700 ML(6)' => '700 ML',
-        '375 ML (12)' => '375 ML',
-        '375 ML' => '375 ML',
-        '375 ML (Pet)' => '375 ML',
-        '350 ML (12)' => '350 ML',
-        '275 ML(24)' => '275 ML',
-        '200 ML (48)' => '200 ML',
-        '200 ML (24)' => '200 ML',
-        '200 ML (30)' => '200 ML',
-        '200 ML (12)' => '200 ML',
-        '180 ML(24)' => '180 ML',
-        '180 ML (Pet)' => '180 ML',
-        '180 ML' => '180 ML',
-        '90 ML(100)' => '90 ML',
-        '90 ML (Pet)-100' => '90 ML',
-        '90 ML (Pet)-96' => '90 ML',
-        '90 ML-(96)' => '90 ML',
-        '90 ML' => '90 ML',
-        '60 ML' => '60 ML',
-        '60 ML (75)' => '60 ML',
-        '50 ML(120)' => '50 ML',
-        '50 ML (180)' => '50 ML',
-        '50 ML (24)' => '50 ML',
-        '50 ML (192)' => '50 ML'
-    ];
+    $details_upper = strtoupper($details ?? '');
+    $details2_upper = strtoupper($details2 ?? '');
+    $class_upper = strtoupper($class_field ?? '');
     
-    $wine_sizes = [
-        '750 ML(6)' => '750 ML',
-        '750 ML' => '750 ML',
-        '650 ML' => '650 ML',
-        '375 ML' => '375 ML',
-        '330 ML' => '330 ML',
-        '180 ML' => '180 ML'
-    ];
+    // Get size info
+    $ml_value = 0;
+    $size_desc = '';
     
-    $beer_sizes = [
-        '650 ML' => '650 ML',
-        '500 ML' => '500 ML',
-        '500 ML (CAN)' => '500 ML',
-        '330 ML' => '330 ML',
-        '330 ML (CAN)' => '330 ML',
-        '275 ML' => '275 ML',
-        '250 ML' => '250 ML'
-    ];
-    
-    // Check for beer types first (both fermented and mild)
-    foreach ($beer_sizes as $excel_size => $category) {
-        if (strpos($details2_upper, $excel_size) !== false) {
-            return $category;
+    if (!empty($size_code)) {
+        $size_key = $size_code;
+        if (!isset($size_cache[$size_key])) {
+            $size_cache[$size_key] = getSizeDescription($conn, $size_code);
         }
-    }
-    
-    // Old beer type checks for compatibility
-    if (strpos($details2_upper, '1000 ML') !== false || strpos($details2_upper, '1 LTR') !== false) {
-        return '1000 ML';
-    } elseif (strpos($details2_upper, '650 ML') !== false) {
-        return '650 ML';
-    } elseif (strpos($details2_upper, '500 ML') !== false) {
-        return '500 ML';
-    } elseif (strpos($details2_upper, '330 ML') !== false) {
-        return '330 ML';
-    } elseif (strpos($details2_upper, '275 ML') !== false) {
-        return '275 ML';
-    } elseif (strpos($details2_upper, '250 ML') !== false) {
-        return '250 ML';
-    }
-    
-    // Check for wine types
-    if (strpos($details_upper, 'WINE') !== false || $class === 'V') {
-        foreach ($wine_sizes as $excel_size => $category) {
-            if (strpos($details2_upper, $excel_size) !== false) {
-                return 'Wine ' . $category;
+        $size_desc = $size_cache[$size_key];
+        
+        // Extract ML value from size description
+        if (preg_match('/(\d+)\s*ML/i', $size_desc, $matches)) {
+            $ml_value = (int)$matches[1];
+        }
+    } elseif (!empty($old_item_group)) {
+        // Try to get size from OLD_ITEM_GROUP in tblsize
+        $size_key = 'old_' . $old_item_group;
+        if (!isset($size_cache[$size_key])) {
+            $size_query = "SELECT SIZE_DESC, ML_VOLUME FROM tblsize WHERE OLD_ITEM_GROUP = ? LIMIT 1";
+            $size_stmt = $conn->prepare($size_query);
+            $size_stmt->bind_param("s", $old_item_group);
+            $size_stmt->execute();
+            $size_result = $size_stmt->get_result();
+            if ($size_row = $size_result->fetch_assoc()) {
+                $size_desc = $size_row['SIZE_DESC'];
+                $ml_value = (int)($size_row['ML_VOLUME'] ?? 0);
+                $size_cache[$size_key] = $size_desc;
+            } else {
+                $size_cache[$size_key] = '';
             }
-        }
-        // Default wine category if no specific size found
-        return 'Wine 750 ML';
-    }
-    
-    // Check for country liquor
-    if ($class === 'C') {
-        foreach ($spirit_sizes as $excel_size => $category) {
-            if (strpos($details2_upper, $excel_size) !== false) {
-                // For country liquor, use size names without "Wine" prefix
-                return $category;
-            }
-        }
-        // Default country liquor category
-        return '90 ML';
-    }
-    
-    // Check for foreign liquor (spirits)
-    foreach ($spirit_sizes as $excel_size => $category) {
-        if (strpos($details2_upper, $excel_size) !== false) {
-            return $category;
+        } else {
+            $size_desc = $size_cache[$size_key];
         }
     }
     
-    // Fallback to old logic for edge cases
-    if (strpos($details2_upper, 'NIP') !== false || strpos($details2_upper, '90 ML') !== false || strpos($details2_upper, '60 ML') !== false) {
-        return '90 ML';
-    } elseif (strpos($details2_upper, 'PINT') !== false || strpos($details2_upper, '375 ML') !== false) {
-        return '375 ML';
+    // If still no size, try to extract from details2
+    if ($ml_value == 0 && !empty($details2_upper)) {
+        if (preg_match('/(\d+)\s*ML/i', $details2_upper, $matches)) {
+            $ml_value = (int)$matches[1];
+        }
+    }
+    
+    // Determine base size from ML value
+    $base_size = 'Other';
+    if ($ml_value >= 15000) $base_size = '15 Ltr+';
+    elseif ($ml_value >= 3000) $base_size = '3000 ML';
+    elseif ($ml_value >= 2000) $base_size = '2000 ML';
+    elseif ($ml_value >= 1750) $base_size = '1750 ML';
+    elseif ($ml_value >= 1500) $base_size = '1500 ML';
+    elseif ($ml_value >= 1000) $base_size = '1000 ML';
+    elseif ($ml_value >= 750) $base_size = '750 ML';
+    elseif ($ml_value >= 700) $base_size = '700 ML';
+    elseif ($ml_value >= 650) $base_size = '650 ML';
+    elseif ($ml_value >= 500) $base_size = '500 ML';
+    elseif ($ml_value >= 375) $base_size = '375 ML';
+    elseif ($ml_value >= 350) $base_size = '350 ML';
+    elseif ($ml_value >= 330) $base_size = '330 ML';
+    elseif ($ml_value >= 275) $base_size = '275 ML';
+    elseif ($ml_value >= 250) $base_size = '250 ML';
+    elseif ($ml_value >= 200) $base_size = '200 ML';
+    elseif ($ml_value >= 180) $base_size = '180 ML';
+    elseif ($ml_value >= 170) $base_size = '170 ML';
+    elseif ($ml_value >= 90) $base_size = '90 ML';
+    elseif ($ml_value >= 60) $base_size = '60 ML';
+    elseif ($ml_value >= 50) $base_size = '50 ML';
+    
+    // Determine main category from class field and details
+    if ($class_upper == 'C' || strpos($details_upper, 'COUNTRY') !== false || strpos($details2_upper, 'COUNTRY') !== false) {
+        return 'Country Liquor - ' . $base_size;
+    } elseif (strpos($details_upper, 'WINE') !== false || strpos($details2_upper, 'WINE') !== false) {
+        return 'Wine - ' . $base_size;
+    } elseif (strpos($details_upper, 'BEER') !== false || strpos($details2_upper, 'BEER') !== false) {
+        if (strpos($details2_upper, 'MILD') !== false) {
+            return 'Mild Beer - ' . $base_size;
+        } else {
+            return 'Beer - ' . $base_size;
+        }
+    } elseif (strpos($details_upper, 'WHISK') !== false || strpos($details2_upper, 'WHISK') !== false) {
+        return 'Foreign Liquor - Whisky - ' . $base_size;
+    } elseif (strpos($details_upper, 'VODKA') !== false || strpos($details2_upper, 'VODKA') !== false) {
+        return 'Foreign Liquor - Vodka - ' . $base_size;
+    } elseif (strpos($details_upper, 'RUM') !== false || strpos($details2_upper, 'RUM') !== false) {
+        return 'Foreign Liquor - Rum - ' . $base_size;
+    } elseif (strpos($details_upper, 'BRAND') !== false || strpos($details2_upper, 'BRAND') !== false) {
+        return 'Foreign Liquor - Brandy - ' . $base_size;
+    } elseif (strpos($details_upper, 'GIN') !== false || strpos($details2_upper, 'GIN') !== false) {
+        return 'Foreign Liquor - Gin - ' . $base_size;
+    } elseif (strpos($details_upper, 'SODA') !== false || strpos($details2_upper, 'SODA') !== false) {
+        return 'Others - Soda - ' . $base_size;
+    } elseif (strpos($details_upper, 'COLD DRINK') !== false || strpos($details2_upper, 'COLD DRINK') !== false) {
+        return 'Others - Cold Drinks - ' . $base_size;
     } else {
-        return '750 ML';
+        return 'Other Products - ' . $base_size;
     }
 }
 
@@ -237,20 +231,94 @@ if (isset($_GET['generate'])) {
     
     // Check if the stock table exists
     if (tableExists($conn, $stock_table)) {
-        // Build query with license type filtering
-        if (!empty($allowed_classes)) {
-            $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+        // First, let's check the structure of tblitemmaster
+        $columns_query = "SHOW COLUMNS FROM tblitemmaster";
+        $columns_result = $conn->query($columns_query);
+        $columns = [];
+        while ($col = $columns_result->fetch_assoc()) {
+            $columns[] = $col['Field'];
+        }
+        
+        // Build the SELECT part based on actual columns
+        $select_fields = "im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.PPRICE, im.BPRICE, im.RPRICE, im.MPRICE";
+        
+        // Add these columns only if they exist
+        if (in_array('SUB_CLASS', $columns)) {
+            $select_fields .= ", im.SUB_CLASS";
+        }
+        if (in_array('ITEM_GROUP', $columns)) {
+            $select_fields .= ", im.ITEM_GROUP";
+        }
+        if (in_array('LIQ_FLAG', $columns)) {
+            $select_fields .= ", im.LIQ_FLAG";
+        }
+        if (in_array('SIZE_CODE', $columns)) {
+            $select_fields .= ", im.SIZE_CODE";
+        }
+        
+        // Build query with license type filtering using SGROUP values from license_functions
+        if (!empty($allowed_sgroups)) {
+            $sgroup_placeholders = implode(',', array_fill(0, count($allowed_sgroups), '?'));
             
-            $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                             im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.RPRICE, im.MPRICE, im.LIQ_FLAG,
-                             ds.{$day_column} as CLOSING_STOCK
+            // Simpler query that doesn't rely on CLASS_CODE
+            $query = "SELECT $select_fields,
+                             ds.{$day_column} as CLOSING_STOCK,
+                             sz.OLD_ITEM_GROUP, sz.SIZE_DESC, sz.ML_VOLUME
                       FROM tblitemmaster im
                       LEFT JOIN $stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
-                      WHERE im.CLASS IN ($class_placeholders) AND im.PPRICE > 0
-                      AND COALESCE(ds.{$day_column}, 0) > 0";
+                      LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
+                      WHERE im.PPRICE > 0
+                      AND COALESCE(ds.{$day_column}, 0) > 0
+                      AND (";
             
-            $params = array_merge([$stock_month], $allowed_classes);
-            $types = str_repeat('s', count($params));
+            // Add conditions for each SGROUP based on patterns in DETAILS, DETAILS2, and CLASS
+            $conditions = [];
+            foreach ($allowed_sgroups as $sgroup) {
+                switch ($sgroup) {
+                    case 'W': // Whisky/Spirit
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%WHISK%' OR UPPER(im.DETAILS2) LIKE '%WHISK%' OR UPPER(im.DETAILS) LIKE '%SPIRIT%')";
+                        break;
+                    case 'V': // Wine
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%WINE%' OR UPPER(im.DETAILS2) LIKE '%WINE%')";
+                        break;
+                    case 'F': // Strong Beer
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%BEER%' OR UPPER(im.DETAILS2) LIKE '%BEER%') AND (UPPER(im.DETAILS2) NOT LIKE '%MILD%')";
+                        break;
+                    case 'M': // Mild Beer
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%MILD%' OR UPPER(im.DETAILS2) LIKE '%MILD%' OR UPPER(im.DETAILS) LIKE '%MILD BEER%')";
+                        break;
+                    case 'L': // Country Liquor
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%COUNTRY%' OR UPPER(im.DETAILS2) LIKE '%COUNTRY%' OR im.CLASS = 'C')";
+                        break;
+                    case 'D': // Brandy
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%BRAND%' OR UPPER(im.DETAILS2) LIKE '%BRAND%')";
+                        break;
+                    case 'K': // Vodka
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%VODKA%' OR UPPER(im.DETAILS2) LIKE '%VODKA%')";
+                        break;
+                    case 'G': // Gin
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%GIN%' OR UPPER(im.DETAILS2) LIKE '%GIN%')";
+                        break;
+                    case 'R': // Rum
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%RUM%' OR UPPER(im.DETAILS2) LIKE '%RUM%')";
+                        break;
+                    case 'O': // Others
+                        $conditions[] = "(UPPER(im.DETAILS) LIKE '%SODA%' OR UPPER(im.DETAILS2) LIKE '%SODA%' OR UPPER(im.DETAILS) LIKE '%COLD DRINK%')";
+                        break;
+                }
+            }
+            
+            if (!empty($conditions)) {
+                $query .= implode(' OR ', $conditions);
+            } else {
+                $query .= "1=1"; // No specific conditions, return all
+            }
+            
+            $query .= ")";
+            
+            // Prepare parameters
+            $params = array_merge([$stock_month]);
+            $types = 's';
             
             $stmt = $conn->prepare($query);
             $stmt->bind_param($types, ...$params);
@@ -258,9 +326,35 @@ if (isset($_GET['generate'])) {
             $result = $stmt->get_result();
             $items = $result->fetch_all(MYSQLI_ASSOC);
             
-            // Organize items by category (following brand_register.php structure)
+            // If no items found with conditions, try a simpler approach - get all items with stock
+            if (empty($items)) {
+                $query = "SELECT $select_fields,
+                                 ds.{$day_column} as CLOSING_STOCK,
+                                 sz.OLD_ITEM_GROUP, sz.SIZE_DESC, sz.ML_VOLUME
+                          FROM tblitemmaster im
+                          LEFT JOIN $stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
+                          LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
+                          WHERE im.PPRICE > 0
+                          AND COALESCE(ds.{$day_column}, 0) > 0";
+                
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("s", $stock_month);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $items = $result->fetch_all(MYSQLI_ASSOC);
+            }
+            
+            // Organize items by category
             foreach ($items as $item) {
-                $category = getCategoryName($item['CLASS'], $item['DETAILS'], $item['DETAILS2']);
+                $category = getCategoryName(
+                    $conn, 
+                    $item['DETAILS'] ?? '', 
+                    $item['DETAILS2'] ?? '', 
+                    $item['CLASS'] ?? '',
+                    $item['SIZE_CODE'] ?? '',
+                    $item['OLD_ITEM_GROUP'] ?? null
+                );
+                
                 $closing_stock = (float)$item['CLOSING_STOCK'];
                 
                 // Get the appropriate rate based on rate_type
@@ -274,13 +368,19 @@ if (isset($_GET['generate'])) {
                 
                 $amount = $closing_stock * $rate;
                 
+                // Create description
+                $description = trim($item['Print_Name'] ?? $item['DETAILS'] ?? '');
+                if (empty($description) && !empty($item['DETAILS2'])) {
+                    $description = $item['DETAILS2'];
+                }
+                
                 // For detailed report
                 if (!isset($detailed_categories[$category])) {
                     $detailed_categories[$category] = [];
                 }
                 
                 $detailed_categories[$category][] = [
-                    'description' => $item['DETAILS'],
+                    'description' => $description,
                     'closing_stock' => $closing_stock,
                     'rate' => $rate,
                     'amount' => $amount
@@ -302,22 +402,30 @@ if (isset($_GET['generate'])) {
     }
 }
 
-// Define category order for display (updated with comprehensive size categories like brand_register.php)
-$category_order = [
-    'Foreign Liquor' => [
-        '2000 ML', '1000 ML', '750 ML', '700 ML', '375 ML', '350 ML', '275 ML', 
-        '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
-    ],
-    'Wine' => [
-        'Wine 750 ML', 'Wine 650 ML', 'Wine 375 ML', 'Wine 330 ML', 'Wine 180 ML'
-    ],
-    'Beer' => [
-        '1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'
-    ],
-    'Country Liquor' => [
-        '750 ML', '375 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
-    ]
-];
+// Organize categories into main groups
+$organized_categories = [];
+foreach (array_keys($summary_data) as $cat) {
+    if (strpos($cat, 'Country Liquor') === 0) {
+        $organized_categories['Country Liquor'][] = $cat;
+    } elseif (strpos($cat, 'Wine') === 0) {
+        $organized_categories['Wine'][] = $cat;
+    } elseif (strpos($cat, 'Mild Beer') === 0) {
+        $organized_categories['Mild Beer'][] = $cat;
+    } elseif (strpos($cat, 'Beer') === 0) {
+        $organized_categories['Beer'][] = $cat;
+    } elseif (strpos($cat, 'Foreign Liquor') === 0) {
+        $organized_categories['Foreign Liquor'][] = $cat;
+    } elseif (strpos($cat, 'Others') === 0) {
+        $organized_categories['Others'][] = $cat;
+    } else {
+        $organized_categories['Other Products'][] = $cat;
+    }
+}
+
+// Sort categories within each group
+foreach ($organized_categories as &$group) {
+    sort($group);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -410,14 +518,14 @@ $category_order = [
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
           <p class="mb-0">Showing items for classes: 
               <?php 
-              if (!empty($available_classes)) {
-                  $class_names = [];
-                  foreach ($available_classes as $class) {
-                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+              if (!empty($class_descriptions)) {
+                  $display_names = [];
+                  foreach ($class_descriptions as $sgroup => $desc) {
+                      $display_names[] = $desc . ' (' . $sgroup . ')';
                   }
-                  echo implode(', ', $class_names);
+                  echo implode(', ', $display_names);
               } else {
-                  echo 'No classes available for your license type';
+                  echo 'All classes available for your license type';
               }
               ?>
           </p>
@@ -472,7 +580,7 @@ $category_order = [
           <div class="report-header text-center mb-4">
             <h2><?= htmlspecialchars($companyName) ?></h2>
             <h4>Stock Valuation Report [ Bank - <?= $report_type === 'detailed' ? 'Detailed' : 'Summary' ?> ] (<?= 
-                $rate_type === 'purc' ? 'Pure. Rate' : 
+                $rate_type === 'purc' ? 'Purchase Rate' : 
                 ($rate_type === 'sales' ? 'Sales Rate' : 
                 ($rate_type === 'mrp' ? 'MRP Rate' : 'Basic Rate'))
             ?>)</h4>
@@ -484,8 +592,8 @@ $category_order = [
               No stock data found for the selected date.
             </div>
           <?php elseif ($report_type === 'detailed'): ?>
-            <!-- Detailed Report (Updated with comprehensive size categories) -->
-            <?php foreach ($category_order as $main_category => $subcategories): 
+            <!-- Detailed Report -->
+            <?php foreach ($organized_categories as $main_category => $subcategories): 
                   $has_data = false;
                   foreach ($subcategories as $subcat) {
                       if (isset($detailed_categories[$subcat]) && !empty($detailed_categories[$subcat])) {
@@ -503,7 +611,7 @@ $category_order = [
                   </tr>
                   <tr>
                     <th>Item Description</th>
-                    <th class="text-right">Cl. Stock</th>
+                    <th class="text-right">Closing Stock</th>
                     <th class="text-right">Rate</th>
                     <th class="text-right">Amount</th>
                   </tr>
@@ -556,13 +664,13 @@ $category_order = [
             </div>
 
           <?php else: ?>
-            <!-- Summary Report (Updated with comprehensive size categories) -->
+            <!-- Summary Report -->
             <div class="summary-section">
               <table class="report-table">
                 <thead>
                   <tr>
                     <th>Category</th>
-                    <th class="text-right">Cl. Stock</th>
+                    <th class="text-right">Closing Stock</th>
                     <th class="text-right">Amount</th>
                   </tr>
                 </thead>
@@ -571,9 +679,19 @@ $category_order = [
                   $summary_total_amount = 0;
                   $summary_total_stock = 0;
                   
-                  foreach ($category_order as $main_category => $subcategories):
+                  foreach ($organized_categories as $main_category => $subcategories):
                       $main_category_stock = 0;
                       $main_category_amount = 0;
+                      
+                      // Check if any subcategory has data
+                      $has_main_data = false;
+                      foreach ($subcategories as $subcategory) {
+                          if (isset($summary_data[$subcategory])) {
+                              $has_main_data = true;
+                              break;
+                          }
+                      }
+                      if (!$has_main_data) continue;
                   ?>
                   <tr class="category-header">
                     <td colspan="3"><?= $main_category ?></td>

@@ -19,10 +19,26 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
-// Extract class SGROUP values for filtering
+// Debug: Check what keys are available in $available_classes
+// Uncomment the following line for debugging if needed
+// var_dump($available_classes); exit;
+
+// Extract class codes for filtering - Check what key is actually used
 $allowed_classes = [];
-foreach ($available_classes as $class) {
-    $allowed_classes[] = $class['SGROUP'];
+if (!empty($available_classes)) {
+    foreach ($available_classes as $class) {
+        // Check if CLASS_CODE exists, if not try other possible keys
+        if (isset($class['CLASS_CODE'])) {
+            $allowed_classes[] = $class['CLASS_CODE'];
+        } elseif (isset($class['code'])) {
+            $allowed_classes[] = $class['code'];
+        } elseif (isset($class['SGROUP'])) {
+            // Fallback to SGROUP if that's what's being returned
+            $allowed_classes[] = $class['SGROUP'];
+        } elseif (isset($class['class_code'])) {
+            $allowed_classes[] = $class['class_code'];
+        }
+    }
 }
 
 // Get parameters
@@ -46,7 +62,7 @@ $companyResult = $stmt->get_result();
 $company = $companyResult->fetch_assoc();
 $companyName = $company['COMP_NAME'] ?? 'DIAMOND WINE SHOP';
 
-// Function to extract brand name from item details (same as closing_stock.php)
+// Function to extract brand name from item details
 function getBrandName($details) {
     // Remove size patterns (ML, CL, L, etc. with numbers)
     $brandName = preg_replace('/\s*\d+\s*(ML|CL|L).*$/i', '', $details);
@@ -55,7 +71,7 @@ function getBrandName($details) {
     return trim($brandName);
 }
 
-// Function to group sizes by base size (same as closing_stock.php)
+// Function to group sizes by base size
 function getBaseSize($size) {
     // Extract the base size (everything before any special characters after ML)
     $baseSize = preg_replace('/\s*ML.*$/i', ' ML', $size);
@@ -65,7 +81,7 @@ function getBaseSize($size) {
     return trim($baseSize);
 }
 
-// Define size columns for each liquor type exactly as in closing_stock.php
+// Define size columns for each liquor type
 $size_columns_s = [
     '2000 ML Pet (6)', '2000 ML(4)', '2000 ML(6)', '1000 ML(Pet)', '1000 ML',
     '750 ML(6)', '750 ML (Pet)', '750 ML', '700 ML', '700 ML(6)',
@@ -79,7 +95,7 @@ $size_columns_w = ['750 ML(6)', '750 ML', '650 ML', '375 ML', '330 ML', '180 ML'
 $size_columns_fb = ['650 ML', '500 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
 $size_columns_mb = ['650 ML', '500 ML (CAN)', '330 ML', '330 ML (CAN)'];
 
-// Group sizes by base size for each liquor type (same as closing_stock.php)
+// Group sizes by base size for each liquor type
 function groupSizes($sizes) {
     $grouped = [];
     foreach ($sizes as $size) {
@@ -103,28 +119,19 @@ $display_sizes_w = array_keys($grouped_sizes_w);
 $display_sizes_fb = array_keys($grouped_sizes_fb);
 $display_sizes_mb = array_keys($grouped_sizes_mb);
 
-// FIXED: Function to determine liquor type based on CLASS and LIQ_FLAG
-function getLiquorType($class, $liq_flag, $details = '') {
-    // First check LIQ_FLAG - if it's 'C', it's definitely Country Liquor
-    if ($liq_flag == 'C') {
-        return 'Country Liquor';
+// Function to get liquor type based on category
+function getLiquorTypeByCategory($category_code) {
+    switch ($category_code) {
+        case 'CAT001': return 'Spirits';
+        case 'CAT002': return 'Wines';
+        case 'CAT003': return 'Fermented Beer';
+        case 'CAT004': return 'Mild Beer';
+        case 'CAT005': return 'Country Liquor';
+        default: return 'Other';
     }
-    
-    // For non-country liquor, use CLASS to determine type
-    if ($liq_flag == 'F') {
-        switch ($class) {
-            case 'F': return 'Fermented Beer';
-            case 'M': return 'Mild Beer';
-            case 'V': return 'Wines';
-            default: return 'Spirits';
-        }
-    }
-    
-    // Default to Spirits for other items
-    return 'Spirits';
 }
 
-// Function to get grouped size for display (same as closing_stock.php)
+// Function to get grouped size for display
 function getGroupedSize($size, $liquor_type) {
     global $grouped_sizes_s, $grouped_sizes_w, $grouped_sizes_fb, $grouped_sizes_mb;
     
@@ -157,20 +164,31 @@ function getGroupedSize($size, $liquor_type) {
             return $baseSize;
     }
     
-    return $baseSize; // Return base size even if not found in predefined groups
+    return $baseSize;
 }
 
-// Fetch items with negative closing stock - FILTERED BY LICENSE TYPE
+// Updated query to join with new table structure - FIXED ALIAS ISSUE
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-    $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
-                     ds.DAY_{$day}_CLOSING as CLOSING_STOCK
+    $query = "SELECT 
+                im.CODE, 
+                im.Print_Name, 
+                im.DETAILS, 
+                im.DETAILS2, 
+                cat.CATEGORY_CODE,
+                cat.CATEGORY_NAME,
+                cl.CLASS_CODE,
+                cl.CLASS_NAME,
+                im.PPRICE, 
+                im.BPRICE,
+                ds.DAY_{$day}_CLOSING as CLOSING_STOCK
               FROM tblitemmaster im
+              LEFT JOIN tblclass_new cl ON im.CLASS = cl.CLASS_CODE
+              LEFT JOIN tblcategory cat ON cl.CATEGORY_CODE = cat.CATEGORY_CODE
               LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
-              WHERE im.CLASS IN ($class_placeholders) 
+              WHERE cl.CLASS_CODE IN ($class_placeholders) 
               AND ds.DAY_{$day}_CLOSING < 0
-              ORDER BY im.LIQ_FLAG, im.CLASS, im.DETAILS, im.DETAILS2";
+              ORDER BY cat.CATEGORY_NAME, cl.CLASS_NAME, im.DETAILS, im.DETAILS2";
     
     $params = array_merge([$month_year], $allowed_classes);
     $types = str_repeat('s', count($params));
@@ -179,10 +197,21 @@ if (!empty($allowed_classes)) {
     $stmt->bind_param($types, ...$params);
 } else {
     // If no classes allowed, show empty result
-    $query = "SELECT im.CODE, im.Print_Name, im.DETAILS, im.DETAILS2, im.CLASS, im.SUB_CLASS, 
-                     im.ITEM_GROUP, im.PPRICE, im.BPRICE, im.LIQ_FLAG,
-                     ds.DAY_{$day}_CLOSING as CLOSING_STOCK
+    $query = "SELECT 
+                im.CODE, 
+                im.Print_Name, 
+                im.DETAILS, 
+                im.DETAILS2, 
+                cat.CATEGORY_CODE,
+                cat.CATEGORY_NAME,
+                cl.CLASS_CODE,
+                cl.CLASS_NAME,
+                im.PPRICE, 
+                im.BPRICE,
+                ds.DAY_{$day}_CLOSING as CLOSING_STOCK
               FROM tblitemmaster im
+              LEFT JOIN tblclass_new cl ON im.CLASS = cl.CLASS_CODE
+              LEFT JOIN tblcategory cat ON cl.CATEGORY_CODE = cat.CATEGORY_CODE
               LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
               WHERE 1 = 0"; // Always false condition
     
@@ -194,13 +223,14 @@ $stmt->execute();
 $result = $stmt->get_result();
 $negative_items = $result->fetch_all(MYSQLI_ASSOC);
 
-// FIXED: Restructure data by liquor type -> brand
+// Restructure data by liquor type -> brand
 $negative_brand_data_by_category = [
     'Spirits' => [],
     'Wines' => [],
     'Fermented Beer' => [],
     'Mild Beer' => [],
-    'Country Liquor' => []  // Added separate category for Country Liquor
+    'Country Liquor' => [],
+    'Other' => []
 ];
 
 // Define display sizes for each liquor type
@@ -209,12 +239,14 @@ $liquor_type_sizes = [
     'Wines' => $display_sizes_w,
     'Fermented Beer' => $display_sizes_fb,
     'Mild Beer' => $display_sizes_mb,
-    'Country Liquor' => [] // Will be populated dynamically
+    'Country Liquor' => [],
+    'Other' => []
 ];
 
-// Process negative items - FIXED LOGIC
+// Process negative items
 foreach ($negative_items as $item) {
-    $liquor_type = getLiquorType($item['CLASS'], $item['LIQ_FLAG'], $item['DETAILS']);
+    $category_code = $item['CATEGORY_CODE'] ?? '';
+    $liquor_type = getLiquorTypeByCategory($category_code);
     $size = $item['DETAILS2'] ?? '';
     
     // Extract brand name
@@ -224,8 +256,8 @@ foreach ($negative_items as $item) {
     // Get grouped size for display
     $grouped_size = getGroupedSize($size, $liquor_type);
     
-    if ($liquor_type === 'Country Liquor') {
-        // For country liquor, we'll handle sizes dynamically
+    if ($liquor_type === 'Country Liquor' || $liquor_type === 'Other') {
+        // Handle sizes dynamically for Country Liquor and Other
         if (!isset($negative_brand_data_by_category[$liquor_type][$brandName])) {
             $negative_brand_data_by_category[$liquor_type][$brandName] = [];
         }
@@ -236,9 +268,9 @@ foreach ($negative_items as $item) {
         
         $negative_brand_data_by_category[$liquor_type][$brandName][$grouped_size] += (float)$item['CLOSING_STOCK'];
         
-        // Also add to liquor_type_sizes for Country Liquor
-        if (!in_array($grouped_size, $liquor_type_sizes['Country Liquor'])) {
-            $liquor_type_sizes['Country Liquor'][] = $grouped_size;
+        // Add to liquor_type_sizes
+        if (!in_array($grouped_size, $liquor_type_sizes[$liquor_type])) {
+            $liquor_type_sizes[$liquor_type][] = $grouped_size;
         }
     } else {
         // For other liquor types, only include if the grouped size exists in our display sizes
@@ -254,8 +286,10 @@ foreach ($negative_items as $item) {
     }
 }
 
-// Sort Country Liquor sizes
-sort($liquor_type_sizes['Country Liquor']);
+// Sort dynamic sizes
+foreach (['Country Liquor', 'Other'] as $type) {
+    sort($liquor_type_sizes[$type]);
+}
 
 // Calculate negative totals for each liquor type
 $negative_liquor_type_totals = [
@@ -263,7 +297,8 @@ $negative_liquor_type_totals = [
     'Wines' => array_fill_keys($display_sizes_w, 0),
     'Fermented Beer' => array_fill_keys($display_sizes_fb, 0),
     'Mild Beer' => array_fill_keys($display_sizes_mb, 0),
-    'Country Liquor' => array_fill_keys($liquor_type_sizes['Country Liquor'], 0)
+    'Country Liquor' => array_fill_keys($liquor_type_sizes['Country Liquor'], 0),
+    'Other' => array_fill_keys($liquor_type_sizes['Other'], 0)
 ];
 
 $negative_grand_totals = [
@@ -271,7 +306,8 @@ $negative_grand_totals = [
     'Wines' => 0,
     'Fermented Beer' => 0,
     'Mild Beer' => 0,
-    'Country Liquor' => 0
+    'Country Liquor' => 0,
+    'Other' => 0
 ];
 
 foreach ($negative_brand_data_by_category as $liquor_type => $brands) {
@@ -402,7 +438,14 @@ foreach ($negative_brand_data_by_category as $brands) {
               if (!empty($available_classes)) {
                   $class_names = [];
                   foreach ($available_classes as $class) {
-                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                      // Try different possible keys for display
+                      if (isset($class['CLASS_NAME'])) {
+                          $class_names[] = $class['CLASS_NAME'] . ' (' . ($class['CLASS_CODE'] ?? $class['SGROUP'] ?? '') . ')';
+                      } elseif (isset($class['DESC'])) {
+                          $class_names[] = $class['DESC'] . ' (' . ($class['SGROUP'] ?? '') . ')';
+                      } elseif (isset($class['name'])) {
+                          $class_names[] = $class['name'];
+                      }
                   }
                   echo implode(', ', $class_names);
               } else {
@@ -477,7 +520,7 @@ foreach ($negative_brand_data_by_category as $brands) {
                     <th>Sr. No.</th>
                     <th>Brand Name</th>
                     <?php foreach ($display_sizes as $size): ?>
-                      <th class="text-right"><?= $size ?></th>
+                      <th class="text-right"><?= htmlspecialchars($size) ?></th>
                     <?php endforeach; ?>
                     <th class="text-right">Total</th>
                   </tr>

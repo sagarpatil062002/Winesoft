@@ -491,6 +491,46 @@ foreach ($dates as $date) {
 
 // Calculate total columns count for table formatting - Original FLR Datewise layout
 $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes_wine) + (count($display_sizes_beer) * 2);
+
+// Calculate closing balance for each category and size
+$closing_balance = [
+    'Spirit' => [],
+    'Wine' => [],
+    'Fermented Beer' => [],
+    'Mild Beer' => []
+];
+
+// Spirit closing balance
+foreach ($display_sizes_spirit as $size) {
+    $opening = isset($opening_balance_data['Spirit'][$size]) ? $opening_balance_data['Spirit'][$size] : 0;
+    $received = isset($totals['Spirit']['purchase'][$size]) ? $totals['Spirit']['purchase'][$size] : 0;
+    $sold = isset($totals['Spirit']['sales'][$size]) ? $totals['Spirit']['sales'][$size] : 0;
+    $closing_balance['Spirit'][$size] = $opening + $received - $sold;
+}
+
+// Wine closing balance
+foreach ($display_sizes_wine as $size) {
+    $opening = isset($opening_balance_data['Wine'][$size]) ? $opening_balance_data['Wine'][$size] : 0;
+    $received = isset($totals['Wine']['purchase'][$size]) ? $totals['Wine']['purchase'][$size] : 0;
+    $sold = isset($totals['Wine']['sales'][$size]) ? $totals['Wine']['sales'][$size] : 0;
+    $closing_balance['Wine'][$size] = $opening + $received - $sold;
+}
+
+// Fermented Beer closing balance
+foreach ($display_sizes_beer as $size) {
+    $opening = isset($opening_balance_data['Fermented Beer'][$size]) ? $opening_balance_data['Fermented Beer'][$size] : 0;
+    $received = isset($totals['Fermented Beer']['purchase'][$size]) ? $totals['Fermented Beer']['purchase'][$size] : 0;
+    $sold = isset($totals['Fermented Beer']['sales'][$size]) ? $totals['Fermented Beer']['sales'][$size] : 0;
+    $closing_balance['Fermented Beer'][$size] = $opening + $received - $sold;
+}
+
+// Mild Beer closing balance
+foreach ($display_sizes_beer as $size) {
+    $opening = isset($opening_balance_data['Mild Beer'][$size]) ? $opening_balance_data['Mild Beer'][$size] : 0;
+    $received = isset($totals['Mild Beer']['purchase'][$size]) ? $totals['Mild Beer']['purchase'][$size] : 0;
+    $sold = isset($totals['Mild Beer']['sales'][$size]) ? $totals['Mild Beer']['sales'][$size] : 0;
+    $closing_balance['Mild Beer'][$size] = $opening + $received - $sold;
+}
 ?>
 
 <!DOCTYPE html>
@@ -1077,13 +1117,9 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
                 <td></td>
               </tr>
 
-              <!-- Summary rows - Grand Total (Last Day Closing) -->
-              <?php 
-              $last_date = end($dates);
-              reset($dates);
-              ?>
+              <!-- Summary rows - Closing Balance (Opening + Received - Sold) -->
               <tr class="summary-row">
-                <td>Grand Total</td>
+                <td>Closing Balance</td>
                 <td></td>
 
                 <!-- Received Section - Empty -->
@@ -1096,25 +1132,25 @@ $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes
                   <td></td>
                 <?php endfor; ?>
 
-                <!-- Closing Balance Section - Show last date's closing -->
+                <!-- Closing Balance Section - Show calculated closing balance -->
                 <!-- Spirit -->
                 <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Spirit']['closing'][$size]) && $daily_data[$last_date]['Spirit']['closing'][$size] > 0 ? $daily_data[$last_date]['Spirit']['closing'][$size] : '' ?></td>
+                  <td><?= isset($closing_balance['Spirit'][$size]) && $closing_balance['Spirit'][$size] > 0 ? $closing_balance['Spirit'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- Wine -->
                 <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Wine']['closing'][$size]) && $daily_data[$last_date]['Wine']['closing'][$size] > 0 ? $daily_data[$last_date]['Wine']['closing'][$size] : '' ?></td>
+                  <td><?= isset($closing_balance['Wine'][$size]) && $closing_balance['Wine'][$size] > 0 ? $closing_balance['Wine'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- Fermented Beer -->
                 <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Fermented Beer']['closing'][$size]) && $daily_data[$last_date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$last_date]['Fermented Beer']['closing'][$size] : '' ?></td>
+                  <td><?= isset($closing_balance['Fermented Beer'][$size]) && $closing_balance['Fermented Beer'][$size] > 0 ? $closing_balance['Fermented Beer'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <!-- Mild Beer -->
                 <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($daily_data[$last_date]['Mild Beer']['closing'][$size]) && $daily_data[$last_date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$last_date]['Mild Beer']['closing'][$size] : '' ?></td>
+                  <td><?= isset($closing_balance['Mild Beer'][$size]) && $closing_balance['Mild Beer'][$size] > 0 ? $closing_balance['Mild Beer'][$size] : '' ?></td>
                 <?php endforeach; ?>
 
                 <td></td>

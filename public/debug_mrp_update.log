@@ -218,3 +218,5 @@
 [2026-02-18 06:33:44] MRP Update Result - Success: 1, Affected Rows: 1
 [2026-02-18 09:41:52] MRP Update Request - Item: SCMKS0036602, MRP: 500, Company: 1
 [2026-02-18 09:41:52] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-02-24 17:31:28] MRP Update Request - Item: SCMKS0036602, MRP: 500, Company: 1
+[2026-02-24 17:31:28] MRP Update Result - Success: 1, Affected Rows: 1

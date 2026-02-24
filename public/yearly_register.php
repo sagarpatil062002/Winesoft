@@ -356,12 +356,14 @@ if ($companyStmt) {
     $companyStmt->close();
 }
 
-// Define display categories for main table (EXCLUDING MML)
+// Define display categories for main table (NOW INCLUDING MML) - to match monthly register
 $main_display_categories = [
     'IMFL',
     'IMPORTED', 
+    'MML',                    // Added MML here
     'INDIAN WINE',
     'IMPORTED WINE',
+    'WINE MML',               // Added Wine MML here
     'FERMENTED BEER',
     'MILD BEER'
 ];
@@ -369,20 +371,15 @@ $main_display_categories = [
 $category_display_names = [
     'IMFL' => 'IMFL',
     'IMPORTED' => 'IMPORTED',
+    'MML' => 'SPIRIT MML',    // Display name for MML
     'INDIAN WINE' => 'INDIAN WINE',
     'IMPORTED WINE' => 'IMPORTED WINE',
+    'WINE MML' => 'WINE MML', // Display name for Wine MML
     'FERMENTED BEER' => 'FERMENTED BEER',
     'MILD BEER' => 'MILD BEER'
 ];
 
-// MML specific categories for second table
-$mml_categories = ['MML', 'WINE MML'];
-$mml_display_names = [
-    'MML' => 'SPIRIT MML',
-    'WINE MML' => 'WINE MML'
-];
-
-// Define size columns for each category
+// Define size columns for each category (including MML)
 $spirit_sizes = [
     '50 ML', '60 ML', '90 ML', '180 ML', '200 ML', '275 ML', '330 ML', 
     '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML', '2000 ML'
@@ -490,12 +487,11 @@ foreach ($items as $code => &$item) {
     }
     
     $item['matched_size'] = $matched_size;
-    $item['is_mml'] = in_array($display_type, $mml_categories);
     $item['is_main'] = in_array($display_type, $main_display_categories);
 }
 unset($item);
 
-// Initialize yearly data structure for main categories
+// Initialize yearly data structure for main categories (includes MML now)
 $main_yearly_data = [
     'opening' => [],
     'received' => [],
@@ -512,64 +508,111 @@ foreach ($main_display_categories as $category) {
     $main_yearly_data['breakages'][$category] = array_fill_keys($size_columns[$category], 0);
 }
 
-// Initialize yearly data structure for MML categories
-$mml_yearly_data = [
-    'opening' => [],
-    'received' => [],
-    'sold' => [],
-    'closing' => [],
-    'breakages' => []
-];
+// ============================================
+// PART 1: Get OPENING BALANCE from the first available date in the financial year
+// First try April 1st, if no data, find first day with data in April,
+// if no data in April, find first month with data and first day in that month
+// ============================================
+$opening_date_found = false;
+$opening_date_description = "";
 
-foreach ($mml_categories as $category) {
-    $mml_yearly_data['opening'][$category] = array_fill_keys($size_columns[$category], 0);
-    $mml_yearly_data['received'][$category] = array_fill_keys($size_columns[$category], 0);
-    $mml_yearly_data['sold'][$category] = array_fill_keys($size_columns[$category], 0);
-    $mml_yearly_data['closing'][$category] = array_fill_keys($size_columns[$category], 0);
-    $mml_yearly_data['breakages'][$category] = array_fill_keys($size_columns[$category], 0);
+// Get all months in financial year in order
+$months_in_financial_year = [];
+$current_timestamp = strtotime($fin_start_date);
+$end_timestamp = strtotime($fin_end_date);
+
+while ($current_timestamp <= $end_timestamp) {
+    $year = date('Y', $current_timestamp);
+    $month = date('m', $current_timestamp);
+    $months_in_financial_year[] = [
+        'year' => $year,
+        'month' => $month,
+        'key' => $year . '-' . $month,
+        'name' => date('F Y', $current_timestamp)
+    ];
+    $current_timestamp = strtotime('+1 month', $current_timestamp);
 }
 
-// ============================================
-// PART 1: Get OPENING BALANCE from first day of financial year (DAY_01_OPEN of first month)
-// ============================================
-$first_month_key = $fin_start_year . '-' . $fin_start_month;
-$first_month_table = getTableForMonth($conn, $compID, $fin_start_year, $fin_start_month);
-
-// Check if DAY_01_OPEN exists in the first month's table
-$checkColumnQuery = "SHOW COLUMNS FROM $first_month_table LIKE 'DAY_01_OPEN'";
-$checkResult = $conn->query($checkColumnQuery);
-if ($checkResult && $checkResult->num_rows > 0) {
-    $openingQuery = "SELECT ITEM_CODE, DAY_01_OPEN as opening FROM $first_month_table WHERE STK_MONTH = ?";
-    $openingStmt = $conn->prepare($openingQuery);
-    if ($openingStmt) {
-        $openingStmt->bind_param("s", $first_month_key);
-        $openingStmt->execute();
-        $openingResult = $openingStmt->get_result();
+// First, try to find opening balance starting from first month (April)
+foreach ($months_in_financial_year as $month_info) {
+    if ($opening_date_found) break;
+    
+    $year = $month_info['year'];
+    $month_num = $month_info['month'];
+    $month_key = $month_info['key'];
+    $tableName = getTableForMonth($conn, $compID, $year, $month_num);
+    
+    // Check if table exists
+    $checkTableQuery = "SHOW TABLES LIKE '$tableName'";
+    $tableCheckResult = $conn->query($checkTableQuery);
+    if (!$tableCheckResult || $tableCheckResult->num_rows == 0) {
+        continue; // Skip if table doesn't exist
+    }
+    
+    // Get days in this month
+    $days_in_month = date('t', strtotime($month_key . '-01'));
+    
+    // Check each day in order
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $day_padded = sprintf('%02d', $day);
         
-        while ($row = $openingResult->fetch_assoc()) {
-            $item_code = $row['ITEM_CODE'];
-            
-            if (!isset($items[$item_code])) continue;
-            
-            $item = $items[$item_code];
-            $display_type = $item['hierarchy']['display_type'];
-            $matched_size = $item['matched_size'];
-            $is_mml = $item['is_mml'];
-            $is_main = $item['is_main'];
-            
-            if (!$matched_size) continue;
-            
-            $opening_qty = (int)$row['opening'];
-            
-            if ($is_main) {
-                $main_yearly_data['opening'][$display_type][$matched_size] += $opening_qty;
-            } elseif ($is_mml) {
-                $mml_yearly_data['opening'][$display_type][$matched_size] += $opening_qty;
+        // Check if OPEN column exists for this day
+        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$day_padded}_OPEN'";
+        $checkResult = $conn->query($checkColumnQuery);
+        
+        if ($checkResult && $checkResult->num_rows > 0) {
+            // Column exists, check if there's any data > 0
+            $openingQuery = "SELECT ITEM_CODE, DAY_{$day_padded}_OPEN as opening FROM $tableName WHERE STK_MONTH = ?";
+            $openingStmt = $conn->prepare($openingQuery);
+            if ($openingStmt) {
+                $openingStmt->bind_param("s", $month_key);
+                $openingStmt->execute();
+                $openingResult = $openingStmt->get_result();
+                
+                $has_data = false;
+                $temp_data = [];
+                
+                while ($row = $openingResult->fetch_assoc()) {
+                    $item_code = $row['ITEM_CODE'];
+                    
+                    if (!isset($items[$item_code])) continue;
+                    
+                    $item = $items[$item_code];
+                    $display_type = $item['hierarchy']['display_type'];
+                    $matched_size = $item['matched_size'];
+                    $is_main = $item['is_main'];
+                    
+                    if (!$matched_size || !$is_main) continue;
+                    
+                    $opening_qty = (int)$row['opening'];
+                    
+                    if ($opening_qty > 0) {
+                        $has_data = true;
+                        $temp_data[] = [
+                            'display_type' => $display_type,
+                            'matched_size' => $matched_size,
+                            'qty' => $opening_qty
+                        ];
+                    }
+                }
+                $openingStmt->close();
+                
+                if ($has_data) {
+                    // Found first day with data - use this as opening balance
+                    foreach ($temp_data as $data) {
+                        $main_yearly_data['opening'][$data['display_type']][$data['matched_size']] += $data['qty'];
+                    }
+                    $opening_date_found = true;
+                    $opening_date_description = date('d-M-Y', strtotime($month_key . '-' . $day_padded));
+                    break; // Exit day loop
+                }
             }
         }
-        $openingStmt->close();
     }
 }
+
+// If no opening balance found at all, set a flag
+$no_opening_data = !$opening_date_found;
 
 // ============================================
 // PART 2: Get TOTAL RECEIVED and SOLD for entire financial year
@@ -657,126 +700,22 @@ foreach ($months_in_year as $month_key => $month_info) {
             $item = $items[$item_code];
             $display_type = $item['hierarchy']['display_type'];
             $matched_size = $item['matched_size'];
-            $is_mml = $item['is_mml'];
             $is_main = $item['is_main'];
             
-            if (!$matched_size) continue;
+            if (!$matched_size || !$is_main) continue;
             
             $purchase_qty = (int)$row['total_purchase'];
             $sales_qty = (int)$row['total_sales'];
             
-            if ($is_main) {
-                $main_yearly_data['received'][$display_type][$matched_size] += $purchase_qty;
-                $main_yearly_data['sold'][$display_type][$matched_size] += $sales_qty;
-            } elseif ($is_mml) {
-                $mml_yearly_data['received'][$display_type][$matched_size] += $purchase_qty;
-                $mml_yearly_data['sold'][$display_type][$matched_size] += $sales_qty;
-            }
+            $main_yearly_data['received'][$display_type][$matched_size] += $purchase_qty;
+            $main_yearly_data['sold'][$display_type][$matched_size] += $sales_qty;
         }
         $stockStmt->close();
     }
 }
 
 // ============================================
-// PART 3: Get CLOSING BALANCE from current date or last day of financial year
-// ============================================
-$closing_date = $current_date;
-$closing_year = $current_year;
-$closing_month = $current_month_num;
-$closing_day = $current_day;
-
-// If current date is beyond financial year, use last day of financial year
-if (!$is_current_date_in_fin_year) {
-    $closing_date = $fin_end_date;
-    $closing_year = $fin_end_year;
-    $closing_month = $fin_end_month;
-    $closing_day = (int)date('d', strtotime($fin_end_date));
-}
-
-$closing_month_key = $closing_year . '-' . sprintf('%02d', $closing_month);
-$closing_table = getTableForMonth($conn, $compID, $closing_year, sprintf('%02d', $closing_month));
-
-// Check if the closing day column exists
-$day_padded = sprintf('%02d', $closing_day);
-$checkColumnQuery = "SHOW COLUMNS FROM $closing_table LIKE 'DAY_{$day_padded}_CLOSING'";
-$checkResult = $conn->query($checkColumnQuery);
-
-if ($checkResult && $checkResult->num_rows > 0) {
-    $closingQuery = "SELECT ITEM_CODE, DAY_{$day_padded}_CLOSING as closing FROM $closing_table WHERE STK_MONTH = ?";
-    $closingStmt = $conn->prepare($closingQuery);
-    if ($closingStmt) {
-        $closingStmt->bind_param("s", $closing_month_key);
-        $closingStmt->execute();
-        $closingResult = $closingStmt->get_result();
-        
-        while ($row = $closingResult->fetch_assoc()) {
-            $item_code = $row['ITEM_CODE'];
-            
-            if (!isset($items[$item_code])) continue;
-            
-            $item = $items[$item_code];
-            $display_type = $item['hierarchy']['display_type'];
-            $matched_size = $item['matched_size'];
-            $is_mml = $item['is_mml'];
-            $is_main = $item['is_main'];
-            
-            if (!$matched_size) continue;
-            
-            $closing_qty = (int)$row['closing'];
-            
-            if ($is_main) {
-                $main_yearly_data['closing'][$display_type][$matched_size] += $closing_qty;
-            } elseif ($is_mml) {
-                $mml_yearly_data['closing'][$display_type][$matched_size] += $closing_qty;
-            }
-        }
-        $closingStmt->close();
-    }
-} else {
-    // If specific day column doesn't exist, try to get the latest available closing for that month
-    for ($day = $closing_day; $day >= 1; $day--) {
-        $day_padded = sprintf('%02d', $day);
-        $checkColumnQuery = "SHOW COLUMNS FROM $closing_table LIKE 'DAY_{$day_padded}_CLOSING'";
-        $checkResult = $conn->query($checkColumnQuery);
-        
-        if ($checkResult && $checkResult->num_rows > 0) {
-            $closingQuery = "SELECT ITEM_CODE, DAY_{$day_padded}_CLOSING as closing FROM $closing_table WHERE STK_MONTH = ?";
-            $closingStmt = $conn->prepare($closingQuery);
-            if ($closingStmt) {
-                $closingStmt->bind_param("s", $closing_month_key);
-                $closingStmt->execute();
-                $closingResult = $closingStmt->get_result();
-                
-                while ($row = $closingResult->fetch_assoc()) {
-                    $item_code = $row['ITEM_CODE'];
-                    
-                    if (!isset($items[$item_code])) continue;
-                    
-                    $item = $items[$item_code];
-                    $display_type = $item['hierarchy']['display_type'];
-                    $matched_size = $item['matched_size'];
-                    $is_mml = $item['is_mml'];
-                    $is_main = $item['is_main'];
-                    
-                    if (!$matched_size) continue;
-                    
-                    $closing_qty = (int)$row['closing'];
-                    
-                    if ($is_main) {
-                        $main_yearly_data['closing'][$display_type][$matched_size] += $closing_qty;
-                    } elseif ($is_mml) {
-                        $mml_yearly_data['closing'][$display_type][$matched_size] += $closing_qty;
-                    }
-                }
-                $closingStmt->close();
-                break; // Found data, exit loop
-            }
-        }
-    }
-}
-
-// ============================================
-// PART 4: Get BREAKAGES for entire financial year from tblbreakages
+// PART 3: Get BREAKAGES for entire financial year from tblbreakages
 // ============================================
 $breakagesQuery = "SELECT b.Code, b.BRK_Qty 
                    FROM tblbreakages b 
@@ -795,23 +734,52 @@ if ($breakagesStmt) {
         $item = $items[$item_code];
         $display_type = $item['hierarchy']['display_type'];
         $matched_size = $item['matched_size'];
-        $is_mml = $item['is_mml'];
         $is_main = $item['is_main'];
         
-        if (!$matched_size) continue;
+        if (!$matched_size || !$is_main) continue;
         
         $breakage_qty = (int)$row['BRK_Qty'];
         
-        if ($is_main) {
-            $main_yearly_data['breakages'][$display_type][$matched_size] += $breakage_qty;
-        } elseif ($is_mml) {
-            $mml_yearly_data['breakages'][$display_type][$matched_size] += $breakage_qty;
-        }
+        $main_yearly_data['breakages'][$display_type][$matched_size] += $breakage_qty;
     }
     $breakagesStmt->close();
 }
 
-// Calculate summary in liters for main categories
+// ============================================
+// PART 4: Calculate CLOSING BALANCE for the year
+// Formula: Opening Balance + Received - Sold - Breakages
+// ============================================
+
+// Calculate closing balance for each category and size
+foreach ($main_display_categories as $category) {
+    foreach ($size_columns[$category] as $size) {
+        $opening = $main_yearly_data['opening'][$category][$size] ?? 0;
+        $received = $main_yearly_data['received'][$category][$size] ?? 0;
+        $sold = $main_yearly_data['sold'][$category][$size] ?? 0;
+        $breakages = $main_yearly_data['breakages'][$category][$size] ?? 0;
+        
+        // Calculate closing: opening + received - sold - breakages
+        $calculated_closing = $opening + $received - $sold - $breakages;
+        
+        // Ensure non-negative
+        if ($calculated_closing < 0) {
+            $calculated_closing = 0;
+        }
+        
+        $main_yearly_data['closing'][$category][$size] = $calculated_closing;
+    }
+}
+
+// Flag to indicate closing is calculated (always true now)
+$closing_is_calculated = true;
+
+// Update closing display text to indicate it's calculated
+$closing_display_text = "as on " . date('d-M-Y', strtotime($current_date)) . " (Calculated: Opening + Received - Sold - Breakages)";
+if (!$is_current_date_in_fin_year) {
+    $closing_display_text = "as on End of Financial Year (" . date('d-M-Y', strtotime($fin_end_date)) . ") (Calculated: Opening + Received - Sold - Breakages)";
+}
+
+// Calculate summary in liters for main categories (now includes MML)
 $summary_liters_main = [];
 foreach ($main_display_categories as $category) {
     $summary_liters_main[$category] = [
@@ -834,39 +802,10 @@ foreach ($main_display_categories as $category) {
     }
 }
 
-// Calculate summary in liters for MML categories
-$summary_liters_mml = [];
-foreach ($mml_categories as $category) {
-    $summary_liters_mml[$category] = [
-        'opening' => 0,
-        'received' => 0,
-        'sold' => 0,
-        'closing' => 0,
-        'breakages' => 0
-    ];
-    
-    foreach ($size_columns[$category] as $size) {
-        $ml = extractMLFromSize($size);
-        $liters_factor = $ml / 1000;
-        
-        $summary_liters_mml[$category]['opening'] += ($mml_yearly_data['opening'][$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['received'] += ($mml_yearly_data['received'][$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['sold'] += ($mml_yearly_data['sold'][$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['closing'] += ($mml_yearly_data['closing'][$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['breakages'] += ($mml_yearly_data['breakages'][$category][$size] ?? 0) * $liters_factor;
-    }
-}
-
 // Format liters to 2 decimal places
 foreach ($summary_liters_main as $category => $data) {
     foreach ($data as $key => $value) {
         $summary_liters_main[$category][$key] = number_format($value, 2);
-    }
-}
-
-foreach ($summary_liters_mml as $category => $data) {
-    foreach ($data as $key => $value) {
-        $summary_liters_mml[$category][$key] = number_format($value, 2);
     }
 }
 
@@ -875,11 +814,6 @@ $available_months = getAvailableMonthsInYear($conn, $compID, $fin_start_year);
 $available_months = array_merge($available_months, getAvailableMonthsInYear($conn, $compID, $fin_end_year));
 $available_months = array_unique($available_months);
 sort($available_months);
-
-// Determine closing date display text
-$closing_display_text = $is_current_date_in_fin_year ? 
-    "as on " . date('d-M-Y', strtotime($current_date)) : 
-    "as on End of Financial Year (" . date('d-M-Y', strtotime($fin_end_date)) . ")";
 ?>
 
 <!DOCTYPE html>
@@ -998,17 +932,8 @@ $closing_display_text = $is_current_date_in_fin_year ?
     .summary-table th {
       background-color: #e9ecef;
     }
-    .mml-section {
-      margin-top: 30px;
-      page-break-before: always;
-    }
-    .mml-header {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      font-weight: bold;
+    .mml-highlight {
+      background-color: #e0e0e0 !important; /* Grey highlight */
     }
     .current-date-note {
       font-size: 11px;
@@ -1025,6 +950,30 @@ $closing_display_text = $is_current_date_in_fin_year ?
       padding: 2px 5px;
       display: inline-block;
       margin-left: 10px;
+    }
+    .calculated-note {
+      font-size: 9px;
+      color: #666;
+      font-style: italic;
+    }
+    .opening-note {
+      font-size: 10px;
+      color: #004085;
+      background-color: #cce5ff;
+      border: 1px solid #b8daff;
+      border-radius: 3px;
+      padding: 2px 5px;
+      display: inline-block;
+      margin-left: 10px;
+    }
+    .no-data-warning {
+      background-color: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: bold;
     }
 
     @media print {
@@ -1151,6 +1100,12 @@ $closing_display_text = $is_current_date_in_fin_year ?
         print-color-adjust: exact;
       }
       
+      .mml-highlight {
+        background-color: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      
       .footer-info {
         text-align: center;
         margin-top: 3px;
@@ -1165,17 +1120,6 @@ $closing_display_text = $is_current_date_in_fin_year ?
       
       .summary-table {
         page-break-inside: avoid;
-      }
-      
-      .mml-section {
-        margin-top: 20px;
-        page-break-before: always;
-      }
-      
-      .mml-header {
-        background-color: #d4edda !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
       }
     }
   </style>
@@ -1235,12 +1179,6 @@ $closing_display_text = $is_current_date_in_fin_year ?
                   <strong><?= date('d-M-Y', strtotime($fin_start_date)) ?> to <?= date('d-M-Y', strtotime($fin_end_date)) ?></strong>
                 </div>
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Closing as on:</label>
-                <div class="form-control-plaintext">
-                  <strong><?= date('d-M-Y') ?></strong>
-                </div>
-              </div>
             </div>
             
             <div class="action-controls">
@@ -1258,15 +1196,28 @@ $closing_display_text = $is_current_date_in_fin_year ?
         </div>
       </div>
 
-      <!-- Main Report Table (Without MML) -->
+      <?php if ($no_opening_data): ?>
+      <div class="no-data-warning no-print">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Warning: No opening balance data found for the financial year. Opening balance shows as zero.
+      </div>
+      <?php endif; ?>
+
+      <!-- Main Report Table (WITH MML Included and Grey Highlighted) -->
       <div class="print-section">
         <div class="company-header">
           <h1>Form F.L.R. 1A/2A/3A (See Rule 15)</h1>
           <h5>YEARLY REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>Financial Year : <?= $fin_year_display ?> (<?= date('d-M-Y', strtotime($fin_start_date)) ?> to <?= date('d-M-Y', strtotime($fin_end_date)) ?>)</h6>
+          <?php if ($opening_date_found): ?>
+          <h6>Opening Balance taken from: <?= $opening_date_description ?> (First available date with data)</h6>
+          <?php else: ?>
+          <h6>Opening Balance: No data found for the financial year</h6>
+          <?php endif; ?>
           <h6>Closing Balance <?= $closing_display_text ?></h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
+          <h6><span class="badge bg-secondary">MML Categories Included: Spirit MML & Wine MML (Grey Highlighted)</span></h6>
         </div>
         
         <div class="table-responsive">
@@ -1275,7 +1226,7 @@ $closing_display_text = $is_current_date_in_fin_year ?
               <tr>
                 <th rowspan="2" class="description-col">Description</th>
                 <?php foreach ($main_display_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header"><?= $category_display_names[$category] ?></th>
+                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $category_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
               <tr>
@@ -1285,7 +1236,7 @@ $closing_display_text = $is_current_date_in_fin_year ?
                   $last_index = count($sizes) - 1;
                   foreach ($sizes as $size_index => $size): 
                   ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?> <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $size ?></th>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
               </tr>
@@ -1293,7 +1244,7 @@ $closing_display_text = $is_current_date_in_fin_year ?
             <tbody>
               <!-- Opening Balance Row -->
               <tr>
-                <td class="description-col">Opening Balance of the Beginning of the Year (<?= date('d-M-Y', strtotime($fin_start_date)) ?>)</td>
+                <td class="description-col">Opening Balance (<?= $opening_date_found ? $opening_date_description : 'No data found' ?>)</td>
                 
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
@@ -1379,15 +1330,15 @@ $closing_display_text = $is_current_date_in_fin_year ?
           </table>
         </div>
 
-        <!-- Summary in Liters Table -->
+        <!-- Summary in Liters Table (WITH MML Included) -->
         <div class="summary-table">
-          <h5 class="text-center mb-3">YEARLY SUMMARY (IN LITERS)</h5>
+          <h5 class="text-center mb-3">YEARLY SUMMARY (IN LITERS) - ALL CATEGORIES INCLUDING MML</h5>
           <table class="report-table">
             <thead>
               <tr>
                 <th>Description</th>
                 <?php foreach ($main_display_categories as $category): ?>
-                  <th><?= $category_display_names[$category] ?></th>
+                  <th <?= in_array($category, ['MML', 'WINE MML']) ? 'class="mml-highlight"' : '' ?>><?= $category_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
             </thead>
@@ -1427,191 +1378,17 @@ $closing_display_text = $is_current_date_in_fin_year ?
         </div>
         
         <div class="footer-info">
-          <p>Note: This is a computer generated yearly report. Received, Sold and Breakages are for the full financial year (<?= $fin_year_display ?>). Closing Balance is <?= $closing_display_text ?>.</p>
-          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Financial Year: <?= $fin_year_display ?></p>
-        </div>
-      </div>
-
-      <!-- MML Section - Second Table -->
-      <div class="mml-section print-section">
-        <div class="mml-header">
-          <h4 class="mb-0">MML Yearly Summary Report (Spirit MML & Wine MML Only)</h4>
-        </div>
-        
-        <div class="company-header">
-          <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
-          <h6>Financial Year : <?= $fin_year_display ?></h6>
-          <h6>Closing Balance <?= $closing_display_text ?></h6>
-        </div>
-        
-        <div class="table-responsive">
-          <table class="report-table" id="mml-yearly-table">
-            <thead>
-              <tr>
-                <th rowspan="2" class="description-col">Description (MML)</th>
-                <?php foreach ($mml_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header"><?= $mml_display_names[$category] ?></th>
-                <?php endforeach; ?>
-              </tr>
-              <tr>
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- MML Opening Balance Row -->
-              <tr>
-                <td class="description-col">Opening Balance of the Beginning of the Year (<?= date('d-M-Y', strtotime($fin_start_date)) ?>)</td>
-                
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_yearly_data['opening'][$category][$size]) && $mml_yearly_data['opening'][$category][$size] > 0 ? $mml_yearly_data['opening'][$category][$size] : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-
-              <!-- MML Received during Year -->
-              <tr>
-                <td class="description-col">Received during the Year</td>
-                
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_yearly_data['received'][$category][$size]) && $mml_yearly_data['received'][$category][$size] > 0 ? $mml_yearly_data['received'][$category][$size] : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-
-              <!-- MML Sold during Year -->
-              <tr>
-                <td class="description-col">Sold during the Year</td>
-                
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_yearly_data['sold'][$category][$size]) && $mml_yearly_data['sold'][$category][$size] > 0 ? $mml_yearly_data['sold'][$category][$size] : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-
-              <!-- MML Breakages during Year -->
-              <tr>
-                <td class="description-col">Breakages during the Year</td>
-                
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_yearly_data['breakages'][$category][$size]) && $mml_yearly_data['breakages'][$category][$size] > 0 ? $mml_yearly_data['breakages'][$category][$size] : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-
-              <!-- MML Closing Balance Row -->
-              <tr>
-                <td class="description-col">Closing Balance <?= $closing_display_text ?></td>
-                
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <td class="closing-balance <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_yearly_data['closing'][$category][$size]) && $mml_yearly_data['closing'][$category][$size] > 0 ? $mml_yearly_data['closing'][$category][$size] : '' ?>
-                    </td>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- MML Summary in Liters -->
-        <div class="summary-table mt-3">
-          <h5 class="text-center mb-3">MML YEARLY SUMMARY (IN LITERS)</h5>
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <?php foreach ($mml_categories as $category): ?>
-                  <th><?= $mml_display_names[$category] ?></th>
-                <?php endforeach; ?>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="text-start fw-bold">Opening Balance (Liters)</td>
-                <?php foreach ($mml_categories as $category): ?>
-                  <td><?= number_format($summary_liters_mml[$category]['opening'] ?? 0, 2) ?></td>
-                <?php endforeach; ?>
-              </tr>
-              <tr>
-                <td class="text-start fw-bold">Received (Liters)</td>
-                <?php foreach ($mml_categories as $category): ?>
-                  <td><?= number_format($summary_liters_mml[$category]['received'] ?? 0, 2) ?></td>
-                <?php endforeach; ?>
-              </tr>
-              <tr>
-                <td class="text-start fw-bold">Sold (Liters)</td>
-                <?php foreach ($mml_categories as $category): ?>
-                  <td><?= number_format($summary_liters_mml[$category]['sold'] ?? 0, 2) ?></td>
-                <?php endforeach; ?>
-              </tr>
-              <tr>
-                <td class="text-start fw-bold">Breakages (Liters)</td>
-                <?php foreach ($mml_categories as $category): ?>
-                  <td><?= number_format($summary_liters_mml[$category]['breakages'] ?? 0, 2) ?></td>
-                <?php endforeach; ?>
-              </tr>
-              <tr>
-                <td class="text-start fw-bold">Closing Balance (Liters) <?= $closing_display_text ?></td>
-                <?php foreach ($mml_categories as $category): ?>
-                  <td><?= number_format($summary_liters_mml[$category]['closing'] ?? 0, 2) ?></td>
-                <?php endforeach; ?>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <div class="footer-info mt-3">
-          <p><strong>MML Yearly Summary:</strong> 
-             Spirit MML Total Received: <?= array_sum($mml_yearly_data['received']['MML'] ?? []) ?> | 
-             Spirit MML Total Sold: <?= array_sum($mml_yearly_data['sold']['MML'] ?? []) ?> | 
-             Spirit MML Breakages: <?= array_sum($mml_yearly_data['breakages']['MML'] ?? []) ?> |
-             Spirit MML Closing <?= $closing_display_text ?>: <?= array_sum($mml_yearly_data['closing']['MML'] ?? []) ?><br>
-             Wine MML Total Received: <?= array_sum($mml_yearly_data['received']['WINE MML'] ?? []) ?> | 
-             Wine MML Total Sold: <?= array_sum($mml_yearly_data['sold']['WINE MML'] ?? []) ?> |
-             Wine MML Breakages: <?= array_sum($mml_yearly_data['breakages']['WINE MML'] ?? []) ?> |
-             Wine MML Closing <?= $closing_display_text ?>: <?= array_sum($mml_yearly_data['closing']['WINE MML'] ?? []) ?>
+          <p>Note: This is a computer generated yearly report. Opening balance is taken from the first available date with data in the financial year (<?= $opening_date_found ? $opening_date_description : 'No data found' ?>). Received, Sold and Breakages are for the full financial year (<?= $fin_year_display ?>). Closing Balance is calculated as Opening + Received - Sold - Breakages.</p>
+          <p><strong>MML Summary:</strong> Spirit MML Total Received: <?= array_sum($main_yearly_data['received']['MML'] ?? []) ?> | 
+             Spirit MML Total Sold: <?= array_sum($main_yearly_data['sold']['MML'] ?? []) ?> | 
+             Spirit MML Breakages: <?= array_sum($main_yearly_data['breakages']['MML'] ?? []) ?> |
+             Spirit MML Closing: <?= array_sum($main_yearly_data['closing']['MML'] ?? []) ?><br>
+             Wine MML Total Received: <?= array_sum($main_yearly_data['received']['WINE MML'] ?? []) ?> | 
+             Wine MML Total Sold: <?= array_sum($main_yearly_data['sold']['WINE MML'] ?? []) ?> |
+             Wine MML Breakages: <?= array_sum($main_yearly_data['breakages']['WINE MML'] ?? []) ?> |
+             Wine MML Closing: <?= array_sum($main_yearly_data['closing']['WINE MML'] ?? []) ?>
           </p>
+          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Financial Year: <?= $fin_year_display ?></p>
         </div>
       </div>
     </div>
