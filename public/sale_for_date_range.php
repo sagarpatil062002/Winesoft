@@ -440,7 +440,7 @@ if (!$table_exists) {
         DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
-        DAY_17_SALES DECimal(10,3) DEFAULT 0.000,
+        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
         DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
         DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
@@ -3006,7 +3006,11 @@ const latestGlobalSale = <?= json_encode($restrictions['latest_existing_sale'] ?
 // NEW: Dry days info
 const dryDaysInfo = <?= json_encode($restrictions['dry_days_info'] ?? []) ?>;
 
-// FIXED: Enhanced distribution function that correctly handles global restrictions and dry days
+// ============================================================================
+// FIXED: Enhanced distribution functions with dry day exclusion and auto-correction
+// ============================================================================
+
+// FIXED: Enhanced distribution function that correctly handles global restrictions AND EXCLUDES DRY DAYS
 function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDates, unavailableDates) {
     if (totalQty <= 0) return new Array(daysCount).fill(0);
     
@@ -3019,14 +3023,22 @@ function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDate
     // Create distribution array
     const distribution = new Array(daysCount).fill(0);
     
-    // If no available dates, return zeros
-    if (availableDates.length === 0) {
-        console.log(`No available dates for distribution`);
+    // FIXED: Filter out dry days from available dates
+    // Create truly available dates by excluding dry days
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    
+    console.log(`DEBUG: distribute - Original available dates:`, availableDates);
+    console.log(`DEBUG: distribute - Dry dates to exclude:`, dryDates);
+    console.log(`DEBUG: distribute - Truly available dates (after dry day filter):`, trulyAvailableDates);
+    
+    // If no truly available dates, return zeros
+    if (trulyAvailableDates.length === 0) {
+        console.log(`No truly available dates for distribution`);
         return distribution;
     }
     
-    // Distribute quantity only on available dates
-    const availableDaysCount = availableDates.length;
+    // Distribute quantity only on truly available dates
+    const availableDaysCount = trulyAvailableDates.length;
     const baseQty = Math.floor(totalQty / availableDaysCount);
     const remainder = totalQty % availableDaysCount;
     
@@ -3044,20 +3056,398 @@ function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDate
     }
     
     // Place the distributed quantities in the correct date positions
-    availableDates.forEach((date, index) => {
+    trulyAvailableDates.forEach((date, index) => {
         const dateIndex = dateIndexMap[date];
         if (dateIndex !== undefined) {
             distribution[dateIndex] = dailySales[index];
         }
     });
     
-    console.log(`Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
-    console.log(`Distribution:`, distribution);
+    // FIXED: Verify total distribution equals total quantity
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed !== totalQty) {
+        console.warn(`Distribution mismatch: Total ${totalQty} vs Distributed ${totalDistributed} - Auto-correcting`);
+        
+        // Auto-correct: Add missing quantity to first truly available date
+        if (totalDistributed < totalQty) {
+            const missing = totalQty - totalDistributed;
+            if (trulyAvailableDates.length > 0) {
+                const firstAvailableDate = trulyAvailableDates[0];
+                const firstIndex = dateIndexMap[firstAvailableDate];
+                distribution[firstIndex] += missing;
+                console.log(`Added ${missing} to ${firstAvailableDate}`);
+            }
+        }
+    }
+    
+    console.log(`Distributing ${totalQty} on ${availableDaysCount} truly available dates (excluding dry days):`, trulyAvailableDates);
+    console.log(`Final distribution:`, distribution);
+    console.log(`Total distributed:`, distribution.reduce((sum, qty) => sum + qty, 0));
     
     return distribution;
 }
 
-// Function to validate global restrictions before submission
+// FIXED: Enhanced distribution function for shuffle that correctly handles global restrictions AND EXCLUDES DRY DAYS
+function shuffleDistributionForItem(itemCode, totalQty) {
+    console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
+    const availableDatesJson = inputField.data('available-dates');
+    const unavailableDatesJson = inputField.data('unavailable-dates');
+    const dryDatesJson = inputField.data('dry-dates');
+
+    let availableDates = [];
+    let unavailableDates = [];
+    let dryDates = [];
+    
+    try {
+        availableDates = availableDatesJson || [];
+        unavailableDates = unavailableDatesJson || [];
+        dryDates = dryDatesJson || [];
+    } catch (e) {
+        console.error('Error parsing date arrays:', e);
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
+    console.log(`DEBUG: shuffle ${itemCode} - availableDates:`, availableDates);
+    console.log(`DEBUG: shuffle ${itemCode} - unavailableDates:`, unavailableDates);
+    console.log(`DEBUG: shuffle ${itemCode} - dryDates:`, dryDates);
+    
+    // Create date index map
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    // FIXED: Filter out dry days from available dates
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    console.log(`DEBUG: shuffle ${itemCode} - Truly available dates (after dry day filter):`, trulyAvailableDates);
+
+    let distribution = new Array(daysCount).fill(0);
+
+    if (hasGlobalRestriction && trulyAvailableDates.length > 0) {
+        console.log(`DEBUG: shuffle ${itemCode} - Distributing on ${trulyAvailableDates.length} truly available dates`);
+        // Distribute only on truly available dates (excluding dry days)
+        const availableDaysCount = trulyAvailableDates.length;
+        const baseQty = Math.floor(totalQty / availableDaysCount);
+        const remainder = totalQty % availableDaysCount;
+
+        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
+
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            dailySalesForAvailableDates[i]++;
+        }
+
+        // Shuffle the distribution
+        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
+            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+        }
+
+        // Place the distributed quantities in the correct date positions
+        trulyAvailableDates.forEach((date, index) => {
+            const dateIndex = dateIndexMap[date];
+            if (dateIndex !== undefined) {
+                distribution[dateIndex] = dailySalesForAvailableDates[index];
+            }
+        });
+
+        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} truly available dates`);
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        console.log(`DEBUG: shuffle ${itemCode} - Distributing across all dates but EXCLUDING dry days`);
+        
+        // Get all dates that are NOT dry days
+        const nonDryDates = dateArray.filter(date => !dryDates.includes(date));
+        const nonDryDaysCount = nonDryDates.length;
+        
+        if (nonDryDaysCount > 0) {
+            const baseQty = Math.floor(totalQty / nonDryDaysCount);
+            const remainder = totalQty % nonDryDaysCount;
+
+            const dailySalesForNonDryDates = new Array(nonDryDaysCount).fill(baseQty);
+
+            // Distribute remainder
+            for (let i = 0; i < remainder; i++) {
+                dailySalesForNonDryDates[i]++;
+            }
+
+            // Shuffle the distribution
+            for (let i = dailySalesForNonDryDates.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [dailySalesForNonDryDates[i], dailySalesForNonDryDates[j]] =
+                [dailySalesForNonDryDates[j], dailySalesForNonDryDates[i]];
+            }
+
+            // Place the distributed quantities in the correct date positions
+            nonDryDates.forEach((date, index) => {
+                const dateIndex = dateIndexMap[date];
+                if (dateIndex !== undefined) {
+                    distribution[dateIndex] = dailySalesForNonDryDates[index];
+                }
+            });
+            
+            console.log(`Shuffled ${itemCode}: Distributing ${totalQty} across ${nonDryDaysCount} non-dry dates`);
+        }
+    } else {
+        console.log(`DEBUG: shuffle ${itemCode} - No truly available dates, returning zeros`);
+    }
+
+    // FIXED: Verify total distribution equals total quantity and auto-correct if needed
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed !== totalQty && trulyAvailableDates.length > 0) {
+        console.warn(`Shuffle distribution mismatch: Total ${totalQty} vs Distributed ${totalDistributed} - Auto-correcting`);
+        
+        if (totalDistributed < totalQty) {
+            const missing = totalQty - totalDistributed;
+            const firstAvailableDate = trulyAvailableDates[0];
+            const firstIndex = dateIndexMap[firstAvailableDate];
+            if (firstIndex !== undefined) {
+                distribution[firstIndex] += missing;
+                console.log(`Added ${missing} to ${firstAvailableDate}`);
+            }
+        }
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - final distribution:`, distribution);
+    console.log(`DEBUG: shuffle ${itemCode} - total distributed:`, distribution.reduce((sum, qty) => sum + qty, 0));
+    
+    return distribution;
+}
+
+// FIXED: Enhanced function to update distribution preview - correctly handles dry day exclusion
+function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
+    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const itemRow = inputField.closest('tr');
+
+    if (totalQty <= 0) {
+        // Remove distribution cells if quantity is 0
+        itemRow.find('.date-distribution-cell').remove();
+
+        // Reset closing balance and amount
+        const currentStock = parseFloat(inputField.data('stock'));
+        const displayClosing = Math.floor(currentStock);
+        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
+
+        // Hide date columns if no items have quantity
+        if ($('input[name^="sale_qty"]').filter(function() {
+            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+
+        return;
+    }
+
+    // Get global available/unavailable dates
+    const hasGlobalRestriction = inputField.data('has-global-restriction');
+    const availableDates = inputField.data('available-dates') || [];
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+
+    console.log(`DEBUG: ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
+    console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
+    console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
+    console.log(`DEBUG: ${itemCode} - dryDates:`, dryDates);
+    
+    // FIXED: Create truly available dates by excluding dry days
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    console.log(`DEBUG: ${itemCode} - Truly available dates (after dry day filter):`, trulyAvailableDates);
+    
+    // Create date index map
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    console.log(`DEBUG: ${itemCode} - dateIndexMap:`, dateIndexMap);
+
+    // Calculate distribution based on truly available dates
+    let distribution = new Array(daysCount).fill(0);
+
+    if (hasGlobalRestriction && trulyAvailableDates.length > 0) {
+        console.log(`DEBUG: ${itemCode} - Has global restriction with ${trulyAvailableDates.length} truly available dates`);
+        // Distribute only on truly available dates
+        const availableDaysCount = trulyAvailableDates.length;
+        const baseQty = Math.floor(totalQty / availableDaysCount);
+        const remainder = totalQty % availableDaysCount;
+
+        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
+
+        // Distribute remainder
+        for (let i = 0; i < remainder; i++) {
+            dailySalesForAvailableDates[i]++;
+        }
+
+        // Shuffle the distribution
+        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
+            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+        }
+
+        // Place the distributed quantities in the correct date positions
+        trulyAvailableDates.forEach((date, index) => {
+            const dateIndex = dateIndexMap[date];
+            if (dateIndex !== undefined) {
+                distribution[dateIndex] = dailySalesForAvailableDates[index];
+            }
+        });
+
+        console.log(`Item ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} truly available dates:`, trulyAvailableDates);
+        console.log(`Distribution array:`, distribution);
+
+        // Add special class to row to indicate partial distribution
+        itemRow.addClass('partial-distribution-item');
+        itemRow.attr('title', `Only ${trulyAvailableDates.length} of ${daysCount} dates are truly available (excluding dry days). New sales will be distributed only on truly available dates.`);
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        console.log(`DEBUG: ${itemCode} - No restrictions or all dates available, but EXCLUDING dry days`);
+        
+        // Get all dates that are NOT dry days
+        const nonDryDates = dateArray.filter(date => !dryDates.includes(date));
+        const nonDryDaysCount = nonDryDates.length;
+        
+        if (nonDryDaysCount > 0) {
+            const baseQty = Math.floor(totalQty / nonDryDaysCount);
+            const remainder = totalQty % nonDryDaysCount;
+
+            const dailySalesForNonDryDates = new Array(nonDryDaysCount).fill(baseQty);
+
+            // Distribute remainder
+            for (let i = 0; i < remainder; i++) {
+                dailySalesForNonDryDates[i]++;
+            }
+
+            // Shuffle the distribution
+            for (let i = dailySalesForNonDryDates.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [dailySalesForNonDryDates[i], dailySalesForNonDryDates[j]] =
+                [dailySalesForNonDryDates[j], dailySalesForNonDryDates[i]];
+            }
+
+            // Place the distributed quantities in the correct date positions
+            nonDryDates.forEach((date, index) => {
+                const dateIndex = dateIndexMap[date];
+                if (dateIndex !== undefined) {
+                    distribution[dateIndex] = dailySalesForNonDryDates[index];
+                }
+            });
+            
+            console.log(`Item ${itemCode}: Distributing ${totalQty} across ${nonDryDaysCount} non-dry dates`);
+        } else {
+            console.log(`Item ${itemCode}: No non-dry dates available for distribution`);
+        }
+        
+        itemRow.removeClass('partial-distribution-item');
+    } else {
+        console.log(`DEBUG: ${itemCode} - No truly available dates for distribution`);
+        console.log(`Item ${itemCode}: No truly available dates for distribution`);
+        itemRow.addClass('partial-distribution-item');
+        itemRow.attr('title', 'No truly available dates in selected range (all dates are dry days or have existing sales)');
+    }
+
+    // FIXED: Verify total distribution equals total quantity and auto-correct if needed
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed !== totalQty && trulyAvailableDates.length > 0) {
+        console.warn(`Distribution mismatch for ${itemCode}: Total ${totalQty} vs Distributed ${totalDistributed} - Auto-correcting`);
+        
+        if (totalDistributed < totalQty) {
+            const missing = totalQty - totalDistributed;
+            const firstAvailableDate = trulyAvailableDates[0];
+            const firstIndex = dateIndexMap[firstAvailableDate];
+            if (firstIndex !== undefined) {
+                distribution[firstIndex] += missing;
+                console.log(`Added ${missing} to ${firstAvailableDate}`);
+            }
+        }
+    }
+
+    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
+    console.log(`DEBUG: ${itemCode} - Total distributed:`, distribution.reduce((sum, qty) => sum + qty, 0));
+    
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
+
+    console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
+
+    // Add date distribution cells with proper styling
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell"></td>`);
+
+        // Check if this date is unavailable due to global sales
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        
+        // Check if this date is a dry day
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        
+        // Check if this date is available
+        const isAvailable = trulyAvailableDates.length > 0 && trulyAvailableDates.includes(date);
+
+        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
+
+        if (isGlobalUnavailable && !isDryDate) {
+            // Date has existing global sales - show ✗
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
+
+        } else if (isDryDate) {
+            // Date is a dry day - show 🌙 (always with 0 quantity)
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            
+            // Get dry day description
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
+
+        } else if (isAvailable && qty > 0) {
+            // Date is available and has new sales
+            cell.addClass('available-date-with-sales');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
+
+        } else if (qty > 0) {
+            // Normal distribution (no restrictions)
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date}`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
+
+        } else {
+            // Zero quantity
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to ZERO DISTRIBUTION`);
+
+            if (isAvailable) {
+                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
+            } else if (!hasGlobalRestriction) {
+                cell.attr('title', `Date ${date} has 0 units assigned`);
+            }
+        }
+
+        // Insert distribution cells after the action column
+        cell.insertAfter(itemRow.find('.action-column'));
+    });
+
+    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
+    
+    // Final verification
+    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - FINAL TOTAL DISTRIBUTED: ${finalTotal} (should equal ${totalQty})`);
+    
+    // Show date columns
+    $('.date-header, .date-distribution-cell').show();
+}
+
+// Function to check global restrictions before submission
 function checkGlobalRestrictionsBeforeSubmit() {
     return new Promise((resolve, reject) => {
         // Check if there are any available dates
@@ -3326,305 +3716,6 @@ function validateAllQuantities() {
     }
     
     return isValid;
-}
-
-// FIXED: Enhanced function to update distribution preview - correctly shows available dates with global restrictions
-function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
-    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const itemRow = inputField.closest('tr');
-
-    if (totalQty <= 0) {
-        // Remove distribution cells if quantity is 0
-        itemRow.find('.date-distribution-cell').remove();
-
-        // Reset closing balance and amount
-        const currentStock = parseFloat(inputField.data('stock'));
-        const displayClosing = Math.floor(currentStock);
-        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
-        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
-
-        // Hide date columns if no items have quantity
-        if ($('input[name^="sale_qty"]').filter(function() {
-            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
-        }).length === 0) {
-            $('.date-header, .date-distribution-cell').hide();
-        }
-
-        return;
-    }
-
-    // Get global available/unavailable dates
-    const hasGlobalRestriction = inputField.data('has-global-restriction');
-    const availableDates = inputField.data('available-dates') || [];
-    const unavailableDates = inputField.data('unavailable-dates') || [];
-    const dryDates = inputField.data('dry-dates') || [];
-
-    console.log(`DEBUG: ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
-    console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
-    console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
-    console.log(`DEBUG: ${itemCode} - dryDates:`, dryDates);
-    
-    // Create date index map
-    const dateIndexMap = {};
-    dateArray.forEach((date, index) => {
-        dateIndexMap[date] = index;
-    });
-
-    console.log(`DEBUG: ${itemCode} - dateIndexMap:`, dateIndexMap);
-
-    // Calculate distribution based on global availability
-    let distribution = new Array(daysCount).fill(0);
-
-    if (hasGlobalRestriction && availableDates.length > 0) {
-        console.log(`DEBUG: ${itemCode} - Has global restriction with ${availableDates.length} available dates`);
-        // Distribute only on available dates
-        const availableDaysCount = availableDates.length;
-        const baseQty = Math.floor(totalQty / availableDaysCount);
-        const remainder = totalQty % availableDaysCount;
-
-        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-        // Distribute remainder
-        for (let i = 0; i < remainder; i++) {
-            dailySalesForAvailableDates[i]++;
-        }
-
-        // Shuffle the distribution
-        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
-        }
-
-        // Place the distributed quantities in the correct date positions
-        availableDates.forEach((date, index) => {
-            const dateIndex = dateIndexMap[date];
-            if (dateIndex !== undefined) {
-                distribution[dateIndex] = dailySalesForAvailableDates[index];
-            }
-        });
-
-        console.log(`Item ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
-        console.log(`Distribution array:`, distribution);
-
-        // Add special class to row to indicate partial distribution
-        itemRow.addClass('partial-distribution-item');
-        itemRow.attr('title', `Only ${availableDates.length} of ${daysCount} dates are available. New sales will be distributed only on available dates.`);
-    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
-        console.log(`DEBUG: ${itemCode} - No restrictions or all dates available`);
-        // No restrictions - distribute across all dates
-        const baseQty = Math.floor(totalQty / daysCount);
-        const remainder = totalQty % daysCount;
-
-        distribution = new Array(daysCount).fill(baseQty);
-
-        // Distribute remainder evenly across days
-        for (let i = 0; i < remainder; i++) {
-            distribution[i]++;
-        }
-
-        // Shuffle the distribution to make it look more natural
-        for (let i = distribution.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
-        }
-
-        itemRow.removeClass('partial-distribution-item');
-        console.log(`Item ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
-    } else {
-        console.log(`DEBUG: ${itemCode} - No available dates for distribution`);
-        // No available dates - all zeros
-        console.log(`Item ${itemCode}: No available dates for distribution`);
-        itemRow.addClass('partial-distribution-item');
-        itemRow.attr('title', 'No available dates in selected range');
-    }
-
-    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-
-    console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
-
-    // Add date distribution cells with proper styling
-    distribution.forEach((qty, index) => {
-        const date = dateArray[index];
-        const cell = $(`<td class="date-distribution-cell"></td>`);
-
-        // Check if this date is unavailable due to global sales
-        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        
-        // Check if this date is a dry day
-        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-        
-        // Check if this date is available
-        const isAvailable = availableDates.length > 0 && availableDates.includes(date);
-
-        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-        // Apply styling and content based on availability and quantity
-        if (isGlobalUnavailable && !isDryDate) {
-            // Date has existing global sales - show ✗
-            cell.addClass('global-unavailable-date');
-            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
-
-        } else if (isDryDate) {
-            // Date is a dry day - show 🌙
-            cell.addClass('dry-unavailable-date');
-            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            
-            // Get dry day description
-            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
-
-        } else if (isAvailable && qty > 0) {
-            // Date is available and has new sales
-            cell.addClass('available-date-with-sales');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
-
-        } else if (qty > 0) {
-            // Normal distribution (no restrictions)
-            cell.addClass('non-zero-distribution');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date}`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
-
-        } else {
-            // Zero quantity
-            cell.addClass('zero-distribution');
-            cell.text('0');
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to ZERO DISTRIBUTION`);
-
-            if (isAvailable) {
-                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
-            } else if (!hasGlobalRestriction) {
-                cell.attr('title', `Date ${date} has 0 units assigned`);
-            }
-        }
-
-        // Insert distribution cells after the action column
-        cell.insertAfter(itemRow.find('.action-column'));
-    });
-
-    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
-    
-    // Update total distribution count
-    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
-    if (totalDistributed !== totalQty) {
-        console.warn(`Warning: Total distributed (${totalDistributed}) doesn't match input (${totalQty}) for item ${itemCode}`);
-    }
-    
-    // Show date columns
-    $('.date-header, .date-distribution-cell').show();
-}
-
-// FIXED: Enhanced distribution function for shuffle that correctly handles global restrictions
-function shuffleDistributionForItem(itemCode, totalQty) {
-    console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
-    const availableDatesJson = inputField.data('available-dates');
-    const unavailableDatesJson = inputField.data('unavailable-dates');
-    const dryDatesJson = inputField.data('dry-dates');
-
-    let availableDates = [];
-    let unavailableDates = [];
-    let dryDates = [];
-    
-    try {
-        availableDates = availableDatesJson || [];
-        unavailableDates = unavailableDatesJson || [];
-        dryDates = dryDatesJson || [];
-    } catch (e) {
-        console.error('Error parsing date arrays:', e);
-    }
-
-    console.log(`DEBUG: shuffle ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
-    console.log(`DEBUG: shuffle ${itemCode} - availableDates:`, availableDates);
-    console.log(`DEBUG: shuffle ${itemCode} - unavailableDates:`, unavailableDates);
-    console.log(`DEBUG: shuffle ${itemCode} - dryDates:`, dryDates);
-    
-    // Create date index map
-    const dateIndexMap = {};
-    dateArray.forEach((date, index) => {
-        dateIndexMap[date] = index;
-    });
-
-    let distribution = new Array(daysCount).fill(0);
-
-    if (hasGlobalRestriction && availableDates.length > 0) {
-        console.log(`DEBUG: shuffle ${itemCode} - Distributing on ${availableDates.length} available dates`);
-        // Distribute only on available dates
-        const availableDaysCount = availableDates.length;
-        const baseQty = Math.floor(totalQty / availableDaysCount);
-        const remainder = totalQty % availableDaysCount;
-
-        const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-        // Distribute remainder
-        for (let i = 0; i < remainder; i++) {
-            dailySalesForAvailableDates[i]++;
-        }
-
-        // Shuffle the distribution
-        for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-            [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
-        }
-
-        // Place the distributed quantities in the correct date positions
-        availableDates.forEach((date, index) => {
-            const dateIndex = dateIndexMap[date];
-            if (dateIndex !== undefined) {
-                distribution[dateIndex] = dailySalesForAvailableDates[index];
-            }
-        });
-
-        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} available dates`);
-        console.log(`DEBUG: shuffle ${itemCode} - distribution:`, distribution);
-    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
-        console.log(`DEBUG: shuffle ${itemCode} - Distributing across all dates`);
-        // Distribute across all dates
-        const baseQty = Math.floor(totalQty / daysCount);
-        const remainder = totalQty % daysCount;
-
-        distribution = new Array(daysCount).fill(baseQty);
-
-        // Distribute remainder
-        for (let i = 0; i < remainder; i++) {
-            distribution[i]++;
-        }
-
-        // Shuffle the distribution
-        for (let i = distribution.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
-        }
-
-        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} across all ${daysCount} dates`);
-        console.log(`DEBUG: shuffle ${itemCode} - distribution:`, distribution);
-    } else {
-        console.log(`DEBUG: shuffle ${itemCode} - No available dates, returning zeros`);
-    }
-
-    console.log(`DEBUG: shuffle ${itemCode} - returning distribution:`, distribution);
-    return distribution;
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
-    $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
-    });
-    $('#totalAmount').text(Math.floor(total));
 }
 
 // Function to initialize date headers and closing balance column
@@ -4187,7 +4278,7 @@ $(document).on('click', '.btn-shuffle-item', async function() {
                 const isDryDate = dryDates.length > 0 && dryDates.includes(date);
 
                 // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
+                const isAvailable = availableDates.length > 0 && availableDates.includes(date) && !isDryDate;
 
                 console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
@@ -4295,7 +4386,7 @@ $('#shuffleBtn').off('click').on('click', async function() {
                 const isDryDate = dryDates.length > 0 && dryDates.includes(date);
 
                 // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
+                const isAvailable = availableDates.length > 0 && availableDates.includes(date) && !isDryDate;
 
                 console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
@@ -4443,6 +4534,15 @@ function initializeQuantitiesFromSession() {
     if (hasQuantities) {
         $('.date-header').show();
     }
+}
+
+// Function to calculate total amount
+function calculateTotalAmount() {
+    let total = 0;
+    $('.amount-cell').each(function() {
+        total += parseFloat($(this).text()) || 0;
+    });
+    $('#totalAmount').text(Math.floor(total));
 }
 </script>
 </body>

@@ -40,12 +40,11 @@ if (is_array($available_classes) && !empty($available_classes)) {
 $hierarchy_cache = [];
 
 /**
- * Get complete hierarchy information for an item (copied from excise_register.php)
+ * Get complete hierarchy information for an item
  */
 function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
     global $hierarchy_cache;
     
-    // Create cache key
     $cache_key = $class_code . '|' . $subclass_code . '|' . $size_code;
     
     if (isset($hierarchy_cache[$cache_key])) {
@@ -84,14 +83,9 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                 $hierarchy['category_code'] = $row['CATEGORY_CODE'];
                 $hierarchy['category_name'] = $row['CATEGORY_NAME'] ?? '';
                 
-                // Map category name to display category
                 $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
-                $display_category = 'OTHER';
                 
                 if ($category_name == 'SPIRIT') {
-                    $display_category = 'SPIRITS';
-                    
-                    // Determine spirit type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
                         $hierarchy['display_type'] = 'IMPORTED';
@@ -101,9 +95,6 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                         $hierarchy['display_type'] = 'IMFL';
                     }
                 } elseif ($category_name == 'WINE') {
-                    $display_category = 'WINE';
-                    
-                    // Determine wine type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
                         $hierarchy['display_type'] = 'IMPORTED WINE';
@@ -113,17 +104,12 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                         $hierarchy['display_type'] = 'INDIAN WINE';
                     }
                 } elseif ($category_name == 'FERMENTED BEER') {
-                    $display_category = 'FERMENTED BEER';
                     $hierarchy['display_type'] = 'FERMENTED BEER';
                 } elseif ($category_name == 'MILD BEER') {
-                    $display_category = 'MILD BEER';
                     $hierarchy['display_type'] = 'MILD BEER';
                 } elseif ($category_name == 'COUNTRY LIQUOR') {
-                    $display_category = 'COUNTRY LIQUOR';
                     $hierarchy['display_type'] = 'COUNTRY LIQUOR';
                 }
-                
-                $hierarchy['display_category'] = $display_category;
             }
             $stmt->close();
         }
@@ -157,15 +143,6 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
             $stmt->close();
         }
         
-        // Build full hierarchy string
-        $parts = [];
-        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
-        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
-        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
-        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
-        
-        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
-        
     } catch (Exception $e) {
         error_log("Error in getItemHierarchy: " . $e->getMessage());
     }
@@ -182,10 +159,8 @@ function getVolumeLabel($volume) {
         return $volume_label_cache[$volume];
     }
     
-    // Format volume based on size
     if ($volume >= 1000) {
         $liters = $volume / 1000;
-        // Check if it's a whole number
         if ($liters == intval($liters)) {
             $label = intval($liters) . 'L';
         } else {
@@ -205,18 +180,156 @@ function extractMLFromSize($size) {
     return isset($matches[1]) ? (int)$matches[1] : 0;
 }
 
-// Default values
-$from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-01');
-$to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
-
-// Validate date range
-if (strtotime($from_date) > strtotime($to_date)) {
-    $from_date = $to_date;
+// Function to get table name for a specific month
+function getTableForMonth($conn, $compID, $year, $month) {
+    $current_year = date('Y');
+    $current_month = date('m');
+    $tablePrefix = "tbldailystock_" . $compID;
+    
+    // For current month, use main table
+    if ($year == $current_year && $month == $current_month) {
+        $tableName = $tablePrefix;
+    } else {
+        // For archive months, try both formats: MM_YY and MM_YYYY
+        $short_year = substr($year, -2);
+        $tableName = $tablePrefix . "_" . $month . "_" . $short_year;
+        
+        // Check if table exists
+        $checkQuery = "SHOW TABLES LIKE '$tableName'";
+        $checkResult = $conn->query($checkQuery);
+        
+        if (!$checkResult || $checkResult->num_rows == 0) {
+            // Try with full year
+            $altTableName = $tablePrefix . "_" . $month . "_" . $year;
+            $checkQuery = "SHOW TABLES LIKE '$altTableName'";
+            $checkResult = $conn->query($checkQuery);
+            
+            if ($checkResult && $checkResult->num_rows > 0) {
+                $tableName = $altTableName;
+            } else {
+                // Fallback to main table
+                $tableName = $tablePrefix;
+            }
+        }
+    }
+    
+    return $tableName;
 }
 
+// Function to get available months from all tables
+function getAvailableMonths($conn, $compID) {
+    $available_months = [];
+    $tablePrefix = "tbldailystock_" . $compID;
+    
+    // Check main table first
+    $mainTableExists = false;
+    $checkMainQuery = "SHOW TABLES LIKE '$tablePrefix'";
+    $mainResult = $conn->query($checkMainQuery);
+    if ($mainResult && $mainResult->num_rows > 0) {
+        $mainTableExists = true;
+        // Get months from main table
+        $monthQuery = "SELECT DISTINCT STK_MONTH FROM $tablePrefix WHERE STK_MONTH IS NOT NULL AND STK_MONTH != '' ORDER BY STK_MONTH DESC";
+        $monthResult = $conn->query($monthQuery);
+        if ($monthResult) {
+            while ($monthRow = $monthResult->fetch_assoc()) {
+                $stk_month = trim($monthRow['STK_MONTH']);
+                if (preg_match('/^\d{4}-\d{2}$/', $stk_month)) {
+                    $available_months[] = $stk_month;
+                }
+            }
+        }
+    }
+    
+    // Check for archive tables
+    $archiveQuery = "SHOW TABLES LIKE '{$tablePrefix}_%'";
+    $archiveResult = $conn->query($archiveQuery);
+    
+    if ($archiveResult) {
+        while ($row = $archiveResult->fetch_array()) {
+            $tableName = $row[0];
+            
+            // Extract month and year from table name
+            if (preg_match('/_(\d{2})_(\d{2,4})$/', $tableName, $matches)) {
+                $month_num = $matches[1];
+                $year_part = $matches[2];
+                
+                if (strlen($year_part) == 2) {
+                    $year_full = '20' . $year_part;
+                } else {
+                    $year_full = $year_part;
+                }
+                
+                // Get the STK_MONTH from the table to verify
+                $monthQuery = "SELECT DISTINCT STK_MONTH FROM $tableName WHERE STK_MONTH IS NOT NULL AND STK_MONTH != '' LIMIT 1";
+                $monthResult = $conn->query($monthQuery);
+                if ($monthResult && $monthRow = $monthResult->fetch_assoc()) {
+                    $stk_month = trim($monthRow['STK_MONTH']);
+                    if (preg_match('/^\d{4}-\d{2}$/', $stk_month)) {
+                        $available_months[] = $stk_month;
+                    }
+                } else {
+                    // If no data, construct from table name
+                    $available_months[] = $year_full . '-' . $month_num;
+                }
+            }
+        }
+    }
+    
+    // Remove duplicates and sort descending
+    $available_months = array_unique($available_months);
+    rsort($available_months);
+    
+    return $available_months;
+}
+
+// Get financial year info from session
+$fin_year_id = $_SESSION['FIN_YEAR_ID'];
+
+// Fetch financial year dates
+$finYearQuery = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ? AND ACTIVE = 1";
+$finYearStmt = $conn->prepare($finYearQuery);
+$finYearStmt->bind_param("i", $fin_year_id);
+$finYearStmt->execute();
+$finYearResult = $finYearStmt->get_result();
+$finYearRow = $finYearResult->fetch_assoc();
+$finYearStmt->close();
+
+if (!$finYearRow) {
+    // Fallback to default if no active financial year
+    $finYearRow = ['START_DATE' => date('Y-04-01 00:00:00'), 'END_DATE' => date('Y-03-31 23:59:59', strtotime('+1 year'))];
+}
+
+$fin_start_date = date('Y-m-d', strtotime($finYearRow['START_DATE']));
+$fin_end_date = date('Y-m-d', strtotime($finYearRow['END_DATE']));
+$fin_year_display = date('Y', strtotime($fin_start_date)) . '-' . date('Y', strtotime($fin_end_date));
+
+// Get all available months
+$available_months = getAvailableMonths($conn, $compID);
+
+// Default values - Monthly register
+$selected_month = isset($_GET['month']) ? $_GET['month'] : date('Y-m');
+
+// If selected month is not in available months, use the most recent
+if (!empty($available_months) && !in_array($selected_month, $available_months)) {
+    $selected_month = $available_months[0];
+}
+
+// Parse selected month
+$month_name = date('F Y', strtotime($selected_month . '-01'));
+$days_in_month = date('t', strtotime($selected_month . '-01'));
+$last_day = $days_in_month;
+$first_date = date('Y-m-d', strtotime($selected_month . '-01'));
+$last_date = date('Y-m-d', strtotime($selected_month . '-01 + ' . ($days_in_month - 1) . ' days'));
+
+// Extract year and month
+list($year, $month_num) = explode('-', $selected_month);
+
+// Check if this is the current month
+$is_current_month = ($year == date('Y') && $month_num == date('m'));
+
 // Fetch company name and license number
-$companyName = "Digvijay WINE SHOP";
-$licenseNo = "3";
+$companyName = "";
+$licenseNo = "";
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
 if ($companyStmt) {
@@ -225,7 +338,7 @@ if ($companyStmt) {
     $companyResult = $companyStmt->get_result();
     if ($row = $companyResult->fetch_assoc()) {
         $companyName = $row['COMP_NAME'];
-        $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : $licenseNo;
+        $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : '3';
     }
     $companyStmt->close();
 }
@@ -252,8 +365,8 @@ $category_display_names = [
 // MML specific categories for second table
 $mml_categories = ['MML', 'WINE MML'];
 $mml_display_names = [
-    'MML' => 'Spirit MML',
-    'WINE MML' => 'Wine MML'
+    'MML' => 'SPIRIT MML',
+    'WINE MML' => 'WINE MML'
 ];
 
 // Define size columns for each category
@@ -281,70 +394,6 @@ $size_columns = [
     'MILD BEER' => $beer_sizes
 ];
 
-// Function to get table name for a specific date
-function getTableForDate($conn, $compID, $date) {
-    $current_month = date('Y-m');
-    $target_month = date('Y-m', strtotime($date));
-    
-    // If current month, use main table
-    if ($target_month == $current_month) {
-        $tableName = "tbldailystock_" . $compID;
-    } else {
-        // For previous months, use archive table format
-        $month = date('m', strtotime($date));
-        $year = date('y', strtotime($date));
-        $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
-    }
-    
-    // Check if table exists
-    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
-    $tableCheckResult = $conn->query($tableCheckQuery);
-    
-    if ($tableCheckResult && $tableCheckResult->num_rows == 0) {
-        // If archive table doesn't exist, fall back to main table
-        $tableName = "tbldailystock_" . $compID;
-        
-        // Check if main table exists
-        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
-        $tableCheckResult2 = $conn->query($tableCheckQuery2);
-        if ($tableCheckResult2 && $tableCheckResult2->num_rows == 0) {
-            $tableName = "tbldailystock_1";
-        }
-    }
-    
-    return $tableName;
-}
-
-// Function to check if table has specific day columns
-function tableHasDayColumns($conn, $tableName, $day) {
-    $day_padded = sprintf('%02d', $day);
-    
-    $columns_to_check = [
-        "DAY_{$day_padded}_OPEN",
-        "DAY_{$day_padded}_PURCHASE", 
-        "DAY_{$day_padded}_SALES",
-        "DAY_{$day_padded}_CLOSING"
-    ];
-    
-    foreach ($columns_to_check as $column) {
-        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
-        $columnResult = $conn->query($checkColumnQuery);
-        if ($columnResult && $columnResult->num_rows == 0) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-// Initialize dates array
-$dates = [];
-$current_date = $from_date;
-while (strtotime($current_date) <= strtotime($to_date)) {
-    $dates[] = $current_date;
-    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
-}
-
 // Fetch item master data with hierarchy information
 $items = [];
 if (!empty($allowed_classes)) {
@@ -369,189 +418,322 @@ if (!empty($allowed_classes)) {
                 $conn
             );
             
+            // Pre-calculate size label and matching
+            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+            
             $items[$row['CODE']] = [
                 'code' => $row['CODE'],
                 'details' => $row['DETAILS'],
                 'details2' => $row['DETAILS2'],
                 'class' => $row['CLASS'],
-                'class_code_new' => $row['CLASS_CODE_NEW'],
-                'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
-                'size_code' => $row['SIZE_CODE'],
                 'liq_flag' => $row['LIQ_FLAG'],
-                'hierarchy' => $hierarchy
+                'hierarchy' => $hierarchy,
+                'volume_label' => $volume_label
             ];
         }
         $itemStmt->close();
     }
 }
 
-// Initialize main report data structure (excluding MML)
-$main_daily_data = [];
-$main_totals = [];
-$main_opening_balance = [];
-
-foreach ($main_display_categories as $category) {
-    $main_totals[$category] = [
-        'purchase' => array_fill_keys($size_columns[$category], 0),
-        'sales' => array_fill_keys($size_columns[$category], 0),
-        'closing' => array_fill_keys($size_columns[$category], 0)
-    ];
-    $main_opening_balance[$category] = array_fill_keys($size_columns[$category], 0);
-}
-
-// Initialize MML report data structure (only MML categories)
-$mml_daily_data = [];
-$mml_totals = [];
-$mml_opening_balance = [];
-
-foreach ($mml_categories as $category) {
-    $mml_totals[$category] = [
-        'purchase' => array_fill_keys($size_columns[$category], 0),
-        'sales' => array_fill_keys($size_columns[$category], 0),
-        'closing' => array_fill_keys($size_columns[$category], 0)
-    ];
-    $mml_opening_balance[$category] = array_fill_keys($size_columns[$category], 0);
-}
-
-// Process each date
-foreach ($dates as $date) {
-    $day = date('d', strtotime($date));
-    $month = date('Y-m', strtotime($date));
-    $day_padded = sprintf('%02d', $day);
+// Pre-calculate size matching for all items
+foreach ($items as $code => &$item) {
+    $display_type = $item['hierarchy']['display_type'];
+    $volume_label = $item['volume_label'];
     
-    // Initialize daily data for this date
-    $main_daily_data[$date] = [];
-    $mml_daily_data[$date] = [];
-    
-    foreach ($main_display_categories as $category) {
-        $main_daily_data[$date][$category] = [
-            'purchase' => array_fill_keys($size_columns[$category], 0),
-            'sales' => array_fill_keys($size_columns[$category], 0),
-            'closing' => array_fill_keys($size_columns[$category], 0)
-        ];
-    }
-    
-    foreach ($mml_categories as $category) {
-        $mml_daily_data[$date][$category] = [
-            'purchase' => array_fill_keys($size_columns[$category], 0),
-            'sales' => array_fill_keys($size_columns[$category], 0),
-            'closing' => array_fill_keys($size_columns[$category], 0)
-        ];
-    }
-    
-    // Get appropriate table for this date
-    $dailyStockTable = getTableForDate($conn, $compID, $date);
-    
-    // Check if table has columns for this day
-    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
-        continue;
-    }
-    
-    // Fetch stock data for this specific day
-    $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                  DAY_{$day_padded}_OPEN as opening,
-                  DAY_{$day_padded}_PURCHASE as purchase, 
-                  DAY_{$day_padded}_SALES as sales, 
-                  DAY_{$day_padded}_CLOSING as closing 
-                  FROM $dailyStockTable 
-                  WHERE STK_MONTH = ?";
-    
-    $stockStmt = $conn->prepare($stockQuery);
-    if ($stockStmt) {
-        $stockStmt->bind_param("s", $month);
-        $stockStmt->execute();
-        $stockResult = $stockStmt->get_result();
-        
-        while ($row = $stockResult->fetch_assoc()) {
-            $item_code = $row['ITEM_CODE'];
-            
-            // Skip if item not found in master
-            if (!isset($items[$item_code])) continue;
-            
-            $item = $items[$item_code];
-            $hierarchy = $item['hierarchy'];
-            $display_type = $hierarchy['display_type'];
-            
-            // Get volume label for size matching
-            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
-            
-            // Find matching size column
-            $matched_size = null;
-            if (isset($size_columns[$display_type])) {
-                // Try exact match
-                if (in_array($volume_label, $size_columns[$display_type])) {
-                    $matched_size = $volume_label;
-                } else {
-                    // Try numeric matching
-                    foreach ($size_columns[$display_type] as $size_col) {
-                        preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
-                        preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
-                        
-                        if (isset($vol_parts[1]) && isset($col_parts[1])) {
-                            $vol_num = floatval($vol_parts[1]);
-                            $col_num = floatval($col_parts[1]);
-                            
-                            $vol_unit = strtoupper($vol_parts[2]);
-                            $col_unit = strtoupper($col_parts[2]);
-                            
-                            // Convert to ML for comparison
-                            if ($vol_unit == 'L' && $col_unit == 'ML') {
-                                $vol_num *= 1000;
-                            } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
-                                $col_num *= 1000;
-                            }
-                            
-                            if (abs($vol_num - $col_num) < 1) {
-                                $matched_size = $size_col;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (!$matched_size && !empty($size_columns[$display_type])) {
-                $matched_size = $size_columns[$display_type][0];
-            }
-            
-            // Check if this is an MML category
-            $is_mml = in_array($display_type, $mml_categories);
-            
-            // Add to appropriate data structure
-            if ($matched_size) {
-                if (!$is_mml && in_array($display_type, $main_display_categories)) {
-                    // Add to main table (non-MML)
-                    if ($date == $from_date) {
-                        $main_opening_balance[$display_type][$matched_size] += (int)$row['opening'];
+    $matched_size = null;
+    if (isset($size_columns[$display_type])) {
+        if (in_array($volume_label, $size_columns[$display_type])) {
+            $matched_size = $volume_label;
+        } else {
+            // Try numeric matching
+            foreach ($size_columns[$display_type] as $size_col) {
+                preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
+                preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
+                
+                if (isset($vol_parts[1]) && isset($col_parts[1])) {
+                    $vol_num = floatval($vol_parts[1]);
+                    $col_num = floatval($col_parts[1]);
+                    
+                    $vol_unit = strtoupper($vol_parts[2] ?? 'ML');
+                    $col_unit = strtoupper($col_parts[2] ?? 'ML');
+                    
+                    if ($vol_unit == 'L' && $col_unit == 'ML') {
+                        $vol_num *= 1000;
+                    } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
+                        $col_num *= 1000;
                     }
                     
-                    $main_daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
-                    $main_daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
-                    $main_daily_data[$date][$display_type]['closing'][$matched_size] += (int)$row['closing'];
-                    
-                    $main_totals[$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
-                    $main_totals[$display_type]['sales'][$matched_size] += (int)$row['sales'];
-                    $main_totals[$display_type]['closing'][$matched_size] += (int)$row['closing'];
-                    
-                } elseif ($is_mml) {
-                    // Add to MML table
-                    if ($date == $from_date) {
-                        $mml_opening_balance[$display_type][$matched_size] += (int)$row['opening'];
+                    if (abs($vol_num - $col_num) < 1) {
+                        $matched_size = $size_col;
+                        break;
                     }
-                    
-                    $mml_daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
-                    $mml_daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
-                    $mml_daily_data[$date][$display_type]['closing'][$matched_size] += (int)$row['closing'];
-                    
-                    $mml_totals[$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
-                    $mml_totals[$display_type]['sales'][$matched_size] += (int)$row['sales'];
-                    $mml_totals[$display_type]['closing'][$matched_size] += (int)$row['closing'];
                 }
             }
         }
-        
-        $stockStmt->close();
     }
+    
+    if (!$matched_size && !empty($size_columns[$display_type])) {
+        $matched_size = $size_columns[$display_type][0];
+    }
+    
+    $item['matched_size'] = $matched_size;
+    $item['is_mml'] = in_array($display_type, $mml_categories);
+    $item['is_main'] = in_array($display_type, $main_display_categories);
+}
+unset($item);
+
+// Initialize monthly data structure for main categories
+$main_monthly_data = [
+    'opening' => [],
+    'received' => [],
+    'sold' => [],
+    'closing' => [],
+    'breakages' => []
+];
+
+foreach ($main_display_categories as $category) {
+    $main_monthly_data['opening'][$category] = array_fill_keys($size_columns[$category], 0);
+    $main_monthly_data['received'][$category] = array_fill_keys($size_columns[$category], 0);
+    $main_monthly_data['sold'][$category] = array_fill_keys($size_columns[$category], 0);
+    $main_monthly_data['closing'][$category] = array_fill_keys($size_columns[$category], 0);
+    $main_monthly_data['breakages'][$category] = array_fill_keys($size_columns[$category], 0);
+}
+
+// Initialize monthly data structure for MML categories
+$mml_monthly_data = [
+    'opening' => [],
+    'received' => [],
+    'sold' => [],
+    'closing' => [],
+    'breakages' => []
+];
+
+foreach ($mml_categories as $category) {
+    $mml_monthly_data['opening'][$category] = array_fill_keys($size_columns[$category], 0);
+    $mml_monthly_data['received'][$category] = array_fill_keys($size_columns[$category], 0);
+    $mml_monthly_data['sold'][$category] = array_fill_keys($size_columns[$category], 0);
+    $mml_monthly_data['closing'][$category] = array_fill_keys($size_columns[$category], 0);
+    $mml_monthly_data['breakages'][$category] = array_fill_keys($size_columns[$category], 0);
+}
+
+// Get table name for selected month
+$tableName = getTableForMonth($conn, $compID, $year, $month_num);
+
+// Check if table exists
+$tableExists = false;
+$checkTableQuery = "SHOW TABLES LIKE '$tableName'";
+$tableCheckResult = $conn->query($checkTableQuery);
+if ($tableCheckResult && $tableCheckResult->num_rows > 0) {
+    $tableExists = true;
+}
+
+// ============================================
+// PART 1: Get OPENING BALANCE from first day of the month (DAY_01_OPEN)
+// ============================================
+if ($tableExists) {
+    $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_01_OPEN'";
+    $checkResult = $conn->query($checkColumnQuery);
+    if ($checkResult && $checkResult->num_rows > 0) {
+        $openingQuery = "SELECT ITEM_CODE, DAY_01_OPEN as opening FROM $tableName WHERE STK_MONTH = ?";
+        $openingStmt = $conn->prepare($openingQuery);
+        if ($openingStmt) {
+            $openingStmt->bind_param("s", $selected_month);
+            $openingStmt->execute();
+            $openingResult = $openingStmt->get_result();
+            
+            while ($row = $openingResult->fetch_assoc()) {
+                $item_code = $row['ITEM_CODE'];
+                
+                if (!isset($items[$item_code])) continue;
+                
+                $item = $items[$item_code];
+                $display_type = $item['hierarchy']['display_type'];
+                $matched_size = $item['matched_size'];
+                $is_mml = $item['is_mml'];
+                $is_main = $item['is_main'];
+                
+                if (!$matched_size) continue;
+                
+                $opening_qty = (int)$row['opening'];
+                
+                if ($is_main) {
+                    $main_monthly_data['opening'][$display_type][$matched_size] += $opening_qty;
+                } elseif ($is_mml) {
+                    $mml_monthly_data['opening'][$display_type][$matched_size] += $opening_qty;
+                }
+            }
+            $openingStmt->close();
+        }
+    }
+}
+
+// ============================================
+// PART 2: Get TOTAL RECEIVED and SOLD for the month (sum of all DAY_xx_PURCHASE and DAY_xx_SALES)
+// ============================================
+if ($tableExists) {
+    // Build dynamic column list for this table
+    $purchase_cols = [];
+    $sales_cols = [];
+
+    // Check which day columns exist (up to days_in_month)
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $day_padded = sprintf('%02d', $day);
+        $checkPurchaseQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$day_padded}_PURCHASE'";
+        $checkPurchaseResult = $conn->query($checkPurchaseQuery);
+        if ($checkPurchaseResult && $checkPurchaseResult->num_rows > 0) {
+            $purchase_cols[] = "DAY_{$day_padded}_PURCHASE";
+        }
+        
+        $checkSalesQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$day_padded}_SALES'";
+        $checkSalesResult = $conn->query($checkSalesQuery);
+        if ($checkSalesResult && $checkSalesResult->num_rows > 0) {
+            $sales_cols[] = "DAY_{$day_padded}_SALES";
+        }
+    }
+
+    if (!empty($purchase_cols) || !empty($sales_cols)) {
+        $purchase_sum = !empty($purchase_cols) ? implode(' + ', $purchase_cols) : '0';
+        $sales_sum = !empty($sales_cols) ? implode(' + ', $sales_cols) : '0';
+        
+        $stockQuery = "SELECT ITEM_CODE, 
+                       COALESCE($purchase_sum, 0) as total_purchase,
+                       COALESCE($sales_sum, 0) as total_sales
+                       FROM $tableName 
+                       WHERE STK_MONTH = ?
+                       GROUP BY ITEM_CODE";
+        
+        $stockStmt = $conn->prepare($stockQuery);
+        if ($stockStmt) {
+            $stockStmt->bind_param("s", $selected_month);
+            $stockStmt->execute();
+            $stockResult = $stockStmt->get_result();
+            
+            while ($row = $stockResult->fetch_assoc()) {
+                $item_code = $row['ITEM_CODE'];
+                
+                if (!isset($items[$item_code])) continue;
+                
+                $item = $items[$item_code];
+                $display_type = $item['hierarchy']['display_type'];
+                $matched_size = $item['matched_size'];
+                $is_mml = $item['is_mml'];
+                $is_main = $item['is_main'];
+                
+                if (!$matched_size) continue;
+                
+                $purchase_qty = (int)$row['total_purchase'];
+                $sales_qty = (int)$row['total_sales'];
+                
+                if ($is_main) {
+                    $main_monthly_data['received'][$display_type][$matched_size] += $purchase_qty;
+                    $main_monthly_data['sold'][$display_type][$matched_size] += $sales_qty;
+                } elseif ($is_mml) {
+                    $mml_monthly_data['received'][$display_type][$matched_size] += $purchase_qty;
+                    $mml_monthly_data['sold'][$display_type][$matched_size] += $sales_qty;
+                }
+            }
+            $stockStmt->close();
+        }
+    }
+}
+
+// ============================================
+// PART 3: Get CLOSING BALANCE from last day of the month (DAY_xx_CLOSING)
+// For current month, use the latest available day's closing
+// For completed months, use the last day's closing
+// ============================================
+if ($tableExists) {
+    $closing_day = $last_day;
+    
+    // For current month, find the latest day that has data
+    if ($is_current_month) {
+        $today = (int)date('j');
+        for ($day = $today; $day >= 1; $day--) {
+            $day_padded = sprintf('%02d', $day);
+            $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$day_padded}_CLOSING'";
+            $checkResult = $conn->query($checkColumnQuery);
+            if ($checkResult && $checkResult->num_rows > 0) {
+                $closing_day = $day;
+                break;
+            }
+        }
+    }
+    
+    $closing_day_padded = sprintf('%02d', $closing_day);
+    $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE 'DAY_{$closing_day_padded}_CLOSING'";
+    $checkResult = $conn->query($checkColumnQuery);
+    
+    if ($checkResult && $checkResult->num_rows > 0) {
+        $closingQuery = "SELECT ITEM_CODE, DAY_{$closing_day_padded}_CLOSING as closing FROM $tableName WHERE STK_MONTH = ?";
+        $closingStmt = $conn->prepare($closingQuery);
+        if ($closingStmt) {
+            $closingStmt->bind_param("s", $selected_month);
+            $closingStmt->execute();
+            $closingResult = $closingStmt->get_result();
+            
+            while ($row = $closingResult->fetch_assoc()) {
+                $item_code = $row['ITEM_CODE'];
+                
+                if (!isset($items[$item_code])) continue;
+                
+                $item = $items[$item_code];
+                $display_type = $item['hierarchy']['display_type'];
+                $matched_size = $item['matched_size'];
+                $is_mml = $item['is_mml'];
+                $is_main = $item['is_main'];
+                
+                if (!$matched_size) continue;
+                
+                $closing_qty = (int)$row['closing'];
+                
+                if ($is_main) {
+                    $main_monthly_data['closing'][$display_type][$matched_size] += $closing_qty;
+                } elseif ($is_mml) {
+                    $mml_monthly_data['closing'][$display_type][$matched_size] += $closing_qty;
+                }
+            }
+            $closingStmt->close();
+        }
+    }
+}
+
+// ============================================
+// PART 4: Get BREAKAGES for the month from tblbreakages
+// ============================================
+$month_start = $selected_month . '-01';
+$month_end = $selected_month . '-' . sprintf('%02d', $last_day);
+
+$breakagesQuery = "SELECT b.Code, b.BRK_Qty 
+                   FROM tblbreakages b 
+                   WHERE b.CompID = ? AND DATE(b.BRK_Date) BETWEEN ? AND ?";
+$breakagesStmt = $conn->prepare($breakagesQuery);
+if ($breakagesStmt) {
+    $breakagesStmt->bind_param("iss", $compID, $month_start, $month_end);
+    $breakagesStmt->execute();
+    $breakagesResult = $breakagesStmt->get_result();
+    
+    while ($row = $breakagesResult->fetch_assoc()) {
+        $item_code = $row['Code'];
+        
+        if (!isset($items[$item_code])) continue;
+        
+        $item = $items[$item_code];
+        $display_type = $item['hierarchy']['display_type'];
+        $matched_size = $item['matched_size'];
+        $is_mml = $item['is_mml'];
+        $is_main = $item['is_main'];
+        
+        if (!$matched_size) continue;
+        
+        $breakage_qty = (int)$row['BRK_Qty'];
+        
+        if ($is_main) {
+            $main_monthly_data['breakages'][$display_type][$matched_size] += $breakage_qty;
+        } elseif ($is_mml) {
+            $mml_monthly_data['breakages'][$display_type][$matched_size] += $breakage_qty;
+        }
+    }
+    $breakagesStmt->close();
 }
 
 // Calculate summary in liters for main categories
@@ -561,17 +743,19 @@ foreach ($main_display_categories as $category) {
         'opening' => 0,
         'received' => 0,
         'sold' => 0,
-        'closing' => 0
+        'closing' => 0,
+        'breakages' => 0
     ];
     
     foreach ($size_columns[$category] as $size) {
         $ml = extractMLFromSize($size);
         $liters_factor = $ml / 1000;
         
-        $summary_liters_main[$category]['opening'] += ($main_opening_balance[$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_main[$category]['received'] += ($main_totals[$category]['purchase'][$size] ?? 0) * $liters_factor;
-        $summary_liters_main[$category]['sold'] += ($main_totals[$category]['sales'][$size] ?? 0) * $liters_factor;
-        $summary_liters_main[$category]['closing'] += ($main_totals[$category]['closing'][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['opening'] += ($main_monthly_data['opening'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['received'] += ($main_monthly_data['received'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['sold'] += ($main_monthly_data['sold'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['closing'] += ($main_monthly_data['closing'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_main[$category]['breakages'] += ($main_monthly_data['breakages'][$category][$size] ?? 0) * $liters_factor;
     }
 }
 
@@ -582,35 +766,64 @@ foreach ($mml_categories as $category) {
         'opening' => 0,
         'received' => 0,
         'sold' => 0,
-        'closing' => 0
+        'closing' => 0,
+        'breakages' => 0
     ];
     
     foreach ($size_columns[$category] as $size) {
         $ml = extractMLFromSize($size);
         $liters_factor = $ml / 1000;
         
-        $summary_liters_mml[$category]['opening'] += ($mml_opening_balance[$category][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['received'] += ($mml_totals[$category]['purchase'][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['sold'] += ($mml_totals[$category]['sales'][$size] ?? 0) * $liters_factor;
-        $summary_liters_mml[$category]['closing'] += ($mml_totals[$category]['closing'][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['opening'] += ($mml_monthly_data['opening'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['received'] += ($mml_monthly_data['received'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['sold'] += ($mml_monthly_data['sold'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['closing'] += ($mml_monthly_data['closing'][$category][$size] ?? 0) * $liters_factor;
+        $summary_liters_mml[$category]['breakages'] += ($mml_monthly_data['breakages'][$category][$size] ?? 0) * $liters_factor;
     }
 }
 
-// Calculate total columns for main table
-$total_main_columns = 0;
-foreach ($main_display_categories as $category) {
-    $total_main_columns += count($size_columns[$category]);
+// Format liters to 2 decimal places
+foreach ($summary_liters_main as $category => $data) {
+    foreach ($data as $key => $value) {
+        $summary_liters_main[$category][$key] = number_format($value, 2);
+    }
 }
 
-// Calculate total columns for MML table
-$total_mml_columns = 0;
-foreach ($mml_categories as $category) {
-    $total_mml_columns += count($size_columns[$category]);
+foreach ($summary_liters_mml as $category => $data) {
+    foreach ($data as $key => $value) {
+        $summary_liters_mml[$category][$key] = number_format($value, 2);
+    }
 }
 
-// Get last date for grand total
-$last_date = end($dates);
-reset($dates);
+// Group available months by year for dropdown display
+$years_with_months = [];
+foreach ($available_months as $avail_month) {
+    $year = date('Y', strtotime($avail_month . '-01'));
+    $month_name = date('F', strtotime($avail_month . '-01'));
+    
+    if (!isset($years_with_months[$year])) {
+        $years_with_months[$year] = [];
+    }
+    $years_with_months[$year][] = [
+        'value' => $avail_month,
+        'name' => $month_name
+    ];
+}
+
+// Get all available years
+$available_years = array_keys($years_with_months);
+rsort($available_years); // Show newest years first
+
+// Determine current year for dropdown
+$current_year_for_dropdown = $year;
+if (!in_array($current_year_for_dropdown, $available_years) && !empty($available_years)) {
+    $current_year_for_dropdown = $available_years[0];
+}
+
+// Determine closing date display text
+$closing_display_text = $is_current_month ? 
+    "as on Latest Available Date" : 
+    "as on " . date('d-M-Y', strtotime($last_date));
 ?>
 
 <!DOCTYPE html>
@@ -618,7 +831,7 @@ reset($dates);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FLR 1A/2A/3A Datewise Register - liqoursoft</title>
+  <title>FLR 1A/2A/3A Monthly Register - liqoursoft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
@@ -676,14 +889,14 @@ reset($dates);
       line-height: 1.1;
       font-weight: bold;
     }
+    .category-header {
+      text-align: center;
+      font-weight: bold;
+      background-color: #e0e0e0;
+    }
     .summary-row {
       background-color: #e9ecef;
       font-weight: bold;
-    }
-    .closing-balance {
-      font-weight: bold !important;
-      color: #000 !important;
-      background-color: #d3d3d3 !important;
     }
     .double-line-right {
       border-right: 3px double #000 !important;
@@ -710,44 +923,16 @@ reset($dates);
         padding: 10px;
         margin-bottom: 15px;
     }
-    .classification-note {
-        background-color: #fff3cd;
-        border: 1px solid #ffeeba;
-        border-radius: 5px;
-        padding: 8px;
-        margin-bottom: 10px;
-        font-size: 11px;
-    }
-    .type-col {
-      width: 40px;
-      min-width: 40px;
-    }
-    .date-col {
-      width: 30px;
-      min-width: 30px;
-    }
-    .permit-col, .signature-col {
-      width: 50px;
-      min-width: 50px;
+    .description-col {
+      width: 180px;
+      min-width: 180px;
+      text-align: left !important;
+      font-weight: bold;
     }
     .size-col {
       width: 25px;
       min-width: 25px;
       max-width: 25px;
-    }
-    .date-display {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      line-height: 1;
-    }
-    .date-display span {
-      display: block;
-      line-height: 1;
-      margin: 0;
-      padding: 0;
     }
     .summary-table {
       margin-top: 20px;
@@ -768,6 +953,16 @@ reset($dates);
       margin-bottom: 15px;
       border-radius: 5px;
       font-weight: bold;
+    }
+    .month-status {
+      font-size: 10px;
+      color: #856404;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      border-radius: 3px;
+      padding: 2px 5px;
+      display: inline-block;
+      margin-left: 10px;
     }
 
     @media print {
@@ -874,16 +1069,24 @@ reset($dates);
         height: auto !important;
       }
       
-      .date-col, .permit-col, .signature-col {
-        width: 25px !important;
-        min-width: 25px !important;
-        max-width: 25px !important;
+      .description-col {
+        width: 150px !important;
+        min-width: 150px !important;
+        max-width: 150px !important;
+        text-align: left !important;
+        font-size: 7px !important;
       }
       
       .size-col {
         width: 18px !important;
         min-width: 18px !important;
         max-width: 18px !important;
+      }
+      
+      .category-header {
+        background-color: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       
       .summary-row {
@@ -928,7 +1131,7 @@ reset($dates);
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
-      <h3 class="mb-4">Monthly Register</h3>
+      <h3 class="mb-4">FLR 1A/2A/3A Monthly Register</h3>
 
       <!-- License Restriction Info -->
       <div class="license-info no-print">
@@ -950,37 +1153,49 @@ reset($dates);
           </p>
       </div>
 
-      <!-- Classification Note -->
-      <div class="classification-note no-print">
-          <strong>Classification Logic (as per Excise Register):</strong><br>
-          • <strong>IMFL:</strong> Indian Made Foreign Liquor - Spirits<br>
-          • <strong>IMPORTED:</strong> Imported Spirits<br>
-          • <strong>INDIAN WINE:</strong> Indian Made Wine<br>
-          • <strong>IMPORTED WINE:</strong> Imported Wine<br>
-          • <strong>FERMENTED BEER:</strong> Fermented Beer (Class F)<br>
-          • <strong>MILD BEER:</strong> Mild Beer (Class M)<br>
-          • <strong>MML Items (Spirit & Wine):</strong> Shown in separate table below
-      </div>
-
       <!-- Report Filters -->
       <div class="card filter-card mb-4 no-print">
         <div class="card-header">Report Filters</div>
         <div class="card-body">
-          <form method="GET" class="report-filters">
+          <form method="GET" class="report-filters" id="reportForm">
             <div class="row mb-3">
-              <div class="col-md-3">
-                <label class="form-label">From Date:</label>
-                <input type="date" name="from_date" class="form-control" value="<?= htmlspecialchars($from_date) ?>" max="<?= date('Y-m-d') ?>">
+              <div class="col-md-4">
+                <label class="form-label">Year:</label>
+                <select name="year" class="form-control" id="yearSelect">
+                  <?php
+                  if (empty($available_years)) {
+                      echo '<option value="">No data available</option>';
+                  } else {
+                      foreach ($available_years as $avail_year) {
+                          $selected = ($current_year_for_dropdown == $avail_year) ? 'selected' : '';
+                          echo "<option value=\"$avail_year\" $selected>$avail_year</option>";
+                      }
+                  }
+                  ?>
+                </select>
               </div>
-              <div class="col-md-3">
-                <label class="form-label">To Date:</label>
-                <input type="date" name="to_date" class="form-control" value="<?= htmlspecialchars($to_date) ?>" max="<?= date('Y-m-d') ?>">
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Date Range Info:</label>
-                <div class="form-control-plaintext">
-                  <small class="text-muted">Selected: <?= count($dates) ?> day(s)</small>
-                </div>
+              
+              <div class="col-md-4">
+                <label class="form-label">Month:</label>
+                <select name="month" class="form-control" id="monthSelect">
+                  <?php
+                  if (isset($years_with_months[$current_year_for_dropdown])) {
+                      foreach ($years_with_months[$current_year_for_dropdown] as $month_info) {
+                          $selected = ($selected_month == $month_info['value']) ? 'selected' : '';
+                          echo "<option value=\"{$month_info['value']}\" $selected>{$month_info['name']} {$current_year_for_dropdown}</option>";
+                      }
+                  } elseif (!empty($available_months)) {
+                      // Fallback: show all available months
+                      foreach ($available_months as $avail_month) {
+                          $selected = ($selected_month == $avail_month) ? 'selected' : '';
+                          $month_name = date('F Y', strtotime($avail_month . '-01'));
+                          echo "<option value=\"$avail_month\" $selected>$month_name</option>";
+                      }
+                  } else {
+                      echo '<option value="">No months available</option>';
+                  }
+                  ?>
+                </select>
               </div>
             </div>
             
@@ -990,15 +1205,6 @@ reset($dates);
               </button>
               <button type="button" class="btn btn-success" onclick="window.print()">
                 <i class="fas fa-print me-1"></i> Print Report
-              </button>
-              <button type="button" class="btn btn-info" onclick="exportToExcel()">
-                <i class="fas fa-file-excel me-1"></i> Export to Excel
-              </button>
-              <button type="button" class="btn btn-warning" onclick="exportToCSV()">
-                <i class="fas fa-file-csv me-1"></i> Export to CSV
-              </button>
-              <button type="button" class="btn btn-danger" onclick="exportToPDF()">
-                <i class="fas fa-file-pdf me-1"></i> Export to PDF
               </button>
               <a href="dashboard.php" class="btn btn-secondary ms-auto">
                 <i class="fas fa-times me-1"></i> Exit
@@ -1012,58 +1218,27 @@ reset($dates);
       <div class="print-section">
         <div class="company-header">
           <h1>Form F.L.R. 1A/2A/3A (See Rule 15)</h1>
-          <h5>REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
+          <h5>MONTHLY REGISTER OF TRANSACTION OF FOREIGN LIQUOR EFFECTED BY HOLDER OF VENDOR'S/HOTEL/CLUB LICENCE</h5>
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
-          <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+          <h6>Month : <?= $month_name ?> 
+            <?php if ($is_current_month): ?>
+              <span class="month-status">(Current Month - Partial Data)</span>
+            <?php endif; ?>
+          </h6>
+          <h6>Closing Balance <?= $closing_display_text ?></h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
         </div>
         
         <div class="table-responsive">
-          <table class="report-table" id="flr-datewise-table">
+          <table class="report-table" id="flr-monthly-table">
             <thead>
               <tr>
-                <th rowspan="3" class="date-col">Date</th>
-                <th rowspan="3" class="permit-col">Permit No</th>
-                <th colspan="<?= $total_main_columns ?>">Received</th>
-                <th colspan="<?= $total_main_columns ?>">Sold</th>
-                <th colspan="<?= $total_main_columns ?>">Closing Balance</th>
-                <th rowspan="3" class="signature-col">Signature</th>
-              </tr>
-              <tr>
+                <th rowspan="2" class="description-col">Description</th>
                 <?php foreach ($main_display_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
-                <?php endforeach; ?>
-                <?php foreach ($main_display_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
-                <?php endforeach; ?>
-                <?php foreach ($main_display_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header"><?= $category_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
               <tr>
-                <!-- Received sizes -->
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-
-                <!-- Sold sizes -->
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-
-                <!-- Closing sizes -->
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1076,71 +1251,10 @@ reset($dates);
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($dates as $date): ?>
-                <?php if (!isset($main_daily_data[$date])) continue; ?>
-                <tr>
-                  <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
-                  <td class="permit-col"></td>
-                  
-                  <!-- Received -->
-                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                        <?= isset($main_daily_data[$date][$category]['purchase'][$size]) && $main_daily_data[$date][$category]['purchase'][$size] > 0 ? $main_daily_data[$date][$category]['purchase'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-
-                  <!-- Sold -->
-                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                        <?= isset($main_daily_data[$date][$category]['sales'][$size]) && $main_daily_data[$date][$category]['sales'][$size] > 0 ? $main_daily_data[$date][$category]['sales'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-
-                  <!-- Closing -->
-                  <?php foreach ($main_display_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?> <?= ($size_index == $last_index) ? 'closing-balance' : '' ?>">
-                        <?= isset($main_daily_data[$date][$category]['closing'][$size]) && $main_daily_data[$date][$category]['closing'][$size] > 0 ? $main_daily_data[$date][$category]['closing'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-                  
-                  <td class="signature-col"></td>
-                </tr>
-              <?php endforeach; ?>
-              
               <!-- Opening Balance Row -->
-              <tr class="summary-row">
-                <td>Opening Balance</td>
-                <td></td>
+              <tr>
+                <td class="description-col">Opening Balance of the Beginning of the Month (<?= date('d-M-Y', strtotime($first_date)) ?>)</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Opening Balance values in Closing section -->
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1148,20 +1262,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($main_opening_balance[$category][$size]) && $main_opening_balance[$category][$size] > 0 ? $main_opening_balance[$category][$size] : '' ?>
+                      <?= isset($main_monthly_data['opening'][$category][$size]) && $main_monthly_data['opening'][$category][$size] > 0 ? $main_monthly_data['opening'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- Total Received Row -->
-              <tr class="summary-row">
-                <td>Total Received</td>
-                <td></td>
+              <!-- Received during Month -->
+              <tr>
+                <td class="description-col">Received during the Current Month</td>
                 
-                <!-- Received totals -->
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1169,35 +1279,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($main_totals[$category]['purchase'][$size]) && $main_totals[$category]['purchase'][$size] > 0 ? $main_totals[$category]['purchase'][$size] : '' ?>
+                      <?= isset($main_monthly_data['received'][$category][$size]) && $main_monthly_data['received'][$category][$size] > 0 ? $main_monthly_data['received'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Closing -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- Total Sold Row -->
-              <tr class="summary-row">
-                <td>Total Sold</td>
-                <td></td>
+              <!-- Sold during Month -->
+              <tr>
+                <td class="description-col">Sold during the Current Month</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Sold totals -->
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1205,35 +1296,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($main_totals[$category]['sales'][$size]) && $main_totals[$category]['sales'][$size] > 0 ? $main_totals[$category]['sales'][$size] : '' ?>
+                      <?= isset($main_monthly_data['sold'][$category][$size]) && $main_monthly_data['sold'][$category][$size] > 0 ? $main_monthly_data['sold'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <!-- Empty for Closing -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- Grand Total Row -->
-              <tr class="summary-row">
-                <td>Grand Total</td>
-                <td></td>
+              <!-- Breakages during Month -->
+              <tr>
+                <td class="description-col">Breakages during the Current Month</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_main_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Last day closing in Closing section -->
                 <?php foreach ($main_display_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1241,13 +1313,29 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($main_daily_data[$last_date][$category]['closing'][$size]) && $main_daily_data[$last_date][$category]['closing'][$size] > 0 ? $main_daily_data[$last_date][$category]['closing'][$size] : '' ?>
+                      <?= isset($main_monthly_data['breakages'][$category][$size]) && $main_monthly_data['breakages'][$category][$size] > 0 ? $main_monthly_data['breakages'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <td></td>
               </tr>
+
+              <!-- Closing Balance Row -->
+              <tr>
+                <td class="description-col">Closing Balance at the End of the Month <?= $closing_display_text ?></td>
+                
+                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($main_monthly_data['closing'][$category][$size]) && $main_monthly_data['closing'][$category][$size] > 0 ? $main_monthly_data['closing'][$category][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+              </tr>
+
             </tbody>
           </table>
         </div>
@@ -1283,8 +1371,14 @@ reset($dates);
                   <td><?= number_format($summary_liters_main[$category]['sold'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
+              <tr>
+                <td class="text-start fw-bold">Breakages (Liters)</td>
+                <?php foreach ($main_display_categories as $category): ?>
+                  <td><?= number_format($summary_liters_main[$category]['breakages'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
               <tr class="summary-row">
-                <td class="text-start fw-bold">Closing Balance (Liters)</td>
+                <td class="text-start fw-bold">Closing Balance (Liters) <?= $closing_display_text ?></td>
                 <?php foreach ($main_display_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['closing'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
@@ -1294,68 +1388,37 @@ reset($dates);
         </div>
         
         <div class="footer-info">
-          <p>Note: This is a computer generated report and does not require signature.</p>
-          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Total Days: <?= count($dates) ?></p>
+          <p>Note: This is a computer generated monthly report. Received, Sold and Breakages are for the month of <?= $month_name ?>. <?= $is_current_month ? 'Current month data is partial and subject to change.' : '' ?></p>
+          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Month: <?= $month_name ?></p>
         </div>
       </div>
 
-      <!-- MML Section - Second Table (Only MML Data) -->
+      <!-- MML Section - Second Table -->
       <div class="mml-section print-section">
         <div class="mml-header">
-          <h4 class="mb-0">MML Summary Report (Spirit MML & Wine MML Only)</h4>
+          <h4 class="mb-0">MML Monthly Summary Report (Spirit MML & Wine MML Only)</h4>
         </div>
         
         <div class="company-header">
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
-          <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+          <h6>Month : <?= $month_name ?>
+            <?php if ($is_current_month): ?>
+              <span class="month-status">(Current Month - Partial Data)</span>
+            <?php endif; ?>
+          </h6>
+          <h6>Closing Balance <?= $closing_display_text ?></h6>
         </div>
         
         <div class="table-responsive">
-          <table class="report-table" id="mml-datewise-table">
+          <table class="report-table" id="mml-monthly-table">
             <thead>
               <tr>
-                <th rowspan="3" class="date-col">Date</th>
-                <th rowspan="3" class="permit-col">Permit No</th>
-                <th colspan="<?= $total_mml_columns ?>">Received</th>
-                <th colspan="<?= $total_mml_columns ?>">Sold</th>
-                <th colspan="<?= $total_mml_columns ?>">Closing Balance</th>
-                <th rowspan="3" class="signature-col">Signature</th>
-              </tr>
-              <tr>
+                <th rowspan="2" class="description-col">Description (MML)</th>
                 <?php foreach ($mml_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
-                <?php endforeach; ?>
-                <?php foreach ($mml_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
-                <?php endforeach; ?>
-                <?php foreach ($mml_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>"><?= $mml_display_names[$category] ?></th>
+                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header"><?= $mml_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
               <tr>
-                <!-- Received sizes -->
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-
-                <!-- Sold sizes -->
-                <?php foreach ($mml_categories as $cat_index => $category): ?>
-                  <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
-                  ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
-                  <?php endforeach; ?>
-                <?php endforeach; ?>
-
-                <!-- Closing sizes -->
                 <?php foreach ($mml_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1368,71 +1431,10 @@ reset($dates);
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($dates as $date): ?>
-                <?php if (!isset($mml_daily_data[$date])) continue; ?>
-                <tr>
-                  <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
-                  <td class="permit-col"></td>
-                  
-                  <!-- Received -->
-                  <?php foreach ($mml_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                        <?= isset($mml_daily_data[$date][$category]['purchase'][$size]) && $mml_daily_data[$date][$category]['purchase'][$size] > 0 ? $mml_daily_data[$date][$category]['purchase'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-
-                  <!-- Sold -->
-                  <?php foreach ($mml_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                        <?= isset($mml_daily_data[$date][$category]['sales'][$size]) && $mml_daily_data[$date][$category]['sales'][$size] > 0 ? $mml_daily_data[$date][$category]['sales'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-
-                  <!-- Closing -->
-                  <?php foreach ($mml_categories as $cat_index => $category): ?>
-                    <?php 
-                    $sizes = $size_columns[$category];
-                    $last_index = count($sizes) - 1;
-                    foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?> <?= ($size_index == $last_index) ? 'closing-balance' : '' ?>">
-                        <?= isset($mml_daily_data[$date][$category]['closing'][$size]) && $mml_daily_data[$date][$category]['closing'][$size] > 0 ? $mml_daily_data[$date][$category]['closing'][$size] : '' ?>
-                      </td>
-                    <?php endforeach; ?>
-                  <?php endforeach; ?>
-                  
-                  <td class="signature-col"></td>
-                </tr>
-              <?php endforeach; ?>
-              
               <!-- MML Opening Balance Row -->
-              <tr class="summary-row">
-                <td>Opening Balance</td>
-                <td></td>
+              <tr>
+                <td class="description-col">Opening Balance of the Beginning of the Month (<?= date('d-M-Y', strtotime($first_date)) ?>)</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Opening Balance values in Closing section -->
                 <?php foreach ($mml_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1440,20 +1442,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_opening_balance[$category][$size]) && $mml_opening_balance[$category][$size] > 0 ? $mml_opening_balance[$category][$size] : '' ?>
+                      <?= isset($mml_monthly_data['opening'][$category][$size]) && $mml_monthly_data['opening'][$category][$size] > 0 ? $mml_monthly_data['opening'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- MML Total Received Row -->
-              <tr class="summary-row">
-                <td>Total Received (MML)</td>
-                <td></td>
+              <!-- MML Received during Month -->
+              <tr>
+                <td class="description-col">Received during the Current Month</td>
                 
-                <!-- Received totals -->
                 <?php foreach ($mml_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1461,35 +1459,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_totals[$category]['purchase'][$size]) && $mml_totals[$category]['purchase'][$size] > 0 ? $mml_totals[$category]['purchase'][$size] : '' ?>
+                      <?= isset($mml_monthly_data['received'][$category][$size]) && $mml_monthly_data['received'][$category][$size] > 0 ? $mml_monthly_data['received'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Closing -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- MML Total Sold Row -->
-              <tr class="summary-row">
-                <td>Total Sold (MML)</td>
-                <td></td>
+              <!-- MML Sold during Month -->
+              <tr>
+                <td class="description-col">Sold during the Current Month</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Sold totals -->
                 <?php foreach ($mml_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1497,35 +1476,16 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_totals[$category]['sales'][$size]) && $mml_totals[$category]['sales'][$size] > 0 ? $mml_totals[$category]['sales'][$size] : '' ?>
+                      <?= isset($mml_monthly_data['sold'][$category][$size]) && $mml_monthly_data['sold'][$category][$size] > 0 ? $mml_monthly_data['sold'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <!-- Empty for Closing -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <td></td>
               </tr>
 
-              <!-- MML Grand Total Row -->
-              <tr class="summary-row">
-                <td>Grand Total (MML)</td>
-                <td></td>
+              <!-- MML Breakages during Month -->
+              <tr>
+                <td class="description-col">Breakages during the Current Month</td>
                 
-                <!-- Empty for Received -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Empty for Sold -->
-                <?php for ($i = 0; $i < $total_mml_columns; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-                
-                <!-- Last day closing -->
                 <?php foreach ($mml_categories as $cat_index => $category): ?>
                   <?php 
                   $sizes = $size_columns[$category];
@@ -1533,13 +1493,29 @@ reset($dates);
                   foreach ($sizes as $size_index => $size): 
                   ?>
                     <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
-                      <?= isset($mml_daily_data[$last_date][$category]['closing'][$size]) && $mml_daily_data[$last_date][$category]['closing'][$size] > 0 ? $mml_daily_data[$last_date][$category]['closing'][$size] : '' ?>
+                      <?= isset($mml_monthly_data['breakages'][$category][$size]) && $mml_monthly_data['breakages'][$category][$size] > 0 ? $mml_monthly_data['breakages'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
-                
-                <td></td>
               </tr>
+
+              <!-- MML Closing Balance Row -->
+              <tr>
+                <td class="description-col">Closing Balance at the End of the Month <?= $closing_display_text ?></td>
+                
+                <?php foreach ($mml_categories as $cat_index => $category): ?>
+                  <?php 
+                  $sizes = $size_columns[$category];
+                  $last_index = count($sizes) - 1;
+                  foreach ($sizes as $size_index => $size): 
+                  ?>
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($mml_categories) - 1) ? 'double-line-right' : '' ?>">
+                      <?= isset($mml_monthly_data['closing'][$category][$size]) && $mml_monthly_data['closing'][$category][$size] > 0 ? $mml_monthly_data['closing'][$category][$size] : '' ?>
+                    </td>
+                  <?php endforeach; ?>
+                <?php endforeach; ?>
+              </tr>
+
             </tbody>
           </table>
         </div>
@@ -1575,8 +1551,14 @@ reset($dates);
                   <td><?= number_format($summary_liters_mml[$category]['sold'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
+              <tr>
+                <td class="text-start fw-bold">Breakages (Liters)</td>
+                <?php foreach ($mml_categories as $category): ?>
+                  <td><?= number_format($summary_liters_mml[$category]['breakages'] ?? 0, 2) ?></td>
+                <?php endforeach; ?>
+              </tr>
               <tr class="summary-row">
-                <td class="text-start fw-bold">Closing Balance (Liters)</td>
+                <td class="text-start fw-bold">Closing Balance (Liters) <?= $closing_display_text ?></td>
                 <?php foreach ($mml_categories as $category): ?>
                   <td><?= number_format($summary_liters_mml[$category]['closing'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
@@ -1586,14 +1568,19 @@ reset($dates);
         </div>
         
         <div class="footer-info mt-3">
-          <p><strong>MML Summary:</strong> 
-             Spirit MML Total Received: <?= array_sum($mml_totals['MML']['purchase'] ?? []) ?> | 
-             Spirit MML Total Sold: <?= array_sum($mml_totals['MML']['sales'] ?? []) ?> | 
-             Spirit MML Closing: <?= array_sum($mml_daily_data[$last_date]['MML']['closing'] ?? []) ?><br>
-             Wine MML Total Received: <?= array_sum($mml_totals['WINE MML']['purchase'] ?? []) ?> | 
-             Wine MML Total Sold: <?= array_sum($mml_totals['WINE MML']['sales'] ?? []) ?> | 
-             Wine MML Closing: <?= array_sum($mml_daily_data[$last_date]['WINE MML']['closing'] ?? []) ?>
+          <p><strong>MML Monthly Summary:</strong> 
+             Spirit MML Total Received: <?= array_sum($mml_monthly_data['received']['MML'] ?? []) ?> | 
+             Spirit MML Total Sold: <?= array_sum($mml_monthly_data['sold']['MML'] ?? []) ?> | 
+             Spirit MML Breakages: <?= array_sum($mml_monthly_data['breakages']['MML'] ?? []) ?> |
+             Spirit MML Closing: <?= array_sum($mml_monthly_data['closing']['MML'] ?? []) ?><br>
+             Wine MML Total Received: <?= array_sum($mml_monthly_data['received']['WINE MML'] ?? []) ?> | 
+             Wine MML Total Sold: <?= array_sum($mml_monthly_data['sold']['WINE MML'] ?? []) ?> |
+             Wine MML Breakages: <?= array_sum($mml_monthly_data['breakages']['WINE MML'] ?? []) ?> |
+             Wine MML Closing: <?= array_sum($mml_monthly_data['closing']['WINE MML'] ?? []) ?>
           </p>
+          <?php if ($is_current_month): ?>
+            <p><em>* Note: Current month data is partial. Closing balance shows latest available day's closing.</em></p>
+          <?php endif; ?>
         </div>
       </div>
     </div>
@@ -1602,63 +1589,90 @@ reset($dates);
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-function exportToExcel() {
-    var mainTable = document.getElementById('flr-datewise-table');
-    var mmlTable = document.getElementById('mml-datewise-table');
-    var wb = XLSX.utils.book_new();
+// Month data from PHP
+const monthData = <?= json_encode($years_with_months) ?>;
+let formSubmitted = false;
+let currentMonth = '<?= $selected_month ?>';
+
+function updateMonthOptions() {
+    const yearSelect = document.getElementById('yearSelect');
+    const monthSelect = document.getElementById('monthSelect');
+    const selectedYear = yearSelect.value;
     
-    // Add main table
-    var mainClone = mainTable.cloneNode(true);
-    var ws1 = XLSX.utils.table_to_sheet(mainClone);
-    XLSX.utils.book_append_sheet(wb, ws1, 'FLR Datewise');
+    // Clear current options
+    monthSelect.innerHTML = '';
     
-    // Add MML table
-    var mmlClone = mmlTable.cloneNode(true);
-    var ws2 = XLSX.utils.table_to_sheet(mmlClone);
-    XLSX.utils.book_append_sheet(wb, ws2, 'MML Summary');
+    if (monthData[selectedYear] && monthData[selectedYear].length > 0) {
+        // Add options for selected year
+        monthData[selectedYear].forEach(month => {
+            const option = document.createElement('option');
+            option.value = month.value;
+            option.textContent = month.name + ' ' + selectedYear;
+            monthSelect.appendChild(option);
+        });
+        
+        // Try to select current month if it exists in this year
+        const currentMonthInYear = Array.from(monthSelect.options).find(opt => opt.value === currentMonth);
+        if (currentMonthInYear) {
+            monthSelect.value = currentMonth;
+        } else if (monthSelect.options.length > 0) {
+            // Otherwise select first month
+            monthSelect.selectedIndex = 0;
+        }
+    } else {
+        // No months for this year
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No months available';
+        monthSelect.appendChild(option);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const reportForm = document.getElementById('reportForm');
+    const yearSelect = document.getElementById('yearSelect');
+    const monthSelect = document.getElementById('monthSelect');
     
-    var fileName = 'FLR_Datewise_MML_<?= date('Y-m-d') ?>.xlsx';
-    XLSX.writeFile(wb, fileName);
-}
-
-function exportToCSV() {
-    var table = document.getElementById('flr-datewise-table');
-    var ws = XLSX.utils.table_to_sheet(table);
-    var fileName = 'FLR_Datewise_<?= date('Y-m-d') ?>.csv';
-    XLSX.writeFile(ws, fileName);
-}
-
-function exportToPDF() {
-    const element = document.querySelector('.print-section');
-    const opt = {
-        margin: 0.5,
-        filename: 'FLR_Datewise_MML_<?= date('Y-m-d') ?>.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
-    };
-    html2pdf().set(opt).from(element).save();
-}
-
-// Load XLSX library dynamically
-if (typeof XLSX === 'undefined') {
-    var script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    document.head.appendChild(script);
-}
-
-// Load html2pdf library dynamically
-if (typeof html2pdf === 'undefined') {
-    var script2 = document.createElement('script');
-    script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    document.head.appendChild(script2);
-}
-
-// Auto-submit form when dates change
-document.querySelectorAll('input[type="date"]').forEach(input => {
-  input.addEventListener('change', function() {
-    document.querySelector('.report-filters').submit();
-  });
+    // Initial setup - update month options
+    updateMonthOptions();
+    
+    // Handle form submission
+    reportForm.addEventListener('submit', function(e) {
+        // Ensure month has a value before submitting
+        if (!monthSelect.value) {
+            e.preventDefault();
+            if (monthSelect.options.length > 0) {
+                monthSelect.selectedIndex = 0;
+                setTimeout(() => reportForm.submit(), 50);
+            }
+            return;
+        }
+        formSubmitted = true;
+    });
+    
+    // Handle year change - update month options
+    yearSelect.addEventListener('change', function() {
+        updateMonthOptions();
+        
+        // Update URL without page reload
+        const url = new URL(window.location.href);
+        url.searchParams.set('year', this.value);
+        if (monthSelect.value) {
+            url.searchParams.set('month', monthSelect.value);
+        }
+        window.history.replaceState({}, '', url);
+    });
+    
+    // Handle month change - update URL only, don't submit
+    monthSelect.addEventListener('change', function() {
+        if (this.value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('month', this.value);
+            url.searchParams.set('year', yearSelect.value);
+            window.history.replaceState({}, '', url);
+        }
+    });
 });
 </script>
 </body>
