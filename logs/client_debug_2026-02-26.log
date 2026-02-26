@@ -1,0 +1,20 @@
+[12:32:10] [info] Page loaded
+Data: {"view_type":"all","date":"2026-02-26","record_count":5}
+------------------------
+[12:32:12] [info] STEP 2: Showing manual upload guide
+Data: {"filename":"sales_export_2026-02-26_07-27-14.xlsx"}
+------------------------
+[12:32:12] [info] Status: Manual Upload Required - Follow the steps shown to upload your file
+------------------------
+[12:32:12] [success] Manual upload guide displayed
+------------------------
+[12:32:58] [info] Page loaded
+Data: {"view_type":"all","date":"2026-02-26","record_count":5}
+------------------------
+[12:33:01] [info] STEP 2: Showing manual upload guide
+Data: {"filename":"sales_export_2026-02-26_07-27-14.xlsx"}
+------------------------
+[12:33:01] [info] Status: Manual Upload Required - Follow the steps shown to upload your file
+------------------------
+[12:33:01] [success] Manual upload guide displayed
+------------------------

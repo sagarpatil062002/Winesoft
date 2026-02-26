@@ -1,0 +1,138 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>
+	Untitled Page
+</title><link href="MainStyle.css" rel="stylesheet" type="text/css" />
+
+    <script src="FormsJQuery/jquery-3.4.1.js" type="text/javascript"></script>
+
+    <link href="FormsJQuery/jquery-ui-1.12.css" rel="stylesheet" type="text/css" />
+
+    <script src="FormsJQuery/jquery-ui-1.12.js" type="text/javascript"></script>
+
+    <script src="MyScript.js" type="text/javascript"></script>
+
+    <link href="bootstrap/css/hexagon-1_2.css" rel="stylesheet" type="text/css" />
+
+    <script src="FormsJQuery/echarts.min.js" type="text/javascript"></script>
+
+    <style type="text/css">
+        </style>
+<link href="/Retailer/WebResource.axd?d=8nLIBcdHjVX_BedYU8Yd7K9lHRg-iD_PF8IZAyYOywvgJuix1YCp4Umj6o_CSgkJPY7KzXP9vVXbNaUsS12MF9LeqUuxOod1aXjC5KvI42XVUM6hXegCyb0q9tL0J7uAsdmgKg2&amp;t=637704965120000000" type="text/css" rel="stylesheet" /></head>
+<body>
+    <form name="form1" method="post" action="ShopInfo.aspx" id="form1">
+<div>
+<input type="hidden" name="ScriptManager1_HiddenField" id="ScriptManager1_HiddenField" value="" />
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwULLTEzMzQ2ODc5MTQPZBYCAgQPZBYCAgMPDxYCHgdWaXNpYmxlaGQWAgIFDw8WAh8AaGQWAgIHDxYCHgVWYWx1ZQUBMGQYAQUeX19Db250cm9sc1JlcXVpcmVQb3N0QmFja0tleV9fFgIFDEltYWdlQnV0dG9uMwUMSW1hZ2VCdXR0b24ytJZFXczOmExK7ttrLaDIsTuSZ10=" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/Retailer/WebResource.axd?d=QL4vAAerLbZoa8p3ktFuxXV1QZSrJmjm4nKS_LFZNFZaBMvhbMpXsyG7OJHdjUwcMa-44zMjZHOLg4fwFQtAW2yaICs1&amp;t=637292263376503783" type="text/javascript"></script>
+
+
+<script src="/Retailer/ScriptResource.axd?d=8DweClAXHU5WsBJx_BP2HZu5-SXDzYFUtTUfQRPR96L8URIyUOcHHr8oB4nbj7yUzbYVi5gqHvfgnvghBXZ3Cm3zF1Y5O--ZpTfjI_JGM9VxWI2yPL7B3_VA-N9qYEoYXR9fnw2&amp;t=2939b118" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+if (typeof(Sys) === 'undefined') throw new Error('ASP.NET Ajax client-side framework failed to load.');
+//]]>
+</script>
+
+<script src="/Retailer/ScriptResource.axd?d=o0aoSHXdAEV-fG8YQgsxo595ZBEIHhiX99FCCbbXyEhn95zKvyOwjZjhHsHA0uXefa_mK2LS1jOZxTZibnkriVBixztG_j4UzU3jumnIx6V3quvzZXvOKzBfCD9b-foKqBzKYQ2&amp;t=2939b118" type="text/javascript"></script>
+<script src="/Retailer/ShopInfo.aspx?_TSM_HiddenField_=ScriptManager1_HiddenField&amp;_TSM_CombinedScripts_=%3b%3bAjaxControlToolkit%2c+Version%3d3.5.60501.0%2c+Culture%3dneutral%2c+PublicKeyToken%3d28f01b0e84b6d53e%3aen-US%3a61715ba4-0922-4e75-a2be-d80670612837%3a475a4ef5%3aaddc6819%3a5546a2b%3ad2e10b12%3aeffe2a26%3a37e2e5c9%3a5a682656%3ac7029a2%3ae9e598a9" type="text/javascript"></script>
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="774F4B41" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEWBgLHr4zpCALb8aH8DQLSwsGJCgLZu+fcCwLSwtXkAgL7nPWPA1xm2tTHlRLFGr8ITLP0wG/lp/ZH" />
+</div>
+    <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ScriptManager1', document.getElementById('form1'));
+Sys.WebForms.PageRequestManager.getInstance()._updateControls([], [], [], 90);
+//]]>
+</script>
+
+    <div>
+        
+        <table width="100%" class="tablesructure">
+            <tr>
+                        <td style="padding-top:10px;">
+                            <table style="display:none">
+                                <tr >
+                                    <td style="text-align: left;">
+                                        <span id="Label9" style="color:Black;font-family:Verdana;font-size:8pt;font-weight:bold;">From Date :</span>
+                                    </td>
+                                    <td align="left" valign="middle">
+                                        <input name="txtFromDate" type="text" value="26-Feb-2026" id="txtFromDate" class="TxtBox" style="width:100px;" />
+                                        
+                                        <input type="image" name="ImageButton3" id="ImageButton3" src="Images/Calendar.jpg" style="border-width:0px;" />
+                                    </td>
+                                    <td style="text-align: left;" valign="middle">
+                                        &nbsp;&nbsp;<span id="Label15" style="color:Black;font-family:Verdana;font-size:8pt;font-weight:bold;">To Date :</span>
+                                    </td>
+                                    <td style="text-align: left;" valign="middle">
+                                        <input name="txtToDate" type="text" value="26-Feb-2026" id="txtToDate" class="TxtBox" style="font-weight:normal;width:100px;" />
+                                        
+                                        <input type="image" name="ImageButton2" id="ImageButton2" src="Images/Calendar.jpg" style="border-width:0px;" />
+                                    </td>
+                                    <td style="text-align: left;" valign="middle">&nbsp;&nbsp;&nbsp;
+                                        <input type="submit" name="btnShow" value="Show" id="btnShow" class="imgbtn" style="height:30px;width:97px;" />
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+            <tr>
+                <td>
+                    
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    
+                    
+                </td>
+            </tr>
+        </table>
+    </div>
+    <p>
+        &nbsp;</p>
+    <div id="dialog" style="display: none;">
+    </div>
+    
+
+<script type="text/javascript">
+//<![CDATA[
+(function() {var fn = function() {$get("ScriptManager1_HiddenField").value = '';Sys.Application.remove_init(fn);};Sys.Application.add_init(fn);})();Sys.Application.initialize();
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"button":$get("ImageButton3"),"format":"dd-MMM-yyyy","id":"txtFromDate_CalendarExtender"}, null, null, $get("txtFromDate"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.CalendarBehavior, {"button":$get("ImageButton2"),"format":"dd-MMM-yyyy","id":"txtToDate_CalendarExtender"}, null, null, $get("txtToDate"));
+});
+//]]>
+</script>
+</form>
+</body>
+</html>

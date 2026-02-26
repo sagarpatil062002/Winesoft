@@ -1,0 +1,483 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport" /><title>
+	Excise of Maharashtra
+</title><link rel="stylesheet" href="bootstrap/bootstrap/css/bootstrap.min.css" /><link href="bootstrap/assets/css/font-awesome.min.css" rel="stylesheet" /><link rel="stylesheet" href="bootstrap/assets/css/AdminLTE.min.css" /><link rel="stylesheet" href="bootstrap/assets/css/_all-skins.min.css" />
+
+    <script src="bootstrap/assets/js/jquery-1.12.3.min.js" type="text/javascript"></script>
+
+    <script src="bootstrap/bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+
+    <script src="bootstrap/assets/js/app.min.js" type="text/javascript"></script>
+
+    <script src="bootstrap/bootstrap/js/app.min.js"></script>
+
+    <link href="../StyleSheet.css" rel="stylesheet" type="text/css" /><link href="../MainStyle.css" rel="stylesheet" type="text/css" />
+    
+
+    <script src="../MyScript.js" type="text/javascript"></script>
+ <link href="../bootstrap/assets/css/font-awesome.min.css" rel="stylesheet" />
+    <script type="text/javascript">
+
+  function resizeIframe() {
+         alert('px');
+    //obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+    
+  }
+  
+  $(document).ready(function() {
+  
+     $(window).on('load', function() {
+                Sys.WebForms.PageRequestManager.getInstance().add_endRequest(endUpdatePanelRequest);
+            });
+    
+
+   setupResponsiveTables();
+
+});
+
+ function endUpdatePanelRequest() {
+            setupResponsiveTables();
+        }
+        
+        function setupResponsiveTables() {
+        var iFrame = $('#Frame0');
+
+    iFrame.bind('load', function() { //binds the event
+        //alert('iFrame Reloaded');
+        this.style.height = $( window ).height() + 'px';
+    });
+}
+    </script>
+
+</head>
+<body class="hold-transition sidebar-mini">
+    <form name="form1" method="post" action="ShopHome.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="form1">
+<div>
+<input type="hidden" name="ScriptManager2_HiddenField" id="ScriptManager2_HiddenField" value="" />
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUJNDE2MjYzMDE5D2QWAgIED2QWAgIFD2QWAmYPZBYCAgMPZBYSAgEPDxYCHgRUZXh0BRRMb2dpbiBCeTogMzA5MjgxNzEzM2RkAgMPDxYCHwAFGzxiPkxpYy4gTm86PC9iPiBGTC4gSUlJLTQxM2RkAgUPDxYCHwAFHDxiPk5hbWUgOjwvYj5IT1RFTCBOQU5EQU5WQU5kZAIHDw8WAh8ABRg8Yj5EaXN0cmljdCA6PC9iPiBTYW5nbGlkZAIJDw8WAh8ABQ88Yj5VbmRlciA6PC9iPiBkZAIND2QWAgIBDw8WAh8ABQooMDEtMDQtMjUpZGQCFQ9kFgYCAQ8PFgIfAAUkRkxSIDFBLzJBLzNBIDxiciAvPihCcmFuZHdpc2UgU3RvY2spZGQCAw8PFgIfAAUgRkxSIDRBIDxiciAvPihNb250aGx5IFN0YXRlbWVudClkZAIFDw8WAh8ABSVGTFIgMUEvMkEvM0EgPGJyIC8+KERhdGV3aXNlIERldGFpbHMpZGQCGw8PFgIfAAUbUGVyaW9kOiBBcHIgMjAyNSAtIE1hciAyMDI2ZGQCIQ9kFgICAQ9kFgICBQ8PFgIeD1ZhbGlkYXRpb25Hcm91cAUFdmFsaWRkZGRg6PtOsojwE329afAufBqQPhC1rQ==" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/Retailer/WebResource.axd?d=QL4vAAerLbZoa8p3ktFuxXV1QZSrJmjm4nKS_LFZNFZaBMvhbMpXsyG7OJHdjUwcMa-44zMjZHOLg4fwFQtAW2yaICs1&amp;t=637292263376503783" type="text/javascript"></script>
+
+
+<script src="/Retailer/ScriptResource.axd?d=ByOLTMYQmZCuh53ngX2rz2b6P-oKVefRzq80Gyl7zfWSB_z-bnuzASu2Tf-MSeuWVFIOKYXjjlfYxA3HbC94LAvO7gpo-5ITL4m9EB1WvjLZJy-ZVbC3OStnD7T5s_hlk08y0ziEliz2IkwIDvUv_QWQWsA1&amp;t=ffffffffa0813e55" type="text/javascript"></script>
+<script src="/Retailer/ScriptResource.axd?d=8DweClAXHU5WsBJx_BP2HZu5-SXDzYFUtTUfQRPR96L8URIyUOcHHr8oB4nbj7yUzbYVi5gqHvfgnvghBXZ3Cm3zF1Y5O--ZpTfjI_JGM9VxWI2yPL7B3_VA-N9qYEoYXR9fnw2&amp;t=2939b118" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+if (typeof(Sys) === 'undefined') throw new Error('ASP.NET Ajax client-side framework failed to load.');
+//]]>
+</script>
+
+<script src="/Retailer/ScriptResource.axd?d=o0aoSHXdAEV-fG8YQgsxo595ZBEIHhiX99FCCbbXyEhn95zKvyOwjZjhHsHA0uXefa_mK2LS1jOZxTZibnkriVBixztG_j4UzU3jumnIx6V3quvzZXvOKzBfCD9b-foKqBzKYQ2&amp;t=2939b118" type="text/javascript"></script>
+<script src="/Retailer/ShopHome.aspx?_TSM_HiddenField_=ScriptManager2_HiddenField&amp;_TSM_CombinedScripts_=%3b%3bAjaxControlToolkit%2c+Version%3d3.5.60501.0%2c+Culture%3dneutral%2c+PublicKeyToken%3d28f01b0e84b6d53e%3aen-US%3a61715ba4-0922-4e75-a2be-d80670612837%3a5546a2b%3a475a4ef5%3ad2e10b12%3aeffe2a26%3a37e2e5c9%3a1d3ed089%3a751cdd15%3adfad98a5%3a497ef277%3aa43b07eb%3a3cf12cf1" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="4EBAD322" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEWGwK7993RCgLbt5rACwK8hIWZCQLTpKbzDgLRgZPtCQKI7Z7TCwKTp92cBgKZ8+UhAqf9hbsMAtCbg7wMAqz/m5sEAtvD4tsFAr+h+awDAtXz2dkNAv+imYMFAtzbp8kGAr/Ete0IAr7Ete0IAr3Ete0IAvrL/GoC98v8agLssuXSAQLqp4bwCwKlzMHGCQK4vaKaBwLk17bYCAK3n8/8D5xCnISoJa+hOr8tJPTgVQzSnpqZ" />
+</div>
+    <div>
+    </div>
+    <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ScriptManager2', document.getElementById('form1'));
+Sys.WebForms.PageRequestManager.getInstance()._updateControls(['tUpdatePanel1'], [], [], 90);
+//]]>
+</script>
+
+    <div id="UpdateProgress1" style="display:none;">
+	
+            
+<style type="text/css">
+.loadingmodal
+{
+    position: fixed;
+    z-index: 999;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    background-color: gray;
+    filter: alpha(opacity=70);
+    opacity: 0.7;
+    -moz-opacity: 0.8;
+}
+
+.loadingImg
+{
+    z-index: 1000;
+    margin: 300px auto;
+    padding: 10px;
+    width: 250px;
+    height: 100px;
+    border: 5px solid #009FE8;
+    background-color: #D1F0FC;
+    border-radius: 10px;
+    filter: alpha(opacity=100);
+    opacity: 1;
+    -moz-opacity: 1; 
+    text-align:center;
+    font-size:13px;
+    
+}
+    
+.loadingImg img
+{
+	padding-top:5px;
+    height: 50px;
+    width: 50px;
+}
+</style>    
+<div class="loadingmodal">
+    <div class="loadingImg">
+        Processing...Please wait.<br />
+        <img src="Images/spinner.gif" id="WProcess1_imgProcess" />
+    </div>
+</div>
+
+
+        
+</div>
+    <div id="UpdatePanel1">
+	
+            
+<header class="main-header">
+            <a href="#" class="logo">
+            <span class="SubTitlename"> Maharashtra State Excise</span>
+            <span class="logo-lg">
+                <img alt="" src="bootstrap/assets/img/logo.png" /></span> <span class="logo-mini">
+                    <img alt="" src="bootstrap/assets/img/logo.png" /></span>
+                     </a>
+            <nav class="navbar navbar-static-top">
+                <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button"><span class="sr-only">
+                    </span> </a>
+                    <span class="Titlename">Retailer Management System</span>
+                    
+                <div class="navbar-custom-menu">
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown user user-menu"><a href="#">
+                            <img src="images/MaharashtraLogo.png" class="mol-logo" alt="" />
+                        </a></li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+            
+<script src="../MyScript.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+        function CallEvent()
+        {
+        alert($("divFirst").val());
+            $("#divFirst").val();
+        }
+</script>
+
+<aside class="main-sidebar">
+            <section class="sidebar">
+                <div class="user-panel">
+                    <div class="pull-left image">
+                    <i class="fa fa-user" style="font-size:40pt;"></i>
+                       
+                    </div>
+                    <p><span id="Navigation1_lblUName">Login By: 3092817133</span><br />
+                        <span id="Navigation1_lblLicenseNo"><b>Lic. No:</b> FL. III-413</span> <br />
+                       <strong> <span id="Navigation1_lblName"><b>Name :</b>HOTEL NANDANVAN</span> </strong></p>
+                    <div class="info" style="background-color:#BB9600;width:100%;">
+                        <p> <span id="Navigation1_lblDistrict"><b>District :</b> Sangli</span>  <br />
+                        <span id="Navigation1_lblInspector"><b>Under :</b> </span></p>
+                    </div>
+                </div>
+               <ul class="sidebar-menu" >
+                    <li id="Navigation1_ulMasters" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-list" aria-hidden="true"></i><span>Masters</span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li>
+                                <a id="Navigation1_lnkbtnLicProfile" href="javascript:__doPostBack('Navigation1$lnkbtnLicProfile','')">
+                                    <i class="fa fa-user"></i>Licensee Profile
+                                </a>
+                                <a id="Navigation1_lnkbtnBrandDetails" href="javascript:__doPostBack('Navigation1$lnkbtnBrandDetails','')">
+                                    <i class="fa fa-user"></i>Brand Details
+                                </a>
+                                <a id="Navigation1_lnkbtnAddNewBrands" href="javascript:__doPostBack('Navigation1$lnkbtnAddNewBrands','')">
+                                    <i class="fa fa-user"></i>Add New Brand Details
+                                </a>
+                                <a id="Navigation1_lnkbtnRemoveBrand" href="javascript:__doPostBack('Navigation1$lnkbtnRemoveBrand','')">
+                                    <i class="fa fa-user"></i>Remove Brands
+                                </a>
+                                 <a id="Navigation1_lnkbtnDashboard" href="javascript:__doPostBack('Navigation1$lnkbtnDashboard','')">
+                                    <i class="fa fa-tachometer"></i>Dashboard
+                                </a>
+                                 <a id="Navigation1_lnkbtnChangePWD" href="javascript:__doPostBack('Navigation1$lnkbtnChangePWD','')">
+                                    <i class="fa fa-unlock-alt"></i>Change Password
+                                </a>
+                                
+                            </li>
+                        </ul>
+                    </li>
+                    <li id="Navigation1_ulOpening" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-hourglass-half" aria-hidden="true"></i><span>Opening Bal.
+                            <span id="Navigation1_lblOpening" style="font-size:9pt;">(01-04-25)</span>
+                            </span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li>
+                                <a id="Navigation1_lnkbtnOPWS" href="javascript:__doPostBack('Navigation1$lnkbtnOPWS','')">
+                                    <i class="fa fa-snowflake-o"></i>Opening Stock Details
+                                </a>
+                                <a id="Navigation1_lnkbtnOPMultiple" href="javascript:__doPostBack('Navigation1$lnkbtnOPMultiple','')">
+                                    <i class="fa fa-snowflake-o"></i>Multiple Opening Stock Details
+                                </a>
+                                <a id="Navigation1_lnkbtnUpdateOPStock" href="javascript:__doPostBack('Navigation1$lnkbtnUpdateOPStock','')">
+                                    <i class="fa fa-snowflake-o"></i>Update Opening Stock Details
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li id="Navigation1_ulReceived" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-reply" aria-hidden="true"></i><span>Received Entry</span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li>
+                                <a id="Navigation1_lnkbtnRecWS" href="javascript:__doPostBack('Navigation1$lnkbtnRecWS','')">
+                                    <i class="fa fa-truck"></i>Received From Trader
+                                </a>
+                                <a id="Navigation1_lnkbtnRecOT" href="javascript:__doPostBack('Navigation1$lnkbtnRecOT','')">
+                                    <i class="fa fa-truck"></i>Received From Manufactory
+                                </a>
+                                <a id="Navigation1_lnkbtnRecManual" href="javascript:__doPostBack('Navigation1$lnkbtnRecManual','')">
+                                    <i class="fa fa-truck"></i>Manual Received Entry
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li id="Navigation1_ulTransaction" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-exchange" aria-hidden="true"></i><span>Transaction Entry</span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li>
+                                <a id="Navigation1_lnkbtnDispEntry" href="javascript:__doPostBack('Navigation1$lnkbtnDispEntry','')">
+                                    <i class="fa fa-sliders"></i>Sales Entry Daily
+                                </a>
+                                
+                                <a id="Navigation1_lnkbtnDispMultipleEntry" href="javascript:__doPostBack('Navigation1$lnkbtnDispMultipleEntry','')">
+                                    <i class="fa fa-sliders"></i>Multiple Sales Entry
+                                </a>
+                               <a id="Navigation1_lnkbtnUpdateDeleteSale" href="javascript:__doPostBack('Navigation1$lnkbtnUpdateDeleteSale','')">
+                                    <i class="fa fa-sliders"></i>Update/Delete Sales Details
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li id="Navigation1_ulExcRegister" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-book" aria-hidden="true"></i><span>Excise Register</span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                        <ul class="treeview-menu">
+                            <li>
+                                <a id="Navigation1_lnkbtnExcReg1" href="javascript:__doPostBack('Navigation1$lnkbtnExcReg1','')">FLR 1A/2A/3A <br />(Brandwise Stock)</a>
+                                <a id="Navigation1_lnkbtnExcReg2" href="javascript:__doPostBack('Navigation1$lnkbtnExcReg2','')">FLR 4A <br />(Monthly Statement)</a>
+                                <a id="Navigation1_lnkbtnExcReg3" href="javascript:__doPostBack('Navigation1$lnkbtnExcReg3','')">FLR 1A/2A/3A <br />(Datewise Details)</a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li id="Navigation1_ulReports" class="treeview">
+                        <a href="#">
+                            <i class="fa fa-line-chart" aria-hidden="true"></i><span>Reports</span>
+                            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+                        </a>
+                       <ul class="treeview-menu">
+                            <li>
+                                 <a id="Navigation1_lnkbtnReport1" href="javascript:__doPostBack('Navigation1$lnkbtnReport1','')">
+                                    <i class="fa fa-th-large"></i>Brandwise Stock Details
+                                </a>
+                                <a id="Navigation1_lnkbtnReport2" href="javascript:__doPostBack('Navigation1$lnkbtnReport2','')">
+                                    <i class="fa fa-th-large"></i>Brand Summary Details
+                                </a>
+                                
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="treeview">
+                            <a id="Navigation1_lnkbtnLogOut" href="javascript:__doPostBack('Navigation1$lnkbtnLogOut','')">
+                                    <i class="fa fa-power-off" aria-hidden="true"></i>Log Out
+                                </a>
+                        
+                    </li>
+                </ul>
+                <span id="Navigation1_lblPeriod" class="LblCaption" style="color:White;">Period: Apr 2025 - Mar 2026</span>
+            </section>
+        </aside>
+
+<input type="submit" name="Navigation1$btnTempUpdate" value="Button" id="Navigation1_btnTempUpdate" style="display: none" />
+    
+    <div id="Navigation1_pnlTPNos" class="modalPopup" style="display: none;">
+		
+        <table width="100%">
+            <tr>
+                <td align="center">
+                    
+<link href="../MainStyle.css" rel="stylesheet" type="text/css" />
+<table style="text-align: left" >
+    <tbody>
+        <tr>
+            <td colspan="5">
+                &nbsp;
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: left; width: 90px;">
+                <span id="Navigation1_WTPNo1_Label130" class="LblCaption" style="font-size:18pt;">TP No :</span>
+            </td>
+            <td>
+                <input name="Navigation1$WTPNo1$txtTPNo" type="text" maxlength="500" id="Navigation1_WTPNo1_txtTPNo" class="TxtBox" autocomplete="off" placeholder="Enter TP No" style="font-size:20pt;" />
+            </td>
+            <td>
+                &nbsp;
+            </td>
+            <td>
+                &nbsp;
+            </td>
+            <td>
+                &nbsp;
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: left; width: 90px;">
+                &nbsp;
+            </td>
+            <td>
+                <span id="Navigation1_WTPNo1_TPNo_RequiredFieldValidator" style="color:Red;visibility:hidden;">This field is required</span>
+            </td>
+            <td>
+                &nbsp;
+            </td>
+            <td>
+                &nbsp;
+            </td>
+            <td>
+                &nbsp;
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+                </td>
+            </tr>
+            <tr>
+                <td align="right" style="border-top: 1px solid silver; padding-top: 10px;">
+                    <input type="submit" name="Navigation1$btnCheckTPNo" value="Open TP Details" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;Navigation1$btnCheckTPNo&quot;, &quot;&quot;, true, &quot;valid&quot;, &quot;&quot;, false, false))" id="Navigation1_btnCheckTPNo" class="imgbtn" style="width:130px;" />&nbsp;&nbsp;&nbsp;
+                    <input type="submit" name="Navigation1$btnCancel" value="Cancel" id="Navigation1_btnCancel" class="imgbtn" />
+                    <input type="hidden" name="Navigation1$hfGridRowIndex" id="Navigation1_hfGridRowIndex" />
+                </td>
+            </tr>
+        </table>
+    
+	</div>
+            <div class="content-wrapper">
+                <iframe id="Frame0" class="framecss" name="Frame0" src="ShopInfo.aspx" frameborder="0" scrolling="auto" seamless="seamless" style="display: block; width: 100%;">
+                </iframe>
+                <div id="dialog" style="display: none;">
+                </div>
+            </div>
+            
+ <footer class="main-footer">
+    <div class="copyright  pull-right"> &copy; 2020 <a href="#" target="_blank">Siddhi Global Tech Solutions</a></div>
+    <div class="clearfix"></div>
+  </footer>
+        
+</div>
+    
+<script type="text/javascript">
+//<![CDATA[
+var Page_Validators =  new Array(document.getElementById("Navigation1_WTPNo1_TPNo_RequiredFieldValidator"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var Navigation1_WTPNo1_TPNo_RequiredFieldValidator = document.all ? document.all["Navigation1_WTPNo1_TPNo_RequiredFieldValidator"] : document.getElementById("Navigation1_WTPNo1_TPNo_RequiredFieldValidator");
+Navigation1_WTPNo1_TPNo_RequiredFieldValidator.controltovalidate = "Navigation1_WTPNo1_txtTPNo";
+Navigation1_WTPNo1_TPNo_RequiredFieldValidator.errormessage = "This field is required";
+Navigation1_WTPNo1_TPNo_RequiredFieldValidator.validationGroup = "valid";
+Navigation1_WTPNo1_TPNo_RequiredFieldValidator.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+Navigation1_WTPNo1_TPNo_RequiredFieldValidator.initialvalue = "";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+(function() {var fn = function() {$get("ScriptManager2_HiddenField").value = '';Sys.Application.remove_init(fn);};Sys.Application.add_init(fn);})();
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        Sys.Application.initialize();
+Sys.Application.add_init(function() {
+    $create(Sys.UI._UpdateProgress, {"associatedUpdatePanelId":"UpdatePanel1","displayAfter":500,"dynamicLayout":true}, null, null, $get("UpdateProgress1"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ModalPopupBehavior, {"BackgroundCssClass":"modalBackground","CancelControlID":"Navigation1_btnCancel","PopupControlID":"Navigation1_pnlTPNos","dynamicServicePath":"/Retailer/ShopHome.aspx","id":"Navigation1_mpeTPNos"}, null, null, $get("Navigation1_btnTempUpdate"));
+});
+
+document.getElementById('Navigation1_WTPNo1_TPNo_RequiredFieldValidator').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('Navigation1_WTPNo1_TPNo_RequiredFieldValidator'));
+}
+//]]>
+</script>
+</form>
+</body>
+</html>

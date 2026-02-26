@@ -1,0 +1,442 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport" /><title>
+	Excise of Maharashtra
+</title><link href="MainStyle.css" rel="stylesheet" type="text/css" />
+
+    <script src="FormsJQuery/JQuerySCM.js" type="text/javascript"></script>
+    
+    <link href="FormsJQuery/jquery-ui-1.12.css" rel="stylesheet" type="text/css" />
+
+    <script src="FormsJQuery/JQuerSCM12.js" type="text/javascript"></script>
+
+    <link href="bootstrap/bootstrap/css/bootstrap.min.css" rel="stylesheet" /><link href="bootstrap/assets/css/font-awesome.min.css" rel="stylesheet" /><link href="bootstrap/assets/css/login.css?id=123" rel="stylesheet" />
+
+    <script src="FormsJQuery/scmaes.js" type="text/javascript"></script>
+
+    <style type="text/css">
+        p, ul
+        {
+            margin: 5px 5px 5px 5px;
+            color: Gray;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            text-align: justify;
+        }
+        .style1
+        {
+            height: 17px;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+$(document).ready(function() {
+
+   
+
+});
+function LoginAuth(seed,seed1)
+    {
+    if (Page_ClientValidate('')) {
+        var txtUserName = $("#txtUserName").val();
+            var txtpassword = getCharCodes($("#txtPwd").val(),seed1)+seed;
+
+            if (txtUserName != "" && txtpassword != "") {
+
+                
+                AESEncrypt(txtpassword);
+                return false;
+            }
+            
+            }
+    }
+       function AESEncrypt(txtpassword){//alert(txtpassword);
+      // var txtpassword=$("#txtPwd").val();
+         $.ajax({
+                type: "POST",
+                url: "WebService/ServerAccess.asmx/CryptoCode",
+                data: "{strVal:'" + txtpassword + "'}",
+               contentType: "application/json; charset=utf-8",
+               dataType: "json",
+                success: function (response) {
+                    //$("#txtPwd").val(response.d);
+                    $("#txtPwd").val(response.d);
+                    __doPostBack( 'BtnLogin','' );
+                },
+                failure: function (response) {
+                  //alert(response.d+'1');
+                },
+                error: function (response) {
+                   // alert(response.d+'2');
+                }
+            });
+           // $("#txtCaptcha").val('123');
+            //alert('sd');
+    }
+     function getCharCodes(s,s1){
+    var charCodeArr ='';
+    
+        for(var i = 0; i < s.length; i++)
+        {
+            var code = s.charCodeAt(i);
+            charCodeArr=charCodeArr+((code+1)*(parseInt(s1)+i))+'$$';
+        }
+    
+        return charCodeArr;
+    }
+    </script>
+
+<link href="/Retailer/WebResource.axd?d=a31ZOeptOCjarImrqt6eWghxNhcfnJpmfwIXukNEVZjjnVpyQgw9fJN5LyoqtMsafdR-HuTk22RP9PAma8gZNYQT_s0xrAkQLwPpcOpPFt8pBuNYjzkmOjBnnnFGJpaahSFQvobJEotwhljEGTfiOp7TwJI1&amp;t=637704965120000000" type="text/css" rel="stylesheet" /></head>
+<body>
+    <form name="form1" method="post" action="Login.aspx" onsubmit="javascript:return WebForm_OnSubmit();" onkeypress="javascript:return WebForm_FireDefaultButton(event, 'BtnLogin')" id="form1">
+<div>
+<input type="hidden" name="__LASTFOCUS" id="__LASTFOCUS" value="" />
+<input type="hidden" name="ScriptManager1_HiddenField" id="ScriptManager1_HiddenField" value="" />
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="qRPAgTrkmGKI9em1mVI8/CbQVJRNqTCPGiKouAZGn4+pCXZuTTEhtYGoP+lhvi7wZ2qoreozSF2/mIs2t3BJJ6eXvVI5WF0hyOpE7w8/DtClvWxp/HNxtg+MqKYluimtt+dZCUQW97NMLNa/7sx0FIRUTNBtSH76BNAyduU5a97dkq0OLacYgckD9tRWz3amczN7WcQ4ybXXfd6bEx7uyylrcRrE2SwZUXQjCyvi6/8mqV48T1vcj8hhXJiYI+3M3IzUTNIpgax+vDTiTg4PI850CNRHZpsyL0L/LvY+AsuRkNf4zBJl2RzjHGglvhHyDG2JlB2rJTo9F+0Zwi6QYC83Ubyu6hgNDhQp5V+vrJBtX+jTXCMzoYSTXiQE+E35Ft0Jcu1awaZR8+t/jaec2nTas8jwJN+CLwAZLMOQrVN1J9lcvyoLh53NtefQDK9MZBJXA3E00iYyAUAgCyTSKmyvv1Aj5ASthlnNj6Iw9/wb24o+xu9MGwHZvE0v0NpohcMQ2POKoxZYmfYJTZjjKyxvmII+Pn4RW8PW0stPwi5KBuz7T9cZPSM355TtNE+uXocKJ55wn7L8+/erDVfuI7SUJd2XVUcutleLE7eStRgRf4q7fjBsXlfv3frMBDSxEhr1WxeFmRVUwXamsJcMVd9qklGUb60g8Ci1l6RWqGNbkhU+s71/Dwv/wgknNh8NRSGlMMvpb5R0sZ1WNcmvg6yURUbLEK91ESL0rEXKuvdGVo1hAd7ffsUSConsrvl0uOF5czUGK50DgtUAPljQ56Am3Rwadmc/bJDL7WGzAWBFxPPlAXbq389XLNCIUHi/QvCD3d6N5Rll/7vSaHOb5ZImGDc=" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/Retailer/WebResource.axd?d=QL4vAAerLbZoa8p3ktFuxXV1QZSrJmjm4nKS_LFZNFZaBMvhbMpXsyG7OJHdjUwcMa-44zMjZHOLg4fwFQtAW2yaICs1&amp;t=637292263376503783" type="text/javascript"></script>
+
+
+<script src="/Retailer/ScriptResource.axd?d=ByOLTMYQmZCuh53ngX2rz2b6P-oKVefRzq80Gyl7zfWSB_z-bnuzASu2Tf-MSeuWVFIOKYXjjlfYxA3HbC94LAvO7gpo-5ITL4m9EB1WvjLZJy-ZVbC3OStnD7T5s_hlk08y0ziEliz2IkwIDvUv_QWQWsA1&amp;t=ffffffffa0813e55" type="text/javascript"></script>
+<script src="/Retailer/ScriptResource.axd?d=8DweClAXHU5WsBJx_BP2HZu5-SXDzYFUtTUfQRPR96L8URIyUOcHHr8oB4nbj7yUzbYVi5gqHvfgnvghBXZ3Cm3zF1Y5O--ZpTfjI_JGM9VxWI2yPL7B3_VA-N9qYEoYXR9fnw2&amp;t=2939b118" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+if (typeof(Sys) === 'undefined') throw new Error('ASP.NET Ajax client-side framework failed to load.');
+//]]>
+</script>
+
+<script src="/Retailer/ScriptResource.axd?d=o0aoSHXdAEV-fG8YQgsxo595ZBEIHhiX99FCCbbXyEhn95zKvyOwjZjhHsHA0uXefa_mK2LS1jOZxTZibnkriVBixztG_j4UzU3jumnIx6V3quvzZXvOKzBfCD9b-foKqBzKYQ2&amp;t=2939b118" type="text/javascript"></script>
+<script src="/Retailer/Login.aspx?_TSM_HiddenField_=ScriptManager1_HiddenField&amp;_TSM_CombinedScripts_=%3b%3bAjaxControlToolkit%2c+Version%3d3.5.60501.0%2c+Culture%3dneutral%2c+PublicKeyToken%3d28f01b0e84b6d53e%3aen-US%3a61715ba4-0922-4e75-a2be-d80670612837%3a475a4ef5%3aeffe2a26%3a3ac3e789%3a5546a2b%3ad2e10b12%3a37e2e5c9%3a5a682656%3abfe70f69" type="text/javascript"></script>
+<script src="/Retailer/WebResource.axd?d=IoGy2iglBBTc9NapeO786hd0jL15wOKZoK1HEN_dZgzKU5JGYGtAD2SdIUpXmGZ4wYfnrhQbyVMYXJipqbc9PkBeAio1&amp;t=637292263376503783" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="291D6EC0" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="RTG+UKYbhakkVrMcR4fgvCKcpYfgTeCrkDfZ3wdHWr/B9Ugdto4hHsSOT6KKtUGOAErefoLDRBOcr7Nto5v+vdoL/HHw76V/SJQ1KEGFASeCNvipjFXY8Fd9Bn9Mm/dmsEyGXh34sF9WB8Kknwq0ds3Qj05lk4LRAQ+SnFXsiGcl5QqlL77vSLSyWaIn0g+ZkVcZwrKfMdVl4vNHgix8oH2YfNv2iT6jjB05ga12KgDv4Tta" />
+</div>
+    <div>
+        <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ScriptManager1', document.getElementById('form1'));
+Sys.WebForms.PageRequestManager.getInstance()._updateControls([], [], [], 90);
+//]]>
+</script>
+
+    </div>
+    <input type="hidden" name="hfID" id="hfID" value="47d025e5-afd6-410c-b1ff-7a9d55ce8d9c" />
+    <input type="hidden" name="hfVal" id="hfVal" value="2" />
+    <div class="carousel slide carousel-fade" data-ride="carousel">
+        <div id="dot-matrix">
+        </div>
+        <div class="carousel-inner" role="listbox">
+            <div class="item active">
+            </div>
+            <div class="item">
+            </div>
+            <div class="item">
+            </div>
+        </div>
+    </div>
+    <header>
+        <div class="container">
+            <img src="bootstrap/assets/img/logo.png" alt="" class="logo" />
+            <span class="header-title">Retailer Management System <small>Maharashtra State Excise</small>
+            </span>
+            
+            <div class="clearfix">
+            </div>
+        </div>
+    </header>
+    <table border="0" width="100%" cellspacing="0" cellpadding="0">
+        <tr style="display: none;">
+            <td style="text-align: left; height: 100px; vertical-align: middle; background-image: url('Images/BGMain.jpg');
+                background-repeat: repeat-x;">
+                <div class="divMainHeader">
+                    <table width="100%">
+                        <tr>
+                            <td>
+                                <img id="Image3" src="Images/Logo.gif" style="width:50px;border-width:0px;" />
+                            </td>
+                            <td>
+                                <span id="Label5" style="color:White;font-family:Arial,Helvetica,sans-serif;font-size:25pt;font-weight:bold;font-style:normal;">Retailer Management System</span><br />
+                                <span id="Label4" style="color:White;font-family:Arial,Helvetica,sans-serif;font-size:12pt;font-weight:bold;font-style:normal;">Maharashtra State Excise</span>
+                            </td>
+                            <td align="right">
+                                <img id="Image4" src="Images/MaharashtraLogo.png" style="width:70px;border-width:0px;" />
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 5px; background-color: #91DBFF;">
+            </td>
+        </tr>
+    </table>
+    <section>
+            
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <div class="login">
+                         <table   width="100%">
+                            <tr>
+                            <td align="left">
+                            
+                                <table height="260px" >
+                                    <tr>
+                                        <td colspan="2" >
+                                            <h3>User Login</h3>
+                                        </td>
+                                    </tr>
+                                   
+                                    <tr>
+                                        <td width="80">
+                                            <span id="Label1" style="color:Black;font-family:Verdana;font-size:8pt;">User Name</span>
+                                        </td>
+                                        <td width="232px">
+                                            <input name="txtUserName" type="text" id="txtUserName" class="TxtBox" autocomplete="off" style="width:100%;" />
+                                             
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span id="Label2" style="color:Black;font-family:Verdana;font-size:8pt;">Password</span>
+                                        </td>
+                                        <td>
+                                            <input name="txtPwd" type="password" id="txtPwd" class="TxtBox" oncut="return false" oncopy="return false" autocomplete="off" placeholder="Password" style="width:100%;" />
+                                            
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <span id="Label3" style="color:Black;font-family:Verdana;font-size:8pt;">Period</span>
+                                        </td>
+                                        <td>
+                                            <select name="DDPeriod" id="DDPeriod" class="ddl" style="width:100%;">
+	<option value="1">Apr 2019 - Mar 2020</option>
+	<option value="2">Apr 2020 - Mar 2021</option>
+	<option value="3">Apr 2021 - Mar 2022</option>
+	<option value="4">Apr 2022 - Mar 2023</option>
+	<option value="5">Apr 2023 - Mar 2024</option>
+	<option value="6">Apr 2024 - Mar 2025</option>
+	<option selected="selected" value="7">Apr 2025 - Mar 2026</option>
+
+</select>
+                                            
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                        <img src="UC/OMCaptchaImage.aspx" id="Captcha1_imgCtrl" />
+ 
+                                        <input name="txtCaptcha" type="text" maxlength="6" id="txtCaptcha" class="TxtBox" oncut="return false" oncopy="return false" onpaste="return false" autocomplete="off" placeholder="Type here" style="width:100px;text-transform:uppercase" />      
+                                            <input type="image" name="ImageButton1" id="ImageButton1" src="Images/Refresh.jpg" style="border-width:0px;" />
+                                             
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            
+                                        </td>
+                                        <td>
+                                            <span id="CustomValidator4" style="color:Red;font-family:Verdana;font-size:x-small;display:none;">Login Failed</span>
+                                            
+                                                <span id="RequiredFieldValidator3" style="color:Red;font-family:Verdana;font-size:9pt;display:none;"></span>
+                                            <span id="RequiredFieldValidator2" style="color:Red;font-family:Verdana;font-size:9pt;display:none;"></span>   
+                                             <span id="RequiredFieldValidator1" style="color:Red;font-family:Verdana;font-size:9pt;display:none;"></span>       
+                                        </td>
+                                    </tr>
+                                    
+                                    <tr>
+                                        <td colspan="2">
+                                    <table width="100%"><tr>
+                                    <td>
+                                        <i class="fa fa-key imgbtnicoGreen" visible="false">
+                                            <input type="submit" name="btnForgotPassword" value="Forgot Password" id="btnForgotPassword" class="imgbtnGreen" style="height:34px;width:95px;text-align: center;" />
+                                         </i>     
+                                    </td>
+                                        <td  style="text-align: right">
+                                        <i class="fa fa-sign-in imgbtnico">
+                                            <input type="submit" name="BtnLogin" value="Login" onclick="javascript:return LoginAuth('47d025e5-afd6-410c-b1ff-7a9d55ce8d9c','2');WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;BtnLogin&quot;, &quot;&quot;, true, &quot;&quot;, &quot;&quot;, false, false))" id="BtnLogin" class="imgbtn" style="height:34px;text-align: center;" />
+                                         </i>       
+                                           
+                                                
+                                        </td>
+                                        </tr></table>
+                                        </td>
+                                    </tr>
+                                    <tr><td colspan="2" >
+                                    <a id="HyperLink1" class="lnkbtn" href="UserManual.aspx" target="_blank">User Manual PDF</a>
+                                        <!--RetailerUserManual.pdf -->
+                                    </td></tr>
+                                    
+                                </table>
+                            </td>
+                            
+                        </tr>
+                    </table>
+                    </div>
+                </div>
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <div class="welcome">
+                        <h1>Welcome To Supply Chain Management System</h1>
+                        <p>The  Maharashtra  State  Excise  Department  (‘MSED’)  functions  with  the  primary  statutory 
+objective of collecting Excise Duty on alcoholic products and to regulate the trade of these products. </p>
+                    </div>
+                </div>
+                <div class="clearfix=">
+                </div>
+            </div>
+            <div class="clearfix=">
+            </div>
+        </div>
+    </section>
+    <footer>
+        <div class="container">
+            <ul class="footer-link">
+               
+            </ul>
+             <div class="copyright pull-right">
+                &copy; 2020 <a href="#" target="_blank">Siddhi Global Tech Solutions.</a>.</div>
+        </div>
+    </footer>
+    <input type="hidden" name="hfwidth" id="hfwidth" />
+    <input type="hidden" name="hfheight" id="hfheight" />
+    <input type="hidden" name="RequiredFieldValidator3_Validator_ClientState" id="RequiredFieldValidator3_Validator_ClientState" /><input type="hidden" name="RequiredFieldValidator2_Validator_ClientState" id="RequiredFieldValidator2_Validator_ClientState" /><input type="hidden" name="RequiredFieldValidator1_Validator_ClientState" id="RequiredFieldValidator1_Validator_ClientState" />
+<script type="text/javascript">
+//<![CDATA[
+var Page_Validators =  new Array(document.getElementById("CustomValidator4"), document.getElementById("RequiredFieldValidator3"), document.getElementById("RequiredFieldValidator2"), document.getElementById("RequiredFieldValidator1"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var CustomValidator4 = document.all ? document.all["CustomValidator4"] : document.getElementById("CustomValidator4");
+CustomValidator4.controltovalidate = "txtPwd";
+CustomValidator4.errormessage = "Login Failed";
+CustomValidator4.display = "Dynamic";
+CustomValidator4.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var RequiredFieldValidator3 = document.all ? document.all["RequiredFieldValidator3"] : document.getElementById("RequiredFieldValidator3");
+RequiredFieldValidator3.controltovalidate = "txtUserName";
+RequiredFieldValidator3.focusOnError = "t";
+RequiredFieldValidator3.errormessage = "<b>Enter User Name";
+RequiredFieldValidator3.display = "None";
+RequiredFieldValidator3.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+RequiredFieldValidator3.initialvalue = "";
+var RequiredFieldValidator2 = document.all ? document.all["RequiredFieldValidator2"] : document.getElementById("RequiredFieldValidator2");
+RequiredFieldValidator2.controltovalidate = "txtPwd";
+RequiredFieldValidator2.focusOnError = "t";
+RequiredFieldValidator2.errormessage = "<b>Enter Password";
+RequiredFieldValidator2.display = "None";
+RequiredFieldValidator2.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+RequiredFieldValidator2.initialvalue = "";
+var RequiredFieldValidator1 = document.all ? document.all["RequiredFieldValidator1"] : document.getElementById("RequiredFieldValidator1");
+RequiredFieldValidator1.controltovalidate = "txtCaptcha";
+RequiredFieldValidator1.focusOnError = "t";
+RequiredFieldValidator1.errormessage = "<b>Enter Captcha";
+RequiredFieldValidator1.display = "None";
+RequiredFieldValidator1.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+RequiredFieldValidator1.initialvalue = "";
+//]]>
+</script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+(function() {var fn = function() {$get("ScriptManager1_HiddenField").value = '';Sys.Application.remove_init(fn);};Sys.Application.add_init(fn);})();
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        WebForm_AutoFocus('txtUserName');Sys.Application.initialize();
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.FilteredTextBoxBehavior, {"FilterType":14,"id":"txtUserName_FilteredTextBoxExtender0"}, null, null, $get("txtUserName"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.FilteredTextBoxBehavior, {"FilterMode":2,"FilterType":3,"InvalidChars":"\u0027\\,=\u003c\u003e[];/ ","id":"txtPwd_FilteredTextBoxExtender"}, null, null, $get("txtPwd"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.FilteredTextBoxBehavior, {"FilterType":2,"id":"txtCaptcha_FilteredTextBoxExtender"}, null, null, $get("txtCaptcha"));
+});
+
+document.getElementById('CustomValidator4').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('CustomValidator4'));
+}
+
+document.getElementById('RequiredFieldValidator3').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('RequiredFieldValidator3'));
+}
+
+document.getElementById('RequiredFieldValidator2').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('RequiredFieldValidator2'));
+}
+
+document.getElementById('RequiredFieldValidator1').dispose = function() {
+    Array.remove(Page_Validators, document.getElementById('RequiredFieldValidator1'));
+}
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ValidatorCalloutBehavior, {"ClientStateFieldID":"RequiredFieldValidator3_Validator_ClientState","closeImageUrl":"/Retailer/WebResource.axd?d=U6QKSfXoqmnCqYf2OiWaAsIovvZnU3RnrTnPuAMKBwh71OpIwIoTLT1BQSjura9eMtvNz4fetlIIyqkuarTnBOPGoYKBGAP7gGHRji2Ao_N0NlJBbN6UOufuBIMbAraH1ELSuA2&t=637704965120000000","cssClass":"MyCalloutStyle","highlightCssClass":"ErrorBg","id":"RequiredFieldValidator3_Validator","warningIconImageUrl":"/Retailer/WebResource.axd?d=MCRjouCVp-Utfo9f6EK7d19eVlmcfD-rwLjOOQmiN211TaE9oEA9pcMD7iBG_Ktcvjia6ba42OHO9wdJUEAM26N_woRpyHQ9Dxr1E4P__UBnTwgmQc4dO-me7hCc3hV8f_fo9g2&t=637704965120000000"}, null, null, $get("RequiredFieldValidator3"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ValidatorCalloutBehavior, {"ClientStateFieldID":"RequiredFieldValidator2_Validator_ClientState","closeImageUrl":"/Retailer/WebResource.axd?d=U6QKSfXoqmnCqYf2OiWaAsIovvZnU3RnrTnPuAMKBwh71OpIwIoTLT1BQSjura9eMtvNz4fetlIIyqkuarTnBOPGoYKBGAP7gGHRji2Ao_N0NlJBbN6UOufuBIMbAraH1ELSuA2&t=637704965120000000","cssClass":"MyCalloutStyle","highlightCssClass":"ErrorBg","id":"RequiredFieldValidator2_Validator","warningIconImageUrl":"/Retailer/WebResource.axd?d=MCRjouCVp-Utfo9f6EK7d19eVlmcfD-rwLjOOQmiN211TaE9oEA9pcMD7iBG_Ktcvjia6ba42OHO9wdJUEAM26N_woRpyHQ9Dxr1E4P__UBnTwgmQc4dO-me7hCc3hV8f_fo9g2&t=637704965120000000"}, null, null, $get("RequiredFieldValidator2"));
+});
+Sys.Application.add_init(function() {
+    $create(Sys.Extended.UI.ValidatorCalloutBehavior, {"ClientStateFieldID":"RequiredFieldValidator1_Validator_ClientState","closeImageUrl":"/Retailer/WebResource.axd?d=U6QKSfXoqmnCqYf2OiWaAsIovvZnU3RnrTnPuAMKBwh71OpIwIoTLT1BQSjura9eMtvNz4fetlIIyqkuarTnBOPGoYKBGAP7gGHRji2Ao_N0NlJBbN6UOufuBIMbAraH1ELSuA2&t=637704965120000000","cssClass":"MyCalloutStyle","highlightCssClass":"ErrorBg","id":"RequiredFieldValidator1_Validator","warningIconImageUrl":"/Retailer/WebResource.axd?d=MCRjouCVp-Utfo9f6EK7d19eVlmcfD-rwLjOOQmiN211TaE9oEA9pcMD7iBG_Ktcvjia6ba42OHO9wdJUEAM26N_woRpyHQ9Dxr1E4P__UBnTwgmQc4dO-me7hCc3hV8f_fo9g2&t=637704965120000000"}, null, null, $get("RequiredFieldValidator1"));
+});
+//]]>
+</script>
+</form>
+
+   
+
+    <script type="text/javascript">
+        $('.carousel').carousel();
+    </script>
+
+</body>
+</html>

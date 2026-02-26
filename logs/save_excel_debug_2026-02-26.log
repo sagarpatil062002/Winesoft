@@ -1,0 +1,92 @@
+[2026-02-26 07:27:14] === SAVE EXCEL FOR UPLOAD STARTED ===
+------------------------
+[2026-02-26 07:27:14] POST data
+Array
+(
+    [view_type] => all
+)
+
+------------------------
+[2026-02-26 07:27:14] Company ID
+1
+------------------------
+[2026-02-26 07:27:14] Parameters
+Array
+(
+    [view_type] => all
+    [start_date] => 2026-02-01
+    [end_date] => 2026-02-28
+    [Closing_Stock] => 2026-02-26
+)
+
+------------------------
+[2026-02-26 07:27:14] Adjusted for all view
+Array
+(
+    [start_date] => 2000-01-01
+    [end_date] => 2099-12-31
+)
+
+------------------------
+[2026-02-26 07:27:14] SQL Query
+SELECT
+            DATE_FORMAT(sh.BILL_DATE, '%m/%d/%Y') as 'Sale Date',
+            sd.ITEM_CODE as 'Local Item Code',
+            COALESCE(im.DETAILS, 'Unknown Brand') as 'Brand Name',
+            COALESCE(im.DETAILS2, 'N/A') as 'Size',
+            '' as 'Quantity(Case)',
+            SUM(sd.QTY) as 'Quantity(Loose Bottle)'
+          FROM tblsaleheader sh
+          INNER JOIN tblsaledetails sd ON sh.BILL_NO = sd.BILL_NO AND sh.COMP_ID = sd.COMP_ID
+          LEFT JOIN tblitemmaster im ON sd.ITEM_CODE = im.CODE
+          WHERE sh.COMP_ID = ?
+          AND sh.BILL_DATE BETWEEN ? AND ?
+          GROUP BY DATE(sh.BILL_DATE), sd.ITEM_CODE, im.DETAILS, im.DETAILS2
+          ORDER BY sh.BILL_DATE, sd.ITEM_CODE
+------------------------
+[2026-02-26 07:27:14] Sales data fetched
+Array
+(
+    [count] => 3
+)
+
+------------------------
+[2026-02-26 07:27:14] Creating spreadsheet
+------------------------
+[2026-02-26 07:27:14] Data rows added
+Array
+(
+    [rows] => 3
+    [total_qty] => 11
+)
+
+------------------------
+[2026-02-26 07:27:14] File path
+Array
+(
+    [filename] => sales_export_2026-02-26_07-27-14.xlsx
+    [fullpath] => ../temp_exports/sales_export_2026-02-26_07-27-14.xlsx
+)
+
+------------------------
+[2026-02-26 07:27:14] File saved successfully
+------------------------
+[2026-02-26 07:27:14] File created successfully
+Array
+(
+    [size] => 6807
+    [modified] => 2026-02-26 07:27:14
+)
+
+------------------------
+[2026-02-26 07:27:14] Sending response
+Array
+(
+    [success] => 1
+    [filename] => sales_export_2026-02-26_07-27-14.xlsx
+    [filepath] => ../temp_exports/sales_export_2026-02-26_07-27-14.xlsx
+    [records] => 3
+    [filesize] => 6807
+)
+
+------------------------

@@ -16,7 +16,7 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Check for success message in URL (ADD THIS SECTION)
+// Check for success message in URL
 if (isset($_GET['success'])) {
     $success_message = urldecode($_GET['success']);
 }
@@ -77,7 +77,7 @@ if ($view_type === 'date') {
     $sales = $result->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 } else {
-    // Fetch all sales records (default view) - UPDATED ORDER BY CLAUSE
+    // Fetch all sales records (default view)
     $query = "SELECT 
                 sh.BILL_NO,
                 sh.BILL_DATE,
@@ -119,6 +119,15 @@ if (isset($_SESSION['error'])) {
     $error_message = $_SESSION['error'];
     unset($_SESSION['error']);
 }
+
+// Generate a unique filename for this export
+$export_filename = 'sales_report_' . date('Y-m-d_H-i-s') . '.xlsx';
+$temp_file_path = '../temp_exports/' . $export_filename;
+
+// Create temp directory if it doesn't exist
+if (!file_exists('../temp_exports')) {
+    mkdir('../temp_exports', 0777, true);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -130,7 +139,27 @@ if (isset($_SESSION['error'])) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
- 
+  <style>
+    .btn-excise {
+      background-color: #800080;
+      color: white;
+      border: none;
+    }
+    .btn-excise:hover {
+      background-color: #660066;
+      color: white;
+    }
+    .btn-excise i {
+      margin-right: 5px;
+    }
+    .upload-instructions {
+      font-size: 0.9rem;
+      background-color: #f8f9fa;
+      border-left: 4px solid #800080;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
 <div class="dashboard-container">
@@ -150,14 +179,40 @@ if (isset($_SESSION['error'])) {
             <i class="fa-solid fa-calendar-week me-1"></i> Sale for Date Range
           </a>
 
-          <!-- NEW: Export to Excel Button -->
+          <!-- Export to Excel Button (Manual Download) -->
           <button type="button" class="btn btn-success" id="exportExcelBtn">
             <i class="fa-solid fa-file-excel me-1"></i> Export to Excel
+          </button>
+
+          <!-- NEW: Upload to Excise Portal Button -->
+          <button type="button" class="btn btn-excise" id="uploadToExciseBtn">
+            <i class="fa-solid fa-upload me-1"></i> Upload to Excise Portal
           </button>
         </div>
       </div>
 
-      <!-- Success/Error Messages Section (UPDATED) -->
+      <!-- Upload Instructions (shown only when needed) -->
+      <div class="upload-instructions" id="uploadInstructions" style="display: none;">
+        <i class="fa-solid fa-info-circle me-2 text-excise"></i>
+        <strong>Instructions for Excise Portal Upload:</strong>
+        <ol class="mb-0 mt-2">
+          <li>Click the button below to open the Excise Portal login page</li>
+          <li>Login with your credentials (captcha required)</li>
+          <li>Navigate to <strong>Transaction Entry → Multiple Sales Entry</strong></li>
+          <li>Click "Browse" and select this file: <strong id="filenameDisplay"></strong></li>
+          <li>Click "Import File" to complete the upload</li>
+        </ol>
+        <div class="mt-2">
+          <a href="#" id="openPortalBtn" class="btn btn-sm btn-excise" target="_blank">
+            <i class="fa-solid fa-external-link-alt me-1"></i> Open Excise Portal
+          </a>
+          <button class="btn btn-sm btn-secondary" id="hideInstructionsBtn">
+            <i class="fa-solid fa-times me-1"></i> Hide
+          </button>
+        </div>
+      </div>
+
+      <!-- Success/Error Messages Section -->
       <?php if (isset($success_message)): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
           <i class="fa-solid fa-circle-check me-2"></i> <?= htmlspecialchars($success_message) ?>
@@ -232,7 +287,7 @@ if (isset($_SESSION['error'])) {
         </div>
       </div>
 
-      <!-- NEW: Bulk Delete Options -->
+      <!-- Bulk Delete Options -->
       <div class="card mb-4">
         <div class="card-header fw-semibold bg-warning text-dark">
           <i class="fa-solid fa-trash-can me-2"></i>Bulk Delete Options
@@ -348,13 +403,13 @@ if (isset($_SESSION['error'])) {
                       <td><span class="badge bg-info"><?= $liquorType ?></span></td>
                       <td>
                         <div class="action-buttons">
-                          <!-- Edit Button - Redirects to edit form -->
+                          <!-- Edit Button -->
                           <a href="edit_bill_form.php?bill_no=<?= $sale['BILL_NO'] ?>" 
                              class="btn btn-sm btn-warning" title="Edit Bill">
                             <i class="fa-solid fa-pen-to-square"></i>
                           </a>
                           
-                          <!-- Delete Button - Uses new AJAX method -->
+                          <!-- Delete Button -->
                           <button class="btn btn-sm btn-danger delete-single-btn" 
                                   title="Delete Bill" 
                                   data-billno="<?= htmlspecialchars($sale['BILL_NO']) ?>">
@@ -469,7 +524,7 @@ if (isset($_SESSION['error'])) {
   </div>
 </div>
 
-<!-- Export Options Modal -->
+<!-- Export Options Modal (for manual Excel download) -->
 <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -538,6 +593,25 @@ if (isset($_SESSION['error'])) {
     </div>
 </div>
 
+<!-- Progress Modal for Excel Generation -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-spinner fa-spin me-2"></i>Generating Excel File</h5>
+      </div>
+      <div class="modal-body text-center py-4">
+        <div class="progress mb-3" style="height: 20px;">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" 
+               id="generationProgress" style="width: 0%;">0%</div>
+        </div>
+        <p id="progressMessage">Preparing your export...</p>
+        <p class="text-muted small" id="progressDetail"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -545,8 +619,9 @@ let selectedBills = new Set();
 let currentBillToDelete = '';
 let deleteDate = '';
 let isProcessing = false;
+let currentExportFile = '';
 
-// Optimized: Batch DOM updates
+// Update selected count
 function updateSelectedCount() {
     if (isProcessing) return;
     
@@ -565,7 +640,7 @@ function updateSelectedCount() {
     }
 }
 
-// Optimized: Event delegation for better performance
+// Event delegation for checkboxes
 $(document).on('change', '.bill-checkbox', function() {
     if (isProcessing) return;
     
@@ -625,7 +700,6 @@ $('#selectAllTable').on('change', function() {
 $('#deleteSelectedBtn').on('click', function() {
     if (selectedBills.size === 0 || isProcessing) return;
     
-    // Build bills list for display
     let billsList = '<div class="list-group">';
     selectedBills.forEach(billNo => {
         billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${billNo}</div>`;
@@ -637,71 +711,12 @@ $('#deleteSelectedBtn').on('click', function() {
     $('#deleteModal').modal('show');
 });
 
-// Optimized: Single API call for all operations
-function performDeleteOperation(formData, successMessage) {
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    $('#loadingModal').modal('show');
-    
-    // Optimize: Set timeout for quicker response
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 30000); // 30 second timeout
-    });
-    
-    const deletePromise = fetch('delete_bill.php', {
-        method: 'POST',
-        body: formData
-    }).then(response => response.json());
-    
-    Promise.race([deletePromise, timeoutPromise])
-        .then(data => {
-            $('#loadingModal').modal('hide');
-            isProcessing = false;
-            
-            if (data.success) {
-                showAlert('success', data.message || successMessage);
-                selectedBills.clear();
-                updateSelectedCount();
-                
-                // Optimized: Slight delay before reload to show success message
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                showAlert('danger', data.message || 'Error deleting bills. Please try again.');
-            }
-        })
-        .catch(error => {
-            $('#loadingModal').modal('hide');
-            isProcessing = false;
-            console.error('Error:', error);
-            showAlert('danger', 'Network error: ' + error.message);
-        });
-}
-
-// Confirm delete selected bills
-$('#confirmDeleteBtn').on('click', function() {
-    if (selectedBills.size === 0 || isProcessing) return;
-    
-    $('#deleteModal').modal('hide');
-    
-    const formData = new FormData();
-    const billsArray = Array.from(selectedBills);
-    formData.append('bill_nos', JSON.stringify(billsArray));
-    formData.append('bulk_delete', 'true');
-    formData.append('optimized', 'true'); // Add flag for optimized processing
-    
-    performDeleteOperation(formData, `${selectedBills.size} bill(s) deleted successfully!`);
-});
-
 // Single bill delete
 $(document).on('click', '.delete-single-btn', function() {
     if (isProcessing) return;
     
     currentBillToDelete = $(this).data('billno');
     
-    // Build bills list for display
     let billsList = '<div class="list-group">';
     billsList += `<div class="list-group-item list-group-item-danger small">Bill No: ${currentBillToDelete}</div>`;
     billsList += '</div>';
@@ -711,20 +726,58 @@ $(document).on('click', '.delete-single-btn', function() {
     $('#deleteModal').modal('show');
 });
 
-// Handle confirm delete for single bill
-$(document).on('click', '#confirmDeleteBtn', function() {
-    // If it's a single bill delete
-    if (currentBillToDelete && selectedBills.size === 0) {
+// Confirm delete
+$('#confirmDeleteBtn').on('click', function() {
+    if (selectedBills.size > 0) {
+        // Bulk delete
         $('#deleteModal').modal('hide');
-        
-        const formData = new FormData();
-        formData.append('bill_no', currentBillToDelete);
-        formData.append('optimized', 'true'); // Add flag for optimized processing
-        
-        performDeleteOperation(formData, `Bill ${currentBillToDelete} deleted successfully!`);
+        const billsArray = Array.from(selectedBills);
+        performDelete(billsArray);
+    } else if (currentBillToDelete) {
+        // Single delete
+        $('#deleteModal').modal('hide');
+        performDelete([currentBillToDelete]);
         currentBillToDelete = '';
     }
 });
+
+// Perform delete operation
+function performDelete(billArray) {
+    if (isProcessing) return;
+    isProcessing = true;
+    
+    $('#loadingModal').modal('show');
+    
+    $.ajax({
+        url: 'delete_bill.php',
+        method: 'POST',
+        data: {
+            bill_nos: JSON.stringify(billArray),
+            bulk_delete: billArray.length > 1 ? 'true' : 'false'
+        },
+        dataType: 'json',
+        success: function(response) {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            
+            if (response.success) {
+                showAlert('success', response.message);
+                selectedBills.clear();
+                updateSelectedCount();
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            showAlert('danger', 'Network error: ' + error);
+        }
+    });
+}
 
 // Delete all bills for date
 $('#deleteByDateBtn').on('click', function() {
@@ -752,13 +805,36 @@ $('#confirmDeleteDateBtn').on('click', function() {
     if (isProcessing) return;
     
     $('#deleteDateModal').modal('hide');
+    isProcessing = true;
+    $('#loadingModal').modal('show');
     
-    const formData = new FormData();
-    formData.append('delete_date', deleteDate);
-    formData.append('delete_by_date', 'true');
-    formData.append('optimized', 'true'); // Add flag for optimized processing
-    
-    performDeleteOperation(formData, `All bills for ${deleteDate} deleted successfully!`);
+    $.ajax({
+        url: 'delete_bill.php',
+        method: 'POST',
+        data: {
+            delete_date: deleteDate,
+            delete_by_date: 'true'
+        },
+        dataType: 'json',
+        success: function(response) {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            
+            if (response.success) {
+                showAlert('success', response.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showAlert('danger', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#loadingModal').modal('hide');
+            isProcessing = false;
+            showAlert('danger', 'Network error: ' + error);
+        }
+    });
 });
 
 // Show alert function
@@ -789,31 +865,7 @@ $('#deleteDateModal').on('hidden.bs.modal', function() {
     deleteDate = '';
 });
 
-// Apply filters with date range validation
-$('form').on('submit', function(e) {
-    const startDate = $('input[name="start_date"]');
-    const endDate = $('input[name="end_date"]');
-    
-    if (startDate.length && endDate.length && startDate.val() && endDate.val() && startDate.val() > endDate.val()) {
-        e.preventDefault();
-        showAlert('warning', 'Start date cannot be greater than End date');
-        return false;
-    }
-});
-
-// Auto-dismiss alerts after 5 seconds
-$(document).ready(function() {
-    setTimeout(function() {
-        $('.alert').alert('close');
-    }, 5000);
-});
-
-// Edit bill function
-function editBill(billNo) {
-    window.location.href = 'edit_bill_form.php?bill_no=' + billNo;
-}
-
-// Enhanced export functionality with modal
+// Export to Excel (Manual Download) - Original functionality
 $('#exportExcelBtn').on('click', function() {
     $('#exportModal').modal('show');
 });
@@ -827,6 +879,7 @@ $('input[name="export_range"]').on('change', function() {
     }
 });
 
+// Confirm Export (Manual Download)
 $('#confirmExport').on('click', function() {
     const exportRange = $('input[name="export_range"]:checked').val();
     let exportUrl = 'export_sales_excel.php?';
@@ -862,28 +915,118 @@ $('#confirmExport').on('click', function() {
         exportUrl += `&filename=${encodeURIComponent(filename)}`;
     }
 
-    $(this).html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting...');
-    $(this).prop('disabled', true);
-
+    $('#confirmExport').html('<i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting...');
+    $('#confirmExport').prop('disabled', true);
     $('#exportModal').modal('hide');
 
-    const downloadFrame = document.createElement('iframe');
-    downloadFrame.style.display = 'none';
-    downloadFrame.src = exportUrl;
-    document.body.appendChild(downloadFrame);
+    // Trigger download
+    window.location.href = exportUrl;
 
     setTimeout(() => {
-        $(this).html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
-        $(this).prop('disabled', false);
-        document.body.removeChild(downloadFrame);
+        $('#confirmExport').html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
+        $('#confirmExport').prop('disabled', false);
     }, 3000);
 });
 
+// NEW: Upload to Excise Portal functionality
+$('#uploadToExciseBtn').on('click', function() {
+    // Show progress modal
+    $('#progressModal').modal('show');
+    updateProgress(10, 'Preparing export...', 'Initializing...');
+    
+    // First, generate and save the Excel file on server
+    generateAndSaveExcel();
+});
+
+// Generate and save Excel file on server
+function generateAndSaveExcel() {
+    updateProgress(30, 'Generating sales data...', 'Querying database...');
+    
+    // Get current view parameters
+    const viewType = '<?= $view_type ?>';
+    let params = {};
+    
+    if (viewType === 'date') {
+        params = {
+            view_type: 'date',
+            Closing_Stock: '<?= $Closing_Stock ?>'
+        };
+    } else if (viewType === 'range') {
+        params = {
+            view_type: 'range',
+            start_date: '<?= $start_date ?>',
+            end_date: '<?= $end_date ?>'
+        };
+    } else {
+        params = {
+            view_type: 'all'
+        };
+    }
+    
+    updateProgress(50, 'Creating Excel file...', 'Formatting data...');
+    
+    // Make AJAX call to generate and save file
+    $.ajax({
+        url: 'save_excel_for_upload.php',
+        method: 'POST',
+        data: params,
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                updateProgress(90, 'Finalizing...', 'File saved successfully');
+                currentExportFile = response.filename;
+                
+                setTimeout(() => {
+                    $('#progressModal').modal('hide');
+                    
+                    // Show instructions with filename
+                    $('#filenameDisplay').text(currentExportFile);
+                    $('#uploadInstructions').slideDown();
+                    
+                    // Set the portal link
+                    $('#openPortalBtn').attr('href', 'https://scmexcise.mahaonline.gov.in/Retailer/Login.aspx');
+                    
+                    showAlert('success', 'Excel file generated successfully! Follow the instructions to upload.');
+                }, 1000);
+            } else {
+                $('#progressModal').modal('hide');
+                showAlert('danger', 'Error generating file: ' + response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            $('#progressModal').modal('hide');
+            showAlert('danger', 'Network error: ' + error);
+        }
+    });
+}
+
+// Update progress bar
+function updateProgress(percent, message, detail) {
+    $('#generationProgress').css('width', percent + '%').text(percent + '%');
+    $('#progressMessage').text(message);
+    if (detail) {
+        $('#progressDetail').text(detail);
+    }
+}
+
+// Hide instructions
+$('#hideInstructionsBtn').on('click', function() {
+    $('#uploadInstructions').slideUp();
+});
+
+// Reset export modal on close
 $('#exportModal').on('hidden.bs.modal', function() {
     $('#confirmExport').html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
     $('#confirmExport').prop('disabled', false);
     $('input[name="export_range"][value="current"]').prop('checked', true);
     $('#customDateRange').hide();
+});
+
+// Auto-dismiss alerts after 5 seconds
+$(document).ready(function() {
+    setTimeout(function() {
+        $('.alert').alert('close');
+    }, 5000);
 });
 </script>
 </body>
