@@ -152,13 +152,6 @@ if (!file_exists('../temp_exports')) {
     .btn-excise i {
       margin-right: 5px;
     }
-    .upload-instructions {
-      font-size: 0.9rem;
-      background-color: #f8f9fa;
-      border-left: 4px solid #800080;
-      padding: 10px 15px;
-      margin-bottom: 15px;
-    }
   </style>
 </head>
 <body>
@@ -184,31 +177,11 @@ if (!file_exists('../temp_exports')) {
             <i class="fa-solid fa-file-excel me-1"></i> Export to Excel
           </button>
 
-          <!-- NEW: Upload to Excise Portal Button -->
-          <button type="button" class="btn btn-excise" id="uploadToExciseBtn">
+          <!-- SIMPLIFIED: Upload to Excise Portal Button - Direct redirect -->
+          <a href="https://scmexcise.mahaonline.gov.in/Retailer/Login.aspx" 
+             class="btn btn-excise" target="_blank">
             <i class="fa-solid fa-upload me-1"></i> Upload to Excise Portal
-          </button>
-        </div>
-      </div>
-
-      <!-- Upload Instructions (shown only when needed) -->
-      <div class="upload-instructions" id="uploadInstructions" style="display: none;">
-        <i class="fa-solid fa-info-circle me-2 text-excise"></i>
-        <strong>Instructions for Excise Portal Upload:</strong>
-        <ol class="mb-0 mt-2">
-          <li>Click the button below to open the Excise Portal login page</li>
-          <li>Login with your credentials (captcha required)</li>
-          <li>Navigate to <strong>Transaction Entry → Multiple Sales Entry</strong></li>
-          <li>Click "Browse" and select this file: <strong id="filenameDisplay"></strong></li>
-          <li>Click "Import File" to complete the upload</li>
-        </ol>
-        <div class="mt-2">
-          <a href="#" id="openPortalBtn" class="btn btn-sm btn-excise" target="_blank">
-            <i class="fa-solid fa-external-link-alt me-1"></i> Open Excise Portal
           </a>
-          <button class="btn btn-sm btn-secondary" id="hideInstructionsBtn">
-            <i class="fa-solid fa-times me-1"></i> Hide
-          </button>
         </div>
       </div>
 
@@ -748,12 +721,13 @@ function performDelete(billArray) {
     
     $('#loadingModal').modal('show');
     
-    $.ajax({
+        $.ajax({
         url: 'delete_bill.php',
         method: 'POST',
         data: {
             bill_nos: JSON.stringify(billArray),
-            bulk_delete: billArray.length > 1 ? 'true' : 'false'
+            bulk_delete: billArray.length > 1 ? 'true' : 'false',
+            optimized: 'true'
         },
         dataType: 'json',
         success: function(response) {
@@ -808,12 +782,13 @@ $('#confirmDeleteDateBtn').on('click', function() {
     isProcessing = true;
     $('#loadingModal').modal('show');
     
-    $.ajax({
+     $.ajax({
         url: 'delete_bill.php',
         method: 'POST',
         data: {
             delete_date: deleteDate,
-            delete_by_date: 'true'
+            delete_by_date: 'true',
+            optimized: 'true'
         },
         dataType: 'json',
         success: function(response) {
@@ -926,100 +901,6 @@ $('#confirmExport').on('click', function() {
         $('#confirmExport').html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
         $('#confirmExport').prop('disabled', false);
     }, 3000);
-});
-
-// NEW: Upload to Excise Portal functionality
-$('#uploadToExciseBtn').on('click', function() {
-    // Show progress modal
-    $('#progressModal').modal('show');
-    updateProgress(10, 'Preparing export...', 'Initializing...');
-    
-    // First, generate and save the Excel file on server
-    generateAndSaveExcel();
-});
-
-// Generate and save Excel file on server
-function generateAndSaveExcel() {
-    updateProgress(30, 'Generating sales data...', 'Querying database...');
-    
-    // Get current view parameters
-    const viewType = '<?= $view_type ?>';
-    let params = {};
-    
-    if (viewType === 'date') {
-        params = {
-            view_type: 'date',
-            Closing_Stock: '<?= $Closing_Stock ?>'
-        };
-    } else if (viewType === 'range') {
-        params = {
-            view_type: 'range',
-            start_date: '<?= $start_date ?>',
-            end_date: '<?= $end_date ?>'
-        };
-    } else {
-        params = {
-            view_type: 'all'
-        };
-    }
-    
-    updateProgress(50, 'Creating Excel file...', 'Formatting data...');
-    
-    // Make AJAX call to generate and save file
-    $.ajax({
-        url: 'save_excel_for_upload.php',
-        method: 'POST',
-        data: params,
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                updateProgress(90, 'Finalizing...', 'File saved successfully');
-                currentExportFile = response.filename;
-                
-                setTimeout(() => {
-                    $('#progressModal').modal('hide');
-                    
-                    // Show instructions with filename
-                    $('#filenameDisplay').text(currentExportFile);
-                    $('#uploadInstructions').slideDown();
-                    
-                    // Set the portal link
-                    $('#openPortalBtn').attr('href', 'https://scmexcise.mahaonline.gov.in/Retailer/Login.aspx');
-                    
-                    showAlert('success', 'Excel file generated successfully! Follow the instructions to upload.');
-                }, 1000);
-            } else {
-                $('#progressModal').modal('hide');
-                showAlert('danger', 'Error generating file: ' + response.message);
-            }
-        },
-        error: function(xhr, status, error) {
-            $('#progressModal').modal('hide');
-            showAlert('danger', 'Network error: ' + error);
-        }
-    });
-}
-
-// Update progress bar
-function updateProgress(percent, message, detail) {
-    $('#generationProgress').css('width', percent + '%').text(percent + '%');
-    $('#progressMessage').text(message);
-    if (detail) {
-        $('#progressDetail').text(detail);
-    }
-}
-
-// Hide instructions
-$('#hideInstructionsBtn').on('click', function() {
-    $('#uploadInstructions').slideUp();
-});
-
-// Reset export modal on close
-$('#exportModal').on('hidden.bs.modal', function() {
-    $('#confirmExport').html('<i class="fa-solid fa-file-export me-1"></i> Export to Excel');
-    $('#confirmExport').prop('disabled', false);
-    $('input[name="export_range"][value="current"]').prop('checked', true);
-    $('#customDateRange').hide();
 });
 
 // Auto-dismiss alerts after 5 seconds

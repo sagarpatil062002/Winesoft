@@ -2487,7 +2487,145 @@ tr.global-restriction .qty-input {
         </div>
       <?php endif; ?>
 
-      <!-- Success/Error Messages -->
+      <!-- Bill Generation Progress Modal -->
+<div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-cogs"></i> Generating Bills
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Status Message -->
+                <div class="alert alert-info" id="progressStatus">
+                    <i class="fas fa-spinner fa-spin"></i> <span id="progressMessage">Initializing...</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress mb-3" style="height: 30px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        0%
+                    </div>
+                </div>
+                
+                <!-- Bill Counter -->
+                <div class="row text-center mb-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="currentBillCount">0</h3>
+                                <small class="text-muted">Bills Generated</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="totalBillCount">0</h3>
+                                <small class="text-muted">Total Bills</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="timeRemaining">--</h3>
+                                <small class="text-muted">Time Remaining</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bills Generated List -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Recently Generated Bills</h6>
+                    </div>
+                    <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                        <table class="table table-sm table-hover" id="billsListTable">
+                            <thead>
+                                <tr>
+                                    <th>Bill No</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billsListBody">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Waiting to start...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Performance Stats -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-tachometer-alt"></i> 
+                            Speed: <span id="generationSpeed">--</span> bills/sec
+                        </small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i>
+                            Elapsed: <span id="elapsedTime">0s</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="viewResultsBtn" style="display: none;" onclick="viewResults()">
+                    <i class="fas fa-eye"></i> View Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <style>
+      .progress-bar {
+          transition: width 0.3s ease;
+          font-weight: bold;
+          font-size: 14px;
+          line-height: 30px;
+      }
+
+      #billsListBody tr:last-child {
+          animation: highlightNew 1s ease;
+      }
+
+      @keyframes highlightNew {
+          0% { background-color: #d4edda; }
+          100% { background-color: transparent; }
+      }
+
+      .card .card-body {
+          padding: 10px;
+      }
+
+      #currentBillCount, #totalBillCount {
+          font-size: 28px;
+          font-weight: bold;
+          margin: 0;
+          color: #007bff;
+      }
+
+      #timeRemaining {
+          font-size: 20px;
+          font-weight: bold;
+          margin: 0;
+          color: #28a745;
+      }
+      </style>
+
+<!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?= $success_message ?>
@@ -3789,28 +3927,340 @@ function setupRowNavigation() {
     });
 }
 
-// UPDATED: Function to generate bills immediately with enhanced client-side validation
+// ORIGINAL: Function to generate bills immediately
 function generateBills() {
-    // First check global restrictions
-    checkGlobalRestrictionsBeforeSubmit()
-        .then(() => {
-            // Then validate basic quantities
-            if (!validateAllQuantities()) {
-                throw new Error('Quantity validation failed');
+    // Show loader and submit the form
+    $('#ajaxLoader').show();
+    document.getElementById('salesForm').submit();
+}
+
+// Function to show the progress section on page
+function showProgressModal() {
+    // Reset progress bar
+    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
+    $('#progressMessage').text('Initializing...');
+    $('#currentBillCount').text('0');
+    $('#totalBillCount').text('0');
+    $('#timeRemaining').text('--');
+    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Waiting to start...</td></tr>');
+    $('#generationSpeed').text('--');
+    $('#elapsedTime').text('0s');
+    
+    // Show the progress section on the page
+    $('#billProgressSection').show();
+    
+    // Scroll to the progress section
+    $('html, body').animate({
+        scrollTop: $('#billProgressSection').offset().top - 100
+    }, 500);
+    
+    // Hide the items table temporarily to focus on progress
+    $('#itemsTable').closest('.table-container').hide();
+}
+
+// ============================================================================
+// ULTRA-FAST BILL GENERATION WITH REAL-TIME PROGRESS
+// ============================================================================
+
+// Global variables for progress tracking
+let progressKey = null;
+let progressPollingInterval = null;
+let generationStartTime = null;
+
+// Function to start ultra-fast bill generation
+function startUltraFastBillGeneration() {
+    // Check if already generating
+    if (isGeneratingBills) {
+        console.log('Already generating bills, please wait...');
+        return false;
+    }
+    
+    // Check if there are any available dates
+    if (globalAvailableDates.length === 0) {
+        alert('No available dates in the selected range due to existing sales or dry days.');
+        return false;
+    }
+    
+    // Check if we have any quantities > 0
+    let hasQuantity = false;
+    for (const itemCode in allSessionQuantities) {
+        if (allSessionQuantities[itemCode] > 0) {
+            hasQuantity = true;
+            break;
+        }
+    }
+    
+    if (!hasQuantity) {
+        alert('Please enter quantities for at least one item.');
+        return false;
+    }
+    
+    // Show confirmation
+    const userChoice = confirm(
+        "Generate Bills Options:\n\n" +
+        "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
+        "Click Cancel to save to pending sales (will save for later processing, no stock update)."
+    );
+    
+    if (userChoice === true) {
+        // User clicked OK - Generate bills immediately
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class=\"fas fa-spinner fa-spin\"></i> Generating...');
+        generateBillsUltraFast();
+    } else {
+        // User clicked Cancel - Save to pending sales
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+        saveToPendingSales();
+    }
+}
+
+// Function to generate bills using ultra-fast endpoint
+function generateBillsUltraFast() {
+    // Show the progress modal
+    const progressModal = new bootstrap.Modal(document.getElementById('billProgressModal'));
+    progressModal.show();
+    
+    // Reset progress display
+    resetProgressDisplay();
+    
+    // Collect form data
+    const formData = new FormData();
+    formData.append('generate_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    formData.append('source_page', 'sale_for_date_range');
+    
+    // Add each item's quantity from session
+    for (const itemCode in allSessionQuantities) {
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+        }
+    }
+    
+    // Update status
+    updateProgressStatus('Starting ultra-fast bill generation...', 'info');
+    
+    // Start elapsed time counter
+    generationStartTime = Date.now();
+    
+    // Make AJAX request to ultra-fast endpoint
+    $.ajax({
+        url: 'generate_bills_ultra_fast.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(result) {
+            if (result.success) {
+                // Store the progress key for polling
+                progressKey = result.progress_key;
+                
+                // Start polling for progress updates
+                startProgressPolling();
+                
+                // Final update when complete
+                updateFinalProgress(result);
+                
+                // Clear session quantities
+                clearSessionQuantities();
+                
+                // Hide modal and redirect after short delay
+                setTimeout(function() {
+                    progressModal.hide();
+                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                }, 2000);
+                
+            } else {
+                // Error occurred
+                updateProgressStatus('Error: ' + result.message, 'danger');
+                isGeneratingBills = false;
+                $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+                
+                setTimeout(function() {
+                    progressModal.hide();
+                }, 3000);
             }
+        },
+        error: function(xhr, status, error) {
+            let errorMsg = 'Error: ' + error;
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+            } catch(e) {}
+            updateProgressStatus(errorMsg, 'danger');
+            isGeneratingBills = false;
+            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
             
-            // Then check stock availability
-            return checkStockAvailabilityBeforeSubmit();
-        })
-        .then(() => {
-            // If validation passes, submit the form
-            $('#ajaxLoader').show();
-            document.getElementById('salesForm').submit();
-        })
-        .catch((error) => {
-            // Validation failed, don't submit
-            console.log('Client-side validation failed:', error);
+            setTimeout(function() {
+                progressModal.hide();
+            }, 3000);
+        }
+    });
+}
+
+// Function to start polling for progress updates
+function startProgressPolling() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+    }
+    
+    // Poll every 200ms for real-time updates
+    progressPollingInterval = setInterval(function() {
+        if (!progressKey) return;
+        
+        $.ajax({
+            url: 'bill_progress_ajax.php',
+            type: 'GET',
+            data: { progress_key: progressKey },
+            dataType: 'json',
+            success: function(result) {
+                // If result is already parsed (string), parse it again
+                if (typeof result === 'string') {
+                    try {
+                        result = JSON.parse(result);
+                    } catch(e) {
+                        console.error('JSON parse error:', e);
+                        return;
+                    }
+                }
+                
+                // Update progress display
+                updateProgressDisplay(result);
+                
+                // Stop polling if complete
+                if (result.is_complete || result.has_error) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Progress polling error:', error);
+            }
         });
+    }, 200);
+}
+
+// Function to reset progress display
+function resetProgressDisplay() {
+    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
+    $('#progressMessage').text('Initializing...');
+    $('#currentBillCount').text('0');
+    $('#totalBillCount').text('0');
+    $('#timeRemaining').text('--');
+    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Waiting to start...</td></tr>');
+    $('#generationSpeed').text('--');
+    $('#elapsedTime').text('0s');
+}
+
+// Function to update progress status
+function updateProgressStatus(message, type) {
+    $('#progressStatus').removeClass('alert-info alert-success alert-danger').addClass('alert-' + type);
+    $('#progressMessage').text(message);
+}
+
+// Function to update progress display
+function updateProgressDisplay(progress) {
+    // Update progress bar
+    const percentage = progress.percentage || 0;
+    $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
+    
+    // Update status message
+    if (progress.message) {
+        $('#progressMessage').text(progress.message);
+    }
+    
+    // Update counters
+    $('#currentBillCount').text(progress.current_bill || 0);
+    $('#totalBillCount').text(progress.total_bills || 0);
+    
+    // Update time remaining
+    if (progress.estimated_remaining > 0) {
+        $('#timeRemaining').text(progress.estimated_remaining + 's');
+    } else if (progress.is_complete) {
+        $('#timeRemaining').text('Done');
+    }
+    
+    // Update speed
+    if (progress.speed > 0) {
+        $('#generationSpeed').text(progress.speed.toFixed(1));
+    }
+    
+    // Update elapsed time
+    if (generationStartTime) {
+        const elapsed = Math.floor((Date.now() - generationStartTime) / 1000);
+        $('#elapsedTime').text(elapsed + 's');
+    }
+    
+    // Update recent bills list
+    if (progress.recent_bills && progress.recent_bills.length > 0) {
+        let billsHtml = '';
+        progress.recent_bills.forEach(function(bill) {
+            billsHtml += `<tr>
+                <td>${bill.bill_no}</td>
+                <td>${bill.date}</td>
+                <td>${bill.items}</td>
+                <td>₹${bill.amount.toLocaleString()}</td>
+            </tr>`;
+        });
+        $('#billsListBody').html(billsHtml);
+    }
+    
+    // Update status based on progress
+    if (progress.status === 'completed') {
+        $('#progressStatus').removeClass('alert-info').addClass('alert-success');
+    } else if (progress.status === 'error') {
+        $('#progressStatus').removeClass('alert-info').addClass('alert-danger');
+    }
+}
+
+// Function to update final progress
+function updateFinalProgress(result) {
+    // Update progress bar to 100%
+    $('#progressBar').css('width', '100%').attr('aria-valuenow', 100).text('100%');
+    $('#progressStatus').removeClass('alert-info').addClass('alert-success');
+    $('#progressMessage').text('Generation completed! ' + result.message);
+    $('#currentBillCount').text(result.bill_count);
+    $('#totalBillCount').text(result.bill_count);
+    $('#timeRemaining').text('Done');
+    
+    if (result.execution_time > 0) {
+        $('#generationSpeed').text((result.bill_count / result.execution_time).toFixed(1));
+    }
+    
+    // Show bills list
+    if (result.bills && result.bills.length > 0) {
+        let billsHtml = '';
+        result.bills.forEach(function(bill) {
+            billsHtml += `<tr>
+                <td>${bill.bill_no}</td>
+                <td>${bill.date}</td>
+                <td>${bill.items}</td>
+                <td>₹${bill.amount.toLocaleString()}</td>
+            </tr>`;
+        });
+        $('#billsListBody').html(billsHtml);
+    }
+    
+    // Stop polling
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    
+    isGeneratingBills = false;
+}
+
+// Function to view results
+function viewResults() {
+    window.location.href = 'retail_sale.php';
 }
 
 // Function to save to pending sales via AJAX
@@ -3855,7 +4305,8 @@ function saveToPendingSales() {
                 contentType: false,
                 success: function(response) {
                     $('#ajaxLoader').hide();
-                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    // Reset flag on success - page will redirect
+                    isGeneratingBills = false;
                     
                     try {
                         const result = JSON.parse(response);
@@ -3866,26 +4317,45 @@ function saveToPendingSales() {
                             window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
                         } else {
                             alert('Error: ' + result.message);
+                            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
                         }
                     } catch (e) {
                         alert('Error processing response: ' + response);
+                        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
                     }
                 },
                 error: function() {
                     $('#ajaxLoader').hide();
-                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                    // Reset flag on error
+                    isGeneratingBills = false;
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
                     alert('Error saving data to pending. Please try again.');
                 }
             });
         })
         .catch((error) => {
-            // Validation failed, don't proceed
+            // Validation failed, don't proceed - reset flag
+            isGeneratingBills = false;
+            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
             console.log('Client-side validation failed for pending sales:', error);
         });
 }
 
-// Single button with dual functionality
+// ============================================================================
+// FRONTEND OPTIMIZATION: Add debounce protection to prevent double-clicks
+// ============================================================================
+
+// Global flag to prevent double-click
+let isGeneratingBills = false;
+
+// Function to handle generate bills with debounce
 function handleGenerateBills() {
+    // Check if already generating to prevent double-click
+    if (isGeneratingBills) {
+        console.log('Already generating bills, please wait...');
+        return false;
+    }
+    
     // Check if there are any available dates
     if (globalAvailableDates.length === 0) {
         alert('No available dates in the selected range due to existing sales or dry days.');
@@ -3915,9 +4385,15 @@ function handleGenerateBills() {
     
     if (userChoice === true) {
         // User clicked OK - Generate bills immediately
+        // Set flag and disable button
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
         generateBills();
     } else {
         // User clicked Cancel - Save to pending sales
+        // Set flag and disable button
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
         saveToPendingSales();
     }
 }
@@ -4464,10 +4940,10 @@ $(document).ready(function() {
         }
     });
     
-    // Single button with dual functionality
+    // Single button with dual functionality - ULTRA FAST VERSION
     $('#generateBillsBtn').click(function(e) {
         e.preventDefault();
-        handleGenerateBills();
+        startUltraFastBillGeneration();
     });
     
     // OPTIMIZED: Event delegation with debouncing

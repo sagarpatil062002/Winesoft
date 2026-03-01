@@ -13,6 +13,9 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+require_once 'drydays_functions.php'; // Single include
+require_once 'license_functions.php'; // ADDED: Include license 
+require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
 // Initialize variables to prevent undefined variable warnings
 $totalBills = 0;
@@ -178,6 +181,168 @@ function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permi
     $insertStmt->close();
     
     return $result;
+}
+
+// ============================================================================
+// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: GLOBAL BLOCKING
+// ============================================================================
+
+/**
+ * Check if ANY sales exist for ANY item within or after the given date range
+ * Returns array with allowed dates (after latest global sale)
+ */
+function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
+    // Query to get all sales in or after the date range for ANY item
+    $query = "SELECT DISTINCT sh.BILL_DATE
+              FROM tblsaleheader sh
+              WHERE sh.BILL_DATE >= ? 
+              AND sh.COMP_ID = ?
+              ORDER BY sh.BILL_DATE ASC";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("si", $start_date, $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $existing_dates = [];
+    while ($row = $result->fetch_assoc()) {
+        $existing_dates[] = $row['BILL_DATE'];
+    }
+    $stmt->close();
+    
+    // Create date range array
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day'); // Include end date
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
+    }
+    
+    if (!empty($existing_dates)) {
+        // Find the latest existing sale date
+        $latest_existing = max($existing_dates);
+        $latest_existing_date = new DateTime($latest_existing);
+        
+        // Determine which dates are available (after latest sale date)
+        $available_dates = [];
+        $unavailable_dates = [];
+        
+        foreach ($all_dates as $date) {
+            $current_date = new DateTime($date);
+            if ($current_date > $latest_existing_date) {
+                $available_dates[] = $date;
+            } else {
+                $unavailable_dates[] = $date;
+            }
+        }
+        
+        return [
+            'restricted' => !empty($unavailable_dates), // Restricted if ANY dates are unavailable
+            'latest_existing_sale' => $latest_existing,
+            'available_dates' => $available_dates,
+            'unavailable_dates' => $unavailable_dates,
+            'all_existing_dates' => $existing_dates,
+            'message' => !empty($unavailable_dates) ? 
+                "Global sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
+                "No sales restrictions"
+        ];
+    }
+    
+    return [
+        'restricted' => false,
+        'latest_existing_sale' => null,
+        'available_dates' => $all_dates, // All dates available if no existing sales
+        'unavailable_dates' => [],
+        'all_existing_dates' => [],
+        'message' => "No global sales restrictions"
+    ];
+}
+
+// ============================================================================
+// DRY DAY VALIDATION
+// ============================================================================
+
+/**
+ * Check if any dry days fall within the date range
+ */
+function checkDryDaysInRange($conn, $start_date, $end_date) {
+    $dryDaysManager = new DryDaysManager($conn);
+    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
+    
+    return [
+        'has_dry_days' => !empty($dry_days),
+        'dry_days' => $dry_days,
+        'dry_dates' => array_keys($dry_days),
+        'message' => !empty($dry_days) ? 
+            "Dry days found: " . implode(', ', array_keys($dry_days)) : 
+            "No dry days in selected range"
+    ];
+}
+
+/**
+ * Validate both global sales and dry days restrictions
+ */
+function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
+    // Check global sales restrictions
+    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
+    
+    // Check dry days
+    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
+    
+    // Combine restrictions - a date is unavailable if it has sales OR is a dry day
+    $all_unavailable_dates = array_merge(
+        $global_check['unavailable_dates'],
+        $dry_days_check['dry_dates']
+    );
+    
+    // Remove duplicates
+    $all_unavailable_dates = array_unique($all_unavailable_dates);
+    sort($all_unavailable_dates);
+    
+    // Calculate available dates (all dates minus unavailable)
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day');
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
+    }
+    
+    $available_dates = array_diff($all_dates, $all_unavailable_dates);
+    $available_dates = array_values($available_dates); // Re-index
+    
+    // Prepare messages
+    $messages = [];
+    if ($global_check['restricted']) {
+        $messages[] = "Existing sales on: " . implode(', ', $global_check['unavailable_dates']);
+    }
+    if ($dry_days_check['has_dry_days']) {
+        $messages[] = "Dry days: " . implode(', ', $dry_days_check['dry_dates']);
+    }
+    
+    return [
+        'restricted' => !empty($all_unavailable_dates),
+        'global_restricted' => $global_check['restricted'],
+        'has_dry_days' => $dry_days_check['has_dry_days'],
+        'latest_existing_sale' => $global_check['latest_existing_sale'],
+        'available_dates' => $available_dates,
+        'unavailable_dates' => $all_unavailable_dates,
+        'unavailable_sales_dates' => $global_check['unavailable_dates'],
+        'dry_dates' => $dry_days_check['dry_dates'],
+        'dry_days_info' => $dry_days_check['dry_days'],
+        'message' => !empty($messages) ? implode(' | ', $messages) : "No restrictions",
+        'full_message' => !empty($messages) ? 
+            "<strong>Date Range Restrictions:</strong><br>" . implode('<br>', $messages) . 
+            "<br><strong>Available dates:</strong> " . (empty($available_dates) ? 'None' : implode(', ', $available_dates)) :
+            "No date range restrictions"
+    ];
 }
 
 // Function to check if bills have cash memos

@@ -322,10 +322,8 @@ function manualStockUpdate($conn, $company_id) {
             cursor: pointer;
         }
         
-        .btn-login {
-            background-color: var(--primary-color);
-            color: var(--white);
-            border: none;
+        .btn-login, .btn-create-company {
+            width: 100%;
             padding: 0.75rem;
             border-radius: var(--border-radius);
             font-size: 1rem;
@@ -334,8 +332,54 @@ function manualStockUpdate($conn, $company_id) {
             transition: var(--transition);
         }
         
+        .btn-login {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+        }
+        
         .btn-login:hover {
             background-color: var(--primary-hover);
+        }
+        
+        .btn-create-company {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            margin-top: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        
+        .btn-create-company:hover {
+            background-color: var(--primary-color);
+            color: var(--white);
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0 1rem;
+            color: var(--light-text);
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .divider::before {
+            margin-right: .5rem;
+        }
+        
+        .divider::after {
+            margin-left: .5rem;
         }
         
         @media (max-width: 480px) {
@@ -406,6 +450,12 @@ function manualStockUpdate($conn, $company_id) {
             
             <button type="submit" name="login" class="btn-login">Login</button>
         </form>
+
+        <div class="divider">OR</div>
+
+        <a href="http://localhost/winesoft/public/create_company.php" class="btn-create-company">
+            <i class="fas fa-building"></i> Create New Company
+        </a>
     </div>
 
     <script>

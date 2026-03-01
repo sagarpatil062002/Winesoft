@@ -1,29 +1,48 @@
 <?php
-// volume_limit_utils.php
+// volume_limit_utils.php - OPTIMIZED WITH CACHING
+
+// Global caches
+$category_cache = [];
+$size_cache = [];
+$limits_cache = [];
 
 /**
- * Get category limits from tblcompany
+ * Get category limits from tblcompany - CACHED
  */
 function getCategoryLimits($conn, $comp_id) {
-    $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $limits = $result->fetch_assoc();
-    $stmt->close();
+    global $limits_cache;
     
-    return [
-        'IMFL' => $limits['IMFLLimit'] ?? 1000, // Default 1000ml if not set
-        'BEER' => $limits['BEERLimit'] ?? 0,
-        'CL' => $limits['CLLimit'] ?? 0
-    ];
+    if (!isset($limits_cache[$comp_id])) {
+        $query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $comp_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $limits = $result->fetch_assoc();
+        $stmt->close();
+        
+        $limits_cache[$comp_id] = [
+            'IMFL' => (float)($limits['IMFLLimit'] ?? 1000),
+            'BEER' => (float)($limits['BEERLimit'] ?? 0),
+            'CL' => (float)($limits['CLLimit'] ?? 0)
+        ];
+    }
+    
+    return $limits_cache[$comp_id];
 }
 
 /**
- * Determine item category based on LIQ_FLAG and item details - ENHANCED
+ * Determine item category based on LIQ_FLAG and item details - CACHED
  */
 function getItemCategory($conn, $item_code, $mode) {
+    global $category_cache;
+    
+    $cache_key = $item_code . '|' . $mode;
+    
+    if (isset($category_cache[$cache_key])) {
+        return $category_cache[$cache_key];
+    }
+    
     // Get item details including LIQ_FLAG from tblitemmaster
     $query = "SELECT im.DETAILS2, sc.LIQ_FLAG 
               FROM tblitemmaster im 
@@ -37,6 +56,7 @@ function getItemCategory($conn, $item_code, $mode) {
     $stmt->close();
     
     if (!$item_data) {
+        $category_cache[$cache_key] = 'OTHER';
         return 'OTHER';
     }
     
@@ -48,12 +68,15 @@ function getItemCategory($conn, $item_code, $mode) {
         switch (strtoupper($liq_flag)) {
             case 'F':
             case 'FL':
+                $category_cache[$cache_key] = 'IMFL';
                 return 'IMFL';
             case 'C':
             case 'CL':
+                $category_cache[$cache_key] = 'CL';
                 return 'CL';
             case 'B':
             case 'BEER':
+                $category_cache[$cache_key] = 'BEER';
                 return 'BEER';
         }
     }
@@ -62,6 +85,7 @@ function getItemCategory($conn, $item_code, $mode) {
     if ($mode === 'F' || $mode === 'FL') {
         // Check if it's a liquor item by looking for ML size indication
         if (preg_match('/\d+\s*ML/i', $details2)) {
+            $category_cache[$cache_key] = 'IMFL';
             return 'IMFL';
         }
         
@@ -69,16 +93,19 @@ function getItemCategory($conn, $item_code, $mode) {
         $liquor_keywords = ['WHISKY', 'WHISKEY', 'GIN', 'BRANDY', 'VODKA', 'RUM', 'LIQUOR', 'WINE', 'SCOTCH', 'BOURBON', 'TEQUILA'];
         foreach ($liquor_keywords as $keyword) {
             if (strpos($details2, $keyword) !== false) {
+                $category_cache[$cache_key] = 'IMFL';
                 return 'IMFL';
             }
         }
         
         // Beer detection
         if (strpos($details2, 'BEER') !== false || strpos($details2, 'LAGER') !== false || strpos($details2, 'ALE') !== false) {
+            $category_cache[$cache_key] = 'BEER';
             return 'BEER';
         }
         
         // Default: if it's in Foreign Liquor mode but doesn't match above, treat as IMFL
+        $category_cache[$cache_key] = 'IMFL';
         return 'IMFL';
         
     } elseif ($mode === 'C' || $mode === 'CL') {
@@ -86,20 +113,31 @@ function getItemCategory($conn, $item_code, $mode) {
         $cl_keywords = ['COUNTRY', 'CL', 'DESI', 'LOCAL', 'TRADITIONAL'];
         foreach ($cl_keywords as $keyword) {
             if (strpos($details2, $keyword) !== false) {
+                $category_cache[$cache_key] = 'CL';
                 return 'CL';
             }
         }
         
-        return 'CL'; // Default for CL mode
+        $category_cache[$cache_key] = 'CL';
+        return 'CL';
     }
     
+    $category_cache[$cache_key] = 'OTHER';
     return 'OTHER';
 }
 
 /**
- * Get item size from CC in tblsubclass or extract from details - ENHANCED
+ * Get item size from CC in tblsubclass or extract from details - CACHED
  */
 function getItemSize($conn, $item_code, $mode) {
+    global $size_cache;
+    
+    $cache_key = $item_code . '|' . $mode;
+    
+    if (isset($size_cache[$cache_key])) {
+        return $size_cache[$cache_key];
+    }
+    
     // First try to get size from DETAILS2 in tblitemmaster with better extraction
     $query = "SELECT im.DETAILS2, sc.CC 
               FROM tblitemmaster im 
@@ -114,6 +152,7 @@ function getItemSize($conn, $item_code, $mode) {
     
     // Priority 1: Use CC from tblsubclass if available and valid
     if ($item_data && $item_data['CC'] > 0) {
+        $size_cache[$cache_key] = (float)$item_data['CC'];
         return (float)$item_data['CC'];
     }
     
@@ -127,9 +166,11 @@ function getItemSize($conn, $item_code, $mode) {
             $common_sizes = [30, 60, 90, 120, 180, 250, 330, 350, 500, 650, 750, 1000, 1500];
             foreach ($common_sizes as $common_size) {
                 if (abs($size - $common_size) <= 10) { // Allow small variations
+                    $size_cache[$cache_key] = $common_size;
                     return $common_size;
                 }
             }
+            $size_cache[$cache_key] = $size;
             return $size;
         }
     }
@@ -147,6 +188,7 @@ function getItemSize($conn, $item_code, $mode) {
         // Try to extract size from item name
         if (preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $item_data['DETAILS'], $matches)) {
             $size = (float)$matches[1];
+            $size_cache[$cache_key] = $size;
             return $size;
         }
     }
@@ -155,13 +197,17 @@ function getItemSize($conn, $item_code, $mode) {
     $category = getItemCategory($conn, $item_code, $mode);
     switch ($category) {
         case 'IMFL':
-            return 750; // Standard liquor bottle
+            $size_cache[$cache_key] = 750;
+            return 750;
         case 'BEER':
-            return 650; // Standard beer bottle/can
+            $size_cache[$cache_key] = 650;
+            return 650;
         case 'CL':
-            return 180; // Standard country liquor pouch
+            $size_cache[$cache_key] = 180;
+            return 180;
         default:
-            return 750; // Common default
+            $size_cache[$cache_key] = 750;
+            return 750;
     }
 }
 

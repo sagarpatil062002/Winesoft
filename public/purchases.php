@@ -17,6 +17,31 @@ function debugLog($message, $data = null) {
     file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
 }
 
+// Function to check TP number uniqueness
+function isTPNoUnique($conn, $tp_no, $companyId, $exclude_voc_no = null) {
+    if (empty($tp_no)) return true; // Empty TP numbers are allowed
+    
+    $query = "SELECT COUNT(*) as count FROM tblpurchases WHERE TPNO = ? AND CompID = ?";
+    $params = [$tp_no, $companyId];
+    $types = "si";
+    
+    // If updating existing record, exclude current voucher
+    if ($exclude_voc_no !== null) {
+        $query .= " AND VOC_NO != ?";
+        $params[] = $exclude_voc_no;
+        $types .= "i";
+    }
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    
+    return $row['count'] == 0;
+}
+
 // Start debug session
 debugLog("=== NEW PURCHASE SESSION STARTED ===");
 
@@ -40,6 +65,12 @@ if (!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 
 $companyId = $_SESSION['CompID'];
 debugLog("Company ID from session", $companyId);
+
+// Check for duplicate TP number error
+$tp_no_duplicate_error = '';
+if (isset($_GET['tp_error']) && $_GET['tp_error'] == 1) {
+    $tp_no_duplicate_error = 'TP Number already exists. Please enter a unique TP number.';
+}
 
 include_once "../config/db.php";
 include_once "stock_functions.php";
@@ -679,6 +710,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier_code = $_POST['supplier_code'] ?? '';
     $supplier_name = $_POST['supplier_name'] ?? '';
     
+    // Check if TP number is unique (if provided)
+    if (!empty($tp_no)) {
+        if (!isTPNoUnique($conn, $tp_no, $companyId)) {
+            $errorMessage = "TP Number '$tp_no' already exists. Please enter a unique TP number.";
+            debugLog("Duplicate TP number detected", [
+                'tp_no' => $tp_no,
+                'company_id' => $companyId
+            ]);
+            
+            // Store the error and redirect back with the error message
+            $_SESSION['tp_no_duplicate_error'] = $errorMessage;
+            $_SESSION['form_data'] = $_POST; // Save form data for repopulation
+            header("Location: purchases.php?mode=" . urlencode($mode) . "&tp_error=1");
+            exit;
+        }
+    }
+    
     // Charges and taxes
     $cash_disc = $_POST['cash_disc'] ?? 0;
     $trade_disc = $_POST['trade_disc'] ?? 0;
@@ -1078,9 +1126,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </p>
       </div>
 
-      <?php if (isset($errorMessage)): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
-      <?php endif; ?>
+       <?php if (isset($errorMessage)): ?>
+         <div class="alert alert-danger"><?= htmlspecialchars($errorMessage) ?></div>
+       <?php endif; ?>
+
+       <?php if (isset($_GET['tp_error']) && $_GET['tp_error'] == 1 && isset($_SESSION['tp_no_duplicate_error'])): ?>
+         <div class="alert alert-danger">
+             <i class="fa-solid fa-circle-exclamation me-2"></i>
+             <?= htmlspecialchars($_SESSION['tp_no_duplicate_error']) ?>
+         </div>
+         <?php unset($_SESSION['tp_no_duplicate_error']); ?>
+       <?php endif; ?>
+
+       <?php if (isset($_SESSION['form_data'])): ?>
+         <script>
+             $(function() {
+                 // Repopulate form with saved data
+                 <?php
+                 $formData = $_SESSION['form_data'];
+                 unset($_SESSION['form_data']);
+                 
+                 foreach ($formData as $key => $value) {
+                     if ($key != 'items' && is_string($value)) {
+                         echo "$('[name=\"$key\"]').val('" . addslashes($value) . "');\n";
+                     }
+                 }
+                 ?>
+             });
+         </script>
+       <?php endif; ?>
 
       <div class="alert alert-info">
         <div class="d-flex align-items-center gap-2 mb-1">
@@ -2239,12 +2313,38 @@ function addRow(item){
     $('#scmPasteModal').modal('hide');
   });
 
+  // Function to check TP number uniqueness via AJAX
+  function checkTPNumberUniqueness(tpNo) {
+      if (!tpNo || tpNo.trim() === '') return true;
+      
+      return $.ajax({
+          url: 'check_tp_unique.php',
+          type: 'POST',
+          data: {
+              tp_no: tpNo,
+              company_id: companyId,
+              voc_no: $('input[name="voc_no"]').val() // For edit mode
+          },
+          async: false
+      }).responseJSON?.unique ?? true;
+  }
+
   // Form submission
   $('#purchaseForm').on('submit', function(e) {
     if ($('.item-row').length === 0) {
         alert('Please add at least one item before saving.');
         e.preventDefault();
         return;
+    }
+    
+    const tpNo = $('#tpNo').val().trim();
+    if (tpNo) {
+        const isUnique = checkTPNumberUniqueness(tpNo);
+        if (!isUnique) {
+            alert('TP Number already exists. Please enter a unique TP number.');
+            e.preventDefault();
+            return;
+        }
     }
   });
 

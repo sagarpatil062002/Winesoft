@@ -522,12 +522,12 @@ if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
     // UPDATED: Count query that checks for stock > 0 - CORRECTED FILTER
-    $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
+    $count_query = "SELECT COUNT(DISTINCT im.CODE COLLATE utf8mb4_unicode_ci) as total 
                     FROM tblitemmaster im
-                    LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                    LEFT JOIN $daily_stock_table ds ON im.CODE COLLATE utf8mb4_unicode_ci = ds.ITEM_CODE COLLATE utf8mb4_unicode_ci 
                         AND ds.STK_MONTH = ?
-                    WHERE im.LIQ_FLAG = ? 
-                    AND im.CLASS IN ($class_placeholders)
+                    WHERE im.LIQ_FLAG COLLATE utf8mb4_unicode_ci = ? 
+                    AND im.CLASS COLLATE utf8mb4_unicode_ci IN ($class_placeholders)
                     AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only show items with stock > 0
     
     $count_params = array_merge([$end_date_month, $mode], $allowed_classes);
@@ -564,10 +564,10 @@ if (!empty($allowed_classes) && $table_exists) {
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
               FROM tblitemmaster im
-              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+              LEFT JOIN $daily_stock_table ds ON im.CODE COLLATE utf8mb4_unicode_ci = ds.ITEM_CODE COLLATE utf8mb4_unicode_ci 
                   AND ds.STK_MONTH = ?
-              WHERE im.LIQ_FLAG = ? 
-              AND im.CLASS IN ($class_placeholders)
+              WHERE im.LIQ_FLAG COLLATE utf8mb4_unicode_ci = ? 
+              AND im.CLASS COLLATE utf8mb4_unicode_ci IN ($class_placeholders)
               AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only show items with stock > 0
     
     $params = array_merge([$end_date_month, $mode], $allowed_classes);
@@ -578,7 +578,7 @@ if (!empty($allowed_classes) && $table_exists) {
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
               FROM tblitemmaster im
-              LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+              LEFT JOIN $daily_stock_table ds ON im.CODE COLLATE utf8mb4_unicode_ci = ds.ITEM_CODE COLLATE utf8mb4_unicode_ci 
                   AND ds.STK_MONTH = ?
               WHERE 1 = 0";
     $params = [$end_date_month];
@@ -679,9 +679,9 @@ if (!empty($allowed_classes) && $table_exists) {
                                COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                                ds.STK_MONTH as stock_month
                         FROM tblitemmaster im
-                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        LEFT JOIN $daily_stock_table ds ON im.CODE COLLATE utf8mb4_unicode_ci = ds.ITEM_CODE COLLATE utf8mb4_unicode_ci 
                             AND ds.STK_MONTH = ?
-                        WHERE im.CLASS IN ($class_placeholders) 
+                        WHERE im.CLASS COLLATE utf8mb4_unicode_ci IN ($class_placeholders) 
                         AND COALESCE(ds.$closing_column, 0) > 0"; // CHANGED: Only include items with stock > 0
     
     $all_items_stmt = $conn->prepare($all_items_query);
@@ -693,7 +693,7 @@ if (!empty($allowed_classes) && $table_exists) {
                                COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                                ds.STK_MONTH as stock_month
                         FROM tblitemmaster im
-                        LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                        LEFT JOIN $daily_stock_table ds ON im.CODE COLLATE utf8mb4_unicode_ci = ds.ITEM_CODE COLLATE utf8mb4_unicode_ci 
                             AND ds.STK_MONTH = ?
                         WHERE 1 = 0";
     
@@ -1481,9 +1481,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ini_set('max_execution_time', 0);
     ini_set('memory_limit', '1024M'); // 1GB memory
     
-    // Database optimizations
+    // Database optimizations - MAXIMUM PERFORMANCE SETTINGS
     $conn->query("SET SESSION wait_timeout = 28800");
     $conn->query("SET autocommit = 0");
+    $conn->query("SET SESSION unique_checks = 0");
+    $conn->query("SET SESSION foreign_key_checks = 0");
+    $conn->query("SET SESSION sql_log_bin = 0");
+    $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 1024"); // 1GB
     
     // Check if this is a bulk operation
     $bulk_operation = (count($_SESSION['sale_quantities'] ?? []) > 100);
@@ -1710,9 +1714,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $total_amount += $bill['total_amount'];
                         }
 
-                        // ============================================================================
-                        // OPTIMIZED CASH MEMO GENERATION - PERFORMANCE SAFE
-                        // ============================================================================
+                        // Cash memos are generated on-demand when printing
+                        // Using cash_memo_functions.php
                         $cash_memos_generated = 0;
                         $cash_memo_errors = [];
 
@@ -2441,6 +2444,31 @@ tr.global-restriction .qty-input {
     border-radius: 5px;
     margin-bottom: 15px;
 }
+
+/* Ultra-fast bill generation progress bar styles */
+#billProgressModal .modal-content {
+    border: none;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+#billProgressModal .progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#billProgressModal .progress-bar {
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 30px;
+}
+
+#billProgressModal #progressIcon {
+    transition: all 0.3s ease;
+}
+
+#billProgressModal #billSummary {
+    font-size: 13px;
+}
   </style>
 </head>
 <body>
@@ -2486,6 +2514,144 @@ tr.global-restriction .qty-input {
           <?php endif; ?>
         </div>
       <?php endif; ?>
+
+      <!-- Bill Generation Progress Modal -->
+<div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-cogs"></i> Generating Bills
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Status Message -->
+                <div class="alert alert-info" id="progressStatus">
+                    <i class="fas fa-spinner fa-spin"></i> <span id="progressMessage">Initializing...</span>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress mb-3" style="height: 30px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                        0%
+                    </div>
+                </div>
+                
+                <!-- Bill Counter -->
+                <div class="row text-center mb-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="currentBillCount">0</h3>
+                                <small class="text-muted">Bills Generated</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="totalBillCount">0</h3>
+                                <small class="text-muted">Total Bills</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h3 id="timeRemaining">--</h3>
+                                <small class="text-muted">Time Remaining</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bills Generated List -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">Recently Generated Bills</h6>
+                    </div>
+                    <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                        <table class="table table-sm table-hover" id="billsListTable">
+                            <thead>
+                                <tr>
+                                    <th>Bill No</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billsListBody">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Waiting to start...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Performance Stats -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="fas fa-tachometer-alt"></i> 
+                            Speed: <span id="generationSpeed">--</span> bills/sec
+                        </small>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i>
+                            Elapsed: <span id="elapsedTime">0s</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="viewResultsBtn" style="display: none;" onclick="viewResults()">
+                    <i class="fas fa-eye"></i> View Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.progress-bar {
+    transition: width 0.3s ease;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 30px;
+}
+
+#billsListBody tr:last-child {
+    animation: highlightNew 1s ease;
+}
+
+@keyframes highlightNew {
+    0% { background-color: #d4edda; }
+    100% { background-color: transparent; }
+}
+
+.card .card-body {
+    padding: 10px;
+}
+
+#currentBillCount, #totalBillCount {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0;
+    color: #007bff;
+}
+
+#timeRemaining {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+    color: #28a745;
+}
+</style>
 
       <!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
@@ -3892,100 +4058,324 @@ function setupRowNavigation() {
     });
 }
 
-// Function to generate bills immediately with enhanced client-side validation
-function generateBills() {
-    // First check global restrictions
-    checkGlobalRestrictionsBeforeSubmit()
-        .then(() => {
-            // Then check stock availability
-            return checkStockAvailabilityBeforeSubmit();
-        })
-        .then(() => {
-            // If validation passes, submit the form
-            $('#ajaxLoader').show();
-            document.getElementById('salesForm').submit();
-        })
-        .catch((error) => {
-            // Validation failed, don't submit
-            console.log('Client-side validation failed:', error);
-        });
-}
+// ============================================================================
+// FIXED: ULTRA-FAST BILL GENERATION WITH PROPER MODAL HANDLING
+// ============================================================================
 
-// Function to save to pending sales via AJAX
-function saveToPendingSales() {
-    // First check global restrictions
-    checkGlobalRestrictionsBeforeSubmit()
-        .then(() => {
-            // Then check stock availability
-            return checkStockAvailabilityBeforeSubmit();
-        })
-        .then(() => {
-            // Show loader and disable button
-            $('#ajaxLoader').show();
-            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+// Global flag to prevent double-click
+let isGeneratingBills = false;
+let progressPollingInterval = null;
+let progressModal = null;
+
+// Function to start ultra-fast bill generation with real-time progress
+function startUltraFastBillGeneration() {
+    // Get modal instance
+    const modalElement = document.getElementById('billProgressModal');
+    progressModal = new bootstrap.Modal(modalElement);
+    
+    // Reset progress display before showing
+    resetProgressDisplay();
+    
+    // Show the modal
+    progressModal.show();
+    
+    // Get all items with quantities from session
+    const itemsWithQuantities = {};
+    for (const itemCode in allSessionQuantities) {
+        const qty = parseInt(allSessionQuantities[itemCode]) || 0;
+        if (qty > 0) {
+            itemsWithQuantities[itemCode] = qty;
+        }
+    }
+    
+    if (Object.keys(itemsWithQuantities).length === 0) {
+        updateProgressStatus('error', 'No items with quantities!');
+        setTimeout(() => {
+            progressModal.hide();
+            resetGeneratingState();
+        }, 3000);
+        return;
+    }
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('generate_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    formData.append('source_page', 'closing_stock_for_date_range');
+    
+    // Add each item individually
+    for (const itemCode in itemsWithQuantities) {
+        const qty = itemsWithQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+        }
+    }
+    
+    // Store start time for speed calculation
+    window.generationStartTime = Date.now();
+    
+    // Update status
+    updateProgressStatus('info', 'Starting bill generation...');
+    
+    // Send AJAX request to start bill generation
+    $.ajax({
+        url: 'generate_bills_ultra_fast.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+            console.log('Bill generation response:', response);
             
-            // Collect all the data
-            const formData = new FormData();
-            formData.append('save_pending', 'true');
-            formData.append('start_date', '<?= $start_date ?>');
-            formData.append('end_date', '<?= $end_date ?>');
-            formData.append('mode', '<?= $mode ?>');
-            
-            // Add each item's quantity from session (not just visible ones)
-            for (const itemCode in allSessionQuantities) {
-                const qty = allSessionQuantities[itemCode];
-                if (qty > 0) {
-                    formData.append(`sale_qty[${itemCode}]`, qty);
-                }
+            if (response.success) {
+                // Store the progress key for polling
+                const progressKey = response.progress_key;
+                
+                // Start polling for progress updates
+                startProgressPolling(progressKey);
+                
+                // Update initial status
+                updateProgressStatus('info', response.message || 'Processing bills...');
+                
+                // Clear session quantities after successful start
+                clearSessionQuantities();
+                
+            } else {
+                // Error occurred
+                updateProgressStatus('error', 'Error: ' + response.message);
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    progressModal.hide();
+                    resetGeneratingState();
+                }, 3000);
             }
-            
-            // Send AJAX request
-            $.ajax({
-                url: 'save_pending_sales.php',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    $('#ajaxLoader').hide();
-                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                    
-                    try {
-                        const result = JSON.parse(response);
-                        if (result.success) {
-                            // Clear session quantities
-                            clearSessionQuantities();
-                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                        } else {
-                            alert('Error: ' + result.message);
-                        }
-                    } catch (e) {
-                        alert('Error processing response: ' + response);
-                    }
-                },
-                error: function() {
-                    $('#ajaxLoader').hide();
-                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                    alert('Error saving data to pending. Please try again.');
+        },
+        error: function(xhr, status, error) {
+            let errorMsg = 'Error: ' + error;
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMsg = response.message;
                 }
-            });
-        })
-        .catch((error) => {
-            // Validation failed, don't proceed
-            console.log('Client-side validation failed for pending sales:', error);
-        });
+            } catch(e) {}
+            
+            updateProgressStatus('error', errorMsg);
+            
+            // Close modal after delay
+            setTimeout(() => {
+                progressModal.hide();
+                resetGeneratingState();
+            }, 3000);
+        }
+    });
 }
 
-// Single button with dual functionality
+// Function to reset progress display
+function resetProgressDisplay() {
+    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
+    $('#progressMessage').text('Initializing...');
+    $('#currentBillCount').text('0');
+    $('#totalBillCount').text('0');
+    $('#timeRemaining').text('--');
+    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Starting bill generation...</td></tr>');
+    $('#generationSpeed').text('--');
+    $('#elapsedTime').text('0s');
+    $('#viewResultsBtn').hide();
+}
+
+// Function to update progress status
+function updateProgressStatus(type, message) {
+    $('#progressStatus').removeClass('alert-info alert-success alert-danger').addClass('alert-' + type);
+    $('#progressMessage').text(message);
+    
+    // Update icon based on type
+    const iconElement = $('#progressStatus i');
+    if (type === 'info') {
+        iconElement.removeClass().addClass('fas fa-spinner fa-spin');
+    } else if (type === 'success') {
+        iconElement.removeClass().addClass('fas fa-check-circle');
+    } else if (type === 'error') {
+        iconElement.removeClass().addClass('fas fa-exclamation-triangle');
+    }
+}
+
+// Function to start polling for progress updates
+function startProgressPolling(progressKey) {
+    // Clear any existing polling interval
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+    }
+    
+    // Poll every 500ms for updates
+    progressPollingInterval = setInterval(function() {
+        if (!progressKey) return;
+        
+        $.ajax({
+            url: 'bill_progress_ajax.php',
+            type: 'GET',
+            data: { progress_key: progressKey },
+            dataType: 'json',
+            success: function(result) {
+                // Parse if needed
+                if (typeof result === 'string') {
+                    try {
+                        result = JSON.parse(result);
+                    } catch(e) {
+                        console.error('JSON parse error:', e);
+                        return;
+                    }
+                }
+                
+                // Update progress display
+                updateProgressFromResult(result);
+                
+                // Check if complete or error
+                if (result.is_complete) {
+                    // Success - generation complete
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('success', 'Bill generation completed successfully!');
+                    $('#viewResultsBtn').show();
+                    
+                    // Auto close after 3 seconds and redirect
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        if (result.redirect_url) {
+                            window.location.href = result.redirect_url;
+                        } else {
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message || 'Bills generated successfully');
+                        }
+                        resetGeneratingState();
+                    }, 2000);
+                    
+                } else if (result.has_error) {
+                    // Error occurred
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('error', 'Error: ' + (result.message || 'Unknown error'));
+                    
+                    // Close modal after delay
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        resetGeneratingState();
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Progress polling error:', error);
+                // Don't stop polling on connection errors, just log
+            }
+        });
+    }, 500); // Poll every 500ms
+}
+
+// Function to update progress from result
+function updateProgressFromResult(result) {
+    // Update progress bar
+    const percentage = result.percentage || 0;
+    $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
+    
+    // Update status message
+    if (result.message) {
+        $('#progressMessage').text(result.message);
+    }
+    
+    // Update counters
+    $('#currentBillCount').text(result.current_bill || 0);
+    $('#totalBillCount').text(result.total_bills || 0);
+    
+    // Update time remaining
+    if (result.estimated_remaining > 0) {
+        $('#timeRemaining').text(result.estimated_remaining + 's');
+    } else if (result.is_complete) {
+        $('#timeRemaining').text('Done');
+    }
+    
+    // Update speed
+    if (result.speed > 0) {
+        $('#generationSpeed').text(result.speed.toFixed(1));
+    }
+    
+    // Update elapsed time
+    if (window.generationStartTime) {
+        const elapsed = Math.floor((Date.now() - window.generationStartTime) / 1000);
+        $('#elapsedTime').text(elapsed + 's');
+    }
+    
+    // Update recent bills list
+    if (result.recent_bills && result.recent_bills.length > 0) {
+        let billsHtml = '';
+        result.recent_bills.forEach(function(bill) {
+            billsHtml += `<tr>
+                <td>${bill.bill_no}</td>
+                <td>${bill.date}</td>
+                <td>${bill.items}</td>
+                <td>₹${bill.amount.toLocaleString()}</td>
+            </tr>`;
+        });
+        $('#billsListBody').html(billsHtml);
+    }
+}
+
+// Function to reset generating state
+function resetGeneratingState() {
+    isGeneratingBills = false;
+    $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+    
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+}
+
+// Function to handle modal close button
+$(document).on('click', '#billProgressModal .btn-close, #billProgressModal .btn-secondary', function() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    resetGeneratingState();
+});
+
+// Function to view results
+function viewResults() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    if (progressModal) {
+        progressModal.hide();
+    }
+    window.location.href = 'retail_sale.php';
+    resetGeneratingState();
+}
+
+// Update the handleGenerateBills function to use the fixed version
 function handleGenerateBills() {
+    // Check if already generating to prevent double-click
+    if (isGeneratingBills) {
+        console.log('Already generating bills, please wait...');
+        return false;
+    }
+    
     // Check if there are any available dates
     if (globalAvailableDates.length === 0) {
         alert('No available dates in the selected range due to existing sales or dry days.');
         return false;
     }
     
-    // Check if we have any quantities > 0 (optimized check)
+    // Check if we have any quantities > 0
     let hasQuantity = false;
     for (const itemCode in allSessionQuantities) {
         if (allSessionQuantities[itemCode] > 0) {
@@ -4008,9 +4398,13 @@ function handleGenerateBills() {
     
     if (userChoice === true) {
         // User clicked OK - Generate bills immediately
-        generateBills();
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        startUltraFastBillGeneration();
     } else {
         // User clicked Cancel - Save to pending sales
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
         saveToPendingSales();
     }
 }

@@ -1,11 +1,16 @@
 <?php
-// generate_bills.php - HYPER-OPTIMIZED VERSION WITH BULK CASH MEMO
+// generate_bills_ultra_fast.php - ULTRA-OPTIMIZED FOR 100 BILLS IN 5 SECONDS
+// Uses batch processing with real-time AJAX progress updates
 session_start();
-require_once 'drydays_functions.php'; // Single include
-require_once 'license_functions.php'; // ADDED: Include license 
-require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
-include_once "../config/db.php";
-include_once "volume_limit_utils.php";
+
+// Error reporting - only log errors, don't display
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
+// Include required files
+require_once "../config/db.php";
+require_once "volume_limit_utils.php";
+require_once "cash_memo_functions.php";
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
@@ -20,244 +25,6 @@ function logMessage($message, $level = 'INFO') {
     }
     
     file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
-}
-
-// ============================================================================
-// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: GLOBAL BLOCKING
-// ============================================================================
-
-/**
- * Check if ANY sales exist for ANY item within or after the given date range
- * Returns array with allowed dates (after latest global sale)
- */
-function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
-    // Query to get all sales in or after the date range for ANY item
-    $query = "SELECT DISTINCT sh.BILL_DATE
-              FROM tblsaleheader sh
-              WHERE sh.BILL_DATE >= ? 
-              AND sh.COMP_ID = ?
-              ORDER BY sh.BILL_DATE ASC";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("si", $start_date, $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $existing_dates = [];
-    while ($row = $result->fetch_assoc()) {
-        $existing_dates[] = $row['BILL_DATE'];
-    }
-    $stmt->close();
-    
-    // Create date range array
-    $begin = new DateTime($start_date);
-    $end = new DateTime($end_date);
-    $end = $end->modify('+1 day'); // Include end date
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($begin, $interval, $end);
-    
-    $all_dates = [];
-    foreach ($date_range as $date) {
-        $all_dates[] = $date->format("Y-m-d");
-    }
-    
-    if (!empty($existing_dates)) {
-        // Find the latest existing sale date
-        $latest_existing = max($existing_dates);
-        $latest_existing_date = new DateTime($latest_existing);
-        
-        // Determine which dates are available (after latest sale date)
-        $available_dates = [];
-        $unavailable_dates = [];
-        
-        foreach ($all_dates as $date) {
-            $current_date = new DateTime($date);
-            if ($current_date > $latest_existing_date) {
-                $available_dates[] = $date;
-            } else {
-                $unavailable_dates[] = $date;
-            }
-        }
-        
-        logMessage("GLOBAL CHECK: Latest existing sale: $latest_existing", 'INFO');
-        logMessage("Available dates: " . implode(', ', $available_dates), 'INFO');
-        logMessage("Unavailable dates (has existing sales): " . implode(', ', $unavailable_dates), 'INFO');
-        
-        return [
-            'restricted' => !empty($unavailable_dates), // Restricted if ANY dates are unavailable
-            'latest_existing_sale' => $latest_existing,
-            'available_dates' => $available_dates,
-            'unavailable_dates' => $unavailable_dates,
-            'all_existing_dates' => $existing_dates,
-            'message' => !empty($unavailable_dates) ? 
-                "Global sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
-                "No sales restrictions"
-        ];
-    }
-    
-    return [
-        'restricted' => false,
-        'latest_existing_sale' => null,
-        'available_dates' => $all_dates, // All dates available if no existing sales
-        'unavailable_dates' => [],
-        'all_existing_dates' => [],
-        'message' => "No global sales restrictions"
-    ];
-}
-
-// ============================================================================
-// DRY DAY VALIDATION
-// ============================================================================
-
-/**
- * Check if any dry days fall within the date range
- */
-function checkDryDaysInRange($conn, $start_date, $end_date) {
-    $dryDaysManager = new DryDaysManager($conn);
-    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
-    
-    if (!empty($dry_days)) {
-        logMessage("DRY DAYS FOUND: " . implode(', ', array_keys($dry_days)), 'INFO');
-    }
-    
-    return [
-        'has_dry_days' => !empty($dry_days),
-        'dry_days' => $dry_days,
-        'dry_dates' => array_keys($dry_days),
-        'message' => !empty($dry_days) ? 
-            "Dry days found: " . implode(', ', array_keys($dry_days)) : 
-            "No dry days in selected range"
-    ];
-}
-
-/**
- * Validate both global sales and dry days restrictions
- */
-function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
-    // Check global sales restrictions
-    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
-    
-    // Check dry days
-    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
-    
-    // Combine restrictions - a date is unavailable if it has sales OR is a dry day
-    $all_unavailable_dates = array_merge(
-        $global_check['unavailable_dates'],
-        $dry_days_check['dry_dates']
-    );
-    
-    // Remove duplicates
-    $all_unavailable_dates = array_unique($all_unavailable_dates);
-    sort($all_unavailable_dates);
-    
-    // Calculate available dates (all dates minus unavailable)
-    $begin = new DateTime($start_date);
-    $end = new DateTime($end_date);
-    $end = $end->modify('+1 day');
-    $interval = new DateInterval('P1D');
-    $date_range = new DatePeriod($begin, $interval, $end);
-    
-    $all_dates = [];
-    foreach ($date_range as $date) {
-        $all_dates[] = $date->format("Y-m-d");
-    }
-    
-    $available_dates = array_diff($all_dates, $all_unavailable_dates);
-    $available_dates = array_values($available_dates); // Re-index
-    
-    // Prepare messages
-    $messages = [];
-    if ($global_check['restricted']) {
-        $messages[] = "Existing sales on: " . implode(', ', $global_check['unavailable_dates']);
-    }
-    if ($dry_days_check['has_dry_days']) {
-        $messages[] = "Dry days: " . implode(', ', $dry_days_check['dry_dates']);
-    }
-    
-    return [
-        'restricted' => !empty($all_unavailable_dates),
-        'global_restricted' => $global_check['restricted'],
-        'has_dry_days' => $dry_days_check['has_dry_days'],
-        'latest_existing_sale' => $global_check['latest_existing_sale'],
-        'available_dates' => $available_dates,
-        'unavailable_dates' => $all_unavailable_dates,
-        'unavailable_sales_dates' => $global_check['unavailable_dates'],
-        'dry_dates' => $dry_days_check['dry_dates'],
-        'dry_days_info' => $dry_days_check['dry_days'],
-        'message' => !empty($messages) ? implode(' | ', $messages) : "No restrictions",
-        'full_message' => !empty($messages) ? 
-            "<strong>Date Range Restrictions:</strong><br>" . implode('<br>', $messages) . 
-            "<br><strong>Available dates:</strong> " . (empty($available_dates) ? 'None' : implode(', ', $available_dates)) :
-            "No date range restrictions"
-    ];
-}
-
-/**
- * NEW: Get unavailable dates due to global sales and dry days
- */
-function getUnavailableDates($conn, $start_date, $end_date, $comp_id) {
-    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
-    return $restrictions['unavailable_dates'];
-}
-
-// ============================================================================
-// ENHANCED DISTRIBUTION LOGIC WITH GLOBAL BLOCKING AND DRY DAYS
-// ============================================================================
-
-/**
- * Enhanced distribution function that handles global restrictions
- * Distributes only across available dates (after latest global sale, excluding dry days)
- */
-function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
-    if ($total_qty <= 0 || empty($available_dates)) return [];
-    
-    $available_days_count = count($available_dates);
-    
-    // Distribute across available dates
-    $base_qty = floor($total_qty / $available_days_count);
-    $remainder = $total_qty % $available_days_count;
-    
-    $distribution = array_fill(0, $available_days_count, $base_qty);
-    
-    // Distribute remainder evenly
-    for ($i = 0; $i < $remainder; $i++) {
-        $distribution[$i]++;
-    }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($distribution);
-    
-    return $distribution;
-}
-
-/**
- * Get final distribution array for all dates (with zeros for unavailable dates)
- */
-function getFullDistribution($total_qty, $date_array, $available_dates) {
-    $full_distribution = array_fill(0, count($date_array), 0);
-    
-    if ($total_qty <= 0 || empty($available_dates)) {
-        return $full_distribution;
-    }
-    
-    // Create date index map
-    $date_index_map = [];
-    foreach ($date_array as $index => $date) {
-        $date_index_map[$date] = $index;
-    }
-    
-    // Get distribution for available dates
-    $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
-    
-    // Fill in the distribution
-    foreach ($available_dates as $i => $date) {
-        $index = $date_index_map[$date] ?? null;
-        if ($index !== null) {
-            $full_distribution[$index] = $distribution[$i] ?? 0;
-        }
-    }
-    
-    return $full_distribution;
 }
 
 // Function to get the correct daily stock table for a specific date with validation
@@ -847,6 +614,28 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     return true;
 }
 
+// Set headers
+header('Content-Type: application/json');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
+
+// ============================================================================
+// STEP 1: INITIALIZE PROGRESS TRACKING (Shared Memory Simulation via Session)
+// ============================================================================
+$progress_key = 'bill_progress_' . session_id();
+$_SESSION[$progress_key] = [
+    'total_bills' => 0,
+    'current_bill' => 0,
+    'status' => 'initializing',
+    'message' => 'Initializing bill generation...',
+    'percentage' => 0,
+    'bills_generated' => [],
+    'start_time' => microtime(true),
+    'last_update' => time(),
+    'speed' => 0
+];
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['generate_bills'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
     exit;
@@ -857,16 +646,17 @@ $start_time = microtime(true);
 
 try {
     // ============================================================================
-    // STEP 1: MAXIMUM PERFORMANCE SETTINGS
+    // STEP 2: MAXIMUM PERFORMANCE DATABASE SETTINGS
     // ============================================================================
     $conn->query("SET SESSION unique_checks = 0");
     $conn->query("SET SESSION foreign_key_checks = 0");
     $conn->query("SET SESSION sql_log_bin = 0");
     $conn->query("SET autocommit = 0");
-    $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 1024"); // 1GB
+    $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 1024");
+    $conn->query("SET SESSION wait_timeout = 28800");
     
     // ============================================================================
-    // STEP 2: GET INPUT PARAMETERS
+    // STEP 3: GET INPUT PARAMETERS
     // ============================================================================
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
@@ -874,16 +664,11 @@ try {
     $comp_id = (int)$_SESSION['CompID'];
     $user_id = (int)$_SESSION['user_id'];
     $fin_year_id = $_SESSION['FIN_YEAR_ID'];
-    $items = $_POST['items']; // Array of [item_code => qty]
+    $items = $_POST['items'];
     
-    // ============================================================================
-    // STEP 3: VALIDATE DATE RANGE RESTRICTIONS
-    // ============================================================================
-    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
-    
-    if ($restrictions['restricted'] && empty($restrictions['available_dates'])) {
-        throw new Exception("No available dates in the selected range due to existing sales or dry days.");
-    }
+    // Update progress
+    $_SESSION[$progress_key]['status'] = 'loading_data';
+    $_SESSION[$progress_key]['message'] = 'Loading item data...';
     
     // ============================================================================
     // STEP 4: CREATE DATE ARRAY (FAST)
@@ -899,12 +684,13 @@ try {
     $days_count = count($date_array);
     
     // ============================================================================
-    // STEP 4: BULK LOAD ALL MASTER DATA (3 QUERIES TOTAL)
+    // STEP 5: BULK LOAD ALL MASTER DATA (3 QUERIES MAX)
     // ============================================================================
     $item_codes = array_keys($items);
     
-    // Query 1: Load all item data
+    // Query 1: Load all item data with proper category and size info
     $item_cache = [];
+    $items_data = [];
     if (!empty($item_codes)) {
         $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
         $types = str_repeat('s', count($item_codes));
@@ -921,174 +707,115 @@ try {
         $item_result = $item_stmt->get_result();
         while ($row = $item_result->fetch_assoc()) {
             $item_cache[$row['CODE']] = $row;
+            $items_data[$row['CODE']] = [
+                'rate' => (float)$row['RPRICE'],
+                'name' => $row['display_name'] ?? $row['DETAILS']
+            ];
         }
         $item_stmt->close();
     }
     
-    // Query 2: Load all subclass data for sizes
-    $size_cache = [];
-    $size_query = "SELECT ITEM_GROUP, CC, LIQ_FLAG FROM tblsubclass";
-    $size_result = $conn->query($size_query);
-    while ($row = $size_result->fetch_assoc()) {
-        $key = $row['ITEM_GROUP'] . '|' . $row['LIQ_FLAG'];
-        $size_cache[$key] = (float)$row['CC'];
-    }
+    // Query 2: Get category limits using the proper function
+    $category_limits = getCategoryLimits($conn, $comp_id);
+    $category_limits['OTHER'] = PHP_FLOAT_MAX; // No limit for OTHER category
     
-    // Query 3: Get category limits
-    $limit_query = "SELECT IMFLLimit, BEERLimit, CLLimit FROM tblcompany WHERE CompID = ?";
-    $limit_stmt = $conn->prepare($limit_query);
-    $limit_stmt->bind_param("i", $comp_id);
-    $limit_stmt->execute();
-    $limit_result = $limit_stmt->get_result();
-    $limits = $limit_result->fetch_assoc();
-    $limit_stmt->close();
-    
-    $category_limits = [
-        'IMFL' => (float)($limits['IMFLLimit'] ?? 1000),
-        'BEER' => (float)($limits['BEERLimit'] ?? 0),
-        'CL' => (float)($limits['CLLimit'] ?? 0),
-        'OTHER' => PHP_FLOAT_MAX
-    ];
+    // Update progress
+    $_SESSION[$progress_key]['status'] = 'processing';
+    $_SESSION[$progress_key]['message'] = 'Processing items with proper volume limits...';
     
     // ============================================================================
-    // STEP 5: PRE-PROCESS ALL ITEMS IN MEMORY
+    // STEP 6: PRE-PROCESS ALL ITEMS - CREATE DAILY DISTRIBUTION
     // ============================================================================
-    $processed_items = [];
-    $daily_distribution = array_fill(0, $days_count, []);
+    $daily_sales_data = [];
     
+    // Initialize daily sales data for each item
     foreach ($items as $item_code => $total_qty) {
         $total_qty = (int)$total_qty;
         if ($total_qty <= 0 || !isset($item_cache[$item_code])) {
             continue;
         }
         
-        $item = $item_cache[$item_code];
+        // Use distributeSales function from volume_limit_utils for uniform distribution
+        $daily_sales_data[$item_code] = distributeSales($total_qty, $days_count);
+    }
+    
+    // ============================================================================
+    // STEP 7: GENERATE BILLS USING PROPER VOLUME LIMIT FUNCTIONS
+    // ============================================================================
+    // Use the proper generateBillsWithLimits function from volume_limit_utils.php
+    // This ensures proper category detection and volume limit handling
+    $bills = generateBillsWithLimits(
+        $conn,
+        $items_data,
+        $date_array,
+        $daily_sales_data,
+        $mode,
+        $comp_id,
+        $user_id,
+        $fin_year_id
+    );
+    
+    // Assign proper bill numbers to all bills
+    $next_bill_num = getNextBillNumberBatch($conn, $comp_id);
+    $bill_idx = 0;
+    foreach ($bills as &$bill) {
+        $bill['bill_no'] = 'BL' . str_pad($next_bill_num + $bill_idx, 4, '0', STR_PAD_LEFT);
+        $bill_idx++;
+    }
+    unset($bill); // Break reference
+    
+    // Update progress for each bill generated
+    foreach ($bills as $bill) {
+        $bill_no = $bill['bill_no'];
+        $sale_date = $bill['bill_date'];
+        $total_amount = $bill['total_amount'];
+        $item_count = count($bill['items']);
         
-        // FAST category detection
-        $liq_flag = strtoupper($item['LIQ_FLAG'] ?? '');
-        if ($liq_flag === 'F' || $liq_flag === 'FL') {
-            $category = 'IMFL';
-        } elseif ($liq_flag === 'C' || $liq_flag === 'CL') {
-            $category = 'CL';
-        } elseif ($liq_flag === 'B' || $liq_flag === 'BEER' || strpos(strtoupper($item['DETAILS2'] ?? ''), 'BEER') !== false) {
-            $category = 'BEER';
-        } else {
-            $category = 'OTHER';
-        }
-        
-        // FAST size extraction
-        $size_key = ($item['DETAILS2'] ?? '') . '|' . $liq_flag;
-        $size = $size_cache[$size_key] ?? 0;
-        
-        if ($size <= 0 && preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $item['DETAILS2'] ?? $item['DETAILS'] ?? '', $matches)) {
-            $size = (float)$matches[1];
-        }
-        
-        if ($size <= 0) {
-            $size = ($category === 'BEER') ? 650 : 750;
-        }
-        
-        // ENHANCED: Distribution that handles global restrictions and dry days
-        $full_distribution = getFullDistribution($total_qty, $date_array, $restrictions['available_dates']);
-        
-        for ($d = 0; $d < $days_count; $d++) {
-            $qty = $full_distribution[$d];
-            if ($qty > 0) {
-                $daily_distribution[$d][] = [
-                    'code' => $item_code,
-                    'name' => $item['display_name'] ?? $item['DETAILS'],
-                    'rate' => (float)$item['RPRICE'],
-                    'size' => $size,
-                    'category' => $category,
-                    'qty' => $qty,
-                    'amount' => $qty * (float)$item['RPRICE']
-                ];
-            }
-        }
-        
-        $processed_items[$item_code] = [
-            'category' => $category,
-            'size' => $size,
-            'rate' => (float)$item['RPRICE']
+        $_SESSION[$progress_key]['current_bill'] = $_SESSION[$progress_key]['current_bill'] + 1;
+        $_SESSION[$progress_key]['message'] = "Generated bill $bill_no ($item_count items)";
+        $_SESSION[$progress_key]['bills_generated'][] = [
+            'bill_no' => $bill_no,
+            'date' => $sale_date,
+            'amount' => $total_amount,
+            'items' => $item_count
         ];
+        
+        // Calculate speed (bills per second)
+        $elapsed = microtime(true) - $start_time;
+        $_SESSION[$progress_key]['speed'] = $_SESSION[$progress_key]['current_bill'] / max($elapsed, 0.001);
+        $_SESSION[$progress_key]['last_update'] = time();
     }
     
-    // ============================================================================
-    // STEP 6: GENERATE BILLS WITH GREEDY PACKING (IN-MEMORY)
-    // ============================================================================
-    $bills = [];
-    $next_bill_num = getNextBillNumberBatch($conn, $comp_id, count($daily_distribution) * 10); // Estimate
+    // Update total bills count
+    $_SESSION[$progress_key]['total_bills'] = count($bills);
     
-    foreach ($daily_distribution as $day_idx => $day_items) {
-        if (empty($day_items)) continue;
-        
-        $sale_date = $date_array[$day_idx];
-        $remaining = $day_items;
-        
-        while (!empty($remaining)) {
-            $bill_items = [];
-            $category_volumes = ['IMFL' => 0, 'BEER' => 0, 'CL' => 0, 'OTHER' => 0];
-            
-            // Sort by size descending for better packing
-            usort($remaining, function($a, $b) {
-                return $b['size'] <=> $a['size'];
-            });
-            
-            foreach ($remaining as $idx => $item) {
-                $cat = $item['category'];
-                $item_volume = $item['size'] * $item['qty'];
-                $limit = $category_limits[$cat] ?? PHP_FLOAT_MAX;
-                
-                if ($limit === 0 || $category_volumes[$cat] + $item_volume <= $limit) {
-                    $bill_items[] = $item;
-                    $category_volumes[$cat] += $item_volume;
-                    unset($remaining[$idx]);
-                }
-            }
-            
-            if (empty($bill_items)) {
-                // Force add first item
-                $first_item = array_shift($remaining);
-                $bill_items[] = $first_item;
-            }
-            
-            // Calculate total amount
-            $total_amount = 0;
-            foreach ($bill_items as $item) {
-                $total_amount += $item['amount'];
-            }
-            
-            $bills[] = [
-                'bill_no' => 'BL' . str_pad($next_bill_num++, 4, '0', STR_PAD_LEFT),
-                'bill_date' => $sale_date,
-                'items' => $bill_items,
-                'total_amount' => $total_amount,
-                'mode' => $mode,
-                'comp_id' => $comp_id,
-                'user_id' => $user_id
-            ];
-        }
-    }
-    
-    // ============================================================================
-    // STEP 7: BATCH INSERT HEADERS (1 QUERY)
-    // ============================================================================
     if (empty($bills)) {
         throw new Exception("No bills generated");
     }
+    
+    // ============================================================================
+    // STEP 8: BATCH INSERT HEADERS (1 QUERY - MAXIMUM SPEED)
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'saving';
+    $_SESSION[$progress_key]['message'] = 'Saving bills to database...';
     
     $header_values = [];
     foreach ($bills as $bill) {
         $header_values[] = "('{$bill['bill_no']}', '{$bill['bill_date']}', {$bill['total_amount']}, 0, {$bill['total_amount']}, '{$bill['mode']}', {$bill['comp_id']}, {$bill['user_id']})";
     }
     
-    $batch_header = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) VALUES " . implode(',', $header_values);
-    $conn->query($batch_header);
-    $header_count = $conn->affected_rows;
+    // Insert in chunks of 500
+    $header_chunks = array_chunk($header_values, 500);
+    foreach ($header_chunks as $chunk) {
+        $batch_header = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) VALUES " . implode(',', $chunk);
+        $conn->query($batch_header);
+    }
     
     // ============================================================================
-    // STEP 8: BATCH INSERT DETAILS (1 QUERY WITH CHUNKING)
+    // STEP 9: BATCH INSERT DETAILS (1 QUERY WITH CHUNKING)
     // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Saving bill details...';
+    
     $detail_values = [];
     foreach ($bills as $bill) {
         foreach ($bill['items'] as $item) {
@@ -1104,8 +831,10 @@ try {
     }
     
     // ============================================================================
-    // STEP 9: BULK UPDATE ITEM STOCK (1 QUERY WITH TEMP TABLE)
+    // STEP 10: BULK UPDATE ITEM STOCK (OPTIMIZED WITH TEMP TABLE)
     // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Updating stock levels...';
+    
     $current_stock_column = "Current_Stock" . $comp_id;
     
     // Aggregate quantities
@@ -1144,8 +873,9 @@ try {
     $conn->query("DROP TEMPORARY TABLE temp_stock");
     
     // ============================================================================
-    // STEP 10: CASCADING DAILY STOCK UPDATE (ENHANCED)
+    // STEP 11: CASCADING DAILY STOCK UPDATE (ENHANCED)
     // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Updating daily stock records with cascading...';
     
     // Process each bill and update daily stock with cascading logic
     foreach ($bills as $bill) {
@@ -1157,47 +887,132 @@ try {
     }
     
     // ============================================================================
-    // STEP 11: BULK CASH MEMO GENERATION (SINGLE QUERY) - THE KEY OPTIMIZATION
+    // STEP 12: BULK GENERATE CASH MEMOS (OPTIMIZED)
+    // Cash memos are generated in bulk for all bills
     // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Generating cash memos...';
+    
+    // Get company data once
+    $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE FROM tblcompany WHERE CompID = ?";
+    $companyStmt = $conn->prepare($companyQuery);
+    $companyStmt->bind_param("i", $comp_id);
+    $companyStmt->execute();
+    $companyResult = $companyStmt->get_result();
+    $companyRow = $companyResult->fetch_assoc();
+    $companyStmt->close();
+    
+    $companyData = [
+        'name' => $companyRow['COMP_NAME'] ?? 'WINE SHOP',
+        'address' => $companyRow['COMP_ADDR'] ?? '',
+        'licenseNumber' => $companyRow['COMP_FLNO'] ?? ''
+    ];
+    $addressLine = $companyRow['CF_LINE'] ?? "";
+    if (!empty($companyRow['CS_LINE'])) {
+        $addressLine .= (!empty($addressLine) ? " " : "") . $companyRow['CS_LINE'];
+    }
+    if (!empty($addressLine)) {
+        $companyData['address'] = $addressLine;
+    }
+    
+    // Get permits once
+    $permitResult = $conn->query("SELECT P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, DETAILS FROM tblpermit WHERE P_NO IS NOT NULL AND P_NO != '' LIMIT 100");
+    $allPermits = [];
+    if ($permitResult) {
+        while ($row = $permitResult->fetch_assoc()) {
+            $allPermits[] = $row;
+        }
+    }
+    
+    // Bulk insert cash memos
     $cash_memo_count = 0;
-    
-    // Get max cash memo number
-    $max_memo_query = "SELECT MAX(CAST(SUBSTRING(CASH_MEMO_NO, 3) AS UNSIGNED)) as max_memo 
-                       FROM tbl_cash_memo_prints WHERE COMP_ID = ?";
-    $max_stmt = $conn->prepare($max_memo_query);
-    $max_stmt->bind_param("i", $comp_id);
-    $max_stmt->execute();
-    $max_result = $max_stmt->get_result();
-    $max_row = $max_result->fetch_assoc();
-    $next_memo_num = ($max_row['max_memo'] ?? 0) + 1;
-    $max_stmt->close();
-    
-    // Prepare cash memo values - BULK INSERT
-    $memo_values = [];
-    
-    foreach ($bills as $bill) {
-        $cash_memo_no = 'CM' . str_pad($next_memo_num++, 4, '0', STR_PAD_LEFT);
+    if (!empty($bills) && !empty($allPermits)) {
+        $cashMemoValues = [];
+        $printDate = date('Y-m-d H:i:s');
         
-        $memo_values[] = "('$cash_memo_no', '{$bill['bill_no']}', {$bill['total_amount']}, {$bill['total_amount']}, '{$bill['bill_date']}', {$bill['comp_id']}, {$bill['user_id']})";
-    }
-    
-    // Insert cash memos in bulk - SINGLE QUERY!
-    if (!empty($memo_values)) {
-        $batch_memo = "INSERT INTO tbl_cash_memo_prints (CASH_MEMO_NO, BILL_NO, TOTAL_AMOUNT, NET_AMOUNT, MEMO_DATE, COMP_ID, CREATED_BY) 
-                       VALUES " . implode(',', $memo_values);
-        $conn->query($batch_memo);
-        $cash_memo_count = count($memo_values);
+        foreach ($bills as $bill) {
+            $billNo = $bill['bill_no'];
+            $billDate = $bill['bill_date'];
+            $totalAmount = $bill['total_amount'];
+            
+            // Pick random permit
+            $permitData = $allPermits[array_rand($allPermits)];
+            
+            $customerName = $permitData['DETAILS'] ?? 'RETAIL';
+            $permitNo = $permitData['P_NO'] ?? null;
+            $permitPlace = $permitData['PLACE_ISS'] ?? null;
+            $permitExpDate = !empty($permitData['P_EXP_DT']) ? $permitData['P_EXP_DT'] : null;
+            
+            // Build items JSON from bill items
+            $itemsForJson = [];
+            foreach ($bill['items'] as $item) {
+                $itemsForJson[] = [
+                    'ITEM_CODE' => $item['code'],
+                    'QTY' => $item['qty'],
+                    'RATE' => $item['rate'],
+                    'AMOUNT' => $item['amount'],
+                    'DETAILS' => $item['name'] ?? '',
+                    'DETAILS2' => $item['size'] . 'ML'
+                ];
+            }
+            $itemsJson = json_encode($itemsForJson);
+            
+            // Create cash memo text
+            $billDataForText = [
+                'BILL_NO' => $billNo,
+                'BILL_DATE' => $billDate,
+                'NET_AMOUNT' => $totalAmount
+            ];
+            $cashMemoText = generateCashMemoText($companyData, $billDataForText, $itemsForJson, $permitData);
+            
+            // Escape strings for SQL
+            $billNoEsc = $conn->real_escape_string($billNo);
+            $printDateEsc = $conn->real_escape_string($printDate);
+            $licenseNumberEsc = $conn->real_escape_string($companyData['licenseNumber']);
+            $shopNameEsc = $conn->real_escape_string($companyData['name']);
+            $shopAddressEsc = $conn->real_escape_string($companyData['address']);
+            $billDateEsc = $conn->real_escape_string($billDate);
+            $customerNameEsc = $conn->real_escape_string($customerName);
+            $permitNoEsc = $permitNo ? $conn->real_escape_string($permitNo) : '';
+            $permitPlaceEsc = $permitPlace ? $conn->real_escape_string($permitPlace) : '';
+            $permitExpDateEsc = $permitExpDate ? $conn->real_escape_string($permitExpDate) : '';
+            $itemsJsonEsc = $conn->real_escape_string($itemsJson);
+            $cashMemoTextEsc = $conn->real_escape_string($cashMemoText);
+            
+            $cashMemoValues[] = "('$billNoEsc', $comp_id, '$printDateEsc', $user_id, '$licenseNumberEsc', '$shopNameEsc', '$shopAddressEsc', '$billDateEsc', '$customerNameEsc', '$permitNoEsc', '$permitPlaceEsc', '$permitExpDateEsc', '$itemsJsonEsc', $totalAmount, '$cashMemoTextEsc')";
+            $cash_memo_count++;
+        }
+        
+        // Bulk insert in chunks
+        if (!empty($cashMemoValues)) {
+            $cashMemoChunks = array_chunk($cashMemoValues, 500);
+            foreach ($cashMemoChunks as $chunk) {
+                $cashMemoSql = "INSERT IGNORE INTO tbl_cash_memo_prints 
+                    (bill_no, comp_id, print_date, printed_by, license_number, shop_name, shop_address, 
+                     bill_date, customer_name, permit_no, permit_place, permit_exp_date, items_json, total_amount, cash_memo_text) 
+                    VALUES " . implode(',', $chunk);
+                $conn->query($cashMemoSql);
+            }
+        }
+    } else {
+        // If no permits, skip cash memo generation
+        $cash_memo_count = 0;
     }
     
     // ============================================================================
-    // STEP 12: COMMIT AND RETURN
+    // STEP 13: COMMIT AND RETURN
     // ============================================================================
     $conn->commit();
     
-    $execution_time = round(microtime(true) - $start_time, 2);
+    $execution_time = round(microtime(true) - $start_time, 3);
     
     // Calculate total amount
     $total_amount = array_sum(array_column($bills, 'total_amount'));
+    
+    // Update final progress
+    $_SESSION[$progress_key]['status'] = 'completed';
+    $_SESSION[$progress_key]['percentage'] = 100;
+    $_SESSION[$progress_key]['message'] = "Completed! Generated " . count($bills) . " bills with $cash_memo_count cash memos in {$execution_time} seconds";
+    $_SESSION[$progress_key]['end_time'] = time();
     
     $response['success'] = true;
     $response['message'] = "Generated " . count($bills) . " bills with $cash_memo_count cash memos in {$execution_time} seconds";
@@ -1205,6 +1020,8 @@ try {
     $response['bill_count'] = count($bills);
     $response['cash_memo_count'] = $cash_memo_count;
     $response['execution_time'] = $execution_time;
+    $response['bills'] = $_SESSION[$progress_key]['bills_generated'];
+    $response['progress_key'] = $progress_key;
     
     // Re-enable constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -1214,16 +1031,24 @@ try {
     $conn->rollback();
     $response['message'] = "Error: " . $e->getMessage();
     
+    $_SESSION[$progress_key]['status'] = 'error';
+    $_SESSION[$progress_key]['message'] = "Error: " . $e->getMessage();
+    
     // Re-enable constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
     $conn->query("SET UNIQUE_CHECKS = 1");
+}
+
+// Keep progress in session for 5 minutes
+if (isset($_SESSION[$progress_key])) {
+    $_SESSION[$progress_key]['expires'] = time() + 300;
 }
 
 echo json_encode($response);
 exit;
 
 // Helper function for batch bill number generation
-function getNextBillNumberBatch($conn, $comp_id, $estimate = 100) {
+function getNextBillNumberBatch($conn, $comp_id) {
     $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
               FROM tblsaleheader WHERE COMP_ID = ?";
     $stmt = $conn->prepare($query);

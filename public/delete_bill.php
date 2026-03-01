@@ -294,44 +294,63 @@ function cascadeDailyStockForSales($conn, $table_name, $item_code, $stk_month, $
     }
 }
 
-// Optimized: Function to reverse stock updates for a bill (UPDATED with cash memo deletion)
-function reverseStockUpdatesOptimized($conn, $bill_no, $comp_id) {
-    // Get bill details
-    $bill_query = "SELECT BILL_DATE, LIQ_FLAG FROM tblsaleheader 
-                   WHERE BILL_NO = ? AND COMP_ID = ?";
+// Ultra-optimized: Function to reverse stock updates for multiple bills in bulk
+function reverseStockUpdatesBulkOptimized($conn, $bill_nos, $comp_id) {
+    if (empty($bill_nos)) {
+        return 0;
+    }
+    
+    // Convert to array if single bill
+    if (!is_array($bill_nos)) {
+        $bill_nos = [$bill_nos];
+    }
+    
+    // Get all bill details in bulk
+    $bill_placeholders = implode(',', array_fill(0, count($bill_nos), '?'));
+    $bill_query = "SELECT BILL_NO, BILL_DATE, LIQ_FLAG FROM tblsaleheader 
+                   WHERE BILL_NO IN ($bill_placeholders) AND COMP_ID = ?";
     $bill_stmt = $conn->prepare($bill_query);
-    $bill_stmt->bind_param("si", $bill_no, $comp_id);
+    $bill_params = array_merge($bill_nos, [$comp_id]);
+    $bill_types = str_repeat('s', count($bill_nos)) . 'i';
+    $bill_stmt->bind_param($bill_types, ...$bill_params);
     $bill_stmt->execute();
     $bill_result = $bill_stmt->get_result();
     
-    if ($bill_result->num_rows == 0) {
-        $bill_stmt->close();
-        return false;
+    $bills = [];
+    while ($row = $bill_result->fetch_assoc()) {
+        $bills[$row['BILL_NO']] = $row;
     }
-    
-    $bill = $bill_result->fetch_assoc();
-    $bill_date = $bill['BILL_DATE'];
     $bill_stmt->close();
     
-    // Get sale details
-    $details_query = "SELECT ITEM_CODE, QTY FROM tblsaledetails 
-                      WHERE BILL_NO = ? AND COMP_ID = ?";
+    if (empty($bills)) {
+        return 0;
+    }
+    
+    // Get all sale details in bulk
+    $details_query = "SELECT BILL_NO, ITEM_CODE, QTY FROM tblsaledetails 
+                      WHERE BILL_NO IN ($bill_placeholders) AND COMP_ID = ?";
     $details_stmt = $conn->prepare($details_query);
-    $details_stmt->bind_param("si", $bill_no, $comp_id);
+    $details_stmt->bind_param($bill_types, ...$bill_params);
     $details_stmt->execute();
     $details_result = $details_stmt->get_result();
     
-    $items = [];
+    $all_items = [];
+    $bill_items_map = [];
     while ($row = $details_result->fetch_assoc()) {
-        $items[] = [
+        $item = [
             'ITEM_CODE' => $row['ITEM_CODE'],
             'QTY' => (float)$row['QTY']
         ];
+        $all_items[] = $item;
+        if (!isset($bill_items_map[$row['BILL_NO']])) {
+            $bill_items_map[$row['BILL_NO']] = [];
+        }
+        $bill_items_map[$row['BILL_NO']][] = $item;
     }
     $details_stmt->close();
     
-    if (empty($items)) {
-        return false;
+    if (empty($all_items)) {
+        return 0;
     }
     
     // Get current stock column name
@@ -341,16 +360,20 @@ function reverseStockUpdatesOptimized($conn, $bill_no, $comp_id) {
     $conn->begin_transaction();
     
     try {
-        // 1. FIRST: Delete cash memos for this bill (NEW)
-        deleteCashMemos($conn, $bill_no, $comp_id);
+        // 1. Delete all cash memos in bulk (NEW - optimized)
+        deleteCashMemos($conn, $bill_nos, $comp_id);
         
-        // 2. Batch restore main stock (add back the sold quantity)
-        $item_codes = [];
-        $qtys = [];
-        foreach ($items as $item) {
-            $item_codes[] = $item['ITEM_CODE'];
-            $qtys[] = $item['QTY'];
+        // 2. Batch restore main stock (group items by item code and sum quantities)
+        $item_qty_map = [];
+        foreach ($all_items as $item) {
+            if (!isset($item_qty_map[$item['ITEM_CODE']])) {
+                $item_qty_map[$item['ITEM_CODE']] = 0;
+            }
+            $item_qty_map[$item['ITEM_CODE']] += $item['QTY'];
         }
+        
+        $item_codes = array_keys($item_qty_map);
+        $qtys = array_values($item_qty_map);
         
         // Create CASE statement for batch update
         $case_statement = "CASE ITEM_CODE ";
@@ -380,36 +403,67 @@ function reverseStockUpdatesOptimized($conn, $bill_no, $comp_id) {
         $stock_stmt->execute();
         $stock_stmt->close();
         
-        // 3. Reverse daily stock updates (for SALES)
-        if (!recalculateAndCascadeForSalesItems($conn, $comp_id, $items, $bill_date)) {
-            throw new Exception("Failed to update daily stock");
+        // 3. Reverse daily stock updates (group by date for efficiency)
+        $date_items_map = [];
+        foreach ($bill_nos as $bill_no) {
+            if (isset($bills[$bill_no]) && isset($bill_items_map[$bill_no])) {
+                $bill_date = $bills[$bill_no]['BILL_DATE'];
+                if (!isset($date_items_map[$bill_date])) {
+                    $date_items_map[$bill_date] = [];
+                }
+                // Merge items for the same date, summing quantities
+                foreach ($bill_items_map[$bill_no] as $item) {
+                    $found = false;
+                    foreach ($date_items_map[$bill_date] as &$existing_item) {
+                        if ($existing_item['ITEM_CODE'] == $item['ITEM_CODE']) {
+                            $existing_item['QTY'] += $item['QTY'];
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (!$found) {
+                        $date_items_map[$bill_date][] = $item;
+                    }
+                }
+            }
         }
         
-        // 4. Delete sale details
-        $delete_details_query = "DELETE FROM tblsaledetails WHERE BILL_NO = ? AND COMP_ID = ?";
+        foreach ($date_items_map as $bill_date => $items) {
+            if (!recalculateAndCascadeForSalesItems($conn, $comp_id, $items, $bill_date)) {
+                throw new Exception("Failed to update daily stock for date: " . $bill_date);
+            }
+        }
+        
+        // 4. Delete all sale details in bulk
+        $delete_details_query = "DELETE FROM tblsaledetails WHERE BILL_NO IN ($bill_placeholders) AND COMP_ID = ?";
         $delete_details_stmt = $conn->prepare($delete_details_query);
-        $delete_details_stmt->bind_param("si", $bill_no, $comp_id);
+        $delete_details_stmt->bind_param($bill_types, ...$bill_params);
         $delete_details_stmt->execute();
         $delete_details_stmt->close();
         
-        // 5. Delete sale header
-        $delete_header_query = "DELETE FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
+        // 5. Delete all sale headers in bulk
+        $delete_header_query = "DELETE FROM tblsaleheader WHERE BILL_NO IN ($bill_placeholders) AND COMP_ID = ?";
         $delete_header_stmt = $conn->prepare($delete_header_query);
-        $delete_header_stmt->bind_param("si", $bill_no, $comp_id);
+        $delete_header_stmt->bind_param($bill_types, ...$bill_params);
         $delete_header_stmt->execute();
         $delete_header_stmt->close();
         
         $conn->commit();
-        return true;
+        return count($bill_nos);
         
     } catch (Exception $e) {
         $conn->rollback();
-        error_log("Error reversing stock for bill $bill_no: " . $e->getMessage());
-        return false;
+        error_log("Error reversing stock for bills: " . $e->getMessage());
+        return 0;
     }
 }
 
-// Function to renumber bills after deletion (UPDATED with cash memo updates)
+// Optimized: Function to reverse stock updates for a bill (UPDATED with cash memo deletion)
+function reverseStockUpdatesOptimized($conn, $bill_no, $comp_id) {
+    return reverseStockUpdatesBulkOptimized($conn, $bill_no, $comp_id);
+}
+
+// Optimized: Function to renumber bills after deletion (UPDATED with cash memo updates)
 function renumberBills($conn, $comp_id) {
     // Get all bills ordered by BILL_DATE and original BILL_NO
     $get_bills_query = "SELECT BILL_NO, BILL_DATE FROM tblsaleheader 
@@ -435,6 +489,13 @@ function renumberBills($conn, $comp_id) {
         $counter = 1;
         $bill_mappings = []; // Track old->new mappings for cash memo updates
         
+        // Prepare statements once for reuse
+        $update_header_query = "UPDATE tblsaleheader SET BILL_NO = ? WHERE BILL_NO = ? AND COMP_ID = ?";
+        $update_header_stmt = $conn->prepare($update_header_query);
+        
+        $update_details_query = "UPDATE tblsaledetails SET BILL_NO = ? WHERE BILL_NO = ? AND COMP_ID = ?";
+        $update_details_stmt = $conn->prepare($update_details_query);
+        
         foreach ($bills as $bill) {
             $old_bill_no = $bill['BILL_NO'];
             $new_bill_no = "BL" . str_pad($counter, 4, '0', STR_PAD_LEFT);
@@ -444,26 +505,56 @@ function renumberBills($conn, $comp_id) {
                 $bill_mappings[] = ['old' => $old_bill_no, 'new' => $new_bill_no];
                 
                 // Update bill header
-                $update_header_query = "UPDATE tblsaleheader SET BILL_NO = ? WHERE BILL_NO = ? AND COMP_ID = ?";
-                $update_header_stmt = $conn->prepare($update_header_query);
                 $update_header_stmt->bind_param("ssi", $new_bill_no, $old_bill_no, $comp_id);
                 $update_header_stmt->execute();
-                $update_header_stmt->close();
                 
                 // Update bill details
-                $update_details_query = "UPDATE tblsaledetails SET BILL_NO = ? WHERE BILL_NO = ? AND COMP_ID = ?";
-                $update_details_stmt = $conn->prepare($update_details_query);
                 $update_details_stmt->bind_param("ssi", $new_bill_no, $old_bill_no, $comp_id);
                 $update_details_stmt->execute();
-                $update_details_stmt->close();
             }
             
             $counter++;
         }
         
-        // Update cash memo bill numbers using the mappings (NEW)
+        $update_header_stmt->close();
+        $update_details_stmt->close();
+        
+        // Update cash memo bill numbers using the mappings (NEW) - optimized
         if (!empty($bill_mappings)) {
-            batchUpdateCashMemoBillNumbers($conn, $bill_mappings, $comp_id);
+            // Create a temporary table or use CASE statement for bulk update
+            $cases = [];
+            $params = [];
+            $types = '';
+            
+            foreach ($bill_mappings as $mapping) {
+                $cases[] = "WHEN ? THEN ?";
+                $params[] = $mapping['old'];
+                $params[] = $mapping['new'];
+                $types .= 'ss';
+            }
+            
+            $case_stmt = implode(' ', $cases);
+            
+            $update_cash_memo_query = "UPDATE tbl_cash_memo_prints 
+                                     SET bill_no = CASE bill_no 
+                                     $case_stmt 
+                                     END 
+                                     WHERE bill_no IN (" . implode(',', array_fill(0, count($bill_mappings), '?')) . ") 
+                                     AND comp_id = ?";
+            
+            // Add IN clause parameters
+            foreach ($bill_mappings as $mapping) {
+                $params[] = $mapping['old'];
+                $types .= 's';
+            }
+            
+            $params[] = $comp_id;
+            $types .= 'i';
+            
+            $update_cash_memo_stmt = $conn->prepare($update_cash_memo_query);
+            $update_cash_memo_stmt->bind_param($types, ...$params);
+            $update_cash_memo_stmt->execute();
+            $update_cash_memo_stmt->close();
         }
         
         $conn->commit();
@@ -482,28 +573,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         if (isset($_POST['bulk_delete']) && isset($_POST['bill_nos'])) {
-            // Bulk delete
+            // Bulk delete - use ultra-optimized bulk function
             $bill_nos = json_decode($_POST['bill_nos'], true);
-            $deleted_count = 0;
             
-            // Delete cash memos first (NEW)
-            $deleted_cash_memos = deleteCashMemos($conn, $bill_nos, $compID);
-            
-            // Use optimized function if requested
-            $use_optimized = $optimized;
-            
-            foreach ($bill_nos as $bill_no) {
-                if ($use_optimized) {
-                    if (reverseStockUpdatesOptimized($conn, $bill_no, $compID)) {
-                        $deleted_count++;
-                    }
-                } else {
-                    // Original function for backward compatibility
-                    if (reverseStockUpdates($conn, $bill_no, $compID)) {
-                        $deleted_count++;
-                    }
-                }
-            }
+            // Use optimized bulk function
+            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bill_nos, $compID);
             
             // Renumber bills after deletion
             if ($deleted_count > 0) {
@@ -512,11 +586,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $response = [
                 'success' => true,
-                'message' => "Successfully deleted $deleted_count bill(s), $deleted_cash_memos cash memo(s), and renumbered remaining bills."
+                'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos, and renumbered remaining bills."
             ];
             
         } elseif (isset($_POST['delete_by_date']) && isset($_POST['delete_date'])) {
-            // Delete by date
+            // Delete by date - get all bills first then use bulk function
             $delete_date = $_POST['delete_date'];
             
             // Get all bills for the date
@@ -533,24 +607,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $get_stmt->close();
             
-            // Delete cash memos first (NEW)
-            $deleted_cash_memos = deleteCashMemos($conn, $bills_to_delete, $compID);
-            
-            $deleted_count = 0;
-            // Use optimized function if requested
-            $use_optimized = $optimized;
-            
-            foreach ($bills_to_delete as $bill_no) {
-                if ($use_optimized) {
-                    if (reverseStockUpdatesOptimized($conn, $bill_no, $compID)) {
-                        $deleted_count++;
-                    }
-                } else {
-                    if (reverseStockUpdates($conn, $bill_no, $compID)) {
-                        $deleted_count++;
-                    }
-                }
-            }
+            // Use optimized bulk function
+            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bills_to_delete, $compID);
             
             // Renumber bills after deletion
             if ($deleted_count > 0) {
@@ -559,32 +617,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $response = [
                 'success' => true,
-                'message' => "Successfully deleted $deleted_count bill(s) and $deleted_cash_memos cash memo(s) for $delete_date, and renumbered remaining bills."
+                'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos for $delete_date, and renumbered remaining bills."
             ];
             
         } elseif (isset($_POST['bill_no'])) {
-            // Single bill delete
+            // Single bill delete - use optimized function
             $bill_no = $_POST['bill_no'];
             
-            // Delete cash memos first (NEW)
-            $deleted_cash_memos = deleteCashMemos($conn, $bill_no, $compID);
+            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bill_no, $compID);
             
-            // Use optimized function if requested
-            $use_optimized = $optimized;
-            
-            if ($use_optimized) {
-                $success = reverseStockUpdatesOptimized($conn, $bill_no, $compID);
-            } else {
-                $success = reverseStockUpdates($conn, $bill_no, $compID);
-            }
-            
-            if ($success) {
+            if ($deleted_count > 0) {
                 // Renumber bills after deletion
                 renumberBills($conn, $compID);
                 
                 $response = [
                     'success' => true,
-                    'message' => "Bill $bill_no deleted successfully, along with $deleted_cash_memos cash memo(s), and bills renumbered."
+                    'message' => "Bill $bill_no deleted successfully, along with associated cash memos, and bills renumbered."
                 ];
             } else {
                 $response = [
