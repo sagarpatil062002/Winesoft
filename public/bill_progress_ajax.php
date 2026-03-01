@@ -3,7 +3,9 @@
 session_start();
 
 // Clear any previous output
-ob_clean();
+if (ob_get_level()) {
+    ob_end_clean();
+}
 
 // Set headers
 header('Content-Type: application/json');
@@ -14,13 +16,20 @@ header('Expires: 0');
 $response = [
     'success' => false, 
     'error' => 'Unknown error',
-    'status' => 'error'
+    'status' => 'error',
+    'percentage' => 0,
+    'current_bill' => 0,
+    'total_bills' => 0,
+    'message' => ''
 ];
 
 try {
     // Get the progress key from the request
     $progress_key = isset($_GET['progress_key']) ? $_GET['progress_key'] : '';
-
+    
+    // Debug: Log the request
+    error_log("bill_progress_ajax.php called with progress_key: " . $progress_key . " session_id: " . session_id());
+    
     if (empty($progress_key)) {
         // First check for fixed key 'bill_progress' (used by generate_bills_progress.php)
         if (isset($_SESSION['bill_progress'])) {
@@ -30,17 +39,23 @@ try {
             foreach ($_SESSION as $key => $value) {
                 if (strpos($key, 'bill_progress_') === 0 && is_array($value)) {
                     $progress_key = $key;
+                    error_log("Found progress key: " . $key);
                     break;
                 }
             }
         }
     }
+    
+    // Debug: Log what we're looking for
+    error_log("Looking for session key: " . $progress_key);
+    error_log("Available session keys with bill_progress: " . print_r(array_keys(array_filter($_SESSION, function($k) { return strpos($k, 'bill_progress') === 0; }, ARRAY_FILTER_USE_KEY)), true));
 
     if (empty($progress_key) || !isset($_SESSION[$progress_key])) {
         $response = [
             'success' => false, 
-            'error' => 'No active bill generation',
-            'status' => 'not_started'
+            'error' => 'No active bill generation - key: ' . $progress_key,
+            'status' => 'not_started',
+            'available_keys' => array_keys(array_filter($_SESSION, function($k) { return strpos($k, 'bill_progress') === 0; }, ARRAY_FILTER_USE_KEY))
         ];
         echo json_encode($response);
         exit;

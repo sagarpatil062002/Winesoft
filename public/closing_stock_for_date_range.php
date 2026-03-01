@@ -288,6 +288,7 @@ foreach ($index_queries as $query) {
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
 include_once "stock_functions.php";
+include_once "components/financial_year.php";
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -1708,7 +1709,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
 
                                 // Update daily stock with cascading logic - USING THE FIXED FUNCTION
+                                logMessage("Calling updateDailyStock for item: " . $item['code'] . " date: " . $bill['bill_date'] . " qty: " . $item['qty'], 'INFO');
                                 updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                                logMessage("Completed updateDailyStock for item: " . $item['code'], 'INFO');
                             }
                             
                             $total_amount += $bill['total_amount'];

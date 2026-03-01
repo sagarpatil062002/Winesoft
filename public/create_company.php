@@ -17,7 +17,7 @@ if ($conn->connect_error) {
 // ==================== FINANCIAL YEAR FUNCTIONS ====================
 
 /**
- * Get all financial years from tblfinyear
+ * Get all financial years from tblfinyear with date validation
  */
 function getAllFinancialYears($conn) {
     $fy_list = [];
@@ -33,11 +33,22 @@ function getAllFinancialYears($conn) {
             $start_date = new DateTime($row['START_DATE']);
             $end_date = new DateTime($row['END_DATE']);
             
+            // Format dates for display
+            $start_formatted = $start_date->format('d-m-Y');
+            $end_formatted = $end_date->format('d-m-Y');
+            
+            // Extract years for label
             $start_year = $start_date->format('Y');
             $end_year = $end_date->format('Y');
             
-            $start_formatted = $start_date->format('d-m-Y');
-            $end_formatted = $end_date->format('d-m-Y');
+            // Determine if financial year spans across years
+            if ($start_date->format('m') > $end_date->format('m')) {
+                // Financial year spans across calendar years (e.g., Apr 2025 - Mar 2026)
+                $label = $start_year . '-' . $end_year;
+            } else {
+                // Same calendar year financial year
+                $label = $start_year;
+            }
             
             $fy_list[$row['ID']] = [
                 'id' => $row['ID'],
@@ -45,7 +56,9 @@ function getAllFinancialYears($conn) {
                 'end_date' => $row['END_DATE'],
                 'start_formatted' => $start_formatted,
                 'end_formatted' => $end_formatted,
-                'label' => $start_year . '-' . $end_year,
+                'start_datetime' => $start_date,
+                'end_datetime' => $end_date,
+                'label' => $label,
                 'start_year' => $start_year,
                 'end_year' => $end_year,
                 'active' => $row['ACTIVE']
@@ -57,45 +70,107 @@ function getAllFinancialYears($conn) {
 }
 
 /**
- * Get all months in a financial year
+ * Validate if a date falls within a financial year
+ */
+function isDateInFinancialYear($date, $fy_start, $fy_end) {
+    $check_date = new DateTime($date);
+    $start = new DateTime($fy_start);
+    $end = new DateTime($fy_end);
+    
+    // Set time to start of day for accurate comparison
+    $check_date->setTime(0, 0, 0);
+    $start->setTime(0, 0, 0);
+    $end->setTime(23, 59, 59); // Include the entire end date
+    
+    return ($check_date >= $start && $check_date <= $end);
+}
+
+/**
+ * Validate financial year dates are properly set
+ */
+function validateFinancialYearDates($fy_data) {
+    $errors = [];
+    
+    if (empty($fy_data['START_DATE'])) {
+        $errors[] = "Financial year start date is not set.";
+    }
+    
+    if (empty($fy_data['END_DATE'])) {
+        $errors[] = "Financial year end date is not set.";
+    }
+    
+    if (!empty($fy_data['START_DATE']) && !empty($fy_data['END_DATE'])) {
+        $start = new DateTime($fy_data['START_DATE']);
+        $end = new DateTime($fy_data['END_DATE']);
+        
+        if ($start > $end) {
+            $errors[] = "Financial year start date cannot be after end date.";
+        }
+        
+        // Check if financial year is at least 1 month long
+        $interval = $start->diff($end);
+        if ($interval->days < 28) { // Minimum about a month
+            $errors[] = "Financial year must be at least 1 month long.";
+        }
+    }
+    
+    return $errors;
+}
+
+/**
+ * Get all months in a financial year with validation
  */
 function getMonthsInFinancialYear($start_date, $end_date) {
     $months = [];
     $start = new DateTime($start_date);
     $end = new DateTime($end_date);
+    
+    // Set to first day of month for consistent iteration
+    $start->modify('first day of this month');
     $end->modify('first day of next month');
     
     $interval = new DateInterval('P1M');
     $period = new DatePeriod($start, $interval, $end);
     
     foreach ($period as $month) {
-        $months[] = $month->format('Y-m');
+        $months[] = [
+            'year_month' => $month->format('Y-m'),
+            'year' => $month->format('Y'),
+            'month' => $month->format('m'),
+            'month_name' => $month->format('F Y'),
+            'days_in_month' => cal_days_in_month(CAL_GREGORIAN, $month->format('m'), $month->format('Y'))
+        ];
     }
     
     return $months;
 }
 
 /**
- * Create daily stock structure for a company
+ * Create daily stock structure for a company with strict FY date enforcement
  */
 function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $start_date, $end_date) {
     $tables_created = [];
     $errors = [];
     
+    // Validate financial year dates first
+    $fy_data = ['START_DATE' => $start_date, 'END_DATE' => $end_date];
+    $validation_errors = validateFinancialYearDates($fy_data);
+    
+    if (!empty($validation_errors)) {
+        return ['tables' => [], 'errors' => $validation_errors];
+    }
+    
     $months = getMonthsInFinancialYear($start_date, $end_date);
     
-    foreach ($months as $month) {
-        $month_year = date('m_Y', strtotime($month . '-01'));
+    foreach ($months as $month_data) {
+        $month_year = $month_data['year'] . '_' . $month_data['month'];
         $table_name = "tbldailystock_{$company_id}_{$fin_year_id}_{$month_year}";
         
         $check_query = "SHOW TABLES LIKE '$table_name'";
         $check_result = $conn->query($check_query);
         
         if ($check_result->num_rows == 0) {
-            $year_month = explode('-', $month);
-            $year = $year_month[0];
-            $month_num = $year_month[1];
-            $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+            $days_in_month = $month_data['days_in_month'];
             
             $create_query = "CREATE TABLE $table_name (
                 `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
@@ -108,11 +183,23 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
             
             for ($day = 1; $day <= $days_in_month; $day++) {
                 $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
-                $create_query .= "
+                
+                // Add check to ensure day is within financial year
+                $current_date = $month_data['year'] . '-' . $month_data['month'] . '-' . $day_padded;
+                if (isDateInFinancialYear($current_date, $start_date, $end_date)) {
+                    $create_query .= "
                 `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
                 `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
                 `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
                 `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+                } else {
+                    // Create columns but mark them as disabled for dates outside FY
+                    $create_query .= "
+                `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+                `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+                `DAY_{$day_padded}_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+                `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',";
+                }
             }
             
             $create_query .= "
@@ -121,7 +208,10 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
                 KEY `idx_item_code` (`ITEM_CODE`),
                 KEY `idx_liq_flag` (`LIQ_FLAG`),
                 KEY `idx_fin_year` (`FIN_YEAR_ID`),
-                KEY `idx_stk_month` (`STK_MONTH`)
+                KEY `idx_stk_month` (`STK_MONTH`),
+                CONSTRAINT `chk_fy_dates_$month_year` CHECK (
+                    STK_DATE BETWEEN '$start_date' AND '$end_date'
+                )
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
             
             if ($conn->query($create_query)) {
@@ -132,6 +222,7 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
         }
     }
     
+    // Create summary table with FY date constraints
     $summary_table = "tbldailystock_summary_{$company_id}_{$fin_year_id}";
     $check_summary = $conn->query("SHOW TABLES LIKE '$summary_table'");
     
@@ -141,6 +232,8 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
             `ITEM_CODE` varchar(20) NOT NULL,
             `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
             `FIN_YEAR_ID` int(11) NOT NULL,
+            `FY_START_DATE` date NOT NULL,
+            `FY_END_DATE` date NOT NULL,
             `OPENING_STOCK` int(11) DEFAULT 0,
             `TOTAL_PURCHASE` int(11) DEFAULT 0,
             `TOTAL_SALES` int(11) DEFAULT 0,
@@ -149,7 +242,10 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
             PRIMARY KEY (`SummaryID`),
             UNIQUE KEY `unique_item` (`ITEM_CODE`, `FIN_YEAR_ID`),
             KEY `idx_liq_flag` (`LIQ_FLAG`),
-            KEY `idx_fin_year` (`FIN_YEAR_ID`)
+            KEY `idx_fin_year` (`FIN_YEAR_ID`),
+            CONSTRAINT `chk_fy_summary_dates` CHECK (
+                FY_START_DATE = '$start_date' AND FY_END_DATE = '$end_date'
+            )
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         
         if ($conn->query($create_summary)) {
@@ -163,22 +259,40 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
 }
 
 /**
- * Update tblitem_stock structure for new company
+ * Update tblitem_stock structure with FY date tracking
  */
-function updateItemStockStructure($conn, $company_id, $fin_year_id) {
+function updateItemStockStructure($conn, $company_id, $fin_year_id, $fy_start, $fy_end) {
     $errors = [];
     
     $table_check = $conn->query("SHOW TABLES LIKE 'tblitem_stock'");
     
     if ($table_check->num_rows > 0) {
-        $check_fy_column = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FIN_YEAR_ID'");
-        if ($check_fy_column->num_rows == 0) {
+        // Check and add FY date columns if needed
+        $check_fy_start = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FY_START_DATE'");
+        if ($check_fy_start->num_rows == 0) {
+            $alter_start = "ALTER TABLE tblitem_stock ADD COLUMN FY_START_DATE date NULL AFTER FIN_YEAR_ID";
+            if (!$conn->query($alter_start)) {
+                $errors[] = "Failed to add FY_START_DATE column: " . $conn->error;
+            }
+        }
+        
+        $check_fy_end = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FY_END_DATE'");
+        if ($check_fy_end->num_rows == 0) {
+            $alter_end = "ALTER TABLE tblitem_stock ADD COLUMN FY_END_DATE date NULL AFTER FY_START_DATE";
+            if (!$conn->query($alter_end)) {
+                $errors[] = "Failed to add FY_END_DATE column: " . $conn->error;
+            }
+        }
+        
+        $check_fy_id = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FIN_YEAR_ID'");
+        if ($check_fy_id->num_rows == 0) {
             $alter_fy = "ALTER TABLE tblitem_stock ADD COLUMN FIN_YEAR_ID int(11) DEFAULT NULL AFTER ITEM_CODE";
             if (!$conn->query($alter_fy)) {
                 $errors[] = "Failed to add FIN_YEAR_ID column: " . $conn->error;
             }
         }
         
+        // Add company-specific stock columns
         $check_opening = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'OPENING_STOCK_$company_id'");
         if ($check_opening->num_rows == 0) {
             $alter_opening = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK_$company_id int(11) DEFAULT 0";
@@ -202,11 +316,20 @@ function updateItemStockStructure($conn, $company_id, $fin_year_id) {
                 $errors[] = "Failed to add MONTHLY_STOCK_$company_id column: " . $conn->error;
             }
         }
+        
+        // Add CHECK constraint for FY dates (if supported)
+        $conn->query("ALTER TABLE tblitem_stock DROP CHECK IF EXISTS chk_fy_dates");
+        $add_constraint = "ALTER TABLE tblitem_stock ADD CONSTRAINT chk_fy_dates 
+                          CHECK (FY_START_DATE <= FY_END_DATE)";
+        $conn->query($add_constraint); // Some MySQL versions may ignore this
+        
     } else {
         $create_stock = "CREATE TABLE tblitem_stock (
             `StockID` int(11) NOT NULL AUTO_INCREMENT,
             `ITEM_CODE` varchar(20) NOT NULL,
             `FIN_YEAR_ID` int(11) NOT NULL,
+            `FY_START_DATE` date NOT NULL,
+            `FY_END_DATE` date NOT NULL,
             `OPENING_STOCK_$company_id` int(11) DEFAULT 0,
             `CURRENT_STOCK_$company_id` int(11) DEFAULT 0,
             `MONTHLY_STOCK_$company_id` int(11) DEFAULT 0,
@@ -214,7 +337,8 @@ function updateItemStockStructure($conn, $company_id, $fin_year_id) {
             PRIMARY KEY (`StockID`),
             UNIQUE KEY `unique_item_fy` (`ITEM_CODE`, `FIN_YEAR_ID`),
             KEY `idx_item_code` (`ITEM_CODE`),
-            KEY `idx_fin_year` (`FIN_YEAR_ID`)
+            KEY `idx_fin_year` (`FIN_YEAR_ID`),
+            CONSTRAINT `chk_fy_dates` CHECK (FY_START_DATE <= FY_END_DATE)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         
         if (!$conn->query($create_stock)) {
@@ -225,20 +349,7 @@ function updateItemStockStructure($conn, $company_id, $fin_year_id) {
     return $errors;
 }
 
-// Check and add missing columns in tblcompany
-$columns_to_check = [
-    'License_Type' => 'VARCHAR(20) NULL AFTER COMP_FLNO',
-    'IMFLLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER license_type_id',
-    'BEERLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER IMFLLimit',
-    'CLLimit' => 'DECIMAL(10,2) DEFAULT 0.00 AFTER BEERLimit'
-];
-
-foreach ($columns_to_check as $column_name => $column_definition) {
-    $check_column = $conn->query("SHOW COLUMNS FROM tblcompany LIKE '$column_name'");
-    if ($check_column->num_rows == 0) {
-        $alter_table = $conn->query("ALTER TABLE tblcompany ADD $column_name $column_definition");
-    }
-}
+// ==================== MAIN PROCESSING ====================
 
 // Get all financial years for dropdown
 $all_fy_list = getAllFinancialYears($conn);
@@ -330,12 +441,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $check_user->close();
     }
     
+    // Validate financial year exists and get its dates
+    $fy_data = null;
+    if (!empty($fin_year_id) && isset($all_fy_list[$fin_year_id])) {
+        $fy_data = $all_fy_list[$fin_year_id];
+        
+        // Validate financial year dates
+        $fy_errors = validateFinancialYearDates([
+            'START_DATE' => $fy_data['start_date'],
+            'END_DATE' => $fy_data['end_date']
+        ]);
+        
+        if (!empty($fy_errors)) {
+            foreach ($fy_errors as $fy_error) {
+                $errors[] = "Financial Year error: " . $fy_error;
+            }
+        }
+    } elseif (!empty($fin_year_id)) {
+        $errors[] = "Selected financial year does not exist in database.";
+    }
+    
     // If no errors, proceed with creation
     if (empty($errors)) {
         $conn->begin_transaction();
         
         try {
-            // Insert company
+            // Insert company with FIN_YEAR as the selected ID
             $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, license_type_id, COMP_FLNO, IMFLLimit, BEERLimit, CLLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $insert_company->bind_param("sssisiiddd", $company_name, $cf_line, $cs_line, $fin_year_id, $comp_addr, $license_type_id, $comp_flno, $imfl_limit, $beer_limit, $cl_limit);
             
@@ -352,7 +483,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $fy_stmt->close();
                 
                 if ($fy_data) {
-                    // Create daily stock structure for the company
+                    // Create daily stock structure for the company with FY date enforcement
                     $stock_structure = createCompanyDailyStockStructure(
                         $conn, 
                         $company_id, 
@@ -361,14 +492,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $fy_data['END_DATE']
                     );
                     
-                    // Update tblitem_stock structure
-                    $stock_errors = updateItemStockStructure($conn, $company_id, $fin_year_id);
+                    if (!empty($stock_structure['errors'])) {
+                        foreach ($stock_structure['errors'] as $stock_error) {
+                            error_log("Stock structure error: " . $stock_error);
+                            // Add to errors but don't rollback - continue with user creation
+                            $errors[] = "Warning - Stock table creation issue: " . $stock_error;
+                        }
+                    }
+                    
+                    // Update tblitem_stock structure with FY dates
+                    $stock_errors = updateItemStockStructure(
+                        $conn, 
+                        $company_id, 
+                        $fin_year_id,
+                        $fy_data['START_DATE'],
+                        $fy_data['END_DATE']
+                    );
                     
                     if (!empty($stock_errors)) {
                         foreach ($stock_errors as $stock_error) {
                             error_log("Stock structure error: " . $stock_error);
+                            $errors[] = "Warning - Stock structure update issue: " . $stock_error;
                         }
                     }
+                } else {
+                    throw new Exception("Financial year data not found for ID: " . $fin_year_id);
                 }
                 
                 // Hash password
@@ -386,8 +534,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     // Set success flag and message
                     $creation_success = true;
                     $success_message = "Company and admin user created successfully!";
+                    
                     if (!empty($stock_structure['tables'])) {
-                        $success_message .= " Created " . count($stock_structure['tables']) . " daily stock tables for financial year.";
+                        $success_message .= " Created " . count($stock_structure['tables']) . " daily stock tables for financial year ";
+                        $success_message .= "from " . date('d-m-Y', strtotime($fy_data['START_DATE'])) . 
+                                          " to " . date('d-m-Y', strtotime($fy_data['END_DATE'])) . ".";
                     }
                     
                     // Store success message in session for display after redirect
@@ -395,6 +546,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $_SESSION['company_creation_success'] = $success_message;
                     $_SESSION['company_created'] = $company_name;
                     $_SESSION['admin_username'] = $admin_username;
+                    $_SESSION['fy_dates'] = [
+                        'start' => date('d-m-Y', strtotime($fy_data['START_DATE'])),
+                        'end' => date('d-m-Y', strtotime($fy_data['END_DATE']))
+                    ];
                     
                     // Clean output buffer and redirect
                     ob_end_clean();
@@ -433,7 +588,7 @@ ob_end_flush();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Company</title>
+    <title>Create New Company - Financial Year Enforcement</title>
     <style>
         :root {
             --primary-color: #2B6CB0;
@@ -444,6 +599,7 @@ ob_end_flush();
             --light-text: #718096;
             --error-color: #E53E3E;
             --success-color: #38A169;
+            --warning-color: #DD6B20;
             --white: #FFFFFF;
             --border-radius: 6px;
             --box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -465,7 +621,7 @@ ob_end_flush();
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
@@ -495,13 +651,16 @@ ob_end_flush();
 
         .form-section {
             margin-bottom: 30px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--border-radius);
+            padding: 20px;
         }
 
         .form-section h3 {
             color: var(--primary-color);
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 2px solid var(--primary-color);
             font-weight: 600;
         }
 
@@ -550,6 +709,11 @@ ob_end_flush();
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
 
+        input:read-only, select:disabled {
+            background-color: #edf2f7;
+            cursor: not-allowed;
+        }
+
         .btn {
             display: inline-block;
             padding: 12px 24px;
@@ -577,6 +741,14 @@ ob_end_flush();
             background-color: #a0aec0;
         }
 
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
         .alert {
             padding: 15px;
             margin-bottom: 20px;
@@ -594,6 +766,12 @@ ob_end_flush();
             background-color: #fed7d7;
             color: var(--error-color);
             border: 1px solid #feb2b2;
+        }
+
+        .alert-warning {
+            background-color: #feebc8;
+            color: var(--warning-color);
+            border: 1px solid #fbd38d;
         }
 
         .alert ul {
@@ -631,6 +809,61 @@ ob_end_flush();
             margin: 10px 0 0 20px;
         }
 
+        .fy-dates-display {
+            background-color: #f0f9ff;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            border: 1px solid #bae6fd;
+        }
+
+        .fy-dates-display h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .fy-dates-display p {
+            margin: 5px 0;
+        }
+
+        .date-range {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-active {
+            background-color: #c6f6d5;
+            color: #22543d;
+        }
+
+        .badge-inactive {
+            background-color: #fed7d7;
+            color: #742a2a;
+        }
+
+        .warning-message {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
         @media (max-width: 768px) {
             .form-group {
                 flex: 1 0 calc(100% - 20px);
@@ -646,7 +879,8 @@ ob_end_flush();
     <div class="container">
         <div class="card">
             <div class="card-header">
-                <h2>Create New Company</h2>
+                <h2><i class="fas fa-building"></i> Create New Company - Financial Year Enforcement</h2>
+                <p style="margin-top: 10px; opacity: 0.9;">All operations will be bound to selected financial year dates</p>
             </div>
             <div class="card-body">
                 <?php
@@ -670,7 +904,7 @@ ob_end_flush();
                         <i class="fas fa-check-circle"></i> Success!
                     </h3>
                     <p><?php echo $success_message; ?></p>
-                    <p><a href="/Winesoft/public/index.php">Click here</a> to go to login page.</p>
+                    <p><a href="/Winesoft/public/index.php" class="btn">Go to Login Page</a></p>
                 </div>
                 
                 <?php
@@ -681,55 +915,87 @@ ob_end_flush();
                 ?>
                 
                 <div class="info-box">
-                    <h4><i class="fas fa-info-circle"></i> Company Creation Process</h4>
+                    <h4><i class="fas fa-info-circle"></i> Company Creation Process - Financial Year Enforcement</h4>
                     <ul>
-                        <li>Creates company record in <strong>tblcompany</strong></li>
-                        <li>Creates monthly daily stock tables: <strong>tbldailystock_{company_id}_{fin_year_id}_MM_YYYY</strong></li>
-                        <li>Creates financial year summary table: <strong>tbldailystock_summary_{company_id}_{fin_year_id}</strong></li>
-                        <li>Updates <strong>tblitem_stock</strong> with company-specific columns</li>
-                        <li>Creates admin user account</li>
-                        <li>After successful creation, you'll be redirected to the login page</li>
+                        <li><strong>Company record created</strong> in <strong>tblcompany</strong> with selected Financial Year ID</li>
+                        <li><strong>Financial Year Dates:</strong> All operations strictly bound to selected FY start and end dates</li>
+                        <li><strong>Daily Stock Tables:</strong> Creates <strong>tbldailystock_{company_id}_{fin_year_id}_MM_YYYY</strong> for each month</li>
+                        <li><strong>Table Constraints:</strong> CHECK constraints ensure all dates are within FY range</li>
+                        <li><strong>Summary Table:</strong> Creates <strong>tbldailystock_summary_{company_id}_{fin_year_id}</strong> with FY dates stored</li>
+                        <li><strong>Item Stock:</strong> Updates <strong>tblitem_stock</strong> with FY date tracking columns</li>
+                        <li><strong>Admin Account:</strong> Creates admin user account for the company</li>
+                        <li><strong>Date Validation:</strong> All future transactions will be validated against FY dates</li>
                     </ul>
                 </div>
                 
                 <form method="POST" action="" id="companyForm">
                     <div class="form-section">
-                        <h3>Company Information</h3>
+                        <h3><i class="fas fa-building"></i> Company Information</h3>
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="company_name" class="required-field">Company Name</label>
                                 <input type="text" id="company_name" name="company_name" required 
-                                       value="<?php echo isset($_POST['company_name']) ? htmlspecialchars($_POST['company_name']) : ''; ?>">
+                                       value="<?php echo isset($_POST['company_name']) ? htmlspecialchars($_POST['company_name']) : ''; ?>"
+                                       placeholder="Enter company name">
                             </div>
                             <div class="form-group">
                                 <label for="fin_year" class="required-field">Financial Year</label>
-                                <select id="fin_year" name="fin_year" required>
+                                <select id="fin_year" name="fin_year" required onchange="updateFYDates(this)">
                                     <option value="">-- Select Financial Year --</option>
                                     <?php 
                                     if (!empty($all_fy_list)) {
                                         foreach ($all_fy_list as $id => $fy): 
                                             $selected = (isset($_POST['fin_year']) && $_POST['fin_year'] == $id) ? 'selected' : '';
+                                            $active_badge = $fy['active'] ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>';
                                     ?>
-                                        <option value="<?php echo $id; ?>" <?php echo $selected; ?>>
+                                        <option value="<?php echo $id; ?>" 
+                                                data-start="<?php echo htmlspecialchars($fy['start_formatted']); ?>"
+                                                data-end="<?php echo htmlspecialchars($fy['end_formatted']); ?>"
+                                                data-start-raw="<?php echo htmlspecialchars($fy['start_date']); ?>"
+                                                data-end-raw="<?php echo htmlspecialchars($fy['end_date']); ?>"
+                                                <?php echo $selected; ?>>
                                             <?php echo $fy['label']; ?> 
                                             (<?php echo $fy['start_formatted']; ?> to <?php echo $fy['end_formatted']; ?>)
-                                            <?php echo $fy['active'] ? ' [Active]' : ''; ?>
+                                            <?php echo $fy['active'] ? '✓' : '✗'; ?>
                                         </option>
                                     <?php 
                                         endforeach;
                                     } else {
-                                        echo '<option value="" disabled>No financial years found in database!</option>';
+                                        echo '<option value="" disabled>⚠️ No financial years found in database!</option>';
                                     }
                                     ?>
                                 </select>
                             </div>
                         </div>
                         
+                        <!-- Financial Year Dates Display -->
+                        <div id="fyDatesDisplay" class="fy-dates-display" style="display: none;">
+                            <h4>
+                                <i class="fas fa-calendar-alt"></i> Selected Financial Year Details
+                                <span id="fyActiveBadge" class="badge badge-inactive" style="display: none;"></span>
+                            </h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Financial Year Start Date</label>
+                                    <input type="text" id="fy_start_display" class="date-range" readonly value="">
+                                </div>
+                                <div class="form-group">
+                                    <label>Financial Year End Date</label>
+                                    <input type="text" id="fy_end_display" class="date-range" readonly value="">
+                                </div>
+                            </div>
+                            <p class="warning-message" id="fyWarning" style="display: none;">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                <span id="fyWarningMessage"></span>
+                            </p>
+                        </div>
+                        
                         <div class="form-row">
                             <div class="form-group full-width">
                                 <label for="comp_addr">Company Address</label>
-                                <textarea id="comp_addr" name="comp_addr" rows="2" maxlength="100"><?php echo isset($_POST['comp_addr']) ? htmlspecialchars($_POST['comp_addr']) : ''; ?></textarea>
+                                <textarea id="comp_addr" name="comp_addr" rows="2" maxlength="100" 
+                                          placeholder="Enter company address"><?php echo isset($_POST['comp_addr']) ? htmlspecialchars($_POST['comp_addr']) : ''; ?></textarea>
                             </div>
                         </div>
                         
@@ -749,34 +1015,39 @@ ob_end_flush();
                             <div class="form-group">
                                 <label for="comp_flno" class="required-field">FL No.</label>
                                 <input type="text" id="comp_flno" name="comp_flno" maxlength="12" required
-                                       value="<?php echo isset($_POST['comp_flno']) ? htmlspecialchars($_POST['comp_flno']) : ''; ?>">
+                                       value="<?php echo isset($_POST['comp_flno']) ? htmlspecialchars($_POST['comp_flno']) : ''; ?>"
+                                       placeholder="e.g., FL/2025/001">
                             </div>
                         </div>
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="imfl_limit">IMFL Limit</label>
-                                <input type="number" step="0.01" id="imfl_limit" name="imfl_limit" value="<?php echo isset($_POST['imfl_limit']) ? htmlspecialchars($_POST['imfl_limit']) : '1000.00'; ?>">
+                                <input type="number" step="0.01" id="imfl_limit" name="imfl_limit" 
+                                       value="<?php echo isset($_POST['imfl_limit']) ? htmlspecialchars($_POST['imfl_limit']) : '1000.00'; ?>">
                             </div>
                             <div class="form-group">
                                 <label for="beer_limit">BEER Limit</label>
-                                <input type="number" step="0.01" id="beer_limit" name="beer_limit" value="<?php echo isset($_POST['beer_limit']) ? htmlspecialchars($_POST['beer_limit']) : '4000.00'; ?>">
+                                <input type="number" step="0.01" id="beer_limit" name="beer_limit" 
+                                       value="<?php echo isset($_POST['beer_limit']) ? htmlspecialchars($_POST['beer_limit']) : '4000.00'; ?>">
                             </div>
                             <div class="form-group">
                                 <label for="cl_limit">CL Limit</label>
-                                <input type="number" step="0.01" id="cl_limit" name="cl_limit" value="<?php echo isset($_POST['cl_limit']) ? htmlspecialchars($_POST['cl_limit']) : '2000.00'; ?>">
+                                <input type="number" step="0.01" id="cl_limit" name="cl_limit" 
+                                       value="<?php echo isset($_POST['cl_limit']) ? htmlspecialchars($_POST['cl_limit']) : '2000.00'; ?>">
                             </div>
                         </div>
                     </div>
                     
                     <div class="form-section">
-                        <h3>Admin User Account</h3>
+                        <h3><i class="fas fa-user-shield"></i> Admin User Account</h3>
                         
                         <div class="form-row">
-                            <div class="form-group">
+                            <div class="form-group full-width">
                                 <label for="admin_username" class="required-field">Username</label>
                                 <input type="text" id="admin_username" name="admin_username" required
-                                       value="<?php echo isset($_POST['admin_username']) ? htmlspecialchars($_POST['admin_username']) : ''; ?>">
+                                       value="<?php echo isset($_POST['admin_username']) ? htmlspecialchars($_POST['admin_username']) : ''; ?>"
+                                       placeholder="Enter admin username">
                             </div>
                         </div>
                         
@@ -784,20 +1055,29 @@ ob_end_flush();
                             <div class="form-group">
                                 <label for="admin_password" class="required-field">Password</label>
                                 <input type="password" id="admin_password" name="admin_password" required
-                                       placeholder="Any password length (no restrictions)">
+                                       placeholder="Enter password">
                             </div>
                             <div class="form-group">
                                 <label for="confirm_password" class="required-field">Confirm Password</label>
-                                <input type="password" id="confirm_password" name="confirm_password" required>
+                                <input type="password" id="confirm_password" name="confirm_password" required
+                                       placeholder="Confirm password">
                             </div>
                         </div>
-                        <small style="color: #6c757d; display: block; margin-top: -10px;">Password can be any length - no complexity requirements</small>
+                        <small style="color: #6c757d; display: block; margin-top: -10px;">
+                            <i class="fas fa-info-circle"></i> Password can be any length - no complexity requirements
+                        </small>
                     </div>
                     
-                    <div class="form-row">
-                        <button type="submit" class="btn" id="submitBtn">Create Company & Admin Account</button>
-                        <button type="reset" class="btn btn-secondary">Reset Form</button>
-                        <a href="/Winesoft/public/index.php" class="btn btn-secondary" style="text-decoration: none;">Cancel</a>
+                    <div class="form-row" style="justify-content: center; gap: 10px;">
+                        <button type="submit" class="btn" id="submitBtn">
+                            <i class="fas fa-save"></i> Create Company & Admin Account
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            <i class="fas fa-undo"></i> Reset Form
+                        </button>
+                        <a href="/Winesoft/public/index.php" class="btn btn-warning">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
                     </div>
                 </form>
                 
@@ -807,7 +1087,82 @@ ob_end_flush();
     </div>
 
     <script>
+        // Function to update financial year dates display
+        function updateFYDates(selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const fyDisplay = document.getElementById('fyDatesDisplay');
+            const startDisplay = document.getElementById('fy_start_display');
+            const endDisplay = document.getElementById('fy_end_display');
+            const activeBadge = document.getElementById('fyActiveBadge');
+            const fyWarning = document.getElementById('fyWarning');
+            const warningMessage = document.getElementById('fyWarningMessage');
+            
+            if (selectedOption.value) {
+                const startDate = selectedOption.getAttribute('data-start');
+                const endDate = selectedOption.getAttribute('data-end');
+                const startRaw = selectedOption.getAttribute('data-start-raw');
+                const endRaw = selectedOption.getAttribute('data-end-raw');
+                const optionText = selectedOption.text;
+                
+                // Check if financial year is active (contains ✓ in text)
+                const isActive = optionText.includes('✓');
+                
+                startDisplay.value = startDate;
+                endDisplay.value = endDate;
+                
+                // Update active badge
+                if (isActive) {
+                    activeBadge.textContent = 'Active Financial Year';
+                    activeBadge.className = 'badge badge-active';
+                    activeBadge.style.display = 'inline-block';
+                    
+                    // Hide warning for active FY
+                    fyWarning.style.display = 'none';
+                } else {
+                    activeBadge.textContent = 'Inactive Financial Year';
+                    activeBadge.className = 'badge badge-inactive';
+                    activeBadge.style.display = 'inline-block';
+                    
+                    // Show warning for inactive FY
+                    warningMessage.textContent = 'Warning: Selected financial year is marked as inactive. Company creation is still allowed but transactions may be restricted.';
+                    fyWarning.style.display = 'block';
+                }
+                
+                // Validate dates
+                const start = new Date(startRaw);
+                const end = new Date(endRaw);
+                
+                if (start > end) {
+                    warningMessage.textContent = 'Error: Financial year start date is after end date! Please select a valid financial year.';
+                    fyWarning.style.display = 'block';
+                    fyWarning.style.backgroundColor = '#fed7d7';
+                    fyWarning.style.color = '#742a2a';
+                } else {
+                    // Calculate duration
+                    const diffTime = Math.abs(end - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays < 28) {
+                        warningMessage.textContent = 'Warning: Financial year is less than one month long. This may cause issues with monthly stock tables.';
+                        fyWarning.style.display = 'block';
+                        fyWarning.style.backgroundColor = '#fff3cd';
+                        fyWarning.style.color = '#856404';
+                    }
+                }
+                
+                fyDisplay.style.display = 'block';
+            } else {
+                fyDisplay.style.display = 'none';
+            }
+        }
+        
+        // Check if there's a pre-selected financial year on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const finYearSelect = document.getElementById('fin_year');
+            if (finYearSelect.value) {
+                updateFYDates(finYearSelect);
+            }
+            
             const form = document.getElementById('companyForm');
             if (form) {
                 const password = document.getElementById('admin_password');
@@ -815,6 +1170,14 @@ ob_end_flush();
                 const submitBtn = document.getElementById('submitBtn');
                 
                 form.addEventListener('submit', function(e) {
+                    // Check if financial year is selected
+                    if (!finYearSelect.value) {
+                        e.preventDefault();
+                        alert('Please select a Financial Year!');
+                        finYearSelect.focus();
+                        return false;
+                    }
+                    
                     // Check if passwords match
                     if (password.value !== confirmPassword.value) {
                         e.preventDefault();
@@ -823,8 +1186,7 @@ ob_end_flush();
                         return false;
                     }
                     
-                    // HTML5 required attributes will handle empty fields
-                    // But we'll add an extra check for empty passwords
+                    // Check for empty passwords
                     if (!password.value.trim()) {
                         e.preventDefault();
                         alert('Password cannot be empty!');
@@ -839,6 +1201,15 @@ ob_end_flush();
                         return false;
                     }
                     
+                    // Confirm company creation with financial year dates
+                    const startDate = document.getElementById('fy_start_display').value;
+                    const endDate = document.getElementById('fy_end_display').value;
+                    
+                    if (!confirm(`Create company with Financial Year from ${startDate} to ${endDate}?\n\nAll operations for this company will be bound to these dates.`)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
                     submitBtn.disabled = true;
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Company...';
                     return true;
@@ -846,5 +1217,8 @@ ob_end_flush();
             }
         });
     </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </body>
 </html>

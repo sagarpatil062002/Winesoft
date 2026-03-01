@@ -173,6 +173,7 @@ foreach ($index_queries as $query) {
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
 include_once "stock_functions.php";
+include_once "components/financial_year.php";
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';

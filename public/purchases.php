@@ -74,6 +74,7 @@ if (isset($_GET['tp_error']) && $_GET['tp_error'] == 1) {
 
 include_once "../config/db.php";
 include_once "stock_functions.php";
+include_once "components/financial_year.php";
 debugLog("Database connection included");
 
 // ---- License filtering ----

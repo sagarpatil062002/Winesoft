@@ -22,6 +22,7 @@ error_log("Session CompID: " . ($_SESSION['CompID'] ?? 'NOT SET'));
 error_log("Session User ID: " . ($_SESSION['user_id'] ?? 'NOT SET'));
 
 include_once "../config/db.php";
+include_once "components/financial_year.php";
 
 // Check database connection
 if (!$conn) {
