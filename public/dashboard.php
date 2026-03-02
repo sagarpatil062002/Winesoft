@@ -17,7 +17,7 @@ include_once "../config/db.php";
 require_once 'license_functions.php';
 
 // =============================================================================
-// AUTOMATIC FINANCIAL YEAR MANAGEMENT - REAL TRANSITION ONLY
+// AUTOMATIC FINANCIAL YEAR MANAGEMENT
 // =============================================================================
 
 function checkAndCreateFinancialYear($conn) {
@@ -174,7 +174,7 @@ function createNewFinancialYear($conn, $previousFY = null, $startDate = null, $e
             }
             $insertStmt->bind_param("sss", $fyName, $startDateStr, $endDateStr);
         } else {
-            // Insert without FIN_YEAR_NAME (table structure from your SQL)
+            // Insert without FIN_YEAR_NAME
             $insertQuery = "INSERT INTO tblfinyear (START_DATE, END_DATE, ACTIVE) 
                             VALUES (?, ?, 1)";
             $insertStmt = $conn->prepare($insertQuery);
@@ -219,7 +219,7 @@ function createNewFinancialYear($conn, $previousFY = null, $startDate = null, $e
     }
 }
 
-// Get the current financial year (real, no simulation)
+// Get the current financial year
 $currentFY = checkAndCreateFinancialYear($conn);
 
 // Update session with current financial year data
@@ -269,7 +269,7 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 
 // =============================================================================
-// MONTH TRANSITION & GAP FILLING FUNCTIONS
+// MONTH TRANSITION FUNCTIONS - DYNAMIC FOR ANY MONTH
 // =============================================================================
 
 function getCurrentMonth() {
@@ -288,195 +288,28 @@ function getCurrentDay() {
     return (int)date('j');
 }
 
+/**
+ * Get month suffix in MM_YY format (e.g., 02_26 for February 2026)
+ */
 function getMonthSuffix($month) {
     $date = DateTime::createFromFormat('Y-m', $month);
-    return $date->format('m_Y'); // MM_YYYY format (e.g., 02_2025)
+    return $date->format('m_y');
 }
 
+/**
+ * Get days in month (28, 29, 30, or 31)
+ */
 function getDaysInMonth($month) {
     return (int)date('t', strtotime($month . '-01'));
 }
 
-// =============================================================================
-// TABLE MANAGEMENT FUNCTIONS
-// =============================================================================
-
-function ensureMainTableExists($conn, $tableName) {
-    try {
-        // Check if table exists
-        $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-        if ($tableCheck->num_rows > 0) {
-            return [
-                'success' => true,
-                'action' => 'table_already_exists',
-                'table_name' => $tableName
-            ];
-        }
-        
-        error_log("Main table {$tableName} does not exist. Attempting to create...");
-        
-        // Find a template table to copy structure from
-        $templateTable = null;
-        
-        // First try: Find most recent archive table for this company
-        $archiveCheck = $conn->query("SHOW TABLES LIKE '{$tableName}_%'");
-        if ($archiveCheck->num_rows > 0) {
-            $tables = [];
-            while ($row = $archiveCheck->fetch_array()) {
-                $tables[] = $row[0];
-            }
-            sort($tables);
-            $templateTable = end($tables);
-            error_log("Found archive template: {$templateTable}");
-        }
-        
-        // Second try: Use another company's table as template
-        if (!$templateTable) {
-            $companyTables = [
-                '1' => 'tbldailystock_1',
-                '2' => 'tbldailystock_2',
-                '3' => 'tbldailystock_3'
-            ];
-            
-            foreach ($companyTables as $id => $table) {
-                if ($table !== $tableName) {
-                    $check = $conn->query("SHOW TABLES LIKE '{$table}'");
-                    if ($check->num_rows > 0) {
-                        $templateTable = $table;
-                        error_log("Found other company template: {$templateTable}");
-                        break;
-                    }
-                }
-            }
-        }
-        
-        // If we found a template, create the table
-        if ($templateTable) {
-            $createQuery = "CREATE TABLE `{$tableName}` LIKE `{$templateTable}`";
-            if ($conn->query($createQuery)) {
-                error_log("Table {$tableName} created successfully from template {$templateTable}");
-                return [
-                    'success' => true,
-                    'action' => 'table_created_from_template',
-                    'table_name' => $tableName,
-                    'template' => $templateTable
-                ];
-            } else {
-                throw new Exception("Failed to create table from template: " . $conn->error);
-            }
-        }
-        
-        // Last resort: Create table from hardcoded structure (simplified version)
-        $createQuery = "
-            CREATE TABLE `{$tableName}` (
-                `STK_MONTH` varchar(10) NOT NULL,
-                `ITEM_CODE` varchar(50) NOT NULL,
-                `ITEM_NAME` varchar(255) DEFAULT NULL,
-                `CLASS` varchar(10) DEFAULT NULL,
-                `GROUP` varchar(10) DEFAULT NULL,
-                `DAY_01_OPEN` decimal(15,2) DEFAULT 0.00,
-                `DAY_01_PURCHASE` decimal(15,2) DEFAULT 0.00,
-                `DAY_01_SALES` decimal(15,2) DEFAULT 0.00,
-                `DAY_01_CLOSING` decimal(15,2) DEFAULT 0.00,
-                `DAY_02_OPEN` decimal(15,2) DEFAULT 0.00,
-                `DAY_02_PURCHASE` decimal(15,2) DEFAULT 0.00,
-                `DAY_02_SALES` decimal(15,2) DEFAULT 0.00,
-                `DAY_02_CLOSING` decimal(15,2) DEFAULT 0.00,
-                `DAY_03_OPEN` decimal(15,2) DEFAULT 0.00,
-                `DAY_03_PURCHASE` decimal(15,2) DEFAULT 0.00,
-                `DAY_03_SALES` decimal(15,2) DEFAULT 0.00,
-                `DAY_03_CLOSING` decimal(15,2) DEFAULT 0.00,
-                PRIMARY KEY (`STK_MONTH`, `ITEM_CODE`),
-                KEY `idx_item_code` (`ITEM_CODE`),
-                KEY `idx_month` (`STK_MONTH`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ";
-        
-        if ($conn->query($createQuery)) {
-            error_log("Table {$tableName} created from scratch");
-            return [
-                'success' => true,
-                'action' => 'table_created_from_scratch',
-                'table_name' => $tableName
-            ];
-        } else {
-            throw new Exception("Failed to create table from scratch: " . $conn->error);
-        }
-        
-    } catch (Exception $e) {
-        error_log("Table creation failed: " . $e->getMessage());
-        return [
-            'success' => false,
-            'error' => $e->getMessage(),
-            'action' => 'table_creation_failed'
-        ];
-    }
-}
-
-function restorePreviousMonthFromArchive($conn, $tableName, $previousMonth) {
-    try {
-        $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
-        
-        // Check if archive exists
-        $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
-        if ($archiveCheck->num_rows == 0) {
-            return [
-                'success' => false,
-                'error' => "Archive table {$archiveTable} does not exist",
-                'archive_table' => $archiveTable
-            ];
-        }
-        
-        // Check if we already have data for previous month
-        $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-        $checkStmt->bind_param("s", $previousMonth);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
-        $row = $result->fetch_assoc();
-        $checkStmt->close();
-        
-        if ($row['count'] > 0) {
-            return [
-                'success' => true,
-                'action' => 'data_already_exists',
-                'archive_table' => $archiveTable,
-                'record_count' => $row['count']
-            ];
-        }
-        
-        // Copy data from archive to main table
-        $copyQuery = "INSERT INTO `{$tableName}` SELECT * FROM `{$archiveTable}`";
-        if ($conn->query($copyQuery)) {
-            $copiedRows = $conn->affected_rows;
-            error_log("Restored {$copiedRows} records from {$archiveTable} to {$tableName}");
-            return [
-                'success' => true,
-                'action' => 'restored_from_archive',
-                'archive_table' => $archiveTable,
-                'record_count' => $copiedRows
-            ];
-        } else {
-            throw new Exception("Failed to restore from archive: " . $conn->error);
-        }
-        
-    } catch (Exception $e) {
-        return [
-            'success' => false,
-            'error' => $e->getMessage(),
-            'archive_table' => $archiveTable
-        ];
-    }
-}
-
-// =============================================================================
-// DAY COLUMN FUNCTIONS
-// =============================================================================
-
-function doesDayColumnsExist($conn, $tableName, $day) {
-    if ($day > 31) return false;
+/**
+ * Check if a specific day column exists in the table
+ */
+function doesDayColumnExist($conn, $tableName, $day, $fieldType = 'CLOSING') {
+    if ($day < 1 || $day > 31) return false;
     
-    $columnPrefix = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT);
-    $openCol = $columnPrefix . "_OPEN";
+    $columnName = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_" . $fieldType;
     
     $stmt = $conn->prepare("
         SELECT COUNT(*) as column_exists 
@@ -485,7 +318,7 @@ function doesDayColumnsExist($conn, $tableName, $day) {
         AND TABLE_NAME = ? 
         AND COLUMN_NAME = ?
     ");
-    $stmt->bind_param("ss", $tableName, $openCol);
+    $stmt->bind_param("ss", $tableName, $columnName);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
@@ -494,418 +327,258 @@ function doesDayColumnsExist($conn, $tableName, $day) {
     return $row['column_exists'] > 0;
 }
 
-function archiveTableExists($conn, $tableName) {
-    $result = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-    $exists = $result->num_rows > 0;
-    $result->free();
-    return $exists;
+/**
+ * Get all existing day columns in the table
+ */
+function getAllExistingDayColumns($conn, $tableName) {
+    $columns = [];
+    
+    $stmt = $conn->prepare("
+        SELECT COLUMN_NAME 
+        FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = ? 
+        AND COLUMN_NAME LIKE 'DAY_%'
+        ORDER BY COLUMN_NAME
+    ");
+    $stmt->bind_param("s", $tableName);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $columns[] = $row['COLUMN_NAME'];
+    }
+    $stmt->close();
+    
+    return $columns;
 }
 
-// =============================================================================
-// ARCHIVE FUNCTIONS - UPDATED TO COPY ALL DATA
-// =============================================================================
-
-function createArchiveTable($conn, $sourceTable, $archiveTable, $month) {
-    try {
-        if (archiveTableExists($conn, $archiveTable)) {
+/**
+ * ALTER TABLE to add missing day columns for the new month
+ */
+function ensureDayColumnsForMonth($conn, $tableName, $month) {
+    $daysInMonth = getDaysInMonth($month);
+    $alterations = [];
+    
+    error_log("Ensuring day columns for {$month} with {$daysInMonth} days");
+    
+    for ($day = 1; $day <= $daysInMonth; $day++) {
+        $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        
+        // Check each column type for this day
+        foreach (['OPEN', 'PURCHASE', 'SALES', 'CLOSING'] as $fieldType) {
+            $columnName = "DAY_{$dayPadded}_{$fieldType}";
+            
+            if (!doesDayColumnExist($conn, $tableName, $day, $fieldType)) {
+                $alterations[] = "ADD COLUMN `{$columnName}` int(11) DEFAULT 0";
+                error_log("Need to add column: {$columnName}");
+            }
+        }
+    }
+    
+    // Also check for and potentially remove columns beyond the month's days
+    for ($day = $daysInMonth + 1; $day <= 31; $day++) {
+        $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        
+        foreach (['OPEN', 'PURCHASE', 'SALES', 'CLOSING'] as $fieldType) {
+            $columnName = "DAY_{$dayPadded}_{$fieldType}";
+            
+            if (doesDayColumnExist($conn, $tableName, $day, $fieldType)) {
+                // Comment out the next line if you want to keep extra columns
+                // $alterations[] = "DROP COLUMN `{$columnName}`";
+                error_log("Extra column exists beyond month: {$columnName}");
+            }
+        }
+    }
+    
+    if (!empty($alterations)) {
+        $alterSql = "ALTER TABLE `{$tableName}` " . implode(", ", $alterations);
+        error_log("Executing ALTER TABLE: " . $alterSql);
+        
+        if ($conn->query($alterSql)) {
+            error_log("Successfully added " . count($alterations) . " columns to {$tableName}");
+            return [
+                'success' => true,
+                'columns_added' => count($alterations),
+                'alterations' => $alterations
+            ];
+        } else {
+            error_log("Failed to add columns: " . $conn->error);
             return [
                 'success' => false,
-                'error' => "Archive table {$archiveTable} already exists"
+                'error' => $conn->error
+            ];
+        }
+    }
+    
+    error_log("No column alterations needed for {$tableName}");
+    return [
+        'success' => true,
+        'columns_added' => 0,
+        'message' => 'No alterations needed'
+    ];
+}
+
+/**
+ * Create archive table with month suffix
+ * Format: tbldailystock_1_02_26 (for February 2026)
+ */
+function createArchiveTable($conn, $sourceTable, $month) {
+    $monthSuffix = getMonthSuffix($month);
+    $archiveTable = $sourceTable . '_' . $monthSuffix;
+    
+    try {
+        // Check if archive table already exists
+        $checkExists = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+        if ($checkExists->num_rows > 0) {
+            error_log("Archive table {$archiveTable} already exists, skipping creation");
+            return [
+                'success' => true,
+                'message' => 'Archive already exists',
+                'archive_table' => $archiveTable,
+                'action' => 'already_exists'
             ];
         }
         
-        // Create archive table structure (same as source table)
-        $createQuery = "CREATE TABLE `{$archiveTable}` LIKE `{$sourceTable}`";
-        if (!$conn->query($createQuery)) {
-            throw new Exception("Failed to create archive table structure: " . $conn->error);
+        error_log("Creating archive table {$archiveTable} from {$sourceTable}");
+        
+        // Get the CREATE statement of source table
+        $createResult = $conn->query("SHOW CREATE TABLE `{$sourceTable}`");
+        $createRow = $createResult->fetch_assoc();
+        $createSQL = $createRow['Create Table'];
+        
+        // Modify CREATE statement to create archive table
+        $createArchiveSQL = str_replace(
+            "CREATE TABLE `{$sourceTable}`",
+            "CREATE TABLE `{$archiveTable}`",
+            $createSQL
+        );
+        
+        // Create archive table
+        if (!$conn->query($createArchiveSQL)) {
+            throw new Exception("Failed to create archive table: " . $conn->error);
         }
         
-        // Copy ALL data from source to archive table (not filtered by month)
-        $copyQuery = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}`";
-        if (!$conn->query($copyQuery)) {
-            // If copy fails, drop the created table to avoid orphaned tables
-            $dropQuery = "DROP TABLE IF EXISTS `{$archiveTable}`";
-            $conn->query($dropQuery);
+        // Copy ALL data from source to archive
+        $copySQL = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}`";
+        if (!$conn->query($copySQL)) {
+            // If copy fails, drop the archive table
+            $conn->query("DROP TABLE IF EXISTS `{$archiveTable}`");
             throw new Exception("Failed to copy data to archive: " . $conn->error);
         }
         
         $copiedRows = $conn->affected_rows;
-        
-        error_log("Created archive table {$archiveTable} with {$copiedRows} total rows (all data)");
+        error_log("Successfully created archive {$archiveTable} with {$copiedRows} rows");
         
         return [
             'success' => true,
-            'copied_rows' => $copiedRows,
             'archive_table' => $archiveTable,
-            'source_month' => $month
+            'copied_rows' => $copiedRows,
+            'month' => $month,
+            'action' => 'created'
         ];
         
     } catch (Exception $e) {
         error_log("Archive creation failed: " . $e->getMessage());
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
+            'archive_table' => $archiveTable
         ];
     }
 }
 
-// =============================================================================
-// GAP DETECTION AND FILLING FUNCTIONS
-// =============================================================================
-
-function getItemsWithOpeningBalance($conn, $tableName, $month, $day) {
-    $items = [];
-    
-    if ($day < 1 || $day > 31) {
-        return $items;
-    }
-    
-    $closingCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
-    if (!doesDayColumnsExist($conn, $tableName, $day)) {
-        return $items;
-    }
-    
-    $query = "
-        SELECT ITEM_CODE, {$closingCol} as opening_balance 
-        FROM `{$tableName}` 
-        WHERE STK_MONTH = ? 
-        AND {$closingCol} IS NOT NULL 
-        AND {$closingCol} != 0
-    ";
-    
-    $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return $items;
-    }
-    
-    $stmt->bind_param("s", $month);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    while ($row = $result->fetch_assoc()) {
-        $items[$row['ITEM_CODE']] = $row['opening_balance'];
-    }
-    
-    $stmt->close();
-    
-    return $items;
-}
-
-function detectGapsInMonth($conn, $tableName, $month, $maxDay = null) {
-    $daysInMonth = getDaysInMonth($month);
-    $currentDay = getCurrentDay();
-    
-    $lastCompleteDay = 0;
-    $gaps = [];
-    $dayItemCounts = [];
-    
-    $checkUpTo = $maxDay ?: min($currentDay, $daysInMonth);
-    
-    for ($day = 1; $day <= $checkUpTo; $day++) {
-        if (!doesDayColumnsExist($conn, $tableName, $day)) {
-            $dayItemCounts[$day] = 0;
-            continue;
-        }
-        
-        $closingCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        
-        $countStmt = $conn->prepare("
-            SELECT COUNT(DISTINCT ITEM_CODE) as item_count 
-            FROM `{$tableName}` 
-            WHERE STK_MONTH = ? 
-            AND {$closingCol} IS NOT NULL 
-            AND {$closingCol} != 0
-        ");
-        
-        $countStmt->bind_param("s", $month);
-        $countStmt->execute();
-        $countResult = $countStmt->get_result();
-        $countRow = $countResult->fetch_assoc();
-        $countStmt->close();
-        
-        $itemCount = $countRow['item_count'] ?? 0;
-        $dayItemCounts[$day] = $itemCount;
-        
-        if ($itemCount > 0) {
-            $lastCompleteDay = $day;
-        } else {
-            if ($lastCompleteDay > 0 && $day > $lastCompleteDay) {
-                $gaps[] = $day;
-            }
-        }
-    }
-    
-    $itemsFromLastDay = [];
-    if ($lastCompleteDay > 0) {
-        $itemsFromLastDay = getItemsWithOpeningBalance($conn, $tableName, $month, $lastCompleteDay);
-    }
-    
-    return [
-        'last_complete_day' => $lastCompleteDay,
-        'gaps' => $gaps,
-        'days_in_month' => $daysInMonth,
-        'month' => $month,
-        'max_day_checked' => $maxDay,
-        'current_day' => $currentDay,
-        'check_up_to' => $checkUpTo,
-        'day_item_counts' => $dayItemCounts,
-        'items_from_last_day' => $itemsFromLastDay,
-        'total_items_last_day' => count($itemsFromLastDay),
-        'gap_start_day' => empty($gaps) ? null : min($gaps),
-        'gap_end_day' => empty($gaps) ? null : max($gaps)
-    ];
-}
-
-function autoPopulateMonthGaps($conn, $tableName, $month, $gaps, $lastCompleteDay) {
-    $results = [];
-    $gapsFilled = 0;
-    $totalItemsProcessed = 0;
-    
-    if ($lastCompleteDay === 0) {
-        return [
-            'success' => false,
-            'error' => 'No source data available to copy from',
-            'gaps_filled' => 0,
-            'total_items' => 0
-        ];
-    }
-    
-    $sourceItems = getItemsWithOpeningBalance($conn, $tableName, $month, $lastCompleteDay);
-    
-    if (empty($sourceItems)) {
-        return [
-            'success' => false,
-            'error' => "No items found with opening balance on day {$lastCompleteDay}",
-            'gaps_filled' => 0,
-            'total_items' => 0
-        ];
-    }
-    
-    $totalItems = count($sourceItems);
-    sort($gaps);
-    
-    foreach ($gaps as $day) {
-        $monthDays = getDaysInMonth($month);
-        if ($day > $monthDays) {
-            $results[$day] = [
-                'success' => false,
-                'error' => "Day {$day} exceeds month days ({$monthDays})"
-            ];
-            continue;
-        }
-        
-        if (!doesDayColumnsExist($conn, $tableName, $day)) {
-            $results[$day] = [
-                'success' => false,
-                'error' => "Columns for day {$day} do not exist"
-            ];
-            continue;
-        }
-        
-        $targetOpen = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
-        $targetPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-        $targetSales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
-        $targetClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        
-        try {
-            $itemsProcessed = 0;
-            $itemsUpdated = 0;
-            
-            foreach ($sourceItems as $itemCode => $openingBalance) {
-                $checkItemStmt = $conn->prepare("
-                    SELECT COUNT(*) as item_exists 
-                    FROM `{$tableName}` 
-                    WHERE STK_MONTH = ? 
-                    AND ITEM_CODE = ?
-                ");
-                $checkItemStmt->bind_param("ss", $month, $itemCode);
-                $checkItemStmt->execute();
-                $checkResult = $checkItemStmt->get_result();
-                $checkRow = $checkResult->fetch_assoc();
-                $checkItemStmt->close();
-                
-                if ($checkRow['item_exists'] == 0) {
-                    continue;
-                }
-                
-                $itemsProcessed++;
-                
-                $updateQuery = "
-                    UPDATE `{$tableName}` 
-                    SET 
-                        {$targetOpen} = ?,
-                        {$targetPurchase} = 0,
-                        {$targetSales} = 0,
-                        {$targetClosing} = ?
-                    WHERE STK_MONTH = ?
-                    AND ITEM_CODE = ?
-                ";
-                
-                $updateStmt = $conn->prepare($updateQuery);
-                $updateStmt->bind_param("ddss", $openingBalance, $openingBalance, $month, $itemCode);
-                
-                if ($updateStmt->execute()) {
-                    if ($updateStmt->affected_rows > 0) {
-                        $itemsUpdated++;
-                    }
-                }
-                $updateStmt->close();
-            }
-            
-            $totalItemsProcessed += $itemsProcessed;
-            
-            if ($itemsUpdated > 0) {
-                $gapsFilled++;
-                $lastCompleteDay = $day;
-                $sourceItems = getItemsWithOpeningBalance($conn, $tableName, $month, $day);
-            }
-            
-            $results[$day] = [
-                'success' => true,
-                'items_processed' => $itemsProcessed,
-                'items_updated' => $itemsUpdated,
-                'source_day' => $lastCompleteDay,
-                'total_source_items' => count($sourceItems)
-            ];
-            
-        } catch (Exception $e) {
-            $results[$day] = [
-                'success' => false,
-                'error' => $e->getMessage()
-            ];
-        }
-    }
-    
-    return [
-        'success' => true,
-        'gaps_filled' => $gapsFilled,
-        'total_gaps' => count($gaps),
-        'last_complete_day' => $lastCompleteDay,
-        'total_items_processed' => $totalItemsProcessed,
-        'total_source_items' => $totalItems,
-        'gap_details' => $results,
-        'gap_range' => [
-            'start' => empty($gaps) ? null : min($gaps),
-            'end' => empty($gaps) ? null : max($gaps)
-        ]
-    ];
-}
-
-// =============================================================================
-// MONTH INITIALIZATION FUNCTIONS - UPDATED TO USE UPDATE APPROACH
-// =============================================================================
-
-function getLastDayClosing($conn, $tableName, $month) {
+/**
+ * Get the last day's closing stock from a specific month
+ */
+function getLastDayClosingStock($conn, $tableName, $month) {
     $daysInMonth = getDaysInMonth($month);
     $lastDayCol = "DAY_" . str_pad($daysInMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
     
-    if (!doesDayColumnsExist($conn, $tableName, $daysInMonth)) {
+    error_log("Getting closing stock from {$month}, last day = {$daysInMonth}, column = {$lastDayCol}");
+    
+    // Check if the column exists
+    if (!doesDayColumnExist($conn, $tableName, $daysInMonth, 'CLOSING')) {
+        error_log("Column {$lastDayCol} doesn't exist in {$tableName}");
         return [];
     }
     
-    $stmt = $conn->prepare("
-        SELECT ITEM_CODE, {$lastDayCol} as closing_stock 
-        FROM `{$tableName}` 
-        WHERE STK_MONTH = ? 
-        AND {$lastDayCol} IS NOT NULL 
-        AND {$lastDayCol} != 0
-    ");
+    $query = "SELECT ITEM_CODE, {$lastDayCol} as closing_stock FROM `{$tableName}` WHERE STK_MONTH = ?";
+    $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $month);
     $stmt->execute();
     $result = $stmt->get_result();
     
     $closingData = [];
     while ($row = $result->fetch_assoc()) {
-        $closingData[$row['ITEM_CODE']] = $row['closing_stock'];
+        $closingData[$row['ITEM_CODE']] = (int)$row['closing_stock'];
     }
     
     $stmt->close();
+    error_log("Retrieved closing stock for " . count($closingData) . " items");
     
     return $closingData;
 }
 
-function buildDayColumnsClearingQuery($conn, $tableName, $newMonth) {
-    $clearColumns = [];
-    $daysInNewMonth = getDaysInMonth($newMonth);
-    
-    for ($day = 2; $day <= 31; $day++) {
-        if (doesDayColumnsExist($conn, $tableName, $day)) {
-            $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
-            $clearColumns[] = "DAY_{$dayPadded}_OPEN = 0";
-            $clearColumns[] = "DAY_{$dayPadded}_PURCHASE = 0";
-            $clearColumns[] = "DAY_{$dayPadded}_SALES = 0";
-            $clearColumns[] = "DAY_{$dayPadded}_CLOSING = 0";
-        }
-    }
-    
-    return implode(', ', $clearColumns);
-}
-
 /**
- * UPDATED: Initialize new month by UPDATING existing records from previous month
- * Takes closing stock from previous month's last day and uses it as opening stock for new month's day 1
+ * Clear all day column data and update STK_MONTH for the new month
  */
-function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
+function transformTableForNewMonth($conn, $tableName, $previousMonth, $newMonth) {
     try {
-        // Get last day's closing stock from previous month
-        $closingData = getLastDayClosing($conn, $tableName, $previousMonth);
+        // Get closing stock from previous month's last day
+        $closingData = getLastDayClosingStock($conn, $tableName, $previousMonth);
         
         if (empty($closingData)) {
-            error_log("No closing stock data found for previous month {$previousMonth}");
-            return [
-                'success' => false,
-                'error' => "No closing stock data found for previous month {$previousMonth}",
-                'total_items' => 0
-            ];
+            // Try to get from archive if main table has no data
+            $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
+            $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+            if ($archiveCheck->num_rows > 0) {
+                error_log("Trying to get closing data from archive {$archiveTable}");
+                $closingData = getLastDayClosingStock($conn, $archiveTable, $previousMonth);
+            }
         }
         
-        $totalItems = count($closingData);
-        $clearColumnsQuery = buildDayColumnsClearingQuery($conn, $tableName, $newMonth);
+        $newMonthDays = getDaysInMonth($newMonth);
         
-        // Check if current month already has data
-        $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-        $checkStmt->bind_param("s", $newMonth);
-        $checkStmt->execute();
-        $checkResult = $checkStmt->get_result();
-        $checkRow = $checkResult->fetch_assoc();
-        $checkStmt->close();
+        // Build the UPDATE query
+        $setClauses = ["STK_MONTH = ?"];
         
-        if ($checkRow['count'] > 0) {
-            error_log("Records for new month {$newMonth} already exist, skipping initialization");
-            return [
-                'success' => true,
-                'message' => 'Records already exist',
-                'updated_items' => 0,
-                'total_items_found' => $totalItems
-            ];
+        // Add Day 1 setting (opening = previous month's closing)
+        $setClauses[] = "DAY_01_OPEN = ?";
+        $setClauses[] = "DAY_01_PURCHASE = 0";
+        $setClauses[] = "DAY_01_SALES = 0";
+        $setClauses[] = "DAY_01_CLOSING = ?";
+        
+        // Clear all other days (2 to newMonthDays)
+        for ($day = 2; $day <= $newMonthDays; $day++) {
+            $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $setClauses[] = "DAY_{$dayPadded}_OPEN = 0";
+            $setClauses[] = "DAY_{$dayPadded}_PURCHASE = 0";
+            $setClauses[] = "DAY_{$dayPadded}_SALES = 0";
+            $setClauses[] = "DAY_{$dayPadded}_CLOSING = 0";
         }
         
-        // UPDATE existing records from previous month to become new month records
+        // For days beyond newMonthDays (if columns exist), set to NULL or 0
+        // We'll handle this dynamically by checking which columns exist
+        
+        $updateQuery = "UPDATE `{$tableName}` SET " . implode(", ", $setClauses) . " WHERE STK_MONTH = ?";
+        
+        error_log("Transform query: " . $updateQuery);
+        
         $updateCount = 0;
         $errorCount = 0;
         
+        // Update each item individually with its specific closing stock
         foreach ($closingData as $itemCode => $closingStock) {
-            // Update the record: change month, set day 1 data, clear other days
-            $updateQuery = "
-                UPDATE `{$tableName}` 
-                SET 
-                    STK_MONTH = ?,
-                    DAY_01_OPEN = ?,
-                    DAY_01_PURCHASE = 0,
-                    DAY_01_SALES = 0,
-                    DAY_01_CLOSING = ?,
-                    {$clearColumnsQuery}
-                WHERE STK_MONTH = ? 
-                AND ITEM_CODE = ?
-            ";
-            
             $updateStmt = $conn->prepare($updateQuery);
-            $updateStmt->bind_param("sdsss", $newMonth, $closingStock, $closingStock, $previousMonth, $itemCode);
+            
+            // Bind parameters: newMonth, closingStock (for OPEN), closingStock (for CLOSING), previousMonth
+            $updateStmt->bind_param("siss", $newMonth, $closingStock, $closingStock, $previousMonth);
             
             if ($updateStmt->execute()) {
                 if ($updateStmt->affected_rows > 0) {
                     $updateCount++;
+                    error_log("Updated item {$itemCode}: set opening = {$closingStock}");
                 }
             } else {
                 $errorCount++;
@@ -914,345 +587,255 @@ function initializeNewMonth($conn, $tableName, $previousMonth, $newMonth) {
             $updateStmt->close();
         }
         
-        error_log("Initialized new month {$newMonth}: updated {$updateCount} items from previous month {$previousMonth}, errors: {$errorCount}");
+        error_log("Transformation complete: updated {$updateCount} items, errors: {$errorCount}");
         
         return [
             'success' => true,
             'updated_items' => $updateCount,
             'error_items' => $errorCount,
-            'total_items_found' => $totalItems,
             'previous_month' => $previousMonth,
-            'new_month' => $newMonth,
-            'previous_month_days' => getDaysInMonth($previousMonth),
-            'new_month_days' => getDaysInMonth($newMonth)
+            'new_month' => $newMonth
         ];
         
     } catch (Exception $e) {
-        error_log("Month initialization failed: " . $e->getMessage());
+        error_log("Table transformation failed: " . $e->getMessage());
         return [
             'success' => false,
             'error' => $e->getMessage()
         ];
     }
-}
-
-function ensureDay1Data($conn, $tableName, $month) {
-    try {
-        $checkStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-        $checkStmt->bind_param("s", $month);
-        $checkStmt->execute();
-        $result = $checkStmt->get_result();
-        $row = $result->fetch_assoc();
-        $checkStmt->close();
-        
-        if ($row['count'] > 0) {
-            $day1CheckStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ? AND DAY_01_CLOSING IS NOT NULL AND DAY_01_CLOSING != 0");
-            $day1CheckStmt->bind_param("s", $month);
-            $day1CheckStmt->execute();
-            $day1Result = $day1CheckStmt->get_result();
-            $day1Row = $day1Result->fetch_assoc();
-            $day1CheckStmt->close();
-            
-            if ($day1Row['count'] === 0) {
-                $updateStmt = $conn->prepare("
-                    UPDATE `{$tableName}` 
-                    SET DAY_01_CLOSING = DAY_01_OPEN 
-                    WHERE STK_MONTH = ?
-                    AND DAY_01_OPEN IS NOT NULL 
-                    AND DAY_01_OPEN != 0
-                ");
-                $updateStmt->bind_param("s", $month);
-                $updateStmt->execute();
-                $affectedRows = $updateStmt->affected_rows;
-                $updateStmt->close();
-                
-                error_log("Ensured Day 1 data for {$month}: updated {$affectedRows} rows");
-                
-                return [
-                    'success' => true,
-                    'affected_rows' => $affectedRows,
-                    'action' => 'ensured_day1_data'
-                ];
-            }
-        }
-        
-        return [
-            'success' => true,
-            'action' => 'no_action_needed'
-        ];
-        
-    } catch (Exception $e) {
-        error_log("Ensure Day 1 data failed: " . $e->getMessage());
-        return [
-            'success' => false,
-            'error' => $e->getMessage()
-        ];
-    }
-}
-
-// =============================================================================
-// TRANSITION CHECK AND EXECUTION - UPDATED WITH CORRECT FLOW
-// =============================================================================
-
-function checkMonthTransitionWithGaps($conn) {
-    $currentCompanyId = $_SESSION['CompID'] ?? 1;
-    $currentMonth = getCurrentMonth();
-    $previousMonth = getPreviousMonth();
-    $currentDay = getCurrentDay();
-
-    $companyTables = [
-        '1' => 'tbldailystock_1',
-        '2' => 'tbldailystock_2',
-        '3' => 'tbldailystock_3'
-    ];
-
-    $transitionInfo = [];
-
-    if (isset($companyTables[$currentCompanyId])) {
-        $tableName = $companyTables[$currentCompanyId];
-
-        $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
-        if ($tableCheck->num_rows > 0) {
-            $currentMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-            $currentMonthStmt->bind_param("s", $currentMonth);
-            $currentMonthStmt->execute();
-            $currentMonthResult = $currentMonthStmt->get_result();
-            $currentMonthRow = $currentMonthResult->fetch_assoc();
-            $currentMonthStmt->close();
-
-            $prevMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-            $prevMonthStmt->bind_param("s", $previousMonth);
-            $prevMonthStmt->execute();
-            $prevMonthResult = $prevMonthStmt->get_result();
-            $prevMonthRow = $prevMonthResult->fetch_assoc();
-            $prevMonthStmt->close();
-
-            $previousMonthGaps = [];
-            $hasPreviousGaps = false;
-            if ($prevMonthRow['count'] > 0) {
-                $gapInfo = detectGapsInMonth($conn, $tableName, $previousMonth);
-                $hasPreviousGaps = !empty($gapInfo['gaps']);
-                $previousMonthGaps = $gapInfo;
-            }
-
-            $currentMonthGaps = [];
-            $hasCurrentGaps = false;
-            if ($currentMonthRow['count'] > 0) {
-                $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
-                $hasCurrentGaps = !empty($currentGapInfo['gaps']);
-                $currentMonthGaps = $currentGapInfo;
-            }
-
-            // CORRECT LOGIC: Transition needed when previous month exists and current month doesn't
-            $needsTransition = false;
-            if ($prevMonthRow['count'] > 0 && $currentMonthRow['count'] == 0) {
-                $needsTransition = true;
-                error_log("Month transition needed: Previous month {$previousMonth} exists, current month {$currentMonth} missing");
-            } elseif ($currentMonthRow['count'] > 0 && $hasCurrentGaps) {
-                $needsTransition = true;
-                error_log("Gap filling needed for current month {$currentMonth}");
-            }
-
-            $transitionInfo = [
-                'company_id' => $currentCompanyId,
-                'table_name' => $tableName,
-                'current_month' => $currentMonth,
-                'previous_month' => $previousMonth,
-                'current_day' => $currentDay,
-                'current_date' => getCurrentDate(),
-                'current_month_exists' => $currentMonthRow['count'] > 0,
-                'current_month_count' => $currentMonthRow['count'],
-                'previous_month_exists' => $prevMonthRow['count'] > 0,
-                'previous_month_count' => $prevMonthRow['count'],
-                'has_previous_gaps' => $hasPreviousGaps,
-                'has_current_gaps' => $hasCurrentGaps,
-                'previous_gap_info' => $previousMonthGaps,
-                'current_gap_info' => $currentMonthGaps,
-                'needs_transition' => $needsTransition,
-                'needs_current_gap_fill' => $hasCurrentGaps || $needsTransition,
-                'current_month_days' => getDaysInMonth($currentMonth),
-                'previous_month_days' => getDaysInMonth($previousMonth)
-            ];
-            
-            error_log("Transition check: Table={$tableName}, Prev month exists=" . ($prevMonthRow['count'] > 0 ? 'Yes' : 'No') . 
-                     ", Curr month exists=" . ($currentMonthRow['count'] > 0 ? 'Yes' : 'No') . 
-                     ", Needs transition=" . ($needsTransition ? 'Yes' : 'No'));
-        } else {
-            error_log("Table {$tableName} does not exist");
-        }
-    }
-
-    return $transitionInfo;
 }
 
 /**
- * UPDATED: Complete month transition with correct flow:
- * 1. Fill previous month gaps
- * 2. Create archive of ALL data
- * 3. Update previous month records to become new month
- * 4. Fill current month gaps
+ * Check if month transition is needed
  */
-function executeCompleteMonthTransition($conn) {
-    $currentCompanyId = $_SESSION['CompID'] ?? 1;
+function checkMonthTransition($conn) {
+    $companyId = $_SESSION['CompID'] ?? 1;
+    $tableName = 'tbldailystock_' . $companyId;
     $currentMonth = getCurrentMonth();
-    $previousMonth = getPreviousMonth();
-    $currentDay = getCurrentDay();
     
-    $companyTables = [
-        '1' => 'tbldailystock_1',
-        '2' => 'tbldailystock_2',
-        '3' => 'tbldailystock_3'
-    ];
-    
-    if (!isset($companyTables[$currentCompanyId])) {
+    // Check if table exists
+    $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
+    if ($tableCheck->num_rows == 0) {
+        error_log("Table {$tableName} does not exist");
         return [
-            'success' => false,
-            'error' => 'Invalid company ID',
-            'complete_process' => false
+            'needs_transition' => false,
+            'table_exists' => false
         ];
     }
     
-    $tableName = $companyTables[$currentCompanyId];
+    // Check what months exist in the table
+    $monthQuery = "SELECT DISTINCT STK_MONTH FROM `{$tableName}` ORDER BY STK_MONTH DESC";
+    $monthResult = $conn->query($monthQuery);
     
-    error_log("Starting month transition for company {$currentCompanyId}, table {$tableName}");
+    $existingMonths = [];
+    while ($row = $monthResult->fetch_assoc()) {
+        $existingMonths[] = $row['STK_MONTH'];
+    }
     
-    try {
-        // STEP 0: ENSURE MAIN TABLE EXISTS
-        $ensureTableResult = ensureMainTableExists($conn, $tableName);
-        if (!$ensureTableResult['success']) {
-            throw new Exception("Failed to ensure main table exists: " . $ensureTableResult['error']);
-        }
-        
-        // STEP 0.5: CHECK PREVIOUS MONTH DATA
-        $prevMonthStmt = $conn->prepare("SELECT COUNT(*) as count FROM `{$tableName}` WHERE STK_MONTH = ?");
-        $prevMonthStmt->bind_param("s", $previousMonth);
-        $prevMonthStmt->execute();
-        $prevMonthResult = $prevMonthStmt->get_result();
-        $prevMonthRow = $prevMonthResult->fetch_assoc();
-        $prevMonthStmt->close();
-        
-        $restoreResult = null;
-        if ($prevMonthRow['count'] == 0) {
-            error_log("Previous month {$previousMonth} data missing, attempting to restore from archive");
-            $restoreResult = restorePreviousMonthFromArchive($conn, $tableName, $previousMonth);
-            if (!$restoreResult['success']) {
-                error_log("Failed to restore previous month: " . ($restoreResult['error'] ?? 'Unknown error'));
-                // Don't throw exception yet, try to continue
+    error_log("Existing months in {$tableName}: " . implode(', ', $existingMonths));
+    
+    // If no data at all, no transition needed
+    if (empty($existingMonths)) {
+        return [
+            'needs_transition' => false,
+            'table_exists' => true,
+            'has_data' => false
+        ];
+    }
+    
+    // Get the latest month in the table
+    $latestMonth = $existingMonths[0];
+    
+    // Calculate expected months based on current date
+    $expectedMonths = [];
+    $currentDateTime = new DateTime($currentMonth . '-01');
+    $latestDateTime = new DateTime($latestMonth . '-01');
+    
+    // If latest month is before current month, we need transition
+    if ($latestDateTime < $currentDateTime) {
+        // Calculate all months between latest and current
+        $tempDate = clone $latestDateTime;
+        while ($tempDate < $currentDateTime) {
+            $tempDate->modify('+1 month');
+            if ($tempDate < $currentDateTime) {
+                $expectedMonths[] = $tempDate->format('Y-m');
             }
         }
         
-        // STEP 1: Fill gaps in previous month if any
-        $previousGapFillResult = ['success' => true, 'message' => 'No previous month gaps to fill', 'gaps_filled' => 0];
-        $transitionInfo = checkMonthTransitionWithGaps($conn);
-        
-        if ($transitionInfo && $transitionInfo['has_previous_gaps'] && !empty($transitionInfo['previous_gap_info']['gaps'])) {
-            error_log("Filling gaps in previous month {$previousMonth}");
-            $previousGapFillResult = autoPopulateMonthGaps(
-                $conn, 
-                $tableName, 
-                $previousMonth, 
-                $transitionInfo['previous_gap_info']['gaps'], 
-                $transitionInfo['previous_gap_info']['last_complete_day']
-            );
-        }
-        
-        // STEP 2: Create archive table for previous month (copies ALL data)
-        $archiveResult = ['success' => false, 'error' => 'No data to archive'];
-        $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
-        
-        // Check if there's any data to archive
-        $dataCheck = $conn->query("SELECT COUNT(*) as cnt FROM `{$tableName}`");
-        $dataRow = $dataCheck->fetch_assoc();
-        
-        if ($dataRow && $dataRow['cnt'] > 0) {
-            error_log("Creating archive table {$archiveTable} with ALL data");
-            $archiveResult = createArchiveTable($conn, $tableName, $archiveTable, $previousMonth);
-        } else {
-            error_log("No data to archive for table {$tableName}");
-        }
-        
-        // STEP 3: Initialize new month by UPDATING previous month records
-        $initResult = ['success' => false, 'error' => 'Initialization failed'];
-        
-        // Check if current month already has data
-        $currMonthCheck = $conn->query("SELECT COUNT(*) as cnt FROM `{$tableName}` WHERE STK_MONTH = '{$currentMonth}'");
-        $currDataRow = $currMonthCheck->fetch_assoc();
-        
-        if ($currDataRow && $currDataRow['cnt'] > 0) {
-            error_log("Current month {$currentMonth} already has data, skipping initialization");
-            $initResult = ['success' => true, 'message' => 'Data already exists', 'updated_items' => 0];
-        } else {
-            error_log("Initializing new month {$currentMonth} from previous month {$previousMonth} (UPDATE approach)");
-            $initResult = initializeNewMonth($conn, $tableName, $previousMonth, $currentMonth);
-        }
-        
-        // STEP 4: Fill gaps in current month if any
-        $currentGapFillResult = ['success' => true, 'message' => 'No current month gaps to fill', 'gaps_filled' => 0];
-        
-        sleep(1); // Small delay to ensure data is written
-        
-        $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
-        
-        if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] > 0) {
-            error_log("Filling gaps in current month {$currentMonth}");
-            $currentGapFillResult = autoPopulateMonthGaps(
-                $conn, 
-                $tableName, 
-                $currentMonth, 
-                $currentGapInfo['gaps'], 
-                $currentGapInfo['last_complete_day']
-            );
-        } else if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] === 0) {
-            $firstGapDay = min($currentGapInfo['gaps']);
-            if ($firstGapDay === 1) {
-                error_log("Ensuring Day 1 data for current month {$currentMonth}");
-                $ensureDay1Result = ensureDay1Data($conn, $tableName, $currentMonth);
-                if ($ensureDay1Result['success']) {
-                    sleep(1);
-                    $currentGapInfo = detectGapsInMonth($conn, $tableName, $currentMonth, $currentDay);
-                    if (!empty($currentGapInfo['gaps']) && $currentGapInfo['last_complete_day'] > 0) {
-                        $currentGapFillResult = autoPopulateMonthGaps(
-                            $conn, 
-                            $tableName, 
-                            $currentMonth, 
-                            $currentGapInfo['gaps'], 
-                            $currentGapInfo['last_complete_day']
-                        );
-                    }
-                }
-            }
-        }
-        
-        error_log("Month transition completed successfully");
+        error_log("Need to transition from {$latestMonth} to {$currentMonth}, missing months: " . implode(', ', $expectedMonths));
         
         return [
-            'success' => true,
-            'company_id' => $currentCompanyId,
-            'table_name' => $tableName,
-            'ensure_table_result' => $ensureTableResult,
-            'restore_result' => $restoreResult,
-            'previous_gap_fill_result' => $previousGapFillResult,
-            'archive_result' => $archiveResult,
-            'init_result' => $initResult,
-            'current_gap_fill_result' => $currentGapFillResult,
-            'current_gap_info' => $currentGapInfo,
-            'previous_month' => $previousMonth,
+            'needs_transition' => true,
+            'table_exists' => true,
+            'has_data' => true,
+            'latest_month' => $latestMonth,
             'current_month' => $currentMonth,
-            'current_day' => $currentDay,
-            'archive_table_name' => $archiveTable,
-            'previous_month_days' => getDaysInMonth($previousMonth),
-            'current_month_days' => getDaysInMonth($currentMonth),
-            'complete_process' => true
+            'missing_months' => $expectedMonths,
+            'multiple_months' => count($expectedMonths) > 0
         ];
+    }
+    
+    return [
+        'needs_transition' => false,
+        'table_exists' => true,
+        'has_data' => true,
+        'latest_month' => $latestMonth,
+        'current_month' => $currentMonth
+    ];
+}
+
+/**
+ * Execute complete month transition
+ */
+function executeMonthTransition($conn) {
+    $companyId = $_SESSION['CompID'] ?? 1;
+    $tableName = 'tbldailystock_' . $companyId;
+    $currentMonth = getCurrentMonth();
+    
+    $results = [
+        'company_id' => $companyId,
+        'table_name' => $tableName,
+        'steps' => [],
+        'success' => true
+    ];
+    
+    try {
+        // Step 1: Check current state
+        $checkResult = checkMonthTransition($conn);
+        $results['check_result'] = $checkResult;
+        
+        if (!$checkResult['needs_transition']) {
+            $results['message'] = 'No transition needed';
+            return $results;
+        }
+        
+        // Step 2: Ensure table has correct columns for current month
+        error_log("Step 1: Ensuring columns for current month {$currentMonth}");
+        $columnResult = ensureDayColumnsForMonth($conn, $tableName, $currentMonth);
+        $results['steps']['ensure_columns'] = $columnResult;
+        
+        if (!$columnResult['success']) {
+            throw new Exception("Failed to ensure columns: " . ($columnResult['error'] ?? 'Unknown error'));
+        }
+        
+        // Step 3: Process each missing month
+        $currentProcessingMonth = $checkResult['latest_month'];
+        $targetMonth = $currentMonth;
+        $archiveResults = [];
+        $transformResults = [];
+        
+        while ($currentProcessingMonth != $targetMonth) {
+            // Calculate next month
+            $nextMonthDate = new DateTime($currentProcessingMonth . '-01');
+            $nextMonthDate->modify('+1 month');
+            $nextMonth = $nextMonthDate->format('Y-m');
+            
+            error_log("Processing transition: {$currentProcessingMonth} → {$nextMonth}");
+            
+            // Step 3a: Create archive for current processing month
+            $archiveResult = createArchiveTable($conn, $tableName, $currentProcessingMonth);
+            $archiveResults[] = $archiveResult;
+            $results['steps']['archives'] = $archiveResults;
+            
+            if (!$archiveResult['success']) {
+                throw new Exception("Failed to create archive for {$currentProcessingMonth}: " . ($archiveResult['error'] ?? 'Unknown error'));
+            }
+            
+            // Step 3b: Ensure next month has correct columns
+            $nextMonthColumnResult = ensureDayColumnsForMonth($conn, $tableName, $nextMonth);
+            if (!$nextMonthColumnResult['success']) {
+                throw new Exception("Failed to ensure columns for {$nextMonth}");
+            }
+            
+            // Step 3c: Transform table from current to next month
+            $transformResult = transformTableForNewMonth($conn, $tableName, $currentProcessingMonth, $nextMonth);
+            $transformResults[] = $transformResult;
+            $results['steps']['transforms'] = $transformResults;
+            
+            if (!$transformResult['success']) {
+                throw new Exception("Failed to transform from {$currentProcessingMonth} to {$nextMonth}: " . ($transformResult['error'] ?? 'Unknown error'));
+            }
+            
+            // Move to next month
+            $currentProcessingMonth = $nextMonth;
+        }
+        
+        $results['success'] = true;
+        $results['message'] = "Successfully transitioned from {$checkResult['latest_month']} to {$currentMonth}";
         
     } catch (Exception $e) {
         error_log("Month transition failed: " . $e->getMessage());
-        return [
-            'success' => false,
-            'error' => $e->getMessage(),
-            'complete_process' => false
-        ];
+        $results['success'] = false;
+        $results['error'] = $e->getMessage();
     }
+    
+    return $results;
+}
+
+// =============================================================================
+// TRANSITION PROCESSING
+// =============================================================================
+
+$transitionResults = null;
+if (isset($_POST['execute_month_transition']) && $_POST['execute_month_transition'] === '1') {
+    error_log("Manual month transition started by user");
+    
+    try {
+        $transitionResults = executeMonthTransition($conn);
+        
+        if ($transitionResults['success']) {
+            $successMsg = "Month transition completed successfully! ";
+            if (isset($transitionResults['steps']['archives'])) {
+                foreach ($transitionResults['steps']['archives'] as $archive) {
+                    if ($archive['success']) {
+                        $successMsg .= " | Archive: " . $archive['archive_table'];
+                    }
+                }
+            }
+            $_SESSION['transition_message'] = $successMsg;
+            $_SESSION['message_type'] = 'success';
+        } else {
+            $_SESSION['transition_message'] = "Month transition failed: " . ($transitionResults['error'] ?? 'Unknown error');
+            $_SESSION['message_type'] = 'error';
+        }
+    } catch (Exception $e) {
+        error_log("Month transition exception: " . $e->getMessage());
+        $_SESSION['transition_message'] = "System error: " . $e->getMessage();
+        $_SESSION['message_type'] = 'error';
+    }
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Check if transition is needed
+$transitionInfo = checkMonthTransition($conn);
+
+// Auto-execute if needed
+if ($transitionInfo['needs_transition']) {
+    $transitionKey = 'auto_transition_' . date('Y-m-d');
+    if (!isset($_SESSION[$transitionKey])) {
+        error_log("Auto transition triggered");
+        $autoResults = executeMonthTransition($conn);
+        if ($autoResults['success']) {
+            $_SESSION[$transitionKey] = true;
+            $_SESSION['transition_message'] = "Auto transition completed";
+            $_SESSION['message_type'] = 'success';
+        }
+        // Refresh transition info
+        $transitionInfo = checkMonthTransition($conn);
+    }
+}
+
+// Get any messages
+$successMessage = '';
+$messageType = '';
+if (isset($_SESSION['transition_message'])) {
+    $successMessage = $_SESSION['transition_message'];
+    $messageType = $_SESSION['message_type'] ?? 'info';
+    unset($_SESSION['transition_message']);
+    unset($_SESSION['message_type']);
 }
 
 // =============================================================================
@@ -1262,62 +845,41 @@ function executeCompleteMonthTransition($conn) {
 function getTotalItemsCount($conn) {
     $query = "SELECT COUNT(*) as item_count FROM tblitemmaster";
     $result = $conn->query($query);
-    
-    if (!$result) {
-        return 0;
-    }
-    
+    if (!$result) return 0;
     $row = $result->fetch_assoc();
     $result->free();
-    
     return $row ? $row['item_count'] : 0;
 }
 
 function getLicensedItemsCount($conn, $license_type) {
     $allowed_categories = getAllowedCategoriesByLicenseType($license_type, $conn);
-    
-    if (empty($allowed_categories)) {
-        return 0;
-    }
+    if (empty($allowed_categories)) return 0;
     
     $category_codes = [];
     foreach ($allowed_categories as $cat) {
         $category_codes[] = $conn->real_escape_string($cat['CATEGORY_CODE']);
     }
-    
     $codes_string = "'" . implode("','", $category_codes) . "'";
     
-    $query = "
-        SELECT COUNT(*) as item_count 
-        FROM tblitemmaster 
-        WHERE CATEGORY_CODE IN ($codes_string)
-    ";
-    
+    $query = "SELECT COUNT(*) as item_count FROM tblitemmaster WHERE CATEGORY_CODE IN ($codes_string)";
     $result = $conn->query($query);
-    
     if ($result) {
         $row = $result->fetch_assoc();
         $result->free();
         return $row ? $row['item_count'] : 0;
     }
-    
     return 0;
 }
 
 function getClassesWithCounts($conn, $license_type) {
     $classes = [];
-    
     $allowed_categories = getAllowedCategoriesByLicenseType($license_type, $conn);
-    
-    if (empty($allowed_categories)) {
-        return [];
-    }
+    if (empty($allowed_categories)) return [];
     
     $category_codes = [];
     foreach ($allowed_categories as $cat) {
         $category_codes[] = $conn->real_escape_string($cat['CATEGORY_CODE']);
     }
-    
     $codes_string = "'" . implode("','", $category_codes) . "'";
     
     $query = "
@@ -1338,7 +900,6 @@ function getClassesWithCounts($conn, $license_type) {
     ";
     
     $result = $conn->query($query);
-    
     if ($result) {
         while ($row = $result->fetch_assoc()) {
             $classes[$row['CLASS_CODE']] = [
@@ -1351,331 +912,112 @@ function getClassesWithCounts($conn, $license_type) {
         }
         $result->free();
     }
-    
     return $classes;
 }
 
 function getFormattedClassName($class_name, $category_name) {
     if (stripos($category_name, 'spirit') !== false) {
-        if (stripos($class_name, 'imfl') !== false) {
-            return 'IMFL Spirit';
-        } elseif (stripos($class_name, 'imported') !== false) {
-            return 'Imported Spirit';
-        } elseif (stripos($class_name, 'mml') !== false) {
-            return 'MML Spirit';
-        }
+        if (stripos($class_name, 'imfl') !== false) return 'IMFL Spirit';
+        if (stripos($class_name, 'imported') !== false) return 'Imported Spirit';
+        if (stripos($class_name, 'mml') !== false) return 'MML Spirit';
     } elseif (stripos($category_name, 'wine') !== false) {
-        if (stripos($class_name, 'imported') !== false) {
-            return 'Imported Wine';
-        } elseif (stripos($class_name, 'indian') !== false) {
-            return 'Wine Indian';
-        } elseif (stripos($class_name, 'mml') !== false) {
-            return 'MML Wine';
-        }
+        if (stripos($class_name, 'imported') !== false) return 'Imported Wine';
+        if (stripos($class_name, 'indian') !== false) return 'Wine Indian';
+        if (stripos($class_name, 'mml') !== false) return 'MML Wine';
     } elseif (stripos($category_name, 'beer') !== false) {
-        if (stripos($class_name, 'fermented') !== false) {
-            return 'Fermented Beer';
-        } elseif (stripos($class_name, 'mild') !== false) {
-            return 'Mild Beer';
-        }
+        if (stripos($class_name, 'fermented') !== false) return 'Fermented Beer';
+        if (stripos($class_name, 'mild') !== false) return 'Mild Beer';
     }
-    
     return $class_name;
 }
 
 function getCategoryColor($category_name, $class_name = '') {
     if (stripos($category_name, 'spirit') !== false) {
-        if (stripos($class_name, 'imfl') !== false) {
-            return '#667eea';
-        } elseif (stripos($class_name, 'imported') !== false) {
-            return '#764ba2';
-        } elseif (stripos($class_name, 'mml') !== false) {
-            return '#4facfe';
-        }
+        if (stripos($class_name, 'imfl') !== false) return '#667eea';
+        if (stripos($class_name, 'imported') !== false) return '#764ba2';
+        if (stripos($class_name, 'mml') !== false) return '#4facfe';
         return '#667eea';
     } elseif (stripos($category_name, 'wine') !== false) {
-        if (stripos($class_name, 'imported') !== false) {
-            return '#f5576c';
-        } elseif (stripos($class_name, 'indian') !== false) {
-            return '#fa709a';
-        } elseif (stripos($class_name, 'mml') !== false) {
-            return '#ff6b6b';
-        }
+        if (stripos($class_name, 'imported') !== false) return '#f5576c';
+        if (stripos($class_name, 'indian') !== false) return '#fa709a';
+        if (stripos($class_name, 'mml') !== false) return '#ff6b6b';
         return '#f5576c';
     } elseif (stripos($category_name, 'beer') !== false) {
-        if (stripos($class_name, 'fermented') !== false) {
-            return '#43e97b';
-        } elseif (stripos($class_name, 'mild') !== false) {
-            return '#38f9d7';
-        }
+        if (stripos($class_name, 'fermented') !== false) return '#43e97b';
+        if (stripos($class_name, 'mild') !== false) return '#38f9d7';
         return '#43e97b';
     }
-    
     $colors = ['#667eea', '#764ba2', '#f5576c', '#4facfe', '#43e97b', '#fa709a', '#ff9a9e', '#a18cd1'];
     return $colors[array_rand($colors)];
 }
 
 function getCategoryIcon($category_name, $class_name = '') {
-    if (stripos($category_name, 'spirit') !== false) {
-        return 'fas fa-glass-whiskey';
-    } elseif (stripos($category_name, 'wine') !== false) {
-        return 'fas fa-wine-glass';
-    } elseif (stripos($category_name, 'beer') !== false) {
-        return 'fas fa-beer';
-    }
+    if (stripos($category_name, 'spirit') !== false) return 'fas fa-glass-whiskey';
+    if (stripos($category_name, 'wine') !== false) return 'fas fa-wine-glass';
+    if (stripos($category_name, 'beer') !== false) return 'fas fa-beer';
     return 'fas fa-cube';
 }
 
 function getTotalCustomers($conn, $company_id) {
     $query = "SELECT COUNT(*) as total_customers FROM tbllheads WHERE REF_CODE = 'CUST' AND CompID = ?";
     $stmt = $conn->prepare($query);
-    
     if ($stmt) {
         $stmt->bind_param("i", $company_id);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         $stmt->close();
-        
-        if ($row) {
-            return $row['total_customers'];
-        }
+        return $row ? $row['total_customers'] : 0;
     }
-    
     return 0;
 }
 
 function getTotalSuppliers($conn) {
     $query = "SELECT COUNT(*) as total FROM tblsupplier WHERE CODE IS NOT NULL";
     $result = $conn->query($query);
-    
-    if (!$result) {
-        return 0;
-    }
-    
+    if (!$result) return 0;
     $row = $result->fetch_assoc();
     $result->free();
-    
     return $row ? $row['total'] : 0;
 }
 
 function getActivePermits($conn) {
     $currentDate = date('Y-m-d');
     $query = "SELECT COUNT(*) as total FROM tblpermit WHERE P_EXP_DT >= ? AND PRMT_FLAG = 1";
-    
     $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return 0;
-    }
-    
+    if (!$stmt) return 0;
     $stmt->bind_param("s", $currentDate);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $stmt->close();
-    
     return $row ? $row['total'] : 0;
 }
 
 function getDryDaysCount($conn) {
     $currentYear = date('Y');
     $query = "SELECT COUNT(*) as total FROM tbldrydays WHERE YEAR(DDATE) = ?";
-    
     $stmt = $conn->prepare($query);
-    if (!$stmt) {
-        return 0;
-    }
-    
+    if (!$stmt) return 0;
     $stmt->bind_param("s", $currentYear);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     $stmt->close();
-    
     return $row ? $row['total'] : 0;
 }
 
-// =============================================================================
-// MONTH TRANSITION PROCESSING
-// =============================================================================
-
-$transitionResults = null;
-if (isset($_POST['complete_month_transition']) && $_POST['complete_month_transition'] === '1') {
-    error_log("Manual month transition started by user: " . ($_SESSION['user_id'] ?? 'unknown'));
-    
-    try {
-        $transitionResults = executeCompleteMonthTransition($conn);
-        
-        if ($transitionResults && isset($transitionResults['complete_process']) && $transitionResults['complete_process']) {
-            $successMsg = "Complete month transition processed successfully! ";
-            $successMsg .= "Archive table: " . $transitionResults['archive_table_name'];
-            
-            if (isset($transitionResults['ensure_table_result']['action'])) {
-                $successMsg .= " | Table: " . $transitionResults['ensure_table_result']['action'];
-            }
-            
-            if (isset($transitionResults['restore_result']['action'])) {
-                $successMsg .= " | Restore: " . $transitionResults['restore_result']['action'];
-            }
-            
-            if (isset($transitionResults['previous_gap_fill_result']['gaps_filled']) && $transitionResults['previous_gap_fill_result']['gaps_filled'] > 0) {
-                $successMsg .= " | Prev gaps: " . $transitionResults['previous_gap_fill_result']['gaps_filled'];
-            }
-            
-            if (isset($transitionResults['current_gap_fill_result']['gaps_filled']) && $transitionResults['current_gap_fill_result']['gaps_filled'] > 0) {
-                $successMsg .= " | Curr gaps: " . $transitionResults['current_gap_fill_result']['gaps_filled'];
-                if (isset($transitionResults['current_gap_fill_result']['total_items_processed'])) {
-                    $successMsg .= " (" . $transitionResults['current_gap_fill_result']['total_items_processed'] . " items)";
-                }
-            }
-            
-            if (isset($transitionResults['init_result']['updated_items']) && $transitionResults['init_result']['updated_items'] > 0) {
-                $successMsg .= " | New month: " . $transitionResults['init_result']['updated_items'] . " items updated from previous month";
-            }
-            
-            $_SESSION['transition_message'] = $successMsg;
-            $_SESSION['message_type'] = 'success';
-        } else {
-            $errorMsg = "Month transition failed: " . ($transitionResults['error'] ?? 'Unknown error');
-            $_SESSION['transition_message'] = $errorMsg;
-            $_SESSION['message_type'] = 'error';
-        }
-    } catch (Exception $e) {
-        error_log("Month transition exception: " . $e->getMessage());
-        $_SESSION['transition_message'] = "System error: " . $e->getMessage();
-        $_SESSION['message_type'] = 'error';
-    }
-    
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
-}
-
-$transitionInfo = checkMonthTransitionWithGaps($conn);
-
-$autoTransitionResults = null;
-if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['needs_current_gap_fill'])) {
-    $transitionKey = 'auto_transition_' . $transitionInfo['current_month'] . '_' . date('Y-m-d');
-    if (!isset($_SESSION[$transitionKey])) {
-        error_log("Automatic month transition started for: " . $transitionInfo['current_month']);
-        
-        try {
-            $autoTransitionResults = executeCompleteMonthTransition($conn);
-            
-            if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && $autoTransitionResults['complete_process']) {
-                $successMsg = "Automatic month transition completed successfully!";
-                $_SESSION['transition_message'] = $successMsg;
-                $_SESSION['message_type'] = 'success';
-                $_SESSION[$transitionKey] = true;
-                
-                // Refresh transition info after successful auto transition
-                $transitionInfo = checkMonthTransitionWithGaps($conn);
-            }
-        } catch (Exception $e) {
-            error_log("Automatic month transition exception: " . $e->getMessage());
-        }
-    }
-}
-
-$successMessage = '';
-$messageType = '';
-if (isset($_SESSION['transition_message'])) {
-    $successMessage = $_SESSION['transition_message'];
-    $messageType = $_SESSION['message_type'] ?? 'info';
-    unset($_SESSION['transition_message']);
-    unset($_SESSION['message_type']);
-}
-
-// =============================================================================
-// DASHBOARD STATISTICS
-// =============================================================================
-
+// Get dashboard statistics
 $stats = [
-    'total_items' => 0,
-    'licensed_items' => 0,
-    'total_customers' => 0,
-    'total_suppliers' => 0,
-    'total_permits' => 0,
-    'total_dry_days' => 0
+    'total_items' => number_format(getTotalItemsCount($conn)),
+    'licensed_items' => $license_type ? number_format(getLicensedItemsCount($conn, $license_type)) : '0',
+    'total_customers' => number_format(getTotalCustomers($conn, $company_id)),
+    'total_suppliers' => number_format(getTotalSuppliers($conn)),
+    'total_permits' => number_format(getActivePermits($conn)),
+    'total_dry_days' => number_format(getDryDaysCount($conn))
 ];
 
-$total_items_count = getTotalItemsCount($conn);
-$stats['total_items'] = number_format($total_items_count);
-
-if ($license_type) {
-    $licensed_items_count = getLicensedItemsCount($conn, $license_type);
-    $stats['licensed_items'] = number_format($licensed_items_count);
-    $classes = getClassesWithCounts($conn, $license_type);
-} else {
-    $stats['licensed_items'] = 0;
-    $classes = [];
-}
-
-try {
-    $total_customers_count = getTotalCustomers($conn, $company_id);
-    $stats['total_customers'] = number_format($total_customers_count);
-    
-    $total_suppliers_count = getTotalSuppliers($conn);
-    $stats['total_suppliers'] = number_format($total_suppliers_count);
-    
-    $active_permits_count = getActivePermits($conn);
-    $stats['total_permits'] = number_format($active_permits_count);
-    
-    $dry_days_count = getDryDaysCount($conn);
-    $stats['total_dry_days'] = number_format($dry_days_count);
-    
-} catch (Exception $e) {
-    $error = "Dashboard statistics error: " . $e->getMessage();
-}
-
-// =============================================================================
-// DETERMINE IF TRANSITION CARD SHOULD BE SHOWN
-// =============================================================================
-
-$show_transition_card = false;
-
-// Show card if automatic transition was attempted and failed
-if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && !$autoTransitionResults['complete_process']) {
-    $show_transition_card = true;
-}
-// Show card if there's an error message from previous attempt
-else if (isset($transitionResults) && $transitionResults && isset($transitionResults['complete_process']) && !$transitionResults['complete_process']) {
-    $show_transition_card = true;
-}
-// Show card if manual form was submitted and we have results (success or fail)
-else if (isset($_POST['complete_month_transition']) && $_POST['complete_month_transition'] === '1' && isset($transitionResults)) {
-    $show_transition_card = true;
-}
-// Show card if there's a transition message in session that indicates error
-else if (isset($successMessage) && $successMessage && isset($messageType) && $messageType === 'error') {
-    $show_transition_card = true;
-}
-// Show card if transition is needed AND auto processing was not attempted or failed
-else if ($transitionInfo && ($transitionInfo['needs_transition'] || $transitionInfo['needs_current_gap_fill'])) {
-    // Only show if auto processing didn't run or failed
-    $transitionKey = 'auto_transition_' . $transitionInfo['current_month'] . '_' . date('Y-m-d');
-    if (!isset($_SESSION[$transitionKey])) {
-        // Auto processing hasn't been attempted yet on this page load
-        // But we're at the end of the script, so if we got here and still need transition,
-        // it means auto processing either didn't run or failed silently
-        if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && !$autoTransitionResults['complete_process']) {
-            $show_transition_card = true;
-        } else if (!$autoTransitionResults) {
-            // Auto transition wasn't attempted (maybe due to condition) but we still need it
-            $show_transition_card = true;
-        }
-    } else {
-        // Auto processing was attempted, check if it succeeded
-        if ($autoTransitionResults && isset($autoTransitionResults['complete_process']) && !$autoTransitionResults['complete_process']) {
-            $show_transition_card = true;
-        }
-    }
-}
-
-error_log("Dashboard loaded - Show transition card: " . ($show_transition_card ? 'Yes' : 'No'));
-if ($transitionInfo) {
-    error_log("Transition info - Needs transition: " . ($transitionInfo['needs_transition'] ? 'Yes' : 'No') . 
-              ", Needs gap fill: " . ($transitionInfo['needs_current_gap_fill'] ? 'Yes' : 'No'));
-}
+$classes = $license_type ? getClassesWithCounts($conn, $license_type) : [];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -1811,20 +1153,6 @@ if ($transitionInfo) {
             border-bottom: none;
         }
         
-        .gap-days {
-            font-size: 0.8rem;
-            margin-right: 5px;
-        }
-        
-        .item-count-badge {
-            background: #4ecdc4;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            margin-left: 5px;
-        }
-        
         .fy-indicator {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 8px;
@@ -1879,7 +1207,17 @@ if ($transitionInfo) {
             flex-wrap: wrap;
             gap: 10px;
         }
+        
+        .archive-badge {
+            background: #4ecdc4;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
     </style>
+    <script src="components/shortcuts.js?v=<?= time() ?>"></script>
 </head>
 <body>
 <div class="dashboard-container">
@@ -1887,37 +1225,20 @@ if ($transitionInfo) {
     
     <div class="main-content">
         <div class="content-area">
-            <!-- Financial Year Indicator - Real Mode Only -->
+            <!-- Financial Year Indicator -->
             <div class="fy-indicator">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <i class="fas fa-calendar-alt me-2"></i>
                         <strong>Financial Year:</strong> 
                         <?php 
-                        if (isset($_SESSION['FIN_YEAR_NAME']) && !empty($_SESSION['FIN_YEAR_NAME'])) {
-                            echo htmlspecialchars($_SESSION['FIN_YEAR_NAME']); 
-                        } else {
-                            if (isset($_SESSION['FIN_YEAR_START']) && !empty($_SESSION['FIN_YEAR_START'])) {
-                                $startYear = date('Y', strtotime($_SESSION['FIN_YEAR_START']));
-                                $endYear = date('y', strtotime($_SESSION['FIN_YEAR_END']));
-                                $calculatedName = $startYear . '-' . $endYear;
-                                echo htmlspecialchars($calculatedName);
-                                $_SESSION['FIN_YEAR_NAME'] = $calculatedName;
-                            } else {
-                                echo '<span class="text-warning">Not Available</span>';
-                                error_log("Financial year name not set in session at display time");
-                            }
-                        }
+                        echo isset($_SESSION['FIN_YEAR_NAME']) ? htmlspecialchars($_SESSION['FIN_YEAR_NAME']) : 'N/A'; 
                         ?>
                         (<?php 
-                        echo isset($_SESSION['FIN_YEAR_START']) && !empty($_SESSION['FIN_YEAR_START']) 
-                            ? date('d M Y', strtotime($_SESSION['FIN_YEAR_START'])) 
-                            : 'N/A'; 
+                        echo isset($_SESSION['FIN_YEAR_START']) ? date('d M Y', strtotime($_SESSION['FIN_YEAR_START'])) : 'N/A'; 
                         ?> - 
                         <?php 
-                        echo isset($_SESSION['FIN_YEAR_END']) && !empty($_SESSION['FIN_YEAR_END']) 
-                            ? date('d M Y', strtotime($_SESSION['FIN_YEAR_END'])) 
-                            : 'N/A'; 
+                        echo isset($_SESSION['FIN_YEAR_END']) ? date('d M Y', strtotime($_SESSION['FIN_YEAR_END'])) : 'N/A'; 
                         ?>)
                     </div>
                     <div class="text-white-50">
@@ -1930,14 +1251,7 @@ if ($transitionInfo) {
                     <div class="alert alert-success alert-dismissible fade show mt-3 mb-0">
                         <i class="fas fa-check-circle"></i>
                         <strong>Financial Year Updated!</strong> 
-                        System has automatically transitioned to financial year 
-                        <?php 
-                        if (isset($_SESSION['FIN_YEAR_NAME']) && !empty($_SESSION['FIN_YEAR_NAME'])) {
-                            echo htmlspecialchars($_SESSION['FIN_YEAR_NAME']);
-                        } else {
-                            echo 'new year';
-                        }
-                        ?>
+                        System has transitioned to <?php echo htmlspecialchars($_SESSION['FIN_YEAR_NAME']); ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                     <?php unset($_SESSION['fy_transition']); ?>
@@ -1950,7 +1264,7 @@ if ($transitionInfo) {
                     <div class="d-flex align-items-center">
                         <span class="license-badge">License: <?php echo htmlspecialchars($license_type); ?></span>
                         <span class="allowed-badge">
-                            <?php echo isset($classes) ? count($classes) : 0; ?> Classes
+                            <?php echo count($classes); ?> Classes
                         </span>
                     </div>
                 <?php endif; ?>
@@ -1961,138 +1275,76 @@ if ($transitionInfo) {
             <?php endif; ?>
             
             <?php if($successMessage): ?>
-                <?php if($messageType === 'success'): ?>
-                    <div class="alert alert-success alert-dismissible fade show">
-                        <i class="fas fa-check-circle"></i> <strong>Success!</strong> <?php echo htmlspecialchars($successMessage); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php else: ?>
-                    <div class="alert alert-danger alert-dismissible fade show">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>Error!</strong> <?php echo htmlspecialchars($successMessage); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
+                <div class="alert alert-<?php echo $messageType === 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show">
+                    <i class="fas fa-<?php echo $messageType === 'success' ? 'check-circle' : 'exclamation-triangle'; ?>"></i>
+                    <strong><?php echo $messageType === 'success' ? 'Success!' : 'Error!'; ?></strong> 
+                    <?php echo htmlspecialchars($successMessage); ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             <?php endif; ?>
             
-            <?php if($show_transition_card && $transitionInfo && isset($transitionInfo['table_name']) && $transitionInfo['table_name']): ?>
+            <?php if($transitionInfo && $transitionInfo['needs_transition']): ?>
+                <!-- Month Transition Card -->
                 <div class="card transition-alert">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
                                 <h4 class="mb-0">
-                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <i class="fas fa-calendar-alt"></i>
                                     Month Transition Required
                                 </h4>
                                 <div class="mt-2">
-                                    <strong>Previous Month:</strong> <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'N/A'; ?> 
-                                    (<?php echo isset($transitionInfo['previous_month_days']) ? (int)$transitionInfo['previous_month_days'] : '0'; ?> days) │
-                                    <strong>Current Month:</strong> <?php echo isset($transitionInfo['current_month']) ? htmlspecialchars($transitionInfo['current_month']) : 'N/A'; ?> 
-                                    (<?php echo isset($transitionInfo['current_month_days']) ? (int)$transitionInfo['current_month_days'] : '0'; ?> days) │
-                                    <strong>Today:</strong> <?php echo isset($transitionInfo['current_date']) ? htmlspecialchars($transitionInfo['current_date']) : date('Y-m-d'); ?> 
-                                    (Day <span class="current-day-highlight"><?php echo isset($transitionInfo['current_day']) ? (int)$transitionInfo['current_day'] : (int)date('j'); ?></span>)
+                                    <strong>Current Month in DB:</strong> <?php echo $transitionInfo['latest_month']; ?> 
+                                    (<?php echo getDaysInMonth($transitionInfo['latest_month']); ?> days) │
+                                    <strong>Expected Month:</strong> <?php echo $transitionInfo['current_month']; ?> 
+                                    (<?php echo getDaysInMonth($transitionInfo['current_month']); ?> days) │
+                                    <?php if(!empty($transitionInfo['missing_months'])): ?>
+                                        <strong>Missing Months:</strong> <?php echo implode(', ', $transitionInfo['missing_months']); ?>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <form method="POST" id="transitionForm" style="display: inline;">
-                                <input type="hidden" name="complete_month_transition" value="1">
+                            <form method="POST" id="transitionForm">
+                                <input type="hidden" name="execute_month_transition" value="1">
                                 <button type="submit" class="btn btn-warning btn-transition">
-                                    <i class="fas fa-redo"></i> Process Month Transition
+                                    <i class="fas fa-redo"></i> Execute Transition
                                 </button>
                             </form>
                         </div>
                         
-                        <?php if($transitionInfo['needs_transition']): ?>
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle"></i>
-                            <strong>Month transition needed:</strong> 
-                            The system needs to transition from <?php echo $transitionInfo['previous_month']; ?> to <?php echo $transitionInfo['current_month']; ?>.
-                            This will take the closing stock from <?php echo $transitionInfo['previous_month_days']; ?> <?php echo $transitionInfo['previous_month']; ?> 
-                            and use it as opening stock for Day 1 of <?php echo $transitionInfo['current_month']; ?>.
+                            <strong>Process Overview:</strong>
+                            The system will create archive tables and transition through each missing month.
                         </div>
-                        <?php endif; ?>
-                        
-                        <?php if($transitionInfo['has_current_gaps']): ?>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <strong>Gaps detected in current month:</strong> 
-                            Days <?php echo implode(', ', $transitionInfo['current_gap_info']['gaps']); ?> need to be filled.
-                        </div>
-                        <?php endif; ?>
                         
                         <div class="process-steps">
-                            <h6><i class="fas fa-list-ol"></i> Process Steps:</h6>
+                            <h6><i class="fas fa-list-ol"></i> Automatic Process:</h6>
                             
+                            <?php foreach($transitionInfo['missing_months'] as $index => $missingMonth): 
+                                $prevMonth = $index == 0 ? $transitionInfo['latest_month'] : $transitionInfo['missing_months'][$index-1];
+                                $monthDate = new DateTime($missingMonth . '-01');
+                                $monthName = $monthDate->format('F Y');
+                                $prevMonthDate = new DateTime($prevMonth . '-01');
+                                $prevMonthName = $prevMonthDate->format('F Y');
+                            ?>
                             <div class="step-item">
-                                <strong>Step 1: Ensure Table Exists</strong>
+                                <strong>Step <?php echo $index + 1; ?>: Transition <?php echo $prevMonthName; ?> → <?php echo $monthName; ?></strong>
                                 <div class="mt-1">
-                                    <small>Check if main table exists and create if missing</small>
-                                </div>
-                            </div>
-                            
-                            <?php if(isset($transitionInfo['previous_month_exists']) && !$transitionInfo['previous_month_exists']): ?>
-                            <div class="step-item">
-                                <strong>Step 2: Restore Previous Month Data</strong>
-                                <div class="mt-1">
-                                    <small>Restore <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'previous month'; ?> data from archive</small>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            
-                            <?php if(isset($transitionInfo['has_previous_gaps']) && $transitionInfo['has_previous_gaps']): ?>
-                            <div class="step-item">
-                                <strong>Step 3: Fill Previous Month Gaps</strong>
-                                <div class="mt-1">
-                                    <?php if(isset($transitionInfo['previous_gap_info']['gaps']) && !empty($transitionInfo['previous_gap_info']['gaps'])): ?>
-                                        <small>Missing days: </small>
-                                        <?php foreach($transitionInfo['previous_gap_info']['gaps'] as $day): ?>
-                                            <span class="badge bg-warning gap-days">Day <?php echo (int)$day; ?></span>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            
-                            <div class="step-item">
-                                <strong>Step 4: Create Archive Table (ALL data)</strong>
-                                <div class="mt-1">
-                                    <small>Archive: <code><?php 
-                                        if(isset($transitionInfo['table_name']) && isset($transitionInfo['previous_month'])) {
-                                            echo htmlspecialchars($transitionInfo['table_name'] . '_' . getMonthSuffix($transitionInfo['previous_month'])); 
-                                        } else {
-                                            echo 'archive_table_name';
-                                        }
-                                    ?></code> - Contains ALL data as backup</small>
-                                </div>
-                            </div>
-                            
-                            <div class="step-item">
-                                <strong>Step 5: Initialize New Month (UPDATE approach)</strong>
-                                <div class="mt-1">
-                                    <small>Update <?php echo isset($transitionInfo['previous_month']) ? htmlspecialchars($transitionInfo['previous_month']) : 'previous month'; ?> records to become <?php echo isset($transitionInfo['current_month']) ? htmlspecialchars($transitionInfo['current_month']) : 'current month'; ?> records</small>
+                                    <small>• Create archive: <code>tbldailystock_<?php echo $company_id; ?>_<?php echo getMonthSuffix($prevMonth); ?></code></small>
                                     <br>
-                                    <small>• Day 1 opening = Last day closing from previous month (<?php echo isset($transitionInfo['previous_month_days']) ? $transitionInfo['previous_month_days'] : ''; ?> <?php echo isset($transitionInfo['previous_month']) ? $transitionInfo['previous_month'] : ''; ?>)</small>
+                                    <small>• Update STK_MONTH from <?php echo $prevMonth; ?> to <?php echo $missingMonth; ?></small>
                                     <br>
-                                    <small>• All other days reset to zero</small>
+                                    <small>• Set DAY_01_OPEN = Last day closing of <?php echo $prevMonth; ?></small>
+                                    <br>
+                                    <small>• Ensure <?php echo getDaysInMonth($missingMonth); ?> day columns exist</small>
                                 </div>
                             </div>
-                            
-                            <?php if(isset($transitionInfo['has_current_gaps']) && $transitionInfo['has_current_gaps']): ?>
-                            <div class="step-item">
-                                <strong>Step 6: Fill Current Month Gaps</strong>
-                                <div class="mt-1">
-                                    <?php if(isset($transitionInfo['current_gap_info']['gaps']) && !empty($transitionInfo['current_gap_info']['gaps'])): ?>
-                                        <small>Missing days: </small>
-                                        <?php foreach($transitionInfo['current_gap_info']['gaps'] as $day): ?>
-                                            <span class="badge bg-info gap-days">Day <?php echo (int)$day; ?></span>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+                            <?php endforeach; ?>
                             
                             <div class="mt-3">
                                 <small class="text-muted">
-                                    <i class="fas fa-info-circle"></i> 
-                                    Click "Process Month Transition" to start the transition process.
+                                    <i class="fas fa-clock"></i> 
+                                    This process may take several minutes. Do not close the browser.
                                 </small>
                             </div>
                         </div>
@@ -2100,6 +1352,7 @@ if ($transitionInfo) {
                 </div>
             <?php endif; ?>
             
+            <!-- Statistics Grid -->
             <div class="stats-grid">
                 <div class="stat-card" style="border-left-color: #667eea;">
                     <div class="stat-icon" style="background: #667eea;">
@@ -2107,7 +1360,7 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL ITEMS</h4>
-                        <p><?php echo isset($stats['total_items']) ? htmlspecialchars($stats['total_items']) : '0'; ?></p>
+                        <p><?php echo $stats['total_items']; ?></p>
                         <small class="text-muted">All Products</small>
                     </div>
                 </div>
@@ -2118,7 +1371,7 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>LICENSED ITEMS</h4>
-                        <p><?php echo isset($stats['licensed_items']) ? htmlspecialchars($stats['licensed_items']) : '0'; ?></p>
+                        <p><?php echo $stats['licensed_items']; ?></p>
                         <small class="text-muted"><?php echo htmlspecialchars($license_type ?: 'ALL'); ?> License</small>
                     </div>
                 </div>
@@ -2129,8 +1382,8 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL CUSTOMERS</h4>
-                        <p><?php echo isset($stats['total_customers']) ? htmlspecialchars($stats['total_customers']) : '0'; ?></p>
-                        <small class="text-muted">Company <?php echo isset($company_id) ? (int)$company_id : 'N/A'; ?></small>
+                        <p><?php echo $stats['total_customers']; ?></p>
+                        <small class="text-muted">Company <?php echo $company_id; ?></small>
                     </div>
                 </div>
                 
@@ -2140,7 +1393,7 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>TOTAL SUPPLIERS</h4>
-                        <p><?php echo isset($stats['total_suppliers']) ? htmlspecialchars($stats['total_suppliers']) : '0'; ?></p>
+                        <p><?php echo $stats['total_suppliers']; ?></p>
                     </div>
                 </div>
                 
@@ -2150,7 +1403,7 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>ACTIVE PERMITS</h4>
-                        <p><?php echo isset($stats['total_permits']) ? htmlspecialchars($stats['total_permits']) : '0'; ?></p>
+                        <p><?php echo $stats['total_permits']; ?></p>
                     </div>
                 </div>
                 
@@ -2160,7 +1413,7 @@ if ($transitionInfo) {
                     </div>
                     <div class="stat-info">
                         <h4>DRY DAYS (<?php echo date('Y'); ?>)</h4>
-                        <p><?php echo isset($stats['total_dry_days']) ? htmlspecialchars($stats['total_dry_days']) : '0'; ?></p>
+                        <p><?php echo $stats['total_dry_days']; ?></p>
                     </div>
                 </div>
                 
@@ -2190,14 +1443,14 @@ if ($transitionInfo) {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="components/shortcuts.js?v=<?= time() ?>"></script>
-
 <script>
 $(document).ready(function() {
+    // Auto-hide alerts after 10 seconds
     setTimeout(function() {
         $('.alert').fadeOut('slow');
-    }, 8000);
+    }, 10000);
     
+    // Show processing message on transition
     $('#transitionForm').on('submit', function(e) {
         const btn = $(this).find('button[type="submit"]');
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
@@ -2206,14 +1459,7 @@ $(document).ready(function() {
     <?php if($successMessage): ?>
         window.scrollTo(0, 0);
     <?php endif; ?>
-    
-    <?php if($autoTransitionResults && isset($autoTransitionResults['complete_process']) && $autoTransitionResults['complete_process']): ?>
-        setTimeout(function() {
-            location.reload();
-        }, 30000);
-    <?php endif; ?>
 });
 </script>
-
 </body>
 </html>

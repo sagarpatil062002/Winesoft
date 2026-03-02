@@ -1,6 +1,7 @@
 <?php
 // Start output buffering to prevent header issues
 ob_start();
+session_start();
 
 // Database connection
 $servername = "localhost";
@@ -132,13 +133,22 @@ function getMonthsInFinancialYear($start_date, $end_date) {
     $interval = new DateInterval('P1M');
     $period = new DatePeriod($start, $interval, $end);
     
+    $current_month = new DateTime();
+    $current_month_formatted = $current_month->format('Y-m');
+    
     foreach ($period as $month) {
+        $year_month = $month->format('Y-m');
+        $is_current_month = ($year_month === $current_month_formatted);
+        
         $months[] = [
-            'year_month' => $month->format('Y-m'),
+            'year_month' => $year_month,
             'year' => $month->format('Y'),
             'month' => $month->format('m'),
             'month_name' => $month->format('F Y'),
-            'days_in_month' => cal_days_in_month(CAL_GREGORIAN, $month->format('m'), $month->format('Y'))
+            'days_in_month' => cal_days_in_month(CAL_GREGORIAN, $month->format('m'), $month->format('Y')),
+            'month_short' => $month->format('m'),
+            'year_short' => $month->format('y'), // 2-digit year
+            'is_current_month' => $is_current_month
         ];
     }
     
@@ -146,9 +156,11 @@ function getMonthsInFinancialYear($start_date, $end_date) {
 }
 
 /**
- * Create daily stock structure for a company with strict FY date enforcement
+ * Create daily stock structure for a company
+ * - Current month table: tbldailystock_compid
+ * - Archive month tables: tbldailystock_compid_mm_yy
  */
-function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $start_date, $end_date) {
+function createCompanyDailyStockStructure($conn, $company_id, $start_date, $end_date) {
     $tables_created = [];
     $errors = [];
     
@@ -161,10 +173,18 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
     }
     
     $months = getMonthsInFinancialYear($start_date, $end_date);
+    $current_month_created = false;
     
     foreach ($months as $month_data) {
-        $month_year = $month_data['year'] . '_' . $month_data['month'];
-        $table_name = "tbldailystock_{$company_id}_{$fin_year_id}_{$month_year}";
+        // Determine table name based on whether it's current month or archive
+        if ($month_data['is_current_month'] && !$current_month_created) {
+            // Current month table: tbldailystock_compid
+            $table_name = "tbldailystock_{$company_id}";
+            $current_month_created = true;
+        } else {
+            // Archive month table: tbldailystock_compid_mm_yy
+            $table_name = "tbldailystock_{$company_id}_{$month_data['month_short']}_{$month_data['year_short']}";
+        }
         
         $check_query = "SHOW TABLES LIKE '$table_name'";
         $check_result = $conn->query($check_query);
@@ -176,7 +196,6 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
                 `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
                 `STK_DATE` date NOT NULL,
                 `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
-                `FIN_YEAR_ID` int(11) NOT NULL,
                 `ITEM_CODE` varchar(20) NOT NULL,
                 `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
                 `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
@@ -207,11 +226,7 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
                 UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
                 KEY `idx_item_code` (`ITEM_CODE`),
                 KEY `idx_liq_flag` (`LIQ_FLAG`),
-                KEY `idx_fin_year` (`FIN_YEAR_ID`),
-                KEY `idx_stk_month` (`STK_MONTH`),
-                CONSTRAINT `chk_fy_dates_$month_year` CHECK (
-                    STK_DATE BETWEEN '$start_date' AND '$end_date'
-                )
+                KEY `idx_stk_month` (`STK_MONTH`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
             
             if ($conn->query($create_query)) {
@@ -222,8 +237,8 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
         }
     }
     
-    // Create summary table with FY date constraints
-    $summary_table = "tbldailystock_summary_{$company_id}_{$fin_year_id}";
+    // Create monthly summary table
+    $summary_table = "tbldailystock_summary_{$company_id}";
     $check_summary = $conn->query("SHOW TABLES LIKE '$summary_table'");
     
     if ($check_summary->num_rows == 0) {
@@ -231,21 +246,16 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
             `SummaryID` int(11) NOT NULL AUTO_INCREMENT,
             `ITEM_CODE` varchar(20) NOT NULL,
             `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
-            `FIN_YEAR_ID` int(11) NOT NULL,
-            `FY_START_DATE` date NOT NULL,
-            `FY_END_DATE` date NOT NULL,
+            `STOCK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
             `OPENING_STOCK` int(11) DEFAULT 0,
             `TOTAL_PURCHASE` int(11) DEFAULT 0,
             `TOTAL_SALES` int(11) DEFAULT 0,
             `CLOSING_STOCK` int(11) DEFAULT 0,
             `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
             PRIMARY KEY (`SummaryID`),
-            UNIQUE KEY `unique_item` (`ITEM_CODE`, `FIN_YEAR_ID`),
+            UNIQUE KEY `unique_item_month` (`ITEM_CODE`, `STOCK_MONTH`),
             KEY `idx_liq_flag` (`LIQ_FLAG`),
-            KEY `idx_fin_year` (`FIN_YEAR_ID`),
-            CONSTRAINT `chk_fy_summary_dates` CHECK (
-                FY_START_DATE = '$start_date' AND FY_END_DATE = '$end_date'
-            )
+            KEY `idx_stock_month` (`STOCK_MONTH`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         
         if ($conn->query($create_summary)) {
@@ -259,90 +269,44 @@ function createCompanyDailyStockStructure($conn, $company_id, $fin_year_id, $sta
 }
 
 /**
- * Update tblitem_stock structure with FY date tracking
+ * Create or update tblitem_stock structure with FY date tracking
  */
-function updateItemStockStructure($conn, $company_id, $fin_year_id, $fy_start, $fy_end) {
+function ensureItemStockStructure($conn, $company_id) {
     $errors = [];
     
+    // Check if tblitem_stock exists
     $table_check = $conn->query("SHOW TABLES LIKE 'tblitem_stock'");
     
-    if ($table_check->num_rows > 0) {
-        // Check and add FY date columns if needed
-        $check_fy_start = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FY_START_DATE'");
-        if ($check_fy_start->num_rows == 0) {
-            $alter_start = "ALTER TABLE tblitem_stock ADD COLUMN FY_START_DATE date NULL AFTER FIN_YEAR_ID";
-            if (!$conn->query($alter_start)) {
-                $errors[] = "Failed to add FY_START_DATE column: " . $conn->error;
-            }
-        }
-        
-        $check_fy_end = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FY_END_DATE'");
-        if ($check_fy_end->num_rows == 0) {
-            $alter_end = "ALTER TABLE tblitem_stock ADD COLUMN FY_END_DATE date NULL AFTER FY_START_DATE";
-            if (!$conn->query($alter_end)) {
-                $errors[] = "Failed to add FY_END_DATE column: " . $conn->error;
-            }
-        }
-        
-        $check_fy_id = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'FIN_YEAR_ID'");
-        if ($check_fy_id->num_rows == 0) {
-            $alter_fy = "ALTER TABLE tblitem_stock ADD COLUMN FIN_YEAR_ID int(11) DEFAULT NULL AFTER ITEM_CODE";
-            if (!$conn->query($alter_fy)) {
-                $errors[] = "Failed to add FIN_YEAR_ID column: " . $conn->error;
-            }
-        }
-        
-        // Add company-specific stock columns
-        $check_opening = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'OPENING_STOCK_$company_id'");
-        if ($check_opening->num_rows == 0) {
-            $alter_opening = "ALTER TABLE tblitem_stock ADD COLUMN OPENING_STOCK_$company_id int(11) DEFAULT 0";
-            if (!$conn->query($alter_opening)) {
-                $errors[] = "Failed to add OPENING_STOCK_$company_id column: " . $conn->error;
-            }
-        }
-        
-        $check_current = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'CURRENT_STOCK_$company_id'");
-        if ($check_current->num_rows == 0) {
-            $alter_current = "ALTER TABLE tblitem_stock ADD COLUMN CURRENT_STOCK_$company_id int(11) DEFAULT 0";
-            if (!$conn->query($alter_current)) {
-                $errors[] = "Failed to add CURRENT_STOCK_$company_id column: " . $conn->error;
-            }
-        }
-        
-        $check_monthly = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE 'MONTHLY_STOCK_$company_id'");
-        if ($check_monthly->num_rows == 0) {
-            $alter_monthly = "ALTER TABLE tblitem_stock ADD COLUMN MONTHLY_STOCK_$company_id int(11) DEFAULT 0";
-            if (!$conn->query($alter_monthly)) {
-                $errors[] = "Failed to add MONTHLY_STOCK_$company_id column: " . $conn->error;
-            }
-        }
-        
-        // Add CHECK constraint for FY dates (if supported)
-        $conn->query("ALTER TABLE tblitem_stock DROP CHECK IF EXISTS chk_fy_dates");
-        $add_constraint = "ALTER TABLE tblitem_stock ADD CONSTRAINT chk_fy_dates 
-                          CHECK (FY_START_DATE <= FY_END_DATE)";
-        $conn->query($add_constraint); // Some MySQL versions may ignore this
-        
-    } else {
+    if ($table_check->num_rows == 0) {
+        // Create the table from scratch
         $create_stock = "CREATE TABLE tblitem_stock (
             `StockID` int(11) NOT NULL AUTO_INCREMENT,
             `ITEM_CODE` varchar(20) NOT NULL,
-            `FIN_YEAR_ID` int(11) NOT NULL,
-            `FY_START_DATE` date NOT NULL,
-            `FY_END_DATE` date NOT NULL,
-            `OPENING_STOCK_$company_id` int(11) DEFAULT 0,
-            `CURRENT_STOCK_$company_id` int(11) DEFAULT 0,
-            `MONTHLY_STOCK_$company_id` int(11) DEFAULT 0,
-            `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
             PRIMARY KEY (`StockID`),
-            UNIQUE KEY `unique_item_fy` (`ITEM_CODE`, `FIN_YEAR_ID`),
-            KEY `idx_item_code` (`ITEM_CODE`),
-            KEY `idx_fin_year` (`FIN_YEAR_ID`),
-            CONSTRAINT `chk_fy_dates` CHECK (FY_START_DATE <= FY_END_DATE)
+            UNIQUE KEY `unique_item` (`ITEM_CODE`),
+            KEY `idx_item_code` (`ITEM_CODE`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         
         if (!$conn->query($create_stock)) {
             $errors[] = "Failed to create tblitem_stock: " . $conn->error;
+            return $errors;
+        }
+    }
+    
+    // Add company-specific stock columns
+    $company_columns = [
+        "OPENING_STOCK_$company_id" => "int(11) DEFAULT 0",
+        "CURRENT_STOCK_$company_id" => "int(11) DEFAULT 0",
+        "MONTHLY_STOCK_$company_id" => "int(11) DEFAULT 0"
+    ];
+    
+    foreach ($company_columns as $column => $definition) {
+        $check_column = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE '$column'");
+        if ($check_column->num_rows == 0) {
+            $alter_sql = "ALTER TABLE tblitem_stock ADD COLUMN $column $definition";
+            if (!$conn->query($alter_sql)) {
+                $errors[] = "Failed to add $column column: " . $conn->error;
+            }
         }
     }
     
@@ -428,6 +392,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $errors[] = "Passwords do not match.";
     }
     
+    // Check password length (optional - can be adjusted)
+    if (!empty($admin_password) && strlen($admin_password) < 3) {
+        $errors[] = "Password must be at least 3 characters long.";
+    }
+    
     // Check if username already exists (only if username is provided)
     if (!empty($admin_username)) {
         $check_user = $conn->prepare("SELECT id FROM users WHERE username = ?");
@@ -466,106 +435,102 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $conn->begin_transaction();
         
         try {
-            // Insert company with FIN_YEAR as the selected ID
+            // FIRST: Insert company
             $insert_company = $conn->prepare("INSERT INTO tblcompany (COMP_NAME, CF_LINE, CS_LINE, FIN_YEAR, COMP_ADDR, license_type_id, COMP_FLNO, IMFLLimit, BEERLimit, CLLimit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $insert_company->bind_param("sssisiiddd", $company_name, $cf_line, $cs_line, $fin_year_id, $comp_addr, $license_type_id, $comp_flno, $imfl_limit, $beer_limit, $cl_limit);
             
-            if ($insert_company->execute()) {
-                $company_id = $insert_company->insert_id;
-                
-                // Get financial year details
-                $fy_query = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ?";
-                $fy_stmt = $conn->prepare($fy_query);
-                $fy_stmt->bind_param("i", $fin_year_id);
-                $fy_stmt->execute();
-                $fy_result = $fy_stmt->get_result();
-                $fy_data = $fy_result->fetch_assoc();
-                $fy_stmt->close();
-                
-                if ($fy_data) {
-                    // Create daily stock structure for the company with FY date enforcement
-                    $stock_structure = createCompanyDailyStockStructure(
-                        $conn, 
-                        $company_id, 
-                        $fin_year_id, 
-                        $fy_data['START_DATE'], 
-                        $fy_data['END_DATE']
-                    );
-                    
-                    if (!empty($stock_structure['errors'])) {
-                        foreach ($stock_structure['errors'] as $stock_error) {
-                            error_log("Stock structure error: " . $stock_error);
-                            // Add to errors but don't rollback - continue with user creation
-                            $errors[] = "Warning - Stock table creation issue: " . $stock_error;
-                        }
-                    }
-                    
-                    // Update tblitem_stock structure with FY dates
-                    $stock_errors = updateItemStockStructure(
-                        $conn, 
-                        $company_id, 
-                        $fin_year_id,
-                        $fy_data['START_DATE'],
-                        $fy_data['END_DATE']
-                    );
-                    
-                    if (!empty($stock_errors)) {
-                        foreach ($stock_errors as $stock_error) {
-                            error_log("Stock structure error: " . $stock_error);
-                            $errors[] = "Warning - Stock structure update issue: " . $stock_error;
-                        }
-                    }
-                } else {
-                    throw new Exception("Financial year data not found for ID: " . $fin_year_id);
-                }
-                
-                // Hash password
-                $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
-                $is_admin = 1;
-                $created_by = 1;
-                
-                // Insert admin user
-                $insert_user = $conn->prepare("INSERT INTO users (username, password, company_id, is_admin, created_by) VALUES (?, ?, ?, ?, ?)");
-                $insert_user->bind_param("ssiii", $admin_username, $hashed_password, $company_id, $is_admin, $created_by);
-                
-                if ($insert_user->execute()) {
-                    $conn->commit();
-                    
-                    // Set success flag and message
-                    $creation_success = true;
-                    $success_message = "Company and admin user created successfully!";
-                    
-                    if (!empty($stock_structure['tables'])) {
-                        $success_message .= " Created " . count($stock_structure['tables']) . " daily stock tables for financial year ";
-                        $success_message .= "from " . date('d-m-Y', strtotime($fy_data['START_DATE'])) . 
-                                          " to " . date('d-m-Y', strtotime($fy_data['END_DATE'])) . ".";
-                    }
-                    
-                    // Store success message in session for display after redirect
-                    session_start();
-                    $_SESSION['company_creation_success'] = $success_message;
-                    $_SESSION['company_created'] = $company_name;
-                    $_SESSION['admin_username'] = $admin_username;
-                    $_SESSION['fy_dates'] = [
-                        'start' => date('d-m-Y', strtotime($fy_data['START_DATE'])),
-                        'end' => date('d-m-Y', strtotime($fy_data['END_DATE']))
-                    ];
-                    
-                    // Clean output buffer and redirect
-                    ob_end_clean();
-                    header("Location: /Winesoft/public/index.php");
-                    exit;
-                    
-                } else {
-                    throw new Exception("Error creating admin user: " . $conn->error);
-                }
-                
-                $insert_user->close();
-            } else {
+            if (!$insert_company->execute()) {
                 throw new Exception("Error creating company: " . $conn->error);
             }
             
+            $company_id = $insert_company->insert_id;
             $insert_company->close();
+            
+            // SECOND: Get financial year details
+            $fy_query = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ?";
+            $fy_stmt = $conn->prepare($fy_query);
+            $fy_stmt->bind_param("i", $fin_year_id);
+            $fy_stmt->execute();
+            $fy_result = $fy_stmt->get_result();
+            $fy_data = $fy_result->fetch_assoc();
+            $fy_stmt->close();
+            
+            if (!$fy_data) {
+                throw new Exception("Financial year data not found for ID: " . $fin_year_id);
+            }
+            
+            // THIRD: Create daily stock tables
+            // - Current month: tbldailystock_compid
+            // - Archive months: tbldailystock_compid_mm_yy
+            $stock_structure = createCompanyDailyStockStructure(
+                $conn, 
+                $company_id, 
+                $fy_data['START_DATE'], 
+                $fy_data['END_DATE']
+            );
+            
+            if (!empty($stock_structure['errors'])) {
+                foreach ($stock_structure['errors'] as $stock_error) {
+                    error_log("Stock structure error: " . $stock_error);
+                    $errors[] = "Warning - Stock table creation issue: " . $stock_error;
+                }
+                // Don't throw exception here - continue with user creation
+            }
+            
+            // FOURTH: Update tblitem_stock with company-specific columns now that we have company_id
+            $update_stock_errors = ensureItemStockStructure($conn, $company_id);
+            if (!empty($update_stock_errors)) {
+                foreach ($update_stock_errors as $stock_error) {
+                    error_log("Stock structure update error: " . $stock_error);
+                    $errors[] = "Warning - Stock structure update issue: " . $stock_error;
+                }
+            }
+            
+            // FIFTH: Insert admin user
+            $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
+            $is_admin = 1;
+            $created_by = 1;
+            
+            $insert_user = $conn->prepare("INSERT INTO users (username, password, company_id, is_admin, created_by) VALUES (?, ?, ?, ?, ?)");
+            $insert_user->bind_param("ssiii", $admin_username, $hashed_password, $company_id, $is_admin, $created_by);
+            
+            if (!$insert_user->execute()) {
+                throw new Exception("Error creating admin user: " . $conn->error);
+            }
+            
+            $insert_user->close();
+            
+            // If we got here, commit the transaction
+            $conn->commit();
+            
+            // Set success flag and message
+            $creation_success = true;
+            $success_message = "Company and admin user created successfully!";
+            
+            if (!empty($stock_structure['tables'])) {
+                $success_message .= " Created " . count($stock_structure['tables']) . " daily stock tables for financial year ";
+                $success_message .= "from " . date('d-m-Y', strtotime($fy_data['START_DATE'])) . 
+                                  " to " . date('d-m-Y', strtotime($fy_data['END_DATE'])) . ".<br>";
+                $success_message .= "<strong>Table Structure:</strong><br>";
+                $success_message .= "• Current Month: <strong>tbldailystock_{$company_id}</strong><br>";
+                $success_message .= "• Archive Months: <strong>tbldailystock_{$company_id}_mm_yy</strong> (e.g., tbldailystock_{$company_id}_03_26)";
+            }
+            
+            // Store success message in session for display after redirect
+            $_SESSION['company_creation_success'] = $success_message;
+            $_SESSION['company_created'] = $company_name;
+            $_SESSION['admin_username'] = $admin_username;
+            $_SESSION['company_id'] = $company_id;
+            $_SESSION['fy_dates'] = [
+                'start' => date('d-m-Y', strtotime($fy_data['START_DATE'])),
+                'end' => date('d-m-Y', strtotime($fy_data['END_DATE']))
+            ];
+            
+            // Clean output buffer and redirect
+            ob_end_clean();
+            header("Location: /Winesoft/public/index.php");
+            exit;
+            
         } catch (Exception $e) {
             $conn->rollback();
             $errors[] = "Error: " . $e->getMessage();
@@ -575,7 +540,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 // Store errors in session to display after redirect (if needed)
 if (!empty($errors)) {
-    session_start();
     $_SESSION['creation_errors'] = $errors;
     $_SESSION['form_data'] = $_POST;
 }
@@ -864,6 +828,32 @@ ob_end_flush();
             border-radius: 4px;
         }
 
+        .table-format-example {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .table-format-example ul {
+            margin: 10px 0 0 20px;
+        }
+
+        .table-format-example li {
+            margin: 5px 0;
+        }
+
+        .current-month-table {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .archive-table {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
         @media (max-width: 768px) {
             .form-group {
                 flex: 1 0 calc(100% - 20px);
@@ -919,13 +909,31 @@ ob_end_flush();
                     <ul>
                         <li><strong>Company record created</strong> in <strong>tblcompany</strong> with selected Financial Year ID</li>
                         <li><strong>Financial Year Dates:</strong> All operations strictly bound to selected FY start and end dates</li>
-                        <li><strong>Daily Stock Tables:</strong> Creates <strong>tbldailystock_{company_id}_{fin_year_id}_MM_YYYY</strong> for each month</li>
-                        <li><strong>Table Constraints:</strong> CHECK constraints ensure all dates are within FY range</li>
-                        <li><strong>Summary Table:</strong> Creates <strong>tbldailystock_summary_{company_id}_{fin_year_id}</strong> with FY dates stored</li>
-                        <li><strong>Item Stock:</strong> Updates <strong>tblitem_stock</strong> with FY date tracking columns</li>
+                        <li><strong>Daily Stock Tables:</strong> 
+                            <ul style="margin-top: 5px;">
+                                <li><span class="current-month-table">Current Month:</span> <strong>tbldailystock_{company_id}</strong></li>
+                                <li><span class="archive-table">Archive Months:</span> <strong>tbldailystock_{company_id}_mm_yy</strong></li>
+                            </ul>
+                        </li>
+                        <li><strong>Monthly Summary:</strong> Creates <strong>tbldailystock_summary_{company_id}</strong> for month-wise summaries</li>
+                        <li><strong>Item Stock:</strong> Updates <strong>tblitem_stock</strong> with company-specific stock columns</li>
                         <li><strong>Admin Account:</strong> Creates admin user account for the company</li>
                         <li><strong>Date Validation:</strong> All future transactions will be validated against FY dates</li>
                     </ul>
+                </div>
+
+                <div class="table-format-example">
+                    <strong><i class="fas fa-database"></i> Table Structure Example (Company ID: 1):</strong>
+                    <ul>
+                        <li><span class="current-month-table">✓ Current Month (March 2026):</span> <strong>tbldailystock_1</strong></li>
+                        <li><span class="archive-table">📦 Archive (February 2026):</span> <strong>tbldailystock_1_02_26</strong></li>
+                        <li><span class="archive-table">📦 Archive (January 2026):</span> <strong>tbldailystock_1_01_26</strong></li>
+                        <li><span class="archive-table">📦 Archive (December 2025):</span> <strong>tbldailystock_1_12_25</strong></li>
+                    </ul>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> The current month table (without date suffix) is used for active transactions. 
+                        When month ends, data is archived to month-specific table.
+                    </p>
                 </div>
                 
                 <form method="POST" action="" id="companyForm">
@@ -947,13 +955,13 @@ ob_end_flush();
                                     if (!empty($all_fy_list)) {
                                         foreach ($all_fy_list as $id => $fy): 
                                             $selected = (isset($_POST['fin_year']) && $_POST['fin_year'] == $id) ? 'selected' : '';
-                                            $active_badge = $fy['active'] ? '<span class="badge badge-active">Active</span>' : '<span class="badge badge-inactive">Inactive</span>';
                                     ?>
                                         <option value="<?php echo $id; ?>" 
                                                 data-start="<?php echo htmlspecialchars($fy['start_formatted']); ?>"
                                                 data-end="<?php echo htmlspecialchars($fy['end_formatted']); ?>"
                                                 data-start-raw="<?php echo htmlspecialchars($fy['start_date']); ?>"
                                                 data-end-raw="<?php echo htmlspecialchars($fy['end_date']); ?>"
+                                                data-active="<?php echo $fy['active']; ?>"
                                                 <?php echo $selected; ?>>
                                             <?php echo $fy['label']; ?> 
                                             (<?php echo $fy['start_formatted']; ?> to <?php echo $fy['end_formatted']; ?>)
@@ -1102,10 +1110,8 @@ ob_end_flush();
                 const endDate = selectedOption.getAttribute('data-end');
                 const startRaw = selectedOption.getAttribute('data-start-raw');
                 const endRaw = selectedOption.getAttribute('data-end-raw');
+                const isActive = selectedOption.getAttribute('data-active') === '1';
                 const optionText = selectedOption.text;
-                
-                // Check if financial year is active (contains ✓ in text)
-                const isActive = optionText.includes('✓');
                 
                 startDisplay.value = startDate;
                 endDisplay.value = endDate;
@@ -1201,11 +1207,19 @@ ob_end_flush();
                         return false;
                     }
                     
+                    // Check password length
+                    if (password.value.trim().length < 3) {
+                        e.preventDefault();
+                        alert('Password must be at least 3 characters long!');
+                        password.focus();
+                        return false;
+                    }
+                    
                     // Confirm company creation with financial year dates
                     const startDate = document.getElementById('fy_start_display').value;
                     const endDate = document.getElementById('fy_end_display').value;
                     
-                    if (!confirm(`Create company with Financial Year from ${startDate} to ${endDate}?\n\nAll operations for this company will be bound to these dates.`)) {
+                    if (!confirm(`Create company with Financial Year from ${startDate} to ${endDate}?\n\nTable Structure:\n• Current Month: tbldailystock_XX\n• Archive Months: tbldailystock_XX_mm_yy`)) {
                         e.preventDefault();
                         return false;
                     }

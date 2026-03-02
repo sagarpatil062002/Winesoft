@@ -1,98 +1,69 @@
-[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG START ===
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase ID: 3
-[22-Dec-2025 04:57:10 Europe/Berlin] Mode: F
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase Date: 2025-11-18
-[22-Dec-2025 04:57:10 Europe/Berlin] TP No: 17007
-[22-Dec-2025 04:57:10 Europe/Berlin] Company ID: 4
-[22-Dec-2025 04:57:10 Europe/Berlin] Starting transaction...
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 1: Getting purchase data...
-[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchases WHERE ID = ? AND CompID = ?
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase data found: Array
-(
-    [ID] => 3
-    [DATE] => 2025-11-18
-    [SUBCODE] => SAMB
-    [VOC_NO] => 1
-    [INV_NO] => 
-    [INV_DATE] => 0000-00-00
-    [TAMT] => 0.00
-    [TPNO] => 17007
-    [TP_DATE] => 0000-00-00
-    [SCHDIS] => 0.00
-    [CASHDIS] => 0.00
-    [OCTROI] => 0.00
-    [FREIGHT] => 0.00
-    [STAX_PER] => 0.00
-    [STAX_AMT] => 0.00
-    [TCS_PER] => 0.00
-    [TCS_AMT] => 0.00
-    [MISC_CHARG] => 0.00
-    [PUR_FLAG] => T
-    [CompID] => 4
-    [CreatedAt] => 2025-12-22 09:26:33
-    [UpdatedAt] => 2025-12-22 09:26:33
-    [AUTO_TPNO] => FL167-171125/17008
-)
-
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 2: Getting purchase details...
-[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchasedetails WHERE PurchaseID = ?
-[22-Dec-2025 04:57:10 Europe/Berlin] Found 2 purchase details
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 3: Updating tblitemstock...
-[22-Dec-2025 04:57:10 Europe/Berlin] Processing item: SCMKS0039633, Quantity: 3
-[22-Dec-2025 04:57:10 Europe/Berlin] Stock query: INSERT INTO tblitemstock (ITEM_CODE, QTY, CompID) 
-                               VALUES (?, -?, ?) 
-                               ON DUPLICATE KEY UPDATE QTY = QTY - ?
-[22-Dec-2025 04:57:10 Europe/Berlin] ERROR: Table 'winesoft.tblitemstock' doesn't exist
-[22-Dec-2025 04:57:10 Europe/Berlin] Rolling back transaction...
-[22-Dec-2025 04:57:10 Europe/Berlin] Delete success: NO
-[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG END ===
-[22-Dec-2025 04:57:10 Europe/Berlin] Redirecting to: purchase_module.php?mode=F
-[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG START ===
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase ID: 3
-[22-Dec-2025 04:57:10 Europe/Berlin] Mode: F
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase Date: 2025-11-18
-[22-Dec-2025 04:57:10 Europe/Berlin] TP No: 17007
-[22-Dec-2025 04:57:10 Europe/Berlin] Company ID: 4
-[22-Dec-2025 04:57:10 Europe/Berlin] Starting transaction...
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 1: Getting purchase data...
-[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchases WHERE ID = ? AND CompID = ?
-[22-Dec-2025 04:57:10 Europe/Berlin] Purchase data found: Array
-(
-    [ID] => 3
-    [DATE] => 2025-11-18
-    [SUBCODE] => SAMB
-    [VOC_NO] => 1
-    [INV_NO] => 
-    [INV_DATE] => 0000-00-00
-    [TAMT] => 0.00
-    [TPNO] => 17007
-    [TP_DATE] => 0000-00-00
-    [SCHDIS] => 0.00
-    [CASHDIS] => 0.00
-    [OCTROI] => 0.00
-    [FREIGHT] => 0.00
-    [STAX_PER] => 0.00
-    [STAX_AMT] => 0.00
-    [TCS_PER] => 0.00
-    [TCS_AMT] => 0.00
-    [MISC_CHARG] => 0.00
-    [PUR_FLAG] => T
-    [CompID] => 4
-    [CreatedAt] => 2025-12-22 09:26:33
-    [UpdatedAt] => 2025-12-22 09:26:33
-    [AUTO_TPNO] => FL167-171125/17008
-)
-
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 2: Getting purchase details...
-[22-Dec-2025 04:57:10 Europe/Berlin] Query: SELECT * FROM tblpurchasedetails WHERE PurchaseID = ?
-[22-Dec-2025 04:57:10 Europe/Berlin] Found 2 purchase details
-[22-Dec-2025 04:57:10 Europe/Berlin] Step 3: Updating tblitemstock...
-[22-Dec-2025 04:57:10 Europe/Berlin] Processing item: SCMKS0039633, Quantity: 3
-[22-Dec-2025 04:57:10 Europe/Berlin] Stock query: INSERT INTO tblitemstock (ITEM_CODE, QTY, CompID) 
-                               VALUES (?, -?, ?) 
-                               ON DUPLICATE KEY UPDATE QTY = QTY - ?
-[22-Dec-2025 04:57:10 Europe/Berlin] ERROR: Table 'winesoft.tblitemstock' doesn't exist
-[22-Dec-2025 04:57:10 Europe/Berlin] Rolling back transaction...
-[22-Dec-2025 04:57:10 Europe/Berlin] Delete success: NO
-[22-Dec-2025 04:57:10 Europe/Berlin] === PURCHASE DELETE DEBUG END ===
-[22-Dec-2025 04:57:10 Europe/Berlin] Redirecting to: purchase_module.php?mode=F
+[2026-03-02 08:55:07] Starting delete operation for company ID: 6
+[2026-03-02 08:55:07] Bulk delete request: [
+    "1"
+]
+[2026-03-02 08:55:07] Starting reverse for purchase ID: 1
+[2026-03-02 08:55:07] Purchase found: {
+    "date": "2025-04-01",
+    "tp_no": "444"
+}
+[2026-03-02 08:55:07] Found 1 items
+[2026-03-02 08:55:07] ERROR: Unknown column 'Current_Stock6' in 'field list'
+[2026-03-02 08:58:38] Starting delete operation for company ID: 1
+[2026-03-02 08:58:38] Single delete request for ID: 2
+[2026-03-02 08:58:38] Starting reverse for purchase ID: 2
+[2026-03-02 08:58:38] Purchase found: {
+    "date": "2026-02-02",
+    "tp_no": "25298"
+}
+[2026-03-02 08:58:38] Found 1 items
+[2026-03-02 08:58:38] Main stock updated
+[2026-03-02 08:58:38] Updating daily stock: {
+    "table": "tbldailystock_1_02_26",
+    "day": "02",
+    "month": "2026-02"
+}
+[2026-03-02 08:58:38] Cascading stock: {
+    "table": "tbldailystock_1_02_26",
+    "item_code": "SCMKS0036602",
+    "stk_month": "2026-02",
+    "start_day": "02"
+}
+[2026-03-02 08:58:38] Daily stock updated
+[2026-03-02 08:58:38] Deleted 1 detail records
+[2026-03-02 08:58:38] Deleted purchase header, affected rows: 1
+[2026-03-02 08:58:38] Transaction committed successfully
+[2026-03-02 09:17:17] Starting delete operation for company ID: 6
+[2026-03-02 09:17:17] Bulk delete request: [
+    "1"
+]
+[2026-03-02 09:17:17] Starting reverse for purchase ID: 1
+[2026-03-02 09:17:17] Purchase found: {
+    "date": "2025-04-01",
+    "tp_no": "444"
+}
+[2026-03-02 09:17:17] Found 1 items
+[2026-03-02 09:17:17] Main stock updated
+[2026-03-02 09:17:17] Deleted 1 detail records
+[2026-03-02 09:17:17] Deleted purchase header, affected rows: 1
+[2026-03-02 09:17:17] Transaction committed successfully
+[2026-03-02 09:27:35] Starting delete operation for company ID: 6
+[2026-03-02 09:27:35] Bulk delete request: [
+    "3"
+]
+[2026-03-02 09:27:35] Starting reverse for purchase ID: 3
+[2026-03-02 09:27:35] Purchase found: {
+    "date": "2026-03-02",
+    "tp_no": "33444"
+}
+[2026-03-02 09:27:36] Found 11 items
+[2026-03-02 09:27:36] Main stock updated
+[2026-03-02 09:27:36] Updating daily stock: {
+    "table": "tbldailystock_6",
+    "day": "02",
+    "month": "2026-03"
+}
+[2026-03-02 09:27:36] Daily stock updated
+[2026-03-02 09:27:36] Deleted 11 detail records
+[2026-03-02 09:27:36] Deleted purchase header, affected rows: 1
+[2026-03-02 09:27:36] Transaction committed successfully

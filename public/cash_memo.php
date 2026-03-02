@@ -37,6 +37,7 @@ $date_to = isset($_GET['date_to']) ? $_GET['date_to'] : date('Y-m-d');
 $bill_no = isset($_GET['bill_no']) ? $_GET['bill_no'] : '';
 
 // Function to generate cash memo text exactly as shown in image - UPDATED for license type
+if (!function_exists('generateCashMemoText')) {
 function generateCashMemoText($companyData, $billData, $billItems, $permitData) {
     $text = "";
     
@@ -116,8 +117,10 @@ function generateCashMemoText($companyData, $billData, $billItems, $permitData) 
     
     return $text;
 }
+}
 
 // Function to save complete cash memo data
+if (!function_exists('saveCompleteCashMemo')) {
 function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permitData, $compID, $userID) {
     $billNo = $billData['BILL_NO'];
     $printDate = date('Y-m-d H:i:s');
@@ -181,6 +184,7 @@ function saveCompleteCashMemo($conn, $billData, $companyData, $billItems, $permi
     $insertStmt->close();
     
     return $result;
+}
 }
 
 // ============================================================================

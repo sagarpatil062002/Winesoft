@@ -1,0 +1,1761 @@
+[2026-03-02 03:21:23] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:21:23] [INFO] Request method: GET
+[2026-03-02 03:21:23] [INFO] Search term: ''
+[2026-03-02 03:21:23] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:21:23] [INFO] Final session quantities count: 0
+[2026-03-02 03:21:23] [INFO] Items in current view: 3
+[2026-03-02 03:21:23] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:21:38] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:21:38] [INFO] Request method: GET
+[2026-03-02 03:21:38] [INFO] Search term: ''
+[2026-03-02 03:21:38] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:21:38] [INFO] Created daily stock table: tbldailystock_1_02_26
+[2026-03-02 03:21:38] [INFO] Initialized archive table tbldailystock_1_02_26 with 0 items from 2026-01
+[2026-03-02 03:21:41] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:21:41] [INFO] Request method: GET
+[2026-03-02 03:21:41] [INFO] Search term: ''
+[2026-03-02 03:21:41] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:21:41] [INFO] Final session quantities count: 0
+[2026-03-02 03:21:41] [INFO] Items in current view: 3
+[2026-03-02 03:21:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:21:53] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:21:53] [INFO] Request method: GET
+[2026-03-02 03:21:53] [INFO] Search term: ''
+[2026-03-02 03:21:53] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:21:53] [INFO] DRY DAYS FOUND: 2026-02-21
+[2026-03-02 03:21:53] [INFO] Final session quantities count: 0
+[2026-03-02 03:21:53] [INFO] Items in current view: 3
+[2026-03-02 03:21:53] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-01 to 2026-03-02
+    [days_count] => 30
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+            [0] => 2026-02-01
+            [1] => 2026-02-02
+            [2] => 2026-02-03
+            [3] => 2026-02-04
+            [4] => 2026-02-05
+            [5] => 2026-02-06
+            [6] => 2026-02-07
+            [7] => 2026-02-08
+            [8] => 2026-02-09
+            [9] => 2026-02-10
+            [10] => 2026-02-11
+            [11] => 2026-02-12
+            [12] => 2026-02-13
+            [13] => 2026-02-14
+            [14] => 2026-02-15
+            [15] => 2026-02-16
+            [16] => 2026-02-17
+            [17] => 2026-02-18
+            [18] => 2026-02-19
+            [19] => 2026-02-20
+            [20] => 2026-02-22
+            [21] => 2026-02-23
+            [22] => 2026-02-24
+            [23] => 2026-02-25
+            [24] => 2026-02-26
+            [25] => 2026-02-27
+            [26] => 2026-02-28
+            [27] => 2026-03-01
+            [28] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-02-21
+        )
+
+    [dry_dates] => Array
+        (
+            [0] => 2026-02-21
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:22:01] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:22:01] [INFO] Request method: GET
+[2026-03-02 03:22:01] [INFO] Search term: ''
+[2026-03-02 03:22:01] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:22:01] [INFO] DRY DAYS FOUND: 2026-02-21
+[2026-03-02 03:22:01] [INFO] Final session quantities count: 0
+[2026-03-02 03:22:01] [INFO] Items in current view: 3
+[2026-03-02 03:22:01] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-01 to 2026-03-02
+    [days_count] => 30
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+            [0] => 2026-02-01
+            [1] => 2026-02-02
+            [2] => 2026-02-03
+            [3] => 2026-02-04
+            [4] => 2026-02-05
+            [5] => 2026-02-06
+            [6] => 2026-02-07
+            [7] => 2026-02-08
+            [8] => 2026-02-09
+            [9] => 2026-02-10
+            [10] => 2026-02-11
+            [11] => 2026-02-12
+            [12] => 2026-02-13
+            [13] => 2026-02-14
+            [14] => 2026-02-15
+            [15] => 2026-02-16
+            [16] => 2026-02-17
+            [17] => 2026-02-18
+            [18] => 2026-02-19
+            [19] => 2026-02-20
+            [20] => 2026-02-22
+            [21] => 2026-02-23
+            [22] => 2026-02-24
+            [23] => 2026-02-25
+            [24] => 2026-02-26
+            [25] => 2026-02-27
+            [26] => 2026-02-28
+            [27] => 2026-03-01
+            [28] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-02-21
+        )
+
+    [dry_dates] => Array
+        (
+            [0] => 2026-02-21
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:22:06] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:22:06] [INFO] Request method: GET
+[2026-03-02 03:22:06] [INFO] Search term: ''
+[2026-03-02 03:22:06] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:22:06] [INFO] Final session quantities count: 0
+[2026-03-02 03:22:06] [INFO] Items in current view: 3
+[2026-03-02 03:22:06] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:25:45] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:25:45] [INFO] Request method: GET
+[2026-03-02 03:25:45] [INFO] Search term: ''
+[2026-03-02 03:25:45] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:25:45] [INFO] Final session quantities count: 0
+[2026-03-02 03:25:45] [INFO] Items in current view: 3
+[2026-03-02 03:25:45] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 3
+    [current_page] => 1
+    [total_pages] => 1
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:26:50] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:26:50] [INFO] Request method: GET
+[2026-03-02 03:26:50] [INFO] Search term: ''
+[2026-03-02 03:26:50] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:26:50] [INFO] Final session quantities count: 0
+[2026-03-02 03:26:50] [INFO] Items in current view: 50
+[2026-03-02 03:26:50] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:26:54] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 03:26:54] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 03:26:55] [INFO] Session quantity updated: SCMPL0010694 = 46
+[2026-03-02 03:26:58] [INFO] Session quantity updated: SCMPL0009678 = 29
+[2026-03-02 03:26:59] [INFO] Session quantity updated: SCMPL0009678 = 29
+[2026-03-02 03:27:02] [INFO] Session quantity updated: SCMLS0018484 = 1
+[2026-03-02 03:27:02] [INFO] Session quantity updated: SCMBR0018137 = 145
+[2026-03-02 03:27:03] [INFO] Session quantity updated: SCMBR0018137 = 145
+[2026-03-02 03:27:03] [INFO] Session quantity updated: SCMBR0018137 = 145
+[2026-03-02 03:27:05] [INFO] Session quantity updated: SCMBR0018137 = 145
+[2026-03-02 03:27:07] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:27:07] [INFO] Request method: GET
+[2026-03-02 03:27:07] [INFO] Search term: ''
+[2026-03-02 03:27:07] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:27:07] [INFO] GLOBAL CHECK: Latest existing sale: 2026-03-02
+[2026-03-02 03:27:07] [INFO] Available dates: 
+[2026-03-02 03:27:07] [INFO] Unavailable dates (has existing sales): 2026-03-02
+[2026-03-02 03:27:07] [INFO] Final session quantities count: 0
+[2026-03-02 03:27:07] [INFO] Items in current view: 50
+[2026-03-02 03:27:07] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 90
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 2026-03-02
+)
+
+[2026-03-02 03:27:10] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:27:10] [INFO] Request method: GET
+[2026-03-02 03:27:10] [INFO] Search term: ''
+[2026-03-02 03:27:10] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:27:11] [INFO] GLOBAL CHECK: Latest existing sale: 2026-03-02
+[2026-03-02 03:27:11] [INFO] Available dates: 
+[2026-03-02 03:27:11] [INFO] Unavailable dates (has existing sales): 2026-03-02
+[2026-03-02 03:27:11] [INFO] Final session quantities count: 0
+[2026-03-02 03:27:11] [INFO] Items in current view: 50
+[2026-03-02 03:27:11] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 90
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 2026-03-02
+)
+
+[2026-03-02 03:27:28] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:27:28] [INFO] Request method: GET
+[2026-03-02 03:27:28] [INFO] Search term: ''
+[2026-03-02 03:27:28] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:27:29] [INFO] Final session quantities count: 0
+[2026-03-02 03:27:29] [INFO] Items in current view: 50
+[2026-03-02 03:27:29] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:27:31] [INFO] Session quantity updated: SCMPL0010694 = 46
+[2026-03-02 03:27:31] [INFO] Session quantity updated: SCMPL0010694 = 46
+[2026-03-02 03:27:32] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 03:27:32] [INFO] Session quantity updated: SCMPL0010696 = 0
+[2026-03-02 03:27:33] [INFO] Session quantity updated: SCMPL0041500 = 0
+[2026-03-02 03:27:33] [INFO] Session quantity updated: SCMPL0041500 = 0
+[2026-03-02 03:27:34] [INFO] Session quantity updated: SCMPL0010694 = 46
+[2026-03-02 03:27:35] [INFO] Session quantity updated: SCMPL0010694 = 46
+[2026-03-02 03:27:35] [INFO] Session quantity updated: SCMPL0010696 = 1
+[2026-03-02 03:27:36] [INFO] Session quantity updated: SCMPL0041500 = 1
+[2026-03-02 03:27:36] [INFO] Session quantity updated: SCMPL0041503 = 44
+[2026-03-02 03:27:36] [INFO] Session quantity updated: SCMPL0009678 = 29
+[2026-03-02 03:27:37] [INFO] Session quantity updated: SCMPL0039775 = 1
+[2026-03-02 03:27:38] [INFO] Session quantity updated: SCMBR0018139 = 71
+[2026-03-02 03:27:38] [INFO] Session quantity updated: SCMBR0018139 = 71
+[2026-03-02 03:27:42] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:27:42] [INFO] Request method: GET
+[2026-03-02 03:27:42] [INFO] Search term: ''
+[2026-03-02 03:27:42] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:27:43] [INFO] GLOBAL CHECK: Latest existing sale: 2026-03-02
+[2026-03-02 03:27:43] [INFO] Available dates: 
+[2026-03-02 03:27:43] [INFO] Unavailable dates (has existing sales): 2026-03-02
+[2026-03-02 03:27:43] [INFO] Final session quantities count: 0
+[2026-03-02 03:27:43] [INFO] Items in current view: 50
+[2026-03-02 03:27:43] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 87
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 2026-03-02
+)
+
+[2026-03-02 03:28:14] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:28:14] [INFO] Request method: GET
+[2026-03-02 03:28:14] [INFO] Search term: ''
+[2026-03-02 03:28:14] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:28:14] [INFO] Final session quantities count: 0
+[2026-03-02 03:28:14] [INFO] Items in current view: 50
+[2026-03-02 03:28:14] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:28:16] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:28:16] [INFO] Request method: GET
+[2026-03-02 03:28:16] [INFO] Search term: ''
+[2026-03-02 03:28:16] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:28:17] [INFO] Final session quantities count: 0
+[2026-03-02 03:28:17] [INFO] Items in current view: 50
+[2026-03-02 03:28:17] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:31:09] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:31:09] [INFO] Request method: GET
+[2026-03-02 03:31:09] [INFO] Search term: ''
+[2026-03-02 03:31:09] [INFO] Current session ID: cd20ha22moqt6obc8qarq7kc7j
+[2026-03-02 03:31:10] [INFO] Final session quantities count: 0
+[2026-03-02 03:31:10] [INFO] Items in current view: 50
+[2026-03-02 03:31:10] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:43:40] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:43:40] [INFO] Request method: GET
+[2026-03-02 03:43:40] [INFO] Search term: ''
+[2026-03-02 03:43:40] [INFO] Current session ID: ec2p03r80d1hsb5sheq5c9iogi
+[2026-03-02 03:43:41] [INFO] Final session quantities count: 0
+[2026-03-02 03:43:41] [INFO] Items in current view: 0
+[2026-03-02 03:43:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:43:53] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:43:53] [INFO] Request method: GET
+[2026-03-02 03:43:53] [INFO] Search term: ''
+[2026-03-02 03:43:53] [INFO] Current session ID: ec2p03r80d1hsb5sheq5c9iogi
+[2026-03-02 03:43:53] [INFO] DRY DAYS FOUND: 2026-03-10, 2026-03-25
+[2026-03-02 03:43:53] [INFO] Final session quantities count: 0
+[2026-03-02 03:43:53] [INFO] Items in current view: 0
+[2026-03-02 03:43:53] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-03-28
+    [days_count] => 29
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+            [1] => 2026-03-01
+            [2] => 2026-03-02
+            [3] => 2026-03-03
+            [4] => 2026-03-04
+            [5] => 2026-03-05
+            [6] => 2026-03-06
+            [7] => 2026-03-07
+            [8] => 2026-03-08
+            [9] => 2026-03-09
+            [10] => 2026-03-11
+            [11] => 2026-03-12
+            [12] => 2026-03-13
+            [13] => 2026-03-14
+            [14] => 2026-03-15
+            [15] => 2026-03-16
+            [16] => 2026-03-17
+            [17] => 2026-03-18
+            [18] => 2026-03-19
+            [19] => 2026-03-20
+            [20] => 2026-03-21
+            [21] => 2026-03-22
+            [22] => 2026-03-23
+            [23] => 2026-03-24
+            [24] => 2026-03-26
+            [25] => 2026-03-27
+            [26] => 2026-03-28
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-03-10
+            [1] => 2026-03-25
+        )
+
+    [dry_dates] => Array
+        (
+            [0] => 2026-03-10
+            [1] => 2026-03-25
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:44:15] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:44:15] [INFO] Request method: GET
+[2026-03-02 03:44:15] [INFO] Search term: ''
+[2026-03-02 03:44:15] [INFO] Current session ID: ec2p03r80d1hsb5sheq5c9iogi
+[2026-03-02 03:44:15] [INFO] DRY DAYS FOUND: 2026-03-10, 2026-03-25
+[2026-03-02 03:44:15] [INFO] Final session quantities count: 0
+[2026-03-02 03:44:15] [INFO] Items in current view: 0
+[2026-03-02 03:44:15] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-03-28
+    [days_count] => 29
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 1
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+            [1] => 2026-03-01
+            [2] => 2026-03-02
+            [3] => 2026-03-03
+            [4] => 2026-03-04
+            [5] => 2026-03-05
+            [6] => 2026-03-06
+            [7] => 2026-03-07
+            [8] => 2026-03-08
+            [9] => 2026-03-09
+            [10] => 2026-03-11
+            [11] => 2026-03-12
+            [12] => 2026-03-13
+            [13] => 2026-03-14
+            [14] => 2026-03-15
+            [15] => 2026-03-16
+            [16] => 2026-03-17
+            [17] => 2026-03-18
+            [18] => 2026-03-19
+            [19] => 2026-03-20
+            [20] => 2026-03-21
+            [21] => 2026-03-22
+            [22] => 2026-03-23
+            [23] => 2026-03-24
+            [24] => 2026-03-26
+            [25] => 2026-03-27
+            [26] => 2026-03-28
+        )
+
+    [unavailable_dates] => Array
+        (
+            [0] => 2026-03-10
+            [1] => 2026-03-25
+        )
+
+    [dry_dates] => Array
+        (
+            [0] => 2026-03-10
+            [1] => 2026-03-25
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:44:27] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:44:27] [INFO] Request method: GET
+[2026-03-02 03:44:27] [INFO] Search term: ''
+[2026-03-02 03:44:27] [INFO] Current session ID: ec2p03r80d1hsb5sheq5c9iogi
+[2026-03-02 03:44:27] [INFO] Created daily stock table: tbldailystock_1_02_26
+[2026-03-02 03:44:27] [INFO] Initialized archive table tbldailystock_1_02_26 with 0 items from 2026-01
+[2026-03-02 03:44:27] [INFO] Final session quantities count: 0
+[2026-03-02 03:44:27] [INFO] Items in current view: 0
+[2026-03-02 03:44:27] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-02-28
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-02
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_02_26
+    [table_suffix] => _02_26
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 03:44:41] [INFO] === PAGE ACCESS ===
+[2026-03-02 03:44:41] [INFO] Request method: GET
+[2026-03-02 03:44:41] [INFO] Search term: ''
+[2026-03-02 03:44:41] [INFO] Current session ID: ec2p03r80d1hsb5sheq5c9iogi
+[2026-03-02 03:44:41] [INFO] Final session quantities count: 0
+[2026-03-02 03:44:41] [INFO] Items in current view: 0
+[2026-03-02 03:44:41] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-02-28
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-02
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_02_26
+    [table_suffix] => _02_26
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 04:26:05] [INFO] === PAGE ACCESS ===
+[2026-03-02 04:26:05] [INFO] Request method: GET
+[2026-03-02 04:26:05] [INFO] Search term: ''
+[2026-03-02 04:26:05] [INFO] Current session ID: cuhqfpn0ppdpdn790p3ri6mpf5
+[2026-03-02 04:26:06] [INFO] Final session quantities count: 0
+[2026-03-02 04:26:06] [INFO] Items in current view: 0
+[2026-03-02 04:26:06] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 04:26:16] [INFO] === PAGE ACCESS ===
+[2026-03-02 04:26:16] [INFO] Request method: GET
+[2026-03-02 04:26:16] [INFO] Search term: ''
+[2026-03-02 04:26:16] [INFO] Current session ID: cuhqfpn0ppdpdn790p3ri6mpf5
+[2026-03-02 04:26:16] [INFO] Final session quantities count: 0
+[2026-03-02 04:26:16] [INFO] Items in current view: 0
+[2026-03-02 04:26:16] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-03-02
+    [days_count] => 3
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+            [1] => 2026-03-01
+            [2] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 04:26:43] [INFO] === PAGE ACCESS ===
+[2026-03-02 04:26:43] [INFO] Request method: GET
+[2026-03-02 04:26:43] [INFO] Search term: ''
+[2026-03-02 04:26:43] [INFO] Current session ID: cuhqfpn0ppdpdn790p3ri6mpf5
+[2026-03-02 04:26:43] [INFO] Final session quantities count: 0
+[2026-03-02 04:26:43] [INFO] Items in current view: 50
+[2026-03-02 04:26:43] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-02-28
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-02
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_02_26
+    [table_suffix] => _02_26
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 04:26:48] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 04:26:48] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 04:26:52] [INFO] Session quantity updated: SCMPL0010694 = 0
+[2026-03-02 04:33:16] [INFO] === PAGE ACCESS ===
+[2026-03-02 04:33:16] [INFO] Request method: GET
+[2026-03-02 04:33:16] [INFO] Search term: ''
+[2026-03-02 04:33:16] [INFO] Current session ID: cuhqfpn0ppdpdn790p3ri6mpf5
+[2026-03-02 04:33:16] [INFO] Final session quantities count: 1
+[2026-03-02 04:33:16] [INFO] Items in current view: 0
+[2026-03-02 04:33:16] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 04:33:27] [INFO] === PAGE ACCESS ===
+[2026-03-02 04:33:27] [INFO] Request method: GET
+[2026-03-02 04:33:27] [INFO] Search term: ''
+[2026-03-02 04:33:27] [INFO] Current session ID: cuhqfpn0ppdpdn790p3ri6mpf5
+[2026-03-02 04:33:28] [INFO] Final session quantities count: 1
+[2026-03-02 04:33:28] [INFO] Items in current view: 50
+[2026-03-02 04:33:28] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 1
+    [post_quantities_count] => 0
+    [date_range] => 2026-02-28 to 2026-02-28
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 28
+    [closing_column] => DAY_28_CLOSING
+    [end_date_month] => 2026-02
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1_02_26
+    [table_suffix] => _02_26
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-02-28
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 05:55:30] [INFO] === PAGE ACCESS ===
+[2026-03-02 05:55:30] [INFO] Request method: GET
+[2026-03-02 05:55:30] [INFO] Search term: ''
+[2026-03-02 05:55:30] [INFO] Current session ID: 8dmqpmj08dr37co9nmpd7bu0an
+[2026-03-02 05:55:31] [INFO] Final session quantities count: 0
+[2026-03-02 05:55:31] [INFO] Items in current view: 50
+[2026-03-02 05:55:31] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 09:17:02] [INFO] === PAGE ACCESS ===
+[2026-03-02 09:17:02] [INFO] Request method: GET
+[2026-03-02 09:17:02] [INFO] Search term: ''
+[2026-03-02 09:17:02] [INFO] Current session ID: dd62b6jj070berj6qda82kcbbg
+[2026-03-02 09:17:02] [INFO] Created daily stock table: tbldailystock_6
+[2026-03-02 09:25:08] [INFO] === PAGE ACCESS ===
+[2026-03-02 09:25:08] [INFO] Request method: GET
+[2026-03-02 09:25:08] [INFO] Search term: ''
+[2026-03-02 09:25:08] [INFO] Current session ID: dd62b6jj070berj6qda82kcbbg
+[2026-03-02 14:07:36] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:07:36] [INFO] Request method: GET
+[2026-03-02 14:07:36] [INFO] Search term: ''
+[2026-03-02 14:07:36] [INFO] Current session ID: ocg7lges9qbibgbp45tvb4rnih
+[2026-03-02 14:07:37] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:07:37] [INFO] Request method: GET
+[2026-03-02 14:07:37] [INFO] Search term: ''
+[2026-03-02 14:07:37] [INFO] Current session ID: ocg7lges9qbibgbp45tvb4rnih
+[2026-03-02 14:23:43] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:23:43] [INFO] Request method: GET
+[2026-03-02 14:23:43] [INFO] Search term: ''
+[2026-03-02 14:23:43] [INFO] Current session ID: 0gc6sjtn4n96v9vidnjr1ve094
+[2026-03-02 14:23:43] [INFO] Created daily stock table: tbldailystock_2
+[2026-03-02 14:23:47] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:23:47] [INFO] Request method: GET
+[2026-03-02 14:23:47] [INFO] Search term: ''
+[2026-03-02 14:23:47] [INFO] Current session ID: 0gc6sjtn4n96v9vidnjr1ve094
+[2026-03-02 14:23:48] [INFO] Final session quantities count: 0
+[2026-03-02 14:23:48] [INFO] Items in current view: 0
+[2026-03-02 14:23:48] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 2
+    [comp_id] => 2
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_2
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 14:25:18] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:25:18] [INFO] Request method: GET
+[2026-03-02 14:25:18] [INFO] Search term: ''
+[2026-03-02 14:25:18] [INFO] Current session ID: 12jk59meodtol75djqvb9bog3v
+[2026-03-02 14:25:18] [INFO] Final session quantities count: 0
+[2026-03-02 14:25:18] [INFO] Items in current view: 50
+[2026-03-02 14:25:18] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
+[2026-03-02 14:25:21] [INFO] === PAGE ACCESS ===
+[2026-03-02 14:25:21] [INFO] Request method: GET
+[2026-03-02 14:25:21] [INFO] Search term: ''
+[2026-03-02 14:25:21] [INFO] Current session ID: 12jk59meodtol75djqvb9bog3v
+[2026-03-02 14:25:21] [INFO] Final session quantities count: 0
+[2026-03-02 14:25:21] [INFO] Items in current view: 50
+[2026-03-02 14:25:21] [INFO] Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 94
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [post_quantities_count] => 0
+    [date_range] => 2026-03-02 to 2026-03-02
+    [days_count] => 1
+    [user_id] => 1
+    [comp_id] => 1
+    [license_type] => FL-II
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+    [end_date_day] => 02
+    [closing_column] => DAY_02_CLOSING
+    [end_date_month] => 2026-03
+    [stock_filter] => > 0
+    [daily_stock_table] => tbldailystock_1
+    [table_suffix] => 
+    [current_month] => 2026-03
+    [has_restrictions] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-02
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+    [dry_dates] => Array
+        (
+        )
+
+    [latest_global_sale] => 
+)
+
