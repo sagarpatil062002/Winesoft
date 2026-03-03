@@ -1172,6 +1172,24 @@ debugLog("Suppliers fetched", [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     debugLog("=== FORM SUBMISSION STARTED ===");
     
+    // ============================================================================
+    // ULTRA-FAST PURCHASE SAVE - Apply same optimizations as bill generation
+    // ============================================================================
+    
+    // Set ultra-fast database settings
+    try {
+        $conn->query("SET SESSION unique_checks = 0");
+        $conn->query("SET SESSION foreign_key_checks = 0");
+        $conn->query("SET SESSION sql_log_bin = 0");
+        $conn->query("SET autocommit = 0");
+        $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 256");
+        $conn->query("SET SESSION innodb_flush_log_at_trx_commit = 2");
+        $conn->query("SET SESSION sync_binlog = 0");
+        $conn->query("SET SESSION innodb_autoinc_lock_mode = 2");
+    } catch (Exception $e) {
+        // Continue even if some settings fail
+    }
+    
     // Get form data
     $date = $_POST['date'];
     $voc_no = $_POST['voc_no'];
@@ -1213,31 +1231,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $basic_amt = $_POST['basic_amt'] ?? 0;
     $tamt = $_POST['tamt'] ?? 0;
     
-    debugLog("Form data extracted", [
-        'date' => $date,
-        'voc_no' => $voc_no,
-        'auto_tp_no' => $auto_tp_no,
-        'tp_no' => $tp_no,
-        'tp_date' => $tp_date,
-        'inv_no' => $inv_no,
-        'inv_date' => $inv_date,
-        'supplier_code' => $supplier_code,
-        'supplier_name' => $supplier_name,
-        'basic_amt' => $basic_amt,
-        'total_amt' => $tamt
-    ]);
-    
     // Insert purchase header
     $insertQuery = "INSERT INTO tblpurchases (
         DATE, SUBCODE, AUTO_TPNO, VOC_NO, INV_NO, INV_DATE, TAMT, 
         TPNO, TP_DATE, SCHDIS, CASHDIS, OCTROI, FREIGHT, STAX_PER, STAX_AMT, 
         TCS_PER, TCS_AMT, MISC_CHARG, PUR_FLAG, CompID
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    debugLog("Purchase header insert query", [
-        'query' => $insertQuery
-    ]);
-
+    
     $insertStmt = $conn->prepare($insertQuery);
     if ($insertStmt) {
         $pur_flag = 'T';
@@ -1250,32 +1250,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
     } else {
         $errorMessage = "Error preparing statement: " . $conn->error;
-        debugLog("Error preparing purchase header statement", [
-            'error' => $conn->error,
-            'query' => $insertQuery
-        ]);
     }
     
     if ($insertStmt->execute()) {
         $purchase_id = $conn->insert_id;
-        debugLog("Purchase header inserted successfully", [
-            'purchase_id' => $purchase_id,
-            'affected_rows' => $conn->affected_rows
-        ]);
         
-        // Insert purchase items
-        if (isset($_POST['items']) && is_array($_POST['items'])) {
-            $detailQuery = "INSERT INTO tblpurchasedetails (
-                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
-                CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            
-            $detailStmt = $conn->prepare($detailQuery);
-            $itemCount = 0;
-            
-            debugLog("Starting to process purchase items", [
-                'item_count' => count($_POST['items'])
-            ]);
+        // ============================================================================
+        // ULTRA-FAST: BULK INSERT PURCHASE DETAILS
+        // ============================================================================
+        if (isset($_POST['items']) && is_array($_POST['items']) && !empty($_POST['items'])) {
+            $detailValues = [];
+            $stockUpdates = [];
+            $mrpUpdates = [];
             
             foreach ($_POST['items'] as $index => $item) {
                 $item_code = $item['code'] ?? '';
@@ -1298,66 +1284,159 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Calculate amount
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
-                debugLog("Processing item $index", [
-                    'item_code' => $item_code,
-                    'mrp' => $mrp,
-                    'tot_bott' => $tot_bott
-                ]);
+                // Escape strings for bulk insert
+                $item_code_esc = $conn->real_escape_string($item_code);
+                $item_name_esc = $conn->real_escape_string($item_name);
+                $item_size_esc = $conn->real_escape_string($item_size);
+                $batch_no_esc = $conn->real_escape_string($batch_no);
+                $auto_batch_esc = $conn->real_escape_string($auto_batch);
+                $mfg_month_esc = $conn->real_escape_string($mfg_month);
                 
-                $detailStmt->bind_param(
-                    "isssdddddddisssddi",
-                    $purchase_id, 
-                    $item_code, 
-                    $item_name, 
-                    $item_size,
-                    $cases, 
-                    $bottles, 
-                    $free_cases, 
-                    $free_bottles, 
-                    $case_rate, 
-                    $mrp, 
-                    $amount, 
-                    $bottles_per_case,
-                    $batch_no, 
-                    $auto_batch, 
-                    $mfg_month, 
-                    $bl, 
-                    $vv, 
-                    $tot_bott
-                );
+                // Collect for bulk insert
+                $detailValues[] = "($purchase_id, '$item_code_esc', '$item_name_esc', '$item_size_esc', $cases, $bottles, $free_cases, $free_bottles, $case_rate, $mrp, $amount, $bottles_per_case, '$batch_no_esc', '$auto_batch_esc', '$mfg_month_esc', $bl, $vv, $tot_bott)";
                 
-                if ($detailStmt->execute()) {
-                    $itemCount++;
-                    
-                    // Update MRP in tblitemmaster
-                    updateItemMRP($conn, $item_code, $mrp);
-                    
-                    // Update stock using the cascading logic
-                    updateStock($item_code, $tot_bott, $date, $companyId, $conn);
-                } else {
-                    debugLog("Error inserting purchase detail for item $index", [
-                        'error' => $detailStmt->error,
-                        'item_code' => $item_code
-                    ]);
+                // Collect MRP updates
+                if ($mrp > 0) {
+                    $mrpUpdates[$item_code] = $mrp;
+                }
+                
+                // Collect stock updates for batch processing
+                if ($tot_bott > 0) {
+                    if (!isset($stockUpdates[$item_code])) {
+                        $stockUpdates[$item_code] = 0;
+                    }
+                    $stockUpdates[$item_code] += $tot_bott;
                 }
             }
-            $detailStmt->close();
             
-            debugLog("Purchase items processing completed", [
-                'successful_items' => $itemCount
-            ]);
-        } else {
-            debugLog("No items found in POST data");
+            // ============================================================================
+            // BULK INSERT ALL PURCHASE DETAILS AT ONCE
+            // ============================================================================
+            if (!empty($detailValues)) {
+                $detailBulkQuery = "INSERT INTO tblpurchasedetails (
+                    PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+                    CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+                ) VALUES " . implode(',', $detailValues);
+                
+                if (!$conn->query($detailBulkQuery)) {
+                    debugLog("Bulk insert failed, falling back to individual inserts: " . $conn->error);
+                    // Fall back to individual inserts if bulk fails
+                    $detailStmt = $conn->prepare("INSERT INTO tblpurchasedetails (
+                        PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+                        CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    
+                    foreach ($_POST['items'] as $index => $item) {
+                        $item_code = $item['code'] ?? '';
+                        $item_name = $item['name'] ?? '';
+                        $item_size = $item['size'] ?? '';
+                        $cases = floatval($item['cases'] ?? 0);
+                        $bottles = intval($item['bottles'] ?? 0);
+                        $free_cases = floatval($item['free_cases'] ?? 0);
+                        $free_bottles = intval($item['free_bottles'] ?? 0);
+                        $case_rate = floatval($item['case_rate'] ?? 0);
+                        $mrp = floatval($item['mrp'] ?? 0);
+                        $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+                        $batch_no = $item['batch_no'] ?? '';
+                        $auto_batch = $item['auto_batch'] ?? '';
+                        $mfg_month = $item['mfg_month'] ?? '';
+                        $bl = floatval($item['bl'] ?? 0);
+                        $vv = floatval($item['vv'] ?? 0);
+                        $tot_bott = intval($item['tot_bott'] ?? 0);
+                        $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
+                        
+                        $detailStmt->bind_param(
+                            "isssdddddddisssddi",
+                            $purchase_id, $item_code, $item_name, $item_size,
+                            $cases, $bottles, $free_cases, $free_bottles,
+                            $case_rate, $mrp, $amount, $bottles_per_case,
+                            $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
+                        );
+                        $detailStmt->execute();
+                        
+                        // Update MRP
+                        if ($mrp > 0) {
+                            updateItemMRP($conn, $item_code, $mrp);
+                        }
+                        
+                        // Update stock
+                        if ($tot_bott > 0) {
+                            updateStock($item_code, $tot_bott, $date, $companyId, $conn);
+                        }
+                    }
+                    $detailStmt->close();
+                }
+            }
+            
+            // ============================================================================
+            // BULK UPDATE MRP
+            // ============================================================================
+            if (!empty($mrpUpdates)) {
+                foreach ($mrpUpdates as $code => $mrp) {
+                    $cleanCode = cleanItemCode($code);
+                    $mrp_esc = $conn->real_escape_string($mrp);
+                    $conn->query("UPDATE tblitemmaster SET MPRICE = '$mrp_esc' WHERE CODE = '$cleanCode'");
+                }
+            }
+            
+            // ============================================================================
+            // BULK UPDATE STOCK - Collect all items and update at once
+            // ============================================================================
+            if (!empty($stockUpdates)) {
+                // First, update tblitem_stock with bulk operation
+                $stockColumn = "CURRENT_STOCK" . $companyId;
+                $stockValues = [];
+                
+                foreach ($stockUpdates as $itemCode => $totalBottles) {
+                    $cleanCode = cleanItemCode($itemCode);
+                    $code_esc = $conn->real_escape_string($cleanCode);
+                    $stockValues[] = "('$code_esc', '$fin_year_id', $totalBottles)";
+                }
+                
+                if (!empty($stockValues)) {
+                    // Bulk upsert into tblitem_stock
+                    $stockBulkQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
+                                      VALUES " . implode(',', $stockValues) . "
+                                      ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + VALUES($stockColumn)";
+                    $conn->query($stockBulkQuery);
+                }
+                
+                // Now update daily stock - need to process each date separately
+                // Group by date first
+                $dailyStockByDate = [];
+                foreach ($stockUpdates as $itemCode => $totalBottles) {
+                    $dateKey = $date; // All items in same purchase date
+                    if (!isset($dailyStockByDate[$dateKey])) {
+                        $dailyStockByDate[$dateKey] = [];
+                    }
+                    $dailyStockByDate[$dateKey][$itemCode] = $totalBottles;
+                }
+                
+                foreach ($dailyStockByDate as $purchaseDate => $items) {
+                    foreach ($items as $itemCode => $totalBottles) {
+                        updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn);
+                    }
+                }
+            }
         }
+        
+        // ============================================================================
+        // COMMIT ALL CHANGES AT ONCE
+        // ============================================================================
+        $conn->commit();
+        
+        // Re-enable constraints
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+        $conn->query("SET UNIQUE_CHECKS = 1");
         
         debugLog("=== FORM SUBMISSION COMPLETED SUCCESSFULLY ===");
         header("Location: purchase_module.php?mode=".$mode."&success=1");
         exit;
     } else {
         $errorMessage = "Error saving purchase: " . $insertStmt->error;
-        debugLog("Error saving purchase header", [
-            'error' => $insertStmt->error
-        ]);
+        $conn->rollback();
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+        $conn->query("SET UNIQUE_CHECKS = 1");
     }
     
     $insertStmt->close();

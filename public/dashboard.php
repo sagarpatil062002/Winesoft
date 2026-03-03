@@ -991,7 +991,8 @@ function fixDailyStockIdPreservation($conn, $sourceTable, $archiveMonth) {
         error_log("Archive table {$archiveTable} does not exist, skipping ID fix");
         return [
             'success' => true,
-            'message' => 'No archive table to fix from'
+            'message' => 'No archive table to fix from',
+            'fixed_count' => 0
         ];
     }
     
@@ -1044,7 +1045,8 @@ function fixDailyStockIdPreservation($conn, $sourceTable, $archiveMonth) {
         error_log("Failed to fix DailyStockID: " . $e->getMessage());
         return [
             'success' => false,
-            'error' => $e->getMessage()
+            'error' => $e->getMessage(),
+            'fixed_count' => 0
         ];
     }
 }
@@ -1081,7 +1083,7 @@ if ($transitionInfo['needs_transition']) {
                 $tableName = 'tbldailystock_' . $companyId;
                 $fixResult = fixDailyStockIdPreservation($conn, $tableName, $previousMonth);
                 error_log("DailyStockID fix result: " . print_r($fixResult, true));
-                if ($fixResult['success'] && $fixResult['fixed_count'] > 0) {
+                if ($fixResult['success'] && isset($fixResult['fixed_count']) && $fixResult['fixed_count'] > 0) {
                     $_SESSION['transition_message'] .= " | Fixed {$fixResult['fixed_count']} DailyStockID values";
                 }
             }
@@ -1118,7 +1120,7 @@ if ($transitionInfo['needs_transition']) {
             // Also try to fix DailyStockID if we have previous month archive
             $prevMonth = date('Y-m', strtotime('first day of previous month'));
             $fixResult = fixDailyStockIdPreservation($conn, $tableName, $prevMonth);
-            if ($fixResult['success'] && $fixResult['fixed_count'] > 0) {
+            if ($fixResult['success'] && isset($fixResult['fixed_count']) && $fixResult['fixed_count'] > 0) {
                 $_SESSION['transition_message'] = "Fixed {$fixResult['fixed_count']} DailyStockID values";
                 $_SESSION['message_type'] = 'info';
             }
