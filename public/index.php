@@ -25,25 +25,41 @@ while($year = mysqli_fetch_assoc($yearResult)) {
     $financial_years[$year['ID']] = $year;
 }
 
-// If a company is selected, filter financial years
+// If a company is selected, get its financial years from the new multiple year table
 if(isset($_POST['company']) && !empty($_POST['company'])) {
     $selected_company_id = intval($_POST['company']);
     
-    // Find the company's financial year
-    foreach($companies as $company) {
-        if($company['CompID'] == $selected_company_id) {
-            $company_fin_year = $company['FIN_YEAR'];
-            break;
-        }
+    // Get all financial years associated with this company from new table
+    $company_fy_query = "
+        SELECT fy.ID, fy.START_DATE, fy.END_DATE 
+        FROM tblfinyear fy
+        INNER JOIN tblcompany_finyear cf ON fy.ID = cf.finyear_id
+        WHERE cf.company_id = $selected_company_id AND cf.is_active = 1
+        ORDER BY fy.START_DATE DESC
+    ";
+    $company_fy_result = mysqli_query($conn, $company_fy_query);
+    
+    $filtered_years = [];
+    while($year = mysqli_fetch_assoc($company_fy_result)) {
+        $filtered_years[] = $year;
     }
     
-    // Add only the company's financial year to filtered_years
-    if(isset($company_fin_year) && isset($financial_years[$company_fin_year])) {
-        $filtered_years[] = array(
-            'ID' => $company_fin_year,
-            'START_DATE' => $financial_years[$company_fin_year]['START_DATE'],
-            'END_DATE' => $financial_years[$company_fin_year]['END_DATE']
-        );
+    // If no years in new table, fall back to old single year field for backward compatibility
+    if(empty($filtered_years)) {
+        foreach($companies as $company) {
+            if($company['CompID'] == $selected_company_id) {
+                $company_fin_year = $company['FIN_YEAR'];
+                break;
+            }
+        }
+        
+        if(isset($company_fin_year) && isset($financial_years[$company_fin_year])) {
+            $filtered_years[] = array(
+                'ID' => $company_fin_year,
+                'START_DATE' => $financial_years[$company_fin_year]['START_DATE'],
+                'END_DATE' => $financial_years[$company_fin_year]['END_DATE']
+            );
+        }
     }
 } else {
     // If no company selected, show all financial years

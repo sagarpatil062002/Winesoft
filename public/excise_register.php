@@ -439,8 +439,8 @@ foreach ($dates as $date) {
     
     $day_padded = sprintf('%02d', $day);
     
-    // Fetch stock data for this specific day
-    $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+    // Fetch stock data for this specific day (LIQ_FLAG removed - using hierarchy instead)
+    $stockQuery = "SELECT ITEM_CODE,
                   DAY_{$day_padded}_OPEN as opening,
                   DAY_{$day_padded}_PURCHASE as purchase, 
                   DAY_{$day_padded}_SALES as sales, 

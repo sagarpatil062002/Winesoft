@@ -24,6 +24,11 @@ error_log("Session User ID: " . ($_SESSION['user_id'] ?? 'NOT SET'));
 include_once "../config/db.php";
 include_once "components/financial_year.php";
 
+// Extract financial year variables from session
+$fin_year_start = $_SESSION['FIN_YEAR_START'] ?? null;
+$fin_year_end = $_SESSION['FIN_YEAR_END'] ?? null;
+$fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? null;
+
 // Check database connection
 if (!$conn) {
     error_log("DATABASE CONNECTION FAILED");
@@ -680,11 +685,17 @@ function getSortLink($column, $label) {
         <div class="row g-3">
           <div class="col-md-2">
             <label class="form-label">From Date</label>
-            <input type="date" class="form-control" name="from_date" value="<?=isset($_GET['from_date']) ? $_GET['from_date'] : ''?>">
+            <input type="date" class="form-control" name="from_date" 
+                   value="<?=isset($_GET['from_date']) ? $_GET['from_date'] : (isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : '')?>"
+                   min="<?= htmlspecialchars($_SESSION['FIN_YEAR_START'] ?? '') ?>"
+                   max="<?= htmlspecialchars($_SESSION['FIN_YEAR_END'] ?? '') ?>">
           </div>
           <div class="col-md-2">
             <label class="form-label">To Date</label>
-            <input type="date" class="form-control" name="to_date" value="<?=isset($_GET['to_date']) ? $_GET['to_date'] : ''?>">
+            <input type="date" class="form-control" name="to_date" 
+                   value="<?=isset($_GET['to_date']) ? $_GET['to_date'] : (isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : '')?>"
+                   min="<?= htmlspecialchars($_SESSION['FIN_YEAR_START'] ?? '') ?>"
+                   max="<?= htmlspecialchars($_SESSION['FIN_YEAR_END'] ?? '') ?>">
           </div>
           <div class="col-md-2">
             <label class="form-label">Voucher No.</label>
@@ -831,11 +842,17 @@ function getSortLink($column, $label) {
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label class="form-label">From Date</label>
-                        <input type="date" id="purchaseFromDate" class="form-control" value="<?= date('Y-m-01') ?>">
+                        <input type="date" id="purchaseFromDate" class="form-control" 
+                               value="<?= isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-01') ?>"
+                               min="<?= htmlspecialchars($_SESSION['FIN_YEAR_START'] ?? '') ?>"
+                               max="<?= htmlspecialchars($_SESSION['FIN_YEAR_END'] ?? '') ?>">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">To Date</label>
-                        <input type="date" id="purchaseToDate" class="form-control" value="<?= date('Y-m-d') ?>">
+                        <input type="date" id="purchaseToDate" class="form-control" 
+                               value="<?= isset($_SESSION['FIN_YEAR_END']) ? min($_SESSION['FIN_YEAR_END'], date('Y-m-d')) : date('Y-m-d') ?>"
+                               min="<?= htmlspecialchars($_SESSION['FIN_YEAR_START'] ?? '') ?>"
+                               max="<?= htmlspecialchars($_SESSION['FIN_YEAR_END'] ?? '') ?>">
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
                         <button type="button" class="btn btn-primary w-100" onclick="loadPurchaseSummary()">

@@ -223,6 +223,8 @@ function createNewFinancialYear($conn, $previousFY = null, $startDate = null, $e
 $currentFY = checkAndCreateFinancialYear($conn);
 
 // Update session with current financial year data
+// IMPORTANT: Only set session if not already set from login
+// This preserves the financial year the user selected during login
 if ($currentFY) {
     // Ensure FIN_YEAR_NAME is set
     if (!isset($currentFY['FIN_YEAR_NAME'])) {
@@ -231,16 +233,16 @@ if ($currentFY) {
         $currentFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
     }
     
-    // Check if financial year has changed
-    if (!isset($_SESSION['FIN_YEAR_ID']) || $_SESSION['FIN_YEAR_ID'] != $currentFY['ID']) {
+    // CRITICAL FIX: Only set session if no valid financial year was selected during login
+    // This preserves the user's selected year - do NOT overwrite with current system year!
+    if (!isset($_SESSION['FIN_YEAR_ID']) || $_SESSION['FIN_YEAR_ID'] == 0) {
+        // First time login - use current system FY
         $_SESSION['FIN_YEAR_ID'] = $currentFY['ID'];
         $_SESSION['FIN_YEAR_NAME'] = $currentFY['FIN_YEAR_NAME'];
         $_SESSION['FIN_YEAR_START'] = $currentFY['START_DATE'];
         $_SESSION['FIN_YEAR_END'] = $currentFY['END_DATE'];
-        
-        // Set flag to show transition message
-        $_SESSION['fy_transition'] = true;
     }
+    // If user already has a valid FY set from login, keep it - do NOT overwrite!
 } else {
     // This should never happen, but just in case
     error_log("CRITICAL: No financial year found or created!");
@@ -422,10 +424,13 @@ function ensureDayColumnsForMonth($conn, $tableName, $month) {
 /**
  * Create archive table with month suffix
  * Format: tbldailystock_1_02_26 (for February 2026)
+ * Creates table with only the days that exist in that specific month
+ * IMPORTANT: Copies ALL data from source to archive
  */
 function createArchiveTable($conn, $sourceTable, $month) {
     $monthSuffix = getMonthSuffix($month);
     $archiveTable = $sourceTable . '_' . $monthSuffix;
+    $daysInMonth = getDaysInMonth($month);
     
     try {
         // Check if archive table already exists
@@ -440,41 +445,44 @@ function createArchiveTable($conn, $sourceTable, $month) {
             ];
         }
         
-        error_log("Creating archive table {$archiveTable} from {$sourceTable}");
+        error_log("Creating archive table {$archiveTable} from {$sourceTable} with {$daysInMonth} days");
         
-        // Get the CREATE statement of source table
-        $createResult = $conn->query("SHOW CREATE TABLE `{$sourceTable}`");
-        $createRow = $createResult->fetch_assoc();
-        $createSQL = $createRow['Create Table'];
-        
-        // Modify CREATE statement to create archive table
-        $createArchiveSQL = str_replace(
-            "CREATE TABLE `{$sourceTable}`",
-            "CREATE TABLE `{$archiveTable}`",
-            $createSQL
-        );
-        
-        // Create archive table
-        if (!$conn->query($createArchiveSQL)) {
-            throw new Exception("Failed to create archive table: " . $conn->error);
+        // First, copy the full source table structure and data to archive
+        // Use CREATE TABLE ... LIKE to copy structure
+        $copyStructureSQL = "CREATE TABLE `{$archiveTable}` LIKE `{$sourceTable}`";
+        if (!$conn->query($copyStructureSQL)) {
+            throw new Exception("Failed to create archive table structure: " . $conn->error);
         }
         
         // Copy ALL data from source to archive
-        $copySQL = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}`";
-        if (!$conn->query($copySQL)) {
+        $copyDataSQL = "INSERT INTO `{$archiveTable}` SELECT * FROM `{$sourceTable}`";
+        if (!$conn->query($copyDataSQL)) {
             // If copy fails, drop the archive table
             $conn->query("DROP TABLE IF EXISTS `{$archiveTable}`");
             throw new Exception("Failed to copy data to archive: " . $conn->error);
         }
         
         $copiedRows = $conn->affected_rows;
-        error_log("Successfully created archive {$archiveTable} with {$copiedRows} rows");
+        error_log("Copied {$copiedRows} rows to archive {$archiveTable}");
+        
+        // Now remove extra day columns beyond this month's days
+        // This is optional - keeps archive clean with only relevant days
+        for ($day = $daysInMonth + 1; $day <= 31; $day++) {
+            $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            foreach (['OPEN', 'PURCHASE', 'SALES', 'CLOSING'] as $fieldType) {
+                $columnName = "`DAY_{$dayPadded}_{$fieldType}`";
+                $conn->query("ALTER TABLE `{$archiveTable}` DROP COLUMN IF EXISTS {$columnName}");
+            }
+        }
+        
+        error_log("Successfully created archive {$archiveTable} with {$copiedRows} rows and {$daysInMonth} days");
         
         return [
             'success' => true,
             'archive_table' => $archiveTable,
             'copied_rows' => $copiedRows,
             'month' => $month,
+            'days_in_month' => $daysInMonth,
             'action' => 'created'
         ];
         
@@ -521,80 +529,224 @@ function getLastDayClosingStock($conn, $tableName, $month) {
 }
 
 /**
- * Clear all day column data and update STK_MONTH for the new month
+ * Fill gaps in daily stock data
+ * If a day has 0 opening but previous day has closing > 0, copy the closing to opening
+ * Then recalculate all subsequent days' closing
+ * Only fills gaps up to today's date
  */
-function transformTableForNewMonth($conn, $tableName, $previousMonth, $newMonth) {
-    try {
-        // Get closing stock from previous month's last day
-        $closingData = getLastDayClosingStock($conn, $tableName, $previousMonth);
-        
-        if (empty($closingData)) {
-            // Try to get from archive if main table has no data
-            $archiveTable = $tableName . '_' . getMonthSuffix($previousMonth);
-            $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
-            if ($archiveCheck->num_rows > 0) {
-                error_log("Trying to get closing data from archive {$archiveTable}");
-                $closingData = getLastDayClosingStock($conn, $archiveTable, $previousMonth);
-            }
+function fillStockGaps($conn, $tableName, $month, $itemCode = null) {
+    $daysInMonth = getDaysInMonth($month);
+    $currentDay = (int)date('j'); // Today's day number
+    $today = date('Y-m-d');
+    
+    // Determine how far to fill - either today or end of month
+    $fillUntilDay = min($daysInMonth, $currentDay);
+    
+    error_log("Starting gap filling for month {$month}, filling up to day {$fillUntilDay}");
+    
+    // Get all items if not specified
+    $items = [];
+    if ($itemCode) {
+        $items[] = $itemCode;
+    } else {
+        $query = "SELECT DISTINCT ITEM_CODE FROM `{$tableName}` WHERE STK_MONTH = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("s", $month);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        while ($row = $result->fetch_assoc()) {
+            $items[] = $row['ITEM_CODE'];
+        }
+        $stmt->close();
+    }
+    
+    $filledGaps = 0;
+    
+    foreach ($items as $code) {
+        // Get current stock data for this item
+        $stockData = [];
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $stockData[$day] = [
+                'open' => 0,
+                'purchase' => 0,
+                'sales' => 0,
+                'closing' => 0
+            ];
         }
         
-        $newMonthDays = getDaysInMonth($newMonth);
+        // Fetch actual data from DB
+        $query = "SELECT * FROM `{$tableName}` WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("ss", $month, $code);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
-        // Build the UPDATE query
-        $setClauses = ["STK_MONTH = ?"];
+        if ($row = $result->fetch_assoc()) {
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $stockData[$day] = [
+                    'open' => floatval($row["DAY_{$dayPadded}_OPEN"] ?? 0),
+                    'purchase' => floatval($row["DAY_{$dayPadded}_PURCHASE"] ?? 0),
+                    'sales' => floatval($row["DAY_{$dayPadded}_SALES"] ?? 0),
+                    'closing' => floatval($row["DAY_{$dayPadded}_CLOSING"] ?? 0)
+                ];
+            }
+        }
+        $stmt->close();
         
-        // Add Day 1 setting (opening = previous month's closing)
-        $setClauses[] = "DAY_01_OPEN = ?";
-        $setClauses[] = "DAY_01_PURCHASE = 0";
-        $setClauses[] = "DAY_01_SALES = 0";
-        $setClauses[] = "DAY_01_CLOSING = ?";
+        // Fill gaps: if opening is 0 but previous closing > 0, copy closing to opening
+        // Only fill up to today's date
+        $previousClosing = 0;
+        for ($day = 1; $day <= $fillUntilDay; $day++) {
+            // If day 1, use the opening value (which should be previous month's closing)
+            if ($day == 1) {
+                $previousClosing = $stockData[1]['open'];
+            }
+            
+            // Check if there's a gap (opening is 0 but we have previous closing)
+            if ($stockData[$day]['open'] == 0 && $previousClosing > 0) {
+                $stockData[$day]['open'] = $previousClosing;
+                $filledGaps++;
+                error_log("Gap filled for item {$code} day {$day}: set OPEN = {$previousClosing}");
+            }
+            
+            // Recalculate closing = opening + purchase - sales
+            $stockData[$day]['closing'] = $stockData[$day]['open'] + $stockData[$day]['purchase'] - $stockData[$day]['sales'];
+            
+            // Set previous closing for next iteration
+            $previousClosing = $stockData[$day]['closing'];
+        }
         
-        // Clear all other days (2 to newMonthDays)
-        for ($day = 2; $day <= $newMonthDays; $day++) {
+        // Update the database with filled gaps (only up to today)
+        for ($day = 1; $day <= $fillUntilDay; $day++) {
             $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
-            $setClauses[] = "DAY_{$dayPadded}_OPEN = 0";
-            $setClauses[] = "DAY_{$dayPadded}_PURCHASE = 0";
-            $setClauses[] = "DAY_{$dayPadded}_SALES = 0";
-            $setClauses[] = "DAY_{$dayPadded}_CLOSING = 0";
-        }
-        
-        // For days beyond newMonthDays (if columns exist), set to NULL or 0
-        // We'll handle this dynamically by checking which columns exist
-        
-        $updateQuery = "UPDATE `{$tableName}` SET " . implode(", ", $setClauses) . " WHERE STK_MONTH = ?";
-        
-        error_log("Transform query: " . $updateQuery);
-        
-        $updateCount = 0;
-        $errorCount = 0;
-        
-        // Update each item individually with its specific closing stock
-        foreach ($closingData as $itemCode => $closingStock) {
+            $updateQuery = "UPDATE `{$tableName}` SET 
+                DAY_{$dayPadded}_OPEN = ?,
+                DAY_{$dayPadded}_CLOSING = ?,
+                LAST_UPDATED = CURRENT_TIMESTAMP 
+                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
             $updateStmt = $conn->prepare($updateQuery);
-            
-            // Bind parameters: newMonth, closingStock (for OPEN), closingStock (for CLOSING), previousMonth
-            $updateStmt->bind_param("siss", $newMonth, $closingStock, $closingStock, $previousMonth);
-            
-            if ($updateStmt->execute()) {
-                if ($updateStmt->affected_rows > 0) {
-                    $updateCount++;
-                    error_log("Updated item {$itemCode}: set opening = {$closingStock}");
-                }
-            } else {
-                $errorCount++;
-                error_log("Failed to update item {$itemCode}: " . $updateStmt->error);
-            }
+            $updateStmt->bind_param("ddss", 
+                $stockData[$day]['open'],
+                $stockData[$day]['closing'],
+                $month, 
+                $code
+            );
+            $updateStmt->execute();
             $updateStmt->close();
         }
+    }
+    
+    error_log("Gap filling complete: filled {$filledGaps} gaps for month {$month} up to day {$fillUntilDay}");
+    
+    return [
+        'success' => true,
+        'filled_gaps' => $filledGaps,
+        'month' => $month,
+        'filled_until_day' => $fillUntilDay
+    ];
+}
+
+/**
+ * Clear all day column data and update STK_MONTH for the new month
+ * Also copies last day's closing from archive to DAY_01_OPEN
+ * Order: Clear data -> Add columns -> Copy closing from archive
+ */
+function transformTableForNewMonth($conn, $sourceTable, $previousMonth, $newMonth) {
+    try {
+        $archiveTable = $sourceTable . '_' . getMonthSuffix($previousMonth);
+        $daysInPreviousMonth = getDaysInMonth($previousMonth);
+        $newMonthDays = getDaysInMonth($newMonth);
         
-        error_log("Transformation complete: updated {$updateCount} items, errors: {$errorCount}");
+        error_log("Starting transform: {$previousMonth} ({$daysInPreviousMonth} days) -> {$newMonth} ({$newMonthDays} days)");
+        
+        // Step 1: Get closing stock from archive table (for later use)
+        $closingData = [];
+        $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+        if ($archiveCheck->num_rows > 0) {
+            error_log("Getting closing data from archive {$archiveTable}");
+            $closingData = getLastDayClosingStock($conn, $archiveTable, $previousMonth);
+            error_log("Got closing data for " . count($closingData) . " items from archive");
+        } else {
+            // Try from source table if archive doesn't exist
+            $closingData = getLastDayClosingStock($conn, $sourceTable, $previousMonth);
+            error_log("Got closing data for " . count($closingData) . " items from source table");
+        }
+        
+        // Step 2: Ensure the source table has correct columns for new month (add missing days)
+        ensureDayColumnsForMonth($conn, $sourceTable, $newMonth);
+        
+        // Step 3: Clear ALL data from source table (but keep structure)
+        // We'll update STK_MONTH and set opening from closing
+        $clearQuery = "DELETE FROM `{$sourceTable}` WHERE STK_MONTH = ?";
+        $clearStmt = $conn->prepare($clearQuery);
+        $clearStmt->bind_param("s", $previousMonth);
+        $clearStmt->execute();
+        $deletedRows = $clearStmt->affected_rows;
+        $clearStmt->close();
+        error_log("Cleared {$deletedRows} rows from source table");
+        
+        // Step 4: Insert new records with opening from previous month's closing
+        // IMPORTANT: Preserve the DailyStockID from archive so each item keeps its same ID
+        if (!empty($closingData)) {
+            $insertCount = 0;
+            
+            // First, get the DailyStockID mapping from archive
+            $dailyStockIdMap = [];
+            $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+            if ($archiveCheck->num_rows > 0) {
+                $idQuery = "SELECT ITEM_CODE, DailyStockID FROM `{$archiveTable}` WHERE STK_MONTH = ?";
+                $idStmt = $conn->prepare($idQuery);
+                $idStmt->bind_param("s", $previousMonth);
+                $idStmt->execute();
+                $idResult = $idStmt->get_result();
+                while ($idRow = $idResult->fetch_assoc()) {
+                    $dailyStockIdMap[$idRow['ITEM_CODE']] = $idRow['DailyStockID'];
+                }
+                $idStmt->close();
+            }
+            
+            foreach ($closingData as $itemCode => $closingStock) {
+                // Get the original DailyStockID for this item
+                $originalId = $dailyStockIdMap[$itemCode] ?? null;
+                
+                if ($originalId) {
+                    // Insert new record for new month with opening = previous month's closing
+                    // PRESERVE the original DailyStockID
+                    $insertQuery = "INSERT INTO `{$sourceTable}` (DailyStockID, ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_CLOSING) 
+                                    VALUES (?, ?, ?, ?, ?)";
+                    $insertStmt = $conn->prepare($insertQuery);
+                    $insertStmt->bind_param("issdd", $originalId, $itemCode, $newMonth, $closingStock, $closingStock);
+                } else {
+                    // Fallback: insert without DailyStockID (let auto-increment handle it)
+                    $insertQuery = "INSERT INTO `{$sourceTable}` (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_CLOSING) 
+                                    VALUES (?, ?, ?, ?)";
+                    $insertStmt = $conn->prepare($insertQuery);
+                    $insertStmt->bind_param("ssdd", $itemCode, $newMonth, $closingStock, $closingStock);
+                }
+                
+                if ($insertStmt->execute()) {
+                    $insertCount++;
+                } else {
+                    error_log("Failed to insert for item {$itemCode}: " . $insertStmt->error);
+                }
+                $insertStmt->close();
+            }
+            error_log("Inserted {$insertCount} new rows with opening from archive, preserving DailyStockID");
+        } else {
+            // No closing data, just insert empty record for new month
+            error_log("No closing data available, inserting empty record for new month");
+        }
+        
+        error_log("Transformation complete for {$previousMonth} -> {$newMonth}");
         
         return [
             'success' => true,
-            'updated_items' => $updateCount,
-            'error_items' => $errorCount,
+            'updated_items' => count($closingData),
             'previous_month' => $previousMonth,
-            'new_month' => $newMonth
+            'new_month' => $newMonth,
+            'used_archive_closing' => !empty($closingData),
+            'archive_table' => $archiveTable
         ];
         
     } catch (Exception $e) {
@@ -757,8 +909,21 @@ function executeMonthTransition($conn) {
                 throw new Exception("Failed to transform from {$currentProcessingMonth} to {$nextMonth}: " . ($transformResult['error'] ?? 'Unknown error'));
             }
             
+            // Step 3d: Fill gaps in the new month (for days when system was off)
+            error_log("Step 4: Filling gaps in month {$nextMonth}");
+            $gapFillResult = fillStockGaps($conn, $tableName, $nextMonth);
+            $results['steps']['gap_fill'] = $gapFillResult;
+            
             // Move to next month
             $currentProcessingMonth = $nextMonth;
+        }
+        
+        // Final step: Also fill gaps in the current month after all transitions
+        $currentMonth = getCurrentMonth();
+        if ($currentProcessingMonth == $currentMonth) {
+            error_log("Final step: Filling gaps in current month {$currentMonth}");
+            $finalGapFill = fillStockGaps($conn, $tableName, $currentMonth);
+            $results['steps']['final_gap_fill'] = $finalGapFill;
         }
         
         $results['success'] = true;
@@ -809,22 +974,155 @@ if (isset($_POST['execute_month_transition']) && $_POST['execute_month_transitio
     exit;
 }
 
+/**
+ * Fix DailyStockID in current table to match archive
+ * This is needed when historical transitions didn't preserve the ID
+ * The archive contains the previous month's data with correct DailyStockID
+ * We need to match by ITEM_CODE and update current month's records
+ */
+function fixDailyStockIdPreservation($conn, $sourceTable, $archiveMonth) {
+    $archiveSuffix = getMonthSuffix($archiveMonth);
+    $archiveTable = $sourceTable . '_' . $archiveSuffix;
+    $currentMonth = getCurrentMonth();
+    
+    // Check if archive exists
+    $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+    if ($archiveCheck->num_rows == 0) {
+        error_log("Archive table {$archiveTable} does not exist, skipping ID fix");
+        return [
+            'success' => true,
+            'message' => 'No archive table to fix from'
+        ];
+    }
+    
+    try {
+        // Get DailyStockID mapping from archive
+        // Archive has the OLD month (e.g., 2026-02), current table has NEW month (e.g., 2026-03)
+        // We match by ITEM_CODE
+        $idMapQuery = "
+            SELECT a.ITEM_CODE, a.DailyStockID as archive_id, c.DailyStockID as current_id
+            FROM `{$archiveTable}` a
+            INNER JOIN `{$sourceTable}` c ON a.ITEM_CODE = c.ITEM_CODE AND c.STK_MONTH = ?
+            WHERE a.STK_MONTH = ?
+        ";
+        $stmt = $conn->prepare($idMapQuery);
+        $stmt->bind_param("ss", $currentMonth, $archiveMonth);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $updatedCount = 0;
+        $mismatchedCount = 0;
+        while ($row = $result->fetch_assoc()) {
+            // Only update if IDs are different
+            if ($row['archive_id'] != $row['current_id']) {
+                // Update the current table with the correct DailyStockID from archive
+                $updateQuery = "UPDATE `{$sourceTable}` SET DailyStockID = ? WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->bind_param("iss", $row['archive_id'], $currentMonth, $row['ITEM_CODE']);
+                $updateStmt->execute();
+                $updatedCount++;
+                $updateStmt->close();
+                error_log("Fixed DailyStockID for item {$row['ITEM_CODE']}: {$row['current_id']} -> {$row['archive_id']}");
+            }
+            $mismatchedCount++;
+        }
+        $stmt->close();
+        
+        error_log("Checked {$mismatchedCount} items, fixed {$updatedCount} DailyStockID values from archive {$archiveTable}");
+        
+        return [
+            'success' => true,
+            'fixed_count' => $updatedCount,
+            'checked_count' => $mismatchedCount,
+            'archive_table' => $archiveTable,
+            'source_table' => $sourceTable,
+            'current_month' => $currentMonth,
+            'archive_month' => $archiveMonth
+        ];
+        
+    } catch (Exception $e) {
+        error_log("Failed to fix DailyStockID: " . $e->getMessage());
+        return [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
+    }
+}
+
 // Check if transition is needed
 $transitionInfo = checkMonthTransition($conn);
 
 // Auto-execute if needed
+// Force transition check to run every time for debugging
+error_log("=== AUTO TRANSITION CHECK ===");
+error_log("Current month: " . getCurrentMonth());
+error_log("Transition info: " . print_r($transitionInfo, true));
+
 if ($transitionInfo['needs_transition']) {
     $transitionKey = 'auto_transition_' . date('Y-m-d');
+    error_log("Checking transition key: {$transitionKey}, set: " . (isset($_SESSION[$transitionKey]) ? 'yes' : 'no'));
+    
+    // Always execute if needed (remove the session check for now to debug)
+    // The session check was preventing re-execution if it failed before
     if (!isset($_SESSION[$transitionKey])) {
-        error_log("Auto transition triggered");
+        error_log("Auto transition triggered - executing now");
         $autoResults = executeMonthTransition($conn);
+        error_log("Auto transition result: " . print_r($autoResults, true));
+        
         if ($autoResults['success']) {
             $_SESSION[$transitionKey] = true;
-            $_SESSION['transition_message'] = "Auto transition completed";
+            $_SESSION['transition_message'] = "Auto transition completed successfully!";
             $_SESSION['message_type'] = 'success';
+            
+            // FIX: After transition, fix the DailyStockID to match archive
+            $previousMonth = $transitionInfo['latest_month'] ?? '';
+            if ($previousMonth) {
+                $companyId = $_SESSION['CompID'] ?? 1;
+                $tableName = 'tbldailystock_' . $companyId;
+                $fixResult = fixDailyStockIdPreservation($conn, $tableName, $previousMonth);
+                error_log("DailyStockID fix result: " . print_r($fixResult, true));
+                if ($fixResult['success'] && $fixResult['fixed_count'] > 0) {
+                    $_SESSION['transition_message'] .= " | Fixed {$fixResult['fixed_count']} DailyStockID values";
+                }
+            }
+        } else {
+            $_SESSION['transition_message'] = "Auto transition failed: " . ($autoResults['error'] ?? 'Unknown error');
+            $_SESSION['message_type'] = 'error';
+            // Still mark as done to prevent infinite loop, but show error
+            $_SESSION[$transitionKey] = true;
         }
-        // Refresh transition info
+        // Refresh transition info after auto-execution
         $transitionInfo = checkMonthTransition($conn);
+    } else {
+        error_log("Auto transition already executed today, skipping");
+    }
+} else {
+    // No transition needed, but still check for gaps in current month
+    $gapFillKey = 'auto_gap_fill_' . date('Y-m-d');
+    if (!isset($_SESSION[$gapFillKey])) {
+        $currentMonth = getCurrentMonth();
+        $companyId = $_SESSION['CompID'] ?? 1;
+        $tableName = 'tbldailystock_' . $companyId;
+        
+        // Check if current month has data
+        $checkMonth = $conn->query("SELECT COUNT(*) as cnt FROM `{$tableName}` WHERE STK_MONTH = '{$currentMonth}'");
+        if ($checkMonth && $checkMonth->fetch_assoc()['cnt'] > 0) {
+            error_log("Checking for gaps in current month {$currentMonth}");
+            $gapResult = fillStockGaps($conn, $tableName, $currentMonth);
+            if ($gapResult['filled_gaps'] > 0) {
+                $_SESSION['transition_message'] = "Gap filling completed: {$gapResult['filled_gaps']} gaps filled";
+                $_SESSION['message_type'] = 'info';
+            }
+            $_SESSION[$gapFillKey] = true;
+            
+            // Also try to fix DailyStockID if we have previous month archive
+            $prevMonth = date('Y-m', strtotime('first day of previous month'));
+            $fixResult = fixDailyStockIdPreservation($conn, $tableName, $prevMonth);
+            if ($fixResult['success'] && $fixResult['fixed_count'] > 0) {
+                $_SESSION['transition_message'] = "Fixed {$fixResult['fixed_count']} DailyStockID values";
+                $_SESSION['message_type'] = 'info';
+            }
+        }
     }
 }
 

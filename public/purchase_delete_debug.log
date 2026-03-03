@@ -1,69 +1,102 @@
-[2026-03-02 08:55:07] Starting delete operation for company ID: 6
-[2026-03-02 08:55:07] Bulk delete request: [
-    "1"
+[2026-03-03 11:42:04] Starting delete operation for company ID: 2
+[2026-03-03 11:42:04] Bulk delete request: [
+    "6",
+    "5"
 ]
-[2026-03-02 08:55:07] Starting reverse for purchase ID: 1
-[2026-03-02 08:55:07] Purchase found: {
-    "date": "2025-04-01",
-    "tp_no": "444"
+[2026-03-03 11:42:04] Starting reverse for purchase ID: 6
+[2026-03-03 11:42:04] Purchase found: {
+    "date": "2022-02-08",
+    "tp_no": "2007",
+    "is_previous_fy": true
 }
-[2026-03-02 08:55:07] Found 1 items
-[2026-03-02 08:55:07] ERROR: Unknown column 'Current_Stock6' in 'field list'
-[2026-03-02 08:58:38] Starting delete operation for company ID: 1
-[2026-03-02 08:58:38] Single delete request for ID: 2
-[2026-03-02 08:58:38] Starting reverse for purchase ID: 2
-[2026-03-02 08:58:38] Purchase found: {
-    "date": "2026-02-02",
-    "tp_no": "25298"
+[2026-03-03 11:42:04] Found 1 items
+[2026-03-03 11:42:04] Main stock updated
+[2026-03-03 11:42:04] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-03 11:42:04] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_02_22",
+    "day": "08",
+    "month": "2022-02"
 }
-[2026-03-02 08:58:38] Found 1 items
-[2026-03-02 08:58:38] Main stock updated
-[2026-03-02 08:58:38] Updating daily stock: {
-    "table": "tbldailystock_1_02_26",
-    "day": "02",
-    "month": "2026-02"
+[2026-03-03 11:42:04] Cascading stock: {
+    "table": "tbldailystock_2_02_22",
+    "item_code": "SCMPL0026921",
+    "stk_month": "2022-02",
+    "start_day": "08"
 }
-[2026-03-02 08:58:38] Cascading stock: {
-    "table": "tbldailystock_1_02_26",
-    "item_code": "SCMKS0036602",
-    "stk_month": "2026-02",
-    "start_day": "02"
+[2026-03-03 11:42:05] Previous FY purchase month table updated
+[2026-03-03 11:42:05] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0026921",
+    "purchase_date": "2022-02-08",
+    "purchase_month": 2,
+    "purchase_year": 2022,
+    "fy_end_date": "2022-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2022,
+    "reduction_qty": 36
 }
-[2026-03-02 08:58:38] Daily stock updated
-[2026-03-02 08:58:38] Deleted 1 detail records
-[2026-03-02 08:58:38] Deleted purchase header, affected rows: 1
-[2026-03-02 08:58:38] Transaction committed successfully
-[2026-03-02 09:17:17] Starting delete operation for company ID: 6
-[2026-03-02 09:17:17] Bulk delete request: [
-    "1"
-]
-[2026-03-02 09:17:17] Starting reverse for purchase ID: 1
-[2026-03-02 09:17:17] Purchase found: {
-    "date": "2025-04-01",
-    "tp_no": "444"
+[2026-03-03 11:42:05] Starting cascade - last day: 0, closing value: 0
+[2026-03-03 11:42:05] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_22",
+    "monthYear": "2022-03",
+    "daysInMonth": "31"
 }
-[2026-03-02 09:17:17] Found 1 items
-[2026-03-02 09:17:17] Main stock updated
-[2026-03-02 09:17:17] Deleted 1 detail records
-[2026-03-02 09:17:17] Deleted purchase header, affected rows: 1
-[2026-03-02 09:17:17] Transaction committed successfully
-[2026-03-02 09:27:35] Starting delete operation for company ID: 6
-[2026-03-02 09:27:35] Bulk delete request: [
-    "3"
-]
-[2026-03-02 09:27:35] Starting reverse for purchase ID: 3
-[2026-03-02 09:27:35] Purchase found: {
-    "date": "2026-03-02",
-    "tp_no": "33444"
+[2026-03-03 11:42:05] Cascading reversal completed to FY end: 2022-03-31
+[2026-03-03 11:42:05] Deleted 1 detail records
+[2026-03-03 11:42:05] Deleted purchase header, affected rows: 1
+[2026-03-03 11:42:05] Transaction committed successfully
+[2026-03-03 11:42:05] Starting reverse for purchase ID: 5
+[2026-03-03 11:42:05] Purchase found: {
+    "date": "2021-11-01",
+    "tp_no": "7654",
+    "is_previous_fy": true
 }
-[2026-03-02 09:27:36] Found 11 items
-[2026-03-02 09:27:36] Main stock updated
-[2026-03-02 09:27:36] Updating daily stock: {
-    "table": "tbldailystock_6",
-    "day": "02",
-    "month": "2026-03"
+[2026-03-03 11:42:05] Found 1 items
+[2026-03-03 11:42:05] Main stock updated
+[2026-03-03 11:42:05] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-03 11:42:05] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_11_21",
+    "day": "01",
+    "month": "2021-11"
 }
-[2026-03-02 09:27:36] Daily stock updated
-[2026-03-02 09:27:36] Deleted 11 detail records
-[2026-03-02 09:27:36] Deleted purchase header, affected rows: 1
-[2026-03-02 09:27:36] Transaction committed successfully
+[2026-03-03 11:42:05] Cascading stock: {
+    "table": "tbldailystock_2_11_21",
+    "item_code": "SCMLS0024545",
+    "stk_month": "2021-11",
+    "start_day": "01"
+}
+[2026-03-03 11:42:05] Previous FY purchase month table updated
+[2026-03-03 11:42:05] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMLS0024545",
+    "purchase_date": "2021-11-01",
+    "purchase_month": 11,
+    "purchase_year": 2021,
+    "fy_end_date": "2022-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2022,
+    "reduction_qty": 12
+}
+[2026-03-03 11:42:05] Starting cascade - last day: 0, closing value: 0
+[2026-03-03 11:42:05] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_21",
+    "monthYear": "2021-12",
+    "daysInMonth": "31"
+}
+[2026-03-03 11:42:05] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_22",
+    "monthYear": "2022-01",
+    "daysInMonth": "31"
+}
+[2026-03-03 11:42:05] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_22",
+    "monthYear": "2022-02",
+    "daysInMonth": "28"
+}
+[2026-03-03 11:42:05] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_22",
+    "monthYear": "2022-03",
+    "daysInMonth": "31"
+}
+[2026-03-03 11:42:05] Cascading reversal completed to FY end: 2022-03-31
+[2026-03-03 11:42:05] Deleted 1 detail records
+[2026-03-03 11:42:06] Deleted purchase header, affected rows: 1
+[2026-03-03 11:42:06] Transaction committed successfully

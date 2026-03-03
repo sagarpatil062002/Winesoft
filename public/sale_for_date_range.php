@@ -298,9 +298,23 @@ $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Date range selection (default to current day only)
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+// Date range selection - Default to financial year range
+$fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
+$fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
+
+// If no dates provided, default to financial year start date (for new sessions)
+// Otherwise use provided dates (maintains backward compatibility)
+if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
+    $start_date = $fin_year_start;
+    $end_date = min($fin_year_end, date('Y-m-d')); // Can't be future
+} else {
+    $start_date = $_GET['start_date'];
+    $end_date = $_GET['end_date'];
+    
+    // Validate dates are within financial year
+    if ($start_date < $fin_year_start) $start_date = $fin_year_start;
+    if ($end_date > $fin_year_end) $end_date = $fin_year_end;
+}
 
 // Get company ID
 $comp_id = $_SESSION['CompID'];
@@ -2454,6 +2468,13 @@ tr.global-restriction .qty-input {
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
+      
+      <!-- Financial Year Indicator -->
+      <div class="alert alert-info mb-3 py-2">
+          <strong><i class="fas fa-calendar"></i> Financial Year: <?= htmlspecialchars($fin_year_start . ' to ' . $fin_year_end) ?></strong>
+          <span class="ms-2 text-muted">(Working with year: <?= htmlspecialchars($_SESSION['FIN_YEAR_ID'] ?? 'Not Set') ?>)</span>
+      </div>
+
       <h3 class="mb-4">Sales by Date Range</h3>
 
       <!-- SIMPLIFIED License Restriction Info -->
@@ -2697,13 +2718,17 @@ tr.global-restriction .qty-input {
           <div class="col-md-3">
             <label for="start_date" class="form-label">Start Date</label>
             <input type="date" name="start_date" class="form-control" 
-                   value="<?= htmlspecialchars($start_date); ?>" required>
+                   value="<?= htmlspecialchars($start_date); ?>"
+                   min="<?= htmlspecialchars($fin_year_start); ?>"
+                   max="<?= htmlspecialchars($fin_year_end); ?>" required>
           </div>
           
           <div class="col-md-3">
             <label for="end_date" class="form-label">End Date</label>
             <input type="date" name="end_date" class="form-control" 
-                   value="<?= htmlspecialchars($end_date); ?>" required>
+                   value="<?= htmlspecialchars($end_date); ?>"
+                   min="<?= htmlspecialchars($fin_year_start); ?>"
+                   max="<?= htmlspecialchars($fin_year_end); ?>" required>
           </div>
           
           <div class="col-md-4">

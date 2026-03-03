@@ -16,9 +16,12 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Default values - using date range instead of single date
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+// Default values - using financial year range
+$fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
+$fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
+
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : $fin_year_start;
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : min($fin_year_end, date('Y-m-d'));
 $report_mode = isset($_GET['report_mode']) ? $_GET['report_mode'] : 'all';
 $bill_no = isset($_GET['bill_no']) ? $_GET['bill_no'] : '';
 
@@ -187,11 +190,13 @@ if (isset($_GET['generate'])) {
             <div class="row mb-3">
               <div class="col-md-3">
                 <label class="form-label">Start Date:</label>
-                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>" id="startDate">
+                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>" 
+                     id="startDate" min="<?= htmlspecialchars($fin_year_start) ?>" max="<?= htmlspecialchars($fin_year_end) ?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">End Date:</label>
-                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>" id="endDate">
+                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>" 
+                     id="endDate" min="<?= htmlspecialchars($fin_year_start) ?>" max="<?= htmlspecialchars($fin_year_end) ?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Mode:</label>

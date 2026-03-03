@@ -400,8 +400,8 @@ foreach ($tables_needed as $table_info) {
                     continue;
                 }
                 
-                // Fetch all stock data for this month and day
-                $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                // Fetch all stock data for this month and day (LIQ_FLAG removed - using item master)
+                $stockQuery = "SELECT ITEM_CODE,
                               DAY_{$day}_OPEN as opening, 
                               DAY_{$day}_PURCHASE as purchase, 
                               DAY_{$day}_SALES as sales, 
@@ -444,8 +444,8 @@ foreach ($tables_needed as $table_info) {
                         $cumulative_stock_data[$item_code]['opening'] = $row['opening'];
                     }
                     
-                    // Store LIQ_FLAG for later use
-                    $cumulative_stock_data[$item_code]['liq_flag'] = $row['LIQ_FLAG'];
+                    // Store LIQ_FLAG from item master for later use
+                    $cumulative_stock_data[$item_code]['liq_flag'] = isset($items[$item_code]['LIQ_FLAG']) ? $items[$item_code]['LIQ_FLAG'] : 'F';
                 }
                 
                 $stockStmt->close();

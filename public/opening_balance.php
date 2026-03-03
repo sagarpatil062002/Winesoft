@@ -21,7 +21,12 @@ $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID']; // This is the ID from tblfinyear
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "components/financial_year.php";
 require_once 'license_functions.php'; // ADDED: Include license functions
+
+// Extract financial year variables from session
+$fin_year_start = $_SESSION['FIN_YEAR_START'] ?? null;
+$fin_year_end = $_SESSION['FIN_YEAR_END'] ?? null;
 
 // Helper function to get financial year start date from tblfinyear
 function getFinancialYearStartDate($fin_year_id, $conn) {

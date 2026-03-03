@@ -205,8 +205,8 @@ function updateCascadingDailyStock($conn, $itemCode, $transactionDate, $compId, 
             $update_stmt->close();
         }
 
-        // Cascade changes to subsequent days
-        cascadeStockChanges($conn, $itemCode, $monthYear, $dayOfMonth, $dailyStockTable);
+        // Cascade changes to subsequent days until FY end
+        cascadeStockChanges($conn, $itemCode, $monthYear, $dayOfMonth, $dailyStockTable, $transactionDate);
 
         $conn->commit();
         return true;
@@ -223,8 +223,48 @@ function updateCascadingDailyStock($conn, $itemCode, $transactionDate, $compId, 
     }
 }
 
+// Function to get financial year end date based on transaction date
+// Financial year runs from April 1 to March 31
+if (!function_exists('getFinancialYearEndDate')) {
+    function getFinancialYearEndDate($transactionDate) {
+        $month = (int)date('m', strtotime($transactionDate));
+        $year = (int)date('Y', strtotime($transactionDate));
+        
+        // If transaction is in Jan-Mar (months 1-3), end date is March 31 of current year
+        // If transaction is in Apr-Dec (months 4-12), end date is March 31 of next year
+        if ($month >= 1 && $month <= 3) {
+            return date('Y-03-31', strtotime($year . '-01-01'));
+        } else {
+            return date('Y-03-31', strtotime(($year + 1) . '-01-01'));
+        }
+    }
+}
+
+// Function to check if a transaction is in a previous financial year
+function isPreviousFinancialYear($transactionDate) {
+    $today = new DateTime();
+    $transaction = new DateTime($transactionDate);
+    
+    // Get current financial year (April 1 to March 31)
+    $currentMonth = (int)$today->format('n');
+    $currentYear = (int)$today->format('Y');
+    
+    // If we're in April-Dec (months 4-12), current FY is this year to next year
+    // If we're in Jan-Mar (months 1-3), current FY is last year to this year
+    if ($currentMonth >= 4) {
+        $fyStart = new DateTime("$currentYear-04-01");
+        $fyEnd = new DateTime(($currentYear + 1) . '-03-31');
+    } else {
+        $fyStart = new DateTime(($currentYear - 1) . '-04-01');
+        $fyEnd = new DateTime("$currentYear-03-31");
+    }
+    
+    // If transaction is before the start of current FY, it's in a previous year
+    return $transaction < $fyStart;
+}
+
 // Function to cascade stock changes to subsequent days
-function cascadeStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStockTable) {
+function cascadeStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStockTable, $transactionDate = null) {
     // Get the new closing stock for the modified day
     $closingColumn = "DAY_" . str_pad($startDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
     $query = "SELECT $closingColumn as new_closing FROM $dailyStockTable
@@ -237,19 +277,33 @@ function cascadeStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStoc
     $newClosingStock = $row['new_closing'];
     $stmt->close();
 
-    // Get current date to limit updates
-    $currentDate = date('Y-m-d');
-    $currentDay = date('j', strtotime($currentDate));
-    $currentMonthYear = date('Y-m', strtotime($currentDate));
-
-    // Only cascade if we're in the same month
-    if ($monthYear === $currentMonthYear) {
-        $endDay = min(31, $currentDay); // Don't go beyond current day
+    // Use financial year end date instead of current date
+    // Only for previous financial years - for current year, use today
+    if ($transactionDate !== null && isPreviousFinancialYear($transactionDate)) {
+        $fyEndDate = getFinancialYearEndDate($transactionDate);
     } else {
-        $endDay = 31; // For past months, update all days
+        $fyEndDate = date('Y-m-d'); // For current year, use today
+    }
+    
+    $currentDate = $fyEndDate;
+    $currentDay = (int)date('j', strtotime($currentDate));
+    $currentMonthYear = date('Y-m', strtotime($currentDate));
+    $currentYear = (int)date('Y', strtotime($currentDate));
+    $currentMonth = (int)date('m', strtotime($currentDate));
+
+    // Get the last day of the current month
+    $monthTimestamp = strtotime($monthYear . '-01');
+    $lastDayOfMonth = (int)date('t', $monthTimestamp);
+    
+    // Determine the end day for cascade - use minimum of last day of month and FY end day
+    $endDay = min($lastDayOfMonth, $currentDay);
+    
+    // If we're in a past month relative to FY end, use all days
+    if ($monthYear < $currentMonthYear) {
+        $endDay = $lastDayOfMonth;
     }
 
-    // Update all subsequent days' opening stock up to current date
+    // Update all subsequent days' opening stock up to financial year end
     for ($day = $startDay + 1; $day <= $endDay; $day++) {
         $openColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
         $closingColumn = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
@@ -292,5 +346,134 @@ function cascadeStockChanges($conn, $itemCode, $monthYear, $startDay, $dailyStoc
             $get_stmt->close();
         }
     }
+    
+    // If there are more months until FY end, cascade to next month
+    if ($monthYear < $currentMonthYear) {
+        cascadeToNextMonthStock($conn, $itemCode, $monthYear, $dailyStockTable, $fyEndDate);
+    }
+}
+
+// New function to cascade to next month until FY end
+function cascadeToNextMonthStock($conn, $itemCode, $currentMonthYear, $dailyStockTable, $fyEndDate) {
+    // Calculate next month
+    $nextMonthTimestamp = strtotime($currentMonthYear . '-01 +1 month');
+    $nextMonthYear = date('Y-m', $nextMonthTimestamp);
+    $nextYear = (int)date('Y', $nextMonthTimestamp);
+    $nextMonth = (int)date('m', $nextMonthTimestamp);
+    
+    // Check if we've reached FY end
+    $fyEndYear = (int)date('Y', strtotime($fyEndDate));
+    $fyEndMonth = (int)date('m', strtotime($fyEndDate));
+    
+    // Stop if we've passed the FY end month
+    if ($nextYear > $fyEndYear || ($nextYear == $fyEndYear && $nextMonth > $fyEndMonth)) {
+        return;
+    }
+    
+    // Determine table name for next month (may be archive table)
+    $nextMonthNum = date('m', $nextMonthTimestamp);
+    $nextYearShort = date('y', $nextMonthTimestamp);
+    $nextMonthTable = "tbldailystock_" . substr($dailyStockTable, strlen("tbldailystock_")) . "_" . $nextMonthNum . "_" . $nextYearShort;
+    
+    // Try to find the correct table - check if it exists
+    $tablePrefix = "tbldailystock_";
+    $compId = "";
+    if (preg_match('/tbldailystock_(\d+)/', $dailyStockTable, $matches)) {
+        $compId = $matches[1];
+        $nextMonthTable = "tbldailystock_" . $compId . "_" . $nextMonthNum . "_" . $nextYearShort;
+    }
+    
+    // Check if next month table exists
+    $checkTable = $conn->query("SHOW TABLES LIKE '$nextMonthTable'");
+    if (!$checkTable || $checkTable->num_rows == 0) {
+        // Try the main table format
+        $nextMonthTable = $dailyStockTable;
+    }
+    
+    // Get last day of next month
+    $lastDayNextMonth = (int)date('t', $nextMonthTimestamp);
+    
+    // Get the last day's closing from current month as opening for next month
+    $currentMonthLastDay = (int)date('t', strtotime($currentMonthYear . '-01'));
+    $currentClosingCol = "DAY_" . sprintf('%02d', $currentMonthLastDay) . "_CLOSING";
+    
+    $getClosingQuery = "SELECT $currentClosingCol as closing FROM $dailyStockTable
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $closingStmt = $conn->prepare($getClosingQuery);
+    $closingStmt->bind_param("ss", $currentMonthYear, $itemCode);
+    $closingStmt->execute();
+    $closingResult = $closingStmt->get_result();
+    $closingRow = $closingResult->fetch_assoc();
+    $nextOpeningStock = $closingRow['closing'] ?? 0;
+    $closingStmt->close();
+    
+    // Update next month's day 1 opening
+    $updateNextQuery = "UPDATE $nextMonthTable 
+                        SET DAY_01_OPEN = ? 
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $updateNextStmt = $conn->prepare($updateNextQuery);
+    $updateNextStmt->bind_param("dss", $nextOpeningStock, $nextMonthYear, $itemCode);
+    $updateNextStmt->execute();
+    $updateNextStmt->close();
+    
+    // Recalculate day 1 closing
+    $recalcNextQuery = "UPDATE $nextMonthTable 
+                        SET DAY_01_CLOSING = GREATEST(0, DAY_01_OPEN + DAY_01_PURCHASE - DAY_01_SALES)
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $recalcNextStmt = $conn->prepare($recalcNextQuery);
+    $recalcNextStmt->bind_param("ss", $nextMonthYear, $itemCode);
+    $recalcNextStmt->execute();
+    $recalcNextStmt->close();
+    
+    // Cascade through all days in next month
+    for ($day = 2; $day <= $lastDayNextMonth; $day++) {
+        $dayStr = sprintf('%02d', $day);
+        $prevDayStr = sprintf('%02d', $day - 1);
+        
+        $openCol = "DAY_{$dayStr}_OPEN";
+        $purchaseCol = "DAY_{$dayStr}_PURCHASE";
+        $salesCol = "DAY_{$dayStr}_SALES";
+        $closingCol = "DAY_{$dayStr}_CLOSING";
+        
+        // Check if columns exist
+        $checkCols = $conn->query("SHOW COLUMNS FROM $nextMonthTable LIKE '$openCol'");
+        if ($checkCols->num_rows == 0) break;
+        
+        // Get previous day's closing
+        $prevClosingCol = "DAY_{$prevDayStr}_CLOSING";
+        $getPrevQuery = "SELECT $prevClosingCol as prev_closing FROM $nextMonthTable 
+                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $prevStmt = $conn->prepare($getPrevQuery);
+        $prevStmt->bind_param("ss", $nextMonthYear, $itemCode);
+        $prevStmt->execute();
+        $prevResult = $prevStmt->get_result();
+        $prevRow = $prevResult->fetch_assoc();
+        $prevClosing = $prevRow['prev_closing'] ?? $nextOpeningStock;
+        $prevStmt->close();
+        
+        // Update this day's opening
+        $updateDayQuery = "UPDATE $nextMonthTable 
+                          SET $openCol = ?,
+                              $closingCol = ? + $purchaseCol - $salesCol
+                          WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $dayStmt = $conn->prepare($updateDayQuery);
+        $dayStmt->bind_param("ddss", $prevClosing, $prevClosing, $nextMonthYear, $itemCode);
+        $dayStmt->execute();
+        $dayStmt->close();
+        
+        // Get new closing for next iteration
+        $getNewClosingQuery = "SELECT $closingCol as new_closing FROM $nextMonthTable 
+                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $newStmt = $conn->prepare($getNewClosingQuery);
+        $newStmt->bind_param("ss", $nextMonthYear, $itemCode);
+        $newStmt->execute();
+        $newResult = $newStmt->get_result();
+        $newRow = $newResult->fetch_assoc();
+        $nextOpeningStock = $newRow['new_closing'] ?? 0;
+        $newStmt->close();
+    }
+    
+    // Continue to next month if not at FY end
+    cascadeToNextMonthStock($conn, $itemCode, $nextMonthYear, $nextMonthTable, $fyEndDate);
 }
 ?>

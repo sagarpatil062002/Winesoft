@@ -3,6 +3,10 @@
 ob_start();
 session_start();
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Database connection
 $servername = "localhost";
 $username = "root";
@@ -157,119 +161,181 @@ function getMonthsInFinancialYear($start_date, $end_date) {
 
 /**
  * Create daily stock structure for a company
- * - Current month table: tbldailystock_compid
- * - Archive month tables: tbldailystock_compid_mm_yy
+ * - Current month table: tbldailystock_compid (ALWAYS created for current month operations)
+ * - Archive month tables: tbldailystock_compid_mm_yy (for all months in selected financial year)
+ * - NO summary table (removed as per requirement)
  */
 function createCompanyDailyStockStructure($conn, $company_id, $start_date, $end_date) {
     $tables_created = [];
     $errors = [];
+    
+    error_log("Starting table creation for company ID: $company_id");
+    error_log("Financial Year: $start_date to $end_date");
     
     // Validate financial year dates first
     $fy_data = ['START_DATE' => $start_date, 'END_DATE' => $end_date];
     $validation_errors = validateFinancialYearDates($fy_data);
     
     if (!empty($validation_errors)) {
+        error_log("Financial year validation errors: " . implode(", ", $validation_errors));
         return ['tables' => [], 'errors' => $validation_errors];
     }
     
-    $months = getMonthsInFinancialYear($start_date, $end_date);
-    $current_month_created = false;
+    // Get current month information
+    $current_month = new DateTime();
+    $current_month_formatted = $current_month->format('Y-m');
+    $current_month_name = $current_month->format('F Y');
+    $current_month_days = cal_days_in_month(CAL_GREGORIAN, $current_month->format('m'), $current_month->format('Y'));
     
-    foreach ($months as $month_data) {
-        // Determine table name based on whether it's current month or archive
-        if ($month_data['is_current_month'] && !$current_month_created) {
-            // Current month table: tbldailystock_compid
-            $table_name = "tbldailystock_{$company_id}";
-            $current_month_created = true;
-        } else {
-            // Archive month table: tbldailystock_compid_mm_yy
-            $table_name = "tbldailystock_{$company_id}_{$month_data['month_short']}_{$month_data['year_short']}";
-        }
-        
-        $check_query = "SHOW TABLES LIKE '$table_name'";
-        $check_result = $conn->query($check_query);
-        
-        if ($check_result->num_rows == 0) {
-            $days_in_month = $month_data['days_in_month'];
-            
-            $create_query = "CREATE TABLE $table_name (
-                `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
-                `STK_DATE` date NOT NULL,
-                `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
-                `ITEM_CODE` varchar(20) NOT NULL,
-                `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
-                `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
-            
-            for ($day = 1; $day <= $days_in_month; $day++) {
-                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
-                
-                // Add check to ensure day is within financial year
-                $current_date = $month_data['year'] . '-' . $month_data['month'] . '-' . $day_padded;
-                if (isDateInFinancialYear($current_date, $start_date, $end_date)) {
-                    $create_query .= "
-                `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
-                `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
-                `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
-                `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
-                } else {
-                    // Create columns but mark them as disabled for dates outside FY
-                    $create_query .= "
-                `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
-                `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
-                `DAY_{$day_padded}_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
-                `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',";
-                }
-            }
-            
-            $create_query .= "
-                PRIMARY KEY (`DailyStockID`),
-                UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
-                KEY `idx_item_code` (`ITEM_CODE`),
-                KEY `idx_liq_flag` (`LIQ_FLAG`),
-                KEY `idx_stk_month` (`STK_MONTH`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-            
-            if ($conn->query($create_query)) {
-                $tables_created[] = $table_name;
-            } else {
-                $errors[] = "Failed to create table $table_name: " . $conn->error;
-            }
-        }
+    error_log("Current month: $current_month_name with $current_month_days days");
+    
+    // ===== PART 1: ALWAYS create current month table for ongoing operations =====
+    $current_table_name = "tbldailystock_{$company_id}";
+    
+    error_log("Attempting to create current month table: $current_table_name");
+    
+    // Drop existing table if it exists to ensure clean creation
+    $drop_query = "DROP TABLE IF EXISTS `$current_table_name`";
+    if (!$conn->query($drop_query)) {
+        error_log("Warning: Could not drop table $current_table_name: " . $conn->error);
     }
     
-    // Create monthly summary table
-    $summary_table = "tbldailystock_summary_{$company_id}";
-    $check_summary = $conn->query("SHOW TABLES LIKE '$summary_table'");
+    // Create current month table (without date suffix)
+    $create_current = "CREATE TABLE `$current_table_name` (
+        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+        `STK_DATE` date NOT NULL,
+        `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+        `ITEM_CODE` varchar(20) NOT NULL,
+        `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
     
-    if ($check_summary->num_rows == 0) {
-        $create_summary = "CREATE TABLE $summary_table (
-            `SummaryID` int(11) NOT NULL AUTO_INCREMENT,
+    // Add columns for each day of the current month
+    for ($day = 1; $day <= $current_month_days; $day++) {
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        $create_current .= "
+        `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+    }
+    
+    // Add indexes and constraints
+    $create_current .= "
+        PRIMARY KEY (`DailyStockID`),
+        UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
+        KEY `idx_item_code` (`ITEM_CODE`),
+        KEY `idx_liq_flag` (`LIQ_FLAG`),
+        KEY `idx_stk_month` (`STK_MONTH`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    
+    error_log("Executing CREATE TABLE for current month: $current_table_name");
+    
+    if ($conn->query($create_current)) {
+        $tables_created[] = [
+            'name' => $current_table_name,
+            'type' => 'Current Month',
+            'month' => $current_month_name,
+            'days' => $current_month_days,
+            'current' => true
+        ];
+        
+        error_log("SUCCESS: Created current month table: $current_table_name");
+        
+        // Verify the table was created
+        $verify_query = "SHOW TABLES LIKE '$current_table_name'";
+        $verify_result = $conn->query($verify_query);
+        if ($verify_result->num_rows > 0) {
+            error_log("VERIFIED: Current month table $current_table_name exists in database");
+        } else {
+            $errors[] = "CRITICAL: Current month table $current_table_name was created but not found in verification!";
+            error_log("CRITICAL: Current month table $current_table_name was created but not found in verification!");
+        }
+    } else {
+        $error_msg = "Failed to create current month table $current_table_name: " . $conn->error;
+        $errors[] = "CRITICAL: " . $error_msg;
+        error_log("CRITICAL: " . $error_msg);
+    }
+    
+    // ===== PART 2: Create archive tables for ALL months in the selected financial year =====
+    $fy_months = getMonthsInFinancialYear($start_date, $end_date);
+    
+    error_log("Found " . count($fy_months) . " months in financial year");
+    
+    foreach ($fy_months as $month_data) {
+        // Skip if this month is the current month (already created as current table)
+        $year_month = $month_data['year_month'];
+        if ($year_month === $current_month_formatted) {
+            error_log("Skipping current month {$month_data['month_name']} from archive creation");
+            continue;
+        }
+        
+        // Archive month table: tbldailystock_compid_mm_yy
+        $table_name = "tbldailystock_{$company_id}_{$month_data['month_short']}_{$month_data['year_short']}";
+        
+        error_log("Creating archive table: $table_name for {$month_data['month_name']} with {$month_data['days_in_month']} days");
+        
+        // Drop existing table if it exists to ensure clean creation
+        $drop_query = "DROP TABLE IF EXISTS `$table_name`";
+        $conn->query($drop_query);
+        
+        $days_in_month = $month_data['days_in_month'];
+        
+        // Create archive table for this FY month
+        $create_query = "CREATE TABLE `$table_name` (
+            `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+            `STK_DATE` date NOT NULL,
+            `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
             `ITEM_CODE` varchar(20) NOT NULL,
             `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
-            `STOCK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
-            `OPENING_STOCK` int(11) DEFAULT 0,
-            `TOTAL_PURCHASE` int(11) DEFAULT 0,
-            `TOTAL_SALES` int(11) DEFAULT 0,
-            `CLOSING_STOCK` int(11) DEFAULT 0,
-            `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-            PRIMARY KEY (`SummaryID`),
-            UNIQUE KEY `unique_item_month` (`ITEM_CODE`, `STOCK_MONTH`),
+            `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
+        
+        // Add columns for each day of the month
+        for ($day = 1; $day <= $days_in_month; $day++) {
+            $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $create_query .= "
+            `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
+            `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
+            `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
+            `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+        }
+        
+        // Add indexes and constraints
+        $create_query .= "
+            PRIMARY KEY (`DailyStockID`),
+            UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
+            KEY `idx_item_code` (`ITEM_CODE`),
             KEY `idx_liq_flag` (`LIQ_FLAG`),
-            KEY `idx_stock_month` (`STOCK_MONTH`)
+            KEY `idx_stk_month` (`STK_MONTH`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
         
-        if ($conn->query($create_summary)) {
-            $tables_created[] = $summary_table;
+        if ($conn->query($create_query)) {
+            $tables_created[] = [
+                'name' => $table_name,
+                'type' => 'FY Archive',
+                'month' => $month_data['month_name'],
+                'days' => $days_in_month,
+                'fy_month' => true
+            ];
+            
+            error_log("SUCCESS: Created FY archive table: $table_name for {$month_data['month_name']}");
         } else {
-            $errors[] = "Failed to create summary table $summary_table: " . $conn->error;
+            $error_msg = "Failed to create FY archive table $table_name: " . $conn->error;
+            $errors[] = $error_msg;
+            error_log($error_msg);
         }
     }
+    
+    // ===== PART 3: Summary table REMOVED as per requirement =====
+    // No summary table is created
+    
+    error_log("Table creation completed. Created " . count($tables_created) . " tables with " . count($errors) . " errors");
     
     return ['tables' => $tables_created, 'errors' => $errors];
 }
 
 /**
  * Create or update tblitem_stock structure with FY date tracking
+ * Column naming convention: OPENING_STOCKCOMPID, CURRENT_STOCKCOMPID, MONTHLY_STOCKCOMPID
  */
 function ensureItemStockStructure($conn, $company_id) {
     $errors = [];
@@ -278,7 +344,7 @@ function ensureItemStockStructure($conn, $company_id) {
     $table_check = $conn->query("SHOW TABLES LIKE 'tblitem_stock'");
     
     if ($table_check->num_rows == 0) {
-        // Create the table from scratch
+        // Create the table from scratch if it doesn't exist
         $create_stock = "CREATE TABLE tblitem_stock (
             `StockID` int(11) NOT NULL AUTO_INCREMENT,
             `ITEM_CODE` varchar(20) NOT NULL,
@@ -293,19 +359,22 @@ function ensureItemStockStructure($conn, $company_id) {
         }
     }
     
-    // Add company-specific stock columns
+    // Add company-specific stock columns with correct naming convention
+    // Column names should be: OPENING_STOCKCOMPID, CURRENT_STOCKCOMPID, MONTHLY_STOCKCOMPID
     $company_columns = [
-        "OPENING_STOCK_$company_id" => "int(11) DEFAULT 0",
-        "CURRENT_STOCK_$company_id" => "int(11) DEFAULT 0",
-        "MONTHLY_STOCK_$company_id" => "int(11) DEFAULT 0"
+        "OPENING_STOCK{$company_id}" => "int(11) DEFAULT 0",
+        "CURRENT_STOCK{$company_id}" => "int(11) DEFAULT 0",
+        "MONTHLY_STOCK{$company_id}" => "int(11) DEFAULT 0"
     ];
     
     foreach ($company_columns as $column => $definition) {
         $check_column = $conn->query("SHOW COLUMNS FROM tblitem_stock LIKE '$column'");
         if ($check_column->num_rows == 0) {
-            $alter_sql = "ALTER TABLE tblitem_stock ADD COLUMN $column $definition";
+            $alter_sql = "ALTER TABLE tblitem_stock ADD COLUMN `$column` $definition";
             if (!$conn->query($alter_sql)) {
                 $errors[] = "Failed to add $column column: " . $conn->error;
+            } else {
+                error_log("SUCCESS: Added column $column to tblitem_stock");
             }
         }
     }
@@ -446,7 +515,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $company_id = $insert_company->insert_id;
             $insert_company->close();
             
-            // SECOND: Get financial year details
+            error_log("Company created with ID: $company_id");
+            
+            // SECOND: Add financial year to company_finyear table (new multiple year support)
+            $insert_fy_link = $conn->prepare("INSERT INTO tblcompany_finyear (company_id, finyear_id, is_active) VALUES (?, ?, 1)");
+            $insert_fy_link->bind_param("ii", $company_id, $fin_year_id);
+            
+            if (!$insert_fy_link->execute()) {
+                error_log("Warning: Could not add financial year to tblcompany_finyear: " . $conn->error);
+            }
+            $insert_fy_link->close();
+            
+            // THIRD: Get financial year details
             $fy_query = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ?";
             $fy_stmt = $conn->prepare($fy_query);
             $fy_stmt->bind_param("i", $fin_year_id);
@@ -459,9 +539,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 throw new Exception("Financial year data not found for ID: " . $fin_year_id);
             }
             
-            // THIRD: Create daily stock tables
-            // - Current month: tbldailystock_compid
-            // - Archive months: tbldailystock_compid_mm_yy
+            error_log("Financial year dates: START=" . $fy_data['START_DATE'] . ", END=" . $fy_data['END_DATE']);
+            
+            // FOURTH: Create daily stock tables (NO summary table)
             $stock_structure = createCompanyDailyStockStructure(
                 $conn, 
                 $company_id, 
@@ -469,15 +549,75 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $fy_data['END_DATE']
             );
             
+            // VERIFY current month table was created
+            $current_table_check = "tbldailystock_{$company_id}";
+            $verify_table = $conn->query("SHOW TABLES LIKE '$current_table_check'");
+            
+            if ($verify_table->num_rows == 0) {
+                error_log("CRITICAL: Current month table $current_table_check not found after creation!");
+                
+                // Emergency fallback - try to create just the current month table
+                error_log("EMERGENCY: Attempting direct creation of current month table");
+                
+                $current_month = new DateTime();
+                $current_month_days = cal_days_in_month(CAL_GREGORIAN, $current_month->format('m'), $current_month->format('Y'));
+                
+                $emergency_create = "CREATE TABLE `$current_table_check` (
+                    `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+                    `STK_DATE` date NOT NULL,
+                    `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+                    `ITEM_CODE` varchar(20) NOT NULL,
+                    `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+                    `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
+                
+                for ($day = 1; $day <= $current_month_days; $day++) {
+                    $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                    $emergency_create .= "
+                    `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
+                    `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
+                    `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
+                    `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+                }
+                
+                $emergency_create .= "
+                    PRIMARY KEY (`DailyStockID`),
+                    UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
+                    KEY `idx_item_code` (`ITEM_CODE`),
+                    KEY `idx_liq_flag` (`LIQ_FLAG`),
+                    KEY `idx_stk_month` (`STK_MONTH`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+                
+                if ($conn->query($emergency_create)) {
+                    $stock_structure['tables'][] = [
+                        'name' => $current_table_check,
+                        'type' => 'Current Month (Emergency)',
+                        'month' => $current_month->format('F Y'),
+                        'days' => $current_month_days
+                    ];
+                    error_log("EMERGENCY: Successfully created current month table");
+                    
+                    // Verify again
+                    $verify_again = $conn->query("SHOW TABLES LIKE '$current_table_check'");
+                    if ($verify_again->num_rows > 0) {
+                        error_log("VERIFIED: Current month table exists after emergency creation");
+                    }
+                } else {
+                    $error_msg = "CRITICAL: Could not create current month table even in emergency: " . $conn->error;
+                    $errors[] = $error_msg;
+                    error_log($error_msg);
+                }
+            } else {
+                error_log("VERIFIED: Current month table $current_table_check exists in database");
+            }
+            
             if (!empty($stock_structure['errors'])) {
                 foreach ($stock_structure['errors'] as $stock_error) {
                     error_log("Stock structure error: " . $stock_error);
                     $errors[] = "Warning - Stock table creation issue: " . $stock_error;
                 }
-                // Don't throw exception here - continue with user creation
             }
             
-            // FOURTH: Update tblitem_stock with company-specific columns now that we have company_id
+            // FIFTH: Update tblitem_stock with company-specific columns (correct naming convention)
             $update_stock_errors = ensureItemStockStructure($conn, $company_id);
             if (!empty($update_stock_errors)) {
                 foreach ($update_stock_errors as $stock_error) {
@@ -486,7 +626,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             
-            // FIFTH: Insert admin user
+            // SIXTH: Insert admin user
             $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
             $is_admin = 1;
             $created_by = 1;
@@ -508,13 +648,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $success_message = "Company and admin user created successfully!";
             
             if (!empty($stock_structure['tables'])) {
-                $success_message .= " Created " . count($stock_structure['tables']) . " daily stock tables for financial year ";
-                $success_message .= "from " . date('d-m-Y', strtotime($fy_data['START_DATE'])) . 
-                                  " to " . date('d-m-Y', strtotime($fy_data['END_DATE'])) . ".<br>";
+                $tables_count = count($stock_structure['tables']);
+                $success_message .= " Created $tables_count daily stock tables.<br>";
                 $success_message .= "<strong>Table Structure:</strong><br>";
-                $success_message .= "• Current Month: <strong>tbldailystock_{$company_id}</strong><br>";
-                $success_message .= "• Archive Months: <strong>tbldailystock_{$company_id}_mm_yy</strong> (e.g., tbldailystock_{$company_id}_03_26)";
+                
+                // Separate tables by type
+                $current_table = null;
+                $fy_archive_tables = [];
+                
+                foreach ($stock_structure['tables'] as $table) {
+                    if ($table['type'] === 'Current Month' || $table['type'] === 'Current Month (Emergency)') {
+                        $current_table = $table;
+                    } elseif ($table['type'] === 'FY Archive') {
+                        $fy_archive_tables[] = $table;
+                    }
+                }
+                
+                // Show current month table (ALWAYS created)
+                if ($current_table) {
+                    $success_message .= "• <span style='color: #38A169; font-weight: bold;'>CURRENT MONTH TABLE (Ongoing Operations):</span><br>";
+                    $success_message .= "  <strong>{$current_table['name']}</strong> - {$current_table['month']} ({$current_table['days']} days)<br>";
+                } else {
+                    $success_message .= "• <span style='color: #E53E3E; font-weight: bold;'>ERROR: Current month table was not created!</span><br>";
+                }
+                
+                // Show FY archive tables
+                if (!empty($fy_archive_tables)) {
+                    $fy_label = date('Y', strtotime($fy_data['START_DATE'])) . "-" . date('y', strtotime($fy_data['END_DATE']));
+                    $success_message .= "• <span style='color: #2B6CB0; font-weight: bold;'>FINANCIAL YEAR ARCHIVE TABLES (FY {$fy_label}):</span><br>";
+                    
+                    // Sort archive tables by date
+                    usort($fy_archive_tables, function($a, $b) {
+                        return strtotime($a['month']) - strtotime($b['month']);
+                    });
+                    
+                    foreach ($fy_archive_tables as $table) {
+                        $success_message .= "  - <strong>{$table['name']}</strong> - {$table['month']} ({$table['days']} days)<br>";
+                    }
+                    $success_message .= "  Total: " . count($fy_archive_tables) . " archive tables<br>";
+                }
             }
+            
+            // Add information about tblitem_stock columns
+            $success_message .= "<br><strong>Item Stock Structure:</strong><br>";
+            $success_message .= "• Added columns to tblitem_stock:<br>";
+            $success_message .= "  - <strong>OPENING_STOCK{$company_id}</strong> (Opening Stock for Company {$company_id})<br>";
+            $success_message .= "  - <strong>CURRENT_STOCK{$company_id}</strong> (Current Stock for Company {$company_id})<br>";
+            $success_message .= "  - <strong>MONTHLY_STOCK{$company_id}</strong> (Monthly Stock for Company {$company_id})<br>";
             
             // Store success message in session for display after redirect
             $_SESSION['company_creation_success'] = $success_message;
@@ -534,6 +714,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } catch (Exception $e) {
             $conn->rollback();
             $errors[] = "Error: " . $e->getMessage();
+            error_log("Transaction error: " . $e->getMessage());
         }
     }
 }
@@ -870,7 +1051,7 @@ ob_end_flush();
         <div class="card">
             <div class="card-header">
                 <h2><i class="fas fa-building"></i> Create New Company - Financial Year Enforcement</h2>
-                <p style="margin-top: 10px; opacity: 0.9;">All operations will be bound to selected financial year dates</p>
+                <p style="margin-top: 10px; opacity: 0.9;">Current month table always created for ongoing operations</p>
             </div>
             <div class="card-body">
                 <?php
@@ -905,34 +1086,45 @@ ob_end_flush();
                 ?>
                 
                 <div class="info-box">
-                    <h4><i class="fas fa-info-circle"></i> Company Creation Process - Financial Year Enforcement</h4>
+                    <h4><i class="fas fa-info-circle"></i> Company Creation Process - Enhanced Table Structure</h4>
                     <ul>
                         <li><strong>Company record created</strong> in <strong>tblcompany</strong> with selected Financial Year ID</li>
                         <li><strong>Financial Year Dates:</strong> All operations strictly bound to selected FY start and end dates</li>
-                        <li><strong>Daily Stock Tables:</strong> 
+                        <li><strong>Current Month Table (ALWAYS created):</strong> 
                             <ul style="margin-top: 5px;">
-                                <li><span class="current-month-table">Current Month:</span> <strong>tbldailystock_{company_id}</strong></li>
-                                <li><span class="archive-table">Archive Months:</span> <strong>tbldailystock_{company_id}_mm_yy</strong></li>
+                                <li><span class="current-month-table">Current Month:</span> <strong>tbldailystock_{company_id}</strong> - for ongoing stock operations</li>
+                                <li>Created with columns for ALL days in current month (<?php echo date('F Y'); ?> has <?php echo cal_days_in_month(CAL_GREGORIAN, date('m'), date('Y')); ?> days)</li>
                             </ul>
                         </li>
-                        <li><strong>Monthly Summary:</strong> Creates <strong>tbldailystock_summary_{company_id}</strong> for month-wise summaries</li>
-                        <li><strong>Item Stock:</strong> Updates <strong>tblitem_stock</strong> with company-specific stock columns</li>
+                        <li><strong>Financial Year Archive Tables:</strong> 
+                            <ul style="margin-top: 5px;">
+                                <li><span class="archive-table">Archive Months:</span> <strong>tbldailystock_{company_id}_mm_yy</strong> - one table per month in selected FY</li>
+                                <li>Each table has columns for ALL days in that specific month (28, 30, or 31 days)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Item Stock Columns (Correct Naming Convention):</strong> 
+                            <ul style="margin-top: 5px;">
+                                <li><strong>OPENING_STOCK{company_id}</strong> - Opening stock for the company</li>
+                                <li><strong>CURRENT_STOCK{company_id}</strong> - Current stock for the company</li>
+                                <li><strong>MONTHLY_STOCK{company_id}</strong> - Monthly stock total for the company</li>
+                            </ul>
+                        </li>
                         <li><strong>Admin Account:</strong> Creates admin user account for the company</li>
-                        <li><strong>Date Validation:</strong> All future transactions will be validated against FY dates</li>
                     </ul>
                 </div>
 
                 <div class="table-format-example">
-                    <strong><i class="fas fa-database"></i> Table Structure Example (Company ID: 1):</strong>
+                    <strong><i class="fas fa-database"></i> Example Table Structure (Company ID: 3, FY: 2020-21):</strong>
                     <ul>
-                        <li><span class="current-month-table">✓ Current Month (March 2026):</span> <strong>tbldailystock_1</strong></li>
-                        <li><span class="archive-table">📦 Archive (February 2026):</span> <strong>tbldailystock_1_02_26</strong></li>
-                        <li><span class="archive-table">📦 Archive (January 2026):</span> <strong>tbldailystock_1_01_26</strong></li>
-                        <li><span class="archive-table">📦 Archive (December 2025):</span> <strong>tbldailystock_1_12_25</strong></li>
+                        <li><span class="current-month-table">✓ CURRENT MONTH (<?php echo date('F Y'); ?>):</span> <strong>tbldailystock_3</strong> (<?php echo cal_days_in_month(CAL_GREGORIAN, date('m'), date('Y')); ?> days)</li>
+                        <li><span class="archive-table">📦 FY Archive (April 2020):</span> <strong>tbldailystock_3_04_20</strong> (30 days)</li>
+                        <li><span class="archive-table">📦 FY Archive (May 2020):</span> <strong>tbldailystock_3_05_20</strong> (31 days)</li>
+                        <li><span class="archive-table">📦 FY Archive (June 2020):</span> <strong>tbldailystock_3_06_20</strong> (30 days)</li>
+                        <li><span class="archive-table">📦 FY Archive (February 2021):</span> <strong>tbldailystock_3_02_21</strong> (28 days)</li>
+                        <li><span class="archive-table">📦 FY Archive (March 2021):</span> <strong>tbldailystock_3_03_21</strong> (31 days)</li>
                     </ul>
                     <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">
-                        <i class="fas fa-info-circle"></i> The current month table (without date suffix) is used for active transactions. 
-                        When month ends, data is archived to month-specific table.
+                        <i class="fas fa-info-circle"></i> <strong>Item Stock Columns:</strong> OPENING_STOCK3, CURRENT_STOCK3, MONTHLY_STOCK3 will be added to tblitem_stock
                     </p>
                 </div>
                 
@@ -1111,7 +1303,6 @@ ob_end_flush();
                 const startRaw = selectedOption.getAttribute('data-start-raw');
                 const endRaw = selectedOption.getAttribute('data-end-raw');
                 const isActive = selectedOption.getAttribute('data-active') === '1';
-                const optionText = selectedOption.text;
                 
                 startDisplay.value = startDate;
                 endDisplay.value = endDate;
@@ -1218,8 +1409,19 @@ ob_end_flush();
                     // Confirm company creation with financial year dates
                     const startDate = document.getElementById('fy_start_display').value;
                     const endDate = document.getElementById('fy_end_display').value;
+                    const currentMonth = '<?php echo date('F Y'); ?>';
+                    const currentDays = <?php echo cal_days_in_month(CAL_GREGORIAN, date('m'), date('Y')); ?>;
                     
-                    if (!confirm(`Create company with Financial Year from ${startDate} to ${endDate}?\n\nTable Structure:\n• Current Month: tbldailystock_XX\n• Archive Months: tbldailystock_XX_mm_yy`)) {
+                    if (!confirm(`Create company with:\n\n` +
+                        `Financial Year: ${startDate} to ${endDate}\n\n` +
+                        `Table Structure:\n` +
+                        `• CURRENT MONTH (${currentMonth}, ${currentDays} days): tbldailystock_XX\n` +
+                        `• FY Archive Tables: tbldailystock_XX_mm_yy (one per month in FY)\n\n` +
+                        `Item Stock Columns:\n` +
+                        `• OPENING_STOCKXX\n` +
+                        `• CURRENT_STOCKXX\n` +
+                        `• MONTHLY_STOCKXX\n\n` +
+                        `Proceed with creation?`)) {
                         e.preventDefault();
                         return false;
                     }

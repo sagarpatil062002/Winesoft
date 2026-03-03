@@ -16,9 +16,13 @@ include_once "../config/db.php"; // MySQLi connection in $conn
 // Get company ID from session
 $compID = $_SESSION['CompID'];
 
-// Default values - set to current month range
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+// Default values - set to financial year range from session
+$fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-01');
+$fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
+
+// Default to financial year start/end
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : $fin_year_start;
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : min($fin_year_end, date('Y-m-d'));
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : 'all';
 
 // Fetch company name
@@ -261,11 +265,17 @@ if (isset($_GET['generate'])) {
             <div class="row mb-3">
               <div class="col-md-3">
                 <label class="form-label">Start Date:</label>
-                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+                <input type="date" name="start_date" class="form-control" 
+                     value="<?= htmlspecialchars($start_date) ?>"
+                     min="<?= htmlspecialchars($fin_year_start) ?>"
+                     max="<?= htmlspecialchars($fin_year_end) ?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">End Date:</label>
-                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+                <input type="date" name="end_date" class="form-control" 
+                     value="<?= htmlspecialchars($end_date) ?>"
+                     min="<?= htmlspecialchars($fin_year_start) ?>"
+                     max="<?= htmlspecialchars($fin_year_end) ?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">User:</label>

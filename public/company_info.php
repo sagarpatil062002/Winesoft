@@ -27,6 +27,142 @@ $result = $stmt->get_result();
 $company = $result->fetch_assoc();
 $stmt->close();
 
+// Fetch current company's financial years from the new table
+$company_fy_list = [];
+$fy_query = "
+    SELECT fy.ID, fy.START_DATE, fy.END_DATE, cf.is_active 
+    FROM tblfinyear fy
+    INNER JOIN tblcompany_finyear cf ON fy.ID = cf.finyear_id
+    WHERE cf.company_id = $comp_id
+    ORDER BY fy.START_DATE DESC
+";
+$fy_result = $conn->query($fy_query);
+if ($fy_result) {
+    while ($row = $fy_result->fetch_assoc()) {
+        $company_fy_list[$row['ID']] = $row;
+    }
+}
+
+// If no years in new table, fall back to old field for backward compatibility
+if (empty($company_fy_list) && !empty($company['FIN_YEAR'])) {
+    $old_fy_query = "SELECT ID, START_DATE, END_DATE FROM tblfinyear WHERE ID = " . $company['FIN_YEAR'];
+    $old_fy_result = $conn->query($old_fy_query);
+    if ($old_fy_result && $old_fy_row = $old_fy_result->fetch_assoc()) {
+        $company_fy_list[$old_fy_row['ID']] = $old_fy_row;
+        $company_fy_list[$old_fy_row['ID']]['is_active'] = 1;
+    }
+}
+
+// Handle adding new financial year to company
+if (isset($_POST['add_company_fy'])) {
+    $new_fy_id = intval($_POST['new_fin_year']);
+    
+    if (empty($new_fy_id)) {
+        $error_msg = "Please select a financial year.";
+    } else {
+        // Check if this FY already exists for the company
+        $check_query = "SELECT id FROM tblcompany_finyear WHERE company_id = ? AND finyear_id = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $check_stmt->bind_param("ii", $comp_id, $new_fy_id);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows > 0) {
+            $error_msg = "This financial year is already associated with the company.";
+        } else {
+            // Insert new FY association
+            $insert_query = "INSERT INTO tblcompany_finyear (company_id, finyear_id, is_active) VALUES (?, ?, 1)";
+            $insert_stmt = $conn->prepare($insert_query);
+            $insert_stmt->bind_param("ii", $comp_id, $new_fy_id);
+            
+            if ($insert_stmt->execute()) {
+                $success_msg = "Financial year added successfully.";
+                // Refresh the list
+                $fy_result = $conn->query($fy_query);
+                $company_fy_list = [];
+                if ($fy_result) {
+                    while ($row = $fy_result->fetch_assoc()) {
+                        $company_fy_list[$row['ID']] = $row;
+                    }
+                }
+            } else {
+                $error_msg = "Error adding financial year: " . $conn->error;
+            }
+            $insert_stmt->close();
+        }
+        $check_stmt->close();
+    }
+}
+
+// Handle toggling financial year active status
+if (isset($_GET['toggle_fy'])) {
+    $toggle_fy_id = intval($_GET['toggle_fy']);
+    
+    if (isset($company_fy_list[$toggle_fy_id])) {
+        $current_status = $company_fy_list[$toggle_fy_id]['is_active'];
+        $new_status = $current_status ? 0 : 1;
+        
+        $toggle_query = "UPDATE tblcompany_finyear SET is_active = ? WHERE company_id = ? AND finyear_id = ?";
+        $toggle_stmt = $conn->prepare($toggle_query);
+        $toggle_stmt->bind_param("iii", $new_status, $comp_id, $toggle_fy_id);
+        
+        if ($toggle_stmt->execute()) {
+            $success_msg = "Financial year status updated.";
+            // Refresh the list
+            $fy_result = $conn->query($fy_query);
+            $company_fy_list = [];
+            if ($fy_result) {
+                while ($row = $fy_result->fetch_assoc()) {
+                    $company_fy_list[$row['ID']] = $row;
+                }
+            }
+        }
+        $toggle_stmt->close();
+    }
+}
+
+// Handle removing financial year from company
+if (isset($_GET['remove_fy'])) {
+    $remove_fy_id = intval($_GET['remove_fy']);
+    
+    // Don't allow removing the only financial year
+    if (count($company_fy_list) > 1) {
+        $remove_query = "DELETE FROM tblcompany_finyear WHERE company_id = ? AND finyear_id = ?";
+        $remove_stmt = $conn->prepare($remove_query);
+        $remove_stmt->bind_param("ii", $comp_id, $remove_fy_id);
+        
+        if ($remove_stmt->execute()) {
+            $success_msg = "Financial year removed from company.";
+            // Refresh the list
+            $fy_result = $conn->query($fy_query);
+            $company_fy_list = [];
+            if ($fy_result) {
+                while ($row = $fy_result->fetch_assoc()) {
+                    $company_fy_list[$row['ID']] = $row;
+                }
+            }
+        }
+        $remove_stmt->close();
+    } else {
+        $error_msg = "Cannot remove the only financial year. At least one financial year is required.";
+    }
+}
+
+// Fetch all available financial years for dropdown (exclude already added)
+$all_fin_years = [];
+$all_fy_query = "SELECT ID, START_DATE, END_DATE FROM tblfinyear ORDER BY START_DATE DESC";
+$all_fy_result = $conn->query($all_fy_query);
+if ($all_fy_result) {
+    while ($row = $all_fy_result->fetch_assoc()) {
+        // Only include years not already added to company
+        if (!isset($company_fy_list[$row['ID']])) {
+            $start_year = date('Y', strtotime($row['START_DATE']));
+            $end_year = date('Y', strtotime($row['END_DATE']));
+            $all_fin_years[$row['ID']] = $start_year . '-' . $end_year;
+        }
+    }
+}
+
 // Fetch financial years for dropdown
 $fin_years = [];
 $fin_query = "SELECT ID, START_DATE, END_DATE FROM tblfinyear ORDER BY START_DATE DESC";
@@ -284,6 +420,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_company'])) {
         
         if ($stmt->execute()) {
             $success_msg = "Company information updated successfully.";
+            
+            // Also update the tblcompany_finyear table to add this year if it doesn't exist
+            $check_fy_query = "SELECT id FROM tblcompany_finyear WHERE company_id = ? AND finyear_id = ?";
+            $check_fy_stmt = $conn->prepare($check_fy_query);
+            $check_fy_stmt->bind_param("ii", $comp_id, $fin_year);
+            $check_fy_stmt->execute();
+            $check_fy_result = $check_fy_stmt->get_result();
+            
+            if ($check_fy_result->num_rows == 0) {
+                // Add the selected FY to company_finyear table
+                $add_fy_query = "INSERT INTO tblcompany_finyear (company_id, finyear_id, is_active) VALUES (?, ?, 1)";
+                $add_fy_stmt = $conn->prepare($add_fy_query);
+                $add_fy_stmt->bind_param("ii", $comp_id, $fin_year);
+                $add_fy_stmt->execute();
+                $add_fy_stmt->close();
+            }
+            $check_fy_stmt->close();
+            
             // Refresh company data
             $query = "SELECT * FROM tblcompany WHERE CompID = ?";
             $stmt2 = $conn->prepare($query);
@@ -292,6 +446,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_company'])) {
             $result = $stmt2->get_result();
             $company = $result->fetch_assoc();
             $stmt2->close();
+            
+            // Refresh the financial years list
+            $fy_result = $conn->query($fy_query);
+            $company_fy_list = [];
+            if ($fy_result) {
+                while ($row = $fy_result->fetch_assoc()) {
+                    $company_fy_list[$row['ID']] = $row;
+                }
+            }
         } else {
             $error_msg = "Error updating company information: " . $conn->error;
         }
@@ -597,6 +760,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_company'])) {
           </div>
         </div>
       </form>
+
+      <!-- Financial Years Management Section -->
+      <div class="card mt-4">
+        <div class="card-header" style="background-color: #6f42c1;">
+          <i class="fas fa-calendar-alt me-2"></i>Manage Financial Years
+        </div>
+        <div class="card-body">
+          <p class="text-muted">
+            <i class="fas fa-info-circle"></i> 
+            Add multiple financial years to allow users to work on different years during login.
+            Users can only select active financial years when logging in.
+          </p>
+          
+          <!-- Add New Financial Year Form -->
+          <?php if (!empty($all_fin_years)): ?>
+          <form method="POST" class="mb-4">
+            <div class="row align-items-end">
+              <div class="col-md-6">
+                <label for="new_fin_year" class="form-label">Add Financial Year</label>
+                <select class="form-select" id="new_fin_year" name="new_fin_year">
+                  <option value="">-- Select Financial Year --</option>
+                  <?php foreach ($all_fin_years as $id => $year): ?>
+                    <option value="<?= $id ?>"><?= htmlspecialchars($year) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <button type="submit" name="add_company_fy" class="btn btn-primary">
+                  <i class="fas fa-plus-circle"></i> Add Year
+                </button>
+              </div>
+            </div>
+          </form>
+          <?php else: ?>
+          <div class="alert alert-info">
+            <i class="fas fa-check-circle"></i> All available financial years have been added to this company.
+          </div>
+          <?php endif; ?>
+          
+          <!-- Current Financial Years List -->
+          <h6 class="mt-4 mb-3"><i class="fas fa-list"></i> Company Financial Years (<?= count($company_fy_list) ?>)</h6>
+          
+          <?php if (empty($company_fy_list)): ?>
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i> No financial years associated with this company.
+              Please add at least one financial year.
+            </div>
+          <?php else: ?>
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Financial Year</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($company_fy_list as $fy_id => $fy_data): ?>
+                    <?php 
+                      $start_year = date('Y', strtotime($fy_data['START_DATE']));
+                      $end_year = date('Y', strtotime($fy_data['END_DATE']));
+                      $fy_display = $start_year . '-' . $end_year;
+                    ?>
+                    <tr>
+                      <td><strong><?= htmlspecialchars($fy_display) ?></strong></td>
+                      <td><?= date('d-m-Y', strtotime($fy_data['START_DATE'])) ?></td>
+                      <td><?= date('d-m-Y', strtotime($fy_data['END_DATE'])) ?></td>
+                      <td>
+                        <?php if ($fy_data['is_active']): ?>
+                          <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                        <?php else: ?>
+                          <span class="badge bg-secondary"><i class="fas fa-times"></i> Inactive</span>
+                        <?php endif; ?>
+                      </td>
+                      <td>
+                        <?php if ($fy_data['is_active']): ?>
+                          <a href="?toggle_fy=<?= $fy_id ?>" class="btn btn-sm btn-warning" 
+                             title="Deactivate" onclick="return confirm('Deactivate this financial year? Users will not be able to select it during login.')">
+                            <i class="fas fa-toggle-on"></i> Deactivate
+                          </a>
+                        <?php else: ?>
+                          <a href="?toggle_fy=<?= $fy_id ?>" class="btn btn-sm btn-success" 
+                             title="Activate">
+                            <i class="fas fa-toggle-off"></i> Activate
+                          </a>
+                        <?php endif; ?>
+                        
+                        <?php if (count($company_fy_list) > 1): ?>
+                          <a href="?remove_fy=<?= $fy_id ?>" class="btn btn-sm btn-danger" 
+                             title="Remove" onclick="return confirm('Remove this financial year from company? This cannot be undone.')">
+                            <i class="fas fa-trash"></i> Remove
+                          </a>
+                        <?php else: ?>
+                          <button class="btn btn-sm btn-secondary" disabled title="Cannot remove the only year">
+                            <i class="fas fa-trash"></i> Remove
+                          </button>
+                        <?php endif; ?>
+                      </td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
 
       <!-- Users Management Section -->
       <div class="card mt-4">

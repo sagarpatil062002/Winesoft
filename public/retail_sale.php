@@ -25,12 +25,22 @@ if (isset($_GET['success'])) {
 // Default view selection - show all records initially
 $view_type = isset($_GET['view_type']) ? $_GET['view_type'] : 'all';
 
-// Date selection (default to today)
-$Closing_Stock = isset($_GET['Closing_Stock']) ? $_GET['Closing_Stock'] : date('Y-m-d');
+// Date selection (default to today but within financial year)
+$fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
+$fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
+$Closing_Stock = isset($_GET['Closing_Stock']) ? $_GET['Closing_Stock'] : min($fin_year_end, date('Y-m-d'));
 
-// Date range selection (default to current month)
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-01');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-t');
+// Date range selection (default to financial year range)
+if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
+    $start_date = $fin_year_start;
+    $end_date = min($fin_year_end, date('Y-m-d'));
+} else {
+    $start_date = $_GET['start_date'];
+    $end_date = $_GET['end_date'];
+    // Validate dates are within financial year
+    if ($start_date < $fin_year_start) $start_date = $fin_year_start;
+    if ($end_date > $fin_year_end) $end_date = $fin_year_end;
+}
 
 // Fetch sales records based on selected view
 if ($view_type === 'date') {
@@ -231,7 +241,9 @@ if (!file_exists('../temp_exports')) {
                 <label class="form-label">Sale Date</label>
                 <div class="input-group">
                   <input type="date" name="Closing_Stock" class="form-control" 
-                         value="<?= htmlspecialchars($Closing_Stock); ?>" required>
+                         value="<?= htmlspecialchars($Closing_Stock); ?>"
+                         min="<?= htmlspecialchars($fin_year_start); ?>"
+                         max="<?= htmlspecialchars($fin_year_end); ?>" required>
                   <button type="submit" class="btn btn-primary">Go</button>
                 </div>
               </form>
@@ -243,12 +255,16 @@ if (!file_exists('../temp_exports')) {
                 <div class="col-md-4">
                   <label class="form-label">Start Date</label>
                   <input type="date" name="start_date" class="form-control" 
-                         value="<?= htmlspecialchars($start_date); ?>" required>
+                         value="<?= htmlspecialchars($start_date); ?>"
+                         min="<?= htmlspecialchars($fin_year_start); ?>"
+                         max="<?= htmlspecialchars($fin_year_end); ?>" required>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">End Date</label>
                   <input type="date" name="end_date" class="form-control" 
-                         value="<?= htmlspecialchars($end_date); ?>" required>
+                         value="<?= htmlspecialchars($end_date); ?>"
+                         min="<?= htmlspecialchars($fin_year_start); ?>"
+                         max="<?= htmlspecialchars($fin_year_end); ?>" required>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">&nbsp;</label>
@@ -290,7 +306,9 @@ if (!file_exists('../temp_exports')) {
                 <div class="col-md-6">
                   <label class="form-label fw-semibold">Delete Bills by Date</label>
                   <input type="date" name="delete_date" class="form-control" 
-                         value="<?= htmlspecialchars($Closing_Stock); ?>">
+                         value="<?= htmlspecialchars($Closing_Stock); ?>"
+                         min="<?= htmlspecialchars($fin_year_start); ?>"
+                         max="<?= htmlspecialchars($fin_year_end); ?>">
                 </div>
                 <div class="col-md-6 d-flex align-items-end">
                   <button type="button" class="btn btn-danger w-100" id="deleteByDateBtn">
@@ -540,12 +558,16 @@ if (!file_exists('../temp_exports')) {
                             <div class="col-md-6">
                                 <label class="form-label">Start Date</label>
                                 <input type="date" name="export_start_date" class="form-control"
-                                       value="<?= htmlspecialchars($start_date) ?>">
+                                       value="<?= htmlspecialchars($start_date) ?>"
+                                       min="<?= htmlspecialchars($fin_year_start); ?>"
+                                       max="<?= htmlspecialchars($fin_year_end); ?>">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">End Date</label>
                                 <input type="date" name="export_end_date" class="form-control"
-                                       value="<?= htmlspecialchars($end_date) ?>">
+                                       value="<?= htmlspecialchars($end_date) ?>"
+                                       min="<?= htmlspecialchars($fin_year_start); ?>"
+                                       max="<?= htmlspecialchars($fin_year_end); ?>">
                             </div>
                         </div>
                     </div>

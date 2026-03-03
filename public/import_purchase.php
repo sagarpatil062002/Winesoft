@@ -640,11 +640,24 @@ function updateSubsequentDaysInTable($conn, $table, $monthYear, $itemCode, $purc
 }
 
 // Function to continue cascading from archived month to current month
-function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate) {
-    debugLog("Continuing cascading to current month", [
+function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, $fy_end_date = null) {
+    // Determine the correct end date based on whether it's a previous FY or current FY
+    // If fy_end_date is provided as null or equals purchase date, calculate based on purchase date
+    if ($fy_end_date === null || $fy_end_date === $purchaseDate) {
+        // Check if purchase is in previous financial year
+        if (isPreviousFinancialYear($purchaseDate)) {
+            $fy_end_date = getFinancialYearEndDate($purchaseDate);
+        } else {
+            // For current year, use today's date
+            $fy_end_date = date('Y-m-d');
+        }
+    }
+    
+    debugLog("Continuing cascading to FY end", [
         'comp_id' => $comp_id,
         'itemCode' => $itemCode,
-        'purchaseDate' => $purchaseDate
+        'purchaseDate' => $purchaseDate,
+        'fy_end_date' => $fy_end_date
     ]);
     
     $purchaseDay = date('j', strtotime($purchaseDate));
@@ -654,7 +667,26 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
     $currentMonth = date('n');
     $currentYear = date('Y');
     
-    // If purchase is in current month, cascading has already been handled
+    // Calculate the end month/year based on financial year
+    $fyEndMonth = (int)date('n', strtotime($fy_end_date));
+    $fyEndYear = (int)date('Y', strtotime($fy_end_date));
+    
+    // Get current date components for comparison
+    $currentDay = (int)date('j');
+    $currentMonth = (int)date('n');
+    $currentYear = (int)date('Y');
+    
+    debugLog("FY end info vs current date", [
+        'fyEndMonth' => $fyEndMonth,
+        'fyEndYear' => $fyEndYear,
+        'currentMonth' => $currentMonth,
+        'currentYear' => $currentYear,
+        'purchaseMonth' => $purchaseMonth,
+        'purchaseYear' => $purchaseYear
+    ]);
+    
+    // If purchase is in current month and year, cascading has already been handled in that month's table
+    // For previous months in current FY, we need to cascade
     if ($purchaseMonth == $currentMonth && $purchaseYear == $currentYear) {
         debugLog("Purchase is in current month, cascading already handled");
         return;
@@ -670,11 +702,13 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
     
     debugLog("Starting cascading from month", [
         'startMonth' => $startMonth,
-        'startYear' => $startYear
+        'startYear' => $startYear,
+        'fyEndMonth' => $fyEndMonth,
+        'fyEndYear' => $fyEndYear
     ]);
     
-    // Loop through months from purchase month+1 to current month
-    while (($startYear < $currentYear) || ($startYear == $currentYear && $startMonth <= $currentMonth)) {
+    // Loop through months from purchase month+1 to end of financial year
+    while (($startYear < $fyEndYear) || ($startYear == $fyEndYear && $startMonth <= $fyEndMonth)) {
         $month_2digit = str_pad($startMonth, 2, '0', STR_PAD_LEFT);
         $year_2digit = substr($startYear, -2);
         $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
@@ -772,8 +806,19 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
         }
     }
     
-    // If we've reached current month, ensure current month table is also updated
-    if ($currentMonth != $purchaseMonth || $currentYear != $purchaseYear) {
+    // If we've reached end of financial year, ensure that month is also updated
+    // (only if financial year end is before current month/year)
+    if (($fyEndYear < $currentYear) || ($fyEndYear == $currentYear && $fyEndMonth < $currentMonth)) {
+        // We need to update up to fy end month, not current month
+        $cascadeEndMonth = $fyEndMonth;
+        $cascadeEndYear = $fyEndYear;
+    } else {
+        // Financial year hasn't ended yet, use current month
+        $cascadeEndMonth = $currentMonth;
+        $cascadeEndYear = $currentYear;
+    }
+    
+    if ($cascadeEndMonth != $purchaseMonth || $cascadeEndYear != $purchaseYear) {
         $dailyStockTable = "tbldailystock_" . $comp_id;
         $currentMonthYear = date('Y-m');
         
@@ -859,7 +904,7 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
         }
     }
     
-    debugLog("Cascading completed up to current date");
+    debugLog("Cascading completed up to financial year end: " . $fy_end_date);
 }
 
 // Function to update item stock
@@ -924,8 +969,8 @@ function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn)
         // Update archived month data with cascading
         updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
         
-        // Continue cascading to current month
-        continueCascadingToCurrentMonth($conn, $companyId, $itemCode, $purchaseDate);
+        // Continue cascading - function will determine correct end date
+        continueCascadingToCurrentMonth($conn, $companyId, $itemCode, $purchaseDate, null);
     } else {
         debugLog("Month is current, updating current table with cascading");
         // Update current month data with cascading

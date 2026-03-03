@@ -343,6 +343,13 @@ function tableHasDayColumns($conn, $table_name, $day) {
             $salesResult->num_rows > 0 && $closingResult->num_rows > 0);
 }
 
+// Check if LIQ_FLAG column exists in a table
+function tableHasLiqFlag($conn, $table_name) {
+    $checkQuery = "SHOW COLUMNS FROM $table_name LIKE 'LIQ_FLAG'";
+    $result = $conn->query($checkQuery);
+    return ($result->num_rows > 0);
+}
+
 // Fetch item master data with size information - USING NEW HIERARCHY FIELDS
 $items = [];
 if (!empty($allowed_classes)) {
@@ -455,14 +462,27 @@ foreach ($tables_needed as $table_name => $table_info) {
                 continue;
             }
             
-            // Fetch all stock data for this month and day
-            $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                          DAY_{$day}_OPEN as opening, 
-                          DAY_{$day}_PURCHASE as purchase, 
-                          DAY_{$day}_SALES as sales, 
-                          DAY_{$day}_CLOSING as closing 
-                          FROM $table_name 
-                          WHERE STK_MONTH = ?";
+            // Check if LIQ_FLAG column exists in this table
+            $hasLiqFlag = tableHasLiqFlag($conn, $table_name);
+            
+            // Build query conditionally based on LIQ_FLAG column existence
+            if ($hasLiqFlag) {
+                $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                              DAY_{$day}_OPEN as opening, 
+                              DAY_{$day}_PURCHASE as purchase, 
+                              DAY_{$day}_SALES as sales, 
+                              DAY_{$day}_CLOSING as closing 
+                              FROM $table_name 
+                              WHERE STK_MONTH = ?";
+            } else {
+                $stockQuery = "SELECT ITEM_CODE,
+                              DAY_{$day}_OPEN as opening, 
+                              DAY_{$day}_PURCHASE as purchase, 
+                              DAY_{$day}_SALES as sales, 
+                              DAY_{$day}_CLOSING as closing 
+                              FROM $table_name 
+                              WHERE STK_MONTH = ?";
+            }
             
             $stockStmt = $conn->prepare($stockQuery);
             $stockStmt->bind_param("s", $month);
@@ -475,13 +495,16 @@ foreach ($tables_needed as $table_name => $table_info) {
                 // Skip if item not found in master or not allowed by license
                 if (!isset($items[$item_code])) continue;
                 
+                // Get LIQ_FLAG from stock row if available, otherwise use from item master
+                $stock_liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : $items[$item_code]['liq_flag'];
+                
                 // Initialize item data if not exists
                 if (!isset($cumulative_stock_data[$item_code])) {
                     $cumulative_stock_data[$item_code] = [
                         'purchase' => 0,
                         'sales' => 0,
                         'closing' => 0,
-                        'liq_flag' => $row['LIQ_FLAG'],
+                        'liq_flag' => $stock_liq_flag,
                         'last_date' => $current_date
                     ];
                 }
@@ -502,7 +525,7 @@ foreach ($tables_needed as $table_name => $table_info) {
                 
                 // Update LIQ_FLAG if not set
                 if (empty($cumulative_stock_data[$item_code]['liq_flag'])) {
-                    $cumulative_stock_data[$item_code]['liq_flag'] = $row['LIQ_FLAG'];
+                    $cumulative_stock_data[$item_code]['liq_flag'] = $stock_liq_flag;
                 }
                 
                 // Store TP Nos ONLY if there was a purchase on this date

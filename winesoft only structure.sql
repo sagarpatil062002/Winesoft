@@ -1,0 +1,3818 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Mar 02, 2026 at 02:06 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `winesoft`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `license_types`
+--
+
+CREATE TABLE `license_types` (
+  `id` int(11) NOT NULL,
+  `license_code` varchar(20) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblbalcrdf`
+--
+
+CREATE TABLE `tblbalcrdf` (
+  `ID` int(11) NOT NULL,
+  `BCDATE` datetime NOT NULL,
+  `BCAMOUNT` decimal(15,2) NOT NULL,
+  `CompID` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblbreakages`
+--
+
+CREATE TABLE `tblbreakages` (
+  `BRK_No` bigint(20) NOT NULL,
+  `BRK_Date` datetime(3) DEFAULT NULL,
+  `Code` char(20) DEFAULT NULL,
+  `Item_Desc` varchar(45) DEFAULT NULL,
+  `Rate` decimal(18,2) DEFAULT NULL,
+  `BRK_Qty` decimal(18,0) DEFAULT NULL,
+  `Amount` decimal(18,2) DEFAULT NULL,
+  `CompID` int(11) DEFAULT NULL,
+  `UserID` int(11) DEFAULT NULL,
+  `Created_At` timestamp NOT NULL DEFAULT current_timestamp(),
+  `Updated_At` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblcategory`
+--
+
+CREATE TABLE `tblcategory` (
+  `id` int(11) NOT NULL,
+  `CATEGORY_CODE` varchar(10) NOT NULL,
+  `CATEGORY_NAME` varchar(50) NOT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblclass`
+--
+
+CREATE TABLE `tblclass` (
+  `SRNO` decimal(18,0) NOT NULL,
+  `SGROUP` varchar(1) DEFAULT NULL,
+  `DESC` varchar(20) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblclass_new`
+--
+
+CREATE TABLE `tblclass_new` (
+  `id` int(11) NOT NULL,
+  `CLASS_CODE` varchar(10) NOT NULL,
+  `CLASS_NAME` varchar(50) NOT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `OLD_CLASS_CODE` varchar(1) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblcompany`
+--
+
+CREATE TABLE `tblcompany` (
+  `CompID` int(11) NOT NULL,
+  `COMP_NAME` varchar(50) NOT NULL,
+  `CF_LINE` varchar(15) DEFAULT NULL,
+  `CS_LINE` varchar(35) DEFAULT NULL,
+  `FIN_YEAR` int(15) NOT NULL,
+  `COMP_ADDR` varchar(100) DEFAULT NULL,
+  `COMP_FLNO` varchar(12) DEFAULT NULL,
+  `GST_NO` varchar(20) DEFAULT NULL,
+  `MVAT_NO` varchar(20) DEFAULT NULL,
+  `license_type_id` int(11) DEFAULT NULL,
+  `License_Type` varchar(20) DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `IMFLLimit` decimal(15,2) DEFAULT NULL,
+  `BEERLimit` decimal(15,2) DEFAULT NULL,
+  `CLLimit` decimal(15,2) DEFAULT NULL,
+  `sales_tax_percent` decimal(5,2) DEFAULT 0.00,
+  `cl_tax` decimal(10,2) DEFAULT 0.00,
+  `imfl_tax` decimal(10,2) DEFAULT 0.00,
+  `wine_tax` decimal(10,2) DEFAULT 0.00,
+  `mid_beer_tax` decimal(10,2) DEFAULT 0.00,
+  `strong_beer_tax` decimal(10,2) DEFAULT 0.00,
+  `tcs_percent` decimal(5,2) DEFAULT 1.00,
+  `surcharges_percent` decimal(5,2) DEFAULT 0.00,
+  `educ_cess_percent` decimal(5,2) DEFAULT 0.00,
+  `court_fees` decimal(10,2) DEFAULT 10.00,
+  `check_negative_balance` tinyint(1) DEFAULT 0,
+  `customer_sales` varchar(50) DEFAULT 'SHOP',
+  `winesoft_path` varchar(255) DEFAULT 'C:\\Wines\\WINE0910\\A.DBF',
+  `max_mls_per_bill` int(11) DEFAULT NULL,
+  `d_printing_mode` varchar(20) DEFAULT 'Printer',
+  `display_sub_heads` tinyint(1) DEFAULT 1,
+  `stock_valuation_percent` decimal(5,2) DEFAULT 26.00,
+  `flr5_spacing` tinyint(1) DEFAULT 0,
+  `flr3a_spacing` tinyint(1) DEFAULT 0,
+  `fender_godown` tinyint(1) DEFAULT 0,
+  `number_of_counters` int(11) DEFAULT 1,
+  `data_folder` varchar(50) DEFAULT 'DIAM2526',
+  `weekly_off` varchar(20) DEFAULT 'None',
+  `computer_type` varchar(20) DEFAULT 'Laptop',
+  `winesoft_mode` varchar(50) DEFAULT 'Wine Shop'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblcustomerprices`
+--
+
+CREATE TABLE `tblcustomerprices` (
+  `CustPID` bigint(20) NOT NULL,
+  `LCode` int(11) DEFAULT NULL,
+  `Code` varchar(20) DEFAULT NULL,
+  `WPrice` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblcustomersales`
+--
+
+CREATE TABLE `tblcustomersales` (
+  `SaleID` bigint(20) NOT NULL,
+  `BillNo` int(11) NOT NULL,
+  `BillDate` date NOT NULL,
+  `LCode` int(11) NOT NULL,
+  `ItemCode` varchar(20) NOT NULL,
+  `ItemName` varchar(255) NOT NULL,
+  `ItemSize` varchar(50) DEFAULT NULL,
+  `Rate` decimal(18,3) NOT NULL DEFAULT 0.000,
+  `Quantity` int(11) NOT NULL DEFAULT 1,
+  `Amount` decimal(18,3) NOT NULL DEFAULT 0.000,
+  `CreatedDate` datetime DEFAULT current_timestamp(),
+  `CompID` int(11) DEFAULT NULL,
+  `UserID` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_1`
+--
+
+CREATE TABLE `tbldailystock_1` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_1_02_26`
+--
+
+CREATE TABLE `tbldailystock_1_02_26` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_1_03_26`
+--
+
+CREATE TABLE `tbldailystock_1_03_26` (
+  `ID` int(11) NOT NULL,
+  `ITEM_CODE` varchar(50) NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL,
+  `DAY_01_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_01_21`
+--
+
+CREATE TABLE `tbldailystock_7_01_21` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_02_21`
+--
+
+CREATE TABLE `tbldailystock_7_02_21` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_03_21`
+--
+
+CREATE TABLE `tbldailystock_7_03_21` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_03_26`
+--
+
+CREATE TABLE `tbldailystock_7_03_26` (
+  `ID` int(11) NOT NULL,
+  `ITEM_CODE` varchar(50) NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL,
+  `DAY_01_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_01_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_02_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_03_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_04_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_05_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_06_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_07_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_08_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_09_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_10_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_11_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_12_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_13_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_14_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_15_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_16_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_17_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_18_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_19_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_20_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_21_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_22_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_23_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_24_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_25_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_26_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_27_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_28_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_29_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_30_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_OPEN` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_PURCHASE` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_SALES` decimal(10,3) DEFAULT 0.000,
+  `DAY_31_CLOSING` decimal(10,3) DEFAULT 0.000,
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_04_20`
+--
+
+CREATE TABLE `tbldailystock_7_04_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_04_21`
+--
+
+CREATE TABLE `tbldailystock_7_04_21` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_01_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_01_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_01_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_02_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_02_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_02_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_02_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_03_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_03_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_03_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_03_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_04_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_04_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_04_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_04_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_05_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_05_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_05_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_05_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_06_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_06_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_06_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_06_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_07_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_07_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_07_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_07_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_08_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_08_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_08_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_08_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_09_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_09_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_09_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_09_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_10_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_10_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_10_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_10_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_11_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_11_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_11_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_11_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_12_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_12_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_12_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_12_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_13_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_13_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_13_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_13_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_14_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_14_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_14_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_14_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_15_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_15_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_15_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_15_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_16_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_16_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_16_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_16_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_17_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_17_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_17_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_17_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_18_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_18_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_18_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_18_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_19_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_19_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_19_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_19_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_20_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_20_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_20_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_20_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_21_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_21_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_21_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_21_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_22_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_22_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_22_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_22_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_23_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_23_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_23_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_23_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_24_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_24_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_24_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_24_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_25_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_25_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_25_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_25_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_26_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_26_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_26_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_26_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_27_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_27_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_27_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_27_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_28_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_28_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_28_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_28_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_29_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_29_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_29_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_29_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_30_OPEN` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_30_PURCHASE` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_30_SALES` int(11) DEFAULT 0 COMMENT 'Date outside financial year',
+  `DAY_30_CLOSING` int(11) DEFAULT 0 COMMENT 'Date outside financial year'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_05_20`
+--
+
+CREATE TABLE `tbldailystock_7_05_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_06_20`
+--
+
+CREATE TABLE `tbldailystock_7_06_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_07_20`
+--
+
+CREATE TABLE `tbldailystock_7_07_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_08_20`
+--
+
+CREATE TABLE `tbldailystock_7_08_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_09_20`
+--
+
+CREATE TABLE `tbldailystock_7_09_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_10_20`
+--
+
+CREATE TABLE `tbldailystock_7_10_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_11_20`
+--
+
+CREATE TABLE `tbldailystock_7_11_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_7_12_20`
+--
+
+CREATE TABLE `tbldailystock_7_12_20` (
+  `DailyStockID` int(11) NOT NULL,
+  `STK_DATE` date NOT NULL,
+  `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `DAY_01_OPEN` int(11) DEFAULT 0,
+  `DAY_01_PURCHASE` int(11) DEFAULT 0,
+  `DAY_01_SALES` int(11) DEFAULT 0,
+  `DAY_01_CLOSING` int(11) DEFAULT 0,
+  `DAY_02_OPEN` int(11) DEFAULT 0,
+  `DAY_02_PURCHASE` int(11) DEFAULT 0,
+  `DAY_02_SALES` int(11) DEFAULT 0,
+  `DAY_02_CLOSING` int(11) DEFAULT 0,
+  `DAY_03_OPEN` int(11) DEFAULT 0,
+  `DAY_03_PURCHASE` int(11) DEFAULT 0,
+  `DAY_03_SALES` int(11) DEFAULT 0,
+  `DAY_03_CLOSING` int(11) DEFAULT 0,
+  `DAY_04_OPEN` int(11) DEFAULT 0,
+  `DAY_04_PURCHASE` int(11) DEFAULT 0,
+  `DAY_04_SALES` int(11) DEFAULT 0,
+  `DAY_04_CLOSING` int(11) DEFAULT 0,
+  `DAY_05_OPEN` int(11) DEFAULT 0,
+  `DAY_05_PURCHASE` int(11) DEFAULT 0,
+  `DAY_05_SALES` int(11) DEFAULT 0,
+  `DAY_05_CLOSING` int(11) DEFAULT 0,
+  `DAY_06_OPEN` int(11) DEFAULT 0,
+  `DAY_06_PURCHASE` int(11) DEFAULT 0,
+  `DAY_06_SALES` int(11) DEFAULT 0,
+  `DAY_06_CLOSING` int(11) DEFAULT 0,
+  `DAY_07_OPEN` int(11) DEFAULT 0,
+  `DAY_07_PURCHASE` int(11) DEFAULT 0,
+  `DAY_07_SALES` int(11) DEFAULT 0,
+  `DAY_07_CLOSING` int(11) DEFAULT 0,
+  `DAY_08_OPEN` int(11) DEFAULT 0,
+  `DAY_08_PURCHASE` int(11) DEFAULT 0,
+  `DAY_08_SALES` int(11) DEFAULT 0,
+  `DAY_08_CLOSING` int(11) DEFAULT 0,
+  `DAY_09_OPEN` int(11) DEFAULT 0,
+  `DAY_09_PURCHASE` int(11) DEFAULT 0,
+  `DAY_09_SALES` int(11) DEFAULT 0,
+  `DAY_09_CLOSING` int(11) DEFAULT 0,
+  `DAY_10_OPEN` int(11) DEFAULT 0,
+  `DAY_10_PURCHASE` int(11) DEFAULT 0,
+  `DAY_10_SALES` int(11) DEFAULT 0,
+  `DAY_10_CLOSING` int(11) DEFAULT 0,
+  `DAY_11_OPEN` int(11) DEFAULT 0,
+  `DAY_11_PURCHASE` int(11) DEFAULT 0,
+  `DAY_11_SALES` int(11) DEFAULT 0,
+  `DAY_11_CLOSING` int(11) DEFAULT 0,
+  `DAY_12_OPEN` int(11) DEFAULT 0,
+  `DAY_12_PURCHASE` int(11) DEFAULT 0,
+  `DAY_12_SALES` int(11) DEFAULT 0,
+  `DAY_12_CLOSING` int(11) DEFAULT 0,
+  `DAY_13_OPEN` int(11) DEFAULT 0,
+  `DAY_13_PURCHASE` int(11) DEFAULT 0,
+  `DAY_13_SALES` int(11) DEFAULT 0,
+  `DAY_13_CLOSING` int(11) DEFAULT 0,
+  `DAY_14_OPEN` int(11) DEFAULT 0,
+  `DAY_14_PURCHASE` int(11) DEFAULT 0,
+  `DAY_14_SALES` int(11) DEFAULT 0,
+  `DAY_14_CLOSING` int(11) DEFAULT 0,
+  `DAY_15_OPEN` int(11) DEFAULT 0,
+  `DAY_15_PURCHASE` int(11) DEFAULT 0,
+  `DAY_15_SALES` int(11) DEFAULT 0,
+  `DAY_15_CLOSING` int(11) DEFAULT 0,
+  `DAY_16_OPEN` int(11) DEFAULT 0,
+  `DAY_16_PURCHASE` int(11) DEFAULT 0,
+  `DAY_16_SALES` int(11) DEFAULT 0,
+  `DAY_16_CLOSING` int(11) DEFAULT 0,
+  `DAY_17_OPEN` int(11) DEFAULT 0,
+  `DAY_17_PURCHASE` int(11) DEFAULT 0,
+  `DAY_17_SALES` int(11) DEFAULT 0,
+  `DAY_17_CLOSING` int(11) DEFAULT 0,
+  `DAY_18_OPEN` int(11) DEFAULT 0,
+  `DAY_18_PURCHASE` int(11) DEFAULT 0,
+  `DAY_18_SALES` int(11) DEFAULT 0,
+  `DAY_18_CLOSING` int(11) DEFAULT 0,
+  `DAY_19_OPEN` int(11) DEFAULT 0,
+  `DAY_19_PURCHASE` int(11) DEFAULT 0,
+  `DAY_19_SALES` int(11) DEFAULT 0,
+  `DAY_19_CLOSING` int(11) DEFAULT 0,
+  `DAY_20_OPEN` int(11) DEFAULT 0,
+  `DAY_20_PURCHASE` int(11) DEFAULT 0,
+  `DAY_20_SALES` int(11) DEFAULT 0,
+  `DAY_20_CLOSING` int(11) DEFAULT 0,
+  `DAY_21_OPEN` int(11) DEFAULT 0,
+  `DAY_21_PURCHASE` int(11) DEFAULT 0,
+  `DAY_21_SALES` int(11) DEFAULT 0,
+  `DAY_21_CLOSING` int(11) DEFAULT 0,
+  `DAY_22_OPEN` int(11) DEFAULT 0,
+  `DAY_22_PURCHASE` int(11) DEFAULT 0,
+  `DAY_22_SALES` int(11) DEFAULT 0,
+  `DAY_22_CLOSING` int(11) DEFAULT 0,
+  `DAY_23_OPEN` int(11) DEFAULT 0,
+  `DAY_23_PURCHASE` int(11) DEFAULT 0,
+  `DAY_23_SALES` int(11) DEFAULT 0,
+  `DAY_23_CLOSING` int(11) DEFAULT 0,
+  `DAY_24_OPEN` int(11) DEFAULT 0,
+  `DAY_24_PURCHASE` int(11) DEFAULT 0,
+  `DAY_24_SALES` int(11) DEFAULT 0,
+  `DAY_24_CLOSING` int(11) DEFAULT 0,
+  `DAY_25_OPEN` int(11) DEFAULT 0,
+  `DAY_25_PURCHASE` int(11) DEFAULT 0,
+  `DAY_25_SALES` int(11) DEFAULT 0,
+  `DAY_25_CLOSING` int(11) DEFAULT 0,
+  `DAY_26_OPEN` int(11) DEFAULT 0,
+  `DAY_26_PURCHASE` int(11) DEFAULT 0,
+  `DAY_26_SALES` int(11) DEFAULT 0,
+  `DAY_26_CLOSING` int(11) DEFAULT 0,
+  `DAY_27_OPEN` int(11) DEFAULT 0,
+  `DAY_27_PURCHASE` int(11) DEFAULT 0,
+  `DAY_27_SALES` int(11) DEFAULT 0,
+  `DAY_27_CLOSING` int(11) DEFAULT 0,
+  `DAY_28_OPEN` int(11) DEFAULT 0,
+  `DAY_28_PURCHASE` int(11) DEFAULT 0,
+  `DAY_28_SALES` int(11) DEFAULT 0,
+  `DAY_28_CLOSING` int(11) DEFAULT 0,
+  `DAY_29_OPEN` int(11) DEFAULT 0,
+  `DAY_29_PURCHASE` int(11) DEFAULT 0,
+  `DAY_29_SALES` int(11) DEFAULT 0,
+  `DAY_29_CLOSING` int(11) DEFAULT 0,
+  `DAY_30_OPEN` int(11) DEFAULT 0,
+  `DAY_30_PURCHASE` int(11) DEFAULT 0,
+  `DAY_30_SALES` int(11) DEFAULT 0,
+  `DAY_30_CLOSING` int(11) DEFAULT 0,
+  `DAY_31_OPEN` int(11) DEFAULT 0,
+  `DAY_31_PURCHASE` int(11) DEFAULT 0,
+  `DAY_31_SALES` int(11) DEFAULT 0,
+  `DAY_31_CLOSING` int(11) DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldailystock_summary_7`
+--
+
+CREATE TABLE `tbldailystock_summary_7` (
+  `SummaryID` int(11) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `STOCK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+  `OPENING_STOCK` int(11) DEFAULT 0,
+  `TOTAL_PURCHASE` int(11) DEFAULT 0,
+  `TOTAL_SALES` int(11) DEFAULT 0,
+  `CLOSING_STOCK` int(11) DEFAULT 0,
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbldrydays`
+--
+
+CREATE TABLE `tbldrydays` (
+  `id` int(11) NOT NULL,
+  `DDATE` datetime DEFAULT NULL,
+  `DDESC` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblexpenses`
+--
+
+CREATE TABLE `tblexpenses` (
+  `VNO` int(11) NOT NULL,
+  `VDATE` datetime DEFAULT NULL,
+  `PARTI` varchar(50) DEFAULT NULL,
+  `AMOUNT` decimal(18,2) DEFAULT NULL,
+  `DRCR` char(1) DEFAULT NULL,
+  `NARR` varchar(100) DEFAULT NULL,
+  `MODE` char(1) DEFAULT NULL,
+  `REF_AC` int(11) DEFAULT NULL,
+  `REF_SAC` int(11) DEFAULT NULL,
+  `INV_NO` varchar(15) DEFAULT NULL,
+  `DOC_NO` varchar(20) NOT NULL,
+  `LIQ_FLAG` char(1) DEFAULT NULL,
+  `CHEQ_NO` varchar(20) DEFAULT NULL,
+  `CHEQ_DT` date DEFAULT NULL,
+  `MAIN_BK` char(2) DEFAULT NULL,
+  `COMP_ID` int(11) DEFAULT NULL,
+  `PURCHASE_VOC_NO` int(11) DEFAULT NULL,
+  `PAYMENT_SEQ` int(11) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblfinyear`
+--
+
+CREATE TABLE `tblfinyear` (
+  `ID` int(11) NOT NULL,
+  `START_DATE` datetime DEFAULT NULL,
+  `END_DATE` datetime DEFAULT NULL,
+  `ACTIVE` tinyint(1) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblgheads`
+--
+
+CREATE TABLE `tblgheads` (
+  `GCODE` int(11) NOT NULL,
+  `GHEAD` varchar(30) DEFAULT NULL,
+  `LEVELNO` int(11) DEFAULT NULL,
+  `PARENTID` int(11) DEFAULT NULL,
+  `SERIAL_NO` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblitemmaster`
+--
+
+CREATE TABLE `tblitemmaster` (
+  `id` int(11) NOT NULL,
+  `CODE` varchar(20) NOT NULL,
+  `Print_Name` varchar(10) DEFAULT NULL,
+  `DETAILS` varchar(50) DEFAULT NULL,
+  `DETAILS2` varchar(30) DEFAULT NULL,
+  `BOTTLES` decimal(18,0) DEFAULT NULL,
+  `CLASS` varchar(1) DEFAULT NULL,
+  `SUB_CLASS` varchar(1) DEFAULT NULL,
+  `ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `PPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Purchase Price',
+  `BPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Base Price',
+  `RPRICE` decimal(18,3) DEFAULT NULL COMMENT 'Retail Price',
+  `MPRICE` decimal(18,0) DEFAULT NULL COMMENT 'MRP PRICE',
+  `OB` decimal(18,3) DEFAULT NULL,
+  `TRCPT` decimal(18,3) DEFAULT NULL,
+  `TISSU` decimal(18,3) DEFAULT NULL,
+  `CC` decimal(18,0) DEFAULT NULL,
+  `BARCODE` varchar(15) DEFAULT NULL,
+  `GOB` decimal(18,3) DEFAULT NULL,
+  `GTRCPT` decimal(18,3) DEFAULT NULL,
+  `GTISSU` decimal(18,3) DEFAULT NULL,
+  `REORDER` decimal(18,0) DEFAULT NULL,
+  `GREORDER` decimal(18,0) DEFAULT NULL,
+  `PM_IMFL` decimal(18,0) DEFAULT NULL,
+  `PM_BEER` decimal(18,0) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `SELECTED` tinyint(1) DEFAULT NULL,
+  `SERIAL_NO` decimal(18,0) DEFAULT NULL,
+  `SEQ_NO` decimal(18,0) DEFAULT NULL,
+  `REF_CODE` varchar(4) DEFAULT NULL,
+  `OB2` decimal(18,0) DEFAULT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL,
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblitem_stock`
+--
+
+CREATE TABLE `tblitem_stock` (
+  `StockID` int(11) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `FIN_YEAR_ID` int(11) DEFAULT NULL,
+  `FY_START_DATE` date DEFAULT NULL,
+  `FY_END_DATE` date DEFAULT NULL,
+  `FIN_YEAR` year(4) NOT NULL,
+  `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `OPENING_STOCK1` int(11) DEFAULT 0,
+  `CURRENT_STOCK1` int(11) DEFAULT 0,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL,
+  `OPENING_STOCK2` int(11) DEFAULT 0,
+  `CURRENT_STOCK2` int(11) DEFAULT 0,
+  `OPENING_STOCK_0` int(11) DEFAULT 0,
+  `CURRENT_STOCK_0` int(11) DEFAULT 0,
+  `MONTHLY_STOCK_0` int(11) DEFAULT 0,
+  `OPENING_STOCK_4` int(11) DEFAULT 0,
+  `CURRENT_STOCK_4` int(11) DEFAULT 0,
+  `MONTHLY_STOCK_4` int(11) DEFAULT 0,
+  `OPENING_STOCK_5` int(11) DEFAULT 0,
+  `CURRENT_STOCK_5` int(11) DEFAULT 0,
+  `MONTHLY_STOCK_5` int(11) DEFAULT 0,
+  `OPENING_STOCK_6` int(11) DEFAULT 0,
+  `CURRENT_STOCK_6` int(11) DEFAULT 0,
+  `MONTHLY_STOCK_6` int(11) DEFAULT 0,
+  `Opening_Stock6` decimal(10,3) DEFAULT 0.000,
+  `Current_Stock6` decimal(10,3) DEFAULT 0.000,
+  `OPENING_STOCK_7` int(11) DEFAULT 0,
+  `CURRENT_STOCK_7` int(11) DEFAULT 0,
+  `MONTHLY_STOCK_7` int(11) DEFAULT 0,
+  `Opening_Stock7` decimal(10,3) DEFAULT 0.000,
+  `Current_Stock7` decimal(10,3) DEFAULT 0.000
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbllheads`
+--
+
+CREATE TABLE `tbllheads` (
+  `LCODE` int(11) NOT NULL,
+  `LHEAD` varchar(30) DEFAULT NULL,
+  `GCODE` int(11) DEFAULT NULL,
+  `OP_BAL` double DEFAULT NULL,
+  `DRCR` varchar(2) DEFAULT NULL,
+  `REF_CODE` varchar(7) DEFAULT NULL,
+  `SERIAL_NO` double DEFAULT NULL,
+  `CompID` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblpermit`
+--
+
+CREATE TABLE `tblpermit` (
+  `permit_id` int(11) NOT NULL,
+  `BILL_NO` decimal(18,0) DEFAULT NULL,
+  `CODE` varchar(5) NOT NULL,
+  `DETAILS` varchar(30) DEFAULT NULL,
+  `P_NO` varchar(15) DEFAULT NULL,
+  `P_ISSDT` datetime(3) DEFAULT NULL,
+  `P_EXP_DT` datetime(3) DEFAULT NULL,
+  `PLACE_ISS` varchar(8) DEFAULT NULL,
+  `G1` int(11) DEFAULT NULL,
+  `G2` int(11) DEFAULT NULL,
+  `G3` int(11) DEFAULT NULL,
+  `G4` int(11) DEFAULT NULL,
+  `G5` int(11) DEFAULT NULL,
+  `G6` int(11) DEFAULT NULL,
+  `G7` int(11) DEFAULT NULL,
+  `G8` int(11) DEFAULT NULL,
+  `G9` int(11) DEFAULT NULL,
+  `GA` int(11) DEFAULT NULL,
+  `GB` int(11) DEFAULT NULL,
+  `GC` int(11) DEFAULT NULL,
+  `GD` int(11) DEFAULT NULL,
+  `GE` int(11) DEFAULT NULL,
+  `GF` int(11) DEFAULT NULL,
+  `GG` int(11) DEFAULT NULL,
+  `GH` int(11) DEFAULT NULL,
+  `GI` int(11) DEFAULT NULL,
+  `P_STAT` varchar(1) DEFAULT NULL,
+  `BTYPE` varchar(1) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `PRMT_FLAG` tinyint(1) NOT NULL,
+  `PERMIT_TYPE` enum('ONE_YEAR','LIFETIME') DEFAULT 'ONE_YEAR',
+  `ID` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblpurchasedetails`
+--
+
+CREATE TABLE `tblpurchasedetails` (
+  `DetailID` int(11) NOT NULL,
+  `PurchaseID` int(11) NOT NULL,
+  `ItemCode` varchar(20) NOT NULL,
+  `ItemName` varchar(255) NOT NULL,
+  `Size` varchar(50) DEFAULT NULL,
+  `Cases` decimal(10,2) DEFAULT 0.00,
+  `Bottles` int(11) DEFAULT 0,
+  `FreeCases` decimal(10,2) DEFAULT 0.00,
+  `FreeBottles` int(11) DEFAULT 0,
+  `CaseRate` decimal(12,3) DEFAULT 0.000,
+  `MRP` decimal(10,2) DEFAULT 0.00,
+  `Amount` decimal(12,2) DEFAULT 0.00,
+  `BottlesPerCase` int(11) DEFAULT 12,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `BatchNo` varchar(50) DEFAULT NULL,
+  `AutoBatch` varchar(50) DEFAULT NULL,
+  `MfgMonth` varchar(20) DEFAULT NULL,
+  `BL` decimal(10,2) DEFAULT 0.00,
+  `VV` decimal(5,2) DEFAULT 0.00,
+  `TotBott` int(11) DEFAULT 0,
+  `AUTO_TPNO` varchar(50) DEFAULT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblpurchases`
+--
+
+CREATE TABLE `tblpurchases` (
+  `ID` int(11) NOT NULL,
+  `DATE` date NOT NULL,
+  `SUBCODE` varchar(20) NOT NULL,
+  `VOC_NO` int(11) NOT NULL,
+  `INV_NO` varchar(50) DEFAULT NULL,
+  `INV_DATE` date DEFAULT NULL,
+  `TAMT` decimal(12,2) DEFAULT 0.00,
+  `TPNO` varchar(50) DEFAULT NULL,
+  `TP_DATE` date DEFAULT NULL,
+  `SCHDIS` decimal(10,2) DEFAULT 0.00,
+  `CASHDIS` decimal(10,2) DEFAULT 0.00,
+  `OCTROI` decimal(10,2) DEFAULT 0.00,
+  `FREIGHT` decimal(10,2) DEFAULT 0.00,
+  `STAX_PER` decimal(5,2) DEFAULT 0.00,
+  `STAX_AMT` decimal(10,2) DEFAULT 0.00,
+  `TCS_PER` decimal(5,2) DEFAULT 0.00,
+  `TCS_AMT` decimal(10,2) DEFAULT 0.00,
+  `MISC_CHARG` decimal(10,2) DEFAULT 0.00,
+  `PUR_FLAG` char(1) DEFAULT 'F',
+  `CompID` int(11) NOT NULL,
+  `CreatedAt` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UpdatedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `AUTO_TPNO` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsaledetails`
+--
+
+CREATE TABLE `tblsaledetails` (
+  `BILL_NO` varchar(20) NOT NULL,
+  `ITEM_CODE` varchar(20) NOT NULL,
+  `QTY` decimal(10,3) NOT NULL,
+  `RATE` decimal(10,3) NOT NULL,
+  `AMOUNT` decimal(12,2) DEFAULT NULL,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `COMP_ID` int(11) NOT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsaleheader`
+--
+
+CREATE TABLE `tblsaleheader` (
+  `BILL_NO` varchar(20) NOT NULL,
+  `BILL_DATE` date NOT NULL,
+  `CUST_CODE` varchar(20) DEFAULT NULL,
+  `TOTAL_AMOUNT` decimal(12,2) DEFAULT 0.00,
+  `DISCOUNT` decimal(10,2) DEFAULT 0.00,
+  `NET_AMOUNT` decimal(12,2) DEFAULT 0.00,
+  `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+  `COMP_ID` int(11) NOT NULL,
+  `CREATED_BY` int(11) DEFAULT NULL,
+  `CREATED_DATE` timestamp NOT NULL DEFAULT current_timestamp(),
+  `CUSTOMER_ID` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsize`
+--
+
+CREATE TABLE `tblsize` (
+  `id` int(11) NOT NULL,
+  `SIZE_CODE` varchar(10) NOT NULL,
+  `SIZE_DESC` varchar(50) NOT NULL,
+  `ML_VOLUME` int(11) DEFAULT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT 1,
+  `CC` int(11) DEFAULT NULL,
+  `C_SPACE` int(11) DEFAULT 7,
+  `SUBCLASS_CODE` varchar(10) DEFAULT NULL,
+  `OLD_ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsubclass`
+--
+
+CREATE TABLE `tblsubclass` (
+  `ITEM_GROUP` varchar(8) NOT NULL,
+  `CLASS` varchar(1) DEFAULT NULL,
+  `OB` decimal(18,3) DEFAULT NULL,
+  `RCPT` decimal(18,3) DEFAULT NULL,
+  `SALE` decimal(18,3) DEFAULT NULL,
+  `CLBAL` decimal(18,3) DEFAULT NULL,
+  `DESC` varchar(20) DEFAULT NULL,
+  `SRNO` decimal(18,0) DEFAULT NULL,
+  `CC` decimal(18,0) DEFAULT NULL,
+  `C_SPACE` decimal(18,0) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) NOT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT 1,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL,
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsubclass_new`
+--
+
+CREATE TABLE `tblsubclass_new` (
+  `id` int(11) NOT NULL,
+  `SUBCLASS_CODE` varchar(10) NOT NULL,
+  `SUBCLASS_NAME` varchar(50) NOT NULL,
+  `CLASS_CODE` varchar(10) DEFAULT NULL,
+  `OLD_ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CREATED_AT` timestamp NOT NULL DEFAULT current_timestamp(),
+  `UPDATED_AT` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblsupplier`
+--
+
+CREATE TABLE `tblsupplier` (
+  `id` int(11) NOT NULL,
+  `CODE` varchar(7) NOT NULL,
+  `OUT_LIMIT` varchar(1) DEFAULT NULL,
+  `DETAILS` varchar(30) DEFAULT NULL,
+  `OBDR` decimal(18,2) DEFAULT NULL,
+  `OBCR` decimal(18,2) DEFAULT NULL,
+  `LBDR` decimal(18,2) DEFAULT NULL,
+  `LBCR` decimal(18,2) DEFAULT NULL,
+  `LEVEL` decimal(18,2) DEFAULT NULL,
+  `ADDR1` varchar(40) DEFAULT NULL,
+  `ADDR2` varchar(40) DEFAULT NULL,
+  `PINCODE` varchar(10) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `SALES_TAX` varchar(30) DEFAULT NULL,
+  `OCT_PERC` decimal(18,2) DEFAULT NULL,
+  `CD_PERC` decimal(18,2) DEFAULT NULL,
+  `STAX_PERC` decimal(18,2) DEFAULT NULL,
+  `TCS_PERC` decimal(18,2) DEFAULT NULL,
+  `SURC_PERC` decimal(18,2) DEFAULT NULL,
+  `EC_PERC` decimal(18,2) DEFAULT NULL,
+  `MISC_CHARG` decimal(18,2) DEFAULT NULL,
+  `MODE` varchar(15) DEFAULT NULL,
+  `WSTax_Perc` decimal(18,2) DEFAULT NULL,
+  `MBSTax_Perc` decimal(18,2) DEFAULT NULL,
+  `SBSTax_Perc` decimal(18,2) DEFAULT NULL,
+  `CLSTax_Perc` decimal(18,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_cash_memo_prints`
+--
+
+CREATE TABLE `tbl_cash_memo_prints` (
+  `id` int(11) NOT NULL,
+  `bill_no` varchar(50) NOT NULL,
+  `comp_id` int(11) NOT NULL,
+  `print_date` datetime NOT NULL,
+  `printed_by` int(11) NOT NULL,
+  `license_number` varchar(100) NOT NULL,
+  `shop_name` varchar(255) NOT NULL,
+  `shop_address` varchar(500) NOT NULL,
+  `bill_date` date NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `permit_no` varchar(100) DEFAULT NULL,
+  `permit_place` varchar(100) DEFAULT NULL,
+  `permit_exp_date` date DEFAULT NULL,
+  `items_json` text NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `cash_memo_text` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_doc_counter`
+--
+
+CREATE TABLE `tbl_doc_counter` (
+  `id` int(11) NOT NULL,
+  `comp_id` int(11) NOT NULL,
+  `doc_type` varchar(10) NOT NULL,
+  `last_doc_no` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_pending_sales`
+--
+
+CREATE TABLE `tbl_pending_sales` (
+  `id` int(11) NOT NULL,
+  `comp_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `fin_year_id` int(11) DEFAULT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `mode` char(1) NOT NULL,
+  `item_code` varchar(50) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `bill_no` varchar(50) DEFAULT NULL,
+  `bill_date` date DEFAULT NULL,
+  `bill_amount` decimal(10,2) DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  `status` enum('pending','processed') DEFAULT 'pending',
+  `processed_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tbl_shortcuts`
+--
+
+CREATE TABLE `tbl_shortcuts` (
+  `id` int(11) NOT NULL,
+  `company_id` int(11) NOT NULL,
+  `shortcut_key` varchar(50) NOT NULL,
+  `action_name` varchar(255) NOT NULL,
+  `action_url` varchar(500) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `temp_bill_storage`
+--
+
+CREATE TABLE `temp_bill_storage` (
+  `id` int(11) NOT NULL,
+  `original_bill_no` varchar(20) NOT NULL,
+  `bill_no` varchar(20) NOT NULL,
+  `bill_date` date NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `discount` decimal(10,2) DEFAULT 0.00,
+  `net_amount` decimal(10,2) NOT NULL,
+  `liq_flag` char(1) NOT NULL,
+  `comp_id` int(11) NOT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `item_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`item_data`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `company_id` int(11) DEFAULT NULL,
+  `is_admin` tinyint(1) DEFAULT 0,
+  `created_by` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vw_class_legacy`
+--
+
+CREATE TABLE `vw_class_legacy` (
+  `SRNO` decimal(18,0) DEFAULT NULL,
+  `SGROUP` varchar(1) DEFAULT NULL,
+  `CLASS_DESC` varchar(20) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `CATEGORY_NAME` varchar(50) DEFAULT NULL,
+  `NEW_CLASS_NAME` varchar(50) DEFAULT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vw_item_hierarchy`
+--
+
+CREATE TABLE `vw_item_hierarchy` (
+  `CODE` varchar(20) DEFAULT NULL,
+  `DETAILS` varchar(50) DEFAULT NULL,
+  `Print_Name` varchar(10) DEFAULT NULL,
+  `OLD_CLASS_CODE` varchar(1) DEFAULT NULL,
+  `OLD_CLASS_DESC` varchar(20) DEFAULT NULL,
+  `OLD_ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `OLD_SIZE_DESC` varchar(20) DEFAULT NULL,
+  `CATEGORY_NAME` varchar(50) DEFAULT NULL,
+  `CLASS_NAME` varchar(50) DEFAULT NULL,
+  `SUBCLASS_NAME` varchar(50) DEFAULT NULL,
+  `SIZE_DESC` varchar(50) DEFAULT NULL,
+  `ML_VOLUME` int(11) DEFAULT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT NULL,
+  `CATEGORY_CODE` varchar(10) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `PPRICE` decimal(18,3) DEFAULT NULL,
+  `BPRICE` decimal(18,3) DEFAULT NULL,
+  `RPRICE` decimal(18,3) DEFAULT NULL,
+  `MPRICE` decimal(18,0) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vw_size_catalog`
+--
+
+CREATE TABLE `vw_size_catalog` (
+  `SIZE_CODE` varchar(15) DEFAULT NULL,
+  `SIZE_DESC` varchar(50) DEFAULT NULL,
+  `ML_VOLUME` decimal(18,0) DEFAULT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT NULL,
+  `SUBCLASS_NAME` varchar(50) DEFAULT NULL,
+  `CLASS_NAME` varchar(50) DEFAULT NULL,
+  `CATEGORY_NAME` varchar(50) DEFAULT NULL,
+  `OLD_ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `vw_subclass_legacy`
+--
+
+CREATE TABLE `vw_subclass_legacy` (
+  `ITEM_GROUP` varchar(8) DEFAULT NULL,
+  `CLASS` varchar(1) DEFAULT NULL,
+  `OB` decimal(18,3) DEFAULT NULL,
+  `RCPT` decimal(18,3) DEFAULT NULL,
+  `SALE` decimal(18,3) DEFAULT NULL,
+  `CLBAL` decimal(18,3) DEFAULT NULL,
+  `SIZE_DESC` varchar(20) DEFAULT NULL,
+  `SRNO` decimal(18,0) DEFAULT NULL,
+  `CC` decimal(18,0) DEFAULT NULL,
+  `C_SPACE` decimal(18,0) DEFAULT NULL,
+  `LIQ_FLAG` varchar(1) DEFAULT NULL,
+  `BOTTLE_PER_CASE` int(11) DEFAULT NULL,
+  `CLASS_DESC` varchar(20) DEFAULT NULL,
+  `CATEGORY_NAME` varchar(50) DEFAULT NULL,
+  `NEW_CLASS_NAME` varchar(50) DEFAULT NULL,
+  `CLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SUBCLASS_CODE_NEW` varchar(10) DEFAULT NULL,
+  `SIZE_CODE` varchar(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `license_types`
+--
+ALTER TABLE `license_types`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tblbalcrdf`
+--
+ALTER TABLE `tblbalcrdf`
+  ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `tblbreakages`
+--
+ALTER TABLE `tblbreakages`
+  ADD PRIMARY KEY (`BRK_No`);
+
+--
+-- Indexes for table `tblcategory`
+--
+ALTER TABLE `tblcategory`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_category_code` (`CATEGORY_CODE`);
+
+--
+-- Indexes for table `tblclass_new`
+--
+ALTER TABLE `tblclass_new`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_class_code` (`CLASS_CODE`);
+
+--
+-- Indexes for table `tblcompany`
+--
+ALTER TABLE `tblcompany`
+  ADD PRIMARY KEY (`CompID`);
+
+--
+-- Indexes for table `tblcustomerprices`
+--
+ALTER TABLE `tblcustomerprices`
+  ADD PRIMARY KEY (`CustPID`);
+
+--
+-- Indexes for table `tblcustomersales`
+--
+ALTER TABLE `tblcustomersales`
+  ADD PRIMARY KEY (`SaleID`);
+
+--
+-- Indexes for table `tbldailystock_1`
+--
+ALTER TABLE `tbldailystock_1`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock_1` (`STK_MONTH`,`ITEM_CODE`),
+  ADD KEY `ITEM_CODE_1` (`ITEM_CODE`),
+  ADD KEY `LIQ_FLAG_1` (`LIQ_FLAG`),
+  ADD KEY `STK_MONTH_1` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_1_02_26`
+--
+ALTER TABLE `tbldailystock_1_02_26`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock_1` (`STK_MONTH`,`ITEM_CODE`),
+  ADD KEY `ITEM_CODE_1` (`ITEM_CODE`),
+  ADD KEY `LIQ_FLAG_1` (`LIQ_FLAG`),
+  ADD KEY `STK_MONTH_1` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_1_03_26`
+--
+ALTER TABLE `tbldailystock_1_03_26`
+  ADD PRIMARY KEY (`ID`),
+  ADD UNIQUE KEY `unique_item_month` (`ITEM_CODE`,`STK_MONTH`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_01_21`
+--
+ALTER TABLE `tbldailystock_7_01_21`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_02_21`
+--
+ALTER TABLE `tbldailystock_7_02_21`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_03_21`
+--
+ALTER TABLE `tbldailystock_7_03_21`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_03_26`
+--
+ALTER TABLE `tbldailystock_7_03_26`
+  ADD PRIMARY KEY (`ID`),
+  ADD UNIQUE KEY `unique_item_month` (`ITEM_CODE`,`STK_MONTH`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_04_20`
+--
+ALTER TABLE `tbldailystock_7_04_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_04_21`
+--
+ALTER TABLE `tbldailystock_7_04_21`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_05_20`
+--
+ALTER TABLE `tbldailystock_7_05_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_06_20`
+--
+ALTER TABLE `tbldailystock_7_06_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_07_20`
+--
+ALTER TABLE `tbldailystock_7_07_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_08_20`
+--
+ALTER TABLE `tbldailystock_7_08_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_09_20`
+--
+ALTER TABLE `tbldailystock_7_09_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_10_20`
+--
+ALTER TABLE `tbldailystock_7_10_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_11_20`
+--
+ALTER TABLE `tbldailystock_7_11_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_7_12_20`
+--
+ALTER TABLE `tbldailystock_7_12_20`
+  ADD PRIMARY KEY (`DailyStockID`),
+  ADD UNIQUE KEY `unique_daily_stock` (`STK_DATE`,`ITEM_CODE`),
+  ADD KEY `idx_item_code` (`ITEM_CODE`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stk_month` (`STK_MONTH`);
+
+--
+-- Indexes for table `tbldailystock_summary_7`
+--
+ALTER TABLE `tbldailystock_summary_7`
+  ADD PRIMARY KEY (`SummaryID`),
+  ADD UNIQUE KEY `unique_item_month` (`ITEM_CODE`,`STOCK_MONTH`),
+  ADD KEY `idx_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_stock_month` (`STOCK_MONTH`);
+
+--
+-- Indexes for table `tbldrydays`
+--
+ALTER TABLE `tbldrydays`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tblexpenses`
+--
+ALTER TABLE `tblexpenses`
+  ADD PRIMARY KEY (`VNO`);
+
+--
+-- Indexes for table `tblfinyear`
+--
+ALTER TABLE `tblfinyear`
+  ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `tblgheads`
+--
+ALTER TABLE `tblgheads`
+  ADD PRIMARY KEY (`GCODE`);
+
+--
+-- Indexes for table `tblitemmaster`
+--
+ALTER TABLE `tblitemmaster`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_code` (`CODE`),
+  ADD KEY `idx_itemmaster_liq_flag` (`LIQ_FLAG`),
+  ADD KEY `idx_itemmaster_code` (`CODE`),
+  ADD KEY `idx_itemmaster_details` (`DETAILS`),
+  ADD KEY `idx_itemmaster_class` (`CLASS`);
+
+--
+-- Indexes for table `tblitem_stock`
+--
+ALTER TABLE `tblitem_stock`
+  ADD PRIMARY KEY (`StockID`),
+  ADD KEY `idx_item_stock_item_code` (`ITEM_CODE`);
+
+--
+-- Indexes for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  ADD PRIMARY KEY (`LCODE`);
+
+--
+-- Indexes for table `tblpermit`
+--
+ALTER TABLE `tblpermit`
+  ADD PRIMARY KEY (`permit_id`);
+
+--
+-- Indexes for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  ADD PRIMARY KEY (`DetailID`);
+
+--
+-- Indexes for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  ADD PRIMARY KEY (`ID`),
+  ADD UNIQUE KEY `unique_tpno_per_company` (`TPNO`,`CompID`);
+
+--
+-- Indexes for table `tblsaledetails`
+--
+ALTER TABLE `tblsaledetails`
+  ADD PRIMARY KEY (`BILL_NO`,`ITEM_CODE`,`COMP_ID`);
+
+--
+-- Indexes for table `tblsaleheader`
+--
+ALTER TABLE `tblsaleheader`
+  ADD PRIMARY KEY (`BILL_NO`,`COMP_ID`);
+
+--
+-- Indexes for table `tblsize`
+--
+ALTER TABLE `tblsize`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_size_code` (`SIZE_CODE`);
+
+--
+-- Indexes for table `tblsubclass_new`
+--
+ALTER TABLE `tblsubclass_new`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_subclass_code` (`SUBCLASS_CODE`);
+
+--
+-- Indexes for table `tblsupplier`
+--
+ALTER TABLE `tblsupplier`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_code` (`CODE`);
+
+--
+-- Indexes for table `tbl_cash_memo_prints`
+--
+ALTER TABLE `tbl_cash_memo_prints`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_doc_counter`
+--
+ALTER TABLE `tbl_doc_counter`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_pending_sales`
+--
+ALTER TABLE `tbl_pending_sales`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tbl_shortcuts`
+--
+ALTER TABLE `tbl_shortcuts`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `temp_bill_storage`
+--
+ALTER TABLE `temp_bill_storage`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `license_types`
+--
+ALTER TABLE `license_types`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblbalcrdf`
+--
+ALTER TABLE `tblbalcrdf`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblbreakages`
+--
+ALTER TABLE `tblbreakages`
+  MODIFY `BRK_No` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblcategory`
+--
+ALTER TABLE `tblcategory`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblclass_new`
+--
+ALTER TABLE `tblclass_new`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblcompany`
+--
+ALTER TABLE `tblcompany`
+  MODIFY `CompID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblcustomerprices`
+--
+ALTER TABLE `tblcustomerprices`
+  MODIFY `CustPID` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblcustomersales`
+--
+ALTER TABLE `tblcustomersales`
+  MODIFY `SaleID` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_1`
+--
+ALTER TABLE `tbldailystock_1`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_1_02_26`
+--
+ALTER TABLE `tbldailystock_1_02_26`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_1_03_26`
+--
+ALTER TABLE `tbldailystock_1_03_26`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_01_21`
+--
+ALTER TABLE `tbldailystock_7_01_21`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_02_21`
+--
+ALTER TABLE `tbldailystock_7_02_21`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_03_21`
+--
+ALTER TABLE `tbldailystock_7_03_21`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_03_26`
+--
+ALTER TABLE `tbldailystock_7_03_26`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_04_20`
+--
+ALTER TABLE `tbldailystock_7_04_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_04_21`
+--
+ALTER TABLE `tbldailystock_7_04_21`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_05_20`
+--
+ALTER TABLE `tbldailystock_7_05_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_06_20`
+--
+ALTER TABLE `tbldailystock_7_06_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_07_20`
+--
+ALTER TABLE `tbldailystock_7_07_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_08_20`
+--
+ALTER TABLE `tbldailystock_7_08_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_09_20`
+--
+ALTER TABLE `tbldailystock_7_09_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_10_20`
+--
+ALTER TABLE `tbldailystock_7_10_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_11_20`
+--
+ALTER TABLE `tbldailystock_7_11_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_7_12_20`
+--
+ALTER TABLE `tbldailystock_7_12_20`
+  MODIFY `DailyStockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldailystock_summary_7`
+--
+ALTER TABLE `tbldailystock_summary_7`
+  MODIFY `SummaryID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbldrydays`
+--
+ALTER TABLE `tbldrydays`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblexpenses`
+--
+ALTER TABLE `tblexpenses`
+  MODIFY `VNO` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblfinyear`
+--
+ALTER TABLE `tblfinyear`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblgheads`
+--
+ALTER TABLE `tblgheads`
+  MODIFY `GCODE` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblitemmaster`
+--
+ALTER TABLE `tblitemmaster`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblitem_stock`
+--
+ALTER TABLE `tblitem_stock`
+  MODIFY `StockID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbllheads`
+--
+ALTER TABLE `tbllheads`
+  MODIFY `LCODE` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblpermit`
+--
+ALTER TABLE `tblpermit`
+  MODIFY `permit_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblpurchasedetails`
+--
+ALTER TABLE `tblpurchasedetails`
+  MODIFY `DetailID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblpurchases`
+--
+ALTER TABLE `tblpurchases`
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblsize`
+--
+ALTER TABLE `tblsize`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblsubclass_new`
+--
+ALTER TABLE `tblsubclass_new`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblsupplier`
+--
+ALTER TABLE `tblsupplier`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_cash_memo_prints`
+--
+ALTER TABLE `tbl_cash_memo_prints`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_doc_counter`
+--
+ALTER TABLE `tbl_doc_counter`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_pending_sales`
+--
+ALTER TABLE `tbl_pending_sales`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tbl_shortcuts`
+--
+ALTER TABLE `tbl_shortcuts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `temp_bill_storage`
+--
+ALTER TABLE `temp_bill_storage`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

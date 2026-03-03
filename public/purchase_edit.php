@@ -165,7 +165,10 @@ function reverseArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $p
 
 // Function to update subsequent days after stock change
 function updateSubsequentDays($conn, $dailyStockTable, $monthYear, $itemCode, $startDay, $quantityChange) {
-    for ($day = $startDay + 1; $day <= 31; $day++) {
+    // Get the number of days in the month
+    $days_in_month = date('t', strtotime($monthYear . "-01"));
+    
+    for ($day = $startDay + 1; $day <= $days_in_month; $day++) {
         $dayStr = str_pad($day, 2, '0', STR_PAD_LEFT);
         $openingColumn = "DAY_{$dayStr}_OPEN";
         $closingColumn = "DAY_{$dayStr}_CLOSING";

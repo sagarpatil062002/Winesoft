@@ -335,8 +335,8 @@ foreach ($dates as $date) {
         ]
     ];
     
-    // Fetch all stock data for this month from the appropriate table
-    $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+    // Fetch all stock data for this month from the appropriate table (LIQ_FLAG removed - using item master)
+    $stockQuery = "SELECT ITEM_CODE,
                   DAY_{$day}_OPEN as opening, 
                   DAY_{$day}_PURCHASE as purchase, 
                   DAY_{$day}_SALES as sales, 
@@ -464,7 +464,8 @@ $start_dailyStockTable = getTableForDate($conn, $compID, $from_date);
 $hasStartDayColumns = tableHasDayColumns($conn, $start_dailyStockTable, $start_day);
 
 if ($hasStartDayColumns) {
-    $openingQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+    // Get opening balance for the start date (LIQ_FLAG removed - using item master)
+    $openingQuery = "SELECT ITEM_CODE,
                      DAY_{$start_day}_OPEN as opening
                      FROM $start_dailyStockTable 
                      WHERE STK_MONTH = ?";
