@@ -2,6 +2,7 @@
 // generate_bills_ultra_fast.php - HYPER-OPTIMIZED FOR 1000+ BILLS IN < 3 SECONDS
 // Includes all features: bills, cash memos, stock updates with real-time progress
 // NOW WITH PROPER VOLUME LIMIT ENFORCEMENT USING EXISTING FUNCTIONS
+// NOW WITH DRY DAY FILTERING
 session_start();
 
 // Error reporting - only log errors, don't display
@@ -14,12 +15,13 @@ ini_set('max_execution_time', 300); // 5 minutes max
 require_once "../config/db.php";
 require_once "volume_limit_utils.php";
 require_once "cash_memo_functions.php";
+require_once "drydays_functions.php"; // ADDED: For dry day checking
 
-// Minimal logging function - only for critical errors
+// Minimal logging function - for critical errors and info
 function logMessage($message, $level = 'INFO') {
-    // Only log errors to save disk I/O
-    if ($level === 'ERROR') {
-        $logFile = '../logs/sales_errors.log';
+    // Only log errors or info to track dry day filtering
+    if ($level === 'ERROR' || $level === 'INFO') {
+        $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
         $timestamp = date('Y-m-d H:i:s');
         $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
         
@@ -121,6 +123,28 @@ try {
     }
     
     // ============================================================================
+    // STEP 5: GET AVAILABLE DATES (EXCLUDING DRY DAYS) - NEW!
+    // ============================================================================
+    $dryDaysManager = new DryDaysManager($conn);
+    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
+    $dry_dates = array_keys($dry_days);
+    
+    // Get available dates (exclude dry days)
+    $available_dates = [];
+    foreach ($date_array as $date) {
+        if (!in_array($date, $dry_dates)) {
+            $available_dates[] = $date;
+        }
+    }
+    
+    // If no available dates, throw error
+    if (empty($available_dates)) {
+        throw new Exception("No available dates in selected range - all dates are dry days!");
+    }
+    
+    logMessage("Date range: $start_date to $end_date, Total days: $days_count, Dry days: " . count($dry_dates) . ", Available days: " . count($available_dates), 'INFO');
+    
+    // ============================================================================
     // STEP 5: SINGLE QUERY TO LOAD ALL MASTER DATA
     // ============================================================================
     $item_codes = array_keys($items);
@@ -188,9 +212,19 @@ try {
         $items_processed++;
         $_SESSION[$progress_key]['items_processed'] = $items_processed;
         
-        // Use distributeSales function from volume_limit_utils
-        $distribution = distributeSales($total_qty, $days_count);
-        $daily_sales_data[$item_code] = $distribution;
+        // Use distributeSalesWithGlobalRestrictions function from volume_limit_utils
+        // This will only distribute to available dates (excluding dry days)
+        $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
+        
+        // Map back to full date array (with 0 for unavailable/dry days)
+        $full_distribution = array_fill(0, $days_count, 0);
+        foreach ($available_dates as $i => $date) {
+            $date_index = array_search($date, $date_array);
+            if ($date_index !== false) {
+                $full_distribution[$date_index] = $distribution[$i] ?? 0;
+            }
+        }
+        $daily_sales_data[$item_code] = $full_distribution;
         
         // Count days with sales for this item
         $sale_days = 0;
@@ -217,6 +251,7 @@ try {
     }
     
     // Call the existing generateBillsWithLimits function from volume_limit_utils.php
+    // Pass available_dates to filter out dry days at backend
     $bills = generateBillsWithLimits(
         $conn,
         $formatted_items_data,
@@ -225,7 +260,8 @@ try {
         $mode,
         $comp_id,
         $user_id,
-        $fin_year_id
+        $fin_year_id,
+        $available_dates  // NEW: Pass available dates to filter out dry days
     );
     
     // Get starting bill number

@@ -1,10 +1,52 @@
 <?php
 // volume_limit_utils.php - OPTIMIZED WITH CACHING
+// Updated to use new database structure:
+// - tblcategory: CATEGORY_CODE, CATEGORY_NAME, LIQ_FLAG
+// - tblclass_new: CLASS_CODE, CLASS_NAME, CATEGORY_CODE, LIQ_FLAG
+// - tblsubclass_new: SUBCLASS_CODE, SUBCLASS_NAME, CLASS_CODE
+// - tblsize: SIZE_CODE, SIZE_DESC, ML_VOLUME, CC, LIQ_FLAG
+//
+// Volume Limit Categories:
+// - IMFL: Spirit (CAT001) + Wine (CAT002) categories
+// - BEER: Fermented Beer (CAT003) + Mild Beer (CAT004) categories
+// - CL: Country Liquor (CAT005) category
 
 // Global caches
 $category_cache = [];
 $size_cache = [];
 $limits_cache = [];
+
+/**
+ * Get category name and LIQ_FLAG from category code
+ */
+function getCategoryInfo($conn, $category_code) {
+    $query = "SELECT CATEGORY_NAME, LIQ_FLAG FROM tblcategory WHERE CATEGORY_CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $category_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    return $row ?: ['CATEGORY_NAME' => '', 'LIQ_FLAG' => ''];
+}
+
+/**
+ * Get category code from item code using the new hierarchy
+ */
+function getItemCategoryCode($conn, $item_code) {
+    // Get item's CLASS_CODE_NEW and then get the CATEGORY_CODE from tblclass_new
+    $query = "SELECT im.CLASS_CODE_NEW, cn.CATEGORY_CODE 
+              FROM tblitemmaster im 
+              LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+              WHERE im.CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $item_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    return $row['CATEGORY_CODE'] ?? '';
+}
 
 /**
  * Get category limits from tblcompany - CACHED
@@ -32,7 +74,11 @@ function getCategoryLimits($conn, $comp_id) {
 }
 
 /**
- * Determine item category based on LIQ_FLAG and item details - CACHED
+ * Determine item category based on CATEGORY_CODE from tblitemmaster
+ * Now uses the new database structure:
+ * - IMFL: Spirit (CAT001) + Wine (CAT002) categories
+ * - BEER: Fermented Beer (CAT003) + Mild Beer (CAT004) categories
+ * - CL: Country Liquor (CAT005) category
  */
 function getItemCategory($conn, $item_code, $mode) {
     global $category_cache;
@@ -43,10 +89,12 @@ function getItemCategory($conn, $item_code, $mode) {
         return $category_cache[$cache_key];
     }
     
-    // Get item details including LIQ_FLAG from tblitemmaster
-    $query = "SELECT im.DETAILS2, sc.LIQ_FLAG 
+    // Get item details including CATEGORY_CODE from tblitemmaster
+    // Join with tblclass_new to get the category mapping
+    $query = "SELECT im.CATEGORY_CODE, im.CLASS_CODE_NEW, cn.CATEGORY_CODE as CLASS_CATEGORY_CODE, cat.LIQ_FLAG as CAT_LIQ_FLAG
               FROM tblitemmaster im 
-              LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP 
+              LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+              LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
               WHERE im.CODE = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $item_code);
@@ -60,64 +108,50 @@ function getItemCategory($conn, $item_code, $mode) {
         return 'OTHER';
     }
     
-    $details2 = strtoupper($item_data['DETAILS2'] ?? '');
-    $liq_flag = $item_data['LIQ_FLAG'] ?? '';
+    // Get the category code - prefer from class mapping
+    $category_code = $item_data['CLASS_CATEGORY_CODE'] ?? $item_data['CATEGORY_CODE'] ?? '';
+    $liq_flag = $item_data['CAT_LIQ_FLAG'] ?? '';
     
-    // PRIMARY: Use LIQ_FLAG for categorization if available
+    // Determine category based on category code
+    // IMFL: Spirit (CAT001) + Wine (CAT002)
+    if ($category_code === 'CAT001' || $category_code === 'CAT002') {
+        $category_cache[$cache_key] = 'IMFL';
+        return 'IMFL';
+    }
+    
+    // BEER: Fermented Beer (CAT003) + Mild Beer (CAT004)
+    if ($category_code === 'CAT003' || $category_code === 'CAT004') {
+        $category_cache[$cache_key] = 'BEER';
+        return 'BEER';
+    }
+    
+    // CL: Country Liquor (CAT005)
+    if ($category_code === 'CAT005') {
+        $category_cache[$cache_key] = 'CL';
+        return 'CL';
+    }
+    
+    // Fallback: Use LIQ_FLAG from category if available
     if (!empty($liq_flag)) {
         switch (strtoupper($liq_flag)) {
             case 'F':
-            case 'FL':
                 $category_cache[$cache_key] = 'IMFL';
                 return 'IMFL';
             case 'C':
-            case 'CL':
                 $category_cache[$cache_key] = 'CL';
                 return 'CL';
-            case 'B':
-            case 'BEER':
-                $category_cache[$cache_key] = 'BEER';
-                return 'BEER';
+            case 'O':
+                // Other (non-liquor) - could be soda, cold drinks, etc.
+                $category_cache[$cache_key] = 'OTHER';
+                return 'OTHER';
         }
     }
     
-    // SECONDARY: Categorize based on DETAILS2 content if LIQ_FLAG not available
+    // Fallback: Use mode to determine category
     if ($mode === 'F' || $mode === 'FL') {
-        // Check if it's a liquor item by looking for ML size indication
-        if (preg_match('/\d+\s*ML/i', $details2)) {
-            $category_cache[$cache_key] = 'IMFL';
-            return 'IMFL';
-        }
-        
-        // Specific liquor type detection
-        $liquor_keywords = ['WHISKY', 'WHISKEY', 'GIN', 'BRANDY', 'VODKA', 'RUM', 'LIQUOR', 'WINE', 'SCOTCH', 'BOURBON', 'TEQUILA'];
-        foreach ($liquor_keywords as $keyword) {
-            if (strpos($details2, $keyword) !== false) {
-                $category_cache[$cache_key] = 'IMFL';
-                return 'IMFL';
-            }
-        }
-        
-        // Beer detection
-        if (strpos($details2, 'BEER') !== false || strpos($details2, 'LAGER') !== false || strpos($details2, 'ALE') !== false) {
-            $category_cache[$cache_key] = 'BEER';
-            return 'BEER';
-        }
-        
-        // Default: if it's in Foreign Liquor mode but doesn't match above, treat as IMFL
         $category_cache[$cache_key] = 'IMFL';
         return 'IMFL';
-        
     } elseif ($mode === 'C' || $mode === 'CL') {
-        // Country liquor detection
-        $cl_keywords = ['COUNTRY', 'CL', 'DESI', 'LOCAL', 'TRADITIONAL'];
-        foreach ($cl_keywords as $keyword) {
-            if (strpos($details2, $keyword) !== false) {
-                $category_cache[$cache_key] = 'CL';
-                return 'CL';
-            }
-        }
-        
         $category_cache[$cache_key] = 'CL';
         return 'CL';
     }
@@ -127,7 +161,8 @@ function getItemCategory($conn, $item_code, $mode) {
 }
 
 /**
- * Get item size from CC in tblsubclass or extract from details - CACHED
+ * Get item size from SIZE_CODE in tblsize table - CACHED
+ * Now uses the new database structure with SIZE_CODE from tblitemmaster
  */
 function getItemSize($conn, $item_code, $mode) {
     global $size_cache;
@@ -138,10 +173,10 @@ function getItemSize($conn, $item_code, $mode) {
         return $size_cache[$cache_key];
     }
     
-    // First try to get size from DETAILS2 in tblitemmaster with better extraction
-    $query = "SELECT im.DETAILS2, sc.CC 
+    // First try to get size from SIZE_CODE in tblitemmaster joined with tblsize
+    $query = "SELECT im.SIZE_CODE, sz.ML_VOLUME, sz.CC
               FROM tblitemmaster im 
-              LEFT JOIN tblsubclass sc ON im.DETAILS2 = sc.ITEM_GROUP AND sc.LIQ_FLAG = ?
+              LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE AND sz.LIQ_FLAG = ?
               WHERE im.CODE = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ss", $mode, $item_code);
@@ -150,20 +185,36 @@ function getItemSize($conn, $item_code, $mode) {
     $item_data = $result->fetch_assoc();
     $stmt->close();
     
-    // Priority 1: Use CC from tblsubclass if available and valid
-    if ($item_data && $item_data['CC'] > 0) {
+    // Priority 1: Use ML_VOLUME from tblsize if available and valid
+    if ($item_data && !empty($item_data['ML_VOLUME']) && $item_data['ML_VOLUME'] > 0) {
+        $size_cache[$cache_key] = (float)$item_data['ML_VOLUME'];
+        return (float)$item_data['ML_VOLUME'];
+    }
+    
+    // Priority 2: Use CC from tblsize if available and valid
+    if ($item_data && !empty($item_data['CC']) && $item_data['CC'] > 0) {
         $size_cache[$cache_key] = (float)$item_data['CC'];
         return (float)$item_data['CC'];
     }
     
-    // Priority 2: Extract from DETAILS2 with improved pattern matching
+    // Priority 3: Try to get from DETAILS2 in tblitemmaster with better extraction
+    $query = "SELECT im.DETAILS2 
+              FROM tblitemmaster im 
+              WHERE im.CODE = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $item_code);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $item_data = $result->fetch_assoc();
+    $stmt->close();
+    
     if ($item_data && !empty($item_data['DETAILS2'])) {
         $details2 = $item_data['DETAILS2'];
         // Enhanced size extraction (handles various formats)
         if (preg_match('/(\d+(?:\.\d+)?)\s*ML/i', $details2, $matches)) {
             $size = (float)$matches[1];
             // Common size validation
-            $common_sizes = [30, 60, 90, 120, 180, 250, 330, 350, 500, 650, 750, 1000, 1500];
+            $common_sizes = [30, 60, 90, 120, 180, 250, 330, 350, 500, 650, 750, 1000, 1500, 1750, 2000, 3000, 4500];
             foreach ($common_sizes as $common_size) {
                 if (abs($size - $common_size) <= 10) { // Allow small variations
                     $size_cache[$cache_key] = $common_size;
@@ -175,7 +226,7 @@ function getItemSize($conn, $item_code, $mode) {
         }
     }
     
-    // Priority 3: Try to get from DETAILS in tblitemmaster
+    // Priority 4: Try to get from DETAILS in tblitemmaster
     $query = "SELECT DETAILS FROM tblitemmaster WHERE CODE = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("s", $item_code);
@@ -213,12 +264,31 @@ function getItemSize($conn, $item_code, $mode) {
 
 /**
  * Generate bills with volume limits - ENHANCED MULTI-CATEGORY LOGIC
+ * Now accepts available_dates parameter to filter out dry days
  */
-function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id) {
+function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates = []) {
     $category_limits = getCategoryLimits($conn, $comp_id);
+    
+    // Filter out dry days from the date array - only process available dates
+    $valid_date_indices = [];
+    if (!empty($available_dates)) {
+        // Create a lookup set for faster checking
+        $available_dates_set = array_flip($available_dates);
+        
+        foreach ($date_array as $index => $date) {
+            // Only include dates that are in the available_dates list
+            if (isset($available_dates_set[$date])) {
+                $valid_date_indices[$index] = $date;
+            }
+        }
+    } else {
+        // If no available_dates provided, assume all dates are valid (backward compatibility)
+        $valid_date_indices = array_combine(array_keys($date_array), $date_array);
+    }
+    
     $bills = [];
     
-    foreach ($date_array as $date_index => $sale_date) {
+    foreach ($valid_date_indices as $date_index => $sale_date) {
         $daily_bills = [];
         
         // Collect all items for this day with enhanced categorization
@@ -551,5 +621,33 @@ function distributeSales($total_qty, $days_count) {
     shuffle($daily_sales);
     
     return $daily_sales;
+}
+
+/**
+ * Distribute sales only to available dates (excluding dry days)
+ * Used by generate_bills_ultra_fast.php
+ */
+if (!function_exists('distributeSalesWithGlobalRestrictions')) {
+    function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
+        if ($total_qty <= 0 || empty($available_dates)) return [];
+        
+        $available_days_count = count($available_dates);
+        
+        // Distribute across available dates
+        $base_qty = floor($total_qty / $available_days_count);
+        $remainder = $total_qty % $available_days_count;
+        
+        $distribution = array_fill(0, $available_days_count, $base_qty);
+        
+        // Distribute remainder evenly
+        for ($i = 0; $i < $remainder; $i++) {
+            $distribution[$i]++;
+        }
+        
+        // Shuffle the distribution to make it look more natural
+        shuffle($distribution);
+        
+        return $distribution;
+    }
 }
 ?>

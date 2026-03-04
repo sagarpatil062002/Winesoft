@@ -1,0 +1,949 @@
+[2026-03-04 08:33:45] Starting delete operation for company ID: 2
+[2026-03-04 08:33:45] Bulk delete request: [
+    "14",
+    "13",
+    "12",
+    "11"
+]
+[2026-03-04 08:33:45] Starting reverse for purchase ID: 14
+[2026-03-04 08:33:45] Purchase found: {
+    "date": "2022-07-16",
+    "tp_no": "5124",
+    "is_previous_fy": true
+}
+[2026-03-04 08:33:45] Found 6 items
+[2026-03-04 08:33:45] Main stock updated
+[2026-03-04 08:33:45] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-04 08:33:45] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_07_22",
+    "day": "16",
+    "month": "2022-07"
+}
+[2026-03-04 08:33:45] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0010663",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:45] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMWN0019711",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:45] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0024573",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:46] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0027089",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:46] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0030963",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:46] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMKB0031387",
+    "stk_month": "2022-07",
+    "start_day": "16"
+}
+[2026-03-04 08:33:47] Previous FY purchase month table updated
+[2026-03-04 08:33:47] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0010663",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:47] Starting cascade - last day: 16, closing value: 36
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:47] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:48] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMWN0019711",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 18
+}
+[2026-03-04 08:33:48] Starting cascade - last day: 16, closing value: 12
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:48] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0024573",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 24
+}
+[2026-03-04 08:33:48] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:48] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:49] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0027089",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 60
+}
+[2026-03-04 08:33:49] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:49] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:49] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:49] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0030963",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 24
+}
+[2026-03-04 08:33:50] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:50] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMKB0031387",
+    "purchase_date": "2022-07-16",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 60
+}
+[2026-03-04 08:33:50] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:50] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:51] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:51] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:51] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:51] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:51] Deleted 6 detail records
+[2026-03-04 08:33:51] Deleted purchase header, affected rows: 1
+[2026-03-04 08:33:51] Transaction committed successfully
+[2026-03-04 08:33:51] Starting reverse for purchase ID: 13
+[2026-03-04 08:33:51] Purchase found: {
+    "date": "2022-07-09",
+    "tp_no": "2274",
+    "is_previous_fy": true
+}
+[2026-03-04 08:33:51] Found 3 items
+[2026-03-04 08:33:51] Main stock updated
+[2026-03-04 08:33:51] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-04 08:33:51] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_07_22",
+    "day": "09",
+    "month": "2022-07"
+}
+[2026-03-04 08:33:51] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0009846",
+    "stk_month": "2022-07",
+    "start_day": "09"
+}
+[2026-03-04 08:33:51] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0009847",
+    "stk_month": "2022-07",
+    "start_day": "09"
+}
+[2026-03-04 08:33:52] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0018149",
+    "stk_month": "2022-07",
+    "start_day": "09"
+}
+[2026-03-04 08:33:52] Previous FY purchase month table updated
+[2026-03-04 08:33:52] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0009846",
+    "purchase_date": "2022-07-09",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 60
+}
+[2026-03-04 08:33:52] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:52] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:53] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0009847",
+    "purchase_date": "2022-07-09",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:53] Starting cascade - last day: 9, closing value: 12
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:53] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0018149",
+    "purchase_date": "2022-07-09",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:53] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:53] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:54] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:54] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:54] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:54] Deleted 3 detail records
+[2026-03-04 08:33:54] Deleted purchase header, affected rows: 1
+[2026-03-04 08:33:54] Transaction committed successfully
+[2026-03-04 08:33:54] Starting reverse for purchase ID: 12
+[2026-03-04 08:33:54] Purchase found: {
+    "date": "2022-07-08",
+    "tp_no": "5174",
+    "is_previous_fy": true
+}
+[2026-03-04 08:33:54] Found 1 items
+[2026-03-04 08:33:54] Main stock updated
+[2026-03-04 08:33:54] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-04 08:33:54] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_07_22",
+    "day": "08",
+    "month": "2022-07"
+}
+[2026-03-04 08:33:54] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMWN0020093",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:55] Previous FY purchase month table updated
+[2026-03-04 08:33:55] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMWN0020093",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:55] Starting cascade - last day: 8, closing value: 12
+[2026-03-04 08:33:55] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:55] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:55] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:55] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:55] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:56] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:56] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:56] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:56] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:56] Deleted 1 detail records
+[2026-03-04 08:33:56] Deleted purchase header, affected rows: 1
+[2026-03-04 08:33:56] Transaction committed successfully
+[2026-03-04 08:33:56] Starting reverse for purchase ID: 11
+[2026-03-04 08:33:56] Purchase found: {
+    "date": "2022-07-08",
+    "tp_no": "7842",
+    "is_previous_fy": true
+}
+[2026-03-04 08:33:56] Found 5 items
+[2026-03-04 08:33:56] Main stock updated
+[2026-03-04 08:33:56] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-04 08:33:56] Updating previous FY purchase month table: {
+    "table": "tbldailystock_2_07_22",
+    "day": "08",
+    "month": "2022-07"
+}
+[2026-03-04 08:33:56] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0009942",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:56] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0010445",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:57] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMPL0010451",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:57] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0018161",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:57] Cascading stock: {
+    "table": "tbldailystock_2_07_22",
+    "item_code": "SCMBR0018164",
+    "stk_month": "2022-07",
+    "start_day": "08"
+}
+[2026-03-04 08:33:58] Previous FY purchase month table updated
+[2026-03-04 08:33:58] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0009942",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:58] Starting cascade - last day: 8, closing value: 72
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:58] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0010445",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:58] Starting cascade - last day: 8, closing value: 72
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:58] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:59] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0010451",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 12
+}
+[2026-03-04 08:33:59] Starting cascade - last day: 8, closing value: 72
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:33:59] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0018161",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 24
+}
+[2026-03-04 08:33:59] Starting cascade - last day: 8, closing value: 48
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:33:59] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:34:00] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMBR0018164",
+    "purchase_date": "2022-07-08",
+    "purchase_month": 7,
+    "purchase_year": 2022,
+    "fy_end_date": "2023-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2023,
+    "reduction_qty": 156
+}
+[2026-03-04 08:34:00] Starting cascade - last day: 0, closing value: 0
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_08_22",
+    "monthYear": "2022-08",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_09_22",
+    "monthYear": "2022-09",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_10_22",
+    "monthYear": "2022-10",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_11_22",
+    "monthYear": "2022-11",
+    "daysInMonth": "30"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_12_22",
+    "monthYear": "2022-12",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_01_23",
+    "monthYear": "2023-01",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_02_23",
+    "monthYear": "2023-02",
+    "daysInMonth": "28"
+}
+[2026-03-04 08:34:00] Processing archived month table for reversal: {
+    "table": "tbldailystock_2_03_23",
+    "monthYear": "2023-03",
+    "daysInMonth": "31"
+}
+[2026-03-04 08:34:00] Cascading reversal completed to FY end: 2023-03-31
+[2026-03-04 08:34:00] Deleted 5 detail records
+[2026-03-04 08:34:00] Deleted purchase header, affected rows: 1
+[2026-03-04 08:34:00] Transaction committed successfully

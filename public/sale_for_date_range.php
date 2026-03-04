@@ -302,11 +302,11 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
 $fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
 
-// If no dates provided, default to financial year start date (for new sessions)
+// If no dates provided, default to TODAY's date
 // Otherwise use provided dates (maintains backward compatibility)
 if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
-    $start_date = $fin_year_start;
-    $end_date = min($fin_year_end, date('Y-m-d')); // Can't be future
+    $start_date = date('Y-m-d'); // Default to today
+    $end_date = date('Y-m-d');   // Default to today
 } else {
     $start_date = $_GET['start_date'];
     $end_date = $_GET['end_date'];
@@ -1669,7 +1669,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
                         // FIXED: Use volume_limit_utils.php function for bill generation
-                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                        // Pass available_dates to filter out dry days at backend
+                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates_global);
                         
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
@@ -2483,33 +2484,6 @@ tr.global-restriction .qty-input {
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
-      <!-- NEW: Global Restriction Banner -->
-      <?php if ($has_restrictions): ?>
-        <div class="restriction-banner mb-3">
-          <strong><i class="fas fa-exclamation-triangle"></i> Date Range Restrictions:</strong><br>
-          <?php if (!empty($restrictions['unavailable_sales_dates'])): ?>
-            <span class="badge bg-danger">Existing Sales: <?= implode(', ', $restrictions['unavailable_sales_dates']) ?></span><br>
-          <?php endif; ?>
-          <?php if (!empty($dry_dates)): ?>
-            <span class="badge bg-warning">Dry Days: 
-              <?php 
-              $dryDaysManager = new DryDaysManager($conn);
-              $dry_days_info = $restrictions['dry_days_info'];
-              foreach ($dry_dates as $dry_date): 
-                $description = $dry_days_info[$dry_date] ?? 'Dry Day';
-              ?>
-                <span title="<?= htmlspecialchars($description) ?>"><?= $dry_date ?></span><?= !next($dry_dates) ? '' : ', ' ?>
-              <?php endforeach; ?>
-            </span><br>
-          <?php endif; ?>
-          <?php if (!empty($available_dates_global)): ?>
-            <span class="badge bg-success">Available Dates: <?= implode(', ', $available_dates_global) ?></span>
-          <?php else: ?>
-            <span class="badge bg-danger">No available dates in selected range!</span>
-          <?php endif; ?>
-        </div>
-      <?php endif; ?>
-
       <!-- Bill Generation Progress Modal -->
 <div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
     <div class="modal-dialog modal-lg">
@@ -2814,11 +2788,10 @@ tr.global-restriction .qty-input {
           </a>
         </div>
 
-        <?php if (empty($available_dates_global) && $has_restrictions): ?>
-          <div class="alert alert-danger mb-3">
+        <?php if ($has_restrictions && empty($available_dates_global)): ?>
+          <div class="alert alert-warning mb-3">
             <i class="fas fa-exclamation-circle"></i>
-            <strong>No available dates in selected range!</strong><br>
-            Please select a different date range.
+            <strong>Note:</strong> Some dates in range are restricted due to existing sales or dry days.
           </div>
         <?php endif; ?>
 
@@ -2833,7 +2806,7 @@ tr.global-restriction .qty-input {
                 <th>Rate (₹)</th>
                 <th>Available Stock</th>
                 <th>Sale Qty (Auto-calculated)</th>
-                <th class="closing-balance-header">Enter Closing Balance</th>
+                <th>Closing Stock (End Date)</th>
                 <th class="action-column">Action</th>
                 
                 <!-- Date Distribution Headers (will be populated by JavaScript) -->
@@ -2931,31 +2904,30 @@ tr.global-restriction .qty-input {
                        <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($restriction_title) . '"' : '' ?>>
             </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
-                <span class="stock-integer"><?= number_format($display_closing) ?></span>
-                <!-- Show stock status for closing balance too -->
-                <?php if ($closing_balance <= 0): ?>
-                    <br><span class="stock-status stock-out">Out</span>
-                <?php elseif ($closing_balance < 10): ?>
+                <?php 
+                $closing_stock_display = floor($closing_balance);
+                $closing_class = '';
+                $closing_bg = '';
+                if ($closing_balance < 0) {
+                    $closing_class = 'text-danger fw-bold';
+                    $closing_bg = 'background-color: #f8d7da;';
+                } elseif ($closing_balance < 10 && $closing_balance >= 0) {
+                    $closing_class = 'text-warning fw-bold';
+                }
+                ?>
+                <span class="stock-integer <?= $closing_class ?>" style="<?= $closing_bg ?>"><?= number_format($closing_stock_display) ?></span>
+                <!-- Show stock status for closing stock too -->
+                <?php if ($closing_balance < 0): ?>
+                    <br><span class="stock-status stock-out" style="<?= $closing_bg ?>">Out</span>
+                <?php elseif ($closing_balance < 10 && $closing_balance >= 0): ?>
                     <br><span class="stock-status stock-low">Low</span>
                 <?php endif; ?>
             </td>
             <td class="action-column">
-                <?php if ($should_disable_input): ?>
-                    <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                          title="<?= htmlspecialchars($restriction_title) ?>">
-                        <i class="fas fa-calendar-times"></i> No Available Dates
-                    </span>
-                <?php elseif ($has_restrictions && $has_available_dates): ?>
-                    <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                          title="Only <?= count($available_dates_global) ?> of <?= $days_count ?> dates are available due to existing sales or dry days.">
-                        <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates_global) ?> dates
-                    </span>
-                <?php else: ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                            data-code="<?= htmlspecialchars($item_code); ?>">
-                        <i class="fas fa-random"></i> Shuffle
-                    </button>
-                <?php endif; ?>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
+                        data-code="<?= htmlspecialchars($item_code); ?>">
+                    <i class="fas fa-random"></i> Shuffle
+                </button>
             </td>
             
             <!-- Date distribution cells will be inserted here by JavaScript -->
@@ -3554,14 +3526,8 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
 
         console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
-        if (isGlobalUnavailable && !isDryDate) {
-            // Date has existing global sales - show ✗
-            cell.addClass('global-unavailable-date');
-            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
-
-        } else if (isDryDate) {
+        // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+        if (isDryDate) {
             // Date is a dry day - show 🌙 (always with 0 quantity)
             cell.addClass('dry-unavailable-date');
             cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
@@ -3570,21 +3536,24 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
             const dryDescription = dryDaysInfo[date] || 'Dry Day';
             cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
-
+        } else if (isGlobalUnavailable && !isDryDate) {
+            // Date has existing global sales - show ✗
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
         } else if (isAvailable && qty > 0) {
             // Date is available and has new sales
             cell.addClass('available-date-with-sales');
             cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
-
         } else if (qty > 0) {
             // Normal distribution (no restrictions)
             cell.addClass('non-zero-distribution');
             cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date}`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
-
         } else {
             // Zero quantity
             cell.addClass('zero-distribution');
@@ -3780,11 +3749,12 @@ function validateQuantity(input) {
 // New function to update all UI elements for an item
 function updateItemUI(itemCode, qty, currentStock) {
     const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
-    const closingBalance = currentStock - qty;
+    // Closing Stock (End Date) = Available Stock - Sale Qty (Auto-calculated)
+    const closingStock = currentStock - qty;
     const amount = qty * rate;
     
     // Format to remove decimals for display
-    const displayClosing = Math.floor(closingBalance);
+    const displayClosing = Math.floor(closingStock);
     const displayAmount = Math.floor(amount);
     
     // Update all related UI elements
@@ -3795,13 +3765,17 @@ function updateItemUI(itemCode, qty, currentStock) {
     const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
     row.toggleClass('has-quantity', qty > 0);
     
-    // Update closing balance styling
+    // Update closing balance styling - highlight in RED if negative
     const closingCell = $(`#closing_${itemCode}`);
     closingCell.removeClass('text-warning text-danger fw-bold');
+    closingCell.css('background-color', '');
     
-    if (closingBalance < 0) {
+    if (closingStock < 0) {
+        // Negative closing stock - highlight in RED
         closingCell.addClass('text-danger fw-bold');
-    } else if (closingBalance < (currentStock * 0.1)) {
+        closingCell.css('background-color', '#f8d7da');
+    } else if (closingStock < (currentStock * 0.1) && closingStock >= 0) {
+        // Low stock but still positive - highlight in yellow/warning
         closingCell.addClass('text-warning fw-bold');
     }
 }
@@ -4771,28 +4745,8 @@ $(document).on('click', '.btn-shuffle-item', async function() {
 
                 console.log(`DEBUG: Individual shuffle ${itemCode} - updating cell ${index} for date ${date} with qty ${qty}`);
 
-                // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
-
-                // Check if this date is unavailable due to global sales
-                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-                
-                // Check if this date is a dry day
-                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-
-                // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date) && !isDryDate;
-
-                console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-                if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
-
-                } else if (isDryDate) {
+                // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+                if (isDryDate) {
                     // Date is a dry day - show 🌙
                     cell.addClass('dry-unavailable-date');
                     cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
@@ -4801,20 +4755,23 @@ $(document).on('click', '.btn-shuffle-item', async function() {
                     const dryDescription = dryDaysInfo[date] || 'Dry Day';
                     cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to DRY DAY`);
-
+                } else if (isGlobalUnavailable && !isDryDate) {
+                    // Date has existing global sales - show ✗
+                    cell.addClass('global-unavailable-date');
+                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to AVAILABLE WITH SALES`);
-
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
                     console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to NON-ZERO`);
-
                 } else {
                     cell.addClass('zero-distribution');
                     cell.text('0');
@@ -4879,28 +4836,8 @@ $('#shuffleBtn').off('click').on('click', async function() {
 
                 console.log(`DEBUG: Shuffle all - ${item.itemCode} updating cell ${index} for date ${date} with qty ${qty}`);
 
-                // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
-
-                // Check if this date is unavailable due to global sales
-                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-                
-                // Check if this date is a dry day
-                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-
-                // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date) && !isDryDate;
-
-                console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-                if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
-
-                } else if (isDryDate) {
+                // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+                if (isDryDate) {
                     // Date is a dry day - show 🌙
                     cell.addClass('dry-unavailable-date');
                     cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
@@ -4909,20 +4846,23 @@ $('#shuffleBtn').off('click').on('click', async function() {
                     const dryDescription = dryDaysInfo[date] || 'Dry Day';
                     cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to DRY DAY`);
-
+                } else if (isGlobalUnavailable && !isDryDate) {
+                    // Date has existing global sales - show ✗
+                    cell.addClass('global-unavailable-date');
+                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
                 } else if (isAvailable && qty > 0) {
                     // Date is available and has new sales
                     cell.addClass('available-date-with-sales');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to AVAILABLE WITH SALES`);
-
                 } else if (qty > 0) {
                     cell.addClass('non-zero-distribution');
                     cell.text(qty);
                     cell.attr('title', `${qty} units scheduled for ${date}`);
                     console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to NON-ZERO`);
-
                 } else {
                     cell.addClass('zero-distribution');
                     cell.text('0');

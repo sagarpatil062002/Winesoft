@@ -187,6 +187,36 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 // Date selection (default to current day)
 $sale_date = isset($_GET['sale_date']) ? $_GET['sale_date'] : date('Y-m-d');
 
+// Date range selection (for customer sales with date range)
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+
+// Ensure $_GET has the correct date parameters for pagination
+$_GET['start_date'] = $start_date;
+$_GET['end_date'] = $end_date;
+
+// Remove old sale_date from GET if present
+if (isset($_GET['sale_date'])) {
+    unset($_GET['sale_date']);
+}
+
+// Calculate days in range
+$days_count = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24) + 1;
+
+// If single date is used, set range to that date
+if (!isset($_GET['start_date']) && !isset($_GET['end_date'])) {
+    $start_date = $sale_date;
+    $end_date = $sale_date;
+    $days_count = 1;
+}
+
+// For backward compatibility: if only sale_date is provided, use it as both start and end
+if (isset($_GET['sale_date']) && !isset($_GET['start_date'])) {
+    $start_date = $_GET['sale_date'];
+    $end_date = $_GET['sale_date'];
+    $days_count = 1;
+}
+
 // Get company ID
 $comp_id = $_SESSION['CompID'];
 $current_stock_column = "Current_Stock" . $comp_id;
@@ -209,13 +239,13 @@ if (!isset($_SESSION['stock_columns_checked'])) {
 }
 
 // Calculate the day number for the sale_date to get closing balance
-$sale_day = date('d', strtotime($sale_date));
+$sale_day = date('d', strtotime($start_date));
 $closing_column = "DAY_" . sprintf('%02d', $sale_day) . "_CLOSING";
-$sale_month = date('Y-m', strtotime($sale_date));
+$sale_month = date('Y-m', strtotime($start_date));
 
-// Determine which daily stock table to use based on sale_date
+// Determine which daily stock table to use based on start_date
 $current_month = date('Y-m');
-$sale_month_year = date('m_Y', strtotime($sale_date));
+$sale_month_year = date('m_Y', strtotime($start_date));
 
 if ($sale_month === $current_month) {
     // Use current month table (no suffix)
@@ -223,10 +253,23 @@ if ($sale_month === $current_month) {
     $table_suffix = "";
 } else {
     // Use archived month table (with suffix mm_yyyy)
-    $sale_month_short = date('m', strtotime($sale_date));
-    $sale_year_short = date('y', strtotime($sale_date));
+    $sale_month_short = date('m', strtotime($start_date));
+    $sale_year_short = date('y', strtotime($start_date));
     $daily_stock_table = "tbldailystock_" . $comp_id . "_" . $sale_month_short . "_" . $sale_year_short;
     $table_suffix = "_" . $sale_month_short . "_" . $sale_year_short;
+}
+
+// Validate date range restrictions
+$restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+$unavailable_dates_global = $restrictions['unavailable_dates'];
+
+// Get all dates in range for distribution
+$all_dates_in_range = [];
+$current = strtotime($start_date);
+$end = strtotime($end_date);
+while ($current <= $end) {
+    $all_dates_in_range[] = date('Y-m-d', $current);
+    $current = strtotime('+1 day', $current);
 }
 
 // Build the order clause based on sequence type
@@ -357,6 +400,17 @@ if (!isset($_SESSION['customer_sale_quantities'])) {
 
 // Handle form submission to update session quantities
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
+    // Update date range from POST
+    if (isset($_POST['start_date'])) {
+        $start_date = $_POST['start_date'];
+    }
+    if (isset($_POST['end_date'])) {
+        $end_date = $_POST['end_date'];
+    }
+    
+    // Recalculate days count
+    $days_count = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24) + 1;
+    
     foreach ($_POST['sale_qty'] as $item_code => $qty) {
         $qty_val = intval($qty);
         if ($qty_val > 0) {
@@ -921,6 +975,94 @@ function getNextCustomerBillNumber($conn, $comp_id) {
 }
 
 // ============================================================================
+// DRY DAYS AND BACKDATED SALES CHECK FUNCTIONS (from sale_for_date_range.php)
+// ============================================================================
+
+/**
+ * Check for global backdated sales in a date range
+ */
+function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
+    $today = date('Y-m-d');
+    
+    // If end_date is in the future or today, no backdated restriction
+    if ($end_date >= $today) {
+        return [
+            'has_restriction' => false,
+            'unavailable_dates' => []
+        ];
+    }
+    
+    // Check if there are any existing sales between start_date and today
+    $query = "SELECT DISTINCT DATE(BILL_DATE) as sale_date 
+              FROM tblsaleheader 
+              WHERE COMP_ID = ? 
+              AND BILL_DATE BETWEEN ? AND ?";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("iss", $comp_id, $start_date, $today);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $existing_dates = [];
+    while ($row = $result->fetch_assoc()) {
+        $existing_dates[] = $row['sale_date'];
+    }
+    $stmt->close();
+    
+    return [
+        'has_restriction' => !empty($existing_dates),
+        'unavailable_dates' => $existing_dates
+    ];
+}
+
+/**
+ * Check for dry days in a date range
+ */
+function checkDryDaysInRange($conn, $start_date, $end_date) {
+    $dryDaysManager = new DryDaysManager($conn);
+    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
+    
+    return [
+        'has_dry_days' => !empty($dry_days),
+        'dry_days' => $dry_days,
+        'unavailable_dates' => array_keys($dry_days)
+    ];
+}
+
+/**
+ * Validate date range restrictions (both backdated sales and dry days)
+ */
+function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
+    // Check global sales restrictions
+    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
+    
+    // Check dry days
+    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
+    
+    // Combine unavailable dates
+    $all_unavailable = array_unique(array_merge(
+        $global_check['unavailable_dates'],
+        $dry_days_check['unavailable_dates']
+    ));
+    
+    return [
+        'has_restriction' => $global_check['has_restriction'] || $dry_days_check['has_dry_days'],
+        'has_backdated_sales' => $global_check['has_restriction'],
+        'has_dry_days' => $dry_days_check['has_dry_days'],
+        'dry_days_list' => $dry_days_check['dry_days'],
+        'unavailable_dates' => $all_unavailable
+    ];
+}
+
+/**
+ * Get unavailable dates for the date range
+ */
+function getUnavailableDates($conn, $start_date, $end_date, $comp_id) {
+    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+    return $restrictions['unavailable_dates'];
+}
+
+// ============================================================================
 // HANDLE SALE FINALIZATION WITH BILL GENERATION
 // ============================================================================
 
@@ -932,9 +1074,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
     $conn->query("SET SESSION wait_timeout = 28800");
     $conn->query("SET autocommit = 0");
     
-    // Validate customer selection
-    if (empty($selectedCustomer) && $selectedCustomer !== '') {
-        $_SESSION['error'] = "Please select a customer before finalizing sale";
+    // Handle customer selection from sales form - check if customer_field was posted
+    if (isset($_POST['customer_field'])) {
+        $customerField = trim($_POST['customer_field']);
+        
+        if (!empty($customerField)) {
+            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
+            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
+                // Extract customer name (remove "new:" prefix if present)
+                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
+                
+                if (!empty($customerName)) {
+                    // Get the next available LCODE for GCODE=32
+                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
+                    $maxResult = $conn->query($maxCodeQuery);
+                    $maxCode = 1;
+                    if ($maxResult && $maxResult->num_rows > 0) {
+                        $maxData = $maxResult->fetch_assoc();
+                        $maxCode = $maxData['max_code'] + 1;
+                    }
+                    
+                    // Insert new customer
+                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
+                    $stmt = $conn->prepare($insertQuery);
+                    $stmt->bind_param("is", $maxCode, $customerName);
+                    
+                    if ($stmt->execute()) {
+                        $_SESSION['selected_customer'] = $maxCode;
+                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
+                        logMessage("New customer created from sales form: $customerName (ID: $maxCode)", 'INFO');
+                    }
+                    $stmt->close();
+                }
+            } else {
+                // It's an existing customer code
+                $customerCode = intval($customerField);
+                if (array_key_exists($customerCode, $customers)) {
+                    $_SESSION['selected_customer'] = $customerCode;
+                }
+            }
+        } else {
+            // Empty field means walk-in customer
+            $_SESSION['selected_customer'] = '';
+        }
+        
+        // Update selectedCustomer variable
+        $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
+    }
+    
+    // Validate customer selection - allow empty for walk-in customer
+    // Empty string is valid (walk-in), customer code is valid (numeric), but invalid text is not
+    if ($selectedCustomer !== '' && !is_numeric($selectedCustomer)) {
+        $_SESSION['error'] = "Please select a valid customer or create a new one. Leave empty for walk-in customer.";
         header("Location: customer_sales.php");
         exit;
     }
@@ -963,47 +1154,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
         exit;
     }
     
-    // Check for backdated sales
-    if (!empty($itemsWithQuantity)) {
-        // Function from sale_for_date_range.php to check backdated sales
-        include_once 'check_backdated_functions.php';
+    // Check for backdated sales and dry days validation
+    // Use the new comprehensive validation function
+    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+    
+    if ($restrictions['has_restriction']) {
+        $error_message = "<strong>Cannot generate bills for the selected date range:</strong><br><br>";
         
-        $items_with_dates = [];
-        foreach ($itemsWithQuantity as $item_code) {
-            if ($_SESSION['customer_sale_quantities'][$item_code] > 0) {
-                $items_with_dates[$item_code] = [
-                    'start_date' => $sale_date,
-                    'end_date' => $sale_date
-                ];
-            }
+        if ($restrictions['has_backdated_sales']) {
+            $error_message .= "<div class='mb-2 text-danger'>";
+            $error_message .= "<strong>Existing sales found in date range!</strong><br>";
+            $error_message .= "<small>Please select a future date range or dates with no existing sales.</small>";
+            $error_message .= "</div>";
         }
         
-        if (!empty($items_with_dates)) {
-            // You'll need to create check_backdated_functions.php with this function
-            // $restricted_items = checkItemsBackdatedForDateRange($conn, $items_with_dates, $comp_id);
-            
-            // For now, we'll skip this check but you should implement it
-            $restricted_items = [];
-            
-            if (!empty($restricted_items)) {
-                $error_message = "<strong>Cannot enter sales for the following items on the selected date:</strong><br><br>";
-                
-                foreach ($restricted_items as $item_code => $restriction) {
-                    $item_name = isset($all_items_data[$item_code]['DETAILS']) ? 
-                        $all_items_data[$item_code]['DETAILS'] : $item_code;
-                    
-                    $error_message .= "<div class='mb-2'>";
-                    $error_message .= "<strong>$item_name ($item_code)</strong><br>";
-                    $error_message .= "<small>Selected Date: <span class='text-primary'>{$restriction['start_date']}</span></small><br>";
-                    $error_message .= "<small>Existing Sales: <span class='text-danger'>{$restriction['earliest_existing_sale']} to {$restriction['latest_existing_sale']}</span></small><br>";
-                    $error_message .= "</div>";
-                }
-                
-                $_SESSION['error'] = $error_message;
-                header("Location: customer_sales.php");
-                exit;
+        if ($restrictions['has_dry_days']) {
+            $error_message .= "<div class='mb-2 text-danger'>";
+            $error_message .= "<strong>Dry days found in selected range:</strong><br>";
+            foreach ($restrictions['dry_days_list'] as $dry_date => $day_name) {
+                $error_message .= "<small>• " . date('d-M-Y', strtotime($dry_date)) . " - $day_name</small><br>";
             }
+            $error_message .= "</div>";
         }
+        
+        $_SESSION['error'] = $error_message;
+        header("Location: customer_sales.php?start_date=$start_date&end_date=$end_date");
+        exit;
     }
     
     // Enhanced stock validation before transaction
@@ -1678,15 +1854,15 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
       <div class="mode-selector mb-3">
         <label class="form-label">Liquor Mode:</label>
         <div class="btn-group" role="group">
-          <a href="?mode=F&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=F&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $mode === 'F' ? 'mode-active' : '' ?>">
             Foreign Liquor
           </a>
-          <a href="?mode=C&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=C&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $mode === 'C' ? 'mode-active' : '' ?>">
             Country Liquor
           </a>
-          <a href="?mode=O&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=O&sequence_type=<?= $sequence_type ?>&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $mode === 'O' ? 'mode-active' : '' ?>">
             Others
           </a>
@@ -1697,15 +1873,15 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
       <div class="mb-3">
         <label class="form-label">Sequence Type:</label>
         <div class="btn-group" role="group">
-          <a href="?mode=<?= $mode ?>&sequence_type=user_defined&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=<?= $mode ?>&sequence_type=user_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'user_defined' ? 'sequence-active' : '' ?>">
             User Defined
           </a>
-          <a href="?mode=<?= $mode ?>&sequence_type=system_defined&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=<?= $mode ?>&sequence_type=system_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'system_defined' ? 'sequence-active' : '' ?>">
             System Defined
           </a>
-          <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&sale_date=<?= $sale_date ?>&page=1"
+          <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
             Group Defined
           </a>
@@ -1726,12 +1902,21 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                    value="<?= htmlspecialchars($sale_date); ?>" required>
           </div>
           
-          <div class="col-md-6">
-            <label class="form-label">Selected Date: 
-              <span class="fw-bold"><?= date('d-M-Y', strtotime($sale_date)) ?></span>
-              <span class="table-source-indicator <?= $sale_month === date('Y-m') ? 'table-current' : 'table-archive' ?>">
-                <?= $sale_month === date('Y-m') ? 'Current Month' : 'Archived Month' ?>
-              </span>
+          <div class="col-md-4">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" name="start_date" class="form-control" 
+                   value="<?= htmlspecialchars($start_date); ?>">
+          </div>
+          
+          <div class="col-md-4">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" name="end_date" class="form-control" 
+                   value="<?= htmlspecialchars($end_date); ?>">
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">Selected Range: 
+              <span class="fw-bold"><?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?> (<?= $days_count ?> days)</span>
             </label>
           </div>
           
@@ -1754,7 +1939,7 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                      placeholder="Search by item name or code..." value="<?= htmlspecialchars($search); ?>">
               <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
               <?php if ($search !== ''): ?>
-                <a href="?mode=<?= $mode ?>&sequence_type=<?= $sequence_type ?>&sale_date=<?= $sale_date ?>&page=1" class="btn btn-secondary">Clear</a>
+                <a href="?mode=<?= $mode ?>&sequence_type=<?= $sequence_type ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1" class="btn btn-secondary">Clear</a>
               <?php endif; ?>
             </div>
           </form>
@@ -1772,7 +1957,9 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
 
       <!-- Sales Form -->
       <form method="POST" id="salesForm">
-        <input type="hidden" name="sale_date" value="<?= htmlspecialchars($sale_date); ?>">
+        <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
+        <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
+        <input type="hidden" name="customer_field" id="salesCustomerField" value="<?= !empty($selectedCustomer) ? htmlspecialchars($selectedCustomer) : '' ?>">
 
         <!-- Action Buttons (like sale_for_date_range.php) -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -1784,6 +1971,16 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
           <!-- Clear Session Button -->
           <button type="button" id="clearSessionBtn" class="btn btn-danger">
             <i class="fas fa-trash"></i> Clear All Quantities
+          </button>
+          
+          <!-- Shuffle All Button -->
+          <button type="button" id="shuffleAllBtn" class="btn btn-warning">
+            <i class="fas fa-random"></i> Shuffle All
+          </button>
+          
+          <!-- Volume Limit Info Button -->
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#volumeLimitModal">
+            <i class="fas fa-info-circle"></i> Volume Limits
           </button>
           
           <!-- Total Sales Summary Button -->
@@ -1998,6 +2195,26 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
   </div>
 </div>
 
+<!-- Volume Limit Modal -->
+<div class="modal fade" id="volumeLimitModal" tabindex="-1" aria-labelledby="volumeLimitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="volumeLimitModalLabel">Volume Limits Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="volumeLimitContent">
+                    <p class="text-muted">Loading volume limit information...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Total Sales Modal (from sale_for_date_range.php) -->
 <div class="modal fade" id="totalSalesModal" tabindex="-1" aria-labelledby="totalSalesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -2060,7 +2277,108 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
 // Global variables
 const allSessionQuantities = <?= json_encode($_SESSION['customer_sale_quantities'] ?? []) ?>;
 const allItemsData = <?= json_encode($all_items_data) ?>;
-const saleDate = '<?= $sale_date ?>';
+const saleDate = '<?= $start_date ?>';
+const startDate = '<?= $start_date ?>';
+const endDate = '<?= $end_date ?>';
+const daysInRange = <?= $days_count ?>;
+const unavailableDatesGlobal = <?= json_encode($unavailable_dates_global ?? []) ?>;
+const allDatesInRange = <?= json_encode($all_dates_in_range ?? []) ?>;
+
+// Function to get unavailable dates for JavaScript
+function getUnavailableDatesJS() {
+    return unavailableDatesGlobal;
+}
+
+// Function to get dates in range
+function getDatesInRange() {
+    return allDatesInRange;
+}
+
+// Function to shuffle quantities across available dates
+function shuffleQuantities() {
+    if (!confirm('This will distribute all quantities randomly across available dates (excluding dry days and restricted dates). Continue?')) {
+        return;
+    }
+    
+    const dates = getDatesInRange();
+    const unavailable = getUnavailableDatesJS();
+    const availableDates = dates.filter(d => !unavailable.includes(d));
+    
+    if (availableDates.length === 0) {
+        alert('No available dates to distribute quantities!');
+        return;
+    }
+    
+    // For each item with quantity, distribute randomly
+    for (const itemCode in allSessionQuantities) {
+        const totalQty = allSessionQuantities[itemCode];
+        if (totalQty > 0) {
+            // Distribute quantity across available dates
+            let remaining = totalQty;
+            const distribution = {};
+            
+            availableDates.forEach(date => distribution[date] = 0);
+            
+            // Random distribution
+            while (remaining > 0) {
+                const randomIndex = Math.floor(Math.random() * availableDates.length);
+                const date = availableDates[randomIndex];
+                distribution[date]++;
+                remaining--;
+            }
+            
+            // Save distribution to session
+            saveDistributionToSession(itemCode, distribution);
+        }
+    }
+    
+    alert('Quantities shuffled across ' + availableDates.length + ' available dates!');
+    location.reload();
+}
+
+// Function to save distribution to session
+function saveDistributionToSession(itemCode, distribution) {
+    $.ajax({
+        url: 'save_customer_date_distribution.php',
+        type: 'POST',
+        data: {
+            item_code: itemCode,
+            distribution: JSON.stringify(distribution)
+        },
+        success: function(response) {
+            console.log('Distribution saved for item:', itemCode);
+        },
+        error: function() {
+            console.error('Failed to save distribution');
+        }
+    });
+}
+
+// Function to load volume limit information
+function loadVolumeLimitInfo() {
+    $.ajax({
+        url: 'get_volume_limits.php',
+        type: 'GET',
+        success: function(response) {
+            try {
+                const data = JSON.parse(response);
+                let html = '<table class="table table-bordered table-sm">';
+                html += '<thead><tr><th>License Type</th><th>Volume Limit</th></tr></thead>';
+                html += '<tbody>';
+                for (const [type, limit] of Object.entries(data.limits)) {
+                    html += `<tr><td>${type}</td><td>${limit} ML</td></tr>`;
+                }
+                html += '</tbody></table>';
+                $('#volumeLimitContent').html(html);
+            } catch (e) {
+                $('#volumeLimitContent').html('<p class="text-danger">Error loading volume limits</p>');
+            }
+        },
+        error: function() {
+            $('#volumeLimitContent').html('<p class="text-danger">Error connecting to server</p>');
+        }
+    });
+}
 
 // Function to show client-side validation alert
 function showClientValidationAlert(message) {
@@ -2302,9 +2620,29 @@ function checkCustomerSelection() {
         return true;
     }
     
-    // Check if it's a valid customer code (numeric) or new customer
-    if (!isNaN(customerValue) || customerValue.toLowerCase().startsWith('new:')) {
+    // Check if it's a valid customer code (numeric)
+    if (!isNaN(customerValue) && customerValue !== '') {
         return true;
+    }
+    
+    // Check if it's a new customer (starts with "new:")
+    if (customerValue.toLowerCase().startsWith('new:')) {
+        return true;
+    }
+    
+    // Check if it matches an existing customer name - get the code from the selected option
+    const customerOptions = document.getElementById('customerOptions');
+    if (!customerOptions) {
+        // If no datalist, allow the value (fallback)
+        return true;
+    }
+    
+    const options = customerOptions.options;
+    for (let i = 0; i < options.length; i++) {
+        // Check if the input value matches either the code or the name
+        if (options[i].text === customerValue || options[i].value === customerValue) {
+            return true;
+        }
     }
     
     alert('Please select a valid customer or create a new one.\nLeave empty for walk-in customer.');
@@ -2543,9 +2881,41 @@ function initializeQuantitiesFromSession() {
 
 // Generate bills with validation
 function generateBills() {
-    // First validate customer selection
-    if (!checkCustomerSelection()) {
-        return false;
+    // Sync customer field to hidden field first
+    const customerField = document.getElementById('customer_field');
+    const hiddenCustomerField = document.getElementById('salesCustomerField');
+    
+    // Sync the visible field value to hidden field
+    hiddenCustomerField.value = customerField.value;
+    
+    // Use hidden field value for validation
+    const customerValue = hiddenCustomerField.value.trim();
+    
+    // First validate customer selection using hidden field value
+    if (customerValue === '' || customerValue === '0') {
+        // Empty or 0 means walk-in customer - this is allowed
+    } else if (!isNaN(customerValue) && customerValue !== '') {
+        // Valid numeric customer code
+    } else if (customerValue.toLowerCase().startsWith('new:')) {
+        // New customer creation - this is allowed
+    } else {
+        // Check if it matches an existing customer name
+        const customerOptions = document.getElementById('customerOptions');
+        if (customerOptions) {
+            const options = customerOptions.options;
+            let found = false;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].text === customerValue || options[i].value === customerValue) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                alert('Please select a valid customer or create a new one.\nLeave empty for walk-in customer.');
+                customerField.focus();
+                return false;
+            }
+        }
     }
     
     // Then validate basic quantities
@@ -2602,6 +2972,30 @@ function initializeBackdatedTooltips() {
 // Document ready
 $(document).ready(function() {
     console.log('Customer Sales - Document ready');
+    
+    // Shuffle button click event
+    $('#shuffleAllBtn').click(function() {
+        shuffleQuantities();
+    });
+    
+    // Volume limit modal - load info when shown
+    $('#volumeLimitModal').on('show.bs.modal', function() {
+        loadVolumeLimitInfo();
+    });
+    
+    // Update hidden customer field when customer selection form is submitted
+    $('#customerForm').on('submit', function() {
+        const customerValue = $('#customer_field').val();
+        $('#salesCustomerField').val(customerValue);
+        console.log('Customer field synced to hidden field:', customerValue);
+    });
+    
+    // Also sync on change of customer field
+    $('#customer_field').on('change', function() {
+        const customerValue = $(this).val();
+        $('#salesCustomerField').val(customerValue);
+        console.log('Customer field synced on change:', customerValue);
+    });
     
     // Set up row navigation
     setupRowNavigation();

@@ -303,11 +303,11 @@ $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
 $fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
 
-// If no dates provided, default to financial year start date (for new sessions)
+// If no dates provided, default to TODAY's date
 // Otherwise use provided dates (maintains backward compatibility)
 if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
-    $start_date = $fin_year_start;
-    $end_date = min($fin_year_end, date('Y-m-d')); // Can't be future
+    $start_date = date('Y-m-d'); // Default to today
+    $end_date = date('Y-m-d');   // Default to today
 } else {
     $start_date = $_GET['start_date'];
     $end_date = $_GET['end_date'];
@@ -1674,7 +1674,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Only proceed if we have items with quantities
                     if (!empty($items_data)) {
                         // FIXED: Use volume_limit_utils.php function for bill generation
-                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id);
+                        // Pass available_dates to filter out dry days at backend
+                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates_global);
                         
                         // Get stock column names
                         $current_stock_column = "Current_Stock" . $comp_id;
@@ -2505,32 +2506,7 @@ tr.global-restriction .qty-input {
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
-      <!-- NEW: Global Restriction Banner -->
-      <?php if ($has_restrictions): ?>
-        <div class="restriction-banner mb-3">
-          <strong><i class="fas fa-exclamation-triangle"></i> Date Range Restrictions:</strong><br>
-          <?php if (!empty($restrictions['unavailable_sales_dates'])): ?>
-            <span class="badge bg-danger">Existing Sales: <?= implode(', ', $restrictions['unavailable_sales_dates']) ?></span><br>
-          <?php endif; ?>
-          <?php if (!empty($dry_dates)): ?>
-            <span class="badge bg-warning">Dry Days: 
-              <?php 
-              $dryDaysManager = new DryDaysManager($conn);
-              $dry_days_info = $restrictions['dry_days_info'];
-              foreach ($dry_dates as $dry_date): 
-                $description = $dry_days_info[$dry_date] ?? 'Dry Day';
-              ?>
-                <span title="<?= htmlspecialchars($description) ?>"><?= $dry_date ?></span><?= !next($dry_dates) ? '' : ', ' ?>
-              <?php endforeach; ?>
-            </span><br>
-          <?php endif; ?>
-          <?php if (!empty($available_dates_global)): ?>
-            <span class="badge bg-success">Available Dates: <?= implode(', ', $available_dates_global) ?></span>
-          <?php else: ?>
-            <span class="badge bg-danger">No available dates in selected range!</span>
-          <?php endif; ?>
-        </div>
-      <?php endif; ?>
+      <!-- License Info displayed above -->
 
       <!-- Bill Generation Progress Modal -->
 <div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
@@ -2759,10 +2735,7 @@ tr.global-restriction .qty-input {
 <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
-              <?php if ($has_restrictions): ?>
-                <span class="badge bg-warning"><?= count($available_dates_global) ?> available</span>
-              <?php endif; ?>
-            </label>
+              </label>
           </div>
           
           <div class="col-md-2">
@@ -2836,11 +2809,10 @@ tr.global-restriction .qty-input {
           </a>
         </div>
 
-        <?php if (empty($available_dates_global) && $has_restrictions): ?>
-          <div class="alert alert-danger mb-3">
+        <?php if ($has_restrictions && empty($available_dates_global)): ?>
+          <div class="alert alert-warning mb-3">
             <i class="fas fa-exclamation-circle"></i>
-            <strong>No available dates in selected range!</strong><br>
-            Please select a different date range.
+            <strong>Note:</strong> Some dates in range are restricted due to existing sales or dry days.
           </div>
         <?php endif; ?>
 
@@ -2954,22 +2926,10 @@ tr.global-restriction .qty-input {
                        class="sale-qty-hidden" value="<?= $item_qty ?>">
             </td>
             <td class="action-column">
-                <?php if ($should_disable_input): ?>
-                    <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                          title="<?= htmlspecialchars($restriction_title) ?>">
-                        <i class="fas fa-calendar-times"></i> No Available Dates
-                    </span>
-                <?php elseif ($has_restrictions && $has_available_dates): ?>
-                    <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                          title="Only <?= count($available_dates_global) ?> of <?= $days_count ?> dates are available due to existing sales or dry days.">
-                        <i class="fas fa-calendar-day"></i> Available: <?= count($available_dates_global) ?> dates
-                    </span>
-                <?php else: ?>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                            data-code="<?= htmlspecialchars($item_code); ?>">
-                        <i class="fas fa-random"></i> Shuffle
-                    </button>
-                <?php endif; ?>
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
+                        data-code="<?= htmlspecialchars($item_code); ?>">
+                    <i class="fas fa-random"></i> Shuffle
+                </button>
             </td>
             
             <!-- Date distribution cells will be inserted here by JavaScript -->
