@@ -405,12 +405,13 @@ function getVolumeColumnForCategory($volume, $category) {
     
     // For volumes > 1000 ML
     if ($volume > 1000) {
-        // Check for exactly 1L (1000 ML)
-        if ($volume == 1000) {
-            return ($category === 'WINE') ? '1L W' : '1L';
-        }
-        // All other sizes > 1L go to >1L column
+        // All sizes > 1L go to >1L column
         return '>1L';
+    }
+    
+    // Check for exactly 1L (1000 ML)
+    if ($volume == 1000) {
+        return ($category === 'WINE') ? '1L W' : '1L';
     }
     
     // Standard size mappings

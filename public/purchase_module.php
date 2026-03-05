@@ -258,12 +258,12 @@ function getSortLink($column, $label) {
     width: auto;
     min-width: 100%;
     table-layout: fixed;
-    font-size: 9px;
+    font-size: 12px;
   }
   
   #purchaseSummaryTable th {
-    font-size: 8px;
-    padding: 2px 3px;
+    font-size: 10px;
+    padding: 4px 6px;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -273,8 +273,8 @@ function getSortLink($column, $label) {
   }
 
   #purchaseSummaryTable td {
-    font-size: 8px;
-    padding: 2px 3px;
+    font-size: 11px;
+    padding: 4px 6px;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -285,30 +285,35 @@ function getSortLink($column, $label) {
   /* Adjust column widths for >1L grouping */
   #purchaseSummaryTable th.fixed-column,
   #purchaseSummaryTable td.fixed-column {
-    width: 70px;
-    min-width: 70px;
-    max-width: 70px;
+    width: 80px;
+    min-width: 80px;
+    max-width: 80px;
     position: sticky;
     left: 0;
     background-color: white;
-    z-index: 3;
+    z-index: 1;
     border-right: 2px solid #dee2e6;
   }
   
-  /* Size columns width */
+  /* TP No. header specifically - lower z-index to allow header rows to display properly */
+  #purchaseSummaryTable thead th.fixed-column {
+    z-index: 1;
+  }
+  
+  // Size columns width - increased for better readability
   #purchaseSummaryTable th.size-column,
   #purchaseSummaryTable td.size-column {
-    width: 35px;
-    min-width: 35px;
-    max-width: 35px;
+    width: 55px;
+    min-width: 55px;
+    max-width: 55px;
   }
   
   /* >1L column slightly wider */
   #purchaseSummaryTable th.size-column:first-child,
   #purchaseSummaryTable td.size-column:first-child {
-    width: 40px;
-    min-width: 40px;
-    max-width: 40px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
     background-color: #e3f2fd;
   }
   
@@ -397,7 +402,7 @@ function getSortLink($column, $label) {
     font-size: 9px;
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
   }
   
   .summary-size-header th {
@@ -407,7 +412,7 @@ function getSortLink($column, $label) {
     font-size: 8px;
     position: sticky;
     top: 24px; /* Height of first header row */
-    z-index: 2;
+    z-index: 5;
   }
   
   .table-success {
@@ -451,52 +456,52 @@ function getSortLink($column, $label) {
   @media (max-width: 1800px) {
     #purchaseSummaryTable th.size-column,
     #purchaseSummaryTable td.size-column {
-      width: 32px;
-      min-width: 32px;
+      width: 50px;
+      min-width: 50px;
     }
     
     #purchaseSummaryTable th.size-column:first-child,
     #purchaseSummaryTable td.size-column:first-child {
-      width: 38px;
-      min-width: 38px;
+      width: 55px;
+      min-width: 55px;
     }
   }
   
   @media (max-width: 1600px) {
     #purchaseSummaryTable {
-      font-size: 8px;
+      font-size: 11px;
     }
     
     #purchaseSummaryTable th.size-column,
     #purchaseSummaryTable td.size-column {
-      width: 30px;
-      min-width: 30px;
+      width: 45px;
+      min-width: 45px;
     }
     
     #purchaseSummaryTable th.size-column:first-child,
     #purchaseSummaryTable td.size-column:first-child {
-      width: 35px;
-      min-width: 35px;
+      width: 50px;
+      min-width: 50px;
     }
     
     #purchaseSummaryTable th.fixed-column,
     #purchaseSummaryTable td.fixed-column {
-      width: 65px;
-      min-width: 65px;
+      width: 75px;
+      min-width: 75px;
     }
   }
   
   @media (max-width: 1400px) {
     #purchaseSummaryTable th.size-column,
     #purchaseSummaryTable td.size-column {
-      width: 28px;
-      min-width: 28px;
+      width: 40px;
+      min-width: 40px;
     }
     
     #purchaseSummaryTable th.size-column:first-child,
     #purchaseSummaryTable td.size-column:first-child {
-      width: 33px;
-      min-width: 33px;
+      width: 45px;
+      min-width: 45px;
     }
   }
   
@@ -565,7 +570,7 @@ function getSortLink($column, $label) {
     position: sticky;
     left: 0;
     background-color: white;
-    z-index: 4; /* Higher than other sticky elements */
+    z-index: 3; /* Below size header z-index (5) to avoid overlap with headers */
     box-shadow: 2px 0 4px rgba(0,0,0,0.1);
   }
   
@@ -1393,7 +1398,10 @@ function updatePurchaseSummaryTable(summaryData) {
             'font-weight': 'bold',
             'background-color': '#343a40',
             'color': 'white',
-            'border': '2px solid #495057'
+            'border': '2px solid #495057',
+            'position': 'sticky',
+            'left': '0',
+            'z-index': '11'
         }));
     
     // Add category headers with colspan and distinct colors
@@ -1429,7 +1437,7 @@ function updatePurchaseSummaryTable(summaryData) {
                 .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
                 .css({
                     'font-weight': '600',
-                    'font-size': '9px',
+                    'font-size': '10px',
                     'background-color': isLargeSizeColumn ? '#e3f2fd' : category.bgColor,
                     'border-top': '1px solid #dee2e6',
                     'border-left': isFirstColumnInCategory ? '3px solid #495057' : '1px solid #dee2e6',
@@ -1475,7 +1483,10 @@ function updatePurchaseSummaryTable(summaryData) {
             .addClass('fixed-column fw-bold')
             .css({
                 'background-color': serialNumber % 2 === 0 ? '#f8f9fa' : 'white',
-                'border-right': '2px solid #495057'
+                'border-right': '2px solid #495057',
+                'position': 'sticky',
+                'left': '0',
+                'z-index': '1'
             })
             .text(tpNo)
             .attr('title', 'TP No: ' + tpNo));
@@ -1502,8 +1513,10 @@ function updatePurchaseSummaryTable(summaryData) {
                     .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
                     .css({
                         'background-color': serialNumber % 2 === 0 ? '#f8f9fa' : 'white',
-                        'font-size': '9px',
-                        'padding': '2px 3px',
+                        'font-size': '11px',
+                        'padding': '4px 6px',
+                        'min-width': '55px',
+                        'overflow': 'hidden',
                         'border-left': isFirstColumnInCategory ? '3px solid #495057' : '1px solid #dee2e6'
                     });
                 
@@ -1597,7 +1610,10 @@ function addTotalRow(summaryData, categories) {
                 'background-color': '#495057',
                 'color': 'white',
                 'border': '2px solid #343a40',
-                'font-weight': 'bold'
+                'font-weight': 'bold',
+                'position': 'sticky',
+                'left': '0',
+                'z-index': '1'
             })
             .text('TOTAL'));
         
@@ -1613,8 +1629,8 @@ function addTotalRow(summaryData, categories) {
                         'color': 'white',
                         'border': '1px solid #343a40',
                         'border-left': isFirstColumnInCategory ? '3px solid #343a40' : '1px solid #343a40',
-                        'font-size': '9px',
-                        'padding': '2px 3px',
+                        'font-size': '11px',
+                        'padding': '4px 6px',
                         'font-weight': 'bold'
                     });
                 
