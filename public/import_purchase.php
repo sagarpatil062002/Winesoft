@@ -1,6 +1,43 @@
 <?php
 // import_purchase.php - UPDATED FOR SCM CSV FORMAT WITH FIXES
+// Includes VOC_NO renumbering based on TP_DATE
 session_start();
+
+// ============================================================================
+// VOUCHER NUMBER RENUMBERING FUNCTION
+// Renumbers all VOC_NO for the company based on TP_DATE (or DATE if TP_DATE is empty)
+// Called after importing purchases to ensure VOC_NO reflects date order
+// ============================================================================
+function renumberVoucherNumbers($conn, $companyId) {
+    // Use ROW_NUMBER() to assign new VOC_NO based on date ordering
+    // TP_DATE takes precedence over DATE
+    // For tie-breaking, use ID
+    $renumberQuery = "
+        UPDATE tblpurchases p
+        INNER JOIN (
+            SELECT ID, ROW_NUMBER() OVER (ORDER BY 
+                COALESCE(NULLIF(TP_DATE, '0000-00-00'), DATE) ASC,
+                ID ASC
+            ) AS new_voc_no
+            FROM tblpurchases 
+            WHERE CompID = ?
+        ) AS ranked ON p.ID = ranked.ID
+        SET p.VOC_NO = ranked.new_voc_no";
+    
+    $renumberStmt = $conn->prepare($renumberQuery);
+    if ($renumberStmt) {
+        $renumberStmt->bind_param("i", $companyId);
+        $renumberStmt->execute();
+        $affectedRows = $renumberStmt->affected_rows;
+        $renumberStmt->close();
+        
+        debugLog("VOC_NO renumbered for company $companyId after import, affected rows: $affectedRows");
+        return $affectedRows;
+    } else {
+        debugLog("VOC_NO renumbering failed: " . $conn->error);
+        return -1;
+    }
+}
 
 // Enable debug logging like purchases.php
 function debugLog($message, $data = null) {
@@ -1198,6 +1235,13 @@ function processCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatu
     
     // Process TP groups
     $result = processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $importMode);
+    
+    // ============================================================================
+    // RENUMBER VOC_NO AFTER IMPORT
+    // After importing all purchases, renumber all purchases for the company
+    // based on chronological order of TP_DATE (or DATE if TP_DATE is empty)
+    // ============================================================================
+    renumberVoucherNumbers($conn, $companyId);
     
     if ($result['errorCount'] > 0) {
         $errorMessage = "Imported {$result['successCount']} purchases successfully. Failed: {$result['errorCount']}. " . 

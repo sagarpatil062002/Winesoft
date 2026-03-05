@@ -107,7 +107,51 @@ debugLog("Allowed class SGROUP values", $allowed_classes);
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 debugLog("Purchase mode", $mode);
 
+// ============================================================================
+// VOUCHER NUMBER RENUMBERING FUNCTION
+// Renumbers all VOC_NO for the company based on TP_DATE (or DATE if TP_DATE is empty)
+// ============================================================================
+function renumberVoucherNumbers($conn, $companyId) {
+    // Ensure companyId is an integer
+    $companyId = (int)$companyId;
+    
+    if ($companyId <= 0) {
+        debugLog("VOC_NO renumbering skipped - invalid company ID: $companyId");
+        return -1;
+    }
+    
+    // Use ROW_NUMBER() to assign new VOC_NO based on date ordering
+    // TP_DATE takes precedence over DATE
+    // For tie-breaking, use ID
+    $renumberQuery = "
+        UPDATE tblpurchases p
+        INNER JOIN (
+            SELECT ID, ROW_NUMBER() OVER (ORDER BY 
+                COALESCE(NULLIF(TP_DATE, '0000-00-00'), DATE) ASC,
+                ID ASC
+            ) AS new_voc_no
+            FROM tblpurchases 
+            WHERE CompID = ?
+        ) AS ranked ON p.ID = ranked.ID
+        SET p.VOC_NO = ranked.new_voc_no";
+    
+    $renumberStmt = $conn->prepare($renumberQuery);
+    if ($renumberStmt) {
+        $renumberStmt->bind_param("i", $companyId);
+        $renumberStmt->execute();
+        $affectedRows = $renumberStmt->affected_rows;
+        $renumberStmt->close();
+        
+        debugLog("VOC_NO renumbered for company $companyId, affected rows: $affectedRows");
+        return $affectedRows;
+    } else {
+        debugLog("VOC_NO renumbering failed: " . $conn->error);
+        return -1;
+    }
+}
+
 // ---- Next Voucher No. (for current company) ----
+// NOTE: This is just for display - actual VOC_NO will be assigned after renumbering
 $vocQuery  = "SELECT MAX(VOC_NO) AS MAX_VOC FROM tblPurchases WHERE CompID = ?";
 $vocStmt = $conn->prepare($vocQuery);
 $vocStmt->bind_param("i", $companyId);
@@ -1419,6 +1463,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+        
+        // ============================================================================
+        // RENUMBER VOC_NO BASED ON TP_DATE
+        // After inserting a new purchase, renumber all purchases for the company
+        // based on chronological order of TP_DATE (or DATE if TP_DATE is empty)
+        // ============================================================================
+        renumberVoucherNumbers($conn, $companyId);
         
         // ============================================================================
         // COMMIT ALL CHANGES AT ONCE

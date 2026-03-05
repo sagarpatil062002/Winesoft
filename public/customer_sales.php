@@ -1391,7 +1391,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
         $taxAmount = $total_amount * $taxRate;
         $finalAmount = $total_amount + $taxAmount;
         
-        // Store bill data in session
+        // Store bill data in session (for potential future use)
         $customerName = ($selectedCustomer === '') ? 'Walk-in Customer' : ($customers[$selectedCustomer] ?? 'Unknown Customer');
         $customerIdForDisplay = ($selectedCustomer === '') ? 0 : $selectedCustomer;
         
@@ -1411,11 +1411,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
             'cash_memo_errors' => $cash_memo_errors
         ];
         
-        // Clear selected customer
-        unset($_SESSION['selected_customer']);
+        // Clear selected customer - but keep it for next sale
+        // unset($_SESSION['selected_customer']);
         
-        // Redirect to bill preview
-        header("Location: customer_bill_preview.php");
+        // Store success message instead of redirecting to preview (which doesn't exist)
+        $customerName = ($selectedCustomer === '') ? 'Walk-in Customer' : ($customers[$selectedCustomer] ?? 'Unknown Customer');
+        $_SESSION['success_message'] = "Bill generated successfully for $customerName! Bill No: $retail_bill_no";
+        
+        // Redirect back to the same page with success message
+        header("Location: customer_sales.php?start_date=$start_date&end_date=$end_date");
         exit;
         
     } catch (Exception $e) {
@@ -1426,17 +1430,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
         exit;
     }
 }
-
-// ============================================================================
-// CREATE HELPER FILES
-// ============================================================================
-
-// You'll need to create these helper files:
-
-// 1. clear_customer_session_quantities.php
-// 2. update_customer_session_quantity.php
-// 3. customer_bill_preview.php (similar to bill preview in date range)
-// 4. check_backdated_functions.php (copy from sale_for_date_range.php)
 
 // ============================================================================
 // RENDER PAGE
@@ -1978,11 +1971,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
             <i class="fas fa-random"></i> Shuffle All
           </button>
           
-          <!-- Volume Limit Info Button -->
-          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#volumeLimitModal">
-            <i class="fas fa-info-circle"></i> Volume Limits
-          </button>
-          
           <!-- Total Sales Summary Button -->
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
               <i class="fas fa-chart-bar"></i> View Total Sales Summary
@@ -2193,26 +2181,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
 
     <?php include 'components/footer.php'; ?>
   </div>
-</div>
-
-<!-- Volume Limit Modal -->
-<div class="modal fade" id="volumeLimitModal" tabindex="-1" aria-labelledby="volumeLimitModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="volumeLimitModalLabel">Volume Limits Information</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="volumeLimitContent">
-                    <p class="text-muted">Loading volume limit information...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Total Sales Modal (from sale_for_date_range.php) -->

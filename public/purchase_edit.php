@@ -8,6 +8,8 @@ if (!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) { header("L
 $companyId = $_SESSION['CompID'];
 
 include_once "../config/db.php";
+include_once "stock_functions.php";
+include_once "license_functions.php";
 
 // ---- Mode: F (Foreign) / C (Country) ----
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -18,6 +20,17 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     exit;
 }
 $purchaseId = $_GET['id'];
+
+// ---- Get company's license type and available classes ----
+$license_type = getCompanyLicenseType($companyId, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
+
+$allowed_classes = [];
+if (!empty($available_classes)) {
+    foreach ($available_classes as $class) {
+        $allowed_classes[] = $class['SGROUP'];
+    }
+}
 
 // ---- Fetch existing purchase data ----
 $purchaseQuery = "SELECT p.*, s.DETAILS as supplier_name
@@ -81,15 +94,29 @@ function formatBottleSize($sizeText) {
 }
 
 // Function to check if a month is archived
-function isMonthArchived($conn, $comp_id, $month) {
-    $safe_month = str_replace('-', '_', $month);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+function isMonthArchived($conn, $comp_id, $month, $year) {
+    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+    $year_2digit = substr($year, -2);
+    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
     
+    // Check if archive table exists
     $check_archive_query = "SELECT COUNT(*) as count FROM information_schema.tables 
                            WHERE table_schema = DATABASE() 
                            AND table_name = '$archive_table'";
     $check_result = $conn->query($check_archive_query);
-    return $check_result->fetch_assoc()['count'] > 0;
+    $exists = $check_result->fetch_assoc()['count'] > 0;
+    
+    // Also check if it's the current month (not archived)
+    $current_month = date('n');
+    $current_year = date('Y');
+    
+    // If it's current month, return false (not archived)
+    if ($month == $current_month && $year == $current_year) {
+        return false;
+    }
+    
+    // If archive table exists OR it's a past month, consider it archived
+    return $exists || ($year < $current_year || ($year == $current_year && $month < $current_month));
 }
 
 // Function to reverse stock (for edit - subtract original purchase)
@@ -97,91 +124,258 @@ function reverseStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bo
     // Calculate total bottles to reverse (including free items)
     $totalBottles = (($cases + $freeCases) * $bottlesPerCase) + $bottles + $freeBottles;
     
-    // Get day of month from purchase date
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $monthYear = date('Y-m', strtotime($purchaseDate));
+    // Determine if purchase is in previous financial year
+    $is_previous_fy = isPreviousFinancialYear($purchaseDate);
     
-    // Check if this month is archived
-    $isArchived = isMonthArchived($conn, $companyId, $monthYear);
-    
-    if ($isArchived) {
-        reverseArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+    if ($is_previous_fy) {
+        // Use previous year logic for reversal
+        reversePreviousYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     } else {
-        reverseCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $dayOfMonth, $monthYear);
+        // Use current year logic for reversal
+        reverseCurrentYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     }
 }
 
-// Function to reverse current month stock
-function reverseCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $dayOfMonth, $monthYear) {
-    // Reverse tblitem_stock
-    $stockColumn = "CURRENT_STOCK" . $companyId;
-    $updateItemStockQuery = "UPDATE tblitem_stock 
-                            SET $stockColumn = $stockColumn - ? 
-                            WHERE ITEM_CODE = ? AND FIN_YEAR = YEAR(?)";
-    
-    $itemStmt = $conn->prepare($updateItemStockQuery);
-    $itemStmt->bind_param("iss", $totalBottles, $itemCode, $purchaseDate);
-    $itemStmt->execute();
-    $itemStmt->close();
-    
-    // Reverse daily stock table
-    $dailyStockTable = "tbldailystock_" . $companyId;
-    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
-    // Update purchase column
-    $updateDailyStockQuery = "UPDATE $dailyStockTable 
-                             SET $purchaseColumn = $purchaseColumn - ?,
-                                 $closingColumn = $closingColumn - ? 
-                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $dailyStmt = $conn->prepare($updateDailyStockQuery);
-    $dailyStmt->bind_param("iiss", $totalBottles, $totalBottles, $monthYear, $itemCode);
-    $dailyStmt->execute();
-    $dailyStmt->close();
-    
-    // Update subsequent days' opening and closing balances
-    updateSubsequentDays($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth, -$totalBottles);
-}
-
-// Function to reverse archived month stock
-function reverseArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+// Function to reverse stock for previous financial year
+function reversePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    // Similar to updatePreviousYearStock but subtracting instead of adding
     $dayOfMonth = date('j', strtotime($purchaseDate));
-    $monthYear = date('Y-m', strtotime($purchaseDate));
-    $safe_month = str_replace('-', '_', $monthYear);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
+    
+    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+    $year_2digit = substr($year, -2);
+    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
     
     $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
     $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
     
-    $update_query = "UPDATE $archive_table 
-                    SET $purchaseColumn = $purchaseColumn - ?, 
-                        $closingColumn = $closingColumn - ? 
-                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $update_stmt = $conn->prepare($update_query);
-    $update_stmt->bind_param("iiss", $totalBottles, $totalBottles, $monthYear, $itemCode);
-    $update_stmt->execute();
-    $update_stmt->close();
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    
+    // Check if record exists
+    $check_query = "SELECT COUNT(*) as count FROM $archive_table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Reduce purchase and recalculate closing
+        $update_query = "UPDATE $archive_table 
+                        SET $purchaseColumn = GREATEST(0, $purchaseColumn - ?),
+                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
+        
+        // Cascade to subsequent days
+        cascadeDailyStockInTable($conn, $archive_table, $itemCode, $monthYear, $dayOfMonth);
+    }
+    
+    // Cascade through all remaining months until FY end
+    reverseCascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
+    
+    // Update main stock (subtract)
+    $stockColumn = "CURRENT_STOCK" . $comp_id;
+    $update_stock = "UPDATE tblitem_stock 
+                    SET $stockColumn = GREATEST(0, $stockColumn - ?)
+                    WHERE ITEM_CODE = ?";
+    $stock_stmt = $conn->prepare($update_stock);
+    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+    $stock_stmt->execute();
+    $stock_stmt->close();
 }
 
-// Function to update subsequent days after stock change
-function updateSubsequentDays($conn, $dailyStockTable, $monthYear, $itemCode, $startDay, $quantityChange) {
-    // Get the number of days in the month
-    $days_in_month = date('t', strtotime($monthYear . "-01"));
+// Function to reverse stock for current financial year
+function reverseCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
+    $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    for ($day = $startDay + 1; $day <= $days_in_month; $day++) {
-        $dayStr = str_pad($day, 2, '0', STR_PAD_LEFT);
-        $openingColumn = "DAY_{$dayStr}_OPEN";
-        $closingColumn = "DAY_{$dayStr}_CLOSING";
+    $isArchived = isMonthArchived($conn, $comp_id, $month, $year);
+    
+    if ($isArchived) {
+        $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($year, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        $table = $archive_table;
+    } else {
+        $table = "tbldailystock_" . $comp_id;
+    }
+    
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    // Check if record exists
+    $check_query = "SELECT COUNT(*) as count FROM $table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Reduce purchase and recalculate closing
+        $update_query = "UPDATE $table 
+                        SET $purchaseColumn = GREATEST(0, $purchaseColumn - ?),
+                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
         
-        // Update opening (which is previous day's closing)
-        $updateQuery = "UPDATE $dailyStockTable 
-                       SET $openingColumn = $openingColumn + ?,
-                           $closingColumn = $closingColumn + ? 
-                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $updateStmt = $conn->prepare($updateQuery);
-        $updateStmt->bind_param("iiss", $quantityChange, $quantityChange, $monthYear, $itemCode);
-        $updateStmt->execute();
-        $updateStmt->close();
+        // Cascade to subsequent days
+        cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $dayOfMonth);
+        
+        // If archived month, continue cascading to current month
+        if ($isArchived) {
+            continueReverseCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate);
+        }
+    }
+    
+    // Update main stock (subtract)
+    $stockColumn = "CURRENT_STOCK" . $comp_id;
+    $update_stock = "UPDATE tblitem_stock 
+                    SET $stockColumn = GREATEST(0, $stockColumn - ?)
+                    WHERE ITEM_CODE = ?";
+    $stock_stmt = $conn->prepare($update_stock);
+    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+    $stock_stmt->execute();
+    $stock_stmt->close();
+}
+
+// Function to cascade daily stock in a specific table
+function cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $startDay) {
+    $daysInMonth = date('t', strtotime($monthYear . '-01'));
+    
+    for ($day = $startDay + 1; $day <= $daysInMonth; $day++) {
+        $prevDay = $day - 1;
+        $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+        $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        $update_query = "UPDATE $table 
+                        SET $currentDayOpening = $prevDayClosing,
+                            $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        
+        $stmt = $conn->prepare($update_query);
+        $stmt->bind_param("ss", $monthYear, $itemCode);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+// Function to reverse cascade through all months until FY end
+function reverseCascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, $reduction_qty) {
+    $purchase_timestamp = strtotime($purchase_date);
+    $purchase_month = (int)date('n', $purchase_timestamp);
+    $purchase_year = (int)date('Y', $purchase_timestamp);
+    
+    // Get financial year end date
+    $fy_end_date = getFinancialYearEndDate($purchase_date);
+    $fy_end_month = (int)date('n', strtotime($fy_end_date));
+    $fy_end_year = (int)date('Y', strtotime($fy_end_date));
+    
+    // Start from the next month after purchase
+    $start_month = $purchase_month + 1;
+    $start_year = $purchase_year;
+    
+    if ($start_month > 12) {
+        $start_month = 1;
+        $start_year++;
+    }
+    
+    // Loop through months from purchase month+1 to end of financial year (March)
+    while ($start_year < $fy_end_year || ($start_year == $fy_end_year && $start_month <= $fy_end_month)) {
+        $month_2digit = str_pad($start_month, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($start_year, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        
+        $monthYear = date('Y-m', strtotime("$start_year-$start_month-01"));
+        $daysInMonth = date('t', strtotime("$start_year-$start_month-01"));
+        
+        // Check if table exists
+        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
+        $table_result = $conn->query($check_table);
+        $table_exists = $table_result->fetch_assoc()['count'] > 0;
+        
+        if ($table_exists) {
+            // For each month, reduce all days' stock values
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $opening_col = "DAY_{$day_str}_OPEN";
+                $closing_col = "DAY_{$day_str}_CLOSING";
+                
+                $update_query = "UPDATE $archive_table 
+                                SET $opening_col = GREATEST(0, $opening_col - ?),
+                                    $closing_col = GREATEST(0, $closing_col - ?)
+                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("iiss", $reduction_qty, $reduction_qty, $monthYear, $item_code);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+        
+        // Move to next month
+        $start_month++;
+        if ($start_month > 12) {
+            $start_month = 1;
+            $start_year++;
+        }
+    }
+}
+
+// Function to continue reverse cascading to current month
+function continueReverseCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate) {
+    $current_month = (int)date('n');
+    $current_year = (int)date('Y');
+    $current_day = (int)date('j');
+    
+    $dailyStockTable = "tbldailystock_" . $comp_id;
+    $currentMonthYear = date('Y-m');
+    
+    // Check if current month table exists
+    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                   WHERE table_schema = DATABASE() AND table_name = '$dailyStockTable'";
+    $table_result = $conn->query($check_table);
+    $table_exists = $table_result->fetch_assoc()['count'] > 0;
+    
+    if ($table_exists) {
+        // For each day from 1 to current day, reduce stock values
+        for ($day = 1; $day <= $current_day; $day++) {
+            $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $opening_col = "DAY_{$day_str}_OPEN";
+            $closing_col = "DAY_{$day_str}_CLOSING";
+            
+            $update_query = "UPDATE $dailyStockTable 
+                            SET $opening_col = GREATEST(0, $opening_col - ?),
+                                $closing_col = GREATEST(0, $closing_col - ?)
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            
+            $stmt = $conn->prepare($update_query);
+            $stmt->bind_param("iiss", $reduction_qty, $reduction_qty, $currentMonthYear, $itemCode);
+            $stmt->execute();
+            $stmt->close();
+        }
     }
 }
 
@@ -190,83 +384,47 @@ function updateStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bot
     // Calculate total bottles purchased (including free items)
     $totalBottles = (($cases + $freeCases) * $bottlesPerCase) + $bottles + $freeBottles;
     
-    // Get day of month from purchase date
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $monthYear = date('Y-m', strtotime($purchaseDate));
+    // Determine if purchase is in previous financial year
+    $is_previous_fy = isPreviousFinancialYear($purchaseDate);
     
-    // Check if this month is archived
-    $isArchived = isMonthArchived($conn, $companyId, $monthYear);
-    
-    if ($isArchived) {
-        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+    if ($is_previous_fy) {
+        // Use previous year logic for stock update
+        updatePreviousYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     } else {
-        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $dayOfMonth, $monthYear);
+        // Use current year logic for stock update
+        updateCurrentYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
     }
 }
 
-// Function to update current month stock
-function updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate, $dayOfMonth, $monthYear) {
-    // Update tblitem_stock
-    $stockColumn = "CURRENT_STOCK" . $companyId;
-    $updateItemStockQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
-                             VALUES (?, YEAR(?), ?) 
-                             ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + ?";
+// Function to update stock for previous financial year
+function updatePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
     
-    $itemStmt = $conn->prepare($updateItemStockQuery);
-    $itemStmt->bind_param("ssii", $itemCode, $purchaseDate, $totalBottles, $totalBottles);
-    $itemStmt->execute();
-    $itemStmt->close();
+    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+    $year_2digit = substr($year, -2);
+    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
     
-    // Update daily stock table
-    $dailyStockTable = "tbldailystock_" . $companyId;
     $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
     $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
     
-    // Check if daily stock record exists for this month and item
-    $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $checkStmt = $conn->prepare($checkDailyStockQuery);
-    $checkStmt->bind_param("ss", $monthYear, $itemCode);
-    $checkStmt->execute();
-    $result = $checkStmt->get_result();
-    $row = $result->fetch_assoc();
-    $checkStmt->close();
+    $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    if ($row['count'] > 0) {
-        // Update existing record
-        $updateDailyStockQuery = "UPDATE $dailyStockTable 
-                                 SET $purchaseColumn = $purchaseColumn + ?,
-                                     $closingColumn = $closingColumn + ? 
-                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("iiss", $totalBottles, $totalBottles, $monthYear, $itemCode);
-    } else {
-        // Insert new record
-        $updateDailyStockQuery = "INSERT INTO $dailyStockTable 
-                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn, $closingColumn) 
-                                 VALUES (?, ?, 'F', ?, ?)";
-        $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+    // Check if archive table exists, if not create it
+    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                   WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
+    $table_result = $conn->query($check_table);
+    $table_exists = $table_result->fetch_assoc()['count'] > 0;
+    
+    if (!$table_exists) {
+        $days_in_month = date('t', strtotime($purchaseDate));
+        createArchiveTable($conn, $archive_table, $days_in_month);
     }
     
-    $dailyStmt->execute();
-    $dailyStmt->close();
-    
-    // Update subsequent days' opening and closing balances
-    updateSubsequentDays($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth, $totalBottles);
-}
-
-// Function to update archived month stock
-function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $monthYear = date('Y-m', strtotime($purchaseDate));
-    $safe_month = str_replace('-', '_', $monthYear);
-    $archive_table = "tbldailystock_archive_{$comp_id}_{$safe_month}";
-    
-    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
-    // Check if record exists in archive table
+    // Check if record exists
     $check_query = "SELECT COUNT(*) as count FROM $archive_table 
                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
     $check_stmt = $conn->prepare($check_query);
@@ -279,41 +437,320 @@ function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pu
     if ($exists) {
         // Update existing record
         $update_query = "UPDATE $archive_table 
-                        SET $purchaseColumn = $purchaseColumn + ?, 
-                            $closingColumn = $closingColumn + ? 
+                        SET $purchaseColumn = $purchaseColumn + ?,
+                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
                         WHERE STK_MONTH = ? AND ITEM_CODE = ?";
         $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iiss", $totalBottles, $totalBottles, $monthYear, $itemCode);
+        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
         $update_stmt->execute();
         $update_stmt->close();
     } else {
         // Insert new record
         $insert_query = "INSERT INTO $archive_table 
-                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $purchaseColumn, $closingColumn) 
-                        VALUES (?, ?, 'F', ?, ?)";
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $salesColumn, $closingColumn) 
+                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
         $insert_stmt = $conn->prepare($insert_query);
         $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
         $insert_stmt->execute();
         $insert_stmt->close();
     }
+    
+    // Cascade to subsequent days
+    cascadeDailyStockInTable($conn, $archive_table, $itemCode, $monthYear, $dayOfMonth);
+    
+    // Cascade through all remaining months until FY end
+    forwardCascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
+    
+    // Update main stock
+    $stockColumn = "CURRENT_STOCK" . $comp_id;
+    $update_stock = "UPDATE tblitem_stock 
+                    SET $stockColumn = $stockColumn + ? 
+                    WHERE ITEM_CODE = ?";
+    $stock_stmt = $conn->prepare($update_stock);
+    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+    $stock_stmt->execute();
+    $stock_stmt->close();
 }
 
-// ---- Items (for case rate lookup & modal) ----
+// Function to update stock for current financial year
+function updateCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    $dayOfMonth = date('j', strtotime($purchaseDate));
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
+    $monthYear = date('Y-m', strtotime($purchaseDate));
+    
+    $isArchived = isMonthArchived($conn, $comp_id, $month, $year);
+    
+    if ($isArchived) {
+        $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($year, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        $table = $archive_table;
+        
+        // Check if archive table exists, if not create it
+        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
+        $table_result = $conn->query($check_table);
+        $table_exists = $table_result->fetch_assoc()['count'] > 0;
+        
+        if (!$table_exists) {
+            $days_in_month = date('t', strtotime($purchaseDate));
+            createArchiveTable($conn, $archive_table, $days_in_month);
+        }
+    } else {
+        $table = "tbldailystock_" . $comp_id;
+    }
+    
+    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
+    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
+    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    
+    // Check if record exists
+    $check_query = "SELECT COUNT(*) as count FROM $table 
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_query);
+    $check_stmt->bind_param("ss", $monthYear, $itemCode);
+    $check_stmt->execute();
+    $result = $check_stmt->get_result();
+    $exists = $result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($exists) {
+        // Update existing record
+        $update_query = "UPDATE $table 
+                        SET $purchaseColumn = $purchaseColumn + ?,
+                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $update_stmt = $conn->prepare($update_query);
+        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+        $update_stmt->execute();
+        $update_stmt->close();
+    } else {
+        // Insert new record
+        $insert_query = "INSERT INTO $table 
+                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $salesColumn, $closingColumn) 
+                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
+        $insert_stmt = $conn->prepare($insert_query);
+        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
+        $insert_stmt->execute();
+        $insert_stmt->close();
+    }
+    
+    // Cascade to subsequent days
+    cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $dayOfMonth);
+    
+    // If archived month, continue cascading to current month
+    if ($isArchived) {
+        continueForwardCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate);
+    }
+    
+    // Update main stock
+    $stockColumn = "CURRENT_STOCK" . $comp_id;
+    $update_stock = "UPDATE tblitem_stock 
+                    SET $stockColumn = $stockColumn + ? 
+                    WHERE ITEM_CODE = ?";
+    $stock_stmt = $conn->prepare($update_stock);
+    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+    $stock_stmt->execute();
+    $stock_stmt->close();
+}
+
+// Function to forward cascade through all months until FY end
+function forwardCascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, $additional_qty) {
+    $purchase_timestamp = strtotime($purchase_date);
+    $purchase_month = (int)date('n', $purchase_timestamp);
+    $purchase_year = (int)date('Y', $purchase_timestamp);
+    
+    // Get financial year end date
+    $fy_end_date = getFinancialYearEndDate($purchase_date);
+    $fy_end_month = (int)date('n', strtotime($fy_end_date));
+    $fy_end_year = (int)date('Y', strtotime($fy_end_date));
+    
+    // Start from the next month after purchase
+    $start_month = $purchase_month + 1;
+    $start_year = $purchase_year;
+    
+    if ($start_month > 12) {
+        $start_month = 1;
+        $start_year++;
+    }
+    
+    // Loop through months from purchase month+1 to end of financial year (March)
+    while ($start_year < $fy_end_year || ($start_year == $fy_end_year && $start_month <= $fy_end_month)) {
+        $month_2digit = str_pad($start_month, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($start_year, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        
+        $monthYear = date('Y-m', strtotime("$start_year-$start_month-01"));
+        $daysInMonth = date('t', strtotime("$start_year-$start_month-01"));
+        
+        // Check if table exists, if not create it
+        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
+        $table_result = $conn->query($check_table);
+        $table_exists = $table_result->fetch_assoc()['count'] > 0;
+        
+        if (!$table_exists) {
+            createArchiveTable($conn, $archive_table, $daysInMonth);
+        }
+        
+        // Check if record exists
+        $check_record = "SELECT COUNT(*) as count FROM $archive_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $check_stmt = $conn->prepare($check_record);
+        $check_stmt->bind_param("ss", $monthYear, $item_code);
+        $check_stmt->execute();
+        $record_result = $check_stmt->get_result();
+        $record_exists = $record_result->fetch_assoc()['count'] > 0;
+        $check_stmt->close();
+        
+        if ($record_exists) {
+            // For each day in the month, add the additional qty
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $opening_col = "DAY_{$day_str}_OPEN";
+                $closing_col = "DAY_{$day_str}_CLOSING";
+                
+                $update_query = "UPDATE $archive_table 
+                                SET $opening_col = $opening_col + ?,
+                                    $closing_col = $closing_col + ?
+                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                
+                $stmt = $conn->prepare($update_query);
+                $stmt->bind_param("iiss", $additional_qty, $additional_qty, $monthYear, $item_code);
+                $stmt->execute();
+                $stmt->close();
+            }
+        }
+        
+        // Move to next month
+        $start_month++;
+        if ($start_month > 12) {
+            $start_month = 1;
+            $start_year++;
+        }
+    }
+}
+
+// Function to continue forward cascading to current month
+function continueForwardCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate) {
+    $current_month = (int)date('n');
+    $current_year = (int)date('Y');
+    $current_day = (int)date('j');
+    
+    $dailyStockTable = "tbldailystock_" . $comp_id;
+    $currentMonthYear = date('Y-m');
+    
+    // Check if current month table exists, if not create it
+    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
+                   WHERE table_schema = DATABASE() AND table_name = '$dailyStockTable'";
+    $table_result = $conn->query($check_table);
+    $table_exists = $table_result->fetch_assoc()['count'] > 0;
+    
+    if (!$table_exists) {
+        $days_in_month = date('t');
+        createArchiveTable($conn, $dailyStockTable, $days_in_month);
+    }
+    
+    // Check if record exists in current month
+    $check_record = "SELECT COUNT(*) as count FROM $dailyStockTable WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_record);
+    $check_stmt->bind_param("ss", $currentMonthYear, $itemCode);
+    $check_stmt->execute();
+    $record_result = $check_stmt->get_result();
+    $record_exists = $record_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($record_exists) {
+        // For each day from 1 to current day, add the quantity
+        for ($day = 1; $day <= $current_day; $day++) {
+            $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $opening_col = "DAY_{$day_str}_OPEN";
+            $closing_col = "DAY_{$day_str}_CLOSING";
+            
+            $update_query = "UPDATE $dailyStockTable 
+                            SET $opening_col = $opening_col + ?,
+                                $closing_col = $closing_col + ?
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            
+            $stmt = $conn->prepare($update_query);
+            $stmt->bind_param("iiss", $additional_qty, $additional_qty, $currentMonthYear, $itemCode);
+            $stmt->execute();
+            $stmt->close();
+        }
+    }
+}
+
+// Function to create archive table
+function createArchiveTable($conn, $table_name, $days_in_month) {
+    $create_query = "CREATE TABLE $table_name (
+        `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+        `STK_DATE` date NOT NULL,
+        `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+        `ITEM_CODE` varchar(20) NOT NULL,
+        `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+        `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
+    
+    for ($day = 1; $day <= $days_in_month; $day++) {
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        $create_query .= "
+        `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
+        `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+    }
+    
+    $create_query .= "
+        PRIMARY KEY (`DailyStockID`),
+        UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
+        KEY `idx_item_code` (`ITEM_CODE`),
+        KEY `idx_liq_flag` (`LIQ_FLAG`),
+        KEY `idx_stk_month` (`STK_MONTH`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+    
+    return $conn->query($create_query);
+}
+
+// Function to update MRP in tblitemmaster
+function updateItemMRP($conn, $itemCode, $mrp) {
+    // Clean the item code by removing SCM prefix
+    $cleanCode = preg_replace('/^SCM/i', '', trim($itemCode));
+    
+    // Update MPRICE in tblitemmaster
+    $updateQuery = "UPDATE tblitemmaster SET MPRICE = ? WHERE CODE = ?";
+    $stmt = $conn->prepare($updateQuery);
+    $stmt->bind_param("ss", $mrp, $cleanCode);
+    $result = $stmt->execute();
+    $stmt->close();
+    
+    return $result;
+}
+
+// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ONLY ----
 $items = [];
-$itemsStmt = $conn->prepare(
-  "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG,
-          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
-          CONCAT('SCM', im.CODE) AS SCM_CODE
-     FROM tblitemmaster im
-     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
-    WHERE im.LIQ_FLAG = ?
- ORDER BY im.DETAILS"
-);
-$itemsStmt->bind_param("s", $mode);
-$itemsStmt->execute();
-$itemsResult = $itemsStmt->get_result();
-if ($itemsResult) $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
-$itemsStmt->close();
+
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    // NOTE: Removed LIQ_FLAG filter to match purchases.php behavior
+    // This ensures all items for the allowed classes are shown
+    $itemsQuery = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, im.LIQ_FLAG, im.CLASS,
+                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                          CONCAT('SCM', im.CODE) AS SCM_CODE
+                     FROM tblitemmaster im
+                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG
+                    WHERE im.CLASS IN ($class_placeholders)
+                 ORDER BY im.DETAILS";
+    
+    $params = $allowed_classes;
+    $types = str_repeat('s', count($params));
+    
+    $itemsStmt = $conn->prepare($itemsQuery);
+    $itemsStmt->bind_param($types, ...$params);
+    $itemsStmt->execute();
+    $itemsResult = $itemsStmt->get_result();
+    if ($itemsResult) $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
+    $itemsStmt->close();
+}
 
 // ---- Suppliers (for name/code replacement) ----
 $suppliers = [];
@@ -325,6 +762,20 @@ $suppliersStmt->close();
 
 // ---- Save purchase update ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Set ultra-fast database settings
+    try {
+        $conn->query("SET SESSION unique_checks = 0");
+        $conn->query("SET SESSION foreign_key_checks = 0");
+        $conn->query("SET SESSION sql_log_bin = 0");
+        $conn->query("SET autocommit = 0");
+        $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 256");
+        $conn->query("SET SESSION innodb_flush_log_at_trx_commit = 2");
+        $conn->query("SET SESSION sync_binlog = 0");
+        $conn->query("SET SESSION innodb_autoinc_lock_mode = 2");
+    } catch (Exception $e) {
+        // Continue even if some settings fail
+    }
+    
     // Get form data
     $date = $_POST['date'];
     $voc_no = $_POST['voc_no'];
@@ -349,17 +800,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $basic_amt = $_POST['basic_amt'] ?? 0;
     $tamt = $_POST['tamt'] ?? 0;
     
-    // FIXED: Preserve the original PUR_FLAG instead of using $mode
-    $pur_flag = $purchase['PUR_FLAG']; // Keep the original flag
+    // Preserve the original PUR_FLAG
+    $pur_flag = $purchase['PUR_FLAG'];
     
-    // Start transaction for data consistency
+    // Start transaction
     $conn->begin_transaction();
     
     try {
-        // FIXED: Use the NEW date for both reversal and restocking to maintain consistency
-        $stockDate = $date; // Use the new date for all stock operations
-        
-        // First, reverse stock for all existing items using NEW date
+        // First, reverse stock for all existing items
         foreach ($existingItems as $existingItem) {
             reverseStock(
                 $existingItem['ItemCode'],
@@ -368,13 +816,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $existingItem['FreeCases'],
                 $existingItem['FreeBottles'],
                 $existingItem['BottlesPerCase'],
-                $stockDate,  // FIXED: Use new date instead of $purchase['DATE']
+                $purchase['DATE'],  // Use original date for reversal
                 $companyId,
                 $conn
             );
         }
         
-        // Update purchase header - FIXED: Use original PUR_FLAG instead of $mode
+        // Update purchase header
         $updateQuery = "UPDATE tblpurchases SET
             DATE = ?, SUBCODE = ?, AUTO_TPNO = ?, INV_NO = ?, INV_DATE = ?, TAMT = ?,
             TPNO = ?, TP_DATE = ?, SCHDIS = ?, CASHDIS = ?, OCTROI = ?, FREIGHT = ?, 
@@ -386,7 +834,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             "ssssssssdddddddddsii",
             $date, $supplier_code, $auto_tp_no, $inv_no, $inv_date, $tamt,
             $tp_no, $tp_date, $trade_disc, $cash_disc, $octroi, $freight, 
-            $stax_per, $stax_amt, $tcs_per, $tcs_amt, $misc_charg, $pur_flag, // FIXED: Use $pur_flag instead of $mode
+            $stax_per, $stax_amt, $tcs_per, $tcs_amt, $misc_charg, $pur_flag,
             $purchaseId, $companyId
         );
         
@@ -405,62 +853,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $deleteStmt->close();
         
         // Insert updated purchase items
-        if (isset($_POST['items']) && is_array($_POST['items'])) {
-            $detailQuery = "INSERT INTO tblpurchasedetails (
-                PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
-                CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        if (isset($_POST['items']) && is_array($_POST['items']) && !empty($_POST['items'])) {
+            $detailValues = [];
+            $stockUpdates = [];
+            $mrpUpdates = [];
             
-            $detailStmt = $conn->prepare($detailQuery);
-            
-            foreach ($_POST['items'] as $item) {
+            foreach ($_POST['items'] as $index => $item) {
                 $item_code = $item['code'] ?? '';
                 $item_name = $item['name'] ?? '';
                 $item_size = $item['size'] ?? '';
-                $cases = $item['cases'] ?? 0;
-                $bottles = $item['bottles'] ?? 0; // FIXED: Changed || to ??
-                $free_cases = $item['free_cases'] ?? 0; // FIXED: Changed || to ??
-                $free_bottles = $item['free_bottles'] ?? 0; // FIXED: Changed || to ??
-                $case_rate = $item['case_rate'] ?? 0; // FIXED: Changed || to ??
-                $mrp = $item['mrp'] ?? 0; // FIXED: Changed || to ??
-                $bottles_per_case = $item['bottles_per_case'] ?? 12; // FIXED: Changed || to ??
-                $batch_no = $item['batch_no'] ?? ''; // FIXED: Changed || to ??
-                $auto_batch = $item['auto_batch'] ?? ''; // FIXED: Changed || to ??
-                $mfg_month = $item['mfg_month'] ?? ''; // FIXED: Changed || to ??
-                $bl = $item['bl'] ?? 0; // FIXED: Changed || to ??
-                $vv = $item['vv'] ?? 0; // FIXED: Changed || to ??
-                $tot_bott = $item['totbott'] ?? 0; // FIXED: Changed || to ??
+                $cases = floatval($item['cases'] ?? 0);
+                $bottles = intval($item['bottles'] ?? 0);
+                $free_cases = floatval($item['free_cases'] ?? 0);
+                $free_bottles = intval($item['free_bottles'] ?? 0);
+                $case_rate = floatval($item['case_rate'] ?? 0);
+                $mrp = floatval($item['mrp'] ?? 0);
+                $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+                $batch_no = $item['batch_no'] ?? '';
+                $auto_batch = $item['auto_batch'] ?? '';
+                $mfg_month = $item['mfg_month'] ?? '';
+                $bl = floatval($item['bl'] ?? 0);
+                $vv = floatval($item['vv'] ?? 0);
+                $tot_bott = intval($item['tot_bott'] ?? 0);
                 
-                // Calculate amount correctly
+                // Calculate amount
                 $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
                 
-                $detailStmt->bind_param(
-                    "isssdddddddisssddi",
-                    $purchaseId, $item_code, $item_name, $item_size,
-                    $cases, $bottles, $free_cases, $free_bottles, $case_rate, $mrp, $amount, $bottles_per_case,
-                    $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
-                );
-                if (!$detailStmt->execute()) {
-                    throw new Exception("Error inserting item: " . $detailStmt->error);
+                // Escape strings for bulk insert
+                $item_code_esc = $conn->real_escape_string($item_code);
+                $item_name_esc = $conn->real_escape_string($item_name);
+                $item_size_esc = $conn->real_escape_string($item_size);
+                $batch_no_esc = $conn->real_escape_string($batch_no);
+                $auto_batch_esc = $conn->real_escape_string($auto_batch);
+                $mfg_month_esc = $conn->real_escape_string($mfg_month);
+                
+                // Collect for bulk insert
+                $detailValues[] = "($purchaseId, '$item_code_esc', '$item_name_esc', '$item_size_esc', $cases, $bottles, $free_cases, $free_bottles, $case_rate, $mrp, $amount, $bottles_per_case, '$batch_no_esc', '$auto_batch_esc', '$mfg_month_esc', $bl, $vv, $tot_bott)";
+                
+                // Collect MRP updates
+                if ($mrp > 0) {
+                    $mrpUpdates[$item_code] = $mrp;
                 }
                 
-                // Update stock with new values using the same date
-                updateStock($item_code, $cases, $bottles, $free_cases, $free_bottles, $bottles_per_case, $stockDate, $companyId, $conn);
+                // Collect stock updates
+                if ($tot_bott > 0) {
+                    if (!isset($stockUpdates[$item_code])) {
+                        $stockUpdates[$item_code] = 0;
+                    }
+                    $stockUpdates[$item_code] += $tot_bott;
+                }
             }
-            $detailStmt->close();
+            
+            // Bulk insert all purchase details
+            if (!empty($detailValues)) {
+                $detailBulkQuery = "INSERT INTO tblpurchasedetails (
+                    PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+                    CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+                ) VALUES " . implode(',', $detailValues);
+                
+                if (!$conn->query($detailBulkQuery)) {
+                    throw new Exception("Bulk insert failed: " . $conn->error);
+                }
+            }
+            
+            // Bulk update MRP
+            if (!empty($mrpUpdates)) {
+                foreach ($mrpUpdates as $code => $mrp) {
+                    updateItemMRP($conn, $code, $mrp);
+                }
+            }
+            
+            // Update stock for each item (now adding new quantities)
+            foreach ($stockUpdates as $itemCode => $totalBottles) {
+                // Find the item details to get cases/bottles breakdown
+                foreach ($_POST['items'] as $item) {
+                    if ($item['code'] == $itemCode) {
+                        updateStock(
+                            $itemCode,
+                            floatval($item['cases'] ?? 0),
+                            intval($item['bottles'] ?? 0),
+                            floatval($item['free_cases'] ?? 0),
+                            intval($item['free_bottles'] ?? 0),
+                            intval($item['bottles_per_case'] ?? 12),
+                            $date,
+                            $companyId,
+                            $conn
+                        );
+                        break;
+                    }
+                }
+            }
         }
         
         // Commit transaction
         $conn->commit();
         
-        // Log successful update
-        error_log("Purchase updated successfully - ID: $purchaseId, Company: $companyId, Original PUR_FLAG: $pur_flag");
+        // Re-enable constraints
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+        $conn->query("SET UNIQUE_CHECKS = 1");
         
         header("Location: purchase_module.php?mode=".$mode."&success=1");
         exit;
     } catch (Exception $e) {
         // Rollback transaction on error
         $conn->rollback();
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+        $conn->query("SET UNIQUE_CHECKS = 1");
         $errorMessage = "Error updating purchase: " . $e->getMessage();
         error_log("Purchase update failed - ID: $purchaseId, Error: " . $e->getMessage());
     }
@@ -501,6 +999,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    vertical-align: middle;
 }
 
 .styled-table thead th {
@@ -509,66 +1008,155 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     background: #f8fafc;
     z-index: 1;
     font-weight: 600;
-    text-align: center;
-    vertical-align: middle;
 }
 
 .styled-table tbody tr:hover {
     background-color: #f8f9fa;
 }
 
-/* Fixed column widths */
-.col-code { width: 150px; }
-.col-name { width: 180px; }
-.col-size { width: 100px; }
-.col-cases { width: 100px; }
-.col-bottles { width: 100px; }
-.col-free-cases { width: 100px; }
-.col-free-bottles { width: 100px; }
-.col-rate { width: 100px; }
-.col-amount { width: 100px; }
-.col-mrp { width: 100px; }
-.col-batch { width: 90px; }
-.col-auto-batch { width: 180px; }
-.col-mfg { width: 100px; }
-.col-bl { width: 100px; }
-.col-vv { width: 90px; }
-.col-totbott { width: 100px; }
-.col-action { width: 60px; }
+/* Column widths */
+.styled-table th.col-code,
+.styled-table td.col-code { width: 120px; }
+.styled-table th.col-name,
+.styled-table td.col-name { width: 180px; }
+.styled-table th.col-size,
+.styled-table td.col-size { width: 80px; }
+.styled-table th.col-cases,
+.styled-table td.col-cases { width: 70px; }
+.styled-table th.col-bottles,
+.styled-table td.col-bottles { width: 70px; }
+.styled-table th.col-free-cases,
+.styled-table td.col-free-cases { width: 70px; }
+.styled-table th.col-free-bottles,
+.styled-table td.col-free-bottles { width: 70px; }
+.styled-table th.col-rate,
+.styled-table td.col-rate { width: 80px; }
+.styled-table th.col-amount,
+.styled-table td.col-amount { width: 80px; }
+.styled-table th.col-mrp,
+.styled-table td.col-mrp { width: 80px; }
+.styled-table th.col-batch,
+.styled-table td.col-batch { width: 90px; }
+.styled-table th.col-auto-batch,
+.styled-table td.col-auto-batch { width: 100px; }
+.styled-table th.col-mfg,
+.styled-table td.col-mfg { width: 90px; }
+.styled-table th.col-bl,
+.styled-table td.col-bl { width: 70px; }
+.styled-table th.col-vv,
+.styled-table td.col-vv { width: 70px; }
+.styled-table th.col-totbott,
+.styled-table td.col-totbott { width: 80px; }
+.styled-table th.col-action,
+.styled-table td.col-action { width: 60px; }
 
-/* Text alignment */
-#itemsTable td:first-child,
-#itemsTable th:first-child {
+/* Column alignments */
+.styled-table th:nth-child(1),
+.styled-table td:nth-child(1),
+.styled-table th:nth-child(2),
+.styled-table td:nth-child(2) {
     text-align: left;
+    padding-left: 10px;
 }
 
-#itemsTable td:nth-child(2),
-#itemsTable th:nth-child(2) {
-    text-align: left;
-}
-
-#itemsTable td, 
-#itemsTable th {
+.styled-table th:nth-child(3),
+.styled-table td:nth-child(3),
+.styled-table th:nth-child(4),
+.styled-table td:nth-child(4),
+.styled-table th:nth-child(5),
+.styled-table td:nth-child(5),
+.styled-table th:nth-child(6),
+.styled-table td:nth-child(6),
+.styled-table th:nth-child(7),
+.styled-table td:nth-child(7) {
     text-align: center;
-    vertical-align: middle;
 }
 
-input.form-control-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+.styled-table th:nth-child(8),
+.styled-table td:nth-child(8),
+.styled-table th:nth-child(9),
+.styled-table td:nth-child(9),
+.styled-table th:nth-child(10),
+.styled-table td:nth-child(10) {
+    text-align: right;
+    padding-right: 12px;
+}
+
+.styled-table th:nth-child(11),
+.styled-table td:nth-child(11),
+.styled-table th:nth-child(12),
+.styled-table td:nth-child(12),
+.styled-table th:nth-child(13),
+.styled-table td:nth-child(13) {
+    text-align: left;
+    padding-left: 8px;
+}
+
+.styled-table th:nth-child(14),
+.styled-table td:nth-child(14),
+.styled-table th:nth-child(15),
+.styled-table td:nth-child(15),
+.styled-table th:nth-child(16),
+.styled-table td:nth-child(16) {
+    text-align: right;
+    padding-right: 12px;
+}
+
+.styled-table th:nth-child(17),
+.styled-table td:nth-child(17) {
+    text-align: center;
+}
+
+/* Input fields */
+.styled-table input[type="number"],
+.styled-table input[type="text"] {
     width: 100%;
     box-sizing: border-box;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
 }
 
-.total-amount {
+/* Totals row */
+.totals-row td:nth-child(1),
+.totals-row td:nth-child(2),
+.totals-row td:nth-child(3) {
+    text-align: left;
     font-weight: bold;
-    padding: 10px;
-    text-align: right;
-    background-color: #f1f1f1;
-    border-top: 2px solid #dee2e6;
+    background-color: #f8f9fa;
 }
 
-/* Bottles by size table styling */
+.totals-row td:nth-child(4),
+.totals-row td:nth-child(5),
+.totals-row td:nth-child(6),
+.totals-row td:nth-child(7) {
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+.totals-row td:nth-child(8),
+.totals-row td:nth-child(9),
+.totals-row td:nth-child(10),
+.totals-row td:nth-child(11),
+.totals-row td:nth-child(12),
+.totals-row td:nth-child(13),
+.totals-row td:nth-child(14),
+.totals-row td:nth-child(15),
+.totals-row td:nth-child(16) {
+    text-align: right;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+.totals-row td:nth-child(17) {
+    text-align: center;
+    font-weight: bold;
+    background-color: #f8f9fa;
+}
+
+/* Bottles by size table */
 #bottlesBySizeTable th {
     font-size: 0.75rem;
     padding: 4px 6px;
@@ -576,12 +1164,6 @@ input.form-control-sm {
 #bottlesBySizeTable td {
     font-size: 0.85rem;
     padding: 4px 6px;
-}
-.size-separator {
-    background-color: #6c757d !important;
-    color: white !important;
-    font-weight: bold;
-    width: 10px;
 }
 
 /* Status indicator for PUR_FLAG */
@@ -610,10 +1192,27 @@ input.form-control-sm {
     <div class="content-area p-3 p-md-4">
       <div class="position-relative">
         <h4 class="mb-3">Edit Purchase</h4>
-        <!-- FIXED: Show current PUR_FLAG status -->
         <span class="pur-flag-indicator pur-flag-<?= $purchase['PUR_FLAG'] ?>">
           PUR_FLAG: <?= $purchase['PUR_FLAG'] ?>
         </span>
+      </div>
+
+      <!-- License Restriction Info -->
+      <div class="alert alert-info mb-3">
+          <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
+          <p class="mb-0">Showing items for classes: 
+              <?php 
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                  }
+                  echo implode(', ', $class_names);
+              } else {
+                  echo 'No classes available for your license type';
+              }
+              ?>
+          </p>
       </div>
 
       <?php if (isset($errorMessage)): ?>
@@ -664,7 +1263,7 @@ input.form-control-sm {
                 <label class="form-label">Supplier</label>
                 <div class="supplier-container">
                   <input type="text" class="form-control" name="supplier_name" id="supplierInput" 
-                         value="<?=htmlspecialchars($purchase['supplier_name'] ?? '')?>" placeholder="e.g., ASIAN TRADERS-5" required>
+                         value="<?=htmlspecialchars($purchase['supplier_name'] ?? '')?>" placeholder="Type supplier name" required>
                   <div class="supplier-suggestions" id="supplierSuggestions"></div>
                 </div>
                 <select class="form-select mt-1" id="supplierSelect">
@@ -690,14 +1289,10 @@ input.form-control-sm {
             <div class="table-responsive">
               <table class="table table-bordered table-sm mb-0" id="bottlesBySizeTable">
                 <thead class="table-light">
-                  <tr id="sizeHeaders">
-                    <!-- Headers will be populated by JavaScript -->
-                  </tr>
+                  <tr id="sizeHeaders"></tr>
                 </thead>
                 <tbody>
-                  <tr id="sizeValues">
-                    <!-- Values will be populated by JavaScript -->
-                  </tr>
+                  <tr id="sizeValues"></tr>
                 </tbody>
               </table>
             </div>
@@ -772,648 +1367,647 @@ input.form-control-sm {
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-3">
-                <label class="form-label">Trade Discount (%)</label>
-                <input type="number" class="form-control" name="trade_disc" id="tradeDisc" step="0.01" value="<?=htmlspecialchars($purchase['SCHDIS'] ?? 0)?>">
+                <label class="form-label">Cash Discount</label>
+                <input type="number" step="0.01" class="form-control" name="cash_disc" value="<?=htmlspecialchars($purchase['CASHDIS'] ?? 0)?>">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Cash Discount (%)</label>
-                <input type="number" class="form-control" name="cash_disc" id="cashDisc" step="0.01" value="<?=htmlspecialchars($purchase['CASHDIS'] ?? 0)?>">
+                <label class="form-label">Trade Discount</label>
+                <input type="number" step="0.01" class="form-control" name="trade_disc" value="<?=htmlspecialchars($purchase['SCHDIS'] ?? 0)?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Octroi</label>
-                <input type="number" class="form-control" name="octroi" id="octroi" step="0.01" value="<?=htmlspecialchars($purchase['OCTROI'] ?? 0)?>">
+                <input type="number" step="0.01" class="form-control" name="octroi" value="<?=htmlspecialchars($purchase['OCTROI'] ?? 0)?>">
               </div>
               <div class="col-md-3">
-                <label class="form-label">Freight</label>
-                <input type="number" class="form-control" name="freight" id="freight" step="0.01" value="<?=htmlspecialchars($purchase['FREIGHT'] ?? 0)?>">
+                <label class="form-label">Freight Charges</label>
+                <input type="number" step="0.01" class="form-control" name="freight" value="<?=htmlspecialchars($purchase['FREIGHT'] ?? 0)?>">
               </div>
             </div>
-
             <div class="row g-3 mt-1">
               <div class="col-md-3">
-                <label class="form-label">S.Tax (%)</label>
-                <input type="number" class="form-control" name="stax_per" id="staxPer" step="0.01" value="<?=htmlspecialchars($purchase['STAX_PER'] ?? 0)?>">
+                <label class="form-label">Sales Tax (%)</label>
+                <input type="number" step="0.01" class="form-control" name="stax_per" value="<?=htmlspecialchars($purchase['STAX_PER'] ?? 0)?>">
               </div>
               <div class="col-md-3">
-                <label class="form-label">S.Tax Amount</label>
-                <input type="number" class="form-control" name="stax_amt" id="staxAmt" step="0.01" value="<?=htmlspecialchars($purchase['STAX_AMT'] ?? 0)?>" readonly>
+                <label class="form-label">Sales Tax Amount</label>
+                <input type="number" step="0.01" class="form-control" name="stax_amt" value="<?=htmlspecialchars($purchase['STAX_AMT'] ?? 0)?>" readonly>
               </div>
               <div class="col-md-3">
                 <label class="form-label">TCS (%)</label>
-                <input type="number" class="form-control" name="tcs_per" id="tcsPer" step="0.01" value="<?=htmlspecialchars($purchase['TCS_PER'] ?? 0)?>">
+                <input type="number" step="0.01" class="form-control" name="tcs_per" value="<?=htmlspecialchars($purchase['TCS_PER'] ?? 0)?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">TCS Amount</label>
-                <input type="number" class="form-control" name="tcs_amt" id="tcsAmt" step="0.01" value="<?=htmlspecialchars($purchase['TCS_AMT'] ?? 0)?>" readonly>
+                <input type="number" step="0.01" class="form-control" name="tcs_amt" value="<?=htmlspecialchars($purchase['TCS_AMT'] ?? 0)?>" readonly>
               </div>
             </div>
-
             <div class="row g-3 mt-1">
               <div class="col-md-3">
                 <label class="form-label">Misc. Charges</label>
-                <input type="number" class="form-control" name="misc_charg" id="miscCharg" step="0.01" value="<?=htmlspecialchars($purchase['MISC_CHARG'] ?? 0)?>">
+                <input type="number" step="0.01" class="form-control" name="misc_charg" value="<?=htmlspecialchars($purchase['MISC_CHARG'] ?? 0)?>">
               </div>
               <div class="col-md-3">
                 <label class="form-label">Basic Amount</label>
-                <input type="number" class="form-control" name="basic_amt" id="basicAmt" step="0.01" 
-                       value="<?= htmlspecialchars($purchase['TAMT'] ?? 0) ?>" readonly>
+                <input type="number" step="0.01" class="form-control" name="basic_amt" value="<?=htmlspecialchars($purchase['TAMT'] ?? 0)?>" readonly>
               </div>
               <div class="col-md-3">
                 <label class="form-label">Total Amount</label>
-                <input type="number" class="form-control" name="tamt" id="tamt" step="0.01" value="<?=htmlspecialchars($purchase['TAMT'] ?? 0)?>" readonly>
+                <input type="number" step="0.01" class="form-control" name="tamt" value="<?=htmlspecialchars($purchase['TAMT'] ?? 0)?>" readonly>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- BUTTONS -->
-        <div class="d-flex justify-content-between">
-          <a href="purchase_module.php?mode=<?=$mode?>" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-2"></i>Back</a>
-          <div>
-            <button type="button" class="btn btn-warning" id="resetForm"><i class="fa-solid fa-rotate me-2"></i>Reset</button>
-            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-2"></i>Update Purchase</button>
-          </div>
+        <div class="d-flex gap-2">
+          <a href="purchase_module.php?mode=<?=$mode?>" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back</a>
+          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Update Purchase</button>
         </div>
       </form>
+    </div>
+
+    <?php include 'components/footer.php'; ?>
+  </div>
+</div>
+
+<!-- ITEM PICKER MODAL -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Select Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input class="form-control mb-2" id="itemSearch" placeholder="Search items...">
+        <div class="table-container">
+          <table class="styled-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Item</th>
+                <th>Size</th>
+                <th>Price</th>
+                <th>Bottles/Case</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="itemsModalTable">
+              <?php foreach($items as $it): ?>
+                <tr class="item-row-modal">
+                  <td><?=htmlspecialchars($it['CODE'])?></td>
+                  <td><?=htmlspecialchars($it['DETAILS'])?></td>
+                  <td><?=htmlspecialchars($it['DETAILS2'])?></td>
+                  <td><?=number_format((float)$it['PPRICE'],3)?></td>
+                  <td><?=htmlspecialchars($it['BOTTLE_PER_CASE'])?></td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-primary select-item"
+                        data-code="<?=htmlspecialchars($it['CODE'])?>"
+                        data-name="<?=htmlspecialchars($it['DETAILS'])?>"
+                        data-size="<?=htmlspecialchars($it['DETAILS2'])?>"
+                        data-price="<?=htmlspecialchars($it['PPRICE'])?>"
+                        data-bottles-per-case="<?=htmlspecialchars($it['BOTTLE_PER_CASE'])?>">
+                      Select
+                    </button>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Global variables
-let items = <?= json_encode($items) ?>;
-let existingItems = <?= json_encode($existingItems) ?>;
-let distinctSizes = <?= json_encode($distinctSizes) ?>;
-let itemCounter = 0;
+$(function(){
+  let itemCount = <?= count($existingItems) ?>;
+  const dbItems = <?=json_encode($items, JSON_UNESCAPED_UNICODE)?>;
+  const suppliers = <?=json_encode($suppliers, JSON_UNESCAPED_UNICODE)?>;
+  const distinctSizes = <?=json_encode($distinctSizes, JSON_UNESCAPED_UNICODE)?>;
+  const existingItems = <?=json_encode($existingItems, JSON_UNESCAPED_UNICODE)?>;
 
-// Initialize the form with existing items
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize size table (same as purchases.php)
-    initializeSizeTable();
+  // ---------- Helper Functions (from purchases.php) ----------
+  // Helper function to convert size text to ML value for proper matching
+  function parseSizeToML(sizeText) {
+    if (!sizeText) return null;
     
-    // Add existing items to the table
-    if (existingItems.length > 0) {
-        existingItems.forEach(item => {
-            addItemToTable(item);
-        });
-        updateTotals();
-        updateBottlesBySizeDisplay();
-        updateCharges();
+    const str = sizeText.toString().toUpperCase().trim();
+    
+    // Check if it contains "L" (liters)
+    if (str.includes('L')) {
+      const match = str.match(/([\d.]+)\s*L/);
+      if (match) {
+        const liters = parseFloat(match[1]);
+        return Math.round(liters * 1000); // Convert to ML
+      }
     }
     
-    // Initialize supplier suggestions
-    initSupplierSuggestions();
+    // Check if it contains "ML"
+    if (str.includes('ML')) {
+      const match = str.match(/(\d+)\s*ML/);
+      if (match) {
+        return parseInt(match[1]);
+      }
+    }
     
-    // Initialize event listeners
-    initEventListeners();
-});
+    // Fallback: just extract any number
+    const match = str.match(/(\d+)/);
+    if (match) {
+      return parseInt(match[1]);
+    }
+    
+    return null;
+  }
 
-// Function to format bottle size with proper units (ML/L) without spaces
-function formatBottleSize(sizeText) {
+  function formatBottleSize(sizeText) {
     if (!sizeText) return '';
 
-    // Extract numeric value
     const match = sizeText.toString().match(/(\d+(?:\.\d+)?)/);
     if (!match) return sizeText;
 
     const sizeNum = parseFloat(match[1]);
 
-    // If 1000 or more, display as L, otherwise as ML
     if (sizeNum >= 1000) {
-        const liters = sizeNum / 1000;
-        return liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+      const liters = sizeNum / 1000;
+      return liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
     } else {
-        return `${sizeNum}ML`;
+      return `${sizeNum}ML`;
     }
-}
+  }
 
-// Function to calculate B.L. (size in ML * total bottles / 1000)
-function calculateBL(sizeText, totalBottles) {
+  function calculateBL(sizeText, totalBottles) {
     if (!sizeText || !totalBottles) return 0;
 
-    // Extract numeric value from size (e.g., "500 ML" → 500)
     const sizeMatch = sizeText.match(/(\d+)/);
     if (!sizeMatch) return 0;
 
     const sizeML = parseInt(sizeMatch[1]);
-    return (sizeML * totalBottles) / 1000; // Convert to liters
-}
+    return (sizeML * totalBottles) / 1000;
+  }
 
-// Function to calculate total bottles (cases * bottles per case + individual bottles)
-function calculateTotalBottles(cases, bottles, bottlesPerCase) {
-    return (cases * bottlesPerCase) + bottles;
-}
+  function calculateTotalBottles(cases, bottles, bottlesPerCase) {
+    return (cases * bottlesPerCase) + parseInt(bottles || 0);
+  }
 
-// Function to calculate and update B.L. and Total Bottles for a row
-function updateRowCalculations(row) {
+  function calculateAmount(cases, bottles, caseRate, bottlesPerCase) {
+    if (bottlesPerCase <= 0) bottlesPerCase = 1;
+    if (caseRate < 0) caseRate = 0;
+    cases = Math.max(0, cases || 0);
+    bottles = Math.max(0, bottles || 0);
+    
+    const fullCaseAmount = cases * caseRate;
+    const bottleRate = caseRate / bottlesPerCase;
+    const individualBottleAmount = bottles * bottleRate;
+    
+    return fullCaseAmount + individualBottleAmount;
+  }
+
+  function calculateTradeDiscount() {
+    let totalTradeDiscount = 0;
+    
+    $('.item-row').each(function() {
+      const row = $(this);
+      const freeCases = parseFloat(row.find('.free-cases').val()) || 0;
+      const freeBottles = parseFloat(row.find('.free-bottles').val()) || 0;
+      const caseRate = parseFloat(row.find('.case-rate').val()) || 0;
+      const bottlesPerCase = parseInt(row.data('bottles-per-case')) || 12;
+      
+      const freeAmount = calculateAmount(freeCases, freeBottles, caseRate, bottlesPerCase);
+      totalTradeDiscount += freeAmount;
+    });
+    
+    return totalTradeDiscount;
+  }
+
+  function calculateColumnTotals() {
+    let totalCases = 0;
+    let totalBottles = 0;
+    let totalFreeCases = 0;
+    let totalFreeBottles = 0;
+    let totalBL = 0;
+    let totalTotBott = 0;
+    
+    $('.item-row').each(function() {
+      const row = $(this);
+      totalCases += parseFloat(row.find('.cases').val()) || 0;
+      totalBottles += parseFloat(row.find('.bottles').val()) || 0;
+      totalFreeCases += parseFloat(row.find('.free-cases').val()) || 0;
+      totalFreeBottles += parseFloat(row.find('.free-bottles').val()) || 0;
+      
+      const blValue = parseFloat(row.find('input[name*="[bl]"]').val()) || 0;
+      const totBottValue = parseFloat(row.find('input[name*="[tot_bott]"]').val()) || 0;
+      
+      totalBL += blValue;
+      totalTotBott += totBottValue;
+    });
+    
+    return {
+      cases: totalCases,
+      bottles: totalBottles,
+      freeCases: totalFreeCases,
+      freeBottles: totalFreeBottles,
+      bl: totalBL,
+      totBott: totalTotBott
+    };
+  }
+
+  function updateColumnTotals() {
+    const totals = calculateColumnTotals();
+    
+    $('#totalCases').text(totals.cases.toFixed(2));
+    $('#totalBottles').text(totals.bottles.toFixed(0));
+    $('#totalFreeCases').text(totals.freeCases.toFixed(2));
+    $('#totalFreeBottles').text(totals.freeBottles.toFixed(0));
+    $('#totalBL').text(totals.bl.toFixed(2));
+    $('#totalTotBott').text(totals.totBott.toFixed(0));
+  }
+
+  function updateRowCalculations(row) {
     const cases = parseFloat(row.find('.cases').val()) || 0;
     const bottles = parseFloat(row.find('.bottles').val()) || 0;
     const bottlesPerCase = parseInt(row.data('bottles-per-case')) || 12;
     const size = row.find('input[name*="[size]"]').val() || '';
     
-    // Calculate total bottles
     const totalBottles = calculateTotalBottles(cases, bottles, bottlesPerCase);
-    
-    // Calculate B.L. (size in ML * total bottles / 1000)
     const blValue = calculateBL(size, totalBottles);
     
-    // Update the displayed values
     row.find('.tot-bott-value').text(totalBottles);
     row.find('.bl-value').text(blValue.toFixed(2));
     
-    // Update hidden fields
-    row.find('input[name*="[totbott]"]').val(totalBottles);
+    row.find('input[name*="[tot_bott]"]').val(totalBottles);
     row.find('input[name*="[bl]"]').val(blValue.toFixed(2));
-}
+  }
 
-function initializeSizeTable() {
+  function initializeSizeTable() {
     const $headers = $('#sizeHeaders');
     const $values = $('#sizeValues');
 
     $headers.empty();
     $values.empty();
 
-    // Sort sizes in descending order (largest first)
     const sortedSizes = distinctSizes.sort((a, b) => b - a);
 
-    // Add headers for all sizes in descending order
     sortedSizes.forEach(size => {
-        // Format size display with proper units
-        let displaySize;
-        if (size >= 1000) {
-            const liters = size / 1000;
-            displaySize = liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
-        } else {
-            displaySize = `${size}ML`;
-        }
+      let displaySize;
+      if (size >= 1000) {
+        const liters = size / 1000;
+        displaySize = liters % 1 === 0 ? `${liters}L` : `${liters.toFixed(1)}L`;
+      } else {
+        displaySize = `${size}ML`;
+      }
 
-        $headers.append(`<th>${displaySize}</th>`);
-        $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
+      $headers.append(`<th>${displaySize}</th>`);
+      $values.append(`<td id="size-${size}" class="text-center fw-bold">0</td>`);
     });
-}
+  }
 
-function initSupplierSuggestions() {
-    const supplierInput = document.getElementById('supplierInput');
-    const supplierSelect = document.getElementById('supplierSelect');
-    const supplierSuggestions = document.getElementById('supplierSuggestions');
-    const supplierCodeHidden = document.getElementById('supplierCodeHidden');
-    
-    supplierInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        supplierSuggestions.innerHTML = '';
-        
-        if (searchTerm.length < 2) {
-            supplierSuggestions.style.display = 'none';
-            return;
-        }
-        
-        const filteredSuppliers = <?= json_encode($suppliers) ?>.filter(s => 
-            s.DETAILS.toLowerCase().includes(searchTerm) || 
-            s.CODE.toString().includes(searchTerm)
-        );
-        
-        if (filteredSuppliers.length > 0) {
-            filteredSuppliers.forEach(s => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.textContent = `${s.DETAILS} (${s.CODE})`;
-                div.addEventListener('click', function() {
-                    supplierInput.value = s.DETAILS;
-                    supplierCodeHidden.value = s.CODE;
-                    supplierSuggestions.style.display = 'none';
-                });
-                supplierSuggestions.appendChild(div);
-            });
-            supplierSuggestions.style.display = 'block';
-        } else {
-            supplierSuggestions.style.display = 'none';
-        }
-    });
-    
-    supplierSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption.value) {
-            supplierInput.value = selectedOption.value;
-            supplierCodeHidden.value = selectedOption.dataset.code;
-        }
-    });
-    
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!supplierInput.contains(e.target) && !supplierSuggestions.contains(e.target)) {
-            supplierSuggestions.style.display = 'none';
-        }
-    });
-}
-
-function initEventListeners() {
-    // Add item button
-    document.getElementById('addItem').addEventListener('click', function() {
-        addItemToTable();
-    });
-    
-    // Clear items button
-    document.getElementById('clearItems').addEventListener('click', function() {
-        if (confirm('Are you sure you want to clear all items?')) {
-            document.querySelectorAll('#itemsTable tbody tr.item-row').forEach(row => {
-                row.remove();
-            });
-            updateTotals();
-            updateBottlesBySizeDisplay();
-            updateCharges();
-        }
-    });
-    
-    // Reset form button
-    document.getElementById('resetForm').addEventListener('click', function() {
-        if (confirm('Are you sure you want to reset the form? All changes will be lost.')) {
-            document.getElementById('purchaseForm').reset();
-            document.querySelectorAll('#itemsTable tbody tr.item-row').forEach(row => {
-                row.remove();
-            });
-            existingItems.forEach(item => {
-                addItemToTable(item);
-            });
-            updateTotals();
-            updateBottlesBySizeDisplay();
-            updateCharges();
-        }
-    });
-    
-    // Charges calculation events - ensure all inputs are connected
-    const chargeInputs = [
-        'tradeDisc', 'cashDisc', 'octroi', 'freight', 
-        'staxPer', 'tcsPer', 'miscCharg'
-    ];
-    
-    chargeInputs.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('input', updateCharges);
-            element.addEventListener('change', updateCharges);
-        }
-    });
-    
-    // Also update charges when the page loads to show initial values
-    setTimeout(updateCharges, 100);
-}
-
-function addItemToTable(existingItem = null) {
-    const tbody = document.querySelector('#itemsTable tbody');
-    const noItemsRow = document.getElementById('noItemsRow');
-    
-    if (noItemsRow) noItemsRow.remove();
-    
-    const row = document.createElement('tr');
-    row.className = 'item-row';
-    row.dataset.index = itemCounter;
-    
-    const isNew = !existingItem;
-    const itemData = existingItem || {
-        ItemCode: '',
-        ItemName: '',
-        Size: '',
-        Cases: 0,
-        Bottles: 0,
-        FreeCases: 0,
-        FreeBottles: 0,
-        CaseRate: 0,
-        MRP: 0,
-        BottlesPerCase: 12,
-        BatchNo: '',
-        AutoBatch: '',
-        MfgMonth: '',
-        BL: 0,
-        VV: 0,
-        TotBott: 0
-    };
-    
-    row.innerHTML = `
-        <td>
-            <input type="text" class="form-control form-control-sm item-code" name="items[${itemCounter}][code]" 
-                   value="${itemData.ItemCode}" required>
-            <div class="item-suggestions" id="suggestions_${itemCounter}"></div>
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm item-name" name="items[${itemCounter}][name]" 
-                   value="${itemData.ItemName}" readonly>
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm item-size" name="items[${itemCounter}][size]"
-                   value="${formatBottleSize(itemData.Size)}" readonly>
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-cases" name="items[${itemCounter}][cases]" 
-                   value="${itemData.Cases}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-bottles" name="items[${itemCounter}][bottles]" 
-                   value="${itemData.Bottles}" step="1" min="0" max="${itemData.BottlesPerCase - 1}">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-free-cases" name="items[${itemCounter}][free_cases]" 
-                   value="${itemData.FreeCases}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-free-bottles" name="items[${itemCounter}][free_bottles]" 
-                   value="${itemData.FreeBottles}" step="1" min="0" max="${itemData.BottlesPerCase - 1}">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-case-rate" name="items[${itemCounter}][case_rate]" 
-                   value="${itemData.CaseRate}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-amount" name="items[${itemCounter}][amount]" 
-                   value="${itemData.Amount || 0}" step="0.01" readonly>
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-mrp" name="items[${itemCounter}][mrp]" 
-                   value="${itemData.MRP}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm item-batch" name="items[${itemCounter}][batch_no]" 
-                   value="${itemData.BatchNo}">
-        </td>
-        <td>
-            <input type="text" class="form-control form-control-sm item-auto-batch" name="items[${itemCounter}][auto_batch]" 
-                   value="${itemData.AutoBatch}">
-        </td>
-        <td>
-            <input type="month" class="form-control form-control-sm item-mfg" name="items[${itemCounter}][mfg_month]" 
-                   value="${itemData.MfgMonth}">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-bl" name="items[${itemCounter}][bl]" 
-                   value="${itemData.BL}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-vv" name="items[${itemCounter}][vv]" 
-                   value="${itemData.VV}" step="0.01" min="0">
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm item-totbott" name="items[${itemCounter}][totbott]" 
-                   value="${itemData.TotBott}" step="1" min="0" readonly>
-        </td>
-        <td>
-            <button type="button" class="btn btn-sm btn-danger remove-item"><i class="fa-solid fa-trash"></i></button>
-            <input type="hidden" class="item-bottles-per-case" name="items[${itemCounter}][bottles_per_case]" value="${itemData.BottlesPerCase}">
-        </td>
-    `;
-    
-    tbody.appendChild(row);
-    
-    // Initialize item event listeners
-    initItemEventListeners(row, itemCounter);
-    
-    itemCounter++;
-    
-    if (isNew) {
-        updateTotals();
-        updateBottlesBySizeDisplay();
-        updateCharges();
-    }
-}
-
-function initItemEventListeners(row, index) {
-    const codeInput = row.querySelector('.item-code');
-    const nameInput = row.querySelector('.item-name');
-    const sizeInput = row.querySelector('.item-size');
-    const casesInput = row.querySelector('.item-cases');
-    const bottlesInput = row.querySelector('.item-bottles');
-    const freeCasesInput = row.querySelector('.item-free-cases');
-    const freeBottlesInput = row.querySelector('.item-free-bottles');
-    const caseRateInput = row.querySelector('.item-case-rate');
-    const amountInput = row.querySelector('.item-amount');
-    const mrpInput = row.querySelector('.item-mrp');
-    const batchInput = row.querySelector('.item-batch');
-    const autoBatchInput = row.querySelector('.item-auto-batch');
-    const mfgInput = row.querySelector('.item-mfg');
-    const blInput = row.querySelector('.item-bl');
-    const vvInput = row.querySelector('.item-vv');
-    const totBottInput = row.querySelector('.item-totbott');
-    const bottlesPerCaseInput = row.querySelector('.item-bottles-per-case');
-    const removeBtn = row.querySelector('.remove-item');
-    
-    // Item code autocomplete
-    codeInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const suggestions = document.getElementById(`suggestions_${index}`);
-        suggestions.innerHTML = '';
-        
-        if (searchTerm.length < 2) {
-            suggestions.style.display = 'none';
-            return;
-        }
-        
-        const filteredItems = items.filter(item => 
-            item.CODE.toLowerCase().includes(searchTerm) || 
-            item.DETAILS.toLowerCase().includes(searchTerm) ||
-            item.SCM_CODE.toLowerCase().includes(searchTerm)
-        );
-        
-        if (filteredItems.length > 0) {
-            filteredItems.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.textContent = `${item.SCM_CODE} - ${item.DETAILS}`;
-                div.addEventListener('click', function() {
-                    codeInput.value = item.CODE;
-                    nameInput.value = item.DETAILS;
-                    
-                    // Set size from item group
-                    sizeInput.value = formatBottleSize(item.ITEM_GROUP || '');
-                    
-                    // Set case rate from purchase price
-                    caseRateInput.value = item.PPRICE || 0;
-                    
-                    // Set bottles per case
-                    bottlesPerCaseInput.value = item.BOTTLE_PER_CASE || 12;
-                    
-                    // Update max for bottles inputs
-                    bottlesInput.max = item.BOTTLE_PER_CASE - 1;
-                    freeBottlesInput.max = item.BOTTLE_PER_CASE - 1;
-                    
-                    suggestions.style.display = 'none';
-                    calculateItemAmount(row);
-                    updateTotals();
-                    updateBottlesBySizeDisplay();
-                });
-                suggestions.appendChild(div);
-            });
-            suggestions.style.display = 'block';
-        } else {
-            suggestions.style.display = 'none';
-        }
-    });
-    
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!codeInput.contains(e.target)) {
-            const suggestions = document.getElementById(`suggestions_${index}`);
-            suggestions.style.display = 'none';
-        }
-    });
-    
-    // Calculation events
-    [casesInput, bottlesInput, freeCasesInput, freeBottlesInput, caseRateInput].forEach(input => {
-        input.addEventListener('input', function() {
-            calculateItemAmount(row);
-            updateTotals();
-            updateBottlesBySizeDisplay();
-        });
-    });
-    
-    // Remove item
-    removeBtn.addEventListener('click', function() {
-        if (confirm('Are you sure you want to remove this item?')) {
-            row.remove();
-            updateTotals();
-            updateBottlesBySizeDisplay();
-            updateCharges();
-        }
-    });
-}
-
-function calculateItemAmount(row) {
-    const cases = parseFloat(row.querySelector('.item-cases').value) || 0;
-    const bottles = parseInt(row.querySelector('.item-bottles').value) || 0;
-    const caseRate = parseFloat(row.querySelector('.item-case-rate').value) || 0;
-    const bottlesPerCase = parseInt(row.querySelector('.item-bottles-per-case').value) || 12;
-    
-    const bottleRate = caseRate / bottlesPerCase;
-    const amount = (cases * caseRate) + (bottles * bottleRate);
-    
-    row.querySelector('.item-amount').value = amount.toFixed(2);
-    
-    // Calculate total bottles
-    const freeCases = parseFloat(row.querySelector('.item-free-cases').value) || 0;
-    const freeBottles = parseInt(row.querySelector('.item-free-bottles').value) || 0;
-    const totalBottles = ((cases + freeCases) * bottlesPerCase) + bottles + freeBottles;
-    row.querySelector('.item-totbott').value = totalBottles;
-}
-
-function updateTotals() {
-    let totalCases = 0;
-    let totalBottles = 0;
-    let totalFreeCases = 0;
-    let totalFreeBottles = 0;
-    let totalAmount = 0;
-    let totalBL = 0;
-    let totalTotBott = 0;
-    
-    document.querySelectorAll('#itemsTable tbody tr.item-row').forEach(row => {
-        totalCases += parseFloat(row.querySelector('.item-cases').value) || 0;
-        totalBottles += parseInt(row.querySelector('.item-bottles').value) || 0;
-        totalFreeCases += parseFloat(row.querySelector('.item-free-cases').value) || 0;
-        totalFreeBottles += parseInt(row.querySelector('.item-free-bottles').value) || 0;
-        totalAmount += parseFloat(row.querySelector('.item-amount').value) || 0;
-        totalBL += parseFloat(row.querySelector('.item-bl').value) || 0;
-        totalTotBott += parseInt(row.querySelector('.item-totbott').value) || 0;
-    });
-    
-    document.getElementById('totalCases').textContent = totalCases.toFixed(2);
-    document.getElementById('totalBottles').textContent = totalBottles;
-    document.getElementById('totalFreeCases').textContent = totalFreeCases.toFixed(2);
-    document.getElementById('totalFreeBottles').textContent = totalFreeBottles;
-    document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
-    document.getElementById('totalBL').textContent = totalBL.toFixed(2);
-    document.getElementById('totalTotBott').textContent = totalTotBott;
-    
-    // Update basic amount and trigger charges calculation
-    document.getElementById('basicAmt').value = totalAmount.toFixed(2);
-    updateCharges(); // Add this line to recalculate charges when totals change
-}
-
-function calculateBottlesBySize() {
+  function calculateBottlesBySize() {
     const sizeMap = {};
     
-    // Initialize all sizes to 0
     distinctSizes.forEach(size => {
-        sizeMap[size] = 0;
+      sizeMap[size] = 0;
     });
     
     $('.item-row').each(function() {
-        const row = $(this);
-        const sizeText = row.find('input[name*="[size]"]').val() || '';
-        const totBott = parseInt(row.find('input[name*="[totbott]"]').val()) || 0;
+      const row = $(this);
+      const sizeText = row.find('input[name*="[size]"]').val() || '';
+      const totBott = parseInt(row.find('input[name*="[tot_bott]"]').val()) || 0;
+      
+      if (sizeText && totBott > 0) {
+        // Use the new helper function to properly parse sizes like "1L", "1.5L", "750ML"
+        const sizeValue = parseSizeToML(sizeText);
         
-        if (sizeText && totBott > 0) {
-            // Extract numeric value from size text
-            const sizeMatch = sizeText.match(/(\d+)/);
-            if (sizeMatch) {
-                const sizeValue = parseInt(sizeMatch[1]);
-                
-                // Find the closest matching size from distinctSizes
-                let matchedSize = null;
-                let smallestDiff = Infinity;
-                
-                distinctSizes.forEach(dbSize => {
-                    const diff = Math.abs(dbSize - sizeValue);
-                    if (diff < smallestDiff && diff <= 50) { // Allow 50ml tolerance for matching
-                        smallestDiff = diff;
-                        matchedSize = dbSize;
-                    }
-                });
-                
-                if (matchedSize !== null) {
-                    sizeMap[matchedSize] += totBott;
-                } else {
-                    // If no close match found, check if it's exactly one of our sizes
-                    if (distinctSizes.includes(sizeValue)) {
-                                            sizeMap[sizeValue] += totBott;
-                    }
-                }
+        if (sizeValue !== null) {
+          let matchedSize = null;
+          let smallestDiff = Infinity;
+          
+          distinctSizes.forEach(dbSize => {
+            const diff = Math.abs(dbSize - sizeValue);
+            if (diff < smallestDiff && diff <= 50) {
+              smallestDiff = diff;
+              matchedSize = dbSize;
             }
+          });
+          
+          if (matchedSize !== null) {
+            sizeMap[matchedSize] += totBott;
+          } else if (distinctSizes.includes(sizeValue)) {
+            sizeMap[sizeValue] += totBott;
+          }
         }
+      }
     });
     
     return sizeMap;
-}
+  }
 
-function updateBottlesBySizeDisplay() {
+  function updateBottlesBySizeDisplay() {
     const sizeMap = calculateBottlesBySize();
     
-    // Update all size values in the table
     distinctSizes.forEach(size => {
-        $(`#size-${size}`).text(sizeMap[size] || '0');
+      $(`#size-${size}`).text(sizeMap[size] || '0');
     });
-}
+  }
 
-function updateCharges() {
-    const basicAmt = parseFloat(document.getElementById('basicAmt').value) || 0;
-    const tradeDisc = parseFloat(document.getElementById('tradeDisc').value) || 0;
-    const cashDisc = parseFloat(document.getElementById('cashDisc').value) || 0;
-    const octroi = parseFloat(document.getElementById('octroi').value) || 0;
-    const freight = parseFloat(document.getElementById('freight').value) || 0;
-    const staxPer = parseFloat(document.getElementById('staxPer').value) || 0;
-    const tcsPer = parseFloat(document.getElementById('tcsPer').value) || 0;
-    const miscCharg = parseFloat(document.getElementById('miscCharg').value) || 0;
+  function updateTotals() {
+    let totalAmount = 0;
+    $('.item-row .amount').each(function() { 
+      totalAmount += parseFloat($(this).text()) || 0; 
+    });
     
-    console.log('Calculating charges:', { basicAmt, tradeDisc, cashDisc, octroi, freight, staxPer, tcsPer, miscCharg });
+    $('#totalAmount').text(totalAmount.toFixed(2));
+    $('input[name="basic_amt"]').val(totalAmount.toFixed(2));
     
-    // Calculate discounts
-    const tradeDiscAmt = basicAmt * (tradeDisc / 100);
-    const cashDiscAmt = basicAmt * (cashDisc / 100);
+    const tradeDiscount = calculateTradeDiscount();
+    $('input[name="trade_disc"]').val(tradeDiscount.toFixed(2));
     
-    // Calculate taxable amount (after discounts)
-    const taxableAmt = basicAmt - tradeDiscAmt - cashDiscAmt;
+    updateColumnTotals();
+    updateBottlesBySizeDisplay();
+    calcTaxes();
+  }
+
+  function calcTaxes() {
+    const basic = parseFloat($('input[name="basic_amt"]').val()) || 0;
+    const staxp = parseFloat($('input[name="stax_per"]').val()) || 0;
+    const tcsp  = parseFloat($('input[name="tcs_per"]').val()) || 0;
+    const cash  = parseFloat($('input[name="cash_disc"]').val()) || 0;
+    const trade = parseFloat($('input[name="trade_disc"]').val()) || 0;
+    const oct   = parseFloat($('input[name="octroi"]').val()) || 0;
+    const fr    = parseFloat($('input[name="freight"]').val()) || 0;
+    const misc  = parseFloat($('input[name="misc_charg"]').val()) || 0;
     
-    // Calculate taxes on taxable amount
-    const staxAmt = taxableAmt * (staxPer / 100);
-    const tcsAmt = taxableAmt * (tcsPer / 100);
+    const stax  = basic * staxp / 100;
+    const tcs   = basic * tcsp / 100;
     
-    // Calculate total amount
-    const totalAmt = taxableAmt + octroi + freight + staxAmt + tcsAmt + miscCharg;
+    $('input[name="stax_amt"]').val(stax.toFixed(2));
+    $('input[name="tcs_amt"]').val(tcs.toFixed(2));
     
-    console.log('Calculated amounts:', { tradeDiscAmt, cashDiscAmt, taxableAmt, staxAmt, tcsAmt, totalAmt });
+    const grand = basic + stax + tcs + oct + fr + misc - cash - trade;
+    $('input[name="tamt"]').val(grand.toFixed(2));
+  }
+
+  // ---------- Add Row Function (exactly like purchases.php) ----------
+  function addRow(item){
+    const dbItem = item.dbItem || null;
     
-    // Update fields
-    document.getElementById('staxAmt').value = staxAmt.toFixed(2);
-    document.getElementById('tcsAmt').value = tcsAmt.toFixed(2);
-    document.getElementById('tamt').value = totalAmt.toFixed(2);
-}
+    if($('#noItemsRow').length) {
+        $('#noItemsRow').remove();
+    }
+    
+    const bottlesPerCase = dbItem ? parseInt(dbItem.BOTTLE_PER_CASE) || 12 : 12;
+    const caseRate = item.caseRate || (dbItem ? parseFloat(dbItem.PPRICE) : 0) || 0;
+    const itemCode = dbItem ? dbItem.CODE : (item.cleanCode || item.code || '');
+    const itemName = dbItem ? dbItem.DETAILS : (item.name || '');
+    const itemSize = dbItem ? dbItem.DETAILS2 : (item.size || '');
+    
+    const cases = item.cases || 0;
+    const bottles = item.bottles || 0;
+    const freeCases = item.freeCases || 0;
+    const freeBottles = item.freeBottles || 0;
+    const mrp = item.mrp || 0;
+    
+    const mfgMonth = item.mfgMonth || '';
+    const vv = item.vv || 0;
+    
+    const totalBottles = item.totBott || calculateTotalBottles(cases, bottles, bottlesPerCase);
+    const blValue = item.bl || calculateBL(itemSize, totalBottles);
+    
+    const amount = calculateAmount(cases, bottles, caseRate, bottlesPerCase);
+    
+    const currentIndex = itemCount;
+    
+    const r = `
+      <tr class="item-row" data-bottles-per-case="${bottlesPerCase}">
+        <td>
+          <input type="hidden" name="items[${currentIndex}][code]" value="${itemCode}">
+          <input type="hidden" name="items[${currentIndex}][name]" value="${itemName}">
+          <input type="hidden" name="items[${currentIndex}][size]" value="${itemSize}">
+          <input type="hidden" name="items[${currentIndex}][bottles_per_case]" value="${bottlesPerCase}">
+          <input type="hidden" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}">
+          <input type="hidden" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}">
+          <input type="hidden" name="items[${currentIndex}][mfg_month]" value="${mfgMonth}">
+          <input type="hidden" name="items[${currentIndex}][bl]" value="${blValue}">
+          <input type="hidden" name="items[${currentIndex}][vv]" value="${vv}">
+          <input type="hidden" name="items[${currentIndex}][tot_bott]" value="${totalBottles}">
+          <input type="hidden" name="items[${currentIndex}][free_cases]" value="${freeCases}">
+          <input type="hidden" name="items[${currentIndex}][free_bottles]" value="${freeBottles}">
+          ${itemCode}
+        </td>
+        <td>${itemName}</td>
+        <td>${itemSize}</td>
+        <td><input type="number" class="form-control form-control-sm cases" name="items[${currentIndex}][cases]" value="${cases}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm bottles" name="items[${currentIndex}][bottles]" value="${bottles}" min="0" step="1"></td>
+        <td><input type="number" class="form-control form-control-sm free-cases" name="items[${currentIndex}][free_cases]" value="${freeCases}" min="0" step="0.01"></td>
+        <td><input type="number" class="form-control form-control-sm free-bottles" name="items[${currentIndex}][free_bottles]" value="${freeBottles}" min="0" step="1"></td>
+        <td><input type="number" class="form-control form-control-sm case-rate" name="items[${currentIndex}][case_rate]" value="${caseRate.toFixed(3)}" step="0.001"></td>
+        <td class="amount">${amount.toFixed(2)}</td>
+        <td><input type="number" class="form-control form-control-sm mrp" name="items[${currentIndex}][mrp]" value="${mrp}" step="0.01"></td>
+        <td><input type="text" class="form-control form-control-sm batch-no" name="items[${currentIndex}][batch_no]" value="${item.batchNo || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm auto-batch" name="items[${currentIndex}][auto_batch]" value="${item.autoBatch || ''}"></td>
+        <td><input type="text" class="form-control form-control-sm mfg-month" name="items[${currentIndex}][mfg_month]" value="${mfgMonth}"></td>
+        <td class="bl-value">${blValue.toFixed(2)}</td>
+        <td><input type="number" class="form-control form-control-sm vv" name="items[${currentIndex}][vv]" value="${vv}" step="0.01"></td>
+        <td class="tot-bott-value">${totalBottles}</td>
+        <td><button class="btn btn-sm btn-danger remove-item" type="button"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`;
+    
+    $('#itemsTable tbody').append(r);
+    itemCount++;
+    updateTotals();
+  }
+
+  // ---------- Load Existing Items ----------
+  if (existingItems && existingItems.length > 0) {
+    existingItems.forEach(function(item) {
+      addRow({
+        dbItem: {
+          CODE: item.ItemCode,
+          DETAILS: item.ItemName,
+          DETAILS2: formatBottleSize(item.Size),
+          PPRICE: parseFloat(item.CaseRate) || 0,
+          BOTTLE_PER_CASE: parseInt(item.BottlesPerCase) || 12,
+          CLASS: '' // We don't have CLASS in existing items, but it's okay
+        },
+        code: item.ItemCode,
+        name: item.ItemName,
+        size: formatBottleSize(item.Size),
+        cases: parseFloat(item.Cases) || 0,
+        bottles: parseInt(item.Bottles) || 0,
+        freeCases: parseFloat(item.FreeCases) || 0,
+        freeBottles: parseInt(item.FreeBottles) || 0,
+        caseRate: parseFloat(item.CaseRate) || 0,
+        mrp: parseFloat(item.MRP) || 0,
+        batchNo: item.BatchNo || '',
+        autoBatch: item.AutoBatch || '',
+        mfgMonth: item.MfgMonth || '',
+        vv: parseFloat(item.VV) || 0,
+        bl: parseFloat(item.BL) || 0,
+        totBott: parseInt(item.TotBott) || 0
+      });
+    });
+  }
+
+  // ---------- Event Listeners ----------
+  $('#addItem').on('click', function(){
+    $('#itemModal').modal('show');
+  });
+
+  $('#itemSearch').on('input', function(){
+    const v = this.value.toLowerCase();
+    $('.item-row-modal').each(function(){
+      $(this).toggle($(this).text().toLowerCase().includes(v));
+    });
+  });
+
+  $(document).on('click', '.select-item', function(){
+    const data = $(this).data();
+    
+    addRow({
+      dbItem: {
+        CODE: data.code,
+        DETAILS: data.name,
+        DETAILS2: data.size,
+        PPRICE: parseFloat(data.price) || 0,
+        BOTTLE_PER_CASE: data.bottlesPerCase || 12,
+        CLASS: '' // This will be checked by license filter
+      },
+      code: data.code,
+      name: data.name,
+      size: data.size,
+      cases: 0,
+      bottles: 0,
+      freeCases: 0,
+      freeBottles: 0,
+      caseRate: parseFloat(data.price) || 0,
+      mrp: 0,
+      batchNo: '',
+      autoBatch: '',
+      mfgMonth: '',
+      vv: 0,
+      bottles_per_case: data.bottlesPerCase || 12
+    });
+    
+    $('#itemModal').modal('hide');
+    $('#itemSearch').val('').trigger('input');
+  });
+
+  $(document).on('input', '.cases, .bottles, .case-rate, .free-cases, .free-bottles', function(){
+    const row = $(this).closest('tr');
+    const cases = parseFloat(row.find('.cases').val()) || 0;
+    const bottles = parseFloat(row.find('.bottles').val()) || 0;
+    const rate = parseFloat(row.find('.case-rate').val()) || 0;
+    const bottlesPerCase = parseInt(row.data('bottles-per-case')) || 12;
+    
+    const amount = calculateAmount(cases, bottles, rate, bottlesPerCase);
+    row.find('.amount').text(amount.toFixed(2));
+    
+    updateRowCalculations(row);
+    updateTotals();
+  });
+
+  $(document).on('click', '.remove-item', function(){
+    $(this).closest('tr').remove();
+    if($('.item-row').length === 0){
+      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
+      $('#totalAmount').text('0.00'); 
+      $('input[name="basic_amt"]').val('0.00'); 
+      $('input[name="tamt"]').val('0.00');
+      $('input[name="trade_disc"]').val('0.00');
+      
+      $('#totalCases, #totalBottles, #totalFreeCases, #totalFreeBottles, #totalBL, #totalTotBott').text('0');
+      updateBottlesBySizeDisplay();
+    } else {
+      updateTotals();
+    }
+  });
+
+  $('#clearItems').on('click', function(){
+    if (confirm('Are you sure you want to clear all items?')) {
+      $('.item-row').remove();
+      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
+      $('#totalAmount').text('0.00');
+      $('input[name="basic_amt"]').val('0.00');
+      $('input[name="tamt"]').val('0.00');
+      $('input[name="trade_disc"]').val('0.00');
+      
+      $('#totalCases, #totalBottles, #totalFreeCases, #totalFreeBottles, #totalBL, #totalTotBott').text('0');
+      updateBottlesBySizeDisplay();
+    }
+  });
+
+  $('input[name="stax_per"], input[name="tcs_per"], input[name="cash_disc"], input[name="trade_disc"], input[name="octroi"], input[name="freight"], input[name="misc_charg"]').on('input', function(){
+    calcTaxes();
+  });
+
+  // Supplier UI
+  $('#supplierSelect').on('change', function(){
+    const name = $(this).val();
+    const code = $(this).find(':selected').data('code') || '';
+    if(name){ 
+      $('#supplierInput').val(name); 
+      $('#supplierCodeHidden').val(code); 
+    }
+  });
+
+  $('#supplierInput').on('input', function(){
+    const q = $(this).val().toLowerCase();
+    if(q.length < 2){ 
+      $('#supplierSuggestions').hide().empty(); 
+      return; 
+    }
+    
+    const list = [];
+    <?php foreach($suppliers as $s): ?>
+      (function(){
+        const nm = '<?=addslashes($s['DETAILS'])?>'.toLowerCase();
+        const cd = '<?=addslashes($s['CODE'])?>'.toLowerCase();
+        if(nm.includes(q) || cd.includes(q)){
+          list.push({name:'<?=addslashes($s['DETAILS'])?>', code:'<?=addslashes($s['CODE'])?>'});
+        }
+      })();
+    <?php endforeach; ?>
+    
+    const html = list.map(s=>`<div class="supplier-suggestion" data-code="${s.code}" data-name="${s.name}">${s.name} (${s.code})</div>`).join('');
+    $('#supplierSuggestions').html(html).show();
+  });
+
+  $(document).on('click', '.supplier-suggestion', function(){
+    const name = $(this).data('name');
+    const code = $(this).data('code');
+    $('#supplierInput').val(name);
+    $('#supplierCodeHidden').val(code);
+    $('#supplierSuggestions').hide();
+  });
+
+  $(document).on('click', function(e){
+    if(!$(e.target).closest('.supplier-container').length) {
+      $('#supplierSuggestions').hide();
+    }
+  });
+
+  // Form submission validation
+  $('#purchaseForm').on('submit', function(e) {
+    if ($('.item-row').length === 0) {
+      alert('Please add at least one item before saving.');
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Initialize
+  initializeSizeTable();
+  if ($('.item-row').length === 0) {
+    $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
+  } else {
+    updateTotals();
+  }
+});
 </script>
 </body>
 </html>
+<?php
+$conn->close();
+?>

@@ -1,9 +1,54 @@
 <?php
 // purchase_delete.php - Fixed Version with Better Error Handling
 // Includes separate logic for current and previous financial years
+// Includes VOC_NO renumbering based on TP_DATE
 session_start();
 require_once "../config/db.php";
 require_once "stock_functions.php";
+
+// ============================================================================
+// VOUCHER NUMBER RENUMBERING FUNCTION
+// Renumbers all VOC_NO for the company based on TP_DATE (or DATE if TP_DATE is empty)
+// Called after deleting a purchase to close the gap in sequence
+// ============================================================================
+function renumberVoucherNumbers($conn, $companyId) {
+    // Ensure companyId is an integer
+    $companyId = (int)$companyId;
+    
+    if ($companyId <= 0) {
+        deleteDebugLog("VOC_NO renumbering skipped - invalid company ID: $companyId");
+        return -1;
+    }
+    
+    // Use ROW_NUMBER() to assign new VOC_NO based on date ordering
+    // TP_DATE takes precedence over DATE
+    // For tie-breaking, use ID
+    $renumberQuery = "
+        UPDATE tblpurchases p
+        INNER JOIN (
+            SELECT ID, ROW_NUMBER() OVER (ORDER BY 
+                COALESCE(NULLIF(TP_DATE, '0000-00-00'), DATE) ASC,
+                ID ASC
+            ) AS new_voc_no
+            FROM tblpurchases 
+            WHERE CompID = ?
+        ) AS ranked ON p.ID = ranked.ID
+        SET p.VOC_NO = ranked.new_voc_no";
+    
+    $renumberStmt = $conn->prepare($renumberQuery);
+    if ($renumberStmt) {
+        $renumberStmt->bind_param("i", $companyId);
+        $renumberStmt->execute();
+        $affectedRows = $renumberStmt->affected_rows;
+        $renumberStmt->close();
+        
+        deleteDebugLog("VOC_NO renumbered for company $companyId after deletion, affected rows: $affectedRows");
+        return $affectedRows;
+    } else {
+        deleteDebugLog("VOC_NO renumbering failed: " . $conn->error);
+        return -1;
+    }
+}
 
 // Enable error logging
 error_log("=== PURCHASE DELETE STARTED ===");
@@ -727,6 +772,13 @@ function reversePurchaseStock($conn, $purchase_id, $comp_id) {
             deleteDebugLog("Deleted purchase header, affected rows: " . $del_header_stmt->affected_rows);
             $del_header_stmt->close();
         }
+        
+        // ============================================================================
+        // RENUMBER VOC_NO AFTER DELETION
+        // After deleting a purchase, renumber all remaining purchases for the company
+        // to close any gaps in the VOC_NO sequence
+        // ============================================================================
+        renumberVoucherNumbers($conn, $comp_id);
         
         // Commit transaction
         $conn->commit();
