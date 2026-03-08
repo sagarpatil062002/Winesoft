@@ -760,11 +760,37 @@ function transformTableForNewMonth($conn, $sourceTable, $previousMonth, $newMont
 
 /**
  * Check if month transition is needed
+ * UPDATED: Now respects FY boundaries
  */
 function checkMonthTransition($conn) {
     $companyId = $_SESSION['CompID'] ?? 1;
     $tableName = 'tbldailystock_' . $companyId;
     $currentMonth = getCurrentMonth();
+    
+    // Get FY boundaries from session
+    $fy_start = $_SESSION['FIN_YEAR_START'] ?? null;
+    $fy_end = $_SESSION['FIN_YEAR_END'] ?? null;
+    
+    // Check if current month is within FY boundaries
+    if ($fy_start !== null && $fy_end !== null) {
+        $current_month_date = new DateTime($currentMonth . '-01');
+        $fy_start_date = new DateTime($fy_start);
+        $fy_end_date = new DateTime($fy_end);
+        $fy_end_date->modify('last day of this month');
+        
+        if ($current_month_date < $fy_start_date || $current_month_date > $fy_end_date) {
+            error_log("Current month $currentMonth is outside FY boundaries ($fy_start to $fy_end) - no transition needed");
+            return [
+                'needs_transition' => false,
+                'table_exists' => true,
+                'has_data' => true,
+                'current_month' => $currentMonth,
+                'outside_fy' => true,
+                'fy_start' => $fy_start,
+                'fy_end' => $fy_end
+            ];
+        }
+    }
     
     // Check if table exists
     $tableCheck = $conn->query("SHOW TABLES LIKE '{$tableName}'");
@@ -839,11 +865,37 @@ function checkMonthTransition($conn) {
 
 /**
  * Execute complete month transition
+ * UPDATED: Now respects FY boundaries
  */
 function executeMonthTransition($conn) {
     $companyId = $_SESSION['CompID'] ?? 1;
     $tableName = 'tbldailystock_' . $companyId;
     $currentMonth = getCurrentMonth();
+    
+    // Get FY boundaries from session
+    $fy_start = $_SESSION['FIN_YEAR_START'] ?? null;
+    $fy_end = $_SESSION['FIN_YEAR_END'] ?? null;
+    
+    // Check if current month is within FY boundaries before proceeding
+    if ($fy_start !== null && $fy_end !== null) {
+        $current_month_date = new DateTime($currentMonth . '-01');
+        $fy_start_date = new DateTime($fy_start);
+        $fy_end_date = new DateTime($fy_end);
+        $fy_end_date->modify('last day of this month');
+        
+        if ($current_month_date < $fy_start_date || $current_month_date > $fy_end_date) {
+            error_log("executeMonthTransition: Current month $currentMonth is outside FY boundaries - aborting transition");
+            return [
+                'company_id' => $companyId,
+                'table_name' => $tableName,
+                'success' => false,
+                'error' => 'Current month is outside selected financial year boundaries. Please select the correct FY.',
+                'outside_fy' => true,
+                'fy_start' => $fy_start,
+                'fy_end' => $fy_end
+            ];
+        }
+    }
     
     $results = [
         'company_id' => $companyId,
@@ -1136,6 +1188,262 @@ if (isset($_SESSION['transition_message'])) {
     $messageType = $_SESSION['message_type'] ?? 'info';
     unset($_SESSION['transition_message']);
     unset($_SESSION['message_type']);
+}
+
+// =============================================================================
+// ENSURE ALL ITEMS HAVE DAILYSTOCKID AFTER OPENING BALANCE IMPORT
+// =============================================================================
+
+/**
+ * Ensure all licensed items have DailyStockID entries in current month
+ * This fixes missing items after opening balance import
+ */
+function ensureAllItemsHaveDailyStockId($conn, $company_id, $license_type) {
+    $tableName = 'tbldailystock_' . $company_id;
+    $currentMonth = getCurrentMonth();
+    
+    // Get all licensed items
+    $allowed_categories = getAllowedCategoriesByLicenseType($license_type, $conn);
+    if (empty($allowed_categories)) return 0;
+    
+    $category_codes = [];
+    foreach ($allowed_categories as $cat) {
+        $category_codes[] = $conn->real_escape_string($cat['CATEGORY_CODE']);
+    }
+    $codes_string = "'" . implode("','", $category_codes) . "'";
+    
+    // Get all items that should exist in daily stock
+    $itemsQuery = "
+        SELECT CODE, CATEGORY_CODE, CLASS_CODE_NEW 
+        FROM tblitemmaster 
+        WHERE CATEGORY_CODE IN ($codes_string)
+    ";
+    $itemsResult = $conn->query($itemsQuery);
+    
+    if (!$itemsResult) return 0;
+    
+    $itemsAdded = 0;
+    $currentDay = (int)date('j');
+    
+    while ($item = $itemsResult->fetch_assoc()) {
+        // Check if item exists in current month's daily stock
+        $checkQuery = "SELECT DailyStockID FROM `{$tableName}` WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $checkStmt = $conn->prepare($checkQuery);
+        $checkStmt->bind_param("ss", $currentMonth, $item['CODE']);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        
+        if ($checkResult->num_rows == 0) {
+            // Item missing - try to get from archive first
+            $archiveMonth = date('Y-m', strtotime('first day of previous month'));
+            $archiveSuffix = getMonthSuffix($archiveMonth);
+            $archiveTable = $tableName . '_' . $archiveSuffix;
+            
+            $archiveCheck = $conn->query("SHOW TABLES LIKE '{$archiveTable}'");
+            $dailyStockId = null;
+            
+            if ($archiveCheck && $archiveCheck->num_rows > 0) {
+                // Get DailyStockID from archive
+                $archiveQuery = "SELECT DailyStockID FROM `{$archiveTable}` WHERE ITEM_CODE = ? LIMIT 1";
+                $archiveStmt = $conn->prepare($archiveQuery);
+                $archiveStmt->bind_param("s", $item['CODE']);
+                $archiveStmt->execute();
+                $archiveResult = $archiveStmt->get_result();
+                
+                if ($archiveRow = $archiveResult->fetch_assoc()) {
+                    $dailyStockId = $archiveRow['DailyStockID'];
+                }
+                $archiveStmt->close();
+            }
+            
+            // Insert missing item with zero opening - let MySQL handle auto-increment
+            $daysInMonth = getDaysInMonth($currentMonth);
+            
+            // Build insert query - use NULL for DailyStockID to trigger auto-increment
+            $insertColumns = ["ITEM_CODE", "STK_MONTH"];
+            $insertValues = ["?", "?"];
+            $params = [$item['CODE'], $currentMonth];
+            $types = "ss";
+            
+            // Add day columns with default values
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $insertColumns[] = "DAY_{$dayPadded}_OPEN";
+                $insertColumns[] = "DAY_{$dayPadded}_PURCHASE";
+                $insertColumns[] = "DAY_{$dayPadded}_SALES";
+                $insertColumns[] = "DAY_{$dayPadded}_CLOSING";
+                
+                // For all days, set all to 0
+                $insertValues[] = "?";
+                $insertValues[] = "?";
+                $insertValues[] = "?";
+                $insertValues[] = "?";
+                
+                $params[] = 0;
+                $params[] = 0;
+                $params[] = 0;
+                $params[] = 0;
+                $types .= "iiii";
+            }
+            
+            $insertQuery = "INSERT INTO `{$tableName}` (" . implode(", ", $insertColumns) . ") 
+                            VALUES (" . implode(", ", $insertValues) . ")";
+            
+            $insertStmt = $conn->prepare($insertQuery);
+            if ($insertStmt) {
+                $insertStmt->bind_param($types, ...$params);
+                if ($insertStmt->execute()) {
+                    $itemsAdded++;
+                    error_log("Added missing item {$item['CODE']} to daily stock");
+                }
+                $insertStmt->close();
+            }
+        }
+        $checkStmt->close();
+    }
+    
+    return $itemsAdded;
+}
+
+// Check if this is after opening balance import or run safety check
+$currentMonth = getCurrentMonth();
+$tableName = 'tbldailystock_' . $company_id;
+
+// First, check if there are any missing items in current month's daily stock
+$missingCheck = "
+    SELECT COUNT(*) as missing 
+    FROM tblitemmaster im
+    LEFT JOIN `{$tableName}` ds ON im.CODE = ds.ITEM_CODE AND ds.STK_MONTH = ?
+    WHERE ds.ITEM_CODE IS NULL
+";
+$missingStmt = $conn->prepare($missingCheck);
+$missingStmt->bind_param("s", $currentMonth);
+$missingStmt->execute();
+$missingResult = $missingStmt->get_result();
+$missingRow = $missingResult->fetch_assoc();
+
+if ($missingRow && $missingRow['missing'] > 0) {
+    error_log("Found {$missingRow['missing']} missing items in daily stock - fixing...");
+    $itemsAdded = ensureAllItemsHaveDailyStockId($conn, $company_id, $license_type);
+    if ($itemsAdded > 0) {
+        $_SESSION['transition_message'] = "Auto-fixed {$itemsAdded} missing items in daily stock";
+        $_SESSION['message_type'] = 'info';
+    }
+}
+$missingStmt->close();
+
+// =============================================================================
+// CASCADE STOCK THROUGH ALL DAYS
+// =============================================================================
+
+/**
+ * Cascade stock through all days of the month
+ * Ensures opening/closing are consistent
+ */
+function cascadeDailyStock($conn, $company_id, $month = null) {
+    if (!$month) $month = getCurrentMonth();
+    
+    $tableName = 'tbldailystock_' . $company_id;
+    $daysInMonth = getDaysInMonth($month);
+    $currentDay = (int)date('j');
+    
+    error_log("Cascading stock for $month up to day $currentDay");
+    
+    // Get all items in this month
+    $itemsQuery = "SELECT ITEM_CODE FROM `{$tableName}` WHERE STK_MONTH = ?";
+    $itemsStmt = $conn->prepare($itemsQuery);
+    $itemsStmt->bind_param("s", $month);
+    $itemsStmt->execute();
+    $itemsResult = $itemsStmt->get_result();
+    
+    $cascaded = 0;
+    
+    while ($itemRow = $itemsResult->fetch_assoc()) {
+        $itemCode = $itemRow['ITEM_CODE'];
+        
+        // Get all day data for this item
+        $dataQuery = "SELECT * FROM `{$tableName}` WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $dataStmt = $conn->prepare($dataQuery);
+        $dataStmt->bind_param("ss", $month, $itemCode);
+        $dataStmt->execute();
+        $dataResult = $dataStmt->get_result();
+        
+        if ($row = $dataResult->fetch_assoc()) {
+            $updated = false;
+            $running_stock = 0;
+            
+            for ($day = 1; $day <= $currentDay; $day++) {
+                $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                
+                $open = floatval($row["DAY_{$dayPadded}_OPEN"] ?? 0);
+                $purchase = floatval($row["DAY_{$dayPadded}_PURCHASE"] ?? 0);
+                $sales = floatval($row["DAY_{$dayPadded}_SALES"] ?? 0);
+                $closing = floatval($row["DAY_{$dayPadded}_CLOSING"] ?? 0);
+                
+                // Validate: closing should equal open + purchase - sales
+                $calculated_closing = $open + $purchase - $sales;
+                
+                if (abs($calculated_closing - $closing) > 0.01) {
+                    // Fix the closing value
+                    $updateQuery = "UPDATE `{$tableName}` SET DAY_{$dayPadded}_CLOSING = ? 
+                                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                    $updateStmt = $conn->prepare($updateQuery);
+                    $updateStmt->bind_param("dss", $calculated_closing, $month, $itemCode);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                    
+                    $row["DAY_{$dayPadded}_CLOSING"] = $calculated_closing;
+                    $closing = $calculated_closing;
+                    $updated = true;
+                    
+                    error_log("Fixed closing for $itemCode day $day: $calculated_closing");
+                }
+                
+                // For next day's opening, should equal this day's closing
+                if ($day < $daysInMonth) {
+                    $nextDay = $day + 1;
+                    $nextDayPadded = str_pad($nextDay, 2, '0', STR_PAD_LEFT);
+                    $next_open = floatval($row["DAY_{$nextDayPadded}_OPEN"] ?? 0);
+                    
+                    if (abs($next_open - $closing) > 0.01 && $nextDay <= $currentDay) {
+                        // Fix next day's opening to match this day's closing
+                        $updateQuery = "UPDATE `{$tableName}` SET DAY_{$nextDayPadded}_OPEN = ? 
+                                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                        $updateStmt = $conn->prepare($updateQuery);
+                        $updateStmt->bind_param("dss", $closing, $month, $itemCode);
+                        $updateStmt->execute();
+                        $updateStmt->close();
+                        
+                        $row["DAY_{$nextDayPadded}_OPEN"] = $closing;
+                        $updated = true;
+                        
+                        error_log("Fixed opening for $itemCode day $nextDay: $closing");
+                    }
+                }
+                
+                $running_stock = $closing;
+            }
+            
+            if ($updated) $cascaded++;
+        }
+        $dataStmt->close();
+    }
+    
+    $itemsStmt->close();
+    
+    error_log("Cascaded stock for $cascaded items");
+    return $cascaded;
+}
+
+// Run cascade on every page load to ensure stock integrity
+$cascadeKey = 'auto_cascade_' . date('Y-m-d');
+if (!isset($_SESSION[$cascadeKey])) {
+    $cascaded = cascadeDailyStock($conn, $company_id);
+    if ($cascaded > 0) {
+        $_SESSION['transition_message'] = "Stock cascade completed: $cascaded items fixed";
+        $_SESSION['message_type'] = 'info';
+    }
+    $_SESSION[$cascadeKey] = true;
 }
 
 // =============================================================================

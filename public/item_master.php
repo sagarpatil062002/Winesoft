@@ -41,10 +41,28 @@ $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
 $available_classes = getClassesByLicenseType($license_type, $conn);
 
-// Extract class SGROUP values for filtering
+// Extract CATEGORY_CODE values from new license function
+$allowed_category_codes = [];
+
+if (!empty($available_classes)) {
+    foreach ($available_classes as $class) {
+        // Extract CATEGORY_CODE values from new system
+        if (isset($class['CATEGORY_CODE'])) {
+            $allowed_category_codes[] = $class['CATEGORY_CODE'];
+        }
+    }
+}
+
+// For backward compatibility in import validation, extract SGROUP
 $allowed_classes = [];
-foreach ($available_classes as $class) {
-    $allowed_classes[] = $class['SGROUP'];
+$allowed_sgroups = [];
+if (!empty($available_classes)) {
+    foreach ($available_classes as $class) {
+        if (isset($class['SGROUP'])) {
+            $allowed_sgroups[] = $class['SGROUP'];
+        }
+    }
+    $allowed_classes = $allowed_sgroups;
 }
 
 // ====================================================================
@@ -1147,16 +1165,16 @@ if ($check_main_table->num_rows == 0) {
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
-    // Fetch items from tblitemmaster
-    if (!empty($allowed_classes)) {
-        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    // Fetch items from tblitemmaster - Use ONLY new license function with CATEGORY_CODE
+    if (!empty($allowed_category_codes)) {
+        $cat_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
         $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
                          PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE,
                          CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE
                   FROM tblitemmaster
-                  WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+                  WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($cat_placeholders)";
         
-        $params = array_merge([$mode], $allowed_classes);
+        $params = array_merge([$mode], $allowed_category_codes);
         $types = str_repeat('s', count($params));
     } else {
         $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -1359,21 +1377,19 @@ if (isset($_SESSION['import_errors'])) {
     unset($_SESSION['import_errors']);
 }
 
-// Get total count for pagination
-if (!empty($allowed_classes)) {
-    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+// Get total count for pagination - Use ONLY new license function with CATEGORY_CODE
+if (!empty($allowed_category_codes)) {
+    $cat_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
     $count_query = "SELECT COUNT(*) as total 
                    FROM tblitemmaster
-                   WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+                   WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($cat_placeholders)";
     
-    $count_params = array_merge([$mode], $allowed_classes);
+    $count_params = array_merge([$mode], $allowed_category_codes);
     $count_types = str_repeat('s', count($count_params));
 } else {
-    $count_query = "SELECT COUNT(*) as total 
-                   FROM tblitemmaster
-                   WHERE 1 = 0";
-    $count_params = [$mode];
-    $count_types = "s";
+    $count_query = "SELECT COUNT(*) as total FROM tblitemmaster WHERE 1 = 0";
+    $count_params = [];
+    $count_types = "";
 }
 
 if ($search !== '') {
@@ -1396,16 +1412,16 @@ $count_stmt->close();
 // Calculate total pages
 $total_pages = ceil($total_items / $limit);
 
-// Fetch items for display with pagination
-if (!empty($allowed_classes)) {
-    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+// Fetch items for display with pagination - Use ONLY new license function with CATEGORY_CODE
+if (!empty($allowed_category_codes)) {
+    $cat_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
     $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
                      PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE,
                      CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE
               FROM tblitemmaster
-              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
+              WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($cat_placeholders)";
     
-    $params = array_merge([$mode], $allowed_classes);
+    $params = array_merge([$mode], $allowed_category_codes);
     $types = str_repeat('s', count($params));
 } else {
     $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -1630,16 +1646,27 @@ function goToPage(page) {
       <!-- License Restriction Info -->
       <div class="alert alert-info mb-3">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
-          <p class="mb-0">Showing items for classes: 
+          <p class="mb-0">Showing items for categories: 
               <?php 
               if (!empty($available_classes)) {
                   $class_names = [];
                   foreach ($available_classes as $class) {
-                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
+                      // Show both new CATEGORY_NAME and old SGROUP for reference
+                      $display_parts = [];
+                      if (!empty($class['CATEGORY_NAME'])) {
+                          $display_parts[] = $class['CATEGORY_NAME'];
+                      }
+                      if (!empty($class['CATEGORY_CODE'])) {
+                          $display_parts[] = $class['CATEGORY_CODE'];
+                      }
+                      if (!empty($class['SGROUP'])) {
+                          $display_parts[] = '(' . $class['SGROUP'] . ')';
+                      }
+                      $class_names[] = implode(' ', $display_parts);
                   }
                   echo implode(', ', $class_names);
               } else {
-                  echo 'No classes available for your license type';
+                  echo 'No categories available for your license type';
               }
               ?>
           </p>

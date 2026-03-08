@@ -205,6 +205,12 @@ include_once "../config/db.php"; // MySQLi connection in $conn
                             <span class="nav-label">Shortcut Manager</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="backup.php" class="nav-link">
+                            <span class="nav-icon material-symbols-rounded">backup</span>
+                            <span class="nav-label">Database Backup</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
         </ul>

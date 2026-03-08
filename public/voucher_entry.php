@@ -194,11 +194,41 @@ if ($action === 'new') {
 
 .paid-input {
     width: 100%;
-    padding: 6px 8px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    padding: 8px 10px;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
     text-align: right;
     font-family: monospace;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #fff;
+    color: #212529;
+}
+
+.paid-input:focus {
+    border-color: #0a58ca;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.paid-input::placeholder {
+    color: #adb5bd;
+    font-weight: normal;
+}
+
+/* Loading spinner for pending invoices */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(0,0,0,0.1);
+    border-radius: 50%;
+    border-top-color: #0d6efd;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 .paid-input:focus {
@@ -434,7 +464,12 @@ input[type="number"] {
 
           <!-- Purchase Details (Initially Hidden) -->
           <div class="purchase-details" id="purchase-details">
-            <h6><i class="fas fa-receipt me-2"></i>Pending Invoices</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>Pending Invoices</h6>
+              <button type="button" class="btn btn-sm btn-primary" id="select-all-btn">
+                <i class="fas fa-check-square me-1"></i> Select All
+              </button>
+            </div>
             <table class="purchase-table">
               <thead>
                 <tr>
@@ -703,6 +738,10 @@ input[type="number"] {
 
     // Fetch pending invoices from server
     function fetchPendingInvoices(ledgerCode) {
+      // Show loading state in the purchase details section
+      $('#purchase-details').show();
+      $('#purchase-details-body').html('<tr><td colspan="8" class="text-center py-4"><div class="loading-spinner"></div> <span class="ms-2">Loading pending invoices...</span></td></tr>');
+      
       const timestamp = new Date().getTime();
       
       $.ajax({
@@ -713,6 +752,7 @@ input[type="number"] {
           comp_id: <?= $_SESSION['CompID'] ?>
         },
         dataType: 'json',
+        timeout: 30000, // 30 second timeout
         success: function(response) {
           if (response.success) {
             displayPendingInvoices(response.data);
@@ -728,13 +768,12 @@ input[type="number"] {
               $('.credit-input').val('');
             }
           } else {
-            alert('Error fetching pending invoices: ' + response.message);
+            $('#purchase-details-body').html('<tr><td colspan="8" class="text-center text-danger py-3">' + response.message + '</td></tr>');
             $('#purchase-details').hide();
           }
         },
         error: function(xhr, status, error) {
-          alert('Error connecting to server: ' + error);
-          $('#purchase-details').hide();
+          $('#purchase-details-body').html('<tr><td colspan="8" class="text-center text-danger py-3">Error loading invoices. Please try again.</td></tr>');
         }
       });
     }
@@ -763,10 +802,35 @@ input[type="number"] {
             <td class="amount-cell total-amount">${totalAmount.toFixed(0)}</td>
             <td class="amount-cell paid-amount">${paidAmount.toFixed(0)}</td>
             <td class="amount-cell balance-amount ${balance < 0 ? 'text-danger' : ''}">${balance.toFixed(0)}</td>
-            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0.00" inputmode="numeric" placeholder="0.00"></td>
+            <td><input type="number" class="paid-input form-control form-control-sm" step="0.01" value="0" inputmode="numeric" placeholder="0"></td>
           </tr>
         `);
       });
+    }
+
+    // Select all invoices button handler
+    function selectAllInvoices() {
+      const totalPending = parseFloat($('#pending-amt').val()) || 0;
+      if (totalPending <= 0) return;
+      
+      // Distribute the total pending amount across all invoices
+      $('#purchase-details-body tr').each(function() {
+        const row = $(this);
+        const balance = parseFloat(row.data('balance')) || 0;
+        const checkbox = row.find('.select-invoice');
+        
+        if (checkbox.is(':checked')) {
+          row.find('.paid-input').val(balance.toFixed(0));
+          row.data('paid-now', balance);
+          row.data('new-paid', balance + parseFloat(row.data('paid')));
+          row.data('new-balance', 0);
+          row.find('.paid-amount').text((balance + parseFloat(row.data('paid'))).toFixed(0));
+          row.find('.balance-amount').text('0');
+          row.find('.balance-amount').removeClass('text-danger');
+        }
+      });
+      
+      calculateTotalAmount();
     }
 
     // Handle paid amount input - update calculations in real-time
@@ -1175,6 +1239,11 @@ input[type="number"] {
           }
         });
       }
+    });
+
+    // Select all invoices button handler
+    $('#select-all-btn').on('click', function() {
+      selectAllInvoices();
     });
   });
 </script>

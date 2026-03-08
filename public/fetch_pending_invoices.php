@@ -14,15 +14,33 @@ $ledgerCode = $_POST['ledger_code'];
 $compID = $_SESSION['CompID'];
 
 try {
-    // First, get the LCODE for this REF_CODE
-    $ledgerQuery = "SELECT LCODE FROM tbllheads WHERE REF_CODE = ? AND (CompID IS NULL OR CompID = ?)";
+    // First, get the LCODE for this ledger - check both REF_CODE and LCODE
+    $ledgerQuery = "SELECT LCODE FROM tbllheads WHERE (REF_CODE = ? OR LCODE = ?) AND (CompID IS NULL OR CompID = ?)";
     $stmt = $conn->prepare($ledgerQuery);
-    $stmt->bind_param("si", $ledgerCode, $compID);
+    $stmt->bind_param("ssi", $ledgerCode, $ledgerCode, $compID);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows === 0) {
-        $response['message'] = 'Ledger not found';
+        // Try to find the supplier by CODE in tblsupplier to get their REF_CODE
+        $supplierQuery = "SELECT CODE FROM tblsupplier WHERE CODE = ?";
+        $supplierStmt = $conn->prepare($supplierQuery);
+        $supplierStmt->bind_param("s", $ledgerCode);
+        $supplierStmt->execute();
+        $supplierResult = $supplierStmt->get_result();
+        
+        if ($supplierResult->num_rows === 0) {
+            $response['message'] = 'Ledger not found';
+            echo json_encode($response);
+            exit;
+        }
+        $supplierStmt->close();
+        
+        // Supplier exists but doesn't have a ledger entry - that's okay, continue with empty result
+        $response['success'] = true;
+        $response['message'] = 'No pending invoices - supplier has no ledger entry';
+        $response['data'] = [];
+        $response['total_pending'] = 0;
         echo json_encode($response);
         exit;
     }
@@ -51,22 +69,25 @@ try {
     $invoices = [];
     $totalPending = 0;
     
+    // Pre-fetch all payments for this supplier in one query for better performance
+    $paymentLookup = [];
+    $paymentQuery = "SELECT PURCHASE_VOC_NO, COALESCE(SUM(AMOUNT), 0) as total_paid 
+                     FROM tblexpenses 
+                     WHERE COMP_ID = ? AND PURCHASE_VOC_NO IS NOT NULL AND PURCHASE_VOC_NO > 0
+                     GROUP BY PURCHASE_VOC_NO";
+    $paymentStmt = $conn->prepare($paymentQuery);
+    $paymentStmt->bind_param("i", $compID);
+    $paymentStmt->execute();
+    $paymentResult = $paymentStmt->get_result();
+    while ($paymentRow = $paymentResult->fetch_assoc()) {
+        $paymentLookup[$paymentRow['PURCHASE_VOC_NO']] = $paymentRow['total_paid'];
+    }
+    $paymentStmt->close();
+    
     while ($row = $result->fetch_assoc()) {
-        // Get total payments for THIS SPECIFIC purchase invoice using PURCHASE_VOC_NO
-        $paymentQuery = "SELECT COALESCE(SUM(AMOUNT), 0) as total_paid 
-                         FROM tblexpenses 
-                         WHERE PURCHASE_VOC_NO = ? AND COMP_ID = ?";
-        $paymentStmt = $conn->prepare($paymentQuery);
-        
-        // Use the purchase VOC_NO to find payments
+        // Get total payments from lookup array
         $purchaseVocNo = $row['VOC_NO'];
-        $paymentStmt->bind_param("ii", $purchaseVocNo, $compID);
-        $paymentStmt->execute();
-        $paymentResult = $paymentStmt->get_result();
-        $paymentRow = $paymentResult->fetch_assoc();
-        $paymentStmt->close();
-        
-        $paidAmount = $paymentRow['total_paid'];
+        $paidAmount = isset($paymentLookup[$purchaseVocNo]) ? $paymentLookup[$purchaseVocNo] : 0;
         $balance = $row['TAMT'] - $paidAmount;
         
         // Only include invoices that are not fully paid

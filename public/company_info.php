@@ -753,6 +753,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_company'])) {
               <button type="submit" name="update_company" class="btn btn-primary">
                 <i class="fas fa-save"></i> Update Information
               </button>
+              <a href="backup.php" class="btn btn-success">
+                <i class="fas fa-database"></i> Backup
+              </a>
               <a href="dashboard.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
               </a>
