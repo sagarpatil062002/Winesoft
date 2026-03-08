@@ -354,115 +354,54 @@ function getClassesForLicense($license_code, $conn) {
     return $classes;
 }
 
-// Function to get classes by license type (returns both CATEGORY_CODE and SGROUP for backward compatibility)
+// Function to get classes by license type (returns SGROUP values)
 function getClassesByLicenseType($license_type, $conn) {
     $classes = [];
     
-    // Define allowed CATEGORY_CODE and corresponding SGROUP values based on license type
-    $allowed_mapping = [];
-    
+    // Define allowed SGROUP values based on license type
     switch($license_type) {
         case 'FL-III':
             // Foreign Liquor: Spirit, Wine, Fermented Beer, Mild Beer
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT001', 'SGROUP' => 'W', 'DESC' => 'Spirit'],
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine'],
-                ['CATEGORY_CODE' => 'CAT003', 'SGROUP' => 'F', 'DESC' => 'Strong Beer'],
-                ['CATEGORY_CODE' => 'CAT004', 'SGROUP' => 'M', 'DESC' => 'Mild Beer']
-            ];
+            // SGROUP: W(Wine-Spirit/Spirit), V(Wines), M(Mild Beer), F(Strong/Regular Beer)
+            $allowed_sgroups = ['W', 'V', 'M', 'F', 'D', 'K', 'G', 'R']; // Spirit classes + Wine + Beer
             break;
-            
         case 'FLBR-II':
             // Foreign Liquor Bar Restaurant: Wine, Fermented Beer, Mild Beer
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine'],
-                ['CATEGORY_CODE' => 'CAT003', 'SGROUP' => 'F', 'DESC' => 'Strong Beer'],
-                ['CATEGORY_CODE' => 'CAT004', 'SGROUP' => 'M', 'DESC' => 'Mild Beer']
-            ];
+            $allowed_sgroups = ['V', 'M', 'F'];
             break;
-            
         case 'FL-II':
             // Full Foreign Liquor: All categories
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT001', 'SGROUP' => 'W', 'DESC' => 'Spirit'],
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine'],
-                ['CATEGORY_CODE' => 'CAT003', 'SGROUP' => 'F', 'DESC' => 'Strong Beer'],
-                ['CATEGORY_CODE' => 'CAT004', 'SGROUP' => 'M', 'DESC' => 'Mild Beer'],
-                ['CATEGORY_CODE' => 'CAT005', 'SGROUP' => 'L', 'DESC' => 'Country Liquor']
-            ];
+            $allowed_sgroups = ['W', 'V', 'M', 'F', 'D', 'K', 'G', 'R', 'O'];
             break;
-            
         case 'CL-III':
             // Country Liquor: Only Country Liquor
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT005', 'SGROUP' => 'L', 'DESC' => 'Country Liquor']
-            ];
+            $allowed_sgroups = ['L'];
             break;
-            
         case 'CL-FL-III':
             // Combined Country & Foreign Liquor: All categories
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT001', 'SGROUP' => 'W', 'DESC' => 'Spirit'],
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine'],
-                ['CATEGORY_CODE' => 'CAT003', 'SGROUP' => 'F', 'DESC' => 'Strong Beer'],
-                ['CATEGORY_CODE' => 'CAT004', 'SGROUP' => 'M', 'DESC' => 'Mild Beer'],
-                ['CATEGORY_CODE' => 'CAT005', 'SGROUP' => 'L', 'DESC' => 'Country Liquor']
-            ];
+            $allowed_sgroups = ['W', 'V', 'M', 'F', 'D', 'K', 'G', 'R', 'O', 'L'];
             break;
-            
         case 'IMPORTED':
             // Imported spirits
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT001', 'SGROUP' => 'W', 'DESC' => 'Spirit']
-            ];
+            $allowed_sgroups = ['W']; // Imported Whisky/Spirit
             break;
-            
         case 'WINE-IMP':
             // Imported wines
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine']
-            ];
+            $allowed_sgroups = ['V'];
             break;
-            
         default:
-            // Default: allow all categories
-            $allowed_mapping = [
-                ['CATEGORY_CODE' => 'CAT001', 'SGROUP' => 'W', 'DESC' => 'Spirit'],
-                ['CATEGORY_CODE' => 'CAT002', 'SGROUP' => 'V', 'DESC' => 'Wine'],
-                ['CATEGORY_CODE' => 'CAT003', 'SGROUP' => 'F', 'DESC' => 'Strong Beer'],
-                ['CATEGORY_CODE' => 'CAT004', 'SGROUP' => 'M', 'DESC' => 'Mild Beer'],
-                ['CATEGORY_CODE' => 'CAT005', 'SGROUP' => 'L', 'DESC' => 'Country Liquor']
-            ];
+            // Default: allow all for unknown license types
+            $allowed_sgroups = ['W', 'V', 'M', 'F', 'D', 'K', 'G', 'R', 'O', 'L'];
             break;
     }
     
-    // Get CATEGORY_NAME from database for each category code
-    if (!empty($allowed_mapping)) {
-        $category_codes = array_column($allowed_mapping, 'CATEGORY_CODE');
-        $placeholders = implode(',', array_fill(0, count($category_codes), '?'));
-        
-        $query = "SELECT CATEGORY_CODE, CATEGORY_NAME FROM tblcategory WHERE CATEGORY_CODE IN ($placeholders)";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param(str_repeat('s', count($category_codes)), ...$category_codes);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $category_names = [];
-        while ($row = $result->fetch_assoc()) {
-            $category_names[$row['CATEGORY_CODE']] = $row['CATEGORY_NAME'];
-        }
-        $stmt->close();
-        
-        // Build the classes array with CATEGORY_NAME from database
-        foreach ($allowed_mapping as $mapping) {
-            $cat_code = $mapping['CATEGORY_CODE'];
-            $classes[] = [
-                'CATEGORY_CODE' => $cat_code,
-                'CATEGORY_NAME' => $category_names[$cat_code] ?? $mapping['DESC'],
-                'SGROUP' => $mapping['SGROUP'],
-                'DESC' => $mapping['DESC']
-            ];
-        }
+    // Build the classes array with SGROUP and DESC values
+    foreach ($allowed_sgroups as $sgroup) {
+        $desc = getSGroupDescription($sgroup);
+        $classes[] = [
+            'SGROUP' => $sgroup,
+            'DESC' => $desc
+        ];
     }
     
     return $classes;

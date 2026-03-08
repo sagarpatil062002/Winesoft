@@ -18,22 +18,12 @@ function debugLog($message, $data = null) {
 }
 
 // Function to check TP number uniqueness
-function isTPNoUnique($conn, $tp_no, $companyId, $exclude_voc_no = null, $auto_tp = 'no', $supplier = '', $auto_tp_no = '') {
-    if (empty($tp_no) && empty($auto_tp_no)) return true; // Empty TP numbers are allowed
+function isTPNoUnique($conn, $tp_no, $companyId, $exclude_voc_no = null) {
+    if (empty($tp_no)) return true; // Empty TP numbers are allowed
     
-    // If auto_tp is 'no', check both TPNO and SUBCODE together
-    // Only when both are the same, it's considered a duplicate
-    if ($auto_tp === 'no' && !empty($supplier)) {
-        $query = "SELECT COUNT(*) as count FROM tblpurchases WHERE TPNO = ? AND SUBCODE = ? AND CompID = ?";
-        $params = [$tp_no, $supplier, $companyId];
-        $types = "ssi";
-    } else {
-        // For auto_tp = 'yes', check only AUTO_TPNO
-        if (empty($auto_tp_no)) return true;
-        $query = "SELECT COUNT(*) as count FROM tblpurchases WHERE AUTO_TPNO = ? AND CompID = ?";
-        $params = [$auto_tp_no, $companyId];
-        $types = "si";
-    }
+    $query = "SELECT COUNT(*) as count FROM tblpurchases WHERE TPNO = ? AND CompID = ?";
+    $params = [$tp_no, $companyId];
+    $types = "si";
     
     // If updating existing record, exclude current voucher
     if ($exclude_voc_no !== null) {
@@ -104,26 +94,14 @@ $available_classes = getClassesByLicenseType($license_type, $conn);
 debugLog("License type", $license_type);
 debugLog("Available classes", $available_classes);
 
-// Extract both CATEGORY_CODE and SGROUP values for filtering (backward compatibility)
+// Extract class SGROUP values for filtering
 $allowed_classes = [];
-$allowed_category_codes = [];
-$allowed_sgroups = [];
-
 if (!empty($available_classes)) {
     foreach ($available_classes as $class) {
-        // Store complete class info
-        $allowed_classes[] = $class;
-        // Extract individual values for filtering
-        if (isset($class['CATEGORY_CODE'])) {
-            $allowed_category_codes[] = $class['CATEGORY_CODE'];
-        }
-        if (isset($class['SGROUP'])) {
-            $allowed_sgroups[] = $class['SGROUP'];
-        }
+        $allowed_classes[] = $class['SGROUP'];
     }
 }
-debugLog("Allowed CATEGORY_CODE values", $allowed_category_codes);
-debugLog("Allowed SGROUP values", $allowed_sgroups);
+debugLog("Allowed class SGROUP values", $allowed_classes);
 
 // ---- Mode: F (Foreign) / C (Country) ----
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -1183,61 +1161,50 @@ function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn)
     }
 }
 
-// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE ONLY ----
+// ---- Items (for case rate lookup & modal) - FILTERED BY CATEGORY USING 4-LAYER STRUCTURE ----
 $items = [];
 
-// ---- Items (for case rate lookup & modal) - FILTERED BY LICENSE TYPE (Both CATEGORY_CODE and CLASS) ----
-$items = [];
+// Get allowed categories based on license type
+$allowed_categories = getAllowedCategoriesByLicenseType($license_type, $conn);
 
-$has_category_filter = !empty($allowed_category_codes);
-$has_class_filter = !empty($allowed_sgroups);
-
-if ($has_category_filter || $has_class_filter) {
-    $itemsQuery = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.PPRICE, im.ITEM_GROUP, 
-                          im.LIQ_FLAG, im.CLASS, im.CATEGORY_CODE,
-                          COALESCE(sc.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
-                          CONCAT('SCM', im.CODE) AS SCM_CODE
-                     FROM tblitemmaster im
-                     LEFT JOIN tblsubclass sc ON im.ITEM_GROUP = sc.ITEM_GROUP AND im.LIQ_FLAG = sc.LIQ_FLAG";
+if (!empty($allowed_categories)) {
+    $category_codes = array_column($allowed_categories, 'CATEGORY_CODE');
+    $category_placeholders = implode(',', array_fill(0, count($category_codes), '?'));
     
-    $where_conditions = [];
-    $params = [];
-    $types = "";
+    $itemsQuery = "SELECT 
+                        im.CODE, 
+                        im.DETAILS, 
+                        im.DETAILS2, 
+                        im.PPRICE, 
+                        im.ITEM_GROUP, 
+                        im.LIQ_FLAG, 
+                        im.CLASS_CODE_NEW AS CLASS,
+                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,
+                        CONCAT('SCM', im.CODE) AS SCM_CODE,
+                        c.CATEGORY_NAME,
+                        cn.CLASS_NAME,
+                        sn.SUBCLASS_NAME,
+                        im.CATEGORY_CODE,
+                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW
+                   FROM tblitemmaster im
+                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE
+                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE
+                   WHERE im.CATEGORY_CODE IN ($category_placeholders)
+                   ORDER BY im.DETAILS";
     
-    // Add CATEGORY_CODE filter
-    if ($has_category_filter) {
-        $cat_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
-        $where_conditions[] = "im.CATEGORY_CODE IN ($cat_placeholders)";
-        $params = array_merge($params, $allowed_category_codes);
-        $types .= str_repeat('s', count($allowed_category_codes));
-    }
-    
-    // Add CLASS filter (for backward compatibility)
-    if ($has_class_filter) {
-        $class_placeholders = implode(',', array_fill(0, count($allowed_sgroups), '?'));
-        $where_conditions[] = "im.CLASS IN ($class_placeholders)";
-        $params = array_merge($params, $allowed_sgroups);
-        $types .= str_repeat('s', count($allowed_sgroups));
-    }
-    
-    if (!empty($where_conditions)) {
-        $itemsQuery .= " WHERE " . implode(' OR ', $where_conditions);
-    }
-    
-    $itemsQuery .= " ORDER BY im.DETAILS";
+    $params = $category_codes;
+    $types = str_repeat('s', count($params));
     
     debugLog("Items query parameters", [
         'query' => $itemsQuery,
         'params' => $params,
-        'types' => $types,
-        'allowed_category_codes' => $allowed_category_codes,
-        'allowed_sgroups' => $allowed_sgroups
+        'types' => $types
     ]);
     
     $itemsStmt = $conn->prepare($itemsQuery);
-    if (!empty($params)) {
-        $itemsStmt->bind_param($types, ...$params);
-    }
+    $itemsStmt->bind_param($types, ...$params);
     $itemsStmt->execute();
     $itemsResult = $itemsStmt->get_result();
     if ($itemsResult) $items = $itemsResult->fetch_all(MYSQLI_ASSOC);
@@ -1245,12 +1212,13 @@ if ($has_category_filter || $has_class_filter) {
     
     debugLog("Items fetched from database", [
         'count' => count($items),
-        'license_filter_applied' => true
+        'category_filter_applied' => true,
+        'allowed_categories' => $allowed_categories
     ]);
 } else {
-    // If no classes allowed, show empty result
+    // If no categories allowed, show empty result
     $items = [];
-    debugLog("No items fetched - no allowed classes for license type");
+    debugLog("No items fetched - no allowed categories for license type: " . $license_type);
 }
 
 // ---- Suppliers (for name/code replacement) ----
@@ -1299,11 +1267,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier_name = $_POST['supplier_name'] ?? '';
     
     // Check if TP number is unique (if provided)
-    if (!empty($tp_no) || !empty($auto_tp_no)) {
-        // Determine auto_tp based on whether auto_tp_no has value
-        $auto_tp = !empty($auto_tp_no) ? 'yes' : 'no';
-        
-        if (!isTPNoUnique($conn, $tp_no, $companyId, null, $auto_tp, $supplier_code, $auto_tp_no)) {
+    if (!empty($tp_no)) {
+        if (!isTPNoUnique($conn, $tp_no, $companyId)) {
             $errorMessage = "TP Number '$tp_no' already exists. Please enter a unique TP number.";
             debugLog("Duplicate TP number detected", [
                 'tp_no' => $tp_no,
@@ -1776,16 +1741,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <!-- License Restriction Info -->
       <div class="alert alert-info mb-3">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
-          <p class="mb-0">Showing items for categories: 
+          <p class="mb-0">Showing items for classes: 
               <?php 
               if (!empty($available_classes)) {
-                  $category_names = [];
+                  $class_names = [];
                   foreach ($available_classes as $class) {
-                      $category_names[] = $class['CATEGORY_NAME'] . ' (' . $class['CATEGORY_CODE'] . ')';
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
                   }
-                  echo implode(', ', $category_names);
+                  echo implode(', ', $class_names);
               } else {
-                  echo 'No categories available for your license type';
+                  echo 'No classes available for your license type';
               }
               ?>
           </p>
@@ -2092,7 +2057,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <th width="120">SCM Code</th>
                     <th>Brand Name</th>
                     <th width="80">Size</th>
-                    <th width="120">Category</th>
+                    <th width="120">Class</th>
                     <th width="200">Reason</th>
                   </tr>
                 </thead>
@@ -2143,14 +2108,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script>
 $(function(){
   let itemCount = 0;
-  const dbItems = <?=json_encode($items, JSON_UNESCAPED_UNICODE)?>;
+  const dbItems = <?=json_encode(array_map(function($item) {
+    return [
+        'CODE' => $item['CODE'],
+        'DETAILS' => $item['DETAILS'],
+        'DETAILS2' => $item['DETAILS2'],
+        'PPRICE' => $item['PPRICE'],
+        'ITEM_GROUP' => $item['ITEM_GROUP'],
+        'LIQ_FLAG' => $item['LIQ_FLAG'],
+        'CLASS' => $item['CLASS'],
+        'CLASS_CODE_NEW' => $item['CLASS_CODE_NEW'] ?? $item['CLASS'],
+        'CATEGORY_CODE' => $item['CATEGORY_CODE'] ?? '',
+        'BOTTLE_PER_CASE' => $item['BOTTLE_PER_CASE'],
+        'SCM_CODE' => $item['SCM_CODE']
+    ];
+}, $items), JSON_UNESCAPED_UNICODE)?>;
   const suppliers = <?=json_encode($suppliers, JSON_UNESCAPED_UNICODE)?>;
   const distinctSizes = <?=json_encode($distinctSizes, JSON_UNESCAPED_UNICODE)?>;
-  // Get allowed category codes and sgroups from PHP
-  const allowedCategoryCodes = <?= json_encode($allowed_category_codes) ?>;
-  const allowedSGroups = <?= json_encode($allowed_sgroups) ?>;
-  const allowedClasses = <?= json_encode(array_merge($allowed_category_codes, $allowed_sgroups)) ?>;
+  const allowedCategories = <?=json_encode($allowed_categories ?? [], JSON_UNESCAPED_UNICODE)?>;
   const companyId = <?= $companyId ?>;
+
+  // Debug logging for JavaScript
+  console.log('dbItems loaded:', dbItems.length, 'items');
+  console.log('allowedCategories:', allowedCategories);
 
   // ---------- Helpers ----------
   function ymdFromDmyText(str){
@@ -2217,39 +2197,47 @@ $(function(){
     const missingItems = [];
     
     scmItems.forEach((scmItem, index) => {
+        // Extract clean code without SCM prefix
         const cleanCode = scmItem.scmCode ? scmItem.scmCode.replace(/^SCM/i, '').trim() : '';
+        
+        // Try multiple matching strategies
         let matchingItem = null;
         
-        // Try different matching strategies
+        // Strategy 1: Direct code match (without SCM prefix)
         matchingItem = dbItems.find(dbItem => dbItem.CODE === cleanCode);
-        if (!matchingItem) matchingItem = dbItems.find(dbItem => dbItem.SCM_CODE === scmItem.scmCode);
-        if (!matchingItem) matchingItem = dbItems.find(dbItem => dbItem.CODE.toLowerCase() === cleanCode.toLowerCase());
-        if (!matchingItem) matchingItem = dbItems.find(dbItem => dbItem.CODE.includes(cleanCode) || cleanCode.includes(dbItem.CODE));
+        
+        // Strategy 2: Match with SCM_CODE field
+        if (!matchingItem) {
+            matchingItem = dbItems.find(dbItem => dbItem.SCM_CODE === scmItem.scmCode);
+        }
+        
+        // Strategy 3: Case-insensitive match
+        if (!matchingItem) {
+            matchingItem = dbItems.find(dbItem => 
+                dbItem.CODE.toLowerCase() === cleanCode.toLowerCase()
+            );
+        }
+        
+        // Strategy 4: Partial match (for items with slightly different codes)
+        if (!matchingItem && cleanCode.length > 5) {
+            matchingItem = dbItems.find(dbItem => 
+                dbItem.CODE.includes(cleanCode) || cleanCode.includes(dbItem.CODE)
+            );
+        }
+        
+        // Strategy 5: Match by name and size if code matching fails
+        if (!matchingItem && scmItem.brandName && scmItem.size) {
+            matchingItem = dbItems.find(dbItem => 
+                dbItem.DETAILS.toLowerCase().includes(scmItem.brandName.toLowerCase()) &&
+                dbItem.DETAILS2.toLowerCase().includes(scmItem.size.toLowerCase())
+            );
+        }
         
         if (matchingItem) {
-            // Update MRP in database immediately
-            if (scmItem.mrp && scmItem.mrp > 0) {
-                updateItemMRPInDatabase(matchingItem.CODE, scmItem.mrp)
-                    .done(function(response) {
-                        if (response.success) {
-                            console.log(`MRP updated for ${matchingItem.CODE}: ${scmItem.mrp}`);
-                        }
-                    })
-                    .fail(function(jqXHR, textStatus, errorThrown) {
-                        console.error(`Failed to update MRP for ${matchingItem.CODE}:`, errorThrown);
-                    });
-            }
+            // Check license restriction using CATEGORY_CODE
+            const isAllowed = allowedCategories.some(cat => cat.CATEGORY_CODE === matchingItem.CATEGORY_CODE);
             
-            // Check if item is allowed (check both CATEGORY_CODE and CLASS)
-            const isAllowedByCategory = allowedCategoryCodes && 
-                                       allowedCategoryCodes.length > 0 && 
-                                       allowedCategoryCodes.includes(matchingItem.CATEGORY_CODE);
-            
-            const isAllowedByClass = allowedSGroups && 
-                                    allowedSGroups.length > 0 && 
-                                    allowedSGroups.includes(matchingItem.CLASS);
-            
-            if (isAllowedByCategory || isAllowedByClass) {
+            if (isAllowed) {
                 validItems.push({
                     scmData: scmItem,
                     dbItem: matchingItem
@@ -2257,19 +2245,18 @@ $(function(){
             } else {
                 missingItems.push({
                     code: scmItem.scmCode,
-                    name: matchingItem.DETAILS,
-                    size: scmItem.size,
-                    category: matchingItem.CATEGORY_CODE,
-                    class: matchingItem.CLASS,
-                    reason: 'Not allowed for your license',
+                    name: scmItem.brandName || matchingItem.DETAILS,
+                    size: scmItem.size || matchingItem.DETAILS2,
+                    class: matchingItem.CLASS_CODE_NEW,
+                    reason: 'License restriction',
                     type: 'restricted'
                 });
             }
         } else {
             missingItems.push({
                 code: scmItem.scmCode,
-                name: scmItem.brandName,
-                size: scmItem.size,
+                name: scmItem.brandName || '',
+                size: scmItem.size || '',
                 reason: 'Not found in database',
                 type: 'missing'
             });
@@ -2298,7 +2285,7 @@ $(function(){
                     <td><strong>${item.code}</strong></td>
                     <td>${item.name}</td>
                     <td>${item.size}</td>
-                    <td><span class="badge bg-secondary">${item.category}</span></td>
+                    <td><span class="badge bg-secondary">${item.class}</span></td>
                     <td><span class="text-danger">Not allowed for your license type</span></td>
                 </tr>
             `);
@@ -2353,7 +2340,6 @@ $(function(){
     
     if (parsedData.tpNo) $('#tpNo').val(parsedData.tpNo);
     if (parsedData.tpDate) $('#tpDate').val(parsedData.tpDate);
-    if (parsedData.autoTpNo) $('#autoTpNo').val(parsedData.autoTpNo);
     
     validItems.forEach((validItem, index) => {
         addRow({
@@ -2370,9 +2356,6 @@ $(function(){
     }
   }
 
-  // ============================================================================
-  // UPDATED: parseSCMData function with tab-splitting for accurate parsing
-  // ============================================================================
   function parseSCMData(data) {
     const lines = data.split('\n').map(line => line.trim()).filter(line => line);
     let supplier = '';
@@ -2438,9 +2421,7 @@ $(function(){
         if (line.includes('SCM Code:')) {
             try {
                 const item = parseSCMLine(line);
-                if (item && item.scmCode) {
-                    items.push(item);
-                }
+                if (item) items.push(item);
             } catch (error) {
                 console.error('Error parsing SCM line:', error);
             }
@@ -2450,87 +2431,100 @@ $(function(){
     return { supplier, tpNo, tpDate, receivedDate, autoTpNo, items };
   }
 
-  // ============================================================================
-  // UPDATED: parseSCMLine function with tab-splitting for accurate parsing
-  // This correctly handles complex size descriptions like "90 ML (Pet)-100"
-  // ============================================================================
   function parseSCMLine(line) {
-    const item = {
-        brandName: '',
-        scmCode: '',
-        size: '',
-        cases: 0,
-        bottles: 0,
-        freeCases: 0,
-        freeBottles: 0,
-        batchNo: '',
-        autoBatch: '',
-        mfgMonth: '',
-        mrp: 0,
-        bl: 0,
-        vv: 0,
-        totBott: 0
-    };
+    const parts = line.split(/\s{2,}/);
+    if (parts.length < 2) return parseSCMLineAlternative(line);
     
-    // Extract SCM Code
-    const scmCodeMatch = line.match(/SCM Code:\s*(\S+)/i);
-    if (scmCodeMatch) {
+    const item = {};
+    const scmCodePart = parts[0];
+    const scmCodeMatch = scmCodePart.match(/SCM Code:\s*(\S+)/i);
+    if (scmCodeMatch && scmCodeMatch[1]) {
         item.scmCode = scmCodeMatch[1];
+        const remainingFirstPart = scmCodePart.replace(/SCM Code:\s*\S+/i, '').trim();
+        if (remainingFirstPart) item.brandName = remainingFirstPart;
     }
     
-    // Remove the SCM Code part to get the data part
-    let dataPart = line.replace(/SCM Code:\s*\S+/i, '').trim();
+    const dataParts = line.replace(/SCM Code:\s*\S+/i, '').trim().split(/\s+/);
     
-    // Split by tabs (your data is tab-separated, not space-separated)
-    const fields = dataPart.split('\t').filter(f => f.trim() !== '');
-    
-    console.log('Tab-split fields:', fields); // For debugging
-    
-    if (fields.length >= 10) {
-        // Size (first field) - can contain complex values like "90 ML (Pet)-100"
-        item.size = fields[0] || '';
+    if (dataParts.length >= 11) {
+        let index = 0;
         
-        // Cases (second field)
-        item.cases = parseFloat(fields[1]) || 0;
+        if (!item.brandName) {
+            let brandNameParts = [];
+            while (index < dataParts.length && !dataParts[index].match(/\d+ML/i) && !dataParts[index].match(/\d+L/i)) {
+                brandNameParts.push(dataParts[index]);
+                index++;
+            }
+            item.brandName = brandNameParts.join(' ');
+        } else {
+            while (index < dataParts.length && !dataParts[index].match(/\d+ML/i) && !dataParts[index].match(/\d+L/i)) {
+                index++;
+            }
+        }
         
-        // Bottles (third field) - sometimes 0
-        item.bottles = parseInt(fields[2]) || 0;
+        if (index < dataParts.length) {
+            item.size = dataParts[index];
+            index++;
+        }
         
-        // Batch No (fourth field)
-        item.batchNo = fields[3] || '';
+        if (index < dataParts.length) {
+            item.cases = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
         
-        // Auto Batch (fifth field)
-        item.autoBatch = fields[4] || '';
+        if (index < dataParts.length) {
+            item.bottles = parseInt(dataParts[index]) || 0;
+            index++;
+        }
         
-        // Mfg Month (sixth field)
-        item.mfgMonth = fields[5] || '';
+        if (index < dataParts.length) {
+            item.batchNo = dataParts[index] || '';
+            index++;
+        }
         
-        // MRP (seventh field)
-        item.mrp = parseFloat(fields[6]) || 0;
+        if (index < dataParts.length) {
+            item.autoBatch = dataParts[index] || '';
+            index++;
+        }
         
-        // BL (eighth field)
-        item.bl = parseFloat(fields[7]) || 0;
+        if (index < dataParts.length) {
+            item.mfgMonth = dataParts[index] || '';
+            index++;
+        }
         
-        // VV (ninth field)
-        item.vv = parseFloat(fields[8]) || 0;
+        if (index < dataParts.length) {
+            item.mrp = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
         
-        // Total Bottles (tenth field)
-        item.totBott = parseInt(fields[9]) || 0;
+        if (index < dataParts.length) {
+            item.bl = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
         
-        // Try to extract brand name from the line before the SCM Code part
-        // The brand name is in the UI row, not in this line, so we'll leave it blank
-        // It will be populated from the database when we match the item
+        if (index < dataParts.length) {
+            item.vv = parseFloat(dataParts[index]) || 0;
+            index++;
+        }
         
+        if (index < dataParts.length) {
+            item.totBott = parseInt(dataParts[index]) || 0;
+        }
+        
+        item.freeCases = item.freeCases || 0;
+        item.freeBottles = item.freeBottles || 0;
+        item.caseRate = item.caseRate || 0;
     } else {
-        // Fallback to old method for compatibility with different formats
-        console.log('Insufficient tab-separated fields, trying alternative parsing');
+        return parseSCMLineAlternative(line);
+    }
+    
+    if (!item.scmCode || !item.size) {
         return parseSCMLineAlternative(line);
     }
     
     return item;
   }
 
-  // Fallback parsing method for different formats (kept for compatibility)
   function parseSCMLineAlternative(line) {
     const item = {};
     const scmCodeMatch = line.match(/SCM Code:\s*(\S+)/i);
@@ -2742,17 +2736,16 @@ $(function(){
 function addRow(item){
     const dbItem = item.dbItem || null;
     
-    // Check if item is allowed (check both CATEGORY_CODE and CLASS)
-    const isAllowedByCategory = allowedCategoryCodes && 
-                               allowedCategoryCodes.length > 0 && 
-                               allowedCategoryCodes.includes(dbItem.CATEGORY_CODE);
-    
-    const isAllowedByClass = allowedSGroups && 
-                            allowedSGroups.length > 0 && 
-                            allowedSGroups.includes(dbItem.CLASS);
-    
-    if (dbItem && (allowedCategoryCodes.length > 0 || allowedSGroups.length > 0) && !isAllowedByCategory && !isAllowedByClass) {
-        return;
+    // Check license restriction using CATEGORY_CODE
+    if (dbItem && allowedCategories.length > 0) {
+        const isAllowed = allowedCategories.some(cat => cat.CATEGORY_CODE === dbItem.CATEGORY_CODE);
+        if (!isAllowed) {
+            console.log('Item not allowed by license:', dbItem.CODE, 'Category:', dbItem.CATEGORY_CODE);
+            return;
+        }
+    } else if (dbItem && !dbItem.CATEGORY_CODE) {
+        // If no CATEGORY_CODE, allow the item (backward compatibility)
+        console.log('Item has no CATEGORY_CODE, allowing:', dbItem.CODE);
     }
     
     if($('#noItemsRow').length) {
@@ -2957,20 +2950,6 @@ function addRow(item){
     calcTaxes();
   });
 
-  // ------- Clear All -------
-  $('#clearItems').on('click', function(){
-    if (confirm('Are you sure you want to clear all items?')) {
-      $('#itemsTable tbody').empty().html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
-      itemCount = 0;
-      $('#totalAmount').text('0.00');
-      $('input[name="basic_amt"]').val('0.00');
-      $('input[name="tamt"]').val('0.00');
-      $('input[name="trade_disc"]').val('0.00');
-      $('#totalCases, #totalBottles, #totalFreeCases, #totalFreeBottles, #totalBL, #totalTotBott').text('0');
-      updateBottlesBySizeDisplay();
-    }
-  });
-
   // ------- Paste-from-SCM -------
   $('#pasteFromSCM').on('click', function(){ 
     $('#scmPasteModal').modal('show'); 
@@ -3015,20 +2994,11 @@ function addRow(item){
   function checkTPNumberUniqueness(tpNo) {
       if (!tpNo || tpNo.trim() === '') return true;
       
-      const autoTpNo = $('#autoTpNo').val().trim();
-      const supplierCode = $('#supplierCodeHidden').val();
-      
-      // Determine if auto TP is enabled (has value) or manual TP (no value)
-      const autoTp = autoTpNo && autoTpNo.length > 0 ? 'yes' : 'no';
-      
       return $.ajax({
           url: 'check_tp_unique.php',
           type: 'POST',
           data: {
               tp_no: tpNo,
-              auto_tp_no: autoTpNo,
-              auto_tp: autoTp,
-              supplier: supplierCode,
               company_id: companyId,
               voc_no: $('input[name="voc_no"]').val() // For edit mode
           },

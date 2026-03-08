@@ -134,329 +134,55 @@
 [2026-03-05 08:41:41] MRP Update Result - Success: 1, Affected Rows: 0
 [2026-03-05 08:41:41] MRP Update Request - Item: SCMPL0028275, MRP: 125, Company: 5
 [2026-03-05 08:41:41] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-05 12:23:31] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-05 12:23:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-05 12:24:45] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-05 12:24:45] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-05 12:34:17] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-05 12:34:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-05 12:34:17] MRP Update Request - Item: SCMPL0028275, MRP: 125, Company: 5
-[2026-03-05 12:34:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:20] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 12:27:20] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:20] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 12:27:20] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:20] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 12:27:20] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:27:21] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 12:27:21] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:37:13] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 12:37:13] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:38:19] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 12:38:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 12:40:55] MRP Update Request - Item: SCMPL0010541, MRP: 109, Company: 5
-[2026-03-07 12:40:55] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:04:04] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:04:04] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:31] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:33:31] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:33:53] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:33:53] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:35:52] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:35:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:37:51] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:37:51] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:42:19] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:42:19] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:27] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:52:27] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 1
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:52:40] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:52:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:17] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:53:17] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:53:48] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:53:48] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 1
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 13:54:40] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 13:54:40] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:03:02] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:03:02] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:04:03] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:04:03] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:06:49] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:06:49] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:14:28] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:14:28] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:22:24] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:22:24] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:33:52] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:33:52] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMBR0023052, MRP: 100, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 0
-[2026-03-07 14:34:54] MRP Update Request - Item: SCMKB0030479, MRP: 230, Company: 5
-[2026-03-07 14:34:54] MRP Update Result - Success: 1, Affected Rows: 1
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:38:58] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
+[2026-03-08 21:38:58] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:31] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
+[2026-03-08 21:41:31] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:41:41] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
+[2026-03-08 21:41:41] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMBR0009853, MRP: 175, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMPL0009866, MRP: 200, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMBR0018132, MRP: 210, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMPL0010663, MRP: 190, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMPL0028274, MRP: 64, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:03] MRP Update Request - Item: SCMPL0028276, MRP: 115, Company: 5
+[2026-03-08 21:58:03] MRP Update Result - Success: 1, Affected Rows: 0
+[2026-03-08 21:58:04] MRP Update Request - Item: SCMPL0028357, MRP: 620, Company: 5
+[2026-03-08 21:58:04] MRP Update Result - Success: 1, Affected Rows: 0
