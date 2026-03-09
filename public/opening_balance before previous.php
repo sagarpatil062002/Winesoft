@@ -4,22 +4,6 @@ set_time_limit(0);
 ignore_user_abort(true);
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', '-1');
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-// Add debug log function
-function debug_log($message, $data = null) {
-    $log_file = __DIR__ . '/opening_balance_debug.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $log_entry = "[$timestamp] $message";
-    if ($data !== null) {
-        $log_entry .= " - " . print_r($data, true);
-    }
-    $log_entry .= PHP_EOL;
-    file_put_contents($log_file, $log_entry, FILE_APPEND);
-}
-
-debug_log("Script started");
 
 session_start();
 
@@ -44,7 +28,7 @@ function getFinancialYearStartDate($fin_year_id, $conn) {
     static $cache = null;
     if ($cache !== null) return $cache;
     
-    $query = "SELECT START_DATE, END_DATE FROM tblfinyear WHERE ID = ? LIMIT 1";
+    $query = "SELECT START_DATE FROM tblfinyear WHERE ID = ? LIMIT 1";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("i", $fin_year_id);
     $stmt->execute();
@@ -52,27 +36,16 @@ function getFinancialYearStartDate($fin_year_id, $conn) {
     
     if ($row = $result->fetch_assoc()) {
         $start_date = $row['START_DATE'];
-        $end_date = $row['END_DATE'];
-        $cache = [
-            'start' => date('Y-m-d', strtotime($start_date)),
-            'end' => date('Y-m-d', strtotime($end_date))
-        ];
+        $cache = date('Y-m-d', strtotime($start_date));
         return $cache;
     }
     
-    $cache = [
-        'start' => date('Y') . '-04-01',
-        'end' => date('Y') . '-03-31'
-    ];
+    $cache = date('Y') . '-04-01';
     return $cache;
 }
 
 // Set default start date from financial year table
-$fy_dates = getFinancialYearStartDate($fin_year_id, $conn);
-$default_start_date = $fy_dates['start'];
-$fy_end_date = $fy_dates['end'];
-
-debug_log("Financial Year", ['start' => $default_start_date, 'end' => $fy_end_date, 'fin_year_id' => $fin_year_id]);
+$default_start_date = getFinancialYearStartDate($fin_year_id, $conn);
 
 // Get company's license type and available classes - ADDED LICENSE FILTERING
 $company_id = $_SESSION['CompID'];
@@ -84,8 +57,6 @@ $allowed_classes = [];
 foreach ($available_classes as $class) {
     $allowed_classes[] = $class['SGROUP'];
 }
-
-debug_log("Allowed classes", $allowed_classes);
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -127,79 +98,18 @@ if ($table_check->num_rows > 0) {
                         ADD COLUMN OPENING_STOCK$comp_id INT DEFAULT 0,
                         ADD COLUMN CURRENT_STOCK$comp_id INT DEFAULT 0";
         $conn->query($alter_query);
-        debug_log("Added columns to tblitem_stock for company $comp_id");
     }
 }
 
-// Function to get archive table name for a specific month - FIXED: Added null check
+// Function to get archive table name for a specific month
 function getArchiveTableName($comp_id, $month) {
-    // Check if month is valid
-    if (empty($month) || $month === null) {
-        debug_log("getArchiveTableName called with invalid month", ['month' => $month]);
-        return null;
-    }
-    
-    // Validate month format (YYYY-MM)
-    if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
-        debug_log("getArchiveTableName called with invalid month format", ['month' => $month]);
-        return "tbldailystock_{$comp_id}_invalid";
-    }
-    
-    $timestamp = strtotime($month . '-01');
-    if ($timestamp === false) {
-        debug_log("getArchiveTableName: strtotime failed for month", ['month' => $month]);
-        return "tbldailystock_{$comp_id}_invalid";
-    }
-    
-    $month_year = date('m_y', $timestamp);
+    $month_year = date('m_y', strtotime($month . '-01'));
     return "tbldailystock_{$comp_id}_{$month_year}";
-}
-
-// Function to check if a month is within the financial year
-function isMonthInFinancialYear($month, $fy_start, $fy_end) {
-    // Check if month is valid
-    if (empty($month) || $month === null) {
-        debug_log("isMonthInFinancialYear called with invalid month", ['month' => $month]);
-        return false;
-    }
-    
-    $month_ts = strtotime($month . '-01');
-    if ($month_ts === false) {
-        debug_log("isMonthInFinancialYear: strtotime failed for month", ['month' => $month]);
-        return false;
-    }
-    
-    $fy_start_ts = strtotime($fy_start);
-    $fy_end_ts = strtotime($fy_end);
-    
-    if ($fy_start_ts === false || $fy_end_ts === false) {
-        debug_log("isMonthInFinancialYear: strtotime failed for financial year dates", 
-                 ['fy_start' => $fy_start, 'fy_end' => $fy_end]);
-        return false;
-    }
-    
-    return ($month_ts >= $fy_start_ts && $month_ts <= $fy_end_ts);
 }
 
 // Function to create a fresh archive table with only base columns (NO day columns)
 function createFreshArchiveTable($conn, $comp_id, $month) {
-    // Check if month is valid
-    if (empty($month) || $month === null) {
-        debug_log("createFreshArchiveTable called with invalid month", ['month' => $month]);
-        return false;
-    }
-    
     $table_name = getArchiveTableName($comp_id, $month);
-    if (!$table_name) {
-        debug_log("Failed to get archive table name for month", ['month' => $month]);
-        return false;
-    }
-    
-    debug_log("Creating fresh archive table", ['table' => $table_name, 'month' => $month]);
-    
-    // Drop table if it exists (to ensure clean state)
-    $drop_query = "DROP TABLE IF EXISTS $table_name";
-    $conn->query($drop_query);
     
     // Create table with ONLY base columns, NO day columns
     $create_table_query = "CREATE TABLE $table_name (
@@ -209,19 +119,16 @@ function createFreshArchiveTable($conn, $comp_id, $month) {
         `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
         `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
         PRIMARY KEY (`DailyStockID`),
-        UNIQUE KEY `unique_daily_stock_{$comp_id}_{$month}` (`STK_MONTH`,`ITEM_CODE`),
-        KEY `ITEM_CODE_{$comp_id}_{$month}` (`ITEM_CODE`),
-        KEY `LIQ_FLAG_{$comp_id}_{$month}` (`LIQ_FLAG`),
-        KEY `STK_MONTH_{$comp_id}_{$month}` (`STK_MONTH`)
+        UNIQUE KEY `unique_daily_stock_$comp_id` (`STK_MONTH`,`ITEM_CODE`),
+        KEY `ITEM_CODE_$comp_id` (`ITEM_CODE`),
+        KEY `LIQ_FLAG_$comp_id` (`LIQ_FLAG`),
+        KEY `STK_MONTH_$comp_id` (`STK_MONTH`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
     
     if ($conn->query($create_table_query)) {
-        debug_log("Successfully created archive table $table_name");
         return $table_name;
     } else {
-        $error = $conn->error;
-        debug_log("Failed to create archive table $table_name", $error);
-        error_log("Failed to create archive table $table_name: " . $error);
+        error_log("Failed to create archive table $table_name: " . $conn->error);
         return false;
     }
 }
@@ -247,26 +154,11 @@ if (!$table_exists) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
     
     $conn->query($create_table_query);
-    debug_log("Created main daily stock table for company $comp_id");
 }
 
 // ==================== PERFORMANCE OPTIMIZATION #2: Bulk Column Addition ====================
 // Function to add day columns for a specific month (optimized for bulk operations)
 function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
-    global $fy_dates;
-    
-    // Check if month is valid
-    if (empty($month) || $month === null) {
-        debug_log("addDayColumnsForMonth called with invalid month", ['month' => $month]);
-        return false;
-    }
-    
-    // Check if month is within financial year
-    if (!isMonthInFinancialYear($month, $fy_dates['start'], $fy_dates['end'])) {
-        debug_log("Skipping month outside financial year", ['month' => $month, 'fy_start' => $fy_dates['start'], 'fy_end' => $fy_dates['end']]);
-        return false;
-    }
-    
     $year_month = explode('-', $month);
     $year = $year_month[0];
     $month_num = $year_month[1];
@@ -276,12 +168,6 @@ function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
     $current_month = date('Y-m');
     $table_name = ($month == $current_month) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $month);
     
-    // If table_name is null or invalid, return false
-    if (!$table_name) {
-        debug_log("addDayColumnsForMonth: Invalid table name for month", ['month' => $month]);
-        return false;
-    }
-    
     // Create archive table if it doesn't exist and it's not current month
     if ($month != $current_month) {
         $check_archive_query = "SHOW TABLES LIKE '$table_name'";
@@ -290,11 +176,7 @@ function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
         
         if (!$archive_exists) {
             // Create FRESH archive table with NO day columns
-            $result = createFreshArchiveTable($conn, $comp_id, $month);
-            if (!$result) {
-                debug_log("Failed to create archive table for month", ['month' => $month]);
-                return false;
-            }
+            createFreshArchiveTable($conn, $comp_id, $month);
             $force_create = true; // Force column creation for new table
         }
     }
@@ -304,12 +186,6 @@ function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
         // Get all existing columns in ONE query
         $existing_columns_query = "SHOW COLUMNS FROM $table_name";
         $existing_result = $conn->query($existing_columns_query);
-        
-        if (!$existing_result) {
-            debug_log("Failed to get columns from $table_name", $conn->error);
-            return false;
-        }
-        
         $existing_columns = [];
         while ($row = $existing_result->fetch_assoc()) {
             $existing_columns[] = $row['Field'];
@@ -338,46 +214,19 @@ function addDayColumnsForMonth($conn, $comp_id, $month, $force_create = false) {
         // Execute all ALTER statements at once if there are any
         if (!empty($alter_statements)) {
             $alter_query = "ALTER TABLE $table_name " . implode(", ", $alter_statements);
-            if ($conn->query($alter_query)) {
-                debug_log("Added columns to $table_name", ['columns' => count($alter_statements)]);
-            } else {
-                debug_log("Failed to add columns to $table_name", $conn->error);
-                return false;
-            }
+            $conn->query($alter_query);
         }
     }
-    
-    return true;
 }
 
 // Function to get the correct table for a specific month
 function getTableForMonth($conn, $comp_id, $month) {
-    global $fy_dates;
-    
-    // Check if month is valid
-    if (empty($month) || $month === null) {
-        debug_log("getTableForMonth called with invalid month", ['month' => $month]);
-        return false;
-    }
-    
-    // Check if month is within financial year
-    if (!isMonthInFinancialYear($month, $fy_dates['start'], $fy_dates['end'])) {
-        debug_log("Month $month is outside financial year, returning false");
-        return false;
-    }
-    
     $current_month = date('Y-m');
     
     if ($month == $current_month) {
         return "tbldailystock_$comp_id";
     } else {
         $archive_table = getArchiveTableName($comp_id, $month);
-        
-        // If archive_table is null or invalid, return false
-        if (!$archive_table) {
-            debug_log("getTableForMonth: Invalid archive table name for month", ['month' => $month]);
-            return false;
-        }
         
         // Check if archive table exists
         $check_query = "SHOW TABLES LIKE '$archive_table'";
@@ -386,11 +235,7 @@ function getTableForMonth($conn, $comp_id, $month) {
         
         if (!$table_exists) {
             // Create the archive table if it doesn't exist
-            $result = addDayColumnsForMonth($conn, $comp_id, $month, true);
-            if (!$result) {
-                debug_log("Failed to create archive table for month", ['month' => $month]);
-                return false;
-            }
+            addDayColumnsForMonth($conn, $comp_id, $month, true);
         }
         
         return $archive_table;
@@ -408,159 +253,130 @@ $current_month_exists = $check_month_stmt->num_rows > 0;
 $check_month_stmt->close();
 
 if (!$current_month_exists) {
-    // Check for previous month data to archive - but only if within financial year
+    // Check for previous month data to archive
     $previous_month = date('Y-m', strtotime('-1 month'));
+    $check_prev_query = "SELECT 1 FROM tbldailystock_$comp_id WHERE STK_MONTH = ? LIMIT 1";
+    $check_prev_stmt = $conn->prepare($check_prev_query);
+    $check_prev_stmt->bind_param("s", $previous_month);
+    $check_prev_stmt->execute();
+    $check_prev_stmt->store_result();
+    $prev_month_exists = $check_prev_stmt->num_rows > 0;
+    $check_prev_stmt->close();
     
-    if (isMonthInFinancialYear($previous_month, $fy_dates['start'], $fy_dates['end'])) {
-        $check_prev_query = "SELECT 1 FROM tbldailystock_$comp_id WHERE STK_MONTH = ? LIMIT 1";
-        $check_prev_stmt = $conn->prepare($check_prev_query);
-        $check_prev_stmt->bind_param("s", $previous_month);
-        $check_prev_stmt->execute();
-        $check_prev_stmt->store_result();
-        $prev_month_exists = $check_prev_stmt->num_rows > 0;
-        $check_prev_stmt->close();
+    if ($prev_month_exists) {
+        // Archive previous month's data
+        $archive_table = getArchiveTableName($comp_id, $previous_month);
         
-        if ($prev_month_exists) {
-            debug_log("Archiving previous month", ['month' => $previous_month]);
+        // Create FRESH archive table with NO day columns
+        createFreshArchiveTable($conn, $comp_id, $previous_month);
+        
+        // Now add the correct day columns for this month
+        $prev_year_month = explode('-', $previous_month);
+        $prev_year = $prev_year_month[0];
+        $prev_month_num = $prev_year_month[1];
+        $prev_days_in_month = cal_days_in_month(CAL_GREGORIAN, $prev_month_num, $prev_year);
+        
+        // Add day columns for previous month
+        $alter_statements = [];
+        for ($day = 1; $day <= $prev_days_in_month; $day++) {
+            $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
             
-            // Archive previous month's data
-            $archive_table = getArchiveTableName($comp_id, $previous_month);
-            
-            if (!$archive_table) {
-                debug_log("Failed to get archive table name for previous month", ['month' => $previous_month]);
-            } else {
-                // Create FRESH archive table with NO day columns
-                createFreshArchiveTable($conn, $comp_id, $previous_month);
-                
-                // Now add the correct day columns for this month
-                $prev_year_month = explode('-', $previous_month);
-                $prev_year = $prev_year_month[0];
-                $prev_month_num = $prev_year_month[1];
-                $prev_days_in_month = cal_days_in_month(CAL_GREGORIAN, $prev_month_num, $prev_year);
-                
-                // Add day columns for previous month
-                $alter_statements = [];
-                for ($day = 1; $day <= $prev_days_in_month; $day++) {
-                    $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
-                    
-                    $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_OPEN INT DEFAULT 0";
-                    $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_PURCHASE INT DEFAULT 0";
-                    $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_SALES INT DEFAULT 0";
-                    $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_CLOSING INT DEFAULT 0";
-                }
-                
-                if (!empty($alter_statements)) {
-                    $alter_query = "ALTER TABLE $archive_table " . implode(", ", $alter_statements);
-                    $conn->query($alter_query);
-                }
-                
-                // Copy data to archive - we need to build dynamic column lists
-                // Get columns from source table
-                $source_columns = [];
-                $source_query = "SHOW COLUMNS FROM tbldailystock_$comp_id";
-                $source_result = $conn->query($source_query);
-                while ($row = $source_result->fetch_assoc()) {
-                    $source_columns[] = $row['Field'];
-                }
-                
-                // Get columns from destination table
-                $dest_columns = [];
-                $dest_query = "SHOW COLUMNS FROM $archive_table";
-                $dest_result = $conn->query($dest_query);
-                while ($row = $dest_result->fetch_assoc()) {
-                    $dest_columns[] = $row['Field'];
-                }
-                
-                // Find common columns (excluding auto_increment)
-                $common_columns = array_intersect($source_columns, $dest_columns);
-                // Remove DailyStockID if it's auto_increment
-                $common_columns = array_filter($common_columns, function($col) {
-                    return $col !== 'DailyStockID';
-                });
-                
-                if (!empty($common_columns)) {
-                    $columns_list = implode(', ', $common_columns);
-                    $copy_data_query = "INSERT INTO $archive_table ($columns_list) 
-                                       SELECT $columns_list FROM tbldailystock_$comp_id 
-                                       WHERE STK_MONTH = ?";
-                    $copy_stmt = $conn->prepare($copy_data_query);
-                    $copy_stmt->bind_param("s", $previous_month);
-                    $copy_stmt->execute();
-                    $copy_stmt->close();
-                    
-                    debug_log("Archived data for month $previous_month", ['records' => $copy_stmt->affected_rows]);
-                }
-                
-                // Delete archived data
-                $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
-                $delete_stmt = $conn->prepare($delete_query);
-                $delete_stmt->bind_param("s", $previous_month);
-                $delete_stmt->execute();
-                $delete_stmt->close();
-            }
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_OPEN INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_PURCHASE INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_SALES INT DEFAULT 0";
+            $alter_statements[] = "ADD COLUMN DAY_{$day_padded}_CLOSING INT DEFAULT 0";
         }
+        
+        if (!empty($alter_statements)) {
+            $alter_query = "ALTER TABLE $archive_table " . implode(", ", $alter_statements);
+            $conn->query($alter_query);
+        }
+        
+        // Copy data to archive - we need to build dynamic column lists
+        // Get columns from source table
+        $source_columns = [];
+        $source_query = "SHOW COLUMNS FROM tbldailystock_$comp_id";
+        $source_result = $conn->query($source_query);
+        while ($row = $source_result->fetch_assoc()) {
+            $source_columns[] = $row['Field'];
+        }
+        
+        // Get columns from destination table
+        $dest_columns = [];
+        $dest_query = "SHOW COLUMNS FROM $archive_table";
+        $dest_result = $conn->query($dest_query);
+        while ($row = $dest_result->fetch_assoc()) {
+            $dest_columns[] = $row['Field'];
+        }
+        
+        // Find common columns (excluding auto_increment)
+        $common_columns = array_intersect($source_columns, $dest_columns);
+        // Remove DailyStockID if it's auto_increment
+        $common_columns = array_filter($common_columns, function($col) {
+            return $col !== 'DailyStockID';
+        });
+        
+        if (!empty($common_columns)) {
+            $columns_list = implode(', ', $common_columns);
+            $copy_data_query = "INSERT INTO $archive_table ($columns_list) 
+                               SELECT $columns_list FROM tbldailystock_$comp_id 
+                               WHERE STK_MONTH = ?";
+            $copy_stmt = $conn->prepare($copy_data_query);
+            $copy_stmt->bind_param("s", $previous_month);
+            $copy_stmt->execute();
+            $copy_stmt->close();
+        }
+        
+        // Delete archived data
+        $delete_query = "DELETE FROM tbldailystock_$comp_id WHERE STK_MONTH = ?";
+        $delete_stmt = $conn->prepare($delete_query);
+        $delete_stmt->bind_param("s", $previous_month);
+        $delete_stmt->execute();
+        $delete_stmt->close();
     }
     
-    // Add day columns for the new month (if within financial year)
-    if (isMonthInFinancialYear($current_month, $fy_dates['start'], $fy_dates['end'])) {
-        addDayColumnsForMonth($conn, $comp_id, $current_month, true);
-    }
+    // Add day columns for the new month
+    addDayColumnsForMonth($conn, $comp_id, $current_month, true);
 }
 
 // ==================== PERFORMANCE OPTIMIZATION #3: Bulk Daily Stock Updates ====================
 // Function to update daily stock range (OPTIMIZED for bulk operations)
 // ONLY called for items with stock > 0
 function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date) {
-    global $fy_dates;
-    
-    debug_log("========== UPDATE DAILY STOCK RANGE START ==========", [
-        'items_count' => count($items_data), 
-        'start_date' => $start_date,
-        'fy_start' => $fy_dates['start'],
-        'fy_end' => $fy_dates['end'],
-        'mode' => $mode
-    ]);
-    
     $start = new DateTime($start_date);
-    $end = new DateTime(); // Today
+    $end = new DateTime();
     
-    // If end date is beyond financial year end, cap it at financial year end
-    $fy_end = new DateTime($fy_dates['end']);
-    if ($end > $fy_end) {
-        $end = $fy_end;
+    // Generate all dates between start and end
+    $dates = [];
+    $period = new DatePeriod($start, new DateInterval('P1D'), $end);
+    
+    foreach ($period as $date) {
+        $dates[] = $date->format('Y-m-d');
     }
     
-    debug_log("Date range for update", [
-        'start' => $start->format('Y-m-d'),
-        'end' => $end->format('Y-m-d')
-    ]);
+    if (empty($dates)) {
+        return;
+    }
     
-    // Generate all months from start_date to end of financial year (or today)
-    $all_months = [];
-    $current = new DateTime($start_date);
-    $current->modify('first day of month'); // Start from beginning of start month
-    
-    while ($current <= $end) {
-        $month = $current->format('Y-m');
-        if (isMonthInFinancialYear($month, $fy_dates['start'], $fy_dates['end'])) {
-            $all_months[] = $month;
+    // Group by month for more efficient processing
+    $monthly_data = [];
+    foreach ($dates as $date) {
+        $month = date('Y-m', strtotime($date));
+        $day = date('d', strtotime($date));
+        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+        
+        if (!isset($monthly_data[$month])) {
+            $monthly_data[$month] = [];
         }
-        $current->modify('+1 month');
+        $monthly_data[$month][] = $day_padded;
     }
-    
-    debug_log("All months to process", ['months' => $all_months]);
     
     // Process each month
-    foreach ($all_months as $month) {
+    foreach ($monthly_data as $month => $days) {
         $table_name = getTableForMonth($conn, $comp_id, $month);
         
-        if (!$table_name) {
-            debug_log("Skipping month $month - table not available");
-            continue;
-        }
-        
         // Ensure columns exist for this month
-        addDayColumnsForMonth($conn, $comp_id, $month, true);
+        addDayColumnsForMonth($conn, $comp_id, $month);
         
         // Get days in this month
         $year_month = explode('-', $month);
@@ -571,17 +387,6 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
         for ($d = 1; $d <= $days_in_month; $d++) {
             $all_days_in_month[] = str_pad($d, 2, '0', STR_PAD_LEFT);
         }
-        
-        // Determine first day of the opening balance
-        $start_day_padded = date('d', strtotime($start_date));
-        $start_month = date('Y-m', strtotime($start_date));
-        
-        debug_log("Processing month with carry forward", [
-            'month' => $month,
-            'start_month' => $start_month,
-            'start_day' => $start_day_padded,
-            'days_in_month' => $all_days_in_month
-        ]);
         
         // Process each item for this month
         foreach ($items_data as $item_code => $opening_balance) {
@@ -595,72 +400,32 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
             $check_stmt->close();
             
             if ($exists) {
-                // Build update query for ALL days in the month with carry forward across months
-                // CARRY FORWARD LOGIC:
-                // - If this is the start month: First day in range gets opening_balance
-                // - If this is after start month: First day gets previous month's last day's CLOSING
-                // - All subsequent days: OPEN = previous day's CLOSING
-                // - CLOSING = OPEN + PURCHASE - SALES (always recalculate)
-                debug_log("Updating existing record with full carry forward", [
-                    'item_code' => $item_code, 
-                    'month' => $month, 
-                    'opening_balance' => $opening_balance
-                ]);
-                
+                // Build update query for specific days in range
                 $update_parts = [];
                 $params = [];
                 $types = '';
                 
-                // Determine what OPEN should be for the first day of this month
-                $is_start_month = ($month === $start_month);
-                
-                // Get previous month's data for carry forward
-                $prev_month = date('Y-m', strtotime($month . ' -1 month'));
-                $prev_table = getTableForMonth($conn, $comp_id, $prev_month);
-                $prev_month_last_day = '';
-                
-                if ($prev_table && !$is_start_month) {
-                    // Get the last day of previous month
-                    $prev_year_month = explode('-', $prev_month);
-                    $prev_year = $prev_year_month[0];
-                    $prev_month_num = $prev_year_month[1];
-                    $prev_days_in_month = cal_days_in_month(CAL_GREGORIAN, $prev_month_num, $prev_year);
-                    $prev_month_last_day = str_pad($prev_days_in_month, 2, '0', STR_PAD_LEFT);
+                // Update only the days that are in our date range
+                foreach ($days as $day_padded) {
+                    $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
+                    $update_parts[] = "DAY_{$day_padded}_CLOSING = ?";
+                    $params[] = $opening_balance;
+                    $params[] = $opening_balance;
+                    $types .= 'ii';
                 }
                 
-                // For each day in the month
-                foreach ($all_days_in_month as $day_padded) {
-                    $day_num = intval($day_padded);
-                    
-                    if ($is_start_month && $day_padded === $start_day_padded) {
-                        // This is the first day in the start month where opening balance is set
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
-                        $params[] = $opening_balance;
-                        $types .= 'i';
-                    } elseif (!$is_start_month && $day_padded === '01') {
-                        // This is the first day of a month after the start month
-                        // Need to carry forward from previous month's last day
-                        if ($prev_table && !empty($prev_month_last_day)) {
-                            $update_parts[] = "DAY_{$day_padded}_OPEN = GREATEST(0, COALESCE((SELECT DAY_{$prev_month_last_day}_CLOSING FROM $prev_table WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?), 0))";
-                            $params[] = $prev_month;
-                            $params[] = $item_code;
-                            $params[] = $mode;
-                            $types .= 'sss';
-                        } else {
-                            // No previous month data, use 0
+                // Also set days before start_date to 0 if they're not already set
+                // But only if this is the start month (first month in range)
+                $first_month = array_key_first($monthly_data);
+                if ($month === $first_month) {
+                    $start_day = intval($days[0]);
+                    for ($d = 1; $d < $start_day; $d++) {
+                        $day_padded = str_pad($d, 2, '0', STR_PAD_LEFT);
+                        if (!in_array($day_padded, $days)) {
                             $update_parts[] = "DAY_{$day_padded}_OPEN = 0";
+                            $update_parts[] = "DAY_{$day_padded}_CLOSING = 0";
                         }
-                    } elseif ($day_num > 1) {
-                        // Subsequent days in the same month - use previous day's closing
-                        $prev_day = str_pad($day_num - 1, 2, '0', STR_PAD_LEFT);
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = GREATEST(0, COALESCE(DAY_{$prev_day}_CLOSING, 0))";
-                    } else {
-                        // Day 01 of start month (before the opening balance day) - set to 0
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = 0";
                     }
-                    
-                    // Always recalculate CLOSING: OPEN + PURCHASE - SALES
-                    $update_parts[] = "DAY_{$day_padded}_CLOSING = GREATEST(0, COALESCE(DAY_{$day_padded}_OPEN, 0) + COALESCE(DAY_{$day_padded}_PURCHASE, 0) - COALESCE(DAY_{$day_padded}_SALES, 0))";
                 }
                 
                 if (!empty($update_parts)) {
@@ -679,25 +444,13 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
                 }
             } else {
                 // Insert new record with ALL days in month
-                debug_log("Inserting new record with full carry forward", [
-                    'item_code' => $item_code, 
-                    'month' => $month, 
-                    'opening_balance' => $opening_balance
-                ]);
-                
                 $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
                 $placeholders = ['?', '?', '?'];
                 $params = [$month, $item_code, $mode];
                 $types = 'sss';
                 
-                $is_start_month = ($month === $start_month);
-                
-                // For insert, we set first day to opening balance and rest to carry forward logic
-                // But since we can't do subqueries easily in INSERT, we'll do a simple insert
-                // and let subsequent UPDATE calls handle the carry forward
+                // Set values for all days in the month
                 foreach ($all_days_in_month as $day_padded) {
-                    $day_num = intval($day_padded);
-                    
                     $columns[] = "DAY_{$day_padded}_OPEN";
                     $columns[] = "DAY_{$day_padded}_PURCHASE";
                     $columns[] = "DAY_{$day_padded}_SALES";
@@ -707,20 +460,14 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
                     $placeholders[] = '?';
                     $placeholders[] = '?';
                     
-                    if ($is_start_month && $day_padded === $start_day_padded) {
-                        // First day with opening balance
+                    // For days in our range, set opening and closing to opening_balance
+                    if (in_array($day_padded, $days)) {
                         $params[] = $opening_balance;
                         $params[] = 0;
                         $params[] = 0;
                         $params[] = $opening_balance;
-                    } elseif ($day_num == 1) {
-                        // First day of month (not start month) - we'll handle in UPDATE
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
                     } else {
-                        // Other days - will be handled in UPDATE
+                        // For days outside range, set to 0
                         $params[] = 0;
                         $params[] = 0;
                         $params[] = 0;
@@ -739,9 +486,6 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
             }
         }
     }
-    
-    debug_log("Completed updateDailyStockRange");
-    debug_log("========== UPDATE DAILY STOCK RANGE END ==========");
 }
 
 // ==================== NEW HIERARCHY FUNCTIONS FOR 4-LAYER STRUCTURE ====================
@@ -1255,8 +999,6 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
 
 // Handle export requests - MOVED TO TOP
 if (isset($_GET['export'])) {
-    debug_log("Export requested", ['type' => $_GET['export']]);
-    
     $exportType = $_GET['export'];
     
     // Build query with license filtering - USING CLASS_CODE_NEW and CLASS
@@ -1339,15 +1081,12 @@ if (isset($_GET['export'])) {
         
         fclose($output);
         $stmt->close();
-        debug_log("Export completed");
         exit;
     }
 }
 
 // Handle template download - MOVED TO TOP
 if (isset($_GET['download_template'])) {
-    debug_log("Template download requested");
-    
     // Fetch all items from tblitemmaster for the current liquor mode
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
@@ -1396,7 +1135,6 @@ if (isset($_GET['download_template'])) {
     
     fclose($output);
     $template_stmt->close();
-    debug_log("Template download completed");
     exit;
 }
 
@@ -1546,8 +1284,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'summary_stats') {
 
 // Handle import
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
-    debug_log("Import started", ['file' => $_FILES['csv_file']['name']]);
-    
     $start_date = $_POST['start_date'];
     $csv_file = $_FILES['csv_file']['tmp_name'];
     
@@ -1564,32 +1300,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         $delimiter = ';';
     }
     
-    debug_log("Detected delimiter", ['delimiter' => $delimiter === "\t" ? "TAB" : $delimiter]);
-    
     $handle = fopen($csv_file, "r");
-    if (!$handle) {
-        debug_log("Failed to open file");
-        $_SESSION['import_message'] = [
-            'success' => false,
-            'message' => "Failed to open uploaded file"
-        ];
-        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
-        exit;
-    }
 
     // Read and validate header row with detected delimiter
     $header = fgetcsv($handle, 1000, $delimiter);
-    
-    if ($header === false) {
-        debug_log("Failed to read header");
-        fclose($handle);
-        $_SESSION['import_message'] = [
-            'success' => false,
-            'message' => "Failed to read CSV header"
-        ];
-        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
-        exit;
-    }
     
     // Check if CSV has the correct format (4 columns)
     $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'];
@@ -1602,8 +1316,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     }, $header);
     
     if ($header !== $expected_headers) {
-        debug_log("Header mismatch", ['expected' => $expected_headers, 'found' => $header]);
-        fclose($handle);
         $_SESSION['import_message'] = [
             'success' => false,
             'message' => "CSV format is incorrect. Expected headers: " . implode(', ', $expected_headers) . 
@@ -1678,78 +1390,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             $valid_items[$key6] = $item_data;
         }
         $valid_stmt->close();
-        
-        debug_log("Loaded valid items", ['count' => count($valid_items)]);
     }
 
     // Start transaction
     $conn->begin_transaction();
 
     try {
-        // ====== DEBUG: Log CSV items ======
-        debug_log("========== IMPORT DEBUG START ==========");
-        debug_log("CSV File:", ['name' => $_FILES['csv_file']['name'], 'size' => $_FILES['csv_file']['size']]);
-        debug_log("Start date for import:", ['start_date' => $start_date]);
-        
-        // Re-read CSV to log all items (for debugging)
-        $csv_items_debug = [];
-        $csv_handle = fopen($csv_file, "r");
-        if ($csv_handle) {
-            $header_check = fgetcsv($csv_handle, 1000, $delimiter);
-            $csv_row_num = 1;
-            while (($csv_data = fgetcsv($csv_handle, 1000, $delimiter)) !== FALSE) {
-                $csv_row_num++;
-                if (count($csv_data) >= 4) {
-                    // Handle null values for PHP 8.x compatibility
-                    $csv_code = isset($csv_data[0]) ? trim($csv_data[0]) : '';
-                    $csv_name = isset($csv_data[1]) ? trim($csv_data[1]) : '';
-                    $csv_size = isset($csv_data[2]) ? trim($csv_data[2]) : '';
-                    $csv_balance = isset($csv_data[3]) ? intval(trim($csv_data[3] ?? '0')) : 0;
-                    
-                    $csv_items_debug[] = [
-                        'row' => $csv_row_num,
-                        'code' => $csv_code,
-                        'name' => $csv_name,
-                        'size' => $csv_size,
-                        'balance' => $csv_balance
-                    ];
-                }
-            }
-            fclose($csv_handle);
-        }
-        debug_log("Total rows in CSV:", ['count' => count($csv_items_debug)]);
-        debug_log("First 10 CSV items:", array_slice($csv_items_debug, 0, 10));
-        
-        // ====== DEBUG: Log valid database items ======
-        debug_log("========== DATABASE ITEMS ==========");
-        debug_log("Valid items loaded from database:", ['count' => count($valid_items)]);
-        
-        // Show some example items from database
-        $db_item_examples = array_slice($valid_items, 0, 5, true);
-        debug_log("Sample database items:", $db_item_examples);
-        
-        // ====== DEBUG: Check existing daily stock table ======
-        debug_log("========== DAILY STOCK TABLE CHECK ==========");
-        $check_daily_stock_query = "SHOW TABLES LIKE 'tbldailystock_$comp_id'";
-        $daily_stock_table_exists = $conn->query($check_daily_stock_query)->num_rows > 0;
-        debug_log("Daily stock table exists:", ['table' => "tbldailystock_$comp_id", 'exists' => $daily_stock_table_exists]);
-        
-        if ($daily_stock_table_exists) {
-            // Get current month's data if exists
-            $current_month = date('Y-m');
-            $existing_stock_query = "SELECT ITEM_CODE, STK_MONTH FROM tbldailystock_$comp_id WHERE STK_MONTH = ? LIMIT 20";
-            $existing_stmt = $conn->prepare($existing_stock_query);
-            $existing_stmt->bind_param("s", $current_month);
-            $existing_stmt->execute();
-            $existing_result = $existing_stmt->get_result();
-            $existing_items = [];
-            while ($row = $existing_result->fetch_assoc()) {
-                $existing_items[] = $row;
-            }
-            $existing_stmt->close();
-            debug_log("Existing items in daily stock for current month:", ['month' => $current_month, 'count' => count($existing_items), 'items' => $existing_items]);
-        }
-        
         $batch_size = 100;
         $current_batch = 0;
         
@@ -1758,20 +1404,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
         $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
         
-        if (!$check_stmt || !$update_stmt || !$insert_stmt) {
-            throw new Exception("Failed to prepare statements: " . $conn->error);
-        }
-        
-        $row_count = 0;
         while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-            $row_count++;
             if (count($data) >= 4) {
-                // Handle null values for PHP 8.x compatibility
-                $code = isset($data[0]) ? trim($data[0]) : '';
-                $name = isset($data[1]) ? trim($data[1]) : '';
-                $size_desc = isset($data[2]) ? trim($data[2]) : '';
-                $balance_raw = isset($data[3]) ? $data[3] : '0';
-                $balance = intval(trim($balance_raw ?? '0'));
+                $code = trim($data[0]);
+                $name = trim($data[1]);
+                $size_desc = trim($data[2]);
+                $balance = intval(trim($data[3]));
                 
                 // Clean and normalize data for matching
                 $code_original = $code;
@@ -1905,22 +1543,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             }
         }
         
-        debug_log("Import processed", ['rows' => $row_count, 'imported' => $imported_count, 'skipped' => $skipped_count]);
-        
-        // ====== DEBUG: Log items that were imported ======
-        debug_log("========== IMPORTED ITEMS ==========");
-        debug_log("Items imported to tblitem_stock:", ['count' => count($items_to_update)]);
-        
-        // Show first 20 imported items
-        $imported_examples = array_slice($items_to_update, 0, 20, true);
-        debug_log("First 20 imported items:", $imported_examples);
-        
-        // ====== DEBUG: Items sent to daily stock update ======
-        debug_log("========== DAILY STOCK UPDATE ==========");
-        debug_log("Items sent to daily stock update (balance > 0):", ['count' => count($items_for_daily_stock)]);
-        $daily_stock_examples = array_slice($items_for_daily_stock, 0, 20, true);
-        debug_log("First 20 items for daily stock:", $daily_stock_examples);
-        
         // Process remaining items
         if (!empty($items_to_update)) {
             foreach ($items_to_update as $item) {
@@ -1944,106 +1566,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         $check_stmt->close();
         $update_stmt->close();
         $insert_stmt->close();
-        
-        // Close file handle - properly check if it's a valid resource
-        if (isset($handle) && $handle !== false) {
-            if (is_resource($handle)) {
-                fclose($handle);
-                debug_log("File handle closed successfully");
-            } else {
-                debug_log("File handle was not a valid resource, skipping fclose");
-            }
-        } else {
-            debug_log("File handle not set or already closed");
-        }
+        fclose($handle);
         
         // ==================== PERFORMANCE OPTIMIZATION #5: Bulk Daily Stock Update ====================
         // Only update daily stock for items with balance > 0
         if (!empty($items_for_daily_stock)) {
-            debug_log("========== CALLING UPDATE DAILY STOCK RANGE ==========");
-            debug_log("Updating daily stock", ['items' => count($items_for_daily_stock), 'start_date' => $start_date]);
             updateDailyStockRange($conn, $comp_id, $items_for_daily_stock, $mode, $start_date);
-            
-            // ====== DEBUG: Verify daily stock after update ======
-            debug_log("========== DAILY STOCK AFTER UPDATE ==========");
-            
-            // Check the daily stock table for the items we just updated
-            $start_month = date('Y-m', strtotime($start_date));
-            $current_month_check = date('Y-m');
-            
-            // Get the relevant months
-            $relevant_months = [];
-            $start_ts = strtotime($start_date);
-            $end_ts = time();
-            for ($ts = $start_ts; $ts <= $end_ts; $ts = strtotime('+1 month', $ts)) {
-                $relevant_months[] = date('Y-m', $ts);
-            }
-            debug_log("Checking daily stock for months:", ['months' => $relevant_months]);
-            
-            foreach (array_slice($relevant_months, 0, 3) as $check_month) {
-                // Determine which table to check
-                $check_table = ($check_month == $current_month_check) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $check_month);
-                
-                if ($check_table) {
-                    // Check if table exists
-                    $table_check = $conn->query("SHOW TABLES LIKE '$check_table'");
-                    if ($table_check->num_rows > 0) {
-                        // Get sample items from this month
-                        $sample_query = "SELECT ITEM_CODE, STK_MONTH FROM $check_table LIMIT 5";
-                        $sample_result = $conn->query($sample_query);
-                        $sample_items = [];
-                        while ($row = $sample_result->fetch_assoc()) {
-                            $sample_items[] = $row;
-                        }
-                        debug_log("Sample from $check_table:", ['count' => count($sample_items), 'items' => $sample_items]);
-                        
-                        // Get detailed data for first item if exists
-                        if (!empty($sample_items)) {
-                            $first_item = $sample_items[0]['ITEM_CODE'];
-                            $detail_query = "SELECT * FROM $check_table WHERE ITEM_CODE = ? AND STK_MONTH = ? LIMIT 1";
-                            $detail_stmt = $conn->prepare($detail_query);
-                            $detail_stmt->bind_param("ss", $first_item, $check_month);
-                            $detail_stmt->execute();
-                            $detail_result = $detail_stmt->get_result();
-                            if ($detail_row = $detail_result->fetch_assoc()) {
-                                // Get only day columns
-                                $day_columns = [];
-                                foreach ($detail_row as $key => $value) {
-                                    if (preg_match('/^DAY_\d+_(OPEN|PURCHASE|SALES|CLOSING)$/', $key) && $value != 0) {
-                                        $day_columns[$key] = $value;
-                                    }
-                                }
-                                debug_log("Detailed data for item $first_item in $check_month:", $day_columns);
-                            }
-                            $detail_stmt->close();
-                        }
-                    } else {
-                        debug_log("Table does not exist:", ['table' => $check_table]);
-                    }
-                }
-            }
         }
         
         // Commit transaction
         $conn->commit();
-        debug_log("Transaction committed");
-        
-        // ====== DEBUG: Final Summary ======
-        debug_log("========== IMPORT COMPLETE - FINAL SUMMARY ==========");
-        debug_log("Total CSV rows processed:", ['count' => $row_count]);
-        debug_log("Total items imported to tblitem_stock:", ['count' => $imported_count]);
-        debug_log("Total items skipped:", ['count' => $skipped_count]);
-        debug_log("Total items sent to daily stock update:", ['count' => count($items_for_daily_stock)]);
-        debug_log("Financial Year:", ['start' => $fy_dates['start'], 'end' => $fy_dates['end']]);
-        
-        // Verify final state in database
-        if ($daily_stock_table_exists) {
-            $final_check_query = "SELECT COUNT(*) as total FROM tbldailystock_$comp_id";
-            $final_result = $conn->query($final_check_query);
-            $final_row = $final_result->fetch_assoc();
-            debug_log("Final count in tbldailystock_{$comp_id}:", ['total_records' => $final_row['total']]);
-        }
-        debug_log("========== DEBUG COMPLETE ==========");
 
         // Prepare success message
         $message = "Successfully imported $imported_count opening balances (only items allowed for your license type were processed). ";
@@ -2061,7 +1593,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             'errors' => $error_messages,
             'imported_count' => $imported_count,
             'skipped_count' => $skipped_count,
-            'skipped_items' => $skipped_items,
             'delimiter' => $delimiter
         ];
 
@@ -2071,22 +1602,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     } catch (Exception $e) {
         // Rollback transaction on error
         $conn->rollback();
-        
-        // Close file handle if still open - properly check if it's a valid resource
-        if (isset($handle) && $handle !== false) {
-            if (is_resource($handle)) {
-                fclose($handle);
-                debug_log("File handle closed in exception handler");
-            }
-        }
-        
-        debug_log("Import failed", ['error' => $e->getMessage()]);
+        fclose($handle);
         
         $_SESSION['import_message'] = [
             'success' => false,
             'message' => "Import failed: " . $e->getMessage(),
-            'errors' => $error_messages,
-            'skipped_items' => $skipped_items
+            'errors' => $error_messages
         ];
         
         header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
@@ -2096,8 +1617,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
 
 // Handle bulk form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
-    debug_log("Bulk update started");
-    
     $start_date = $_POST['start_date'];
     
     if (isset($_POST['opening_stock']) && !empty($_POST['opening_stock'])) {
@@ -2120,8 +1639,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
         }
         
         if (!empty($items_to_update)) {
-            debug_log("Processing bulk update", ['items' => count($items_to_update), 'daily_stock_items' => count($items_for_daily_stock)]);
-            
             $conn->begin_transaction();
             
             try {
@@ -2129,10 +1646,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                 $check_stmt = $conn->prepare("SELECT 1 FROM tblitem_stock WHERE ITEM_CODE = ? LIMIT 1");
                 $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
                 $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
-                
-                if (!$check_stmt || !$update_stmt || !$insert_stmt) {
-                    throw new Exception("Failed to prepare statements: " . $conn->error);
-                }
                 
                 $batch_size = 100;
                 $batches = array_chunk($items_to_update, $batch_size);
@@ -2166,7 +1679,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                 }
                 
                 $conn->commit();
-                debug_log("Bulk update committed");
                 
                 $_SESSION['import_message'] = [
                     'success' => true,
@@ -2175,7 +1687,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                 
             } catch (Exception $e) {
                 $conn->rollback();
-                debug_log("Bulk update failed", ['error' => $e->getMessage()]);
                 $_SESSION['import_message'] = [
                     'success' => false,
                     'message' => "Update failed: " . $e->getMessage()
@@ -2223,8 +1734,6 @@ if (!empty($allowed_classes)) {
     $total_with_stock = $count_row['with_stock'] ?? 0;
     $total_without_stock = $total_items - $total_with_stock;
     $count_stmt->close();
-    
-    debug_log("Initial counts", ['total' => $total_items, 'with_stock' => $total_with_stock]);
 }
 
 // Show import message if exists
@@ -2233,8 +1742,6 @@ if (isset($_SESSION['import_message'])) {
     $import_message = $_SESSION['import_message'];
     unset($_SESSION['import_message']);
 }
-
-debug_log("Script completed, rendering page");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -2586,58 +2093,29 @@ debug_log("Script completed, rendering page");
         </form>
         
         <?php if ($import_message): ?>
-          <div class="alert alert-<?= $import_message['success'] ? 'success' : 'danger' ?> mt-3 alert-dismissible fade show" role="alert" id="importAlert">
+          <div class="alert alert-<?= $import_message['success'] ? 'success' : 'danger' ?> mt-3">
             <strong><?= $import_message['success'] ? 'Success!' : 'Error!' ?></strong> <?= $import_message['message'] ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-          <?php if (isset($import_message['skipped_items']) && !empty($import_message['skipped_items'])): ?>
-            <div class="alert alert-warning mt-3" id="skippedItemsAlert">
-              <strong><i class="fas fa-exclamation-triangle"></i> Items Not Found in Database (<?= count($import_message['skipped_items']) ?>)</strong>
-              <p class="mb-2 small text-muted">The following items from your CSV file were not found in the database or are not allowed for your license type:</p>
-              <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                <table class="table table-sm table-bordered table-striped" style="font-size: 12px;">
-                  <thead class="table-warning">
-                    <tr>
-                      <th>Item Code</th>
-                      <th>Item Name</th>
-                      <th>Size</th>
-                      <th>Reason</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($import_message['skipped_items'] as $item): ?>
-                      <tr>
-                        <td><?= htmlspecialchars($item['code']) ?></td>
-                        <td><?= htmlspecialchars($item['name']) ?></td>
-                        <td><?= htmlspecialchars($item['size']) ?></td>
-                        <td><?= htmlspecialchars($item['reason']) ?></td>
-                      </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
+            <?php if (isset($import_message['imported_count']) && isset($import_message['skipped_count'])): ?>
+              <div class="mt-2">
+                <strong>Import Summary:</strong><br>
+                • Imported: <?= $import_message['imported_count'] ?> items<br>
+                • Skipped: <?= $import_message['skipped_count'] ?> items (not found in database)
+                <?php if (isset($import_message['delimiter'])): ?>
+                  <br>• File format: <?= $import_message['delimiter'] === "\t" ? "Tab-Separated (TSV)" : ($import_message['delimiter'] === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)") ?>
+                <?php endif; ?>
               </div>
-            </div>
-          <?php endif; ?>
-          <?php if (isset($import_message['imported_count']) && isset($import_message['skipped_count'])): ?>
-            <div class="mt-2 small">
-              <strong>Import Summary:</strong><br>
-              • Imported: <?= $import_message['imported_count'] ?> items<br>
-              • Skipped: <?= $import_message['skipped_count'] ?> items (not found in database)
-              <?php if (isset($import_message['delimiter'])): ?>
-                <br>• File format: <?= $import_message['delimiter'] === "\t" ? "Tab-Separated (TSV)" : ($import_message['delimiter'] === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)") ?>
-              <?php endif; ?>
-            </div>
-          <?php endif; ?>
-          <?php if (!empty($import_message['errors'])): ?>
-            <div class="mt-2">
-              <strong>Notes (<?= count($import_message['errors']) ?>):</strong>
-              <ul class="mb-0 mt-2 small" style="max-height: 200px; overflow-y: auto;">
-                <?php foreach ($import_message['errors'] as $error): ?>
-                  <li><?= htmlspecialchars($error) ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-          <?php endif; ?>
+            <?php endif; ?>
+            <?php if (!empty($import_message['errors'])): ?>
+              <div class="mt-2">
+                <strong>Notes (<?= count($import_message['errors']) ?>):</strong>
+                <ul class="mb-0 mt-2 small" style="max-height: 200px; overflow-y: auto;">
+                  <?php foreach ($import_message['errors'] as $error): ?>
+                    <li><?= htmlspecialchars($error) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
         <?php endif; ?>
       </div>
 

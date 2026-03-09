@@ -844,3 +844,25 @@
 [05-Mar-2026 09:09:29 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
 [05-Mar-2026 09:09:29 Europe/Berlin] Found 116 purchase records
 [05-Mar-2026 09:09:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[09-Mar-2026 08:06:17 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[09-Mar-2026 08:06:17 Europe/Berlin] Company ID: 5
+[09-Mar-2026 08:06:17 Europe/Berlin] Mode: ALL
+[09-Mar-2026 08:06:17 Europe/Berlin] Session CompID: 5
+[09-Mar-2026 08:06:17 Europe/Berlin] Session User ID: 5
+[09-Mar-2026 08:06:17 Europe/Berlin] Database connection successful
+[09-Mar-2026 08:06:17 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[09-Mar-2026 08:06:17 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[09-Mar-2026 08:06:17 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[09-Mar-2026 08:06:17 Europe/Berlin] Parameter Types: i
+[09-Mar-2026 08:06:17 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[09-Mar-2026 08:06:18 Europe/Berlin] Found 117 purchase records
+[09-Mar-2026 08:06:18 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
