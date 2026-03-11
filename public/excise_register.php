@@ -533,9 +533,26 @@ foreach ($dates as $date) {
 }
 
 // NEW: Recalculate closing balance to ensure Clo. = Op. + Rec. - Sale
-foreach ($dates as $date) {
+// Also carry forward opening from previous day's closing
+foreach ($dates as $index => $date) {
     // Skip if this date was not processed
     if (!isset($daily_data[$date])) continue;
+    
+    // Carry forward opening from previous day's closing
+    if ($index > 0) {
+        $prev_date = $dates[$index - 1];
+        if (isset($daily_data[$prev_date])) {
+            foreach ($display_categories as $category) {
+                if (!isset($daily_data[$date][$category])) continue;
+                
+                foreach ($size_columns[$category] as $size) {
+                    // Opening today = Previous day's calculated closing
+                    $prev_closing = $daily_data[$prev_date][$category]['closing'][$size] ?? 0;
+                    $daily_data[$date][$category]['opening'][$size] = $prev_closing;
+                }
+            }
+        }
+    }
     
     foreach ($display_categories as $category) {
         if (!isset($daily_data[$date][$category])) continue;
@@ -1010,10 +1027,29 @@ foreach ($display_categories as $category) {
                 $first_date = true;
                 foreach ($dates as $date): 
                   // Skip if this date was not processed due to missing columns
-                  if (!isset($daily_data[$date]) || empty(array_filter($daily_data[$date], function($cat_data) {
-                      return array_sum($cat_data['opening']) > 0 || array_sum($cat_data['purchase']) > 0 || 
-                             array_sum($cat_data['sales']) > 0 || array_sum($cat_data['closing']) > 0;
-                  }))) continue;
+                  // But show dates that have opening (carried forward from previous day)
+                  if (!isset($daily_data[$date])) continue;
+                  
+                  // Check if there's any data to show (including carryforward opening)
+                  $has_data = false;
+                  foreach ($display_categories as $cat) {
+                      if (isset($daily_data[$date][$cat])) {
+                          $cat_data = $daily_data[$date][$cat];
+                          // Check for any non-zero values in opening, purchase, sales, or closing
+                          foreach ($size_columns[$cat] as $size) {
+                              if (($cat_data['opening'][$size] ?? 0) > 0 || 
+                                  ($cat_data['purchase'][$size] ?? 0) > 0 || 
+                                  ($cat_data['sales'][$size] ?? 0) > 0 || 
+                                  ($cat_data['closing'][$size] ?? 0) > 0) {
+                                  $has_data = true;
+                                  break;
+                              }
+                          }
+                      }
+                      if ($has_data) break;
+                  }
+                  
+                  if (!$has_data) continue;
                   
                   $day_num = date('d', strtotime($date));
                   $month_num = date('m', strtotime($date));

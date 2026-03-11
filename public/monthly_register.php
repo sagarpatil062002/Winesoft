@@ -366,18 +366,18 @@ $category_display_names = [
     'MILD BEER' => 'MILD BEER'
 ];
 
-// Define size columns for each category (including MML)
+// Define size columns for each category (including MML) - Ordered from HIGH to LOW (largest to smallest)
 $spirit_sizes = [
-    '50 ML', '60 ML', '90 ML', '180 ML', '200 ML', '275 ML', '330 ML', 
-    '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML', '2000 ML'
+    '2000 ML', '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', 
+    '375 ML', '330 ML', '275 ML', '200 ML', '180 ML', '90 ML', '60 ML', '50 ML'
 ];
 
 $wine_sizes = [
-    '90 ML', '180 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1000 ML'
+    '1000 ML', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', '275 ML', '180 ML', '90 ML'
 ];
 
 $beer_sizes = [
-    '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1000 ML'
+    '1000 ML', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', '275 ML', '250 ML'
 ];
 
 $size_columns = [
