@@ -397,7 +397,10 @@ function getSortLink($column, $label) {
     font-size: 9px;
     position: sticky;
     top: 0;
-    z-index: 2;
+    z-index: 10;
+    height: 30px;
+    line-height: 20px;
+    padding: 4px 8px;
   }
   
   .summary-size-header th {
@@ -406,8 +409,11 @@ function getSortLink($column, $label) {
     font-weight: 600;
     font-size: 8px;
     position: sticky;
-    top: 24px; /* Height of first header row */
-    z-index: 2;
+    top: 30px; /* Height of first header row */
+    z-index: 9;
+    height: 24px;
+    line-height: 14px;
+    padding: 2px 4px;
   }
   
   .table-success {
@@ -559,6 +565,16 @@ function getSortLink($column, $label) {
   .summary-size-header {
     background-color: #f8fafc !important;
     border-top: 1px solid #e2e8f0;
+  }
+  
+  .summary-header-group th,
+  .summary-size-header th {
+    vertical-align: middle !important;
+  }
+  
+  /* Ensure data rows have proper spacing from headers */
+  #purchaseSummaryTable tbody tr:first-child td {
+    padding-top: 8px;
   }
   
   .fixed-column {
@@ -1081,13 +1097,14 @@ function getSortLink($column, $label) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Categories based on CLASS field mapping
+// Sizes ordered from SMALL to LARGE as requested by user
+// Note: Wine sizes use "ML" suffix for display but internal mapping uses "W"
 const categories = [
     { 
         name: 'SPIRITS',
         sizes: [
-            '>1L',
-            '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', '330 ML',
-            '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
+            '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
+            '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1L', '>1L'
         ],
         columnClass: 'size-column',
         bgColor: '#e9ecef',
@@ -1096,9 +1113,11 @@ const categories = [
     { 
         name: 'WINE', 
         sizes: [
-            '>1L',
-            '1L W', '750 W', '700 W', '500 W', '375 W', '330 W',
-            '250 W', '180 W', '100 W'
+            '100 ML', '180 ML', '250 ML', '330 ML', '375 ML', '500 ML', '700 ML', '750 ML', '1L', '>1L'
+        ],
+        // Internal mapping still uses W suffix for data matching
+        internalSizes: [
+            '100 W', '180 W', '250 W', '330 W', '375 W', '500 W', '700 W', '750 W', '1L W', '>1L'
         ],
         columnClass: 'size-column',
         bgColor: '#d1ecf1',
@@ -1107,9 +1126,7 @@ const categories = [
     { 
         name: 'FERMENTED BEER', 
         sizes: [
-            '>1L',
-            '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
-            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+            '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
         ],
         columnClass: 'size-column',
         bgColor: '#d4edda',
@@ -1118,9 +1135,7 @@ const categories = [
     { 
         name: 'MILD BEER', 
         sizes: [
-            '>1L',
-            '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
-            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
+            '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
         ],
         columnClass: 'size-column',
         bgColor: '#f8d7da',
@@ -1419,7 +1434,8 @@ function updatePurchaseSummaryTable(summaryData) {
     
     categories.forEach((category, catIndex) => {
         category.sizes.forEach((size, sizeIndex) => {
-            const isLargeSizeColumn = sizeIndex === 0;
+            // >1L is now at the last position, not first
+            const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
             const isFirstColumnInCategory = sizeIndex === 0;
             const isLastColumnInCategory = sizeIndex === category.sizes.length - 1;
             
@@ -1484,16 +1500,23 @@ function updatePurchaseSummaryTable(summaryData) {
         categories.forEach((category, catIndex) => {
             let categoryTotal = 0;
             category.sizes.forEach((size, sizeIndex) => {
-                const isLargeSizeColumn = sizeIndex === 0;
+                // >1L is now at the last position, not first
+                const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
                 const isFirstColumnInCategory = sizeIndex === 0;
                 
                 let value = 0;
                 
+                // For wine, use internal size key for data lookup
+                let dataSize = size;
+                if (category.internalSizes && category.internalSizes[sizeIndex]) {
+                    dataSize = category.internalSizes[sizeIndex];
+                }
+                
                 // Check if data exists for this category and size
                 if (tpData.categories && 
                     tpData.categories[category.name] && 
-                    tpData.categories[category.name][size]) {
-                    value = tpData.categories[category.name][size];
+                    tpData.categories[category.name][dataSize]) {
+                    value = tpData.categories[category.name][dataSize];
                     categoryTotal += value;
                 }
                 
@@ -1570,9 +1593,15 @@ function addTotalRow(summaryData, categories) {
     Object.values(summaryData).forEach(tpData => {
         if (tpData && tpData.categories) {
             categories.forEach(category => {
-                category.sizes.forEach(size => {
-                    if (tpData.categories[category.name] && tpData.categories[category.name][size]) {
-                        totals[category.name][size] += tpData.categories[category.name][size];
+                category.sizes.forEach((size, sizeIndex) => {
+                    // For wine, use internal size key for data lookup
+                    let dataSize = size;
+                    if (category.internalSizes && category.internalSizes[sizeIndex]) {
+                        dataSize = category.internalSizes[sizeIndex];
+                    }
+                    
+                    if (tpData.categories[category.name] && tpData.categories[category.name][dataSize]) {
+                        totals[category.name][size] += tpData.categories[category.name][dataSize];
                     }
                 });
             });
@@ -1603,7 +1632,8 @@ function addTotalRow(summaryData, categories) {
         
         categories.forEach((category, catIndex) => {
             category.sizes.forEach((size, sizeIndex) => {
-                const isLargeSizeColumn = sizeIndex === 0;
+                // >1L is now at the last position, not first
+                const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
                 const isFirstColumnInCategory = sizeIndex === 0;
                 const value = totals[category.name][size];
                 const cell = $('<td>')

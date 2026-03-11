@@ -1613,11 +1613,12 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
     // If no first batch data, return empty summary
     if (!$first_batch_data) {
         debug_log("No first batch data, returning empty summary");
-        // Initialize all sizes to 0
+        // Initialize all sizes to 0 - SORTED FROM LARGEST TO SMALLEST
         $allSizes = [
-            '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-            '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-            '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+            '50L', '30L', '20L', '15L', '4.5L', '3L', '2L', '1.75L', '1.5L',
+            '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', 
+            '355 ML', '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', 
+            '170 ML', '90 ML', '60 ML', '50 ML'
         ];
         
         foreach ($volumeSummary as $category => $data) {
@@ -1656,11 +1657,12 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
         return $volumeSummary;
     }
     
-    // Initialize all volume sizes to 0 for each category
+    // Initialize all volume sizes to 0 for each category - SORTED FROM LARGEST TO SMALLEST
     $allSizes = [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+        '50L', '30L', '20L', '15L', '4.5L', '3L', '2L', '1.75L', '1.5L',
+        '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', 
+        '355 ML', '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', 
+        '170 ML', '90 ML', '60 ML', '50 ML'
     ];
     
     foreach ($volumeSummary as $category => $data) {
@@ -1746,13 +1748,27 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                 // Get volume label
                 $volumeColumn = getVolumeLabel($ml_volume);
                 
+                // Map volume to the correct column in the sorted list
+                // This ensures that even if the volume label format differs, it maps to the predefined columns
+                $mappedColumn = $volumeColumn;
+                
+                // Handle liter format conversions if needed
+                if ($ml_volume >= 1000) {
+                    $liters = $ml_volume / 1000;
+                    // Check if this matches one of the liter size columns
+                    $literKey = $liters . 'L';
+                    if (in_array($literKey, $allSizes)) {
+                        $mappedColumn = $literKey;
+                    }
+                }
+                
                 // Add to summary
-                if (isset($volumeSummary[$display_category][$volumeColumn])) {
-                    $volumeSummary[$display_category][$volumeColumn] += $current_stock;
+                if (isset($volumeSummary[$display_category][$mappedColumn])) {
+                    $volumeSummary[$display_category][$mappedColumn] += $current_stock;
                     debug_log("Added to volume summary", [
                         'category' => $display_category,
-                        'volume' => $volumeColumn,
-                        'new_total' => $volumeSummary[$display_category][$volumeColumn]
+                        'volume' => $mappedColumn,
+                        'new_total' => $volumeSummary[$display_category][$mappedColumn]
                     ]);
                 } elseif ($display_category !== 'OTHER') {
                     // For unknown sizes in known categories, add to smallest size as fallback
@@ -2248,7 +2264,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'volume_summary') {
         // Check if allowed_classes is valid
         if (empty($allowed_classes)) {
             debug_log("Volume summary - no allowed classes");
-            // Return empty but valid JSON
+            // Return empty but valid JSON - SORTED FROM LARGEST TO SMALLEST
             $empty_summary = [
                 'SPIRITS' => [],
                 'WINE' => [],
@@ -2257,11 +2273,12 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'volume_summary') {
                 'COUNTRY LIQUOR' => [],
                 'OTHER' => []
             ];
-            // Initialize all sizes to 0
+            // Initialize all sizes to 0 - SORTED FROM LARGEST TO SMALLEST
             $allSizes = [
-                '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-                '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-                '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+                '50L', '30L', '20L', '15L', '4.5L', '3L', '2L', '1.75L', '1.5L',
+                '1000 ML', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', 
+                '355 ML', '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', 
+                '170 ML', '90 ML', '60 ML', '50 ML'
             ];
             
             foreach ($empty_summary as $category => $data) {
@@ -4068,14 +4085,42 @@ async function loadVolumeSummary() {
     }
 }
 
-// Generate volume summary HTML with improved styling
+// Generate volume summary HTML with improved styling and sorted sizes (largest to smallest)
 function generateVolumeSummaryHTML(data) {
     const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
-    const allSizes = [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+    
+    // Define all sizes with their numeric values for sorting
+    const sizeDefinitions = [
+        { label: '50 ML', value: 50 },
+        { label: '60 ML', value: 60 },
+        { label: '90 ML', value: 90 },
+        { label: '170 ML', value: 170 },
+        { label: '180 ML', value: 180 },
+        { label: '200 ML', value: 200 },
+        { label: '250 ML', value: 250 },
+        { label: '275 ML', value: 275 },
+        { label: '330 ML', value: 330 },
+        { label: '355 ML', value: 355 },
+        { label: '375 ML', value: 375 },
+        { label: '500 ML', value: 500 },
+        { label: '650 ML', value: 650 },
+        { label: '700 ML', value: 700 },
+        { label: '750 ML', value: 750 },
+        { label: '1000 ML', value: 1000 },
+        { label: '1.5L', value: 1500 },
+        { label: '1.75L', value: 1750 },
+        { label: '2L', value: 2000 },
+        { label: '3L', value: 3000 },
+        { label: '4.5L', value: 4500 },
+        { label: '15L', value: 15000 },
+        { label: '20L', value: 20000 },
+        { label: '30L', value: 30000 },
+        { label: '50L', value: 50000 }
     ];
+    
+    // Sort sizes from largest to smallest (descending order)
+    const sortedSizes = [...sizeDefinitions].sort((a, b) => b.value - a.value);
+    const allSizes = sortedSizes.map(s => s.label);
     
     // Calculate summary statistics
     let totalBottles = 0;

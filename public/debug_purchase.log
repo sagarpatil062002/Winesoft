@@ -12317,3 +12317,821 @@
 }
 [2026-03-11 06:58:08] Database connection closed
 [2026-03-11 06:58:08] === PURCHASE SESSION ENDED ===
+[2026-03-11 13:40:07] === NEW PURCHASE SESSION STARTED ===
+[2026-03-11 13:40:07] Session data: {
+    "user_id": "5",
+    "username": "Garava",
+    "CompID": 5,
+    "FIN_YEAR_ID": "3",
+    "FIN_YEAR_START": "2021-04-01 00:00:00",
+    "FIN_YEAR_END": "2022-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2021-2022",
+    "COMP_NAME": "Garava Hotel",
+    "auto_gap_fill_2026-03-11": true,
+    "stock_columns_checked": true,
+    "bill_progress_od7adb9q06lvms1vano7h7s2ci_69b15d41b5d49": {
+        "total_bills": 44,
+        "current_bill": 44,
+        "status": "completed",
+        "message": "Completed! Generated 44 bills with 44 cash memos in 1.151 seconds",
+        "percentage": 100,
+        "bills_generated": [
+            {
+                "bill_no": "BL0001",
+                "date": "2021-04-01",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0002",
+                "date": "2021-04-01",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0003",
+                "date": "2021-04-01",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0004",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0005",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0006",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0007",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0008",
+                "date": "2021-04-02",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0009",
+                "date": "2021-04-02",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0010",
+                "date": "2021-04-02",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0011",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0012",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0013",
+                "date": "2021-04-02",
+                "amount": 10784,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0014",
+                "date": "2021-04-02",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0015",
+                "date": "2021-04-02",
+                "amount": 4298,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0016",
+                "date": "2021-04-03",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0017",
+                "date": "2021-04-03",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0018",
+                "date": "2021-04-03",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0019",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0020",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            }
+        ],
+        "start_time": 1773231425.748823,
+        "last_update": 1773231425,
+        "speed": 620.5601503203184,
+        "items_processed": 6,
+        "total_items": 6,
+        "end_time": 1773231426,
+        "expires": 1773231726
+    },
+    "sale_quantities": []
+}
+[2026-03-11 13:40:07] POST data: []
+[2026-03-11 13:40:07] GET data: []
+[2026-03-11 13:40:07] Company ID from session: 5
+[2026-03-11 13:40:07] Database connection included
+[2026-03-11 13:40:07] License functions included
+[2026-03-11 13:40:07] License type: FL-III
+[2026-03-11 13:40:07] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-11 13:40:07] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-11 13:40:07] Purchase mode: F
+[2026-03-11 13:40:07] Next voucher number: 118
+[2026-03-11 13:40:07] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-03-11 13:40:07] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT003",
+        "CAT004",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssss"
+}
+[2026-03-11 13:40:07] Items fetched from database: {
+    "count": 4687,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-03-11 13:40:07] Suppliers fetched: {
+    "count": 36
+}
+[2026-03-11 13:40:07] Database connection closed
+[2026-03-11 13:40:07] === PURCHASE SESSION ENDED ===
+[2026-03-11 14:15:54] === NEW PURCHASE SESSION STARTED ===
+[2026-03-11 14:15:54] Session data: {
+    "user_id": "5",
+    "username": "Garava",
+    "CompID": 5,
+    "FIN_YEAR_ID": "3",
+    "FIN_YEAR_START": "2021-04-01 00:00:00",
+    "FIN_YEAR_END": "2022-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2021-2022",
+    "COMP_NAME": "Garava Hotel",
+    "auto_gap_fill_2026-03-11": true,
+    "stock_columns_checked": true,
+    "bill_progress_od7adb9q06lvms1vano7h7s2ci_69b15d41b5d49": {
+        "total_bills": 44,
+        "current_bill": 44,
+        "status": "completed",
+        "message": "Completed! Generated 44 bills with 44 cash memos in 1.151 seconds",
+        "percentage": 100,
+        "bills_generated": [
+            {
+                "bill_no": "BL0001",
+                "date": "2021-04-01",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0002",
+                "date": "2021-04-01",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0003",
+                "date": "2021-04-01",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0004",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0005",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0006",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0007",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0008",
+                "date": "2021-04-02",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0009",
+                "date": "2021-04-02",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0010",
+                "date": "2021-04-02",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0011",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0012",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0013",
+                "date": "2021-04-02",
+                "amount": 10784,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0014",
+                "date": "2021-04-02",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0015",
+                "date": "2021-04-02",
+                "amount": 4298,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0016",
+                "date": "2021-04-03",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0017",
+                "date": "2021-04-03",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0018",
+                "date": "2021-04-03",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0019",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0020",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            }
+        ],
+        "start_time": 1773231425.748823,
+        "last_update": 1773231425,
+        "speed": 620.5601503203184,
+        "items_processed": 6,
+        "total_items": 6,
+        "end_time": 1773231426,
+        "expires": 1773231726
+    },
+    "sale_quantities": [],
+    "form_token": "c80928af303e11dfe1868a19fecf3545044f8e88f5a8e4ea2f719627430b9c5e",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-03-11 14:15:54] POST data: []
+[2026-03-11 14:15:54] GET data: []
+[2026-03-11 14:15:54] Company ID from session: 5
+[2026-03-11 14:15:54] Database connection included
+[2026-03-11 14:15:54] License functions included
+[2026-03-11 14:15:54] License type: FL-III
+[2026-03-11 14:15:54] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-11 14:15:54] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-11 14:15:54] Purchase mode: F
+[2026-03-11 14:15:54] Next voucher number: 118
+[2026-03-11 14:15:54] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-03-11 14:15:54] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT003",
+        "CAT004",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssss"
+}
+[2026-03-11 14:15:54] Items fetched from database: {
+    "count": 4687,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-03-11 14:15:54] Suppliers fetched: {
+    "count": 36
+}
+[2026-03-11 14:15:55] Database connection closed
+[2026-03-11 14:15:55] === PURCHASE SESSION ENDED ===
+[2026-03-11 14:21:15] === NEW PURCHASE SESSION STARTED ===
+[2026-03-11 14:21:15] Session data: {
+    "user_id": "5",
+    "username": "Garava",
+    "CompID": 5,
+    "FIN_YEAR_ID": "3",
+    "FIN_YEAR_START": "2021-04-01 00:00:00",
+    "FIN_YEAR_END": "2022-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2021-2022",
+    "COMP_NAME": "Garava Hotel",
+    "auto_gap_fill_2026-03-11": true,
+    "stock_columns_checked": true,
+    "bill_progress_od7adb9q06lvms1vano7h7s2ci_69b15d41b5d49": {
+        "total_bills": 44,
+        "current_bill": 44,
+        "status": "completed",
+        "message": "Completed! Generated 44 bills with 44 cash memos in 1.151 seconds",
+        "percentage": 100,
+        "bills_generated": [
+            {
+                "bill_no": "BL0001",
+                "date": "2021-04-01",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0002",
+                "date": "2021-04-01",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0003",
+                "date": "2021-04-01",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0004",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0005",
+                "date": "2021-04-01",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0006",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0007",
+                "date": "2021-04-01",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0008",
+                "date": "2021-04-02",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0009",
+                "date": "2021-04-02",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0010",
+                "date": "2021-04-02",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0011",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0012",
+                "date": "2021-04-02",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0013",
+                "date": "2021-04-02",
+                "amount": 10784,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0014",
+                "date": "2021-04-02",
+                "amount": 8596,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0015",
+                "date": "2021-04-02",
+                "amount": 4298,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0016",
+                "date": "2021-04-03",
+                "amount": 24258,
+                "items": 3
+            },
+            {
+                "bill_no": "BL0017",
+                "date": "2021-04-03",
+                "amount": 12819,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0018",
+                "date": "2021-04-03",
+                "amount": 15737,
+                "items": 2
+            },
+            {
+                "bill_no": "BL0019",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            },
+            {
+                "bill_no": "BL0020",
+                "date": "2021-04-03",
+                "amount": 12972,
+                "items": 1
+            }
+        ],
+        "start_time": 1773231425.748823,
+        "last_update": 1773231425,
+        "speed": 620.5601503203184,
+        "items_processed": 6,
+        "total_items": 6,
+        "end_time": 1773231426,
+        "expires": 1773231726
+    },
+    "sale_quantities": [],
+    "form_token": "c80928af303e11dfe1868a19fecf3545044f8e88f5a8e4ea2f719627430b9c5e",
+    "sale_items": [],
+    "sale_count": 0,
+    "current_focus_index": -1
+}
+[2026-03-11 14:21:15] POST data: []
+[2026-03-11 14:21:15] GET data: []
+[2026-03-11 14:21:15] Company ID from session: 5
+[2026-03-11 14:21:15] Database connection included
+[2026-03-11 14:21:15] License functions included
+[2026-03-11 14:21:15] License type: FL-III
+[2026-03-11 14:21:15] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-11 14:21:15] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-11 14:21:15] Purchase mode: F
+[2026-03-11 14:21:15] Next voucher number: 118
+[2026-03-11 14:21:15] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-03-11 14:21:15] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT003",
+        "CAT004",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssss"
+}
+[2026-03-11 14:21:16] Items fetched from database: {
+    "count": 4687,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-03-11 14:21:16] Suppliers fetched: {
+    "count": 36
+}
+[2026-03-11 14:21:16] Database connection closed
+[2026-03-11 14:21:16] === PURCHASE SESSION ENDED ===
