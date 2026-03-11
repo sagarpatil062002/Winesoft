@@ -218,15 +218,13 @@ function getVolumeLabel($volume) {
         return $volume_label_cache[$volume];
     }
     
-    // Format volume based on size
-    if ($volume >= 1000) {
-        $liters = $volume / 1000;
-        // Check if it's a whole number
-        if ($liters == intval($liters)) {
-            $label = intval($liters) . 'L';
-        } else {
-            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
-        }
+    // Format volume based on size - group all >1L into >1L
+    if ($volume == 1000) {
+        // Exactly 1L - use '1L' label
+        $label = '1L';
+    } elseif ($volume > 1000) {
+        // Greater than 1L - group all under '>1L'
+        $label = '>1L';
     } else {
         $label = $volume . ' ML';
     }
@@ -235,11 +233,10 @@ function getVolumeLabel($volume) {
     return $label;
 }
 
-// Define all display sizes (from opening_balance.php volume summary)
+// Define all display sizes - from largest to smallest with >1L grouping
 $all_display_sizes = [
-    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+    '>1L', '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', 
+    '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
 ];
 
 // Function to extract brand name from item details
@@ -835,17 +832,25 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
       line-height: 1.2;
       text-align: left;
       padding: 2px;
-      max-width: 100px;
+      min-width: 120px;
+      max-width: 150px;
       white-space: normal;
       word-wrap: break-word;
     }
     .tp-nos-list span {
       display: inline-block;
       margin-right: 3px;
+      margin-bottom: 2px;
       background-color: #e9ecef;
       padding: 1px 3px;
       border-radius: 3px;
       font-size: 8px;
+    }
+    .tp-nos-list .tp-more {
+      display: block;
+      font-size: 8px;
+      color: #666;
+      margin-top: 2px;
     }
 
     /* Print styles */
@@ -1109,12 +1114,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1170,12 +1172,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1231,12 +1230,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1292,12 +1288,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1353,12 +1346,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1414,12 +1404,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1475,12 +1462,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 
@@ -1536,12 +1520,9 @@ $total_columns = count($all_display_sizes) * 3; // Received, Sold, Closing
                   <td style="text-align: left;"><?= htmlspecialchars($brand) ?></td>
                   <td class="tp-nos-list">
                     <?php if (!empty($brand_info['tp_nos'])): ?>
-                      <?php foreach (array_slice($brand_info['tp_nos'], 0, 3) as $tp_no): ?>
+                      <?php foreach ($brand_info['tp_nos'] as $tp_no): ?>
                         <span><?= htmlspecialchars($tp_no) ?></span>
                       <?php endforeach; ?>
-                      <?php if (count($brand_info['tp_nos']) > 3): ?>
-                        <span>...</span>
-                      <?php endif; ?>
                     <?php endif; ?>
                   </td>
 

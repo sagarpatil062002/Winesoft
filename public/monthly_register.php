@@ -693,12 +693,8 @@ foreach ($main_display_categories as $category) {
     }
 }
 
-// Format liters to 2 decimal places
-foreach ($summary_liters_main as $category => $data) {
-    foreach ($data as $key => $value) {
-        $summary_liters_main[$category][$key] = number_format($value, 2);
-    }
-}
+// Keep raw values for summary (format only when displaying)
+// The formatting will be done at display time to avoid double-formatting issues
 
 // Group available months by year for dropdown display
 $years_with_months = [];

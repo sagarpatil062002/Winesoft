@@ -237,8 +237,13 @@ if (!empty($allowed_classes)) {
     }
 }
 
+// Cache for table structures
+$table_columns_cache = [];
+$table_exists_cache = [];
+
 // Function to get table name for a specific date
-function getTableForDate($conn, $compID, $date) {
+function getTableForDate($conn, $compID, $date, &$table_exists_cache) {
+    global $table_columns_cache;
     $current_month = date('Y-m');
     $target_month = date('Y-m', strtotime($date));
     
@@ -252,18 +257,25 @@ function getTableForDate($conn, $compID, $date) {
         $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
     }
     
-    // Check if table exists
-    $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
-    $tableCheckResult = $conn->query($tableCheckQuery);
+    // Check if table exists (use cache)
+    if (!isset($table_exists_cache[$tableName])) {
+        $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
+        $tableCheckResult = $conn->query($tableCheckQuery);
+        $table_exists_cache[$tableName] = ($tableCheckResult && $tableCheckResult->num_rows > 0);
+    }
     
-    if ($tableCheckResult && $tableCheckResult->num_rows == 0) {
+    if (!$table_exists_cache[$tableName]) {
         // If archive table doesn't exist, fall back to main table
         $tableName = "tbldailystock_" . $compID;
         
-        // Check if main table exists
-        $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
-        $tableCheckResult2 = $conn->query($tableCheckQuery2);
-        if ($tableCheckResult2 && $tableCheckResult2->num_rows == 0) {
+        // Check if main table exists (use cache)
+        if (!isset($table_exists_cache[$tableName])) {
+            $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
+            $tableCheckResult2 = $conn->query($tableCheckQuery2);
+            $table_exists_cache[$tableName] = ($tableCheckResult2 && $tableCheckResult2->num_rows > 0);
+        }
+        
+        if (!$table_exists_cache[$tableName]) {
             $tableName = "tbldailystock_1";
         }
     }
@@ -271,26 +283,40 @@ function getTableForDate($conn, $compID, $date) {
     return $tableName;
 }
 
-// Function to check if table has specific day columns
-function tableHasDayColumns($conn, $tableName, $day) {
-    $day_padded = sprintf('%02d', $day);
+// Function to check if table has specific day columns (cached)
+function tableHasDayColumns($conn, $tableName, $day, &$table_columns_cache) {
+    // Use cache
+    if (isset($table_columns_cache[$tableName])) {
+        $day_padded = sprintf('%02d', $day);
+        $columnName = "DAY_{$day_padded}_OPEN";
+        return isset($table_columns_cache[$tableName][$columnName]);
+    }
     
-    $columns_to_check = [
-        "DAY_{$day_padded}_OPEN",
-        "DAY_{$day_padded}_PURCHASE", 
-        "DAY_{$day_padded}_SALES",
-        "DAY_{$day_padded}_CLOSING"
-    ];
+    // Cache all day columns for this table (check first 31 days)
+    $table_columns_cache[$tableName] = [];
     
-    foreach ($columns_to_check as $column) {
-        $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
-        $columnResult = $conn->query($checkColumnQuery);
-        if ($columnResult && $columnResult->num_rows == 0) {
-            return false;
+    for ($d = 1; $d <= 31; $d++) {
+        $day_padded = sprintf('%02d', $d);
+        $columns_to_check = [
+            "DAY_{$day_padded}_OPEN",
+            "DAY_{$day_padded}_PURCHASE", 
+            "DAY_{$day_padded}_SALES",
+            "DAY_{$day_padded}_CLOSING"
+        ];
+        
+        foreach ($columns_to_check as $column) {
+            $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
+            $columnResult = $conn->query($checkColumnQuery);
+            if ($columnResult && $columnResult->num_rows > 0) {
+                $table_columns_cache[$tableName][$column] = true;
+            }
         }
     }
     
-    return true;
+    // Now check for the requested day
+    $day_padded = sprintf('%02d', $day);
+    $columnName = "DAY_{$day_padded}_OPEN";
+    return isset($table_columns_cache[$tableName][$columnName]);
 }
 
 // Initialize report data structure
@@ -343,7 +369,7 @@ foreach ($dates as $date) {
     $day_padded = sprintf('%02d', $day);
     
     // Get appropriate table for this date
-    $dailyStockTable = getTableForDate($conn, $compID, $date);
+    $dailyStockTable = getTableForDate($conn, $compID, $date, $table_exists_cache);
     
     // Initialize daily data for this date
     $daily_data[$date] = [
@@ -369,8 +395,8 @@ foreach ($dates as $date) {
         ]
     ];
     
-    // Check if table has columns for this day
-    if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
+    // Check if table has columns for this day (using cache)
+    if (!tableHasDayColumns($conn, $dailyStockTable, $day, $table_columns_cache)) {
         continue;
     }
     

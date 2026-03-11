@@ -802,12 +802,12 @@ foreach ($main_display_categories as $category) {
     }
 }
 
-// Format liters to 2 decimal places
-foreach ($summary_liters_main as $category => $data) {
-    foreach ($data as $key => $value) {
-        $summary_liters_main[$category][$key] = number_format($value, 2);
-    }
-}
+// NOTE: Do NOT format here - formatting is done at display time to avoid 'number_format(): Argument #1 must be of type float' error
+// foreach ($summary_liters_main as $category => $data) {
+//     foreach ($data as $key => $value) {
+//         $summary_liters_main[$category][$key] = number_format($value, 2);
+//     }
+// }
 
 // Get all available months in the financial year for display
 $available_months = getAvailableMonthsInYear($conn, $compID, $fin_start_year);
