@@ -34,12 +34,29 @@ function getCompanyInfo($conn, $comp_id) {
 }
 
 /**
- * Create full database backup using PHP (not mysqldump - for Windows compatibility)
+ * Get all tables in the database
+ */
+function getAllTables($conn) {
+    $tables = [];
+    $result = $conn->query("SHOW TABLES");
+    while ($row = $result->fetch_array()) {
+        $tables[] = $row[0];
+    }
+    return $tables;
+}
+
+/**
+ * Create full database backup (complete backup - entire database as-is)
  */
 function createFullBackup($host, $user, $pass, $dbname, $backup_dir) {
     $timestamp = date('Y-m-d_H-i-s');
-    $filename = "winesoft_full_backup_{$timestamp}.sql";
-    $filepath = $backup_dir . '/' . $filename;
+    $filename = "full_database_backup_{$timestamp}.sql";
+    $filepath = $backup_dir . '/complete_backup/' . $filename;
+    
+    // Create directory if not exists
+    if (!is_dir($backup_dir . '/complete_backup')) {
+        mkdir($backup_dir . '/complete_backup', 0755, true);
+    }
     
     // Connect to database
     $conn = new mysqli($host, $user, $pass, $dbname);
@@ -66,25 +83,15 @@ function createFullBackup($host, $user, $pass, $dbname, $backup_dir) {
     fwrite($fp, "-- ====================================================\n");
     fwrite($fp, "-- Database: {$dbname}\n");
     fwrite($fp, "-- Backup Date: " . date('Y-m-d H:i:s') . "\n");
+    fwrite($fp, "-- ====================================================\n");
+    fwrite($fp, "-- THIS IS A COMPLETE DATABASE BACKUP\n");
+    fwrite($fp, "-- When restored, it will replace ALL data in the database\n");
     fwrite($fp, "-- ====================================================\n\n");
     
     fwrite($fp, "SET FOREIGN_KEY_CHECKS=0;\n\n");
     
     // Get all tables in the database
-    $result = $conn->query("SHOW TABLES");
-    if (!$result) {
-        fclose($fp);
-        $conn->close();
-        return [
-            'success' => false,
-            'error' => 'Cannot get tables list'
-        ];
-    }
-    
-    $tables = [];
-    while ($row = $result->fetch_array()) {
-        $tables[] = $row[0];
-    }
+    $tables = getAllTables($conn);
     
     $table_count = 0;
     foreach ($tables as $table) {
@@ -163,8 +170,14 @@ function createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $
     $company_name = preg_replace('/[^a-zA-Z0-9]/', '_', $company['COMP_NAME']);
     
     $timestamp = date('Y-m-d_H-i-s');
-    $filename = "winesoft_{$company_name}_backup_{$timestamp}.sql";
-    $filepath = $backup_dir . '/' . $filename;
+    $filename = "{$company_name}_backup_{$timestamp}.sql";
+    $filepath = $backup_dir . '/company_backup/' . $company_name . '/' . $filename;
+    
+    // Create directory if not exists
+    $company_dir = $backup_dir . '/company_backup/' . $company_name;
+    if (!is_dir($company_dir)) {
+        mkdir($company_dir, 0755, true);
+    }
     
     $fp = fopen($filepath, 'w');
     
@@ -185,53 +198,78 @@ function createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $
     fwrite($fp, "-- ====================================================\n");
     fwrite($fp, "-- IMPORTANT RESTORATION INSTRUCTIONS:\n");
     fwrite($fp, "-- This backup contains ALL data for company: " . $company['COMP_NAME'] . "\n");
-    fwrite($fp, "-- When restored, it will only INSERT or UPDATE records for this company\n");
+    fwrite($fp, "-- When restored, it will INSERT new records for this company\n");
     fwrite($fp, "-- Existing data from OTHER companies will NOT be affected\n");
     fwrite($fp, "-- The backup uses INSERT IGNORE for safe restoration\n");
+    fwrite($fp, "-- DO NOT delete any existing data before restoring\n");
     fwrite($fp, "-- ====================================================\n\n");
     
     fwrite($fp, "SET FOREIGN_KEY_CHECKS=0;\n\n");
     
-    // Transaction tables
+    // Define all company-related tables with their filter conditions
+    // Each table has: table name, company column name, where clause
     $tables_config = [
-        'tblsaleheader' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
-        'tblsaledetails' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
-        'tblpurchases' => ['company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
-        'tblpurchasedetails' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID IN (SELECT CompID FROM tblpurchases WHERE CompID = {$comp_id})"],
-        'tblexpenses' => ['company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
-        'tbl_cash_memo_prints' => ['company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
-        'tblcustomersales' => ['company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
-        'tbl_pending_sales' => ['company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
-        'tblstock' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
-        'tbldailystock' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
-        'tblvoucher' => ['company_col' => 'company_id', 'where' => "company_id = {$comp_id}"],
-        'tblvoucher_details' => ['company_col' => 'company_id', 'where' => "company_id = {$comp_id}"],
-        'tblopeningbalance' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
-        'tblopeningbalancedetails' => ['company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        // Sales tables
+        ['table' => 'tblsaleheader', 'company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        ['table' => 'tblsaledetails', 'company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        
+        // Purchase tables
+        ['table' => 'tblpurchases', 'company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
+        ['table' => 'tblpurchasedetails', 'company_col' => 'COMP_ID', 'where' => "COMP_ID IN (SELECT CompID FROM tblpurchases WHERE CompID = {$comp_id})"],
+        
+        // Expenses
+        ['table' => 'tblexpenses', 'company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
+        
+        // Balance Carried Forward
+        ['table' => 'tblbalcrdf', 'company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
+        
+        // Breakages
+        ['table' => 'tblbreakages', 'company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
+        
+        // Customer Sales
+        ['table' => 'tblcustomersales', 'company_col' => 'CompID', 'where' => "CompID = {$comp_id}"],
+        
+        // Pending Sales
+        ['table' => 'tbl_pending_sales', 'company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
+        
+        // Stock tables
+        ['table' => 'tblstock', 'company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        
+        // Daily Stock tables - backup all for this company (based on item codes used by company)
+        ['table' => 'tbldailystock_1', 'company_col' => null, 'where' => "ITEM_CODE IN (SELECT CODE FROM tblitemmaster WHERE CompID = {$comp_id})", 'is_daily_stock' => true],
+        
+        // Vouchers
+        ['table' => 'tblvoucher', 'company_col' => 'company_id', 'where' => "company_id = {$comp_id}"],
+        ['table' => 'tblvoucher_details', 'company_col' => 'company_id', 'where' => "company_id = {$comp_id}"],
+        
+        // Opening Balance
+        ['table' => 'tblopeningbalance', 'company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        ['table' => 'tblopeningbalancedetails', 'company_col' => 'COMP_ID', 'where' => "COMP_ID = {$comp_id}"],
+        
+        // Cash Memo Prints
+        ['table' => 'tbl_cash_memo_prints', 'company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
+        
+        // Doc Counter
+        ['table' => 'tbl_doc_counter', 'company_col' => 'comp_id', 'where' => "comp_id = {$comp_id}"],
     ];
     
+    $tables_backed_up = [];
+    
     // Process company-specific tables
-    foreach ($tables_config as $table => $config) {
+    foreach ($tables_config as $config) {
+        $table = $config['table'];
+        
         // Check if table exists
         $table_check = $conn->query("SHOW TABLES LIKE '{$table}'");
         if (!$table_check || $table_check->num_rows == 0) {
             continue;
         }
         
-        // Get table structure
-        $result = $conn->query("SHOW CREATE TABLE `{$table}`");
-        if (!$result) continue;
-        
-        $row = $result->fetch_assoc();
-        $create_table = $row['Create Table'];
-        
+        fwrite($fp, "-- --------------------------------------------------------\n");
         fwrite($fp, "-- Table: {$table}\n");
+        fwrite($fp, "-- --------------------------------------------------------\n");
         
-        // For company-specific tables, we'll use backup table to preserve existing data
-        fwrite($fp, "DROP TABLE IF EXISTS `{$table}_backup_{$comp_id}`;\n");
-        fwrite($fp, "{$create_table};\n\n");
-        
-        // Get data for this company
+        // Get data for this company - NO CREATE TABLE, ONLY INSERT IGNORE
         $data_query = "SELECT * FROM `{$table}` WHERE " . $config['where'];
         $data_result = $conn->query($data_query);
         
@@ -255,11 +293,17 @@ function createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $
                 }
             }
             fwrite($fp, "\n");
+            $tables_backed_up[] = $table . " ({$count} records)";
+        } else {
+            $tables_backed_up[] = $table . " (0 records)";
         }
     }
     
-    // Handle customer prices (join with ledger)
+    // Backup customer prices (via ledger)
+    fwrite($fp, "-- --------------------------------------------------------\n");
     fwrite($fp, "-- Table: tblcustomerprices (via ledger)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    
     $prices_result = $conn->query("SELECT cp.* FROM tblcustomerprices cp 
         INNER JOIN tbllheads l ON cp.LCODE = l.LCODE 
         WHERE l.CompID = {$comp_id}");
@@ -268,93 +312,153 @@ function createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $
         $columns = array_keys($prices_result->fetch_assoc());
         $prices_result->data_seek(0);
         
+        $count = 0;
         while ($row_data = $prices_result->fetch_assoc()) {
             $values = [];
             foreach ($row_data as $value) {
                 $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
             }
             fwrite($fp, "INSERT IGNORE INTO tblcustomerprices (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+            $count++;
         }
+        fwrite($fp, "\n");
+        $tables_backed_up[] = "tblcustomerprices ({$count} records)";
+    } else {
+        $tables_backed_up[] = "tblcustomerprices (0 records)";
     }
-    fwrite($fp, "\n");
     
-    // Backup company-specific items
-    $items_table_check = $conn->query("SHOW TABLES LIKE 'tblitems'");
+    // Backup company-specific items (itemmaster)
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    fwrite($fp, "-- Table: tblitemmaster (company specific items)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    
+    $items_table_check = $conn->query("SHOW TABLES LIKE 'tblitemmaster'");
     if ($items_table_check && $items_table_check->num_rows > 0) {
-        fwrite($fp, "-- Table: tblitems (company specific)\n");
-        
-        $create_result = $conn->query("SHOW CREATE TABLE `tblitems`");
-        if ($create_result) {
-            $create_row = $create_result->fetch_assoc();
-            fwrite($fp, "DROP TABLE IF EXISTS `tblitems_backup_{$comp_id}`;\n");
-            fwrite($fp, $create_row['Create Table'] . ";\n\n");
-            
-            // Check if items have company_id column
-            $item_company_check = $conn->query("SHOW COLUMNS FROM tblitems LIKE '%COMP%'");
-            if ($item_company_check && $item_company_check->num_rows > 0) {
-                $data_result = $conn->query("SELECT * FROM tblitems WHERE CompID = {$comp_id}");
-                if ($data_result && $data_result->num_rows > 0) {
-                    $columns = array_keys($data_result->fetch_assoc());
-                    $data_result->data_seek(0);
-                    
-                    while ($row_data = $data_result->fetch_assoc()) {
-                        $values = [];
-                        foreach ($row_data as $value) {
-                            $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
-                        }
-                        fwrite($fp, "INSERT IGNORE INTO tblitems (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
-                    }
-                }
-            } else {
-                // Backup all items
-                $data_result = $conn->query("SELECT * FROM tblitems");
-                if ($data_result && $data_result->num_rows > 0) {
-                    $columns = array_keys($data_result->fetch_assoc());
-                    $data_result->data_seek(0);
-                    
-                    while ($row_data = $data_result->fetch_assoc()) {
-                        $values = [];
-                        foreach ($row_data as $value) {
-                            $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
-                        }
-                        fwrite($fp, "INSERT IGNORE INTO tblitems (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
-                    }
-                }
-            }
-            fwrite($fp, "\n");
-        }
-    }
-    
-    // Backup company ledger (party accounts)
-    $ledger_table_check = $conn->query("SHOW TABLES LIKE 'tbllheads'");
-    if ($ledger_table_check && $ledger_table_check->num_rows > 0) {
-        fwrite($fp, "-- Table: tbllheads (Ledger/Party accounts)\n");
-        
-        $create_result = $conn->query("SHOW CREATE TABLE `tbllheads`");
-        if ($create_result) {
-            $create_row = $create_result->fetch_assoc();
-            fwrite($fp, "DROP TABLE IF EXISTS `tbllheads_backup_{$comp_id}`;\n");
-            fwrite($fp, $create_row['Create Table'] . ";\n\n");
-            
-            $data_result = $conn->query("SELECT * FROM tbllheads WHERE CompID = {$comp_id}");
+        // Check if items have company_id column
+        $item_company_check = $conn->query("SHOW COLUMNS FROM tblitemmaster LIKE 'CompID'");
+        if ($item_company_check && $item_company_check->num_rows > 0) {
+            $data_result = $conn->query("SELECT * FROM tblitemmaster WHERE CompID = {$comp_id}");
             if ($data_result && $data_result->num_rows > 0) {
                 $columns = array_keys($data_result->fetch_assoc());
                 $data_result->data_seek(0);
                 
+                $count = 0;
                 while ($row_data = $data_result->fetch_assoc()) {
                     $values = [];
                     foreach ($row_data as $value) {
                         $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
                     }
-                    fwrite($fp, "INSERT IGNORE INTO tbllheads (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+                    fwrite($fp, "INSERT IGNORE INTO tblitemmaster (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+                    $count++;
                 }
+                fwrite($fp, "\n");
+                $tables_backed_up[] = "tblitemmaster ({$count} records)";
+            } else {
+                $tables_backed_up[] = "tblitemmaster (0 records)";
             }
-            fwrite($fp, "\n");
+        } else {
+            // Backup all items if no company column
+            $data_result = $conn->query("SELECT * FROM tblitemmaster");
+            if ($data_result && $data_result->num_rows > 0) {
+                $columns = array_keys($data_result->fetch_assoc());
+                $data_result->data_seek(0);
+                
+                $count = 0;
+                while ($row_data = $data_result->fetch_assoc()) {
+                    $values = [];
+                    foreach ($row_data as $value) {
+                        $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
+                    }
+                    fwrite($fp, "INSERT IGNORE INTO tblitemmaster (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+                    $count++;
+                }
+                fwrite($fp, "\n");
+                $tables_backed_up[] = "tblitemmaster ({$count} records)";
+            }
         }
     }
     
-    // Add backup marker table to track company backups
-    fwrite($fp, "-- Backup marker table\n");
+    // Backup company ledger (party accounts)
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    fwrite($fp, "-- Table: tbllheads (Ledger/Party accounts)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    
+    $ledger_table_check = $conn->query("SHOW TABLES LIKE 'tbllheads'");
+    if ($ledger_table_check && $ledger_table_check->num_rows > 0) {
+        $data_result = $conn->query("SELECT * FROM tbllheads WHERE CompID = {$comp_id}");
+        if ($data_result && $data_result->num_rows > 0) {
+            $columns = array_keys($data_result->fetch_assoc());
+            $data_result->data_seek(0);
+            
+            $count = 0;
+            while ($row_data = $data_result->fetch_assoc()) {
+                $values = [];
+                foreach ($row_data as $value) {
+                    $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
+                }
+                fwrite($fp, "INSERT IGNORE INTO tbllheads (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+                $count++;
+            }
+            fwrite($fp, "\n");
+            $tables_backed_up[] = "tbllheads ({$count} records)";
+        } else {
+            $tables_backed_up[] = "tbllheads (0 records)";
+        }
+    }
+    
+    // Backup company financial year
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    fwrite($fp, "-- Table: tblcompany_finyear (company financial year)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    
+    $finyear_check = $conn->query("SHOW TABLES LIKE 'tblcompany_finyear'");
+    if ($finyear_check && $finyear_check->num_rows > 0) {
+        $data_result = $conn->query("SELECT * FROM tblcompany_finyear WHERE company_id = {$comp_id}");
+        if ($data_result && $data_result->num_rows > 0) {
+            $columns = array_keys($data_result->fetch_assoc());
+            $data_result->data_seek(0);
+            
+            $count = 0;
+            while ($row_data = $data_result->fetch_assoc()) {
+                $values = [];
+                foreach ($row_data as $value) {
+                    $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
+                }
+                fwrite($fp, "INSERT IGNORE INTO tblcompany_finyear (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+                $count++;
+            }
+            fwrite($fp, "\n");
+            $tables_backed_up[] = "tblcompany_finyear ({$count} records)";
+        }
+    }
+    
+    // Backup company record itself
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    fwrite($fp, "-- Table: tblcompany (this company record)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    
+    $data_result = $conn->query("SELECT * FROM tblcompany WHERE CompID = {$comp_id}");
+    if ($data_result && $data_result->num_rows > 0) {
+        $columns = array_keys($data_result->fetch_assoc());
+        $data_result->data_seek(0);
+        
+        $count = 0;
+        while ($row_data = $data_result->fetch_assoc()) {
+            $values = [];
+            foreach ($row_data as $value) {
+                $values[] = $value === null ? "NULL" : "'" . $conn->real_escape_string($value) . "'";
+            }
+            fwrite($fp, "INSERT IGNORE INTO tblcompany (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $values) . ");\n");
+            $count++;
+        }
+        fwrite($fp, "\n");
+        $tables_backed_up[] = "tblcompany ({$count} records)";
+    }
+    
+    // Add backup marker table to track company backups (ONLY CREATE THIS IF NEEDED)
+    fwrite($fp, "-- --------------------------------------------------------\n");
+    fwrite($fp, "-- Backup marker table (optional)\n");
+    fwrite($fp, "-- --------------------------------------------------------\n");
     fwrite($fp, "CREATE TABLE IF NOT EXISTS `tblcompany_backup_marker` (\n");
     fwrite($fp, "  `id` INT AUTO_INCREMENT PRIMARY KEY,\n");
     fwrite($fp, "  `comp_id` INT NOT NULL,\n");
@@ -374,7 +478,8 @@ function createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $
             'filepath' => $filepath,
             'size' => filesize($filepath),
             'type' => 'company',
-            'company_name' => $company['COMP_NAME']
+            'company_name' => $company['COMP_NAME'],
+            'tables' => implode(", ", $tables_backed_up)
         ];
     }
     
@@ -399,10 +504,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
     $result = null;
     
     if ($backup_type === 'full') {
-        // Create full database backup using PHP
+        // Create full database backup (entire database as-is)
         $result = createFullBackup($host, $user, $pass, $dbname, $backup_dir);
     } elseif ($backup_type === 'company' && $company_id) {
-        // Create company-specific backup
+        // Create company-specific backup (only this company's data, INSERT IGNORE)
         $result = createCompanyBackup($conn, $host, $user, $pass, $dbname, $backup_dir, $company_id, $fin_year_id);
     } else {
         $result = [
@@ -482,6 +587,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
             padding: 15px;
             margin-bottom: 20px;
         }
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .success-box {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -495,8 +612,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
             <div class="info-box">
                 <h5><i class="fas fa-info-circle"></i> About Backups</h5>
                 <ul class="mb-0">
-                    <li><strong>Full Database Backup:</strong> Creates a complete backup of all companies and all data in the database</li>
-                    <li><strong>Company Backup:</strong> Creates a backup of only the current company's data. When restored, it will only update/insert records for this company without affecting other companies.</li>
+                    <li><strong>Full Database Backup:</strong> Creates a complete backup of ALL companies and ALL data in the database. When restored, it will replace ALL data.</li>
+                    <li><strong>Company Backup:</strong> Creates a backup of only the current company's data. Uses INSERT IGNORE so when restored, it will only add records for this company WITHOUT deleting any existing data from other companies.</li>
                 </ul>
             </div>
 
@@ -521,7 +638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
                                 <i class="fas fa-database backup-icon"></i>
                                 <h5>Full Database Backup</h5>
                                 <p class="text-muted mb-0">
-                                    Backup all companies and all data in the database.<br>
+                                    Backup ALL companies and ALL data.<br>
                                     <small>Recommended for complete system backup</small>
                                 </p>
                             </div>
@@ -570,18 +687,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
                 <?php
                 $backup_dir = __DIR__ . '/backups';
                 $backups = [];
-                if (is_dir($backup_dir)) {
-                    $files = scandir($backup_dir);
+                
+                // Function to scan directories recursively
+                function scanBackupDir($dir, $base_dir = '') {
+                    $results = [];
+                    if (!is_dir($dir)) return $results;
+                    
+                    $files = scandir($dir);
                     foreach ($files as $file) {
-                        if (pathinfo($file, PATHINFO_EXTENSION) === 'sql') {
-                            $filepath = $backup_dir . '/' . $file;
-                            $backups[] = [
+                        if ($file === '.' || $file === '..') continue;
+                        
+                        $full_path = $dir . '/' . $file;
+                        $relative_path = $base_dir ? $base_dir . '/' . $file : $file;
+                        
+                        if (is_dir($full_path)) {
+                            $results = array_merge($results, scanBackupDir($full_path, $relative_path));
+                        } elseif (pathinfo($file, PATHINFO_EXTENSION) === 'sql') {
+                            $results[] = [
                                 'name' => $file,
-                                'size' => filesize($filepath),
-                                'date' => filemtime($filepath)
+                                'path' => $relative_path,
+                                'full_path' => $full_path,
+                                'size' => filesize($full_path),
+                                'date' => filemtime($full_path)
                             ];
                         }
                     }
+                    return $results;
+                }
+                
+                if (is_dir($backup_dir)) {
+                    $backups = scanBackupDir($backup_dir);
                     // Sort by date, newest first
                     usort($backups, function($a, $b) {
                         return $b['date'] - $a['date'];
@@ -601,7 +736,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach (array_slice($backups, 0, 10) as $backup): ?>
+                                <?php foreach (array_slice($backups, 0, 20) as $backup): ?>
                                     <tr>
                                         <td>
                                             <i class="fas fa-file-sql text-success me-2"></i>
@@ -610,7 +745,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_backup'])) {
                                         <td><?= number_format($backup['size'] / 1024, 2) ?> KB</td>
                                         <td><?= date('d-m-Y H:i:s', $backup['date']) ?></td>
                                         <td>
-                                            <a href="backups/<?= urlencode($backup['name']) ?>" 
+                                            <a href="backups/<?= urlencode($backup['path']) ?>" 
                                                class="btn btn-sm btn-success" 
                                                download>
                                                 <i class="fas fa-download"></i> Download
@@ -698,10 +833,12 @@ $(document).ready(function() {
                     
                     if (response.type === 'company') {
                         message += '<br>Company: ' + response.company_name;
-                        message += '<br><small class="text-muted">This backup can be safely restored without affecting other companies</small>';
+                        message += '<br><br><div class="success-box"><i class="fas fa-info-circle"></i> This backup uses INSERT IGNORE. When restored, it will only add records for this company WITHOUT deleting any existing data from other companies.</div>';
+                    } else if (response.type === 'full') {
+                        message += '<br><br><div class="warning-box"><i class="fas fa-exclamation-triangle"></i> This is a COMPLETE database backup. When restored, it will replace ALL data in the database.</div>';
                     }
                     
-                    message += '<br><br><a href="backups/' + encodeURIComponent(response.filename) + '" class="btn btn-success btn-sm" download><i class="fas fa-download"></i> Download Backup</a>';
+                    message += '<br><br><a href="backups/' + encodeURIComponent(response.filepath.split('/').pop()) + '" class="btn btn-success btn-sm" download><i class="fas fa-download"></i> Download Backup</a>';
                     message += ' <a href="backup.php" class="btn btn-primary btn-sm"><i class="fas fa-refresh"></i> Refresh Page</a>';
                     
                     $('#resultMessage').html('<div class="alert alert-' + alertClass + '">' + message + '</div>');

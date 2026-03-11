@@ -90,6 +90,30 @@ debug_log("Allowed classes", $allowed_classes);
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
 
+// ==================== NEW: Find First Opening Batch Date ====================
+// Get first batch data after mode is set so it can be used throughout the script
+debug_log("Calling findFirstOpeningBatchDate with", [
+    'comp_id' => $comp_id,
+    'mode' => $mode,
+    'fy_start' => $fy_dates['start'],
+    'fy_end' => $fy_dates['end'],
+    'allowed_classes' => $allowed_classes
+]);
+
+$first_batch_data = findFirstOpeningBatchDate(
+    $conn, 
+    $comp_id, 
+    $mode, 
+    $fy_dates['start'], 
+    $fy_dates['end'], 
+    $allowed_classes
+);
+
+debug_log("First batch data result", $first_batch_data);
+
+debug_log("First batch data", $first_batch_data);
+$mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
+
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
@@ -131,7 +155,7 @@ if ($table_check->num_rows > 0) {
     }
 }
 
-// Function to get archive table name for a specific month - FIXED: Added null check
+// Function to get archive table name for a specific month - FIXED: Added null check and better validation
 function getArchiveTableName($comp_id, $month) {
     // Check if month is valid
     if (empty($month) || $month === null) {
@@ -142,13 +166,13 @@ function getArchiveTableName($comp_id, $month) {
     // Validate month format (YYYY-MM)
     if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
         debug_log("getArchiveTableName called with invalid month format", ['month' => $month]);
-        return "tbldailystock_{$comp_id}_invalid";
+        return null;
     }
     
     $timestamp = strtotime($month . '-01');
     if ($timestamp === false) {
         debug_log("getArchiveTableName: strtotime failed for month", ['month' => $month]);
-        return "tbldailystock_{$comp_id}_invalid";
+        return null;
     }
     
     $month_year = date('m_y', $timestamp);
@@ -988,9 +1012,393 @@ function extractVolumeFromDetails($details, $details2, $item_code = null, $conn 
     return 0; // Unknown volume
 }
 
-// ==================== OPENING BALANCE SUMMARY FUNCTION (UPDATED) ====================
-// Function to get opening balance summary with volume breakdown
-function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = []) {
+// ==================== HELPER FUNCTION: Generate months in range ====================
+/**
+ * Generate all months between two dates (inclusive)
+ * 
+ * @param string $start_date Start date in Y-m-d format
+ * @param string $end_date End date in Y-m-d format
+ * @return array Array of months in Y-m format
+ */
+function generateMonthsInRange($start_date, $end_date) {
+    $months = [];
+    
+    // Validate input dates
+    if (empty($start_date) || empty($end_date)) {
+        debug_log("generateMonthsInRange: Invalid dates", ['start' => $start_date, 'end' => $end_date]);
+        return $months;
+    }
+    
+    $start = trim($start_date);
+    $end = trim($end_date);
+    
+    // Parse dates properly
+    $start_ts = strtotime($start);
+    $end_ts = strtotime($end);
+    
+    if ($start_ts === false || $end_ts === false) {
+        debug_log("generateMonthsInRange: strtotime failed", ['start' => $start, 'end' => $end]);
+        return $months;
+    }
+    
+    // Start from first day of start month
+    $current = date('Y-m-01', $start_ts);
+    $end_month = date('Y-m-01', $end_ts);
+    
+    debug_log("generateMonthsInRange: Date range", ['start' => $current, 'end' => $end_month]);
+    
+    while ($current <= $end_month) {
+        $months[] = date('Y-m', strtotime($current));
+        $current = date('Y-m-01', strtotime($current . ' +1 month'));
+    }
+    
+    debug_log("generateMonthsInRange: Generated months", ['count' => count($months), 'months' => $months]);
+    
+    return $months;
+}
+
+// ==================== NEW FUNCTION: Find First Opening Batch Date ====================
+/**
+ * Find the earliest date in financial year where any item has DAY_XX_OPEN > 0
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $comp_id Company ID
+ * @param string $mode Liquor mode (F/C/O)
+ * @param string $fy_start Financial year start (Y-m-d)
+ * @param string $fy_end Financial year end (Y-m-d)
+ * @param array $allowed_classes Allowed class codes from license
+ * @return array|null Returns ['date' => 'Y-m-d', 'month' => 'Y-m', 'day' => 'dd'] or null
+ */
+function findFirstOpeningBatchDate($conn, $comp_id, $mode, $fy_start, $fy_end, $allowed_classes) {
+    global $fy_dates;
+    
+    debug_log("findFirstOpeningBatchDate called", [
+        'comp_id' => $comp_id,
+        'mode' => $mode,
+        'fy_start' => $fy_start,
+        'fy_end' => $fy_end,
+        'allowed_classes' => $allowed_classes
+    ]);
+    
+    // Generate all months from fy_start to fy_end
+    $months = generateMonthsInRange($fy_start, $fy_end);
+    
+    debug_log("Generated months", ['months' => $months]);
+    
+    if (empty($allowed_classes)) {
+        debug_log("No allowed classes, returning null");
+        return null;
+    }
+    
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    
+    foreach ($months as $month) {
+        // Determine correct table
+        $current_month = date('Y-m');
+        $table_name = ($month == $current_month) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $month);
+        
+        if (!$table_name) continue;
+        
+        // Check if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE '$table_name'");
+        if ($table_check->num_rows == 0) continue;
+        
+        // Get days in this month
+        $year_month = explode('-', $month);
+        $year = $year_month[0];
+        $month_num = $year_month[1];
+        $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+        
+        // Build DAY_XX_OPEN > 0 conditions for all days
+        $day_conditions = [];
+        for ($day = 1; $day <= $days_in_month; $day++) {
+            $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $day_conditions[] = "DAY_{$day_padded}_OPEN > 0";
+        }
+        
+        if (empty($day_conditions)) continue;
+        
+        // Query for any item with opening balance in this month
+        $query = "SELECT 
+                    STK_MONTH,
+                    ITEM_CODE,
+                    LIQ_FLAG
+                  FROM $table_name 
+                  WHERE STK_MONTH = ? 
+                    AND LIQ_FLAG = ?
+                    AND (" . implode(' OR ', $day_conditions) . ")
+                  LIMIT 1";
+        
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("ss", $month, $mode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows > 0) {
+            // Found opening balance in this month, now find the specific day
+            $row = $result->fetch_assoc();
+            $stmt->close();
+            
+            debug_log("Found opening balance in month", ['month' => $month, 'item_code' => $row['ITEM_CODE']]);
+            
+            // Find which day has the opening balance
+            $item_code = $row['ITEM_CODE'];
+            
+            for ($day = 1; $day <= $days_in_month; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                
+                $check_query = "SELECT DAY_{$day_padded}_OPEN as opening 
+                               FROM $table_name 
+                               WHERE STK_MONTH = ? 
+                                 AND ITEM_CODE = ? 
+                                 AND LIQ_FLAG = ?
+                                 AND DAY_{$day_padded}_OPEN > 0
+                               LIMIT 1";
+                
+                $check_stmt = $conn->prepare($check_query);
+                $check_stmt->bind_param("sss", $month, $item_code, $mode);
+                $check_stmt->execute();
+                $check_result = $check_stmt->get_result();
+                
+                if ($check_result->num_rows > 0) {
+                    $check_stmt->close();
+                    // Found the first day with opening balance
+                    debug_log("Found first batch date", ['date' => $month . '-' . $day_padded, 'month' => $month, 'day' => $day_padded]);
+                    return [
+                        'date' => $month . '-' . $day_padded,
+                        'month' => $month,
+                        'day' => $day_padded,
+                        'day_num' => $day
+                    ];
+                }
+                $check_stmt->close();
+            }
+        }
+        $stmt->close();
+    }
+    
+    debug_log("No first batch date found, returning null");
+    
+    return null;
+}
+
+// ==================== NEW FUNCTION: Check for prior purchases ====================
+/**
+ * Check if an item had any purchase entries before a given cutoff date
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $comp_id Company ID
+ * @param string $item_code Item code to check
+ * @param string $cutoff_date Cutoff date in 'Y-m-d' format
+ * @param string $mode Liquor mode
+ * @param string $fy_start Financial year start date
+ * @return boolean True if purchases exist before cutoff date
+ */
+function hasPurchaseBeforeDate($conn, $comp_id, $item_code, $cutoff_date, $mode, $fy_start = null) {
+    global $fy_dates;
+    
+    // Use provided fy_start or get from session
+    if ($fy_start === null && isset($GLOBALS['fy_dates'])) {
+        $fy_start = $GLOBALS['fy_dates']['start'];
+    }
+    
+    // Parse cutoff date
+    $cutoff_timestamp = strtotime($cutoff_date);
+    if ($cutoff_timestamp === false) return false;
+    
+    $cutoff_year_month = date('Y-m', $cutoff_timestamp);
+    $cutoff_day = (int)date('d', $cutoff_timestamp);
+    
+    // Default to beginning of current year if no fy_start
+    if ($fy_start === null) {
+        $fy_start = date('Y') . '-04-01';
+    }
+    
+    // Generate all months from financial year start to month before cutoff
+    $months_to_check = generateMonthsInRange($fy_start, $cutoff_date);
+    
+    foreach ($months_to_check as $month) {
+        $current_month = date('Y-m');
+        $table_name = ($month == $current_month) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $month);
+        
+        if (!$table_name) continue;
+        
+        // Check if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE '$table_name'");
+        if ($table_check->num_rows == 0) continue;
+        
+        $year_month = explode('-', $month);
+        $year = $year_month[0];
+        $month_num = $year_month[1];
+        $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+        
+        if ($month == $cutoff_year_month) {
+            // For cutoff month, only check days BEFORE cutoff day
+            $max_day = $cutoff_day - 1;
+            if ($max_day < 1) continue;
+            
+            $day_conditions = [];
+            for ($day = 1; $day <= $max_day; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $day_conditions[] = "DAY_{$day_padded}_PURCHASE > 0";
+            }
+            
+            if (empty($day_conditions)) continue;
+            
+            $query = "SELECT 1 FROM $table_name 
+                      WHERE ITEM_CODE = ? 
+                        AND STK_MONTH = ? 
+                        AND LIQ_FLAG = ?
+                        AND (" . implode(' OR ', $day_conditions) . ")
+                      LIMIT 1";
+            
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("sss", $item_code, $month, $mode);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $stmt->close();
+                return true;
+            }
+            $stmt->close();
+        } else {
+            // For months before cutoff month, check ALL days
+            $day_conditions = [];
+            for ($day = 1; $day <= $days_in_month; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $day_conditions[] = "DAY_{$day_padded}_PURCHASE > 0";
+            }
+            
+            if (empty($day_conditions)) continue;
+            
+            $query = "SELECT 1 FROM $table_name 
+                      WHERE ITEM_CODE = ? 
+                        AND STK_MONTH = ? 
+                        AND LIQ_FLAG = ?
+                        AND (" . implode(' OR ', $day_conditions) . ")
+                      LIMIT 1";
+            
+            $stmt = $conn->prepare($query);
+            $stmt->bind_param("sss", $item_code, $month, $mode);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $stmt->close();
+                return true;
+            }
+            $stmt->close();
+        }
+    }
+    
+    return false;
+}
+
+// ==================== NEW FUNCTION: Get prior purchases subquery ====================
+/**
+ * Generate a subquery to check for purchases before a given date
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $comp_id Company ID
+ * @param string $cutoff_date Cutoff date in 'Y-m-d' format
+ * @param string $mode Liquor mode
+ * @param string $fy_start Financial year start date
+ * @return string SQL subquery
+ */
+function getPriorPurchasesSubquery($conn, $comp_id, $cutoff_date, $mode, $fy_start = null) {
+    global $fy_dates;
+    
+    // Use provided fy_start or get from global
+    if ($fy_start === null && isset($GLOBALS['fy_dates'])) {
+        $fy_start = $GLOBALS['fy_dates']['start'];
+    }
+    
+    // Default to beginning of current year if no fy_start
+    if ($fy_start === null) {
+        $fy_start = date('Y') . '-04-01';
+    }
+    
+    // Parse cutoff date
+    $cutoff_timestamp = strtotime($cutoff_date);
+    if ($cutoff_timestamp === false) return "SELECT NULL as ITEM_CODE, NULL as STK_MONTH WHERE 1 = 0";
+    
+    $cutoff_year_month = date('Y-m', $cutoff_timestamp);
+    $cutoff_day = (int)date('d', $cutoff_timestamp);
+    
+    // Generate all months from financial year start to month before cutoff
+    $months_to_check = generateMonthsInRange($fy_start, $cutoff_date);
+    
+    $union_parts = [];
+    
+    foreach ($months_to_check as $month) {
+        $current_month = date('Y-m');
+        $table_name = ($month == $current_month) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $month);
+        
+        if (!$table_name) continue;
+        
+        // Check if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE '$table_name'");
+        if ($table_check->num_rows == 0) continue;
+        
+        $year_month = explode('-', $month);
+        $year = $year_month[0];
+        $month_num = $year_month[1];
+        $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+        
+        if ($month == $cutoff_year_month) {
+            // For cutoff month, only check days BEFORE cutoff day
+            $max_day = $cutoff_day - 1;
+            if ($max_day < 1) continue;
+            
+            $day_conditions = [];
+            for ($day = 1; $day <= $max_day; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $day_conditions[] = "DAY_{$day_padded}_PURCHASE > 0";
+            }
+            
+            if (!empty($day_conditions)) {
+                $union_parts[] = "SELECT ITEM_CODE, STK_MONTH FROM $table_name 
+                                  WHERE STK_MONTH = '$month' 
+                                    AND LIQ_FLAG = '$mode'
+                                    AND (" . implode(' OR ', $day_conditions) . ")";
+            }
+        } else {
+            // For months before cutoff month, check ALL days
+            $day_conditions = [];
+            for ($day = 1; $day <= $days_in_month; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $day_conditions[] = "DAY_{$day_padded}_PURCHASE > 0";
+            }
+            
+            if (!empty($day_conditions)) {
+                $union_parts[] = "SELECT ITEM_CODE, STK_MONTH FROM $table_name 
+                                  WHERE STK_MONTH = '$month' 
+                                    AND LIQ_FLAG = '$mode'
+                                    AND (" . implode(' OR ', $day_conditions) . ")";
+            }
+        }
+    }
+    
+    if (empty($union_parts)) {
+        return "SELECT NULL as ITEM_CODE, NULL as STK_MONTH WHERE 1 = 0";
+    }
+    
+    return implode(" UNION ALL ", $union_parts);
+}
+
+// ==================== OPENING BALANCE SUMMARY FUNCTION (UPDATED FOR FIRST BATCH) ====================
+// Function to get opening balance summary with volume breakdown - now filtered by first batch only
+function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [], $first_batch_data = null) {
+    global $fy_dates;
+    
+    debug_log("getOpeningBalanceSummary called", [
+        'mode' => $mode,
+        'comp_id' => $comp_id,
+        'allowed_classes' => $allowed_classes,
+        'first_batch_data' => $first_batch_data
+    ]);
+    
     $summary = [
         'total_items' => 0,
         'total_stock' => 0,
@@ -1003,10 +1411,48 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
         'volume_breakdown' => []
     ];
     
+    // If no first batch data, return empty summary
+    if (!$first_batch_data) {
+        debug_log("No first batch data, returning empty summary");
+        return $summary;
+    }
+    
     try {
+        $batch_month = $first_batch_data['month'];
+        $batch_day = $first_batch_data['day'];
+        $batch_date = $first_batch_data['date'];
+        $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
+        
+        debug_log("Processing summary", [
+            'batch_month' => $batch_month,
+            'batch_day' => $batch_day,
+            'batch_date' => $batch_date,
+            'batch_table' => $batch_table
+        ]);
+        
+        if (!$batch_table) {
+            debug_log("No batch table found");
+            return $summary;
+        }
+        
+        // Check if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+        if ($table_check->num_rows == 0) {
+            debug_log("Batch table does not exist", ['table' => $batch_table]);
+            return $summary;
+        }
+        
         // Build query based on license filtering - USING CLASS_CODE_NEW and CLASS for backward compatibility
         if (!empty($allowed_classes)) {
+            debug_log("Building query with allowed classes", ['count' => count($allowed_classes)]);
+            
             $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            
+            // Get prior purchases subquery
+            $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
+            
+            debug_log("Prior purchases subquery generated", ['subquery_length' => strlen($prior_purchases_subquery)]);
+            
             $query = "SELECT 
                         im.CODE,
                         im.DETAILS,
@@ -1015,30 +1461,26 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
                         im.CLASS_CODE_NEW,
                         im.SUBCLASS_CODE_NEW,
                         im.SIZE_CODE,
-                        COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
+                        ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
+                      INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                      WHERE im.LIQ_FLAG = ? 
-                      AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))";
-            $params = array_merge([$mode], $allowed_classes, $allowed_classes);
-            $types = "s" . str_repeat('s', count($allowed_classes) * 2);
+                      WHERE ds.STK_MONTH = ?
+                        AND ds.LIQ_FLAG = ?
+                        AND ds.DAY_{$batch_day}_OPEN > 0
+                        AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                        AND NOT EXISTS (
+                            SELECT 1 FROM (
+                                $prior_purchases_subquery
+                            ) pp
+                            WHERE pp.ITEM_CODE = im.CODE
+                        )";
+            $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
+            $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
         } else {
-            $query = "SELECT 
-                        im.CODE,
-                        im.DETAILS,
-                        im.DETAILS2,
-                        im.CLASS,
-                        im.CLASS_CODE_NEW,
-                        im.SUBCLASS_CODE_NEW,
-                        im.SIZE_CODE,
-                        COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
-                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
-                      FROM tblitemmaster im
-                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                      WHERE 1 = 0";
-            $params = [$mode];
-            $types = "s";
+            debug_log("No allowed classes, returning empty summary");
+            return $summary;
         }
         
         $stmt = $conn->prepare($query);
@@ -1049,6 +1491,8 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
         $result = $stmt->get_result();
         $items = $result->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+        
+        debug_log("Summary query returned items", ['count' => count($items)]);
         
         // Calculate summary statistics
         $total_stock = 0;
@@ -1150,8 +1594,17 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [])
     return $summary;
 }
 
-// ==================== VOLUME SUMMARY FUNCTION (UPDATED) ====================
-function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes = []) {
+// ==================== VOLUME SUMMARY FUNCTION (UPDATED FOR FIRST BATCH) ====================
+function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes = [], $first_batch_data = null) {
+    global $fy_dates;
+    
+    debug_log("getOpeningBalanceVolumeSummary called", [
+        'mode' => $mode,
+        'comp_id' => $comp_id,
+        'allowed_classes' => $allowed_classes,
+        'first_batch_data' => $first_batch_data
+    ]);
+    
     $volumeSummary = [
         'SPIRITS' => [],
         'WINE' => [],
@@ -1160,6 +1613,52 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
         'COUNTRY LIQUOR' => [],
         'OTHER' => []
     ];
+    
+    // If no first batch data, return empty summary
+    if (!$first_batch_data) {
+        debug_log("No first batch data, returning empty summary");
+        // Initialize all sizes to 0
+        $allSizes = [
+            '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+            '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+            '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+        ];
+        
+        foreach ($volumeSummary as $category => $data) {
+            foreach ($allSizes as $size) {
+                $volumeSummary[$category][$size] = 0;
+            }
+        }
+        return $volumeSummary;
+    }
+    
+    $batch_month = $first_batch_data['month'];
+    $batch_day = $first_batch_data['day'];
+    $batch_date = $first_batch_data['date'];
+    $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
+    
+    debug_log("Processing volume summary", [
+        'batch_month' => $batch_month,
+        'batch_day' => $batch_day,
+        'batch_date' => $batch_date,
+        'batch_table' => $batch_table
+    ]);
+    
+    if (!$batch_table) {
+        debug_log("No batch table found");
+        return $volumeSummary;
+    }
+    
+    if (!$batch_table) {
+        return $volumeSummary;
+    }
+    
+    // Check if table exists
+    $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+    if ($table_check->num_rows == 0) {
+        debug_log("Batch table does not exist", ['table' => $batch_table]);
+        return $volumeSummary;
+    }
     
     // Initialize all volume sizes to 0 for each category
     $allSizes = [
@@ -1175,9 +1674,13 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
     }
     
     try {
-        // Build query to get all items with their stock - USING CLASS_CODE_NEW and CLASS
+        // Build query to get first batch items with their stock - USING CLASS_CODE_NEW and CLASS
         if (!empty($allowed_classes)) {
             $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+            
+            // Get prior purchases subquery
+            $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
+            
             $query = "SELECT 
                         im.CODE,
                         im.DETAILS,
@@ -1186,28 +1689,26 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                         im.CLASS_CODE_NEW,
                         im.SUBCLASS_CODE_NEW,
                         im.SIZE_CODE,
+                        ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
                         COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
+                      INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                      WHERE im.LIQ_FLAG = ? 
-                      AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))";
-            $params = array_merge([$mode], $allowed_classes, $allowed_classes);
-            $types = "s" . str_repeat('s', count($allowed_classes) * 2);
+                      WHERE ds.STK_MONTH = ?
+                        AND ds.LIQ_FLAG = ?
+                        AND ds.DAY_{$batch_day}_OPEN > 0
+                        AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                        AND NOT EXISTS (
+                            SELECT 1 FROM (
+                                $prior_purchases_subquery
+                            ) pp
+                            WHERE pp.ITEM_CODE = im.CODE
+                        )";
+            $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
+            $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
         } else {
-            $query = "SELECT 
-                        im.CODE,
-                        im.DETAILS,
-                        im.DETAILS2,
-                        im.CLASS,
-                        im.CLASS_CODE_NEW,
-                        im.SUBCLASS_CODE_NEW,
-                        im.SIZE_CODE,
-                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
-                      FROM tblitemmaster im
-                      LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                      WHERE 1 = 0";
-            $params = [$mode];
-            $types = "s";
+            debug_log("No allowed classes");
+            return $volumeSummary;
         }
         
         $stmt = $conn->prepare($query);
@@ -1217,8 +1718,18 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
         $stmt->execute();
         $result = $stmt->get_result();
         
+        $row_count = $result->num_rows;
+        debug_log("Volume summary query returned rows", ['count' => $row_count]);
+        
         while ($item = $result->fetch_assoc()) {
             $current_stock = (int)$item['CURRENT_STOCK'];
+            debug_log("Processing item", [
+                'code' => $item['CODE'],
+                'current_stock' => $current_stock,
+                'class_code_new' => $item['CLASS_CODE_NEW'],
+                'class' => $item['CLASS']
+            ]);
+            
             if ($current_stock > 0) {
                 // Get hierarchy information - use CLASS_CODE_NEW if available, otherwise fallback to CLASS
                 $class_to_use = !empty($item['CLASS_CODE_NEW']) ? $item['CLASS_CODE_NEW'] : $item['CLASS'];
@@ -1231,23 +1742,41 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                 $display_category = $hierarchy['display_category'];
                 $ml_volume = $hierarchy['ml_volume'];
                 
+                debug_log("Item hierarchy", [
+                    'display_category' => $display_category,
+                    'ml_volume' => $ml_volume
+                ]);
+                
                 // Get volume label
                 $volumeColumn = getVolumeLabel($ml_volume);
                 
                 // Add to summary
                 if (isset($volumeSummary[$display_category][$volumeColumn])) {
                     $volumeSummary[$display_category][$volumeColumn] += $current_stock;
+                    debug_log("Added to volume summary", [
+                        'category' => $display_category,
+                        'volume' => $volumeColumn,
+                        'new_total' => $volumeSummary[$display_category][$volumeColumn]
+                    ]);
                 } elseif ($display_category !== 'OTHER') {
                     // For unknown sizes in known categories, add to smallest size as fallback
                     $volumeSummary[$display_category]['50 ML'] += $current_stock;
+                    debug_log("Added to fallback (50 ML)", [
+                        'category' => $display_category,
+                        'new_total' => $volumeSummary[$display_category]['50 ML']
+                    ]);
                 }
             }
         }
         
         $stmt->close();
         
+        // Log final summary
+        debug_log("Final volume summary", $volumeSummary);
+        
     } catch (Exception $e) {
         error_log("Error fetching volume summary: " . $e->getMessage());
+        debug_log("Exception in volume summary", ['error' => $e->getMessage()]);
     }
     
     return $volumeSummary;
@@ -1259,9 +1788,61 @@ if (isset($_GET['export'])) {
     
     $exportType = $_GET['export'];
     
-    // Build query with license filtering - USING CLASS_CODE_NEW and CLASS
-    $query_params = [$mode];
-    $query_types = "s";
+    // If no first batch data, export empty file
+    if (!$first_batch_data) {
+        if ($exportType === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=opening_balance_empty_' . $mode . '_' . date('Y-m-d') . '.csv');
+            
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            
+            // Headers
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
+            
+            fclose($output);
+            debug_log("Export completed - empty (no first batch data)");
+            exit;
+        }
+    }
+    
+    $batch_month = $first_batch_data['month'];
+    $batch_day = $first_batch_data['day'];
+    $batch_date = $first_batch_data['date'];
+    $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
+    
+    if (!$batch_table) {
+        if ($exportType === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=opening_balance_empty_' . $mode . '_' . date('Y-m-d') . '.csv');
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
+            fclose($output);
+            exit;
+        }
+    }
+    
+    // Check if table exists
+    $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+    if ($table_check->num_rows == 0) {
+        if ($exportType === 'csv') {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=opening_balance_empty_' . $mode . '_' . date('Y-m-d') . '.csv');
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
+            fclose($output);
+            exit;
+        }
+    }
+    
+    // Build query with license filtering and first batch filter - USING CLASS_CODE_NEW and CLASS
+    $query_params = [$batch_month, $mode];
+    $query_types = "ss";
+    
+    // Get prior purchases subquery
+    $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode);
     
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
@@ -1274,13 +1855,23 @@ if (isset($_GET['export'])) {
                     im.SUBCLASS_CODE_NEW,
                     im.SIZE_CODE,
                     sz.SIZE_DESC,
+                    ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
+                  INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
                   LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
-                  WHERE im.LIQ_FLAG = ? 
-                  AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))";
-        $query_params = array_merge([$mode], $allowed_classes, $allowed_classes);
+                  WHERE ds.STK_MONTH = ?
+                    AND ds.LIQ_FLAG = ?
+                    AND ds.DAY_{$batch_day}_OPEN > 0
+                    AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                    AND NOT EXISTS (
+                        SELECT 1 FROM (
+                            $prior_purchases_subquery
+                        ) pp
+                        WHERE pp.ITEM_CODE = im.CODE
+                    )";
+        $query_params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
         $query_types .= str_repeat('s', count($allowed_classes) * 2);
     } else {
         $query = "SELECT 
@@ -1292,8 +1883,10 @@ if (isset($_GET['export'])) {
                     im.SUBCLASS_CODE_NEW,
                     im.SIZE_CODE,
                     sz.SIZE_DESC,
+                    ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
                     COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
+                  INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
                   LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
                   WHERE 1 = 0";
@@ -1402,6 +1995,24 @@ if (isset($_GET['download_template'])) {
 
 // Handle AJAX request for items
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
+    // Clean any output buffer to ensure clean JSON response
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    header('Content-Type: application/json');
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    debug_log("AJAX get_items called", [
+        'page' => isset($_GET['page']) ? $_GET['page'] : 1,
+        'view' => isset($_GET['view']) ? $_GET['view'] : 'with_stock',
+        'mode' => isset($_GET['mode']) ? $_GET['mode'] : 'F',
+        'search' => isset($_GET['search']) ? $_GET['search'] : '',
+        'first_batch_data' => $first_batch_data
+    ]);
+    
     $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
     $view_type = isset($_GET['view']) ? $_GET['view'] : 'with_stock';
     $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -1411,12 +2022,38 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     
     header('Content-Type: application/json');
     
+    // If no first batch data, return empty
+    if (!$first_batch_data) {
+        echo json_encode(['items' => [], 'total' => 0, 'has_more' => false]);
+        exit;
+    }
+    
     if (empty($allowed_classes)) {
         echo json_encode(['items' => [], 'total' => 0, 'has_more' => false]);
         exit;
     }
     
+    $batch_month = $first_batch_data['month'];
+    $batch_day = $first_batch_data['day'];
+    $batch_date = $first_batch_data['date'];
+    $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
+    
+    if (!$batch_table) {
+        echo json_encode(['items' => [], 'total' => 0, 'has_more' => false]);
+        exit;
+    }
+    
+    // Check if table exists
+    $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+    if ($table_check->num_rows == 0) {
+        echo json_encode(['items' => [], 'total' => 0, 'has_more' => false]);
+        exit;
+    }
+    
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+    
+    // Get prior purchases subquery
+    $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
     
     // Get total count
     $stock_condition = ($view_type === 'with_stock') 
@@ -1425,13 +2062,22 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     
     $count_query = "SELECT COUNT(*) as total 
                     FROM tblitemmaster im
+                    INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                     LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                    WHERE im.LIQ_FLAG = ? 
-                    AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
-                    $stock_condition";
+                    WHERE ds.STK_MONTH = ?
+                      AND ds.LIQ_FLAG = ?
+                      AND ds.DAY_{$batch_day}_OPEN > 0
+                      AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                      AND NOT EXISTS (
+                          SELECT 1 FROM (
+                              $prior_purchases_subquery
+                          ) pp
+                          WHERE pp.ITEM_CODE = im.CODE
+                      )
+                      $stock_condition";
     
-    $params = array_merge([$mode], $allowed_classes, $allowed_classes);
-    $types = "s" . str_repeat('s', count($allowed_classes) * 2);
+    $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
+    $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
     
     if ($search !== '') {
         $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -1447,6 +2093,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     $total = $count_result->fetch_assoc()['total'];
     $count_stmt->close();
     
+    debug_log("AJAX get_items count query result", ['total' => $total, 'batch_month' => $batch_month, 'batch_day' => $batch_day]);
+    
     // Get items
     $query = "SELECT 
                 im.CODE, 
@@ -1458,18 +2106,27 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
                 im.SUBCLASS_CODE_NEW, 
                 im.ITEM_GROUP,
                 im.SIZE_CODE,
+                ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
                 COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
-                COALESCE(st.OPENING_STOCK$comp_id, 0) as OPENING_STOCK,
                 sz.SIZE_DESC
               FROM tblitemmaster im
+              INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
               LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
               LEFT JOIN tblsize sz ON im.SIZE_CODE = sz.SIZE_CODE
-              WHERE im.LIQ_FLAG = ? 
-              AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
-              $stock_condition";
+              WHERE ds.STK_MONTH = ?
+                AND ds.LIQ_FLAG = ?
+                AND ds.DAY_{$batch_day}_OPEN > 0
+                AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                AND NOT EXISTS (
+                    SELECT 1 FROM (
+                        $prior_purchases_subquery
+                    ) pp
+                    WHERE pp.ITEM_CODE = im.CODE
+                )
+                $stock_condition";
     
-    $params = array_merge([$mode], $allowed_classes, $allowed_classes);
-    $types = "s" . str_repeat('s', count($allowed_classes) * 2);
+    $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
+    $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
     
     if ($search !== '') {
         $query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
@@ -1520,27 +2177,165 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     }
     $stmt->close();
     
+    debug_log("AJAX get_items returning", ['items_count' => count($items), 'total' => $total, 'has_more' => ($offset + $limit) < $total]);
+    
     echo json_encode([
         'items' => $items,
         'total' => (int)$total,
-        'has_more' => ($offset + $limit) < $total
+        'has_more' => ($offset + $limit) < $total,
+        'first_batch_date' => $first_batch_data['date']
     ]);
     exit;
 }
 
 // Handle AJAX request for volume summary
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'volume_summary') {
+    // Clean any output buffer to ensure clean JSON response
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     header('Content-Type: application/json');
-    $volume_summary_data = getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes);
-    echo json_encode($volume_summary_data);
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    debug_log("AJAX volume_summary called", $_GET);
+    
+    try {
+        // Check if first_batch_data exists
+        if (!$first_batch_data) {
+            debug_log("AJAX volume_summary - no first_batch_data");
+            echo json_encode([
+                'error' => 'No opening balance data found',
+                'volume_summary' => [],
+                'debug' => 'first_batch_data is null'
+            ]);
+            exit;
+        }
+        
+        // Validate that the batch table exists before proceeding
+        $batch_month = $first_batch_data['month'];
+        $batch_day = $first_batch_data['day'];
+        $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
+        
+        debug_log("Volume summary - checking table", [
+            'batch_table' => $batch_table,
+            'batch_month' => $batch_month
+        ]);
+        
+        if (!$batch_table) {
+            echo json_encode([
+                'error' => 'Invalid batch table',
+                'volume_summary' => [],
+                'debug' => 'batch_table is null'
+            ]);
+            exit;
+        }
+        
+        // Check if table exists
+        $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+        if ($table_check->num_rows == 0) {
+            debug_log("Volume summary - table does not exist", ['table' => $batch_table]);
+            echo json_encode([
+                'error' => 'Batch table does not exist',
+                'volume_summary' => [],
+                'debug' => "Table $batch_table not found"
+            ]);
+            exit;
+        }
+        
+        // Check if allowed_classes is valid
+        if (empty($allowed_classes)) {
+            debug_log("Volume summary - no allowed classes");
+            // Return empty but valid JSON
+            $empty_summary = [
+                'SPIRITS' => [],
+                'WINE' => [],
+                'FERMENTED BEER' => [],
+                'MILD BEER' => [],
+                'COUNTRY LIQUOR' => [],
+                'OTHER' => []
+            ];
+            // Initialize all sizes to 0
+            $allSizes = [
+                '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+                '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+                '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+            ];
+            
+            foreach ($empty_summary as $category => $data) {
+                foreach ($allSizes as $size) {
+                    $empty_summary[$category][$size] = 0;
+                }
+            }
+            
+            echo json_encode($empty_summary);
+            exit;
+        }
+        
+        $volume_summary_data = getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes, $first_batch_data);
+        
+        // Ensure we always return a valid array
+        if (!is_array($volume_summary_data)) {
+            $volume_summary_data = [];
+        }
+        
+        debug_log("AJAX volume_summary returning with categories count: " . count($volume_summary_data));
+        echo json_encode($volume_summary_data);
+        
+    } catch (Exception $e) {
+        debug_log("AJAX volume_summary Exception: " . $e->getMessage());
+        debug_log("Exception trace: " . $e->getTraceAsString());
+        
+        // Return a structured error response
+        echo json_encode([
+            'error' => $e->getMessage(),
+            'volume_summary' => [],
+            'debug' => 'Exception occurred'
+        ]);
+    } catch (Error $e) {
+        debug_log("AJAX volume_summary Error: " . $e->getMessage());
+        debug_log("Error trace: " . $e->getTraceAsString());
+        
+        echo json_encode([
+            'error' => 'Server error: ' . $e->getMessage(),
+            'volume_summary' => [],
+            'debug' => 'PHP Error occurred'
+        ]);
+    }
     exit;
 }
 
 // Handle AJAX request for summary stats
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'summary_stats') {
+    // Clean any output buffer to ensure clean JSON response
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     header('Content-Type: application/json');
-    $summary_data = getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes);
-    echo json_encode($summary_data);
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    debug_log("AJAX summary_stats called", $_GET);
+    
+    if (!$first_batch_data) {
+        echo json_encode(['error' => 'No opening balance data found']);
+        exit;
+    }
+    
+    try {
+        $summary_data = getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes, $first_batch_data);
+        echo json_encode($summary_data);
+    } catch (Exception $e) {
+        debug_log("AJAX summary_stats Exception: " . $e->getMessage());
+        echo json_encode(['error' => $e->getMessage()]);
+    } catch (Error $e) {
+        debug_log("AJAX summary_stats Error: " . $e->getMessage());
+        echo json_encode(['error' => 'Server error: ' . $e->getMessage()]);
+    }
     exit;
 }
 
@@ -2188,43 +2983,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
     exit;
 }
 
-// Get initial counts only (lightweight)
+// Get initial counts only (lightweight) - Now filtered by first batch
+$total_items = 0;
 $total_with_stock = 0;
 $total_without_stock = 0;
 
-if (!empty($allowed_classes)) {
+if (!empty($allowed_classes) && $first_batch_data) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    // Lightweight count query - CHECK BOTH CLASS AND CLASS_CODE_NEW
-    $count_query = "SELECT 
-                        COUNT(*) as total,
-                        SUM(CASE WHEN COALESCE(st.CURRENT_STOCK$comp_id, 0) > 0 THEN 1 ELSE 0 END) as with_stock
-                    FROM tblitemmaster im
-                    LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
-                    WHERE im.LIQ_FLAG = ? 
-                    AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))";
+    $batch_month = $first_batch_data['month'];
+    $batch_day = $first_batch_data['day'];
+    $batch_date = $first_batch_data['date'];
+    $batch_table = ($batch_month == date('Y-m')) ? "tbldailystock_$comp_id" : getArchiveTableName($comp_id, $batch_month);
     
-    $params = array_merge([$mode], $allowed_classes, $allowed_classes);
-    $types = "s" . str_repeat('s', count($allowed_classes) * 2);
-    
-    if ($search !== '') {
-        $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
-        $params[] = "%$search%";
-        $params[] = "%$search%";
-        $types .= "ss";
+    // Check if table exists
+    $table_check = $conn->query("SHOW TABLES LIKE '$batch_table'");
+    if ($table_check->num_rows > 0) {
+        // Get prior purchases subquery
+        $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
+        
+        // Lightweight count query - CHECK BOTH CLASS AND CLASS_CODE_NEW with first batch filter
+        $count_query = "SELECT 
+                            COUNT(*) as total,
+                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0 THEN 1 ELSE 0 END) as with_stock
+                        FROM tblitemmaster im
+                        INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
+                        LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
+                        WHERE ds.STK_MONTH = ?
+                          AND ds.LIQ_FLAG = ?
+                          AND ds.DAY_{$batch_day}_OPEN > 0
+                          AND (im.CLASS_CODE_NEW IN ($class_placeholders) OR im.CLASS IN ($class_placeholders))
+                          AND NOT EXISTS (
+                              SELECT 1 FROM (
+                                  $prior_purchases_subquery
+                              ) pp
+                              WHERE pp.ITEM_CODE = im.CODE
+                          )";
+        
+        $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
+        $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
+        
+        if ($search !== '') {
+            $count_query .= " AND (im.DETAILS LIKE ? OR im.CODE LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $types .= "ss";
+        }
+        
+        $count_stmt = $conn->prepare($count_query);
+        $count_stmt->bind_param($types, ...$params);
+        $count_stmt->execute();
+        $count_result = $count_stmt->get_result();
+        $count_row = $count_result->fetch_assoc();
+        $total_items = $count_row['total'] ?? 0;
+        $total_with_stock = $count_row['with_stock'] ?? 0;
+        $total_without_stock = $total_items - $total_with_stock;
+        $count_stmt->close();
+        
+        debug_log("Initial counts (first batch)", ['total' => $total_items, 'with_stock' => $total_with_stock]);
     }
-    
-    $count_stmt = $conn->prepare($count_query);
-    $count_stmt->bind_param($types, ...$params);
-    $count_stmt->execute();
-    $count_result = $count_stmt->get_result();
-    $count_row = $count_result->fetch_assoc();
-    $total_items = $count_row['total'] ?? 0;
-    $total_with_stock = $count_row['with_stock'] ?? 0;
-    $total_without_stock = $total_items - $total_with_stock;
-    $count_stmt->close();
-    
-    debug_log("Initial counts", ['total' => $total_items, 'with_stock' => $total_with_stock]);
 }
 
 // Show import message if exists
@@ -2544,6 +3361,22 @@ debug_log("Script completed, rendering page");
         <strong>Financial Year:</strong> <span id="financialYear"><?php echo date('Y-m-d', strtotime($finyear_data['START_DATE'])) . ' to ' . date('Y-m-d', strtotime($finyear_data['END_DATE'])); ?></span>
       </div>
 
+      <?php if ($first_batch_data): ?>
+      <!-- First Batch Date Info -->
+      <div class="alert alert-info mb-4">
+        <i class="fas fa-info-circle"></i>
+        <strong>First Batch Opening Date:</strong> <?= date('d M Y', strtotime($first_batch_data['date'])) ?>
+        <span class="text-muted">(Showing only items from the first batch of opening entries with no prior purchases)</span>
+      </div>
+      <?php else: ?>
+      <!-- No Opening Balances Warning -->
+      <div class="alert alert-warning mb-4">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>No Opening Balances Found</strong>
+        <p class="mb-0">No opening balances were found for the current financial year. Please import opening balances using the CSV import feature.</p>
+      </div>
+      <?php endif; ?>
+
       <!-- Import/Export Buttons -->
       <div class="import-export-buttons">
         <div class="btn-group">
@@ -2689,6 +3522,11 @@ debug_log("Script completed, rendering page");
             <i class="fas fa-box"></i> Items without Stock (<span id="withoutStockCount"><?= $total_without_stock ?></span>)
           </a>
         </div>
+        <?php if ($first_batch_data): ?>
+        <div class="mt-2 small text-muted">
+          <i class="fas fa-filter"></i> Showing only items from first batch (<?= date('d M Y', strtotime($first_batch_data['date'])) ?>) with no prior purchases
+        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Balance Management Form -->
@@ -2827,6 +3665,7 @@ let isLoading = false;
 let hasMore = true;
 let items = [];
 let totalItems = <?= $total_items ?? 0 ?>;
+let firstBatchDate = <?= $first_batch_data ? "'" . $first_batch_data['date'] . "'" : "null" ?>;
 
 // DOM elements
 const itemsTableBody = document.getElementById('itemsTableBody');
@@ -2869,17 +3708,42 @@ async function loadItems(page = 1, append = false) {
             search: currentSearch
         });
         
+        console.log('Loading items with params:', Object.fromEntries(params));
+        
         const response = await fetch('opening_balance.php?' + params);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
+        
+        console.log('AJAX response:', data);
+        console.log('Items count:', data.items ? data.items.length : 0);
+        console.log('Total count:', data.total);
+        
+        if (!data || !Array.isArray(data.items)) {
+            console.error('Invalid response format:', data);
+            itemsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Invalid response from server</td></tr>';
+            isLoading = false;
+            tableLoading.style.display = 'none';
+            return;
+        }
         
         if (!append) {
             items = data.items;
             totalItems = data.total;
             hasMore = data.has_more;
+            // Store first batch date from response if available
+            if (data.first_batch_date) {
+                firstBatchDate = data.first_batch_date;
+            }
         } else {
             items = [...items, ...data.items];
             hasMore = data.has_more;
         }
+        
+        console.log('Rendering', items.length, 'items');
         
         renderItems(append);
         
@@ -2893,7 +3757,7 @@ async function loadItems(page = 1, append = false) {
         
     } catch (error) {
         console.error('Error loading items:', error);
-        itemsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading items</td></tr>';
+        itemsTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading items: ' + error.message + '</td></tr>';
     } finally {
         isLoading = false;
         tableLoading.style.display = 'none';
@@ -2902,50 +3766,61 @@ async function loadItems(page = 1, append = false) {
 
 // Render items to table
 function renderItems(append = false) {
+    console.log('renderItems called, append:', append, ', items length:', items ? items.length : 0);
+    
     if (!append) {
         itemsTableBody.innerHTML = '';
     }
     
-    if (items.length === 0) {
-        itemsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">No items found</td></tr>';
+    if (!items || items.length === 0) {
+        let message = 'No items found';
+        if (!firstBatchDate) {
+            message = 'No opening balances found. Please import opening balances using the CSV import feature.';
+        } else if (totalItems > 0) {
+            message = 'No items to display. Please try a different search or view.';
+        }
+        itemsTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">' + message + '</td></tr>';
+        console.log('No items to render, showing message:', message);
         return;
     }
     
     let html = '';
-    items.forEach(item => {
+    items.forEach(function(item, index) {
         // Build hierarchy badges
         let hierarchyHtml = '';
         if (item.category_name) {
-            hierarchyHtml += `<span class="hierarchy-badge badge-category">${escapeHtml(item.category_name)}</span> `;
+            hierarchyHtml += '<span class="hierarchy-badge badge-category">' + escapeHtml(item.category_name) + '</span> ';
         }
         if (item.class_name) {
-            hierarchyHtml += `<span class="hierarchy-badge badge-class">${escapeHtml(item.class_name)}</span> `;
+            hierarchyHtml += '<span class="hierarchy-badge badge-class">' + escapeHtml(item.class_name) + '</span> ';
         }
         if (item.subclass_name) {
-            hierarchyHtml += `<span class="hierarchy-badge badge-subclass">${escapeHtml(item.subclass_name)}</span> `;
+            hierarchyHtml += '<span class="hierarchy-badge badge-subclass">' + escapeHtml(item.subclass_name) + '</span> ';
         }
         
-        html += `
-            <tr>
-                <td><strong>${escapeHtml(item.code)}</strong></td>
-                <td>
-                    <div>${escapeHtml(item.details)}</div>
-                    <div class="size-info mt-1">${hierarchyHtml}</div>
-                </td>
-                <td>
-                    <div>${escapeHtml(item.size_desc)}</div>
-                    <div class="size-info">${item.ml_volume > 0 ? getVolumeLabel(item.ml_volume) : ''}</div>
-                </td>
-                <td class="company-column">
-                    <input type="number" name="opening_stock[${escapeHtml(item.code)}]"
-                           value="${item.current_stock}" min="0"
-                           class="form-control opening-balance-input"
-                           data-original="${item.current_stock}">
-                    <input type="hidden" name="original_stock[${escapeHtml(item.code)}]"
-                           value="${item.current_stock}">
-                </td>
-            </tr>
-        `;
+        const sizeDesc = item.size_desc || 'N/A';
+        const mlVolume = item.ml_volume > 0 ? getVolumeLabel(item.ml_volume) : '';
+        const currentStock = item.current_stock || 0;
+        
+        html += '<tr>';
+        html += '<td><strong>' + escapeHtml(item.code) + '</strong></td>';
+        html += '<td>';
+        html += '<div>' + escapeHtml(item.details) + '</div>';
+        html += '<div class="size-info mt-1">' + hierarchyHtml + '</div>';
+        html += '</td>';
+        html += '<td>';
+        html += '<div>' + escapeHtml(sizeDesc) + '</div>';
+        html += '<div class="size-info">' + mlVolume + '</div>';
+        html += '</td>';
+        html += '<td class="company-column">';
+        html += '<input type="number" name="opening_stock[' + escapeHtml(item.code) + ']" ';
+        html += 'value="' + currentStock + '" min="0" ';
+        html += 'class="form-control opening-balance-input" ';
+        html += 'data-original="' + currentStock + '">';
+        html += '<input type="hidden" name="original_stock[' + escapeHtml(item.code) + ']" ';
+        html += 'value="' + currentStock + '">';
+        html += '</td>';
+        html += '</tr>';
     });
     
     if (append) {
@@ -2953,6 +3828,8 @@ function renderItems(append = false) {
     } else {
         itemsTableBody.innerHTML = html;
     }
+    
+    console.log('Items rendered successfully, row count:', items.length);
     
     // Reattach change listeners
     attachInputListeners();
@@ -3105,66 +3982,262 @@ async function loadVolumeSummary() {
     const loadingEl = document.getElementById('volumeSummaryLoading');
     const contentEl = document.getElementById('volumeSummaryContent');
     
+    // Show loading with spinner
     loadingEl.style.display = 'block';
+    loadingEl.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading volume summary...</p></div>';
     contentEl.style.display = 'none';
+    contentEl.innerHTML = '';
     
     try {
         const params = new URLSearchParams({
             ajax: 'volume_summary',
-            mode: currentMode
+            mode: currentMode,
+            t: Date.now() // Add timestamp to prevent caching
         });
         
-        const response = await fetch('opening_balance.php?' + params);
-        const data = await response.json();
+        console.log('Fetching volume summary...');
+        const response = await fetch('opening_balance.php?' + params.toString());
         
-        let html = generateVolumeSummaryHTML(data);
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Get the response text first
+        const responseText = await response.text();
+        console.log('Raw response:', responseText.substring(0, 200) + '...');
+        
+        // Try to parse as JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error('Failed to parse JSON. Response starts with:', responseText.substring(0, 100));
+            // Check if it's HTML (starts with <)
+            if (responseText.trim().startsWith('<')) {
+                throw new Error('Server returned HTML instead of JSON. There might be a PHP error.');
+            } else {
+                throw new Error('Invalid JSON response from server');
+            }
+        }
+        
+        console.log('Volume summary data received:', data);
+        
+        // Check if we have an error in the response
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Check if data is empty
+        if (!data || Object.keys(data).length === 0) {
+            loadingEl.innerHTML = '<div class="alert alert-warning">No volume summary data available</div>';
+            return;
+        }
+        
+        // Check if any category has non-zero values
+        let hasData = false;
+        for (let category in data) {
+            if (data[category] && typeof data[category] === 'object') {
+                for (let size in data[category]) {
+                    if (data[category][size] > 0) {
+                        hasData = true;
+                        break;
+                    }
+                }
+            }
+            if (hasData) break;
+        }
+        
+        if (!hasData) {
+            loadingEl.innerHTML = '<div class="alert alert-info">No stock data available for the current selection.</div>';
+            return;
+        }
+        
+        // Generate and display the table
+        const html = generateVolumeSummaryHTML(data);
         loadingEl.style.display = 'none';
         contentEl.innerHTML = html;
         contentEl.style.display = 'block';
+        
     } catch (error) {
-        loadingEl.innerHTML = '<div class="alert alert-danger">Error loading volume summary</div>';
+        console.error('Error in loadVolumeSummary:', error);
+        loadingEl.innerHTML = `<div class="alert alert-danger">
+            <strong>Error loading volume summary:</strong> ${error.message}<br>
+            <small class="text-muted">Check browser console for details.</small>
+        </div>`;
     }
 }
 
-// Generate volume summary HTML
+// Generate volume summary HTML with improved styling
 function generateVolumeSummaryHTML(data) {
-    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR', 'OTHER'];
-    const sizes = [
+    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+    const allSizes = [
         '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
         '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
     
-    let html = '<div class="table-responsive">';
-    html += '<table class="table table-bordered table-sm" id="openingBalanceSummaryTable">';
-    html += '<thead class="table-light"><tr><th>Category</th>';
-    
-    sizes.forEach(size => {
-        html += `<th>${size}</th>`;
-    });
-    
-    html += '</tr></thead><tbody>';
+    // Calculate summary statistics
+    let totalBottles = 0;
+    let categoriesWithData = 0;
+    let sizesWithData = {};
     
     categories.forEach(category => {
-        if (category === 'OTHER' || (data[category] && Object.values(data[category]).some(v => v > 0))) {
-            html += '<tr><td><strong>' + category + '</strong></td>';
-            sizes.forEach(size => {
-                const value = (data[category] && data[category][size]) ? data[category][size] : 0;
-                const className = value > 0 ? 'table-success' : '';
-                html += `<td class="${className}">${value > 0 ? value.toLocaleString() : ''}</td>`;
+        if (data[category]) {
+            let categoryHasData = false;
+            Object.values(data[category]).forEach(val => {
+                if (val > 0) {
+                    totalBottles += val;
+                    categoryHasData = true;
+                }
             });
-            html += '</tr>';
+            if (categoryHasData) categoriesWithData++;
+            
+            // Count sizes with data
+            Object.entries(data[category]).forEach(([size, val]) => {
+                if (val > 0) {
+                    sizesWithData[size] = (sizesWithData[size] || 0) + val;
+                }
+            });
         }
     });
     
+    // Generate summary cards HTML
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-wine-bottle me-2"></i>Total Bottles</h6>
+                        <h2 class="mb-0">${totalBottles.toLocaleString()}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-tags me-2"></i>Categories with Stock</h6>
+                        <h2 class="mb-0">${categoriesWithData}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-ruler-combined me-2"></i>Different Sizes</h6>
+                        <h2 class="mb-0">${Object.keys(sizesWithData).length}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Generate table HTML with sticky header
+    html += '<div class="table-responsive" style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6;">';
+    html += '<table class="table table-bordered table-sm table-hover" style="font-size: 11px; margin-bottom: 0;">';
+    html += '<thead class="sticky-top" style="background: #343a40; color: white; z-index: 100;">';
+    html += '<tr><th style="position: sticky; left: 0; background: #343a40; z-index: 101;">Category</th>';
+    
+    allSizes.forEach(size => {
+        const hasData = sizesWithData[size] > 0;
+        const bgColor = hasData ? 'background: #28a745;' : '';
+        html += `<th style="white-space: nowrap; ${bgColor}">${size}</th>`;
+    });
+    
+    html += '<th style="background: #007bff; color: white;">Category Total</th>';
+    html += '</tr></thead><tbody>';
+    
+    let grandTotal = 0;
+    
+    categories.forEach(category => {
+        if (data[category]) {
+            let rowTotal = 0;
+            let rowHasData = false;
+            
+            // Check if row has any data
+            allSizes.forEach(size => {
+                const val = data[category][size] || 0;
+                if (val > 0) {
+                    rowTotal += val;
+                    rowHasData = true;
+                }
+            });
+            
+            if (rowHasData) {
+                grandTotal += rowTotal;
+                
+                // Category row with color coding
+                let categoryClass = '';
+                if (category === 'SPIRITS') categoryClass = 'table-primary';
+                else if (category === 'WINE') categoryClass = 'table-danger';
+                else if (category === 'FERMENTED BEER') categoryClass = 'table-warning';
+                else if (category === 'MILD BEER') categoryClass = 'table-success';
+                else if (category === 'COUNTRY LIQUOR') categoryClass = 'table-info';
+                
+                html += `<tr class="${categoryClass}">`;
+                html += `<td style="position: sticky; left: 0; background: inherit; font-weight: bold;">${category}</td>`;
+                
+                allSizes.forEach(size => {
+                    const value = data[category][size] || 0;
+                    if (value > 0) {
+                        html += `<td class="text-center" style="background: rgba(40, 167, 69, 0.2); font-weight: bold;">${value.toLocaleString()}</td>`;
+                    } else {
+                        html += `<td class="text-center text-muted">-</td>`;
+                    }
+                });
+                
+                html += `<td class="text-center" style="background: rgba(0, 123, 255, 0.2); font-weight: bold;">${rowTotal.toLocaleString()}</td>`;
+                html += '</tr>';
+            }
+        }
+    });
+    
+    // Grand total row
+    html += '<tr style="background: #007bff; color: white; font-weight: bold;">';
+    html += '<td style="position: sticky; left: 0; background: #007bff;">GRAND TOTAL</td>';
+    
+    allSizes.forEach(size => {
+        const value = sizesWithData[size] || 0;
+        if (value > 0) {
+            html += `<td class="text-center">${value.toLocaleString()}</td>`;
+        } else {
+            html += `<td class="text-center">-</td>`;
+        }
+    });
+    
+    html += `<td class="text-center">${grandTotal.toLocaleString()}</td>`;
+    html += '</tr>';
+    
     html += '</tbody></table></div>';
+    
+    // Add first batch date info
+    html += `<div class="mt-3 text-muted small">
+        <i class="fas fa-info-circle me-1"></i>
+        First Batch Date: ${firstBatchDate ? new Date(firstBatchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+    </div>`;
+    
     return html;
 }
 
 // Print volume summary
 function printVolumeSummary() {
-    const content = document.getElementById('volumeSummaryContent').innerHTML;
+    const contentEl = document.getElementById('volumeSummaryContent');
+    const companyName = document.getElementById('companyName').textContent;
+    const currentMode = document.getElementById('currentMode').textContent;
+    const financialYear = document.getElementById('financialYear').textContent;
+    
+    if (!contentEl || contentEl.innerHTML.trim() === '') {
+        alert('No data to print. Please load the volume summary first.');
+        return;
+    }
+    
+    const content = contentEl.innerHTML;
     const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+        alert('Please allow popups to print the volume summary.');
+        return;
+    }
     
     printWindow.document.write(`
         <!DOCTYPE html>
@@ -3172,32 +4245,83 @@ function printVolumeSummary() {
         <head>
             <title>Opening Balance Volume Summary</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
             <style>
-                body { padding: 20px; }
+                @media print {
+                    .no-print { display: none !important; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+                body { 
+                    padding: 15px; 
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                }
                 .print-header { 
                     text-align: center; 
-                    margin-bottom: 30px;
-                    border-bottom: 2px solid #333;
-                    padding-bottom: 20px;
+                    margin-bottom: 20px;
+                    border-bottom: 2px solid #343a40;
+                    padding-bottom: 15px;
                 }
-                .table { font-size: 10px; }
-                th, td { padding: 3px !important; text-align: center; }
-                @media print {
-                    .no-print { display: none; }
+                .print-header h2 {
+                    margin-bottom: 10px;
+                    color: #343a40;
                 }
+                .print-header h4 {
+                    color: #6c757d;
+                    margin-bottom: 5px;
+                }
+                .print-header p {
+                    margin-bottom: 3px;
+                    color: #6c757d;
+                    font-size: 12px;
+                }
+                .card {
+                    border: 1px solid #dee2e6;
+                    border-radius: 5px;
+                    margin-bottom: 15px;
+                }
+                .card-body {
+                    padding: 10px;
+                }
+                .card h6 {
+                    font-size: 11px;
+                    margin-bottom: 5px;
+                }
+                .card h2 {
+                    font-size: 24px;
+                    margin-bottom: 0;
+                }
+                .table { 
+                    font-size: 9px; 
+                    margin-bottom: 0;
+                }
+                th, td { 
+                    padding: 3px !important; 
+                    text-align: center;
+                    font-size: 9px;
+                }
+                .table-primary { background-color: #cff4fc !important; }
+                .table-danger { background-color: #f8d7da !important; }
+                .table-warning { background-color: #fff3cd !important; }
+                .table-success { background-color: #d1e7dd !important; }
+                .table-info { background-color: #cff4fc !important; }
+                .bg-primary { background-color: #0d6efd !important; }
+                .bg-success { background-color: #198754 !important; }
+                .bg-info { background-color: #0dcaf0 !important; }
             </style>
         </head>
         <body>
             <div class="print-header">
-                <h2>Opening Balance Volume Summary</h2>
-                <h4>${document.getElementById('companyName').textContent}</h4>
-                <p>Mode: ${document.getElementById('currentMode').textContent}</p>
-                <p>Financial Year: ${document.getElementById('financialYear').textContent}</p>
-                <p>Generated on: ${new Date().toLocaleString()}</p>
+                <h2><i class="fas fa-wine-bottle me-2"></i>Opening Balance Volume Summary</h2>
+                <h4>${companyName}</h4>
+                <p><strong>Mode:</strong> ${currentMode} | <strong>Financial Year:</strong> ${financialYear}</p>
+                <p class="text-muted">Generated on: ${new Date().toLocaleString()}</p>
             </div>
             ${content}
             <script>
-                window.onload = function() { window.print(); setTimeout(() => window.close(), 500); };
+                window.onload = function() { 
+                    window.print(); 
+                    setTimeout(() => window.close(), 500); 
+                };
             <\/script>
         </body>
         </html>
