@@ -929,15 +929,11 @@ function getVolumeLabel($volume) {
         return $volume_label_cache[$volume];
     }
     
-    // Format volume based on size
+    // Format volume - always use ML format for consistency
+    // Handle special cases: 1L = 1000ml, 1.5L = 1500ml, etc.
     if ($volume >= 1000) {
-        $liters = $volume / 1000;
-        // Check if it's a whole number
-        if ($liters == intval($liters)) {
-            $label = intval($liters) . 'L';
-        } else {
-            $label = rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
-        }
+        // For liter sizes, convert to ML but use the ML format
+        $label = $volume . ' ML';
     } else {
         $label = $volume . ' ML';
     }
@@ -1453,7 +1449,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [],
             
             debug_log("Prior purchases subquery generated", ['subquery_length' => strlen($prior_purchases_subquery)]);
             
-            $query = "SELECT 
+            $query = "SELECT DISTINCT
                         im.CODE,
                         im.DETAILS,
                         im.DETAILS2,
@@ -1681,7 +1677,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
             // Get prior purchases subquery
             $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
             
-            $query = "SELECT 
+            $query = "SELECT DISTINCT
                         im.CODE,
                         im.DETAILS,
                         im.DETAILS2,
@@ -1846,7 +1842,7 @@ if (isset($_GET['export'])) {
     
     if (!empty($allowed_classes)) {
         $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
-        $query = "SELECT 
+        $query = "SELECT DISTINCT
                     im.CODE, 
                     im.DETAILS, 
                     im.DETAILS2,
@@ -2055,12 +2051,16 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     // Get prior purchases subquery
     $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
     
-    // Get total count
+    // Get total count - Only show items with stock >= 0 (exclude negative stock)
+    // For with_stock view: stock > 0
+    // For without_stock view: stock = 0
     $stock_condition = ($view_type === 'with_stock') 
-        ? "AND COALESCE(st.CURRENT_STOCK$comp_id, 0) > 0" 
-        : "AND (st.CURRENT_STOCK$comp_id IS NULL OR COALESCE(st.CURRENT_STOCK$comp_id, 0) = 0)";
+        ? "AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0" 
+        : "AND (st.CURRENT_STOCK{$comp_id} IS NULL OR COALESCE(st.CURRENT_STOCK{$comp_id}, 0) = 0)";
     
-    $count_query = "SELECT COUNT(*) as total 
+    // Count query with proper stock filtering - excludes negative stock
+    $count_query = "SELECT 
+                        COUNT(DISTINCT im.CODE) as total
                     FROM tblitemmaster im
                     INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                     LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -2074,7 +2074,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
                           ) pp
                           WHERE pp.ITEM_CODE = im.CODE
                       )
-                      $stock_condition";
+                      AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) >= 0";
     
     $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
     $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
@@ -2096,7 +2096,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     debug_log("AJAX get_items count query result", ['total' => $total, 'batch_month' => $batch_month, 'batch_day' => $batch_day]);
     
     // Get items
-    $query = "SELECT 
+    $query = "SELECT DISTINCT
                 im.CODE, 
                 im.Print_Name, 
                 im.DETAILS, 
@@ -3003,9 +3003,11 @@ if (!empty($allowed_classes) && $first_batch_data) {
         $prior_purchases_subquery = getPriorPurchasesSubquery($conn, $comp_id, $batch_date, $mode, $fy_dates['start']);
         
         // Lightweight count query - CHECK BOTH CLASS AND CLASS_CODE_NEW with first batch filter
+        // Only count items with stock >= 0 (exclude negative stock)
         $count_query = "SELECT 
-                            COUNT(*) as total,
-                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0 THEN 1 ELSE 0 END) as with_stock
+                            COUNT(DISTINCT im.CODE) as total,
+                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0 THEN 1 ELSE 0 END) as with_stock,
+                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) = 0 THEN 1 ELSE 0 END) as without_stock
                         FROM tblitemmaster im
                         INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                         LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -3018,7 +3020,8 @@ if (!empty($allowed_classes) && $first_batch_data) {
                                   $prior_purchases_subquery
                               ) pp
                               WHERE pp.ITEM_CODE = im.CODE
-                          )";
+                          )
+                          AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) >= 0";
         
         $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
         $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
@@ -3035,9 +3038,9 @@ if (!empty($allowed_classes) && $first_batch_data) {
         $count_stmt->execute();
         $count_result = $count_stmt->get_result();
         $count_row = $count_result->fetch_assoc();
-        $total_items = $count_row['total'] ?? 0;
+        $total_items = ($count_row['with_stock'] ?? 0) + ($count_row['without_stock'] ?? 0);
         $total_with_stock = $count_row['with_stock'] ?? 0;
-        $total_without_stock = $total_items - $total_with_stock;
+        $total_without_stock = $count_row['without_stock'] ?? 0;
         $count_stmt->close();
         
         debug_log("Initial counts (first batch)", ['total' => $total_items, 'with_stock' => $total_with_stock]);
@@ -3845,13 +3848,10 @@ function escapeHtml(text) {
 
 // Helper function to get volume label
 function getVolumeLabel(volume) {
+    // Always use ML format for consistency
+    // 1000ml = 1000 ML, 1500ml = 1500 ML, etc.
     if (volume >= 1000) {
-        const liters = volume / 1000;
-        if (liters === Math.floor(liters)) {
-            return liters + 'L';
-        } else {
-            return liters.toFixed(1).replace(/\.0$/, '') + 'L';
-        }
+        return volume + ' ML';
     } else {
         return volume + ' ML';
     }
