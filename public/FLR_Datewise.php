@@ -515,10 +515,90 @@ foreach ($dates as $date) {
     }
 }
 
+// OPENING BALANCE AND CLOSING CALCULATION LOGIC:
+// - First day of selection: Use DB opening value
+// - Subsequent days: Carry forward previous day's closing as today's opening
+// - Closing = Opening + Purchase - Sold (calculated, not from DB)
+
+// First, fetch raw data and store daily closing from DB
+$daily_closing_from_db = [];
+
+// Process each date and store raw DB closing
+foreach ($dates as $index => $date) {
+    if (!isset($daily_data[$date])) continue;
+    
+    // Store the raw closing from DB before any modification
+    foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
+        if (!isset($daily_data[$date][$type])) continue;
+        
+        // Get the correct size array for this type
+        $type_sizes = [];
+        switch($type) {
+            case 'Spirit':
+                $type_sizes = $display_sizes_spirit;
+                break;
+            case 'Wine':
+                $type_sizes = $display_sizes_wine;
+                break;
+            case 'Fermented Beer':
+            case 'Mild Beer':
+                $type_sizes = $display_sizes_beer;
+                break;
+        }
+        
+        foreach ($type_sizes as $size) {
+            $daily_closing_from_db[$date][$type][$size] = $daily_data[$date][$type]['closing'][$size] ?? 0;
+        }
+    }
+}
+
+// Now carry forward opening from previous day's DB closing and calculate closing
+foreach ($dates as $index => $date) {
+    // Skip first day - keep its original DB opening
+    if ($index == 0) continue;
+    
+    if (!isset($daily_data[$date])) continue;
+    
+    $prev_date = $dates[$index - 1];
+    if (isset($daily_data[$prev_date])) {
+        foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
+            if (!isset($daily_data[$date][$type])) continue;
+            
+            // Get the correct size array for this type
+            $type_sizes = [];
+            switch($type) {
+                case 'Spirit':
+                    $type_sizes = $display_sizes_spirit;
+                    break;
+                case 'Wine':
+                    $type_sizes = $display_sizes_wine;
+                    break;
+                case 'Fermented Beer':
+                case 'Mild Beer':
+                    $type_sizes = $display_sizes_beer;
+                    break;
+            }
+            
+            foreach ($type_sizes as $size) {
+                // Carry forward previous day's DB closing as today's opening
+                $prev_closing = $daily_closing_from_db[$prev_date][$type][$size] ?? 0;
+                $daily_data[$date][$type]['opening'][$size] = $prev_closing;
+                
+                // Calculate closing: Opening + Purchase - Sold
+                $opening = $daily_data[$date][$type]['opening'][$size];
+                $purchase = $daily_data[$date][$type]['purchase'][$size] ?? 0;
+                $sales = $daily_data[$date][$type]['sales'][$size] ?? 0;
+                $daily_data[$date][$type]['closing'][$size] = max(0, $opening + $purchase - $sales);
+            }
+        }
+    }
+}
+
 // Calculate total columns count for table formatting - Original FLR Datewise layout
 $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes_wine) + (count($display_sizes_beer) * 2);
 
-// Calculate closing balance for each category and size
+// CLOSING BALANCE - Calculated using formula: Opening + Purchase - Sold
+// This matches the monthly register calculation
 $closing_balance = [
     'Spirit' => [],
     'Wine' => [],
@@ -526,36 +606,30 @@ $closing_balance = [
     'Mild Beer' => []
 ];
 
-// Spirit closing balance
-foreach ($display_sizes_spirit as $size) {
-    $opening = isset($opening_balance_data['Spirit'][$size]) ? $opening_balance_data['Spirit'][$size] : 0;
-    $received = isset($totals['Spirit']['purchase'][$size]) ? $totals['Spirit']['purchase'][$size] : 0;
-    $sold = isset($totals['Spirit']['sales'][$size]) ? $totals['Spirit']['sales'][$size] : 0;
-    $closing_balance['Spirit'][$size] = $opening + $received - $sold;
-}
-
-// Wine closing balance
-foreach ($display_sizes_wine as $size) {
-    $opening = isset($opening_balance_data['Wine'][$size]) ? $opening_balance_data['Wine'][$size] : 0;
-    $received = isset($totals['Wine']['purchase'][$size]) ? $totals['Wine']['purchase'][$size] : 0;
-    $sold = isset($totals['Wine']['sales'][$size]) ? $totals['Wine']['sales'][$size] : 0;
-    $closing_balance['Wine'][$size] = $opening + $received - $sold;
-}
-
-// Fermented Beer closing balance
-foreach ($display_sizes_beer as $size) {
-    $opening = isset($opening_balance_data['Fermented Beer'][$size]) ? $opening_balance_data['Fermented Beer'][$size] : 0;
-    $received = isset($totals['Fermented Beer']['purchase'][$size]) ? $totals['Fermented Beer']['purchase'][$size] : 0;
-    $sold = isset($totals['Fermented Beer']['sales'][$size]) ? $totals['Fermented Beer']['sales'][$size] : 0;
-    $closing_balance['Fermented Beer'][$size] = $opening + $received - $sold;
-}
-
-// Mild Beer closing balance
-foreach ($display_sizes_beer as $size) {
-    $opening = isset($opening_balance_data['Mild Beer'][$size]) ? $opening_balance_data['Mild Beer'][$size] : 0;
-    $received = isset($totals['Mild Beer']['purchase'][$size]) ? $totals['Mild Beer']['purchase'][$size] : 0;
-    $sold = isset($totals['Mild Beer']['sales'][$size]) ? $totals['Mild Beer']['sales'][$size] : 0;
-    $closing_balance['Mild Beer'][$size] = $opening + $received - $sold;
+// Calculate closing using: Opening + Received - Sold
+foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
+    $type_sizes = [];
+    switch($type) {
+        case 'Spirit':
+            $type_sizes = $display_sizes_spirit;
+            break;
+        case 'Wine':
+            $type_sizes = $display_sizes_wine;
+            break;
+        case 'Fermented Beer':
+        case 'Mild Beer':
+            $type_sizes = $display_sizes_beer;
+            break;
+    }
+    
+    foreach ($type_sizes as $size) {
+        $opening = isset($opening_balance_data[$type][$size]) ? $opening_balance_data[$type][$size] : 0;
+        $received = isset($totals[$type]['purchase'][$size]) ? $totals[$type]['purchase'][$size] : 0;
+        $sold = isset($totals[$type]['sales'][$size]) ? $totals[$type]['sales'][$size] : 0;
+        
+        // Calculate closing: Opening + Received - Sold
+        $closing_balance[$type][$size] = $opening + $received - $sold;
+    }
 }
 ?>
 

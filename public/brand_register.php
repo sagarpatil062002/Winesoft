@@ -415,8 +415,20 @@ $brand_tp_nos = [];
 // Get all tables needed for the date range
 $tables_needed = getTablesForDateRange($conn, $compID, $from_date, $to_date);
 
+// Sort dates chronologically for proper carry-forward
+$all_dates = [];
+foreach ($tables_needed as $table_name => $table_info) {
+    foreach ($table_info['dates'] as $date) {
+        $all_dates[] = $date;
+    }
+}
+sort($all_dates);
+
 // Store cumulative stock data for each item
 $cumulative_stock_data = [];
+
+// Track previous day's closing for each item (for carry-forward)
+$prev_day_closing = [];
 
 // Fetch TP Nos from tblpurchases
 $tpQuery = "SELECT TPNO, DATE FROM tblpurchases WHERE CompID = ? AND DATE BETWEEN ? AND ?";
@@ -436,111 +448,120 @@ while ($row = $tpResult->fetch_assoc()) {
 }
 $tpStmt->close();
 
-// Process each table
-foreach ($tables_needed as $table_name => $table_info) {
-    $months = $table_info['months'];
-    $dates = $table_info['dates'];
+// Process dates in chronological order using the sorted $all_dates array
+foreach ($all_dates as $current_date) {
+    $day = date('d', strtotime($current_date));
+    $month = date('Y-m', strtotime($current_date));
     
-    // Process each month in this table
-    foreach ($months as $month) {
-        // Get all dates in this month that are in our date range
-        $month_dates = array_filter($dates, function($date) use ($month) {
-            return date('Y-m', strtotime($date)) == $month;
-        });
+    // Get the table for this date
+    $table_name = getTableForDate($conn, $compID, $current_date);
+    
+    // Debug: Log the date processing
+    error_log("Processing: Date=$current_date, Day=$day, Month=$month, Table=$table_name");
+    
+    // Check if this specific table has columns for this specific day
+    if (!tableHasDayColumns($conn, $table_name, $day)) {
+        error_log("Skipping: Table $table_name does not have columns for day $day");
+        continue;
+    }
+    
+    // Check if LIQ_FLAG column exists in this table
+    $hasLiqFlag = tableHasLiqFlag($conn, $table_name);
+    
+    // Build query conditionally based on LIQ_FLAG column existence
+    if ($hasLiqFlag) {
+        $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
+                      DAY_{$day}_OPEN as opening, 
+                      DAY_{$day}_PURCHASE as purchase, 
+                      DAY_{$day}_SALES as sales, 
+                      DAY_{$day}_CLOSING as closing 
+                      FROM $table_name 
+                      WHERE STK_MONTH = ?";
+    } else {
+        $stockQuery = "SELECT ITEM_CODE,
+                      DAY_{$day}_OPEN as opening, 
+                      DAY_{$day}_PURCHASE as purchase, 
+                      DAY_{$day}_SALES as sales, 
+                      DAY_{$day}_CLOSING as closing 
+                      FROM $table_name 
+                      WHERE STK_MONTH = ?";
+    }
+    
+    $stockStmt = $conn->prepare($stockQuery);
+    $stockStmt->bind_param("s", $month);
+    $stockStmt->execute();
+    $stockResult = $stockStmt->get_result();
+    
+    while ($row = $stockResult->fetch_assoc()) {
+        $item_code = $row['ITEM_CODE'];
         
-        if (empty($month_dates)) continue;
+        // Skip if item not found in master or not allowed by license
+        if (!isset($items[$item_code])) continue;
         
-        // For each date in this month, fetch the purchase data
-        foreach ($month_dates as $current_date) {
-            $day = date('d', strtotime($current_date));
-            
-            // Check if this specific table has columns for this specific day
-            if (!tableHasDayColumns($conn, $table_name, $day)) {
-                continue;
+        // Get LIQ_FLAG from stock row if available, otherwise use from item master
+        $stock_liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : $items[$item_code]['liq_flag'];
+        
+        // Get the opening - use previous day's calculated closing if available (carry-forward logic)
+        $opening = $row['opening'];
+        
+        // Debug: Log opening values
+        error_log("Item: $item_code, DB Opening: " . $row['opening'] . ", Prev Closing: " . ($prev_day_closing[$item_code] ?? 'N/A'));
+        
+        if (isset($prev_day_closing[$item_code])) {
+            // Carry forward previous day's calculated closing as today's opening
+            $opening = $prev_day_closing[$item_code];
+            error_log("Using carry-forward opening: $opening");
+        }
+        
+        // Initialize item data if not exists
+        if (!isset($cumulative_stock_data[$item_code])) {
+            $cumulative_stock_data[$item_code] = [
+                'opening' => $opening,
+                'purchase' => 0,
+                'sales' => 0,
+                'closing' => 0,
+                'liq_flag' => $stock_liq_flag,
+                'last_date' => $current_date
+            ];
+        }
+        
+        // Accumulate purchase (cumulative)
+        $cumulative_stock_data[$item_code]['purchase'] += $row['purchase'];
+        
+        // Accumulate sales (cumulative)
+        $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
+        
+        // Calculate closing using formula: Opening + Purchase - Sales
+        // This matches the monthly register calculation
+        $calculated_closing = $opening + $row['purchase'] - $row['sales'];
+        
+        // For closing balance, use calculated value
+        $cumulative_stock_data[$item_code]['closing'] = max(0, $calculated_closing);
+        $cumulative_stock_data[$item_code]['opening'] = $opening;
+        $cumulative_stock_data[$item_code]['last_date'] = $current_date;
+        
+        // Update LIQ_FLAG if not set
+        if (empty($cumulative_stock_data[$item_code]['liq_flag'])) {
+            $cumulative_stock_data[$item_code]['liq_flag'] = $stock_liq_flag;
+        }
+        
+        // Store this day's calculated closing for carry-forward to next day
+        $prev_day_closing[$item_code] = $cumulative_stock_data[$item_code]['closing'];
+        
+        // Store TP Nos ONLY if there was a purchase on this date
+        if ($row['purchase'] > 0 && isset($tp_nos_by_date[$current_date])) {
+            if (!isset($brand_tp_nos[$item_code])) {
+                $brand_tp_nos[$item_code] = [];
             }
-            
-            // Check if LIQ_FLAG column exists in this table
-            $hasLiqFlag = tableHasLiqFlag($conn, $table_name);
-            
-            // Build query conditionally based on LIQ_FLAG column existence
-            if ($hasLiqFlag) {
-                $stockQuery = "SELECT ITEM_CODE, LIQ_FLAG,
-                              DAY_{$day}_OPEN as opening, 
-                              DAY_{$day}_PURCHASE as purchase, 
-                              DAY_{$day}_SALES as sales, 
-                              DAY_{$day}_CLOSING as closing 
-                              FROM $table_name 
-                              WHERE STK_MONTH = ?";
-            } else {
-                $stockQuery = "SELECT ITEM_CODE,
-                              DAY_{$day}_OPEN as opening, 
-                              DAY_{$day}_PURCHASE as purchase, 
-                              DAY_{$day}_SALES as sales, 
-                              DAY_{$day}_CLOSING as closing 
-                              FROM $table_name 
-                              WHERE STK_MONTH = ?";
-            }
-            
-            $stockStmt = $conn->prepare($stockQuery);
-            $stockStmt->bind_param("s", $month);
-            $stockStmt->execute();
-            $stockResult = $stockStmt->get_result();
-            
-            while ($row = $stockResult->fetch_assoc()) {
-                $item_code = $row['ITEM_CODE'];
-                
-                // Skip if item not found in master or not allowed by license
-                if (!isset($items[$item_code])) continue;
-                
-                // Get LIQ_FLAG from stock row if available, otherwise use from item master
-                $stock_liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : $items[$item_code]['liq_flag'];
-                
-                // Initialize item data if not exists
-                if (!isset($cumulative_stock_data[$item_code])) {
-                    $cumulative_stock_data[$item_code] = [
-                        'purchase' => 0,
-                        'sales' => 0,
-                        'closing' => 0,
-                        'liq_flag' => $stock_liq_flag,
-                        'last_date' => $current_date
-                    ];
-                }
-                
-                // Accumulate purchase (cumulative)
-                $cumulative_stock_data[$item_code]['purchase'] += $row['purchase'];
-                
-                // Accumulate sales (cumulative)
-                $cumulative_stock_data[$item_code]['sales'] += $row['sales'];
-                
-                // FIX: Calculate closing balance using the formula: Closing = Opening + Purchase - Sales
-                // This ensures the closing balance is correctly calculated regardless of what's in the DB
-                $calculated_closing = $row['opening'] + $row['purchase'] - $row['sales'];
-                
-                // For closing balance, always take the latest calculated value (last day in range)
-                $cumulative_stock_data[$item_code]['closing'] = $calculated_closing;
-                $cumulative_stock_data[$item_code]['last_date'] = $current_date;
-                
-                // Update LIQ_FLAG if not set
-                if (empty($cumulative_stock_data[$item_code]['liq_flag'])) {
-                    $cumulative_stock_data[$item_code]['liq_flag'] = $stock_liq_flag;
-                }
-                
-                // Store TP Nos ONLY if there was a purchase on this date
-                if ($row['purchase'] > 0 && isset($tp_nos_by_date[$current_date])) {
-                    if (!isset($brand_tp_nos[$item_code])) {
-                        $brand_tp_nos[$item_code] = [];
-                    }
-                    foreach ($tp_nos_by_date[$current_date] as $tp_no) {
-                        if (!in_array($tp_no, $brand_tp_nos[$item_code])) {
-                            $brand_tp_nos[$item_code][] = $tp_no;
-                        }
-                    }
+            foreach ($tp_nos_by_date[$current_date] as $tp_no) {
+                if (!in_array($tp_no, $brand_tp_nos[$item_code])) {
+                    $brand_tp_nos[$item_code][] = $tp_no;
                 }
             }
-            
-            $stockStmt->close();
         }
     }
+    
+    $stockStmt->close();
 }
 
 // Process cumulative stock data - Only process items with non-zero stock

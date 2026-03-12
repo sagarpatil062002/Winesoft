@@ -532,13 +532,16 @@ foreach ($dates as $date) {
     $stockStmt->close();
 }
 
-// NEW: Recalculate closing balance to ensure Clo. = Op. + Rec. - Sale
-// Also carry forward opening from previous day's closing
+// OPENING BALANCE AND CLOSING CALCULATION LOGIC:
+// - First day: Use DB opening value
+// - Subsequent days: Carry forward previous day's closing as today's opening
+// - Closing = Opening + Purchase - Sold (calculated, not from DB)
+
 foreach ($dates as $index => $date) {
     // Skip if this date was not processed
     if (!isset($daily_data[$date])) continue;
     
-    // Carry forward opening from previous day's closing
+    // Carry forward opening from previous day's calculated closing
     if ($index > 0) {
         $prev_date = $dates[$index - 1];
         if (isset($daily_data[$prev_date])) {
@@ -554,6 +557,7 @@ foreach ($dates as $index => $date) {
         }
     }
     
+    // Calculate closing: Opening + Purchase - Sold
     foreach ($display_categories as $category) {
         if (!isset($daily_data[$date][$category])) continue;
         
@@ -562,10 +566,10 @@ foreach ($dates as $index => $date) {
             $purchase = $daily_data[$date][$category]['purchase'][$size] ?? 0;
             $sales = $daily_data[$date][$category]['sales'][$size] ?? 0;
             
-            // Recalculate closing: Op. + Rec. - Sale
+            // Calculate closing: Opening + Purchase - Sold
             $calculated_closing = $opening + $purchase - $sales;
             
-            // Update with calculated value (ensure non-negative)
+            // Ensure non-negative
             $daily_data[$date][$category]['closing'][$size] = max(0, $calculated_closing);
         }
     }

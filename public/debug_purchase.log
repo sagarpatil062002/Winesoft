@@ -131,3 +131,267 @@
 }
 [2026-03-12 11:36:44] Database connection closed
 [2026-03-12 11:36:44] === PURCHASE SESSION ENDED ===
+[2026-03-12 13:56:46] === NEW PURCHASE SESSION STARTED ===
+[2026-03-12 13:56:46] Session data: {
+    "user_id": "5",
+    "username": "Garava",
+    "CompID": 5,
+    "FIN_YEAR_ID": "3",
+    "FIN_YEAR_START": "2021-04-01 00:00:00",
+    "FIN_YEAR_END": "2022-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2021-2022",
+    "COMP_NAME": "Garava Hotel"
+}
+[2026-03-12 13:56:46] POST data: []
+[2026-03-12 13:56:46] GET data: []
+[2026-03-12 13:56:46] Company ID from session: 5
+[2026-03-12 13:56:47] Database connection included
+[2026-03-12 13:56:47] License functions included
+[2026-03-12 13:56:47] License type: FL-III
+[2026-03-12 13:56:47] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-12 13:56:47] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-12 13:56:47] Purchase mode: F
+[2026-03-12 13:56:47] Next voucher number: 118
+[2026-03-12 13:56:47] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-03-12 13:56:47] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT003",
+        "CAT004",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssss"
+}
+[2026-03-12 13:56:47] Items fetched from database: {
+    "count": 4687,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-03-12 13:56:47] Suppliers fetched: {
+    "count": 36
+}
+[2026-03-12 13:56:47] Database connection closed
+[2026-03-12 13:56:47] === PURCHASE SESSION ENDED ===
+[2026-03-12 16:24:30] === NEW PURCHASE SESSION STARTED ===
+[2026-03-12 16:24:30] Session data: {
+    "user_id": "5",
+    "username": "Garava",
+    "CompID": 5,
+    "FIN_YEAR_ID": "3",
+    "FIN_YEAR_START": "2021-04-01 00:00:00",
+    "FIN_YEAR_END": "2022-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2021-2022",
+    "COMP_NAME": "Garava Hotel",
+    "stock_columns_checked": true,
+    "sale_quantities": []
+}
+[2026-03-12 16:24:30] POST data: []
+[2026-03-12 16:24:30] GET data: []
+[2026-03-12 16:24:30] Company ID from session: 5
+[2026-03-12 16:24:30] Database connection included
+[2026-03-12 16:24:30] License functions included
+[2026-03-12 16:24:30] License type: FL-III
+[2026-03-12 16:24:30] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-12 16:24:30] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-12 16:24:30] Purchase mode: F
+[2026-03-12 16:24:30] Next voucher number: 118
+[2026-03-12 16:24:30] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-03-12 16:24:30] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT003",
+        "CAT004",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssss"
+}
+[2026-03-12 16:24:30] Items fetched from database: {
+    "count": 4687,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-03-12 16:24:30] Suppliers fetched: {
+    "count": 36
+}
+[2026-03-12 16:24:30] Database connection closed
+[2026-03-12 16:24:30] === PURCHASE SESSION ENDED ===
