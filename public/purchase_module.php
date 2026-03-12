@@ -598,6 +598,33 @@ function getSortLink($column, $label) {
     margin-bottom: 0;
   }
   
+  /* File drop zone styles */
+  .file-drop-zone {
+    border: 2px dashed #6c757d;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .file-drop-zone:hover,
+  .file-drop-zone.dragover {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+  }
+  
+  .file-drop-zone input[type="file"] {
+    display: none;
+  }
+  
+  .drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
   /* Bulk delete selection styles */
   .selection-count {
     background-color: #28a745;
@@ -960,9 +987,18 @@ function getSortLink($column, $label) {
                     </div>
 
                     <div class="mb-3">
-                        <label for="excelFile" class="form-label">Select CSV File</label>
-                        <input type="file" name="excel_file" id="excelFile" class="form-control" accept=".csv" required>
-                        <div class="form-text">Allowed file type: .csv (Max 10MB). Please use CSV format for reliable import.</div>
+                        <label for="excelFile" class="form-label">Select CSV Files (Multiple)</label>
+                        <div class="file-drop-zone" id="fileDropZone">
+                            <div class="drop-zone-content">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-2"></i>
+                                <p class="mb-1">Drag & drop CSV files here</p>
+                                <p class="text-muted small mb-2">or</p>
+                                <input type="file" name="excel_files[]" id="excelFile" class="form-control" accept=".csv" multiple required>
+                                <label for="excelFile" class="btn btn-outline-primary btn-sm mt-2">Browse Files</label>
+                            </div>
+                        </div>
+                        <div class="form-text">Allowed file type: .csv (Max 10MB each). Hold Ctrl/Cmd to select multiple files. Max 50 files at a time.</div>
+                        <div id="selectedFiles" class="mt-2"></div>
                     </div>
                     
                     <div class="row mt-3">
@@ -1812,63 +1848,140 @@ function printPurchaseSummary() {
 // File upload functionality
 $(document).ready(function() {
     const fileInput = $('#excelFile');
+    const fileDropZone = $('#fileDropZone');
     const importForm = $('#importForm');
     const importSubmit = $('#importSubmit');
+    const selectedFilesDiv = $('#selectedFiles');
+    
+    // Drag and drop events
+    fileDropZone.on('dragover', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).addClass('dragover');
+    });
+    
+    fileDropZone.on('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+    });
+    
+    fileDropZone.on('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $(this).removeClass('dragover');
+        
+        const files = e.originalEvent.dataTransfer.files;
+        if (files.length > 0) {
+            // Use DataTransfer to set files to the input
+            const dataTransfer = new DataTransfer();
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name.toLowerCase().endsWith('.csv')) {
+                    dataTransfer.items.add(files[i]);
+                }
+            }
+            fileInput[0].files = dataTransfer.files;
+            
+            // Trigger change event
+            fileInput.trigger('change');
+        }
+    });
+    
+    // Click on drop zone also opens file dialog
+    fileDropZone.on('click', function(e) {
+        if (e.target !== fileInput[0] && !$(e.target).is('label')) {
+            fileInput.trigger('click');
+        }
+    });
     
     // File selected - show validation
     fileInput.on('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+        const files = this.files;
+        const maxFiles = 50; // Match PHP max_file_uploads
+        
+        // Check if too many files selected
+        if (files.length > maxFiles) {
+            alert('You can only select up to ' + maxFiles + ' files at a time. Please select fewer files.');
+            $(this).val('');
+            selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select up to ' + maxFiles + ' files</small>');
+            return;
+        }
+        
+        selectedFilesDiv.empty();
+        
+        if (files.length > 0) {
+            let validFiles = true;
+            let fileListHtml = '<ul class="list-group mb-2" style="max-height: 150px; overflow-y: auto;">';
             
-            // Check file size (10MB max)
-            if (fileSize > 10) {
-                alert('File size exceeds 10MB limit. Please select a smaller file.');
-                $(this).val(''); // Clear file input
-                return;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
+                
+                // Check file size (10MB max)
+                if (fileSize > 10) {
+                    alert('File "' + file.name + '" exceeds 10MB limit. Please select smaller files.');
+                    validFiles = false;
+                    continue;
+                }
+                
+                // Check file extension - ONLY CSV
+                const fileName = file.name.toLowerCase();
+                if (!fileName.match(/\.csv$/)) {
+                    alert('Please select only CSV files (.csv). File "' + file.name + '" is not a CSV.');
+                    validFiles = false;
+                    continue;
+                }
+                
+                fileListHtml += '<li class="list-group-item d-flex justify-content-between align-items-center py-1">';
+                fileListHtml += '<small><i class="fas fa-file-csv me-2"></i>' + file.name + '</small>';
+                fileListHtml += '<span class="badge bg-secondary rounded-pill">' + fileSize + ' MB</span>';
+                fileListHtml += '</li>';
+                
+                console.log('File selected:', file.name, 'Size:', fileSize + 'MB');
             }
             
-            // Check file extension - ONLY CSV
-            const fileName = file.name.toLowerCase();
-            if (!fileName.match(/\.csv$/)) {
-                alert('Please select only CSV files (.csv). Save your Excel file as CSV format first.');
-                $(this).val(''); // Clear file input
-                return;
-            }
+            fileListHtml += '</ul>';
             
-            console.log('File selected:', file.name, 'Size:', fileSize + 'MB');
+            if (validFiles && files.length > 0) {
+                selectedFilesDiv.html(fileListHtml + '<small class="text-success"><i class="fas fa-check-circle me-1"></i>' + files.length + ' file(s) selected ready for import</small>');
+            } else {
+                $(this).val(''); // Clear file input if invalid
+                selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select valid CSV files</small>');
+            }
         }
     });
     
     // Form submission
     importForm.on('submit', function(e) {
-        const file = fileInput[0].files[0];
-        if (!file) {
+        const files = fileInput[0].files;
+        if (!files || files.length === 0) {
             e.preventDefault();
-            alert('Please select a CSV file to upload');
+            alert('Please select at least one CSV file to upload');
             fileInput.focus();
             return;
         }
         
-        // Show loading
-        importSubmit.html('<i class="fas fa-spinner fa-spin me-2"></i> Importing...').prop('disabled', true);
-        
-        // You can also validate file size here again
-        const fileSize = (file.size / 1024 / 1024).toFixed(2);
-        if (fileSize > 10) {
-            e.preventDefault();
-            alert('File size exceeds 10MB limit. Please select a smaller file.');
-            importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
-            fileInput.val('');
-            return;
+        // Validate all files
+        for (let i = 0; i < files.length; i++) {
+            const fileSize = (files[i].size / 1024 / 1024).toFixed(2);
+            if (fileSize > 10) {
+                e.preventDefault();
+                alert('File "' + files[i].name + '" exceeds 10MB limit. Please select smaller files.');
+                importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
+                return;
+            }
         }
+        
+        // Show loading
+        importSubmit.html('<i class="fas fa-spinner fa-spin me-2"></i> Importing ' + files.length + ' file(s)...').prop('disabled', true);
     });
     
     // Reset button state when modal is hidden
     $('#importPurchaseModal').on('hidden.bs.modal', function() {
-        importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
+        importSubmit.html('<i class="fas fa-upload me-2"></i> Import CSV Data').prop('disabled', false);
         // Clear file input
         fileInput.val('');
+        selectedFilesDiv.empty();
     });
     
     // Initialize purchase summary modal

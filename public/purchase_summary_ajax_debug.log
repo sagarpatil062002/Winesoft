@@ -20437,3 +20437,3833 @@
         }
     }
 }
+[12-Mar-2026 10:21:00 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 10:21:00 Europe/Berlin] Processed 0 items into 0 TP numbers
+[12-Mar-2026 10:21:00 Europe/Berlin] Unique TP Numbers found: 
+[12-Mar-2026 10:21:00 Europe/Berlin] Final Summary Structure: []
+[12-Mar-2026 10:21:20 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Royal Stag Deluxe Whisky, Code: SCMPL0010087, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 300
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 90 ML: 300
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 375 ML: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 750 ML: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010088, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 384
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 384, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 180 ML: 384
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Seagram's Royal Stag Deluxe Whisky, Code: SCMPL0010108, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 876, Category SPIRITS, Size 750 ML: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0010663, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 72
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 72, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 1156, Category SPIRITS, Size 180 ML: 72
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Budweiser Magnum Premium Strong Beers, Code: SCMBR0018142, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 36
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 36, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 1156, Category FERMENTED BEER, Size 650 ML: 36
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: MAGIC MOMENTS GREEN APPLE VODKA, Code: SCMPL0009866, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 1156, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028275, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 1156, Category SPIRITS, Size 180 ML: 96
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028274, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 1156, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Tuborg Strong Beer., Code: SCMBR0023264, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 144, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category FERMENTED BEER, Size 650 ML: 144
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010056, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 480
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 480
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Carlsberg Strong Beer, Code: SCMBR0023258, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 36
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 36, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category FERMENTED BEER, Size 650 ML: 36
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: ROYAL CHALLENGE Whisky, Code: SCMPL0009942, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 144
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010055, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 192
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 90 ML: 192
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010447, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 12, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 750 ML: 12
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: PREMIUM ROMANOV VODKA, Code: SCMPL0009936, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: Premium Romanov Vodka - Green Apple Thrill, Code: SCMPL0010434, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 10:21:20 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010450, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 10:21:20 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 10:21:20 Europe/Berlin] Using TotBott column: 288
+[12-Mar-2026 10:21:20 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 10:21:20 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 288, Class: 
+[12-Mar-2026 10:21:20 Europe/Berlin] Added to TP 2709, Category SPIRITS, Size 90 ML: 288
+[12-Mar-2026 10:21:20 Europe/Berlin] Processed 23 items into 3 TP numbers
+[12-Mar-2026 10:21:20 Europe/Berlin] Unique TP Numbers found: 876, 1156, 2709
+[12-Mar-2026 10:21:20 Europe/Berlin] Final Summary Structure: {
+    "876": {
+        "tp_no": "876",
+        "tp_details": {
+            "purchase_date": "2021-06-25",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 300,
+                "170 ML": 0,
+                "180 ML": 432,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 24,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 24,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "1156": {
+        "tp_no": "1156",
+        "tp_details": {
+            "purchase_date": "2021-06-25",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 200,
+                "170 ML": 0,
+                "180 ML": 192,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 36,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "2709": {
+        "tp_no": "2709",
+        "tp_details": {
+            "purchase_date": "2021-06-25",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 680,
+                "170 ML": 0,
+                "180 ML": 960,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 12,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 180,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    }
+}
+[12-Mar-2026 10:57:57 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 10:57:57 Europe/Berlin] Processed 0 items into 0 TP numbers
+[12-Mar-2026 10:57:57 Europe/Berlin] Unique TP Numbers found: 
+[12-Mar-2026 10:57:57 Europe/Berlin] Final Summary Structure: []
+[12-Mar-2026 11:11:06 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 11:11:06 Europe/Berlin] Processed 0 items into 0 TP numbers
+[12-Mar-2026 11:11:06 Europe/Berlin] Unique TP Numbers found: 
+[12-Mar-2026 11:11:06 Europe/Berlin] Final Summary Structure: []
+[12-Mar-2026 11:11:24 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 1440
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1440, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 1440
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: MASTER NOI DR BRANDY, Code: SCMPL0010198, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'D'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Sula Port Wine 1000, Code: SCMWN0019724, Category: 'Wine', ClassName: 'INDIAN', CategoryCode: 'CAT002', OldClass: 'V'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 36
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: WINE, Volume: 375, Column: 375 ML, Qty: 36, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] ERROR: Column not found: 375 W in category WINE
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012499, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: JAMBO P WHISKY(35.0), Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 54
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 54, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 1L: 54
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012497, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 96, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 375 ML: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 960
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 180 ML: 960
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: MASTER NOI DR BRANDY, Code: SCMPL0010198, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'D'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 180 ML: 144
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 576
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 576, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 180 ML: 576
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028274, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 300
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 90 ML: 300
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012499, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: JAMBO P WHISKY(35.0), Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 225
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 225, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 134, Category SPIRITS, Size 1L: 225
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010450, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 816
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 816, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 90 ML: 816
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010453, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 120, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 750 ML: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010452, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 120, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 375 ML: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010450, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 144, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 90 ML: 144
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 2400
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 2400, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 154, Category SPIRITS, Size 180 ML: 2400
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: KARAN XXX RUM, Code: SCMPL0010234, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'R'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 154, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010678, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010676, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 375 ML: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010679, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 336
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 336, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 180 ML: 336
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 2000
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 2000, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 90 ML: 2000
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Seagram's Royal Stag Deluxe Whisky, Code: SCMPL0010087, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 720
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 180 ML: 720
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 24, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 750 ML: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 375 ML: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: 8 PM Special Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 45
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 45, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 237, Category SPIRITS, Size 1L: 45
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028356, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 240, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 237, Category SPIRITS, Size 375 ML: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 100
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 90 ML: 100
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0012597, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: McDowell's No.1 Celebration XXX Matured Rum, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 2400
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 2400, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 2400
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 192
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 192
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 60, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 650 ML: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009846, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 650 ML: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009847, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 330
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 72
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 72, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 330 ML: 72
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Nirvana Rocker Punch Rum with Cola XXX, Code: SCMPL0018080, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'R'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 100
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 100, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 261, Category SPIRITS, Size 180 ML: 100
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0010663, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: MAGIC MOMENTS GREEN APPLE VODKA, Code: SCMPL0009866, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 720
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 720
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: 8 PM Special Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 45
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 45, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 1L: 45
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009846, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 156
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 156, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 334, Category FERMENTED BEER, Size 650 ML: 156
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009847, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 330
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 72
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 72, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 334, Category FERMENTED BEER, Size 330 ML: 72
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010677, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 120, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 750 ML: 120
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010676, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 96, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 375 ML: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010679, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 1200
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1200, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 180 ML: 1200
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010056, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 480
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 480
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Premium Romanov Vodka - Green Apple Thrill, Code: SCMPL0010434, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 384
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 384, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 90 ML: 384
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: PREMIUM ROMANOV VODKA, Code: SCMPL0009936, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010055, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 480
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 480, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 90 ML: 480
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022280, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: Bagpiper Gold Reserve Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: OFFICERS CHOICE Prestige Whisky, Code: SCMPL0009894, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 858, Category SPIRITS, Size 180 ML: 96
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010058, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 60, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 375 ML: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: ROYAL CHALLENGE Whisky, Code: SCMPL0009942, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010055, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 1152
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1152, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 1152
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 960
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 180 ML: 960
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010453, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 60, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 750 ML: 60
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022280, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:11:25 Europe/Berlin] 1L item found: Bagpiper Gold Reserve Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 864
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 864, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 864
+[12-Mar-2026 11:11:25 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022278, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:11:25 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:11:25 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:11:25 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: 
+[12-Mar-2026 11:11:25 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 375 ML: 24
+[12-Mar-2026 11:11:25 Europe/Berlin] Processed 58 items into 18 TP numbers
+[12-Mar-2026 11:11:25 Europe/Berlin] Unique TP Numbers found: 18, 49, 90, 117, 134, 150, 154, 161, 170, 237, 240, 261, 302, 334, 469, 559, 858, 1128
+[12-Mar-2026 11:11:25 Europe/Berlin] Final Summary Structure: {
+    "18": {
+        "tp_no": "18",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1680,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "49": {
+        "tp_no": "49",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "90": {
+        "tp_no": "90",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1104,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 96,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 54,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "117": {
+        "tp_no": "117",
+        "tp_details": {
+            "purchase_date": "2021-04-09",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 300,
+                "170 ML": 0,
+                "180 ML": 576,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "134": {
+        "tp_no": "134",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 225,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "150": {
+        "tp_no": "150",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 960,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 120,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 120,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "154": {
+        "tp_no": "154",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 2640,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "161": {
+        "tp_no": "161",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 200,
+                "170 ML": 0,
+                "180 ML": 336,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 48,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "170": {
+        "tp_no": "170",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 2000,
+                "170 ML": 0,
+                "180 ML": 720,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 48,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 24,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "237": {
+        "tp_no": "237",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 240,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 45,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "240": {
+        "tp_no": "240",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 100,
+                "170 ML": 0,
+                "180 ML": 2592,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "261": {
+        "tp_no": "261",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 100,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 72,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 180,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "302": {
+        "tp_no": "302",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 792,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 45,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "334": {
+        "tp_no": "334",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 72,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 156,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "469": {
+        "tp_no": "469",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1200,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 96,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 120,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "559": {
+        "tp_no": "559",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 864,
+                "170 ML": 0,
+                "180 ML": 792,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "858": {
+        "tp_no": "858",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 96,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "1128": {
+        "tp_no": "1128",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 2216,
+                "170 ML": 0,
+                "180 ML": 984,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 84,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 60,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    }
+}
+[12-Mar-2026 11:14:19 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 11:14:19 Europe/Berlin] Processed 0 items into 0 TP numbers
+[12-Mar-2026 11:14:19 Europe/Berlin] Unique TP Numbers found: 
+[12-Mar-2026 11:14:19 Europe/Berlin] Final Summary Structure: []
+[12-Mar-2026 11:14:36 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size as PurchaseSize,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            -- Get size information from tblsize
+            sz.ML_VOLUME,
+            sz.SIZE_DESC as SizeDescription,
+            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
+            -- Get class and category information from new tables
+            cn.CLASS_NAME,
+            cn.CATEGORY_CODE as ClassCategoryCode,
+            sn.SUBCLASS_NAME,
+            cat.CATEGORY_NAME,
+            -- Also get old fields for fallback
+            im.CLASS as OldClass,
+            im.CLASS_CODE_NEW,
+            im.SUBCLASS_CODE_NEW,
+            im.SIZE_CODE,
+            im.ITEM_GROUP
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
+        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
+        -- Join with new class tables using CLASS_CODE_NEW
+        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
+        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
+        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 1440
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1440, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 1440
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: MASTER NOI DR BRANDY, Code: SCMPL0010198, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'D'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: Sula Port Wine 1000, Code: SCMWN0019724, Category: 'Wine', ClassName: 'INDIAN', CategoryCode: 'CAT002', OldClass: 'V'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 36
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: WINE, Volume: 375, Column: 375 ML, Qty: 36, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] ERROR: Column not found: 375 W in category WINE
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012499, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:36 Europe/Berlin] 1L item found: JAMBO P WHISKY(35.0), Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 54
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 54, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 1L: 54
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012497, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 96, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 375 ML: 96
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 960
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 180 ML: 960
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: MASTER NOI DR BRANDY, Code: SCMPL0010198, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'D'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 144, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 90, Category SPIRITS, Size 180 ML: 144
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 576
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 576, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 180 ML: 576
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028274, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 300
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 90 ML: 300
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012499, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:36 Europe/Berlin] 1L item found: JAMBO P WHISKY(35.0), Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 225
+[12-Mar-2026 11:14:36 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:36 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 225, Class: 
+[12-Mar-2026 11:14:36 Europe/Berlin] Added to TP 134, Category SPIRITS, Size 1L: 225
+[12-Mar-2026 11:14:36 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010450, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:36 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:36 Europe/Berlin] Using TotBott column: 816
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 816, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 90 ML: 816
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010453, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 120, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 750 ML: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010452, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 120, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 375 ML: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010450, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 144
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 144, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 150, Category SPIRITS, Size 90 ML: 144
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 2400
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 2400, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 154, Category SPIRITS, Size 180 ML: 2400
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: KARAN XXX RUM, Code: SCMPL0010234, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'R'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 154, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010678, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010676, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 375 ML: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010679, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 336
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 336, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 180 ML: 336
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010076, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 2000
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 2000, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 90 ML: 2000
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Seagram's Royal Stag Deluxe Whisky, Code: SCMPL0010087, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 720
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 180 ML: 720
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010112, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 24, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 750 ML: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Seagram's Imperial Blue Superior Grain Whisky, Code: SCMPL0010111, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 170, Category SPIRITS, Size 375 ML: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:37 Europe/Berlin] 1L item found: 8 PM Special Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 45
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 45, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 237, Category SPIRITS, Size 1L: 45
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028356, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 240, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 237, Category SPIRITS, Size 375 ML: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 100
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 90 ML: 100
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0012597, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:37 Europe/Berlin] 1L item found: McDowell's No.1 Celebration XXX Matured Rum, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 2400
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 2400, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 2400
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 192
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 192
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 60, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 650 ML: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009846, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 120, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 650 ML: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009847, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 330
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 72
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 72, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 261, Category FERMENTED BEER, Size 330 ML: 72
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Nirvana Rocker Punch Rum with Cola XXX, Code: SCMPL0018080, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'R'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 100
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 100, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 261, Category SPIRITS, Size 180 ML: 100
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: MAGIC MOMENTS PURE GRAIN VODKA, Code: SCMPL0010663, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: MAGIC MOMENTS GREEN APPLE VODKA, Code: SCMPL0009866, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 720
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 720, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 180 ML: 720
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028357, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:37 Europe/Berlin] 1L item found: 8 PM Special Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 45
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 45, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 302, Category SPIRITS, Size 1L: 45
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009846, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 650
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 156
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 156, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 334, Category FERMENTED BEER, Size 650 ML: 156
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Kingfisher Strong Premium Beer, Code: SCMBR0009847, Category: 'Fermented Beer', ClassName: 'Fermented Beer', CategoryCode: 'CAT003', OldClass: 'F'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 330
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 72
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 330, Column: 330 ML, Qty: 72, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 334, Category FERMENTED BEER, Size 330 ML: 72
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010677, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 120, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 750 ML: 120
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010676, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 96, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 375 ML: 96
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010679, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'G'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 1200
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1200, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 469, Category SPIRITS, Size 180 ML: 1200
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010056, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 480
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 480, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 480
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Premium Romanov Vodka - Green Apple Thrill, Code: SCMPL0010434, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 384
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 384, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 90 ML: 384
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: PREMIUM ROMANOV VODKA, Code: SCMPL0009936, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'K'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 48, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 48
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010055, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 480
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 480, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 90 ML: 480
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022280, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:37 Europe/Berlin] 1L item found: Bagpiper Gold Reserve Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 559, Category SPIRITS, Size 180 ML: 240
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: OFFICERS CHOICE Prestige Whisky, Code: SCMPL0009894, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 96
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 96, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 858, Category SPIRITS, Size 180 ML: 96
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010058, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 60, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 375 ML: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 200
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 200
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: ROYAL CHALLENGE Whisky, Code: SCMPL0009942, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 24, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 180 ML: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0010055, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 1152
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 1152, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 1152
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 180
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 960
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 180 ML: 960
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010453, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 750
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 750, Column: 750 ML, Qty: 60, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 750 ML: 60
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022280, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 1000
+[12-Mar-2026 11:14:37 Europe/Berlin] 1L item found: Bagpiper Gold Reserve Whisky, Volume: 1000, Category: SPIRITS
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 1L: 18
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022276, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 90
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 864
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 864, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 90 ML: 864
+[12-Mar-2026 11:14:37 Europe/Berlin] Item: Bagpiper Gold Reserve Whisky, Code: SCMPL0022278, Category: 'Spirit', ClassName: 'IMFL', CategoryCode: 'CAT001', OldClass: 'W'
+[12-Mar-2026 11:14:37 Europe/Berlin] Using ML_VOLUME from tblsize: 375
+[12-Mar-2026 11:14:37 Europe/Berlin] Using TotBott column: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] PHP Warning:  Undefined variable $itemClass in C:\xampp\htdocs\Winesoft\public\purchase_summary_ajax.php on line 321
+[12-Mar-2026 11:14:37 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 24, Class: 
+[12-Mar-2026 11:14:37 Europe/Berlin] Added to TP 1128, Category SPIRITS, Size 375 ML: 24
+[12-Mar-2026 11:14:37 Europe/Berlin] Processed 58 items into 18 TP numbers
+[12-Mar-2026 11:14:37 Europe/Berlin] Unique TP Numbers found: 18, 49, 90, 117, 134, 150, 154, 161, 170, 237, 240, 261, 302, 334, 469, 559, 858, 1128
+[12-Mar-2026 11:14:37 Europe/Berlin] Final Summary Structure: {
+    "18": {
+        "tp_no": "18",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1680,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "49": {
+        "tp_no": "49",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "90": {
+        "tp_no": "90",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1104,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 96,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 54,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "117": {
+        "tp_no": "117",
+        "tp_details": {
+            "purchase_date": "2021-04-09",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 300,
+                "170 ML": 0,
+                "180 ML": 576,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "134": {
+        "tp_no": "134",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 225,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "150": {
+        "tp_no": "150",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 960,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 120,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 120,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "154": {
+        "tp_no": "154",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 2640,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "161": {
+        "tp_no": "161",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 200,
+                "170 ML": 0,
+                "180 ML": 336,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 48,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "170": {
+        "tp_no": "170",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 2000,
+                "170 ML": 0,
+                "180 ML": 720,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 48,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 24,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "237": {
+        "tp_no": "237",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 240,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 45,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "240": {
+        "tp_no": "240",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 100,
+                "170 ML": 0,
+                "180 ML": 2592,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "261": {
+        "tp_no": "261",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 100,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 72,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 180,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "302": {
+        "tp_no": "302",
+        "tp_details": {
+            "purchase_date": "2021-04-22",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 792,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 45,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "334": {
+        "tp_no": "334",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 0,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 72,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 156,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "469": {
+        "tp_no": "469",
+        "tp_details": {
+            "purchase_date": "2021-04-14",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 1200,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 96,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 120,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "559": {
+        "tp_no": "559",
+        "tp_details": {
+            "purchase_date": "2021-04-13",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 864,
+                "170 ML": 0,
+                "180 ML": 792,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "858": {
+        "tp_no": "858",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 0,
+                "170 ML": 0,
+                "180 ML": 96,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    },
+    "1128": {
+        "tp_no": "1128",
+        "tp_details": {
+            "purchase_date": "2021-04-30",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                "50 ML": 0,
+                "60 ML": 0,
+                "90 ML": 2216,
+                "170 ML": 0,
+                "180 ML": 984,
+                "200 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "355 ML": 0,
+                "375 ML": 84,
+                "500 ML": 0,
+                "650 ML": 0,
+                "700 ML": 0,
+                "750 ML": 60,
+                "1L": 18,
+                ">1L": 0
+            },
+            "WINE": {
+                "100 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "700 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "FERMENTED BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            },
+            "MILD BEER": {
+                "60 ML": 0,
+                "90 ML": 0,
+                "180 ML": 0,
+                "250 ML": 0,
+                "275 ML": 0,
+                "330 ML": 0,
+                "375 ML": 0,
+                "500 ML": 0,
+                "650 ML": 0,
+                "750 ML": 0,
+                "1L": 0,
+                ">1L": 0
+            }
+        }
+    }
+}

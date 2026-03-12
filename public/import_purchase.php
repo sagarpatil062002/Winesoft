@@ -3,6 +3,13 @@
 // Includes VOC_NO renumbering based on TP_DATE
 session_start();
 
+// Increase PHP limits for file uploads - set to unlimited execution time
+ini_set('upload_max_filesize', '50M');
+ini_set('post_max_size', '100M');
+ini_set('max_file_uploads', '50');
+ini_set('memory_limit', '512M');
+set_time_limit(0); // No execution time limit
+
 // ============================================================================
 // VOUCHER NUMBER RENUMBERING FUNCTION
 // Renumbers all VOC_NO for the company based on TP_DATE (or DATE if TP_DATE is empty)
@@ -981,45 +988,295 @@ function updateItemStock($conn, $itemCode, $totalBottles, $companyId) {
     return $result;
 }
 
-// Function to update stock after purchase (complete version matching purchases.php)
-function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
-    // Get day of month from purchase date
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $month = date('n', strtotime($purchaseDate));
-    $year = date('Y', strtotime($purchaseDate));
-    $monthYear = date('Y-m', strtotime($purchaseDate));
+// Function to cascade stock through all months of a previous financial year
+// Updates from purchase month+1 until March of that FY
+function cascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, $total_bottles) {
+    $purchase_timestamp = strtotime($purchase_date);
+    $purchase_month = date('n', $purchase_timestamp);
+    $purchase_year = date('Y', $purchase_timestamp);
     
-    debugLog("Updating stock for item", [
+    // Get financial year end date (use function from stock_functions.php)
+    $fy_end_date = getFinancialYearEndDate($purchase_date);
+    $fy_end_month = (int)date('n', strtotime($fy_end_date));
+    $fy_end_year = (int)date('Y', strtotime($fy_end_date));
+    
+    debugLog("Cascading to FY end for previous year purchase", [
+        'item_code' => $item_code,
+        'purchase_date' => $purchase_date,
+        'purchase_month' => $purchase_month,
+        'purchase_year' => $purchase_year,
+        'fy_end_date' => $fy_end_date,
+        'fy_end_month' => $fy_end_month,
+        'fy_end_year' => $fy_end_year
+    ]);
+    
+    // Start from the next month after purchase
+    $start_month = $purchase_month + 1;
+    $start_year = $purchase_year;
+    
+    if ($start_month > 12) {
+        $start_month = 1;
+        $start_year++;
+    }
+    
+    debugLog("Starting cascade from", ['start_month' => $start_month, 'start_year' => $start_year]);
+    
+    // Get the closing value from the purchase month to use as opening for next month
+    $purchase_month_2digit = str_pad($purchase_month, 2, '0', STR_PAD_LEFT);
+    $purchase_year_2digit = substr($purchase_year, -2);
+    $purchase_table = "tbldailystock_{$comp_id}_{$purchase_month_2digit}_{$purchase_year_2digit}";
+    
+    // Find the last day of purchase month with the purchase
+    $days_in_purchase_month = date('t', $purchase_timestamp);
+    
+    $last_day_with_purchase = 0;
+    for ($day = $days_in_purchase_month; $day >= 1; $day--) {
+        $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
+        $purchase_col = "DAY_{$day_str}_PURCHASE";
+        $check_query = "SELECT $purchase_col as purch FROM $purchase_table WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $purchase_month_year = date('Y-m', strtotime($purchase_date));
+        $check_stmt->bind_param("ss", $item_code, $purchase_month_year);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        if ($check_result->num_rows > 0) {
+            $row = $check_result->fetch_assoc();
+            if ($row['purch'] > 0) {
+                $last_day_with_purchase = $day;
+                break;
+            }
+        }
+        $check_stmt->close();
+    }
+    
+    // Get the closing from the last day with purchase
+    $closing_value = 0;
+    if ($last_day_with_purchase > 0) {
+        $last_day_str = str_pad($last_day_with_purchase, 2, '0', STR_PAD_LEFT);
+        $closing_col = "DAY_{$last_day_str}_CLOSING";
+        $get_closing_query = "SELECT $closing_col as closing FROM $purchase_table WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+        $closing_stmt = $conn->prepare($get_closing_query);
+        $closing_stmt->bind_param("ss", $item_code, $purchase_month_year);
+        $closing_stmt->execute();
+        $closing_result = $closing_stmt->get_result();
+        if ($closing_result->num_rows > 0) {
+            $closing_row = $closing_result->fetch_assoc();
+            $closing_value = (int)$closing_row['closing'];
+        }
+        $closing_stmt->close();
+    }
+    
+    debugLog("Last day with purchase: $last_day_with_purchase, closing value: $closing_value");
+    
+    // Loop through months from purchase month+1 to end of financial year (March)
+    while ($start_year < $fy_end_year || ($start_year == $fy_end_year && $start_month <= $fy_end_month)) {
+        $month_2digit = str_pad($start_month, 2, '0', STR_PAD_LEFT);
+        $year_2digit = substr($start_year, -2);
+        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
+        
+        debugLog("Processing month", ['table' => $archive_table, 'month' => $start_month, 'year' => $start_year]);
+        
+        // Check if this month's table exists
+        $check_table_query = "SELECT COUNT(*) as count FROM information_schema.tables 
+                             WHERE table_schema = DATABASE() 
+                             AND table_name = '$archive_table'";
+        $check_result = $conn->query($check_table_query);
+        $table_exists = $check_result ? $check_result->fetch_assoc()['count'] > 0 : false;
+        
+        // If table doesn't exist, create it
+        if (!$table_exists) {
+            $days_in_month = date('t', strtotime("$start_year-$start_month-01"));
+            
+            $create_query = "CREATE TABLE $archive_table (
+                `DailyStockID` int(11) NOT NULL AUTO_INCREMENT,
+                `STK_DATE` date NOT NULL,
+                `STK_MONTH` varchar(7) NOT NULL COMMENT 'Format: YYYY-MM',
+                `ITEM_CODE` varchar(20) NOT NULL,
+                `LIQ_FLAG` char(1) NOT NULL DEFAULT 'F',
+                `LAST_UPDATED` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),";
+            
+            for ($day = 1; $day <= $days_in_month; $day++) {
+                $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                $create_query .= "
+                `DAY_{$day_padded}_OPEN` int(11) DEFAULT 0,
+                `DAY_{$day_padded}_PURCHASE` int(11) DEFAULT 0,
+                `DAY_{$day_padded}_SALES` int(11) DEFAULT 0,
+                `DAY_{$day_padded}_CLOSING` int(11) DEFAULT 0,";
+            }
+            
+            $create_query .= "
+                PRIMARY KEY (`DailyStockID`),
+                UNIQUE KEY `unique_daily_stock` (`STK_DATE`, `ITEM_CODE`),
+                KEY `idx_item_code` (`ITEM_CODE`),
+                KEY `idx_liq_flag` (`LIQ_FLAG`),
+                KEY `idx_stk_month` (`STK_MONTH`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+            
+            if ($conn->query($create_query)) {
+                debugLog("Created archive table: $archive_table");
+                $table_exists = true;
+            }
+        }
+        
+        if ($table_exists) {
+            $monthYear = date('Y-m', strtotime("$start_year-$start_month-01"));
+            $daysInMonth = date('t', strtotime("$start_year-$start_month-01"));
+            
+            // Check if record exists
+            $checkRecordQuery = "SELECT COUNT(*) as count FROM $archive_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $checkRecordStmt = $conn->prepare($checkRecordQuery);
+            $checkRecordStmt->bind_param("ss", $monthYear, $item_code);
+            $checkRecordStmt->execute();
+            $recordResult = $checkRecordStmt->get_result();
+            $recordExists = $recordResult->fetch_assoc()['count'] > 0;
+            $checkRecordStmt->close();
+            
+            if (!$recordExists) {
+                // Insert new record with opening value from previous month
+                $insertQuery = "INSERT INTO $archive_table (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                               VALUES (?, ?, 'F', ?, 0, 0, ?)";
+                $insertStmt = $conn->prepare($insertQuery);
+                $insertStmt->bind_param("ssii", $monthYear, $item_code, $closing_value, $closing_value);
+                $insertStmt->execute();
+                $insertStmt->close();
+                
+                debugLog("Inserted new record in $archive_table with opening=$closing_value");
+            } else {
+                // Update existing record - set day 1 opening from previous month
+                $updateOpeningQuery = "UPDATE $archive_table 
+                                      SET DAY_01_OPEN = ?,
+                                          DAY_01_CLOSING = DAY_01_OPEN + DAY_01_PURCHASE - DAY_01_SALES
+                                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $openingStmt = $conn->prepare($updateOpeningQuery);
+                $openingStmt->bind_param("iss", $closing_value, $monthYear, $item_code);
+                $openingStmt->execute();
+                $openingStmt->close();
+                
+                debugLog("Updated existing record in $archive_table with opening=$closing_value");
+            }
+            
+            // Cascade through all days of this month
+            for ($day = 2; $day <= $daysInMonth; $day++) {
+                $prevDay = $day - 1;
+                $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+                $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+                $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+                $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                
+                $updateDayQuery = "UPDATE $archive_table 
+                                  SET $currentDayOpening = $prevDayClosing,
+                                      $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                                  WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                
+                $dayStmt = $conn->prepare($updateDayQuery);
+                $dayStmt->bind_param("ss", $monthYear, $item_code);
+                $dayStmt->execute();
+                $dayStmt->close();
+            }
+            
+            // Get the closing value from this month to use for next month
+            $lastDayStr = str_pad($daysInMonth, 2, '0', STR_PAD_LEFT);
+            $lastDayClosingCol = "DAY_{$lastDayStr}_CLOSING";
+            $getClosingQuery = "SELECT $lastDayClosingCol as closing FROM $archive_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $getClosingStmt = $conn->prepare($getClosingQuery);
+            $getClosingStmt->bind_param("ss", $monthYear, $item_code);
+            $getClosingStmt->execute();
+            $closingResult = $getClosingStmt->get_result();
+            if ($closingResult->num_rows > 0) {
+                $closingRow = $closingResult->fetch_assoc();
+                $closing_value = (int)$closingRow['closing'];
+            }
+            $getClosingStmt->close();
+            
+            debugLog("Got closing value for next month: $closing_value");
+        }
+        
+        // Move to next month
+        $start_month++;
+        if ($start_month > 12) {
+            $start_month = 1;
+            $start_year++;
+        }
+    }
+    
+    debugLog("Cascading completed to FY end: " . $fy_end_date);
+}
+
+// Function to update stock for purchases in previous financial years
+function updatePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    debugLog("Updating previous year stock", [
         'item_code' => $itemCode,
         'total_bottles' => $totalBottles,
-        'purchase_date' => $purchaseDate,
-        'day_of_month' => $dayOfMonth,
-        'month' => $month,
-        'year' => $year
+        'purchase_date' => $purchaseDate
+    ]);
+    
+    // Update archived month stock
+    updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate);
+    
+    // Cascade through all remaining months until FY end (March)
+    // This handles all months from purchase month+1 through March of that FY
+    cascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
+    
+    // Update tblitem_stock
+    updateItemStock($conn, $itemCode, $totalBottles, $comp_id);
+}
+
+// Function to update stock for purchases in current financial year
+function updateCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
+    debugLog("Updating current year stock", [
+        'item_code' => $itemCode,
+        'total_bottles' => $totalBottles,
+        'purchase_date' => $purchaseDate
     ]);
     
     // Check if this month is archived
-    $isArchived = isMonthArchived($conn, $companyId, $month, $year);
+    $month = date('n', strtotime($purchaseDate));
+    $year = date('Y', strtotime($purchaseDate));
+    $isArchived = isMonthArchived($conn, $comp_id, $month, $year);
     
     if ($isArchived) {
         debugLog("Month is archived, updating archive table with cascading");
         // Update archived month data with cascading
-        updateArchivedMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+        updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate);
         
-        // Continue cascading - function will determine correct end date
-        continueCascadingToCurrentMonth($conn, $companyId, $itemCode, $purchaseDate, null);
+        // Continue cascading to current month (within same FY)
+        continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, null);
     } else {
         debugLog("Month is current, updating current table with cascading");
         // Update current month data with cascading
-        updateCurrentMonthStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+        updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate);
     }
     
     // Update tblitem_stock
-    updateItemStock($conn, $itemCode, $totalBottles, $companyId);
+    updateItemStock($conn, $itemCode, $totalBottles, $comp_id);
 }
 
-// Handle file upload
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
+// Function to update stock after purchase - Main Entry Point
+// DETERMINES whether to use current year or previous year logic (matching purchases.php)
+function updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn) {
+    debugLog("updateStock called", [
+        'item_code' => $itemCode,
+        'total_bottles' => $totalBottles,
+        'purchase_date' => $purchaseDate,
+        'company_id' => $companyId
+    ]);
+    
+    // Determine if purchase is in current or previous financial year
+    // Use the function from stock_functions.php
+    if (isPreviousFinancialYear($purchaseDate)) {
+        // USE NEW LOGIC for previous financial years
+        debugLog("Using PREVIOUS YEAR logic for stock update");
+        updatePreviousYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+    } else {
+        // USE EXISTING LOGIC for current financial year
+        debugLog("Using CURRENT YEAR logic for stock update");
+        updateCurrentYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
+    }
+}
+
+// Handle file upload - supports multiple files
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_files'])) {
     debugLog("=== FORM SUBMISSION STARTED ===");
     
     $importMode = $_POST['import_mode'] ?? 'F';
@@ -1034,31 +1291,274 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
         'update_stock' => $updateStockFlag
     ]);
     
-    // Validate file
-    $fileName = $_FILES['excel_file']['name'];
-    $fileSize = $_FILES['excel_file']['size'];
-    $fileTmp = $_FILES['excel_file']['tmp_name'];
+    $files = $_FILES['excel_files'];
+    $fileCount = count($files['name']);
     
-    // Check file size (10MB max)
-    if ($fileSize > 10 * 1024 * 1024) {
-        header("Location: purchase_module.php?mode=$importMode&import_error=File size exceeds 10MB limit");
+    debugLog("Number of files uploaded", $fileCount);
+    
+    // Validate that files were uploaded
+    if ($fileCount === 0 || ($fileCount === 1 && $files['error'][0] === UPLOAD_ERR_NO_FILE)) {
+        header("Location: purchase_module.php?mode=$importMode&import_error=No file selected");
         exit;
     }
     
-    // Check file extension - ONLY CSV ALLOWED
-    $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
     $allowedExtensions = ['csv'];
-
-    if (!in_array($fileExt, $allowedExtensions)) {
-        header("Location: purchase_module.php?mode=$importMode&import_error=Invalid file type. Please upload .csv files only.");
-        exit;
+    $totalSuccessCount = 0;
+    $totalErrorCount = 0;
+    $allErrors = [];
+    $importedFiles = [];
+    
+    // Process each file one by one
+    for ($i = 0; $i < $fileCount; $i++) {
+        // Skip if no file uploaded for this index
+        if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        
+        // Check for upload errors
+        if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+            $allErrors[] = "File " . ($i + 1) . ": Upload error code " . $files['error'][$i];
+            $totalErrorCount++;
+            continue;
+        }
+        
+        $fileName = $files['name'][$i];
+        $fileSize = $files['size'][$i];
+        $fileTmp = $files['tmp_name'][$i];
+        
+        // Check file size (10MB max)
+        if ($fileSize > 10 * 1024 * 1024) {
+            $allErrors[] = "File '$fileName': Size exceeds 10MB limit";
+            $totalErrorCount++;
+            continue;
+        }
+        
+        // Check file extension
+        $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        if (!in_array($fileExt, $allowedExtensions)) {
+            $allErrors[] = "File '$fileName': Invalid file type. Please upload .csv files only.";
+            $totalErrorCount++;
+            continue;
+        }
+        
+        debugLog("Processing file " . ($i + 1) . ": $fileName");
+        
+        // Process this CSV file
+        $result = processSingleCSVFile($fileTmp, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName);
+        
+        $totalSuccessCount += $result['successCount'];
+        $totalErrorCount += $result['errorCount'];
+        
+        if (!empty($result['errors'])) {
+            foreach ($result['errors'] as $error) {
+                $allErrors[] = "File '$fileName': $error";
+            }
+        }
+        
+        if ($result['successCount'] > 0) {
+            $importedFiles[] = $fileName;
+        }
     }
-
-    // Process CSV file
-    processCSVFile($fileTmp, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes);
+    
+    // After importing all files, renumber voucher numbers
+    if ($totalSuccessCount > 0) {
+        renumberVoucherNumbers($conn, $companyId);
+    }
+    
+    // Redirect with results
+    if ($totalErrorCount > 0) {
+        $errorMessage = "Imported $totalSuccessCount purchases from " . count($importedFiles) . " file(s). Errors: $totalErrorCount. ";
+        if (count($allErrors) > 0) {
+            $errorMessage .= "First error: " . $allErrors[0];
+        }
+        header("Location: purchase_module.php?mode=$importMode&import_error=" . urlencode($errorMessage));
+    } else {
+        header("Location: purchase_module.php?mode=$importMode&import_success=1");
+    }
 } else {
     header("Location: purchase_module.php");
     exit;
+}
+
+// Function to process a single CSV file
+function processSingleCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName = '') {
+    debugLog("Processing CSV file: " . $fileName, $filePath);
+    
+    $handle = fopen($filePath, 'r');
+    if (!$handle) {
+        debugLog("Cannot open file", $filePath);
+        return [
+            'successCount' => 0,
+            'errorCount' => 1,
+            'errors' => ["Cannot open file: $fileName"]
+        ];
+    }
+    
+    // Read and skip metadata rows
+    $rowNum = 0;
+    $headersFound = false;
+    $headers = [];
+    $tpGroups = [];
+    
+    // Read file line by line
+    while (($data = fgetcsv($handle)) !== false) {
+        $rowNum++;
+        
+        // Skip empty rows
+        if (empty($data) || (count($data) == 1 && empty(trim($data[0])))) {
+            continue;
+        }
+        
+        // Skip the first two metadata rows
+        if ($rowNum <= 2) {
+            debugLog("Skipping metadata row $rowNum", $data[0]);
+            continue;
+        }
+        
+        // Row 3 should contain headers
+        if ($rowNum == 3) {
+            // Clean headers: remove special chars, trim, lowercase
+            $headers = array_map(function($h) {
+                $h = trim($h);
+                $h = strtolower($h);
+                $h = preg_replace('/[^a-z0-9\s]/', '', $h); // Remove special characters
+                $h = str_replace(' ', '_', $h); // Replace spaces with underscores
+                return $h;
+            }, $data);
+            
+            debugLog("CSV Headers found", $headers);
+            $headersFound = true;
+            continue;
+        }
+        
+        // Process data rows (row 4 onwards)
+        if ($headersFound) {
+            // Map data to headers
+            $rowData = [];
+            foreach ($headers as $index => $header) {
+                if (isset($data[$index])) {
+                    $rowData[$header] = trim($data[$index]);
+                } else {
+                    $rowData[$header] = '';
+                }
+            }
+            
+            // Skip rows without essential data
+            if (empty($rowData['scm_item_code']) && empty($rowData['item_name'])) {
+                debugLog("Skipping empty row $rowNum");
+                continue;
+            }
+            
+            // Get values from CSV
+            $receivedDate = $rowData['received_date'] ?? '';
+            $autoTpNo = $rowData['auto_tp_no'] ?? '';
+            $manualTpNo = $rowData['manual_tp_no'] ?? '';
+            $tpDate = $rowData['tp_date'] ?? '';
+            $district = $rowData['district'] ?? '';
+            $scmPartyCode = $rowData['scm_party_code'] ?? '';
+            $partyName = $rowData['party_name'] ?? '';
+            $srNo = $rowData['srno'] ?? '';
+            $scmItemCode = $rowData['scm_item_code'] ?? '';
+            $itemName = $rowData['item_name'] ?? '';
+            $size = $rowData['size'] ?? '';
+            $cases = floatval($rowData['qty_cases'] ?? 0);
+            $bottles = intval($rowData['qty_bottles'] ?? 0);
+            $batchNo = $rowData['batch_no'] ?? '';
+            $mfgMonth = $rowData['mfg_month'] ?? '';
+            $mrp = floatval($rowData['mrp'] ?? 0);
+            $bl = floatval($rowData['bl'] ?? 0);
+            $vv = floatval($rowData['vv'] ?? 0);
+            $totalBottQty = intval($rowData['total_bot_qty'] ?? 0);
+            
+            // Default values for missing fields
+            $freeCases = 0;
+            $freeBottles = 0;
+            
+            // Format dates
+            $purchaseDate = '';
+            if (!empty($receivedDate)) {
+                $purchaseDate = date('Y-m-d', strtotime($receivedDate));
+                if ($purchaseDate == '1970-01-01') {
+                    $purchaseDate = date('Y-m-d');
+                }
+            } else {
+                $purchaseDate = date('Y-m-d');
+            }
+            
+            // Format TP date
+            $formattedTpDate = '';
+            if (!empty($tpDate)) {
+                $formattedTpDate = date('Y-m-d', strtotime($tpDate));
+                if ($formattedTpDate == '1970-01-01') {
+                    $formattedTpDate = '0000-00-00';
+                }
+            } else {
+                $formattedTpDate = '0000-00-00';
+            }
+            
+            // Use manual TP number if available, otherwise auto TP number
+            $tpNo = !empty($manualTpNo) ? $manualTpNo : $autoTpNo;
+            
+            // Group by TP No. (manual or auto)
+            if (!empty($tpNo)) {
+                if (!isset($tpGroups[$tpNo])) {
+                    $tpGroups[$tpNo] = [
+                        'date' => $purchaseDate,
+                        'supplier' => $partyName,
+                        'auto_tp_no' => $autoTpNo,
+                        'manual_tp_no' => $manualTpNo,
+                        'tp_date' => $formattedTpDate,
+                        'district' => $district,
+                        'scm_party_code' => $scmPartyCode,
+                        'items' => []
+                    ];
+                    
+                    debugLog("Created new TP group", [
+                        'tp_no' => $tpNo,
+                        'date' => $purchaseDate,
+                        'supplier' => $partyName
+                    ]);
+                }
+                
+                $tpGroups[$tpNo]['items'][] = [
+                    'scm_item_code' => $scmItemCode,
+                    'item_name' => $itemName,
+                    'size' => $size,
+                    'cases' => $cases,
+                    'bottles' => $bottles,
+                    'free_cases' => $freeCases,
+                    'free_bottles' => $freeBottles,
+                    'batch_no' => $batchNo,
+                    'mfg_month' => $mfgMonth,
+                    'mrp' => $mrp,
+                    'bl' => $bl,
+                    'vv' => $vv,
+                    'total_bott_qty' => $totalBottQty
+                ];
+            } else {
+                debugLog("Skipping row - no TP number", $rowNum);
+            }
+        }
+    }
+    
+    fclose($handle);
+    
+    debugLog("Found TP groups in $fileName", [
+        'count' => count($tpGroups),
+        'tps' => array_keys($tpGroups)
+    ]);
+    
+    // If no TP groups were found, show error
+    if (count($tpGroups) == 0) {
+        return [
+            'successCount' => 0,
+            'errorCount' => 1,
+            'errors' => ["No valid TP data found in CSV. Please check that your CSV has the correct format."]
+        ];
+    }
+    
+    // Process TP groups
+    return processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $importMode);
 }
 
 function processCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes) {
