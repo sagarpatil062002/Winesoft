@@ -1678,3 +1678,31 @@
 [2026-03-05 08:38:34] Deleted purchase header, affected rows: 1
 [2026-03-05 08:38:34] VOC_NO renumbered for company 5 after deletion, affected rows: 89
 [2026-03-05 08:38:34] Transaction committed successfully
+[2026-03-12 09:02:28] Starting delete operation for company ID: 5
+[2026-03-12 09:02:28] Single delete request for ID: 1
+[2026-03-12 09:02:28] Starting reverse for purchase ID: 1
+[2026-03-12 09:02:28] Purchase found: {
+    "date": "2021-04-09",
+    "tp_no": "161",
+    "is_previous_fy": true
+}
+[2026-03-12 09:02:28] Found 1 items
+[2026-03-12 09:02:28] Main stock updated
+[2026-03-12 09:02:28] Using PREVIOUS YEAR logic for stock reversal
+[2026-03-12 09:02:28] Updating previous FY purchase month table: {
+    "table": "tbldailystock_5_04_21",
+    "day": "09",
+    "month": "2021-04"
+}
+[2026-03-12 09:02:28] Cascading reversal to FY end for previous year purchase: {
+    "item_code": "SCMPL0010678",
+    "purchase_date": "2021-04-09",
+    "purchase_month": 4,
+    "purchase_year": 2021,
+    "fy_end_date": "2022-03-31",
+    "fy_end_month": 3,
+    "fy_end_year": 2022,
+    "reduction_qty": 200
+}
+[2026-03-12 09:02:28] ERROR: Table 'winesoft.tbldailystock_5_04_21' doesn't exist
+[2026-03-12 09:02:28] Exception: Table 'winesoft.tbldailystock_5_04_21' doesn't exist
