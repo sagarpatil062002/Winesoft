@@ -187,23 +187,19 @@ $items = array_filter($items, function($qty) {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
 }
 
-// Function to distribute sales uniformly
+// Function to distribute sales randomly across days
 function distributeSales($total_qty, $days_count) {
-    logMessage("Distributing $total_qty units across $days_count days");
+    logMessage("Distributing $total_qty units across $days_count days (random distribution)");
     if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
     
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
+    // Initialize all days with 0
+    $daily_sales = array_fill(0, $days_count, 0);
     
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
+    // Randomly distribute each unit across days
+    for ($i = 0; $i < $total_qty; $i++) {
+        $random_day = mt_rand(0, $days_count - 1);
+        $daily_sales[$random_day]++;
     }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($daily_sales);
     
     logMessage("Distribution for $total_qty units: " . implode(', ', $daily_sales));
     return $daily_sales;

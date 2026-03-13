@@ -124,54 +124,6 @@ function getDailyStockTableName($conn, $comp_id, $month, $year) {
     return ensureMonthTableExists($conn, $comp_id, $month, $year);
 }
 
-// Function to sync opening balances between months
-function syncMonthBoundary($conn, $comp_id, $itemCode, $month, $year) {
-    $currentMonthYear = date('Y-m');
-    $targetMonthYear = date('Y-m', strtotime("$year-$month-01"));
-    
-    // Calculate previous month
-    $prev_month = $month - 1;
-    $prev_year = $year;
-    if ($prev_month < 1) {
-        $prev_month = 12;
-        $prev_year = $year - 1;
-    }
-    
-    $prevMonthYear = date('Y-m', strtotime("$prev_year-$prev_month-01"));
-    
-    // Ensure both tables exist
-    $prev_table = ensureMonthTableExists($conn, $comp_id, $prev_month, $prev_year);
-    $current_table = ensureMonthTableExists($conn, $comp_id, $month, $year);
-    
-    $lastDayPrevMonth = date('t', strtotime("$prev_year-$prev_month-01"));
-    $prevClosingCol = "DAY_" . str_pad($lastDayPrevMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    $currentOpenCol = "DAY_01_OPEN";
-    $currentClosingCol = "DAY_01_CLOSING";
-    
-    // Get previous month's last day closing
-    $get_closing = "SELECT $prevClosingCol as closing FROM $prev_table 
-                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $stmt = $conn->prepare($get_closing);
-    $stmt->bind_param("ss", $prevMonthYear, $itemCode);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $closing_balance = $row['closing'] ?? 0;
-    $stmt->close();
-    
-    // Update current month's first day opening
-    $update_opening = "UPDATE $current_table 
-                      SET $currentOpenCol = ?, 
-                          $currentClosingCol = GREATEST(0, ? + DAY_01_PURCHASE - DAY_01_SALES)
-                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $stmt = $conn->prepare($update_opening);
-    $stmt->bind_param("diss", $closing_balance, $closing_balance, $targetMonthYear, $itemCode);
-    $stmt->execute();
-    $stmt->close();
-    
-    return $closing_balance;
-}
-
 // Function to ensure table exists for a given month in the financial year
 function ensureMonthTableExists($conn, $comp_id, $month, $year) {
     $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
@@ -209,41 +161,48 @@ function ensureMonthTableExists($conn, $comp_id, $month, $year) {
     return $archive_table;
 }
 
-// Function to cascade changes through all future months
-function cascadeAllFutureMonths($conn, $comp_id, $itemCode, $startDate, $quantity, $isAddition = true) {
+// ==================== FIXED: Cascade changes through all future months ====================
+function cascadeAllFutureMonths($conn, $comp_id, $itemCode, $startDate, $changeAmount, $isAddition = true) {
     $start_timestamp = strtotime($startDate);
     $start_month = (int)date('n', $start_timestamp);
     $start_year = (int)date('Y', $start_timestamp);
+    $start_day = (int)date('j', $start_timestamp);
     $startMonthYear = date('Y-m', $start_timestamp);
     
     $current_month = (int)date('n');
     $current_year = (int)date('Y');
-    $currentMonthYear = date('Y-m');
     
     // Ensure start month table exists
     $start_table = ensureMonthTableExists($conn, $comp_id, $start_month, $start_year);
     
-    $start_day = (int)date('j', $start_timestamp);
-    $startOpenCol = "DAY_" . str_pad($start_day, 2, '0', STR_PAD_LEFT) . "_OPEN";
-    $startPurchaseCol = "DAY_" . str_pad($start_day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    $startSalesCol = "DAY_" . str_pad($start_day, 2, '0', STR_PAD_LEFT) . "_SALES";
-    $startClosingCol = "DAY_" . str_pad($start_day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+    // Calculate the adjustment factor (positive for addition, negative for reversal)
+    $adjustment = $isAddition ? $changeAmount : -$changeAmount;
     
-    // First, cascade within the same month from the start day onwards
-    cascadeDailyStockInTable($conn, $start_table, $itemCode, $startMonthYear, $start_day);
+    // First, cascade within the start month from the start day onwards
+    cascadeMonthFromDay($conn, $start_table, $itemCode, $startMonthYear, $start_day);
     
-    // Get the new closing balance after the start day
-    $get_closing = "SELECT $startClosingCol as closing FROM $start_table 
+    // Now cascade through all future months
+    $current_month_to_process = $start_month;
+    $current_year_to_process = $start_year;
+    $current_table = $start_table;
+    $currentMonthYear = $startMonthYear;
+    
+    // Get days in start month
+    $days_in_current_month = date('t', strtotime("$current_year_to_process-$current_month_to_process-01"));
+    
+    // Get the last day's closing value of the start month after adjustment
+    $last_day = str_pad($days_in_current_month, 2, '0', STR_PAD_LEFT);
+    $get_closing = "SELECT DAY_{$last_day}_CLOSING as closing FROM $current_table 
                    WHERE STK_MONTH = ? AND ITEM_CODE = ?";
     $stmt = $conn->prepare($get_closing);
-    $stmt->bind_param("ss", $startMonthYear, $itemCode);
+    $stmt->bind_param("ss", $currentMonthYear, $itemCode);
     $stmt->execute();
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
-    $newClosingBalance = $row['closing'] ?? 0;
+    $carry_forward_closing = $row['closing'] ?? 0;
     $stmt->close();
     
-    // Now cascade through all future months
+    // Move to next month
     $next_month = $start_month + 1;
     $next_year = $start_year;
     if ($next_month > 12) {
@@ -251,67 +210,51 @@ function cascadeAllFutureMonths($conn, $comp_id, $itemCode, $startDate, $quantit
         $next_year++;
     }
     
+    // Process each subsequent month up to current month
     while ($next_year < $current_year || ($next_year == $current_year && $next_month <= $current_month)) {
-        // Ensure current month table exists
+        $nextMonthYear = date('Y-m', strtotime("$next_year-$next_month-01"));
         $next_table = ensureMonthTableExists($conn, $comp_id, $next_month, $next_year);
+        $days_in_next_month = date('t', strtotime("$next_year-$next_month-01"));
         
-        // First, sync the month boundary
-        $prev_month = $next_month - 1;
-        $prev_year = $next_year;
-        if ($prev_month < 1) {
-            $prev_month = 12;
-            $prev_year = $next_year - 1;
+        // First, update the first day's opening with the carry forward closing
+        $update_first_day = "UPDATE $next_table 
+                            SET DAY_01_OPEN = ?,
+                                DAY_01_CLOSING = GREATEST(0, ? + DAY_01_PURCHASE - DAY_01_SALES)
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $stmt = $conn->prepare($update_first_day);
+        $stmt->bind_param("diss", $carry_forward_closing, $carry_forward_closing, $nextMonthYear, $itemCode);
+        $stmt->execute();
+        $stmt->close();
+        
+        // Now cascade through all days in this month
+        for ($day = 2; $day <= $days_in_next_month; $day++) {
+            $prev_day = $day - 1;
+            $prev_day_closing = "DAY_" . str_pad($prev_day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+            $current_day_open = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+            $current_day_purchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+            $current_day_sales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+            $current_day_closing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+            
+            $cascade_query = "UPDATE $next_table 
+                             SET $current_day_open = $prev_day_closing,
+                                 $current_day_closing = $prev_day_closing + $current_day_purchase - $current_day_sales
+                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $stmt = $conn->prepare($cascade_query);
+            $stmt->bind_param("ss", $nextMonthYear, $itemCode);
+            $stmt->execute();
+            $stmt->close();
         }
         
-        // Ensure previous month table exists
-        $prev_table = ensureMonthTableExists($conn, $comp_id, $prev_month, $prev_year);
-        $lastDayPrevMonth = date('t', strtotime("$prev_year-$prev_month-01"));
-        $prevClosingCol = "DAY_" . str_pad($lastDayPrevMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        $prevMonthYear = date('Y-m', strtotime("$prev_year-$prev_month-01"));
-        
-        // Get current month's table and first day
-        $nextMonthYear = date('Y-m', strtotime("$next_year-$next_month-01"));
-        $nextOpenCol = "DAY_01_OPEN";
-        $nextPurchaseCol = "DAY_01_PURCHASE";
-        $nextSalesCol = "DAY_01_SALES";
-        $nextClosingCol = "DAY_01_CLOSING";
-        
-        // Get previous month's closing balance
-        $get_prev_closing = "SELECT $prevClosingCol as closing FROM $prev_table 
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $stmt = $conn->prepare($get_prev_closing);
-        $stmt->bind_param("ss", $prevMonthYear, $itemCode);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $prevClosingBalance = $row['closing'] ?? 0;
-        $stmt->close();
-        
-        // Update next month's opening
-        $update_next = "UPDATE $next_table 
-                       SET $nextOpenCol = ?, 
-                           $nextClosingCol = GREATEST(0, ? + $nextPurchaseCol - $nextSalesCol)
-                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $stmt = $conn->prepare($update_next);
-        $stmt->bind_param("diss", $prevClosingBalance, $prevClosingBalance, $nextMonthYear, $itemCode);
-        $stmt->execute();
-        $stmt->close();
-        
-        // Cascade through all days in this month
-        cascadeDailyStockInTable($conn, $next_table, $itemCode, $nextMonthYear, 1);
-        
-        // Get the new closing balance for next iteration
-        $lastDayNextMonth = date('t', strtotime("$next_year-$next_month-01"));
-        $nextClosingCol = "DAY_" . str_pad($lastDayNextMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        
-        $get_next_closing = "SELECT $nextClosingCol as closing FROM $next_table 
+        // Get the last day's closing for next month's carry forward
+        $last_day_next = str_pad($days_in_next_month, 2, '0', STR_PAD_LEFT);
+        $get_next_closing = "SELECT DAY_{$last_day_next}_CLOSING as closing FROM $next_table 
                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
         $stmt = $conn->prepare($get_next_closing);
         $stmt->bind_param("ss", $nextMonthYear, $itemCode);
         $stmt->execute();
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
-        $newClosingBalance = $row['closing'] ?? 0;
+        $carry_forward_closing = $row['closing'] ?? 0;
         $stmt->close();
         
         // Move to next month
@@ -323,100 +266,53 @@ function cascadeAllFutureMonths($conn, $comp_id, $itemCode, $startDate, $quantit
     }
 }
 
-// Function to reverse stock (for edit - subtract original purchase)
+// ==================== FIXED: Cascade within a specific month from a given day ====================
+function cascadeMonthFromDay($conn, $table, $itemCode, $monthYear, $startDay) {
+    $daysInMonth = date('t', strtotime($monthYear . '-01'));
+    
+    for ($day = $startDay + 1; $day <= $daysInMonth; $day++) {
+        $prevDay = $day - 1;
+        $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+        $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        
+        $update_query = "UPDATE $table 
+                        SET $currentDayOpening = $prevDayClosing,
+                            $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        
+        $stmt = $conn->prepare($update_query);
+        $stmt->bind_param("ss", $monthYear, $itemCode);
+        $stmt->execute();
+        $stmt->close();
+    }
+}
+
+// ==================== FIXED: Reverse stock (for edit - subtract original purchase) ====================
 function reverseStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bottlesPerCase, $purchaseDate, $companyId, $conn) {
     // Calculate total bottles to reverse (including free items)
     $totalBottles = (($cases + $freeCases) * $bottlesPerCase) + $bottles + $freeBottles;
     
-    // Determine if purchase is in previous financial year
-    $is_previous_fy = isPreviousFinancialYear($purchaseDate);
-    
-    if ($is_previous_fy) {
-        // Use previous year logic for reversal
-        reversePreviousYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
-    } else {
-        // Use current year logic for reversal
-        reverseCurrentYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
-    }
-    
-    // After reversal, cascade changes to all future months
-    cascadeAllFutureMonths($conn, $companyId, $itemCode, $purchaseDate, $totalBottles, false);
-}
-
-// Function to reverse stock for previous financial year
-function reversePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
-    // Similar to updatePreviousYearStock but subtracting instead of adding
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $month = date('n', strtotime($purchaseDate));
-    $year = date('Y', strtotime($purchaseDate));
-    
-    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
-    $year_2digit = substr($year, -2);
-    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-    
-    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
-    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
-    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
-    $monthYear = date('Y-m', strtotime($purchaseDate));
-    
-    // Check if record exists
-    $check_query = "SELECT COUNT(*) as count FROM $archive_table 
-                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $monthYear, $itemCode);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
-    $exists = $result->fetch_assoc()['count'] > 0;
-    $check_stmt->close();
-    
-    if ($exists) {
-        // Reduce purchase and recalculate closing
-        $update_query = "UPDATE $archive_table 
-                        SET $purchaseColumn = GREATEST(0, $purchaseColumn - ?),
-                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
-                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
-        $update_stmt->execute();
-        $update_stmt->close();
-        
-        // Cascade to subsequent days
-        cascadeDailyStockInTable($conn, $archive_table, $itemCode, $monthYear, $dayOfMonth);
-    }
-    
-    // Cascade through all remaining months until FY end
-    reverseCascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
-    
-    // Update main stock (subtract)
-    $stockColumn = "CURRENT_STOCK" . $comp_id;
-    $update_stock = "UPDATE tblitem_stock 
-                    SET $stockColumn = GREATEST(0, $stockColumn - ?)
-                    WHERE ITEM_CODE = ?";
-    $stock_stmt = $conn->prepare($update_stock);
-    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
-    $stock_stmt->execute();
-    $stock_stmt->close();
-}
-
-// Function to reverse stock for current financial year
-function reverseCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $month = date('n', strtotime($purchaseDate));
     $year = date('Y', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    $isArchived = isMonthArchived($conn, $comp_id, $month, $year);
+    // Get the appropriate table
+    $isArchived = isMonthArchived($conn, $companyId, $month, $year);
     
     if ($isArchived) {
         $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
         $year_2digit = substr($year, -2);
-        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-        $table = $archive_table;
+        $table = "tbldailystock_{$companyId}_{$month_2digit}_{$year_2digit}";
     } else {
-        $table = "tbldailystock_" . $comp_id;
+        $table = "tbldailystock_" . $companyId;
     }
+    
+    // Ensure table exists
+    $table = ensureMonthTableExists($conn, $companyId, $month, $year);
     
     $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
     $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
@@ -444,272 +340,59 @@ function reverseCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $pur
         $update_stmt->execute();
         $update_stmt->close();
         
-        // Cascade to subsequent days
-        cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $dayOfMonth);
-        
-        // If archived month, continue cascading to current month
-        if ($isArchived) {
-            continueReverseCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
-        }
+        // Cascade within this month from the purchase day
+        cascadeMonthFromDay($conn, $table, $itemCode, $monthYear, $dayOfMonth);
     }
+    
+    // Cascade through all future months (negative adjustment)
+    cascadeAllFutureMonths($conn, $companyId, $itemCode, $purchaseDate, $totalBottles, false);
     
     // Update main stock (subtract)
-    $stockColumn = "CURRENT_STOCK" . $comp_id;
-    $update_stock = "UPDATE tblitem_stock 
-                    SET $stockColumn = GREATEST(0, $stockColumn - ?)
-                    WHERE ITEM_CODE = ?";
-    $stock_stmt = $conn->prepare($update_stock);
-    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
-    $stock_stmt->execute();
-    $stock_stmt->close();
-}
-
-// Function to cascade daily stock in a specific table
-function cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $startDay) {
-    $daysInMonth = date('t', strtotime($monthYear . '-01'));
+    $stockColumn = "CURRENT_STOCK" . $companyId;
     
-    for ($day = $startDay + 1; $day <= $daysInMonth; $day++) {
-        $prevDay = $day - 1;
-        $prevDayClosing = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        $currentDayOpening = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
-        $currentDayPurchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-        $currentDaySales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
-        $currentDayClosing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-        
-        $update_query = "UPDATE $table 
-                        SET $currentDayOpening = $prevDayClosing,
-                            $currentDayClosing = $prevDayClosing + $currentDayPurchase - $currentDaySales
-                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        
-        $stmt = $conn->prepare($update_query);
-        $stmt->bind_param("ss", $monthYear, $itemCode);
-        $stmt->execute();
-        $stmt->close();
+    // Check if record exists in tblitem_stock
+    $check_stock = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock);
+    $check_stmt->bind_param("s", $itemCode);
+    $check_stmt->execute();
+    $stock_result = $check_stmt->get_result();
+    $stock_exists = $stock_result->fetch_assoc()['count'] > 0;
+    $check_stmt->close();
+    
+    if ($stock_exists) {
+        $update_stock = "UPDATE tblitem_stock 
+                        SET $stockColumn = GREATEST(0, $stockColumn - ?)
+                        WHERE ITEM_CODE = ?";
+        $stock_stmt = $conn->prepare($update_stock);
+        $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+        $stock_stmt->execute();
+        $stock_stmt->close();
     }
 }
 
-// Function to reverse cascade through all months until FY end
-function reverseCascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, $reduction_qty) {
-    $purchase_timestamp = strtotime($purchase_date);
-    $purchase_month = (int)date('n', $purchase_timestamp);
-    $purchase_year = (int)date('Y', $purchase_timestamp);
-    
-    // Get financial year end date
-    $fy_end_date = getFinancialYearEndDate($purchase_date);
-    $fy_end_month = (int)date('n', strtotime($fy_end_date));
-    $fy_end_year = (int)date('Y', strtotime($fy_end_date));
-    
-    // Start from the next month after purchase
-    $start_month = $purchase_month + 1;
-    $start_year = $purchase_year;
-    
-    if ($start_month > 12) {
-        $start_month = 1;
-        $start_year++;
-    }
-    
-    // Loop through months from purchase month+1 to end of financial year (March)
-    while ($start_year < $fy_end_year || ($start_year == $fy_end_year && $start_month <= $fy_end_month)) {
-        $month_2digit = str_pad($start_month, 2, '0', STR_PAD_LEFT);
-        $year_2digit = substr($start_year, -2);
-        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-        
-        $monthYear = date('Y-m', strtotime("$start_year-$start_month-01"));
-        $daysInMonth = date('t', strtotime("$start_year-$start_month-01"));
-        
-        // Check if table exists
-        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
-        $table_result = $conn->query($check_table);
-        $table_exists = $table_result->fetch_assoc()['count'] > 0;
-        
-        if ($table_exists) {
-            // For each month, reduce all days' stock values
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
-                $opening_col = "DAY_{$day_str}_OPEN";
-                $closing_col = "DAY_{$day_str}_CLOSING";
-                
-                $update_query = "UPDATE $archive_table 
-                                SET $opening_col = GREATEST(0, $opening_col - ?),
-                                    $closing_col = GREATEST(0, $closing_col - ?)
-                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                
-                $stmt = $conn->prepare($update_query);
-                $stmt->bind_param("iiss", $reduction_qty, $reduction_qty, $monthYear, $item_code);
-                $stmt->execute();
-                $stmt->close();
-            }
-        }
-        
-        // Move to next month
-        $start_month++;
-        if ($start_month > 12) {
-            $start_month = 1;
-            $start_year++;
-        }
-    }
-}
-
-// Function to continue reverse cascading to current month
-function continueReverseCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, $reduction_qty) {
-    $current_month = (int)date('n');
-    $current_year = (int)date('Y');
-    $current_day = (int)date('j');
-    
-    $dailyStockTable = "tbldailystock_" . $comp_id;
-    $currentMonthYear = date('Y-m');
-    
-    // Check if current month table exists
-    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                   WHERE table_schema = DATABASE() AND table_name = '$dailyStockTable'";
-    $table_result = $conn->query($check_table);
-    $table_exists = $table_result->fetch_assoc()['count'] > 0;
-    
-    if ($table_exists) {
-        // For each day from 1 to current day, reduce stock values
-        for ($day = 1; $day <= $current_day; $day++) {
-            $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
-            $opening_col = "DAY_{$day_str}_OPEN";
-            $closing_col = "DAY_{$day_str}_CLOSING";
-            
-            $update_query = "UPDATE $dailyStockTable 
-                            SET $opening_col = GREATEST(0, $opening_col - ?),
-                                $closing_col = GREATEST(0, $closing_col - ?)
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            
-            $stmt = $conn->prepare($update_query);
-            $stmt->bind_param("iiss", $reduction_qty, $reduction_qty, $currentMonthYear, $itemCode);
-            $stmt->execute();
-            $stmt->close();
-        }
-    }
-}
-
-// Function to update stock after purchase
+// ==================== FIXED: Update stock after purchase ====================
 function updateStock($itemCode, $cases, $bottles, $freeCases, $freeBottles, $bottlesPerCase, $purchaseDate, $companyId, $conn) {
     // Calculate total bottles purchased (including free items)
     $totalBottles = (($cases + $freeCases) * $bottlesPerCase) + $bottles + $freeBottles;
     
-    // Determine if purchase is in previous financial year
-    $is_previous_fy = isPreviousFinancialYear($purchaseDate);
-    
-    if ($is_previous_fy) {
-        // Use previous year logic for stock update
-        updatePreviousYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
-    } else {
-        // Use current year logic for stock update
-        updateCurrentYearStock($conn, $companyId, $itemCode, $totalBottles, $purchaseDate);
-    }
-    
-    // After adding stock, cascade changes to all future months
-    cascadeAllFutureMonths($conn, $companyId, $itemCode, $purchaseDate, $totalBottles, true);
-}
-
-// Function to update stock for previous financial year
-function updatePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
-    $dayOfMonth = date('j', strtotime($purchaseDate));
-    $month = date('n', strtotime($purchaseDate));
-    $year = date('Y', strtotime($purchaseDate));
-    
-    $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
-    $year_2digit = substr($year, -2);
-    $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-    
-    $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-    $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
-    $salesColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
-    $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
-    $monthYear = date('Y-m', strtotime($purchaseDate));
-    
-    // Check if archive table exists, if not create it
-    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                   WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
-    $table_result = $conn->query($check_table);
-    $table_exists = $table_result->fetch_assoc()['count'] > 0;
-    
-    if (!$table_exists) {
-        $days_in_month = date('t', strtotime($purchaseDate));
-        createArchiveTable($conn, $archive_table, $days_in_month);
-    }
-    
-    // Check if record exists
-    $check_query = "SELECT COUNT(*) as count FROM $archive_table 
-                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_query);
-    $check_stmt->bind_param("ss", $monthYear, $itemCode);
-    $check_stmt->execute();
-    $result = $check_stmt->get_result();
-    $exists = $result->fetch_assoc()['count'] > 0;
-    $check_stmt->close();
-    
-    if ($exists) {
-        // Update existing record
-        $update_query = "UPDATE $archive_table 
-                        SET $purchaseColumn = $purchaseColumn + ?,
-                            $closingColumn = $openingColumn + $purchaseColumn - $salesColumn
-                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_query);
-        $update_stmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
-        $update_stmt->execute();
-        $update_stmt->close();
-    } else {
-        // Insert new record
-        $insert_query = "INSERT INTO $archive_table 
-                        (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $salesColumn, $closingColumn) 
-                        VALUES (?, ?, 'F', 0, ?, 0, ?)";
-        $insert_stmt = $conn->prepare($insert_query);
-        $insert_stmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-    }
-    
-    // Cascade to subsequent days
-    cascadeDailyStockInTable($conn, $archive_table, $itemCode, $monthYear, $dayOfMonth);
-    
-    // Cascade through all remaining months until FY end
-    forwardCascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
-    
-    // Update main stock
-    $stockColumn = "CURRENT_STOCK" . $comp_id;
-    $update_stock = "UPDATE tblitem_stock 
-                    SET $stockColumn = $stockColumn + ? 
-                    WHERE ITEM_CODE = ?";
-    $stock_stmt = $conn->prepare($update_stock);
-    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
-    $stock_stmt->execute();
-    $stock_stmt->close();
-}
-
-// Function to update stock for current financial year
-function updateCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $month = date('n', strtotime($purchaseDate));
     $year = date('Y', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     
-    $isArchived = isMonthArchived($conn, $comp_id, $month, $year);
+    // Get the appropriate table
+    $isArchived = isMonthArchived($conn, $companyId, $month, $year);
     
     if ($isArchived) {
         $month_2digit = str_pad($month, 2, '0', STR_PAD_LEFT);
         $year_2digit = substr($year, -2);
-        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-        $table = $archive_table;
-        
-        // Check if archive table exists, if not create it
-        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
-        $table_result = $conn->query($check_table);
-        $table_exists = $table_result->fetch_assoc()['count'] > 0;
-        
-        if (!$table_exists) {
-            $days_in_month = date('t', strtotime($purchaseDate));
-            createArchiveTable($conn, $archive_table, $days_in_month);
-        }
+        $table = "tbldailystock_{$companyId}_{$month_2digit}_{$year_2digit}";
     } else {
-        $table = "tbldailystock_" . $comp_id;
+        $table = "tbldailystock_" . $companyId;
     }
+    
+    // Ensure table exists
+    $table = ensureMonthTableExists($conn, $companyId, $month, $year);
     
     $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
     $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
@@ -747,147 +430,38 @@ function updateCurrentYearStock($conn, $comp_id, $itemCode, $totalBottles, $purc
         $insert_stmt->close();
     }
     
-    // Cascade to subsequent days
-    cascadeDailyStockInTable($conn, $table, $itemCode, $monthYear, $dayOfMonth);
+    // Cascade within this month from the purchase day
+    cascadeMonthFromDay($conn, $table, $itemCode, $monthYear, $dayOfMonth);
     
-    // If archived month, continue cascading to current month
-    if ($isArchived) {
-        continueForwardCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
-    }
+    // Cascade through all future months (positive adjustment)
+    cascadeAllFutureMonths($conn, $companyId, $itemCode, $purchaseDate, $totalBottles, true);
     
     // Update main stock
-    $stockColumn = "CURRENT_STOCK" . $comp_id;
-    $update_stock = "UPDATE tblitem_stock 
-                    SET $stockColumn = $stockColumn + ? 
-                    WHERE ITEM_CODE = ?";
-    $stock_stmt = $conn->prepare($update_stock);
-    $stock_stmt->bind_param("is", $totalBottles, $itemCode);
-    $stock_stmt->execute();
-    $stock_stmt->close();
-}
-
-// Function to forward cascade through all months until FY end
-function forwardCascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, $additional_qty) {
-    $purchase_timestamp = strtotime($purchase_date);
-    $purchase_month = (int)date('n', $purchase_timestamp);
-    $purchase_year = (int)date('Y', $purchase_timestamp);
+    $stockColumn = "CURRENT_STOCK" . $companyId;
     
-    // Get financial year end date
-    $fy_end_date = getFinancialYearEndDate($purchase_date);
-    $fy_end_month = (int)date('n', strtotime($fy_end_date));
-    $fy_end_year = (int)date('Y', strtotime($fy_end_date));
-    
-    // Start from the next month after purchase
-    $start_month = $purchase_month + 1;
-    $start_year = $purchase_year;
-    
-    if ($start_month > 12) {
-        $start_month = 1;
-        $start_year++;
-    }
-    
-    // Loop through months from purchase month+1 to end of financial year (March)
-    while ($start_year < $fy_end_year || ($start_year == $fy_end_year && $start_month <= $fy_end_month)) {
-        $month_2digit = str_pad($start_month, 2, '0', STR_PAD_LEFT);
-        $year_2digit = substr($start_year, -2);
-        $archive_table = "tbldailystock_{$comp_id}_{$month_2digit}_{$year_2digit}";
-        
-        $monthYear = date('Y-m', strtotime("$start_year-$start_month-01"));
-        $daysInMonth = date('t', strtotime("$start_year-$start_month-01"));
-        
-        // Check if table exists, if not create it
-        $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                       WHERE table_schema = DATABASE() AND table_name = '$archive_table'";
-        $table_result = $conn->query($check_table);
-        $table_exists = $table_result->fetch_assoc()['count'] > 0;
-        
-        if (!$table_exists) {
-            createArchiveTable($conn, $archive_table, $daysInMonth);
-        }
-        
-        // Check if record exists
-        $check_record = "SELECT COUNT(*) as count FROM $archive_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $check_stmt = $conn->prepare($check_record);
-        $check_stmt->bind_param("ss", $monthYear, $item_code);
-        $check_stmt->execute();
-        $record_result = $check_stmt->get_result();
-        $record_exists = $record_result->fetch_assoc()['count'] > 0;
-        $check_stmt->close();
-        
-        if ($record_exists) {
-            // For each day in the month, add the additional qty
-            for ($day = 1; $day <= $daysInMonth; $day++) {
-                $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
-                $opening_col = "DAY_{$day_str}_OPEN";
-                $closing_col = "DAY_{$day_str}_CLOSING";
-                
-                $update_query = "UPDATE $archive_table 
-                                SET $opening_col = $opening_col + ?,
-                                    $closing_col = $closing_col + ?
-                                WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                
-                $stmt = $conn->prepare($update_query);
-                $stmt->bind_param("iiss", $additional_qty, $additional_qty, $monthYear, $item_code);
-                $stmt->execute();
-                $stmt->close();
-            }
-        }
-        
-        // Move to next month
-        $start_month++;
-        if ($start_month > 12) {
-            $start_month = 1;
-            $start_year++;
-        }
-    }
-}
-
-// Function to continue forward cascading to current month
-function continueForwardCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate, $additional_qty) {
-    $current_month = (int)date('n');
-    $current_year = (int)date('Y');
-    $current_day = (int)date('j');
-    
-    $dailyStockTable = "tbldailystock_" . $comp_id;
-    $currentMonthYear = date('Y-m');
-    
-    // Check if current month table exists, if not create it
-    $check_table = "SELECT COUNT(*) as count FROM information_schema.tables 
-                   WHERE table_schema = DATABASE() AND table_name = '$dailyStockTable'";
-    $table_result = $conn->query($check_table);
-    $table_exists = $table_result->fetch_assoc()['count'] > 0;
-    
-    if (!$table_exists) {
-        $days_in_month = date('t');
-        createArchiveTable($conn, $dailyStockTable, $days_in_month);
-    }
-    
-    // Check if record exists in current month
-    $check_record = "SELECT COUNT(*) as count FROM $dailyStockTable WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $check_stmt = $conn->prepare($check_record);
-    $check_stmt->bind_param("ss", $currentMonthYear, $itemCode);
+    // Check if record exists in tblitem_stock
+    $check_stock = "SELECT COUNT(*) as count FROM tblitem_stock WHERE ITEM_CODE = ?";
+    $check_stmt = $conn->prepare($check_stock);
+    $check_stmt->bind_param("s", $itemCode);
     $check_stmt->execute();
-    $record_result = $check_stmt->get_result();
-    $record_exists = $record_result->fetch_assoc()['count'] > 0;
+    $stock_result = $check_stmt->get_result();
+    $stock_exists = $stock_result->fetch_assoc()['count'] > 0;
     $check_stmt->close();
     
-    if ($record_exists) {
-        // For each day from 1 to current day, add the quantity
-        for ($day = 1; $day <= $current_day; $day++) {
-            $day_str = str_pad($day, 2, '0', STR_PAD_LEFT);
-            $opening_col = "DAY_{$day_str}_OPEN";
-            $closing_col = "DAY_{$day_str}_CLOSING";
-            
-            $update_query = "UPDATE $dailyStockTable 
-                            SET $opening_col = $opening_col + ?,
-                                $closing_col = $closing_col + ?
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            
-            $stmt = $conn->prepare($update_query);
-            $stmt->bind_param("iiss", $additional_qty, $additional_qty, $currentMonthYear, $itemCode);
-            $stmt->execute();
-            $stmt->close();
-        }
+    if ($stock_exists) {
+        $update_stock = "UPDATE tblitem_stock 
+                        SET $stockColumn = $stockColumn + ? 
+                        WHERE ITEM_CODE = ?";
+        $stock_stmt = $conn->prepare($update_stock);
+        $stock_stmt->bind_param("is", $totalBottles, $itemCode);
+        $stock_stmt->execute();
+        $stock_stmt->close();
+    } else {
+        $insert_stock = "INSERT INTO tblitem_stock (ITEM_CODE, $stockColumn) VALUES (?, ?)";
+        $stock_stmt = $conn->prepare($insert_stock);
+        $stock_stmt->bind_param("si", $itemCode, $totalBottles);
+        $stock_stmt->execute();
+        $stock_stmt->close();
     }
 }
 
@@ -1017,7 +591,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
     
     try {
-        // First, reverse stock for all existing items
+        // First, reverse stock for all existing items (using original date)
         foreach ($existingItems as $existingItem) {
             reverseStock(
                 $existingItem['ItemCode'],
@@ -1133,7 +707,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // Update stock for each item (now adding new quantities)
+            // Update stock for each item (now adding new quantities with new date)
             foreach ($stockUpdates as $itemCode => $totalBottles) {
                 // Find the item details to get cases/bottles breakdown
                 foreach ($_POST['items'] as $item) {
@@ -1145,7 +719,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             floatval($item['free_cases'] ?? 0),
                             intval($item['free_bottles'] ?? 0),
                             intval($item['bottles_per_case'] ?? 12),
-                            $date,
+                            $date,  // Use new date for addition
                             $companyId,
                             $conn
                         );
@@ -1174,7 +748,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>

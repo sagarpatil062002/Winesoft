@@ -784,25 +784,21 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
 /**
  * Enhanced distribution function that handles global restrictions
  * Distributes only across available dates (after latest global sale, excluding dry days)
+ * Uses RANDOM distribution for each unit
  */
 function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
     if ($total_qty <= 0 || empty($available_dates)) return [];
     
     $available_days_count = count($available_dates);
     
-    // Distribute across available dates
-    $base_qty = floor($total_qty / $available_days_count);
-    $remainder = $total_qty % $available_days_count;
+    // Initialize distribution array with zeros
+    $distribution = array_fill(0, $available_days_count, 0);
     
-    $distribution = array_fill(0, $available_days_count, $base_qty);
-    
-    // Distribute remainder evenly
-    for ($i = 0; $i < $remainder; $i++) {
-        $distribution[$i]++;
+    // Randomly distribute each unit to a day using mt_rand for better randomness
+    for ($i = 0; $i < $total_qty; $i++) {
+        $random_day = mt_rand(0, $available_days_count - 1);
+        $distribution[$random_day]++;
     }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($distribution);
     
     return $distribution;
 }
@@ -1656,8 +1652,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             if ($total_qty > 0 && isset($all_items[$item_code])) {
                                 $item = $all_items[$item_code];
                                 
-                                // NEW: Use global restrictions for distribution
-                                $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
+                                // NEW: Use saved distribution from session if available, otherwise generate random
+                                $full_distribution = [];
+                                if (isset($_SESSION['item_distribution'][$item_code]) && is_array($_SESSION['item_distribution'][$item_code])) {
+                                    $full_distribution = $_SESSION['item_distribution'][$item_code];
+                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $full_distribution));
+                                } else {
+                                    // Generate random distribution if not saved
+                                    $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
+                                    logMessage("Generated new random distribution for item $item_code: " . implode(', ', $full_distribution));
+                                }
                                 $daily_sales_data[$item_code] = $full_distribution;
                                 
                                 // Store item data
@@ -1782,6 +1786,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // CLEAR SESSION QUANTITIES AFTER SUCCESS
                         clearSessionQuantities();
+                        
+                        // Also clear the saved distributions
+                        if (isset($_SESSION['item_distribution'])) {
+                            unset($_SESSION['item_distribution']);
+                        }
 
                         $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
 
@@ -3236,6 +3245,7 @@ function saveQuantityToSession(itemCode, qty) {
 }
 
 // FIXED: Enhanced distribution function that correctly handles global restrictions and dry days
+// UPDATED: Now uses TRULY RANDOM distribution - each unit randomly assigned to a day
 function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDates, unavailableDates) {
     if (totalQty <= 0) return new Array(daysCount).fill(0);
     
@@ -3254,34 +3264,35 @@ function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDate
         return distribution;
     }
     
-    // Distribute quantity only on available dates
-    const availableDaysCount = availableDates.length;
-    const baseQty = Math.floor(totalQty / availableDaysCount);
-    const remainder = totalQty % availableDaysCount;
+    // Filter out dry days from available dates
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
     
-    const dailySales = new Array(availableDaysCount).fill(baseQty);
-    
-    // Distribute remainder
-    for (let i = 0; i < remainder; i++) {
-        dailySales[i]++;
+    if (trulyAvailableDates.length === 0) {
+        console.log(`No truly available dates (all are dry days or have sales)`);
+        return distribution;
     }
     
-    // Shuffle the distribution
-    for (let i = dailySales.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [dailySales[i], dailySales[j]] = [dailySales[j], dailySales[i]];
+    // TRULY RANDOM distribution - each unit is randomly assigned to a day
+    // This creates more extreme variations (e.g., one day 5 sales, another day 0, etc.)
+    const availableDaysCount = trulyAvailableDates.length;
+    const dailySales = new Array(availableDaysCount).fill(0);
+    
+    for (let i = 0; i < totalQty; i++) {
+        // Randomly pick a day from available days using Math.random
+        const randomDay = Math.floor(Math.random() * availableDaysCount);
+        dailySales[randomDay]++;
     }
     
     // Place the distributed quantities in the correct date positions
-    availableDates.forEach((date, index) => {
+    trulyAvailableDates.forEach((date, index) => {
         const dateIndex = dateIndexMap[date];
         if (dateIndex !== undefined) {
             distribution[dateIndex] = dailySales[index];
         }
     });
     
-    console.log(`Distributing ${totalQty} on ${availableDaysCount} available dates:`, availableDates);
-    console.log(`Distribution:`, distribution);
+    console.log(`TRULY RANDOM Distributing ${totalQty} on ${availableDaysCount} available dates:`, trulyAvailableDates);
+    console.log(`Random Distribution:`, distribution);
     
     return distribution;
 }
@@ -3467,22 +3478,14 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
         
         if (trulyAvailableDates.length > 0) {
             // Distribute only on truly available dates (excluding dry days)
+            // UPDATED: TRULY RANDOM distribution - each unit randomly assigned to a day
             const availableDaysCount = trulyAvailableDates.length;
-            const baseQty = Math.floor(totalQty / availableDaysCount);
-            const remainder = totalQty % availableDaysCount;
+            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(0);
 
-            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-            // Distribute remainder
-            for (let i = 0; i < remainder; i++) {
-                dailySalesForAvailableDates[i]++;
-            }
-
-            // Shuffle the distribution
-            for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-                [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+            // TRULY RANDOM: Randomly assign each unit to a day
+            for (let i = 0; i < totalQty; i++) {
+                const randomDay = Math.floor(Math.random() * availableDaysCount);
+                dailySalesForAvailableDates[randomDay]++;
             }
 
             // Place the distributed quantities in the correct date positions
@@ -3530,22 +3533,14 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
         
         if (trulyAvailableDates.length > 0) {
             // Distribute across all non-dry dates
+            // UPDATED: TRULY RANDOM distribution - each unit randomly assigned to a day
             const availableDaysCount = trulyAvailableDates.length;
-            const baseQty = Math.floor(totalQty / availableDaysCount);
-            const remainder = totalQty % availableDaysCount;
+            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(0);
 
-            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-            // Distribute remainder
-            for (let i = 0; i < remainder; i++) {
-                dailySalesForAvailableDates[i]++;
-            }
-
-            // Shuffle the distribution
-            for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-                [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+            // TRULY RANDOM: Randomly assign each unit to a day
+            for (let i = 0; i < totalQty; i++) {
+                const randomDay = Math.floor(Math.random() * availableDaysCount);
+                dailySalesForAvailableDates[randomDay]++;
             }
 
             // Place the distributed quantities in the correct date positions
@@ -3687,6 +3682,9 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     
     // Show date columns
     $('.date-header, .date-distribution-cell').show();
+    
+    // Save distribution to session so it matches when generating bills
+    saveDistributionToSession(itemCode, distribution);
 }
 
 // FIXED: Enhanced distribution function for shuffle that correctly excludes dry days
@@ -3733,22 +3731,14 @@ function shuffleDistributionForItem(itemCode, totalQty) {
         
         if (trulyAvailableDates.length > 0) {
             // Distribute only on truly available dates
+            // UPDATED: TRULY RANDOM distribution - each unit randomly assigned to a day
             const availableDaysCount = trulyAvailableDates.length;
-            const baseQty = Math.floor(totalQty / availableDaysCount);
-            const remainder = totalQty % availableDaysCount;
+            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(0);
 
-            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-            // Distribute remainder
-            for (let i = 0; i < remainder; i++) {
-                dailySalesForAvailableDates[i]++;
-            }
-
-            // Shuffle the distribution
-            for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-                [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+            // TRULY RANDOM: Randomly assign each unit to a day
+            for (let i = 0; i < totalQty; i++) {
+                const randomDay = Math.floor(Math.random() * availableDaysCount);
+                dailySalesForAvailableDates[randomDay]++;
             }
 
             // Place the distributed quantities in the correct date positions
@@ -3785,22 +3775,14 @@ function shuffleDistributionForItem(itemCode, totalQty) {
         
         if (trulyAvailableDates.length > 0) {
             // Distribute across all non-dry dates
+            // UPDATED: TRULY RANDOM distribution - each unit randomly assigned to a day
             const availableDaysCount = trulyAvailableDates.length;
-            const baseQty = Math.floor(totalQty / availableDaysCount);
-            const remainder = totalQty % availableDaysCount;
+            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(0);
 
-            const dailySalesForAvailableDates = new Array(availableDaysCount).fill(baseQty);
-
-            // Distribute remainder
-            for (let i = 0; i < remainder; i++) {
-                dailySalesForAvailableDates[i]++;
-            }
-
-            // Shuffle the distribution
-            for (let i = dailySalesForAvailableDates.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [dailySalesForAvailableDates[i], dailySalesForAvailableDates[j]] =
-                [dailySalesForAvailableDates[j], dailySalesForAvailableDates[i]];
+            // TRULY RANDOM: Randomly assign each unit to a day
+            for (let i = 0; i < totalQty; i++) {
+                const randomDay = Math.floor(Math.random() * availableDaysCount);
+                dailySalesForAvailableDates[randomDay]++;
             }
 
             // Place the distributed quantities in the correct date positions
@@ -3940,6 +3922,25 @@ function showClientValidationAlert(message) {
     setTimeout(() => {
         $('#clientValidationAlert').fadeOut();
     }, 10000);
+}
+
+// Function to save distribution to session via AJAX
+function saveDistributionToSession(itemCode, distribution) {
+    $.ajax({
+        url: 'save_distribution_to_session.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            item_code: itemCode,
+            distribution: distribution
+        }),
+        success: function(response) {
+            console.log('Distribution saved for ' + itemCode + ':', distribution);
+        },
+        error: function() {
+            console.error('Failed to save distribution for ' + itemCode);
+        }
+    });
 }
 
 // Function to clear session quantities via AJAX
@@ -4790,6 +4791,9 @@ $(document).on('click', '.btn-shuffle-item', async function() {
         });
 
         console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
+        
+        // Save distribution to session so it matches when generating bills
+        saveDistributionToSession(itemCode, newDistribution);
     } else {
         console.log(`DEBUG: Individual shuffle ${itemCode} - not shuffling (qty=${totalQty}, disabled=${inputField.prop('disabled')})`);
     }
@@ -4900,6 +4904,21 @@ $('#shuffleBtn').off('click').on('click', async function() {
 
     // Hide loader
     $('#ajaxLoader').hide();
+
+    // Save all distributions to session
+    itemsToShuffle.forEach(item => {
+        const inputField = $(`input[name="closing_balance[${item.itemCode}]"]`);
+        const itemRow = inputField.closest('tr');
+        const dateCells = itemRow.find('.date-distribution-cell');
+        const distribution = [];
+        dateCells.each(function(index) {
+            const cell = $(this);
+            const text = cell.text();
+            const qty = parseInt(text) || 0;
+            distribution.push(qty);
+        });
+        saveDistributionToSession(item.itemCode, distribution);
+    });
 
     // Update total amount
     calculateTotalAmount();

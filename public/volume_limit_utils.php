@@ -602,23 +602,20 @@ function createBill($items, $sale_date, $bill_no, $mode, $comp_id, $user_id) {
 }
 
 /**
- * Distribute sales uniformly
+ * Distribute sales randomly across days
+ * Changed from uniform distribution to random distribution
  */
 function distributeSales($total_qty, $days_count) {
     if ($total_qty <= 0 || $days_count <= 0) return array_fill(0, $days_count, 0);
     
-    $base_qty = floor($total_qty / $days_count);
-    $remainder = $total_qty % $days_count;
+    // Initialize all days with 0
+    $daily_sales = array_fill(0, $days_count, 0);
     
-    $daily_sales = array_fill(0, $days_count, $base_qty);
-    
-    // Distribute remainder evenly across days
-    for ($i = 0; $i < $remainder; $i++) {
-        $daily_sales[$i]++;
+    // Randomly distribute each unit across days
+    for ($i = 0; $i < $total_qty; $i++) {
+        $random_day = mt_rand(0, $days_count - 1);
+        $daily_sales[$random_day]++;
     }
-    
-    // Shuffle the distribution to make it look more natural
-    shuffle($daily_sales);
     
     return $daily_sales;
 }
@@ -626,6 +623,7 @@ function distributeSales($total_qty, $days_count) {
 /**
  * Distribute sales only to available dates (excluding dry days)
  * Used by generate_bills_ultra_fast.php
+ * Changed from uniform distribution to random distribution
  */
 if (!function_exists('distributeSalesWithGlobalRestrictions')) {
     function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
@@ -633,19 +631,14 @@ if (!function_exists('distributeSalesWithGlobalRestrictions')) {
         
         $available_days_count = count($available_dates);
         
-        // Distribute across available dates
-        $base_qty = floor($total_qty / $available_days_count);
-        $remainder = $total_qty % $available_days_count;
+        // Initialize all available days with 0
+        $distribution = array_fill(0, $available_days_count, 0);
         
-        $distribution = array_fill(0, $available_days_count, $base_qty);
-        
-        // Distribute remainder evenly
-        for ($i = 0; $i < $remainder; $i++) {
-            $distribution[$i]++;
+        // Randomly distribute each unit across available days
+        for ($i = 0; $i < $total_qty; $i++) {
+            $random_day = mt_rand(0, $available_days_count - 1);
+            $distribution[$random_day]++;
         }
-        
-        // Shuffle the distribution to make it look more natural
-        shuffle($distribution);
         
         return $distribution;
     }

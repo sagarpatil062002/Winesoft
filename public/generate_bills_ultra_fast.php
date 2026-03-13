@@ -94,6 +94,9 @@ try {
     $user_id = (int)$_SESSION['user_id'];
     $fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? '';
     $items = $_POST['items'] ?? [];
+    $distributions = $_POST['distribution'] ?? []; // NEW: Get saved distributions
+    
+    logMessage("Received " . count($items) . " items and " . count($distributions) . " saved distributions", 'INFO');
     
     if (empty($start_date) || empty($end_date) || empty($items)) {
         throw new Exception("Missing required parameters");
@@ -212,18 +215,26 @@ try {
         $items_processed++;
         $_SESSION[$progress_key]['items_processed'] = $items_processed;
         
-        // Use distributeSalesWithGlobalRestrictions function from volume_limit_utils
-        // This will only distribute to available dates (excluding dry days)
-        $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
-        
-        // Map back to full date array (with 0 for unavailable/dry days)
-        $full_distribution = array_fill(0, $days_count, 0);
-        foreach ($available_dates as $i => $date) {
-            $date_index = array_search($date, $date_array);
-            if ($date_index !== false) {
-                $full_distribution[$date_index] = $distribution[$i] ?? 0;
+        // CRITICAL FIX: Use saved distribution if available, otherwise generate new one
+        if (isset($distributions[$item_code]) && is_array($distributions[$item_code])) {
+            // Use the saved distribution from JavaScript
+            $full_distribution = json_decode($distributions[$item_code], true);
+            logMessage("Using SAVED distribution for item $item_code: " . implode(', ', $full_distribution), 'INFO');
+        } else {
+            // Generate random distribution if not saved (fallback)
+            logMessage("Generating NEW distribution for item $item_code (no saved distribution found)", 'INFO');
+            $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
+            
+            // Map back to full date array (with 0 for unavailable/dry days)
+            $full_distribution = array_fill(0, $days_count, 0);
+            foreach ($available_dates as $i => $date) {
+                $date_index = array_search($date, $date_array);
+                if ($date_index !== false) {
+                    $full_distribution[$date_index] = $distribution[$i] ?? 0;
+                }
             }
         }
+        
         $daily_sales_data[$item_code] = $full_distribution;
         
         // Count days with sales for this item
@@ -679,6 +690,11 @@ try {
     // Re-enable constraints
     $conn->query("SET FOREIGN_KEY_CHECKS = 1");
     $conn->query("SET UNIQUE_CHECKS = 1");
+    
+    // Clear saved distributions from session
+    if (isset($_SESSION['item_distribution'])) {
+        unset($_SESSION['item_distribution']);
+    }
     
 } catch (Exception $e) {
     if (isset($conn)) {
