@@ -430,6 +430,43 @@ $cumulative_stock_data = [];
 // Track previous day's closing for each item (for carry-forward)
 $prev_day_closing = [];
 
+// NEW: Get the first day of the month's opening from DB for the first date in range
+$first_date = $from_date;
+$month_start = date('Y-m-01', strtotime($first_date));
+
+// Initialize array to store first day of month's opening
+$month_start_opening = [];
+
+// Only fetch if the selected range doesn't start from the first day of month
+if ($month_start != $first_date) {
+    // Get first day of month's details
+    $start_month = date('Y-m', strtotime($month_start));
+    $start_day = date('d', strtotime($month_start));
+    $start_day_padded = sprintf('%02d', $start_day);
+    
+    // Get appropriate table for first day of month
+    $startStockTable = getTableForDate($conn, $compID, $month_start);
+    
+    // Check if table exists and has the required columns
+    if (tableHasDayColumns($conn, $startStockTable, $start_day)) {
+        // Fetch opening stock from first day of month
+        $startStockQuery = "SELECT ITEM_CODE, DAY_{$start_day_padded}_OPEN as opening 
+                          FROM $startStockTable 
+                          WHERE STK_MONTH = ?";
+        
+        $startStockStmt = $conn->prepare($startStockQuery);
+        $startStockStmt->bind_param("s", $start_month);
+        $startStockStmt->execute();
+        $startStockResult = $startStockStmt->get_result();
+        
+        while ($row = $startStockResult->fetch_assoc()) {
+            $item_code = $row['ITEM_CODE'];
+            $month_start_opening[$item_code] = (int)$row['opening'];
+        }
+        $startStockStmt->close();
+    }
+}
+
 // Fetch TP Nos from tblpurchases
 $tpQuery = "SELECT TPNO, DATE FROM tblpurchases WHERE CompID = ? AND DATE BETWEEN ? AND ?";
 $tpStmt = $conn->prepare($tpQuery);
@@ -501,13 +538,20 @@ foreach ($all_dates as $current_date) {
         // Get LIQ_FLAG from stock row if available, otherwise use from item master
         $stock_liq_flag = isset($row['LIQ_FLAG']) ? $row['LIQ_FLAG'] : $items[$item_code]['liq_flag'];
         
-        // Get the opening - use previous day's calculated closing if available (carry-forward logic)
+        // Get the opening - use first day of month opening if available, otherwise use previous day's calculated closing
         $opening = $row['opening'];
         
         // Debug: Log opening values
         error_log("Item: $item_code, DB Opening: " . $row['opening'] . ", Prev Closing: " . ($prev_day_closing[$item_code] ?? 'N/A'));
         
-        if (isset($prev_day_closing[$item_code])) {
+        // Check if this is the first date in our range AND we have month start opening
+        $is_first_date = ($current_date == $all_dates[0]);
+        
+        if ($is_first_date && isset($month_start_opening[$item_code])) {
+            // Use first day of month's opening instead of DB opening
+            $opening = $month_start_opening[$item_code];
+            error_log("Using month start opening: $opening");
+        } elseif (isset($prev_day_closing[$item_code])) {
             // Carry forward previous day's calculated closing as today's opening
             $opening = $prev_day_closing[$item_code];
             error_log("Using carry-forward opening: $opening");

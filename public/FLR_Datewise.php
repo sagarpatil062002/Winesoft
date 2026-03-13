@@ -319,6 +319,36 @@ function tableHasDayColumns($conn, $tableName, $day, &$table_columns_cache) {
     return isset($table_columns_cache[$tableName][$columnName]);
 }
 
+// Function to check if table has closing column for specific day
+function tableHasClosingColumn($conn, $tableName, $day, &$table_columns_cache) {
+    // Ensure columns are cached
+    if (!isset($table_columns_cache[$tableName])) {
+        // Cache all day columns for this table
+        for ($d = 1; $d <= 31; $d++) {
+            $day_padded = sprintf('%02d', $d);
+            $columns_to_check = [
+                "DAY_{$day_padded}_OPEN",
+                "DAY_{$day_padded}_PURCHASE", 
+                "DAY_{$day_padded}_SALES",
+                "DAY_{$day_padded}_CLOSING"
+            ];
+            
+            foreach ($columns_to_check as $column) {
+                $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
+                $columnResult = $conn->query($checkColumnQuery);
+                if ($columnResult && $columnResult->num_rows > 0) {
+                    $table_columns_cache[$tableName][$column] = true;
+                }
+            }
+        }
+    }
+    
+    // Check for the requested day CLOSING column
+    $day_padded = sprintf('%02d', $day);
+    $columnName = "DAY_{$day_padded}_CLOSING";
+    return isset($table_columns_cache[$tableName][$columnName]);
+}
+
 // Initialize report data structure
 $dates = [];
 $current_date = $from_date;
@@ -516,80 +546,283 @@ foreach ($dates as $date) {
 }
 
 // OPENING BALANCE AND CLOSING CALCULATION LOGIC:
-// - First day of selection: Use DB opening value
-// - Subsequent days: Carry forward previous day's closing as today's opening
+// - First day of selection: Use first day of month's opening OR previous month's last day closing
+// - Subsequent days: Carry forward previous day's calculated closing as today's opening
 // - Closing = Opening + Purchase - Sold (calculated, not from DB)
 
-// First, fetch raw data and store daily closing from DB
-$daily_closing_from_db = [];
+// Define categories and size columns for FLR Datewise
+$display_categories = ['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'];
+$size_columns = [
+    'Spirit' => $display_sizes_spirit,
+    'Wine' => $display_sizes_wine,
+    'Fermented Beer' => $display_sizes_beer,
+    'Mild Beer' => $display_sizes_beer
+];
 
-// Process each date and store raw DB closing
-foreach ($dates as $index => $date) {
-    if (!isset($daily_data[$date])) continue;
+// Get the first date in selected range
+$first_date = $dates[0];
+$month_start = date('Y-m-01', strtotime($first_date));
+
+// Check if selected date is already the first day of month
+$is_first_day_of_month = ($first_date == $month_start);
+
+// Variable to store opening data
+$prev_day_closing = [];
+
+if (!$is_first_day_of_month) {
+    // Case 1: Not selecting from 1st of month - use 1st of month's opening
+    $prev_date = $month_start;
+    $prev_month = date('Y-m', strtotime($prev_date));
+    $prev_day = date('d', strtotime($prev_date));
+    $prev_day_padded = sprintf('%02d', $prev_day);
     
-    // Store the raw closing from DB before any modification
-    foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
-        if (!isset($daily_data[$date][$type])) continue;
+    $prevStockTable = getTableForDate($conn, $compID, $prev_date, $table_exists_cache);
+    
+    if (tableHasDayColumns($conn, $prevStockTable, $prev_day, $table_columns_cache)) {
+        $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_OPEN as closing 
+                          FROM $prevStockTable 
+                          WHERE STK_MONTH = ?
+                          LIMIT 500";
         
-        // Get the correct size array for this type
-        $type_sizes = [];
-        switch($type) {
-            case 'Spirit':
-                $type_sizes = $display_sizes_spirit;
-                break;
-            case 'Wine':
-                $type_sizes = $display_sizes_wine;
-                break;
-            case 'Fermented Beer':
-            case 'Mild Beer':
-                $type_sizes = $display_sizes_beer;
-                break;
+        $prevStockStmt = $conn->prepare($prevStockQuery);
+        $prevStockStmt->bind_param("s", $prev_month);
+        $prevStockStmt->execute();
+        $prevStockResult = $prevStockStmt->get_result();
+        
+        while ($row = $prevStockResult->fetch_assoc()) {
+            $item_code = $row['ITEM_CODE'];
+            if (!isset($items[$item_code])) continue;
+            
+            $item = $items[$item_code];
+            $hierarchy = $item['hierarchy'];
+            $display_type = $hierarchy['display_type'];
+            
+            if (!in_array($display_type, $display_categories)) continue;
+            
+            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+            
+            $matched_size = null;
+            if (isset($size_columns[$display_type])) {
+                if (in_array($volume_label, $size_columns[$display_type])) {
+                    $matched_size = $volume_label;
+                }
+            }
+            
+            if ($matched_size) {
+                if (!isset($prev_day_closing[$display_type])) {
+                    $prev_day_closing[$display_type] = [];
+                }
+                if (!isset($prev_day_closing[$display_type][$matched_size])) {
+                    $prev_day_closing[$display_type][$matched_size] = 0;
+                }
+                $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
+            }
         }
+        $prevStockStmt->close();
+    }
+} else {
+    // Case 2: Selecting from 1st of month - use PREVIOUS MONTH'S LAST DAY closing
+    // This handles month-to-month transition (e.g., April 30th -> May 1st)
+    $prev_month_date = date('Y-m-01', strtotime($first_date . ' -1 month'));
+    $prev_month_last_day = date('t', strtotime($prev_month_date)); // Last day of previous month
+    $prev_month = date('Y-m', strtotime($prev_month_date));
+    $prev_day_padded = sprintf('%02d', $prev_month_last_day);
+    
+    // Try to get from previous month's archive table
+    $prevStockTable = getTableForDate($conn, $compID, $prev_month_date, $table_exists_cache);
+    
+    // First try: Check for CLOSING column in archive table
+    $found_data = false;
+    if (tableHasClosingColumn($conn, $prevStockTable, $prev_month_last_day, $table_columns_cache)) {
+        $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_CLOSING as closing 
+                          FROM $prevStockTable 
+                          WHERE STK_MONTH = ?
+                          LIMIT 500";
         
-        foreach ($type_sizes as $size) {
-            $daily_closing_from_db[$date][$type][$size] = $daily_data[$date][$type]['closing'][$size] ?? 0;
+        $prevStockStmt = $conn->prepare($prevStockQuery);
+        $prevStockStmt->bind_param("s", $prev_month);
+        $prevStockStmt->execute();
+        $prevStockResult = $prevStockStmt->get_result();
+        
+        $row_count = 0;
+        while ($row = $prevStockResult->fetch_assoc()) {
+            $row_count++;
+            $item_code = $row['ITEM_CODE'];
+            if (!isset($items[$item_code])) continue;
+            
+            $item = $items[$item_code];
+            $hierarchy = $item['hierarchy'];
+            $display_type = $hierarchy['display_type'];
+            
+            if (!in_array($display_type, $display_categories)) continue;
+            
+            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+            
+            $matched_size = null;
+            if (isset($size_columns[$display_type])) {
+                if (in_array($volume_label, $size_columns[$display_type])) {
+                    $matched_size = $volume_label;
+                }
+            }
+            
+            if ($matched_size) {
+                if (!isset($prev_day_closing[$display_type])) {
+                    $prev_day_closing[$display_type] = [];
+                }
+                if (!isset($prev_day_closing[$display_type][$matched_size])) {
+                    $prev_day_closing[$display_type][$matched_size] = 0;
+                }
+                $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
+            }
+        }
+        $prevStockStmt->close();
+        
+        if ($row_count > 0) {
+            $found_data = true;
+        }
+    }
+    
+    // Fallback: If no data from archive, try the current month's table for previous month
+    // This handles case where previous month's data is in current table
+    if (!$found_data) {
+        $currentMonthTable = "tbldailystock_" . $compID;
+        if (tableHasClosingColumn($conn, $currentMonthTable, $prev_month_last_day, $table_columns_cache)) {
+            $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_CLOSING as closing 
+                              FROM $currentMonthTable 
+                              WHERE STK_MONTH = ?
+                              LIMIT 500";
+            
+            $prevStockStmt = $conn->prepare($prevStockQuery);
+            $prevStockStmt->bind_param("s", $prev_month);
+            $prevStockStmt->execute();
+            $prevStockResult = $prevStockStmt->get_result();
+            
+            while ($row = $prevStockResult->fetch_assoc()) {
+                $item_code = $row['ITEM_CODE'];
+                if (!isset($items[$item_code])) continue;
+                
+                $item = $items[$item_code];
+                $hierarchy = $item['hierarchy'];
+                $display_type = $hierarchy['display_type'];
+                
+                if (!in_array($display_type, $display_categories)) continue;
+                
+                $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+                
+                $matched_size = null;
+                if (isset($size_columns[$display_type])) {
+                    if (in_array($volume_label, $size_columns[$display_type])) {
+                        $matched_size = $volume_label;
+                    }
+                }
+                
+                if ($matched_size) {
+                    if (!isset($prev_day_closing[$display_type])) {
+                        $prev_day_closing[$display_type] = [];
+                    }
+                    if (!isset($prev_day_closing[$display_type][$matched_size])) {
+                        $prev_day_closing[$display_type][$matched_size] = 0;
+                    }
+                    $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
+                }
+            }
+            $prevStockStmt->close();
         }
     }
 }
 
-// Now carry forward opening from previous day's DB closing and calculate closing
+// NOW, apply the opening balance logic
+// Also update opening_balance_data for summary row
 foreach ($dates as $index => $date) {
-    // Skip first day - keep its original DB opening
-    if ($index == 0) continue;
-    
+    // Skip if this date was not processed
     if (!isset($daily_data[$date])) continue;
     
-    $prev_date = $dates[$index - 1];
-    if (isset($daily_data[$prev_date])) {
-        foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
-            if (!isset($daily_data[$date][$type])) continue;
+    // For the FIRST date in the range and only if we have prev month data
+    if ($index == 0 && !empty($prev_day_closing)) {
+        foreach ($display_categories as $category) {
+            if (!isset($daily_data[$date][$category])) continue;
             
-            // Get the correct size array for this type
-            $type_sizes = [];
-            switch($type) {
-                case 'Spirit':
-                    $type_sizes = $display_sizes_spirit;
-                    break;
-                case 'Wine':
-                    $type_sizes = $display_sizes_wine;
-                    break;
-                case 'Fermented Beer':
-                case 'Mild Beer':
-                    $type_sizes = $display_sizes_beer;
-                    break;
+            // Initialize opening if not exists
+            if (!isset($daily_data[$date][$category]['opening'])) {
+                $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
             }
             
-            foreach ($type_sizes as $size) {
-                // Carry forward previous day's DB closing as today's opening
-                $prev_closing = $daily_closing_from_db[$prev_date][$type][$size] ?? 0;
-                $daily_data[$date][$type]['opening'][$size] = $prev_closing;
+            foreach ($size_columns[$category] as $size) {
+                if (isset($prev_day_closing[$category][$size]) && $prev_day_closing[$category][$size] > 0) {
+                    // OVERRIDE the database opening with previous month's last day closing
+                    $daily_data[$date][$category]['opening'][$size] = $prev_day_closing[$category][$size];
+                    
+                    // Also update opening_balance_data for summary row
+                    $opening_balance_data[$category][$size] = $prev_day_closing[$category][$size];
+                }
+            }
+        }
+    } else if ($index == 0) {
+        // First date but no prev_day_closing - initialize opening from DB
+        foreach ($display_categories as $category) {
+            if (!isset($daily_data[$date][$category])) continue;
+            if (!isset($daily_data[$date][$category]['opening'])) {
+                $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
+            }
+            // Also sync opening_balance_data from first date's DB opening
+            foreach ($size_columns[$category] as $size) {
+                if (isset($daily_data[$date][$category]['closing'][$size])) {
+                    // opening_balance_data was already set from DB in lines 498-501
+                }
+            }
+        }
+    }
+    
+    // Carry forward opening from previous day's calculated closing for subsequent dates
+    if ($index > 0) {
+        $prev_date_loop = $dates[$index - 1];
+        if (isset($daily_data[$prev_date_loop])) {
+            // Initialize opening for current date if not exists
+            if (!isset($daily_data[$date][$display_categories[0]]['opening'])) {
+                foreach ($display_categories as $category) {
+                    if (!isset($daily_data[$date][$category])) continue;
+                    $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
+                }
+            }
+            
+            foreach ($display_categories as $category) {
+                if (!isset($daily_data[$date][$category]) || !isset($daily_data[$prev_date_loop][$category])) continue;
                 
-                // Calculate closing: Opening + Purchase - Sold
-                $opening = $daily_data[$date][$type]['opening'][$size];
-                $purchase = $daily_data[$date][$type]['purchase'][$size] ?? 0;
-                $sales = $daily_data[$date][$type]['sales'][$size] ?? 0;
-                $daily_data[$date][$type]['closing'][$size] = max(0, $opening + $purchase - $sales);
+                // Initialize opening array if needed
+                if (!isset($daily_data[$date][$category]['opening'])) {
+                    $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
+                }
+                
+                foreach ($size_columns[$category] as $size) {
+                    // Opening today = Previous day's calculated closing
+                    $prev_closing = $daily_data[$prev_date_loop][$category]['closing'][$size] ?? 0;
+                    if ($prev_closing > 0) {
+                        $daily_data[$date][$category]['opening'][$size] = $prev_closing;
+                    }
+                }
             }
+        }
+    }
+    
+    // Calculate closing: Opening + Purchase - Sold
+    foreach ($display_categories as $category) {
+        if (!isset($daily_data[$date][$category])) continue;
+        
+        // Ensure opening array exists
+        if (!isset($daily_data[$date][$category]['opening'])) {
+            $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
+        }
+        
+        foreach ($size_columns[$category] as $size) {
+            $opening = $daily_data[$date][$category]['opening'][$size] ?? 0;
+            $purchase = $daily_data[$date][$category]['purchase'][$size] ?? 0;
+            $sales = $daily_data[$date][$category]['sales'][$size] ?? 0;
+            
+            // Calculate closing: Opening + Purchase - Sold
+            $calculated_closing = $opening + $purchase - $sales;
+            
+            // Ensure non-negative
+            $daily_data[$date][$category]['closing'][$size] = max(0, $calculated_closing);
         }
     }
 }
