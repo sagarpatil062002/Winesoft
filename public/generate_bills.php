@@ -870,6 +870,15 @@ try {
     // ============================================================================
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
+    
+    // FIX: Ensure start_date is before end_date (swap if needed)
+    if (strtotime($start_date) > strtotime($end_date)) {
+        $temp = $start_date;
+        $start_date = $end_date;
+        $end_date = $temp;
+        logMessage("Date range was swapped: start_date=$start_date, end_date=$end_date", 'INFO');
+    }
+    
     $mode = $_POST['mode'];
     $comp_id = (int)$_SESSION['CompID'];
     $user_id = (int)$_SESSION['user_id'];

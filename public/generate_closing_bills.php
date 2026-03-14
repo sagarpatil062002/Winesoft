@@ -13,6 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_bills'])) {
     try {
         $start_date = $_POST['start_date'];
         $end_date = $_POST['end_date'];
+        
+        // FIX: Ensure start_date is before end_date (swap if needed)
+        if (strtotime($start_date) > strtotime($end_date)) {
+            $temp = $start_date;
+            $start_date = $end_date;
+            $end_date = $temp;
+        }
+        
         $mode = $_POST['mode'];
         $comp_id = $_SESSION['CompID'];
         $user_id = $_SESSION['user_id'];

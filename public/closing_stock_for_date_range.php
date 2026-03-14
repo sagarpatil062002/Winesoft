@@ -1517,6 +1517,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['update_sales'])) {
             $start_date = $_POST['start_date'];
             $end_date = $_POST['end_date'];
+            
+            // FIX: Ensure dates are in correct chronological order
+            // This prevents reverse distribution when dates are submitted in wrong order
+            if (strtotime($start_date) > strtotime($end_date)) {
+                $temp = $start_date;
+                $start_date = $end_date;
+                $end_date = $temp;
+                logMessage("Date range was swapped: start_date=$start_date, end_date=$end_date", 'INFO');
+            }
+            
             $comp_id = $_SESSION['CompID'];
             $user_id = $_SESSION['user_id'];
             $fin_year_id = $_SESSION['FIN_YEAR_ID'];
@@ -1653,10 +1663,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $item = $all_items[$item_code];
                                 
                                 // NEW: Use saved distribution from session if available, otherwise generate random
+                                // FIX: Reverse the distribution array because UI shows dates in reverse order
                                 $full_distribution = [];
                                 if (isset($_SESSION['item_distribution'][$item_code]) && is_array($_SESSION['item_distribution'][$item_code])) {
-                                    $full_distribution = $_SESSION['item_distribution'][$item_code];
-                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $full_distribution));
+                                    $saved_dist = $_SESSION['item_distribution'][$item_code];
+                                    // Reverse the distribution to match the date order (first element = first date)
+                                    $full_distribution = array_reverse($saved_dist);
+                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $saved_dist) . " -> reversed: " . implode(', ', $full_distribution));
                                 } else {
                                     // Generate random distribution if not saved
                                     $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
