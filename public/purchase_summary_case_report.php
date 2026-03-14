@@ -12,6 +12,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "components/financial_year.php";
 
 // Get financial year from session
 $fin_year_id = $_SESSION['FIN_YEAR_ID'];

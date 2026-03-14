@@ -13,6 +13,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "components/financial_year.php";
 require_once 'drydays_functions.php'; // Single include
 require_once 'license_functions.php'; // ADDED: Include license 
 require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions

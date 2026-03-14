@@ -3136,6 +3136,7 @@ tr.global-restriction .qty-input {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Global variables
+let savedDistributions = {}; // NEW: Store distribution to prevent reshuffling
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
 // Pass ALL session quantities to JavaScript
@@ -3183,6 +3184,14 @@ function calculateSaleQtyFromClosing(input) {
     // Calculate sale quantity (Current Stock - Closing Balance)
     const saleQty = Math.floor(currentStock - enteredClosing);
     
+    // CRITICAL FIX: Check if quantity actually changed before recalculating distribution
+    // This prevents reshuffling when using arrow keys or other navigation
+    const previousQty = savedDistributions[itemCode] ? 
+        savedDistributions[itemCode].reduce((sum, qty) => sum + qty, 0) : 
+        (parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0);
+    
+    console.log(`Item ${itemCode}: PreviousQty=${previousQty}, NewSaleQty=${saleQty}`);
+    
     // Update hidden sale quantity input
     $(`input[name="sale_qty[${itemCode}]"]`).val(saleQty);
     
@@ -3194,8 +3203,13 @@ function calculateSaleQtyFromClosing(input) {
     // Save to session via AJAX
     saveQuantityToSession(itemCode, saleQty);
     
-    // Update distribution preview with global restrictions
-    updateDistributionPreviewWithGlobalRestrictions(itemCode, saleQty);
+    // Only recalculate distribution if quantity actually changed
+    if (saleQty !== previousQty) {
+        // Update distribution preview with global restrictions
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, saleQty);
+    } else {
+        console.log(`Item ${itemCode}: Quantity unchanged, skipping distribution recalculation`);
+    }
     
     return true;
 }
@@ -3589,6 +3603,9 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     itemRow.find('.date-distribution-cell').remove();
 
     console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
+
+    // SAVE THIS DISTRIBUTION - this is what the user sees
+    savedDistributions[itemCode] = distribution.slice(); // Create a copy
 
     // Add date distribution cells with proper styling
     distribution.forEach((qty, index) => {
@@ -4092,6 +4109,15 @@ function startUltraFastBillGeneration() {
         const qty = itemsWithQuantities[itemCode];
         if (qty > 0) {
             formData.append(`items[${itemCode}]`, qty);
+            
+            // CRITICAL FIX: Also send the saved distribution for this item
+            if (savedDistributions[itemCode]) {
+                // Send distribution as JSON string
+                formData.append(`distribution[${itemCode}]`, JSON.stringify(savedDistributions[itemCode]));
+                console.log(`Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
+            } else {
+                console.warn(`No saved distribution found for ${itemCode} - will recalculate on server`);
+            }
         }
     }
     
@@ -4122,8 +4148,9 @@ function startUltraFastBillGeneration() {
                 // Update initial status
                 updateProgressStatus('info', response.message || 'Processing bills...');
                 
-                // Clear session quantities after successful start
+                // Clear session quantities and saved distributions after successful start
                 clearSessionQuantities();
+                savedDistributions = {};
                 
             } else {
                 // Error occurred
@@ -4792,6 +4819,9 @@ $(document).on('click', '.btn-shuffle-item', async function() {
 
         console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
         
+        // Save this new distribution to savedDistributions
+        savedDistributions[itemCode] = newDistribution.slice();
+        
         // Save distribution to session so it matches when generating bills
         saveDistributionToSession(itemCode, newDistribution);
     } else {
@@ -4917,6 +4947,10 @@ $('#shuffleBtn').off('click').on('click', async function() {
             const qty = parseInt(text) || 0;
             distribution.push(qty);
         });
+        
+        // Save to savedDistributions object
+        savedDistributions[item.itemCode] = distribution.slice();
+        
         saveDistributionToSession(item.itemCode, distribution);
     });
 

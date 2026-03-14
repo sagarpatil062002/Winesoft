@@ -1,4 +1,7 @@
 <?php
+// Include financial year module for date validation and auto-apply constraints
+include_once __DIR__ . "/components/financial_year.php";
+
 // Function to update stock when purchase is made
 function updateStockFromPurchase($purchaseID, $compId, $conn) {
     $query = "SELECT pd.ItemCode, pd.TotBott as Qty, p.PUR_FLAG as LIQ_FLAG, p.DATE as StkDate

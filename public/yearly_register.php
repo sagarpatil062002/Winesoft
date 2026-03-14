@@ -15,6 +15,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 }
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "components/financial_year.php";
 require_once 'license_functions.php'; // Include license functions
 
 // Get company ID from session

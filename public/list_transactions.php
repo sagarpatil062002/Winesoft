@@ -1,6 +1,7 @@
 <?php
 // list_transactions.php
 require_once 'config/database.php';
+require_once 'components/financial_year.php';
 require_once 'license_functions.php';
 require_once 'drydays_functions.php';
 

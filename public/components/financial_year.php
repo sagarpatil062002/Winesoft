@@ -124,67 +124,185 @@ class FinancialYearModule {
     
     /**
      * Generate JavaScript for date validation that automatically applies to all date inputs
+     * Includes: min/max constraints + tab-to-copy functionality
      */
     public function getDateValidationJS() {
-        if (!$this->start_date || !$this->end_date) {
-            return "";
-        }
-        
         $constraints = $this->getDatePickerConstraints();
+        $hasConstraints = $this->start_date && $this->end_date;
+        
+        $minDate = $hasConstraints ? $constraints['min'] : '';
+        $maxDate = $hasConstraints ? $constraints['max'] : '';
+        $displayText = $hasConstraints ? $this->display_text : 'Not Set';
+        
         return "
             <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Apply constraints to all existing date inputs
-                const dateInputs = document.querySelectorAll('input[type=\"date\"]');
-                dateInputs.forEach(input => {
-                    input.min = '{$constraints['min']}';
-                    input.max = '{$constraints['max']}';
-                    
-                    // Validate on change
-                    input.addEventListener('change', function() {
-                        validateFinancialYearDate(this);
-                    });
-                });
+            (function() {
+                'use strict';
                 
-                // Monitor for dynamically added date inputs
-                const observer = new MutationObserver(function(mutations) {
+                var finYearStart = '{$minDate}';
+                var finYearEnd = '{$maxDate}';
+                var finYearDisplay = '{$displayText}';
+                var hasConstraints = " . ($hasConstraints ? 'true' : 'false') . ";
+                
+                console.log('Date Range Handler: Initializing, hasConstraints:', hasConstraints);
+                
+                var dateFieldMappings = [
+                    { start: 'start_date', end: 'end_date' },
+                    { start: 'from_date', end: 'to_date' },
+                    { start: 'StartDate', end: 'EndDate' },
+                    { start: 'fromDate', end: 'toDate' }
+                ];
+                
+                function findEndDateInput(startInput) {
+                    var name = startInput.name || startInput.id || '';
+                    var endInput = null;
+                    
+                    for (var i = 0; i < dateFieldMappings.length; i++) {
+                        var mapping = dateFieldMappings[i];
+                        if (name.toLowerCase().includes(mapping.start.toLowerCase())) {
+                            var endName = name.replace(new RegExp(mapping.start, 'i'), mapping.end);
+                            endInput = document.querySelector('input[name=\"' + endName + '\"]');
+                            if (endInput) break;
+                            
+                            var endId = startInput.id.replace(new RegExp(mapping.start, 'i'), mapping.end);
+                            endInput = document.getElementById(endId);
+                            if (endInput) break;
+                        }
+                    }
+                    
+                    if (!endInput) {
+                        var parent = startInput.parentElement;
+                        while (parent && !parent.classList.contains('row') && !parent.classList.contains('form-row')) {
+                            parent = parent.parentElement;
+                        }
+                        if (parent) {
+                            var allDateInputs = parent.querySelectorAll('input[type=\"date\"]');
+                            for (var j = 0; j < allDateInputs.length; j++) {
+                                if (allDateInputs[j] !== startInput) {
+                                    endInput = allDateInputs[j];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log('findEndDateInput: start=', name, 'found end=', endInput ? (endInput.name || endInput.id) : 'null');
+                    return endInput;
+                }
+                
+                function applyDateConstraints(input) {
+                    if (!hasConstraints || !finYearStart || !finYearEnd) return;
+                    input.min = finYearStart;
+                    input.max = finYearEnd;
+                }
+                
+                function validateFinancialYearDate(input) {
+                    if (!input.value || !hasConstraints || !finYearStart || !finYearEnd) return true;
+                    
+                    var minDate = new Date(finYearStart + 'T00:00:00');
+                    var maxDate = new Date(finYearEnd + 'T00:00:00');
+                    var selectedDate = new Date(input.value + 'T00:00:00');
+                    
+                    if (selectedDate < minDate || selectedDate > maxDate) {
+                        alert('Date must be between ' + finYearStart + ' and ' + finYearEnd + ' (Financial Year: ' + finYearDisplay + ')');
+                        input.value = '';
+                        input.focus();
+                        return false;
+                    }
+                    return true;
+                }
+                
+                function handleTabFromStartDate(startInput) {
+                    console.log('handleTabFromStartDate called:', {
+                        startInput: startInput.name || startInput.id,
+                        startInputValue: startInput.value,
+                        startInputValueEmpty: !startInput.value
+                    });
+                    
+                    if (!startInput.value) {
+                        console.log('No value in start input, not copying');
+                        return;
+                    }
+                    
+                    var endInput = findEndDateInput(startInput);
+                    console.log('endInput found:', endInput ? (endInput.name || endInput.id) : 'null');
+                    
+                    if (endInput) {
+                        console.log('endInput.value before:', endInput.value);
+                    }
+                    
+                    // Always copy when tabbing from start date, regardless of existing value
+                    // This allows user to quickly set both dates to the same value
+                    if (endInput) {
+                        endInput.value = startInput.value;
+                        console.log('Copied date from', startInput.name || startInput.id, 'to', endInput.name || endInput.id, 'value:', startInput.value);
+                        endInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                
+                function processDateInputs(container) {
+                    if (!container) return;
+                    
+                    var dateInputs;
+                    if (container.querySelectorAll) {
+                        dateInputs = container.querySelectorAll('input[type=\"date\"]');
+                    } else if (container.matches && container.matches('input[type=\"date\"]')) {
+                        dateInputs = [container];
+                    } else {
+                        return;
+                    }
+                    
+                    dateInputs.forEach(function(input) {
+                        if (input.dataset.dateHandlerInitialized) return;
+                        input.dataset.dateHandlerInitialized = 'true';
+                        
+                        applyDateConstraints(input);
+                        
+                        input.addEventListener('change', function() {
+                            validateFinancialYearDate(this);
+                        });
+                        
+                        input.addEventListener('keydown', function(e) {
+                            if (e.key === 'Tab') {
+                                var name = (this.name || this.id || '').toLowerCase();
+                                var isStartDate = name.includes('start') || name.includes('from');
+                                
+                                if (isStartDate && !e.shiftKey) {
+                                    handleTabFromStartDate(this);
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        processDateInputs(document.body);
+                    });
+                } else {
+                    processDateInputs(document.body);
+                }
+                
+                setTimeout(function() {
+                    processDateInputs(document.body);
+                }, 1000);
+                
+                var observer = new MutationObserver(function(mutations) {
                     mutations.forEach(function(mutation) {
                         if (mutation.addedNodes) {
                             mutation.addedNodes.forEach(function(node) {
-                                if (node.nodeType === 1) { // Element node
-                                    const newDateInputs = node.querySelectorAll ? 
-                                        node.querySelectorAll('input[type=\"date\"]') : 
-                                        (node.matches && node.matches('input[type=\"date\"]') ? [node] : []);
-                                    
-                                    newDateInputs.forEach(input => {
-                                        input.min = '{$constraints['min']}';
-                                        input.max = '{$constraints['max']}';
-                                        input.addEventListener('change', function() {
-                                            validateFinancialYearDate(this);
-                                        });
-                                    });
+                                if (node.nodeType === 1) {
+                                    processDateInputs(node);
                                 }
                             });
                         }
                     });
                 });
                 
-                observer.observe(document.body, { childList: true, subtree: true });
-            });
-            
-            function validateFinancialYearDate(input) {
-                const minDate = new Date('{$constraints['min']}');
-                const maxDate = new Date('{$constraints['max']}');
-                const selectedDate = new Date(input.value);
-                
-                if (input.value && (selectedDate < minDate || selectedDate > maxDate)) {
-                    alert('Date must be between {$constraints['min']} and {$constraints['max']} (Financial Year: {$this->display_text})');
-                    input.value = '';
-                    input.focus();
-                    return false;
-                }
-                return true;
-            }
+                try {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                } catch(e) {}
+            })();
             </script>
         ";
     }
