@@ -2930,6 +2930,7 @@ tr.global-restriction .qty-input {
                        data-unavailable-dates='<?= htmlspecialchars(json_encode($unavailable_dates_global)) ?>'
                        data-dry-dates='<?= htmlspecialchars(json_encode($dry_dates)) ?>'
                        oninput="calculateSaleQtyFromClosing(this)"
+                       onkeydown="if(event.key === 'Enter') { event.preventDefault(); shuffleThisItemClosing(this); }"
                        <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($restriction_title) . '"' : '' ?>>
                 <input type="hidden" name="sale_qty[<?= htmlspecialchars($item_code); ?>]" 
                        class="sale-qty-hidden" value="<?= $item_qty ?>">
@@ -3436,10 +3437,27 @@ function clearSessionQuantities() {
 
 // FIXED: Enhanced function to update distribution preview - correctly shows available dates with global restrictions
 // AND EXCLUDES DRY DAYS FROM DISTRIBUTION
+// CRITICAL FIX: Uses saved distribution if available instead of generating new one
 function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
     const itemRow = inputField.closest('tr');
+
+    // CRITICAL FIX: Check if we already have a saved distribution and use it instead of generating new one
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        const savedDistribution = savedDistributions[itemCode];
+        const savedTotal = savedDistribution.reduce((sum, qty) => sum + qty, 0);
+        
+        // Verify the saved distribution matches the current quantity
+        if (savedTotal === totalQty) {
+            console.log(`DEBUG: ${itemCode} - Using SAVED distribution instead of generating new one`);
+            // Use the saved distribution for UI display
+            displayDistributionInCellsClosing(itemCode, itemRow, savedDistribution);
+            return;
+        } else {
+            console.log(`DEBUG: ${itemCode} - Saved distribution total (${savedTotal}) doesn't match current qty (${totalQty}), will regenerate`);
+        }
+    }
 
     if (totalQty <= 0) {
         // Remove distribution cells if quantity is 0
@@ -3835,6 +3853,106 @@ function shuffleDistributionForItem(itemCode, totalQty) {
     return distribution;
 }
 
+// NEW: Helper function to display saved distribution in cells for closing stock (avoids regenerating random distribution)
+function displayDistributionInCellsClosing(itemCode, itemRow, distribution) {
+    console.log(`DEBUG: ${itemCode} - displayDistributionInCellsClosing called with:`, distribution);
+    
+    const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
+    
+    // Show date columns
+    $('.date-header, .date-distribution-cell').show();
+    
+    // Calculate total for this distribution
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
+    
+    // Add date distribution cells with proper styling
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell"></td>`);
+
+        // Check if this date is unavailable due to global sales
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        
+        // Check if this date is a dry day
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+
+        // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+        if (isDryDate) {
+            // Date is a dry day - show dYOT (always with 0 quantity)
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">dYOT</span><span class="small-icon">(dry day)</span>');
+        } else if (isGlobalUnavailable) {
+            // Date has existing sales - show X with 0 quantity
+            cell.addClass('global-unavailable-date');
+            cell.html('<span class="text-danger">X</span><span class="small-icon">(has sales)</span>');
+        } else if (qty > 0) {
+            // Normal available date with quantity - show the quantity
+            cell.addClass('has-quantity');
+            cell.html(`<span class="qty-badge">${qty}</span>`);
+        } else {
+            // Available date but 0 quantity
+            cell.addClass('zero-quantity');
+            cell.html('<span class="text-muted">0</span>');
+        }
+
+        // Insert after the item details columns
+        const actionColumn = itemRow.find('td.action-column');
+        if (actionColumn.length > 0) {
+            cell.insertAfter(actionColumn);
+        } else {
+            // Fallback: append to row
+            itemRow.append(cell);
+        }
+    });
+    
+    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+}
+
+// NEW: Function to shuffle distribution for closing stock when Enter is pressed
+function shuffleThisItemClosing(input) {
+    const itemCode = $(input).data('code');
+    const currentStock = parseFloat($(input).data('stock'));
+    const enteredClosing = parseInt($(input).val()) || 0;
+    
+    // Calculate sale quantity (Current Stock - Closing Balance)
+    const saleQty = Math.floor(currentStock - enteredClosing);
+    
+    console.log(`Enter key pressed for closing stock - Item ${itemCode}, Closing=${enteredClosing}, SaleQty=${saleQty}`);
+    
+    if (saleQty > 0) {
+        // Shuffle/randomize the distribution for this item
+        const distribution = shuffleDistributionForItem(itemCode, saleQty);
+        
+        // Save the shuffled distribution to session
+        saveDistributionToSession(itemCode, distribution);
+        
+        // Update the hidden sale quantity input
+        $(`input[name="sale_qty[${itemCode}]"]`).val(saleQty);
+        
+        // Update the distribution preview for this item
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, saleQty);
+        
+        console.log(`Shuffled distribution for closing stock item ${itemCode}:`, distribution);
+    } else {
+        // If quantity is 0, clear the distribution
+        delete savedDistributions[itemCode];
+        
+        // Update the hidden sale quantity input
+        $(`input[name="sale_qty[${itemCode}]"]`).val(0);
+        
+        // Update the UI to show no distribution
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, 0);
+        
+        console.log(`Cleared distribution for closing stock item ${itemCode} (saleQty=0)`);
+    }
+}
+
 // Function to check global restrictions before submission
 function checkGlobalRestrictionsBeforeSubmit() {
     return new Promise((resolve, reject) => {
@@ -3991,6 +4109,9 @@ function initializeTableHeaders() {
     // Remove existing date headers if any
     $('.date-header').remove();
     
+    // First, collect all date headers to insert
+    const headersToInsert = [];
+    
     // Add date headers after the action column header
     dateArray.forEach(date => {
         const dateObj = new Date(date);
@@ -4012,9 +4133,18 @@ function initializeTableHeaders() {
             title = `${date} - Available for new sales`;
         }
         
-        // Insert date headers after the action column header
-        $(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
+        headersToInsert.push(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`);
     });
+    
+    // Insert all headers at once after the action column (in correct order)
+    // Using insertAfter with all headers will insert them in sequence
+    const actionColumn = $('.table-header tr th.action-column');
+    if (actionColumn.length > 0) {
+        // Insert headers in reverse order so first date ends up on the left
+        for (let i = headersToInsert.length - 1; i >= 0; i--) {
+            $(headersToInsert[i]).insertAfter(actionColumn);
+        }
+    }
 }
 
 // Function to handle row navigation with arrow keys

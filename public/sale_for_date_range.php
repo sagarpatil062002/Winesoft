@@ -2910,6 +2910,7 @@ tr.global-restriction .qty-input {
                        data-unavailable-dates='<?= htmlspecialchars(json_encode($unavailable_dates_global)) ?>'
                        data-dry-dates='<?= htmlspecialchars(json_encode($dry_dates)) ?>'
                        oninput="validateQuantity(this)"
+                       onkeydown="if(event.key === 'Enter') { event.preventDefault(); shuffleThisItem(this); }"
                        <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($restriction_title) . '"' : '' ?>>
             </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
@@ -3319,10 +3320,27 @@ function shuffleDistributionForItem(itemCode, totalQty) {
 
 // FIXED: Enhanced function to update distribution preview - correctly handles dry day exclusion
 // UPDATED: Now uses TRULY RANDOM distribution - each unit randomly assigned to a day
+// CRITICAL FIX: Uses saved distribution if available instead of generating new one
 function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const itemRow = inputField.closest('tr');
+
+    // CRITICAL FIX: Check if we already have a saved distribution and use it instead of generating new one
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        const savedDistribution = savedDistributions[itemCode];
+        const savedTotal = savedDistribution.reduce((sum, qty) => sum + qty, 0);
+        
+        // Verify the saved distribution matches the current quantity
+        if (savedTotal === totalQty) {
+            console.log(`DEBUG: ${itemCode} - Using SAVED distribution instead of generating new one`);
+            // Use the saved distribution for UI display
+            displayDistributionInCells(itemCode, itemRow, savedDistribution);
+            return;
+        } else {
+            console.log(`DEBUG: ${itemCode} - Saved distribution total (${savedTotal}) doesn't match current qty (${totalQty}), will regenerate`);
+        }
+    }
 
     if (totalQty <= 0) {
         // Remove distribution cells if quantity is 0
@@ -3531,6 +3549,96 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     
     // Save distribution to session so it matches when generating bills
     saveDistributionToSession(itemCode, distribution);
+}
+
+// NEW: Helper function to display saved distribution in cells (avoids regenerating random distribution)
+function displayDistributionInCells(itemCode, itemRow, distribution) {
+    console.log(`DEBUG: ${itemCode} - displayDistributionInCells called with:`, distribution);
+    
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    // Remove any existing distribution cells
+    itemRow.find('.date-distribution-cell').remove();
+    
+    // Show date columns
+    $('.date-header, .date-distribution-cell').show();
+    
+    // Calculate total for this distribution
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
+    
+    // Add date distribution cells with proper styling
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell"></td>`);
+
+        // Check if this date is unavailable due to global sales
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        
+        // Check if this date is a dry day
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+
+        // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+        if (isDryDate) {
+            // Date is a dry day - show dYOT (always with 0 quantity)
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">dYOT</span><span class="small-icon">(dry day)</span>');
+        } else if (isGlobalUnavailable) {
+            // Date has existing sales - show X with 0 quantity
+            cell.addClass('global-unavailable-date');
+            cell.html('<span class="text-danger">X</span><span class="small-icon">(has sales)</span>');
+        } else if (qty > 0) {
+            // Normal available date with quantity - show the quantity
+            cell.addClass('has-quantity');
+            cell.html(`<span class="qty-badge">${qty}</span>`);
+        } else {
+            // Available date but 0 quantity
+            cell.addClass('zero-quantity');
+            cell.html('<span class="text-muted">0</span>');
+        }
+
+        // Insert after the item details columns
+        const actionColumn = itemRow.find('td.action-column');
+        if (actionColumn.length > 0) {
+            cell.insertAfter(actionColumn);
+        } else {
+            // Fallback: append to row
+            itemRow.append(cell);
+        }
+    });
+    
+    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+}
+
+// NEW: Function to shuffle distribution for a specific item when Enter is pressed
+function shuffleThisItem(input) {
+    const itemCode = $(input).data('code');
+    const qty = parseInt($(input).val()) || 0;
+    
+    console.log(`Enter key pressed for item ${itemCode} with qty ${qty}`);
+    
+    if (qty > 0) {
+        // Shuffle/randomize the distribution for this item
+        const distribution = shuffleDistributionForItem(itemCode, qty);
+        
+        // Save the shuffled distribution to session
+        saveDistributionToSession(itemCode, distribution);
+        
+        // Update the distribution preview for this item
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, qty);
+        
+        console.log(`Shuffled distribution for item ${itemCode}:`, distribution);
+    } else {
+        // If quantity is 0, clear the distribution
+        delete savedDistributions[itemCode];
+        
+        // Update the UI to show no distribution
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, 0);
+        
+        console.log(`Cleared distribution for item ${itemCode} (qty=0)`);
+    }
 }
 
 // Function to check global restrictions before submission
@@ -3850,8 +3958,12 @@ function initializeTableHeaders() {
     // Remove existing date headers if any
     $('.date-header').remove();
     
-    // Add date headers after the action column header
-    dateArray.forEach(date => {
+    // FIXED: Insert headers in reverse order so first date appears on the left
+    // When we insert each header after the action column, they get placed in reverse
+    // So we need to iterate in reverse to get correct left-to-right order
+    const reversedDates = [...dateArray].reverse();
+    
+    reversedDates.forEach(date => {
         const dateObj = new Date(date);
         const day = dateObj.getDate();
         const month = dateObj.toLocaleString('default', { month: 'short' });
@@ -4022,7 +4134,13 @@ function generateBillsUltraFast() {
     formData.append('mode', '<?= $mode ?>');
     formData.append('source_page', 'sale_for_date_range');
     
+    // DEBUG: Log what's in savedDistributions
+    console.log('=== DEBUG: generateBillsUltraFast ===');
+    console.log('savedDistributions object:', savedDistributions);
+    console.log('allSessionQuantities:', allSessionQuantities);
+    
     // Add each item's quantity from session
+    let distributionSentCount = 0;
     for (const itemCode in allSessionQuantities) {
         const qty = allSessionQuantities[itemCode];
         if (qty > 0) {
@@ -4031,13 +4149,17 @@ function generateBillsUltraFast() {
             // CRITICAL FIX: Also send the saved distribution for this item
             if (savedDistributions[itemCode]) {
                 // Send distribution as JSON string
-                formData.append(`distribution[${itemCode}]`, JSON.stringify(savedDistributions[itemCode]));
-                console.log(`Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
+                const distJson = JSON.stringify(savedDistributions[itemCode]);
+                formData.append(`distribution[${itemCode}]`, distJson);
+                distributionSentCount++;
+                console.log(`✓ Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
+                console.log(`  JSON string length: ${distJson.length} chars`);
             } else {
-                console.warn(`No saved distribution found for ${itemCode} - will recalculate on server`);
+                console.warn(`✗ No saved distribution found for ${itemCode} - will recalculate on server`);
             }
         }
     }
+    console.log(`=== END DEBUG: Sent ${distributionSentCount} distributions ===`);
     
     // Update status
     updateProgressStatus('Starting ultra-fast bill generation...', 'info');
@@ -4929,8 +5051,10 @@ $(document).ready(function() {
     });
     
     // Single button with dual functionality - ULTRA FAST VERSION
-    $('#generateBillsBtn').click(function(e) {
+    // First, unbind any existing click handlers to prevent duplicates
+    $('#generateBillsBtn').off('click').on('click', function(e) {
         e.preventDefault();
+        console.log('=== Generate Bills Button Clicked ===');
         startUltraFastBillGeneration();
     });
     
@@ -4941,6 +5065,79 @@ $(document).ready(function() {
         quantityTimeout = setTimeout(() => {
             validateQuantity(this);
         }, 200);
+    });
+    
+    // NEW: Handle Enter key press in quantity input to shuffle distribution for that item only
+    $(document).on('keydown', 'input.qty-input', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault(); // Prevent form submission
+            
+            const itemCode = $(this).data('code');
+            const totalQty = parseInt($(this).val()) || 0;
+            
+            console.log('DEBUG: Enter pressed for item ' + itemCode + ' with qty ' + totalQty);
+            
+            if (totalQty > 0 && !$(this).prop('disabled')) {
+                // Shuffle distribution for this specific item only
+                const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
+                
+                // Update the distribution cells for this row
+                const itemRow = $(this).closest('tr');
+                const dateCells = itemRow.find('.date-distribution-cell');
+                
+                // Get the date information
+                const hasGlobalRestriction = $(this).data('has-global-restriction');
+                const availableDates = $(this).data('available-dates') || [];
+                const unavailableDates = $(this).data('unavailable-dates') || [];
+                const dryDates = $(this).data('dry-dates') || [];
+                
+                // Update each date cell
+                newDistribution.forEach((qty, index) => {
+                    if (dateCells.eq(index).length) {
+                        const cell = dateCells.eq(index);
+                        const date = dateArray[index];
+                        const isDryDate = dryDates.includes(date);
+                        const isGlobalUnavailable = unavailableDates.includes(date);
+                        const trulyAvailableDates = availableDates.filter(d => !dryDates.includes(d));
+                        const isAvailable = trulyAvailableDates.includes(date);
+                        
+                        // Clear previous classes
+                        cell.removeClass('dry-unavailable-date global-unavailable-date available-date-with-sales non-zero-distribution zero-distribution');
+                        
+                        if (isDryDate) {
+                            cell.addClass('dry-unavailable-date');
+                            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+                        } else if (isGlobalUnavailable && !isDryDate) {
+                            cell.addClass('global-unavailable-date');
+                            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+                        } else if (isAvailable && qty > 0) {
+                            cell.addClass('available-date-with-sales');
+                            cell.text(qty);
+                            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+                        } else if (qty > 0) {
+                            cell.addClass('non-zero-distribution');
+                            cell.text(qty);
+                            cell.attr('title', `${qty} units scheduled for ${date}`);
+                        } else {
+                            cell.addClass('zero-distribution');
+                            cell.text('0');
+                            cell.attr('title', `Date ${date} has 0 units assigned`);
+                        }
+                    }
+                });
+                
+                // Save this distribution
+                savedDistributions[itemCode] = newDistribution.slice();
+                saveDistributionToSession(itemCode, newDistribution);
+                
+                console.log('DEBUG: Distribution shuffled for item ' + itemCode + ':', newDistribution);
+            }
+            
+            return false; // Prevent default behavior
+        }
     });
     
     // Quantity input change event - also check if quantity changed

@@ -19,8 +19,8 @@ require_once "drydays_functions.php"; // ADDED: For dry day checking
 
 // Minimal logging function - for critical errors and info
 function logMessage($message, $level = 'INFO') {
-    // Only log errors or info to track dry day filtering
-    if ($level === 'ERROR' || $level === 'INFO') {
+    // Always log errors, but also log DEBUG when needed
+    if ($level === 'ERROR' || $level === 'INFO' || $level === 'DEBUG') {
         $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
         $timestamp = date('Y-m-d H:i:s');
         $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
@@ -32,6 +32,20 @@ function logMessage($message, $level = 'INFO') {
         
         file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
     }
+}
+
+// DEBUG: Enhanced logging function to trace distribution flow
+function logDistribution($step, $item_code, $data) {
+    $logFile = '../logs/distribution_debug_' . date('Y-m-d') . '.log';
+    $timestamp = date('Y-m-d H:i:s.') . sprintf('%03d', (microtime(true) - floor(microtime(true))) * 1000);
+    $logMessage = "[$timestamp] [DIST-$step] Item: $item_code | " . json_encode($data) . PHP_EOL;
+    
+    $logDir = dirname($logFile);
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    
+    file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
 }
 
 // Set headers
@@ -96,7 +110,22 @@ try {
     $items = $_POST['items'] ?? [];
     $distributions = $_POST['distribution'] ?? []; // NEW: Get saved distributions
     
+    // DEBUG: Log what was received
+    logMessage("=== ULTRA FAST BILL GEN START ===", 'INFO');
     logMessage("Received " . count($items) . " items and " . count($distributions) . " saved distributions", 'INFO');
+    logMessage("Items received: " . implode(', ', array_keys($items)), 'DEBUG');
+    
+    // DEBUG: Log raw distribution data
+    if (!empty($distributions)) {
+        logMessage("Distribution keys received: " . implode(', ', array_keys($distributions)), 'DEBUG');
+        foreach ($distributions as $code => $dist) {
+            $distType = gettype($dist);
+            $distPreview = is_array($dist) ? json_encode(array_slice($dist, 0, 5)) : (is_string($dist) ? substr($dist, 0, 100) : $dist);
+            logMessage("Distribution for $code (type: $distType): $distPreview", 'DEBUG');
+        }
+    } else {
+        logMessage("WARNING: No distributions received in POST data!", 'INFO');
+    }
     
     if (empty($start_date) || empty($end_date) || empty($items)) {
         throw new Exception("Missing required parameters");
@@ -216,13 +245,45 @@ try {
         $_SESSION[$progress_key]['items_processed'] = $items_processed;
         
         // CRITICAL FIX: Use saved distribution if available, otherwise generate new one
-        if (isset($distributions[$item_code]) && is_array($distributions[$item_code])) {
-            // Use the saved distribution from JavaScript
-            $full_distribution = json_decode($distributions[$item_code], true);
-            logMessage("Using SAVED distribution for item $item_code: " . implode(', ', $full_distribution), 'INFO');
-        } else {
+        // Note: FormData sends JSON string, not array, so we need to handle both cases
+        $has_saved_distribution = false;
+        $full_distribution = [];
+        
+        // DEBUG: Log the distribution check
+        logMessage("DEBUG: Checking distribution for item $item_code - Total Qty: $total_qty", 'DEBUG');
+        logMessage("DEBUG: Available distributions: " . (isset($distributions[$item_code]) ? 'YES' : 'NO'), 'DEBUG');
+        
+        if (isset($distributions[$item_code])) {
+            $dist_value = $distributions[$item_code];
+            $dist_type = gettype($dist_value);
+            logMessage("DEBUG: Distribution type for $item_code: $dist_type", 'DEBUG');
+            
+            // Check if it's already an array (some edge cases)
+            if (is_array($dist_value)) {
+                $full_distribution = $dist_value;
+                $has_saved_distribution = true;
+                logMessage("SAVED DIST USED (array): $item_code = " . implode(', ', $full_distribution), 'INFO');
+                logDistribution('SAVED_ARRAY', $item_code, $full_distribution);
+            }
+            // Or if it's a JSON string that needs decoding
+            elseif (is_string($dist_value)) {
+                logMessage("DEBUG: Raw distribution string for $item_code: " . substr($dist_value, 0, 200), 'DEBUG');
+                $decoded = json_decode($dist_value, true);
+                if (is_array($decoded)) {
+                    $full_distribution = $decoded;
+                    $has_saved_distribution = true;
+                    logMessage("SAVED DIST USED (json decoded): $item_code = " . implode(', ', $full_distribution), 'INFO');
+                    logDistribution('SAVED_JSON', $item_code, $full_distribution);
+                } else {
+                    logMessage("ERROR: Failed to decode JSON for $item_code: " . json_last_error_msg(), 'ERROR');
+                }
+            }
+        }
+        
+        if (!$has_saved_distribution) {
             // Generate random distribution if not saved (fallback)
-            logMessage("Generating NEW distribution for item $item_code (no saved distribution found)", 'INFO');
+            logMessage("NEW DIST GENERATED: $item_code (no saved distribution found)", 'INFO');
+            logDistribution('GENERATED_NEW', $item_code, ['total_qty' => $total_qty, 'available_dates' => count($available_dates)]);
             $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
             
             // Map back to full date array (with 0 for unavailable/dry days)
@@ -237,9 +298,19 @@ try {
         
         $daily_sales_data[$item_code] = $full_distribution;
         
+        // Validate: Check that sum of distribution equals total quantity
+        $distribution_sum = array_sum($full_distribution);
+        if ($distribution_sum !== $total_qty) {
+            logMessage("WARNING: Distribution mismatch for item $item_code - Expected $total_qty, got $distribution_sum", 'INFO');
+        }
+        
+        // CRITICAL: Log what distribution will be used for bill generation
+        logMessage("=== FINAL DISTRIBUTION FOR BILLS === Item: $item_code | Qty: $total_qty | Distribution: " . implode(',', $full_distribution) . " | Sum: $distribution_sum", 'INFO');
+        logDistribution('BILL_GEN', $item_code, ['qty' => $total_qty, 'dist' => $full_distribution, 'sum' => $distribution_sum]);
+        
         // Count days with sales for this item
         $sale_days = 0;
-        foreach ($distribution as $qty) {
+        foreach ($full_distribution as $qty) {
             if ($qty > 0) $sale_days++;
         }
         $total_bills_estimate += $sale_days;

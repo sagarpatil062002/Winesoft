@@ -229,47 +229,71 @@ function cascadeAllFutureMonths($conn, $comp_id, $itemCode, $startDate) {
         $next_table = ensureMonthTableExists($conn, $comp_id, $next_month, $next_year);
         $days_in_next_month = date('t', strtotime("$next_year-$next_month-01"));
         
-        // Update first day's opening with carry forward from previous month
-        $update_first = "UPDATE $next_table 
-                        SET DAY_01_OPEN = ?,
-                            DAY_01_CLOSING = GREATEST(0, ? + DAY_01_PURCHASE - DAY_01_SALES)
-                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $stmt = $conn->prepare($update_first);
-        $stmt->bind_param("diss", $carry_forward, $carry_forward, $nextMonthYear, $itemCode);
-        $stmt->execute();
-        $stmt->close();
+        // First, check if record exists for this item
+        $check_query = "SELECT COUNT(*) as count FROM $next_table 
+                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $check_stmt = $conn->prepare($check_query);
+        $check_stmt->bind_param("ss", $nextMonthYear, $itemCode);
+        $check_stmt->execute();
+        $result = $check_stmt->get_result();
+        $exists = $result->fetch_assoc()['count'] > 0;
+        $check_stmt->close();
         
-        // Cascade through the rest of the month
-        for ($day = 2; $day <= $days_in_next_month; $day++) {
-            $prev_day = $day - 1;
-            $prev_day_closing = "DAY_" . str_pad($prev_day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-            $current_day_open = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
-            $current_day_purchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
-            $current_day_sales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
-            $current_day_closing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-            
-            $cascade_query = "UPDATE $next_table 
-                             SET $current_day_open = $prev_day_closing,
-                                 $current_day_closing = $prev_day_closing + $current_day_purchase - $current_day_sales
-                             WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $stmt = $conn->prepare($cascade_query);
-            $stmt->bind_param("ss", $nextMonthYear, $itemCode);
+        if ($exists) {
+            // Update first day's opening with carry forward from previous month
+            $update_first = "UPDATE $next_table 
+                            SET DAY_01_OPEN = ?,
+                                DAY_01_CLOSING = GREATEST(0, ? + DAY_01_PURCHASE - DAY_01_SALES)
+                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $stmt = $conn->prepare($update_first);
+            $stmt->bind_param("diss", $carry_forward, $carry_forward, $nextMonthYear, $itemCode);
             $stmt->execute();
             $stmt->close();
+            
+            // Cascade through the rest of the month
+            for ($day = 2; $day <= $days_in_next_month; $day++) {
+                $prev_day = $day - 1;
+                $prev_day_closing = "DAY_" . str_pad($prev_day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                $current_day_open = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+                $current_day_purchase = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+                $current_day_sales = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+                $current_day_closing = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+                
+                $cascade_query = "UPDATE $next_table 
+                                 SET $current_day_open = $prev_day_closing,
+                                     $current_day_closing = $prev_day_closing + $current_day_purchase - $current_day_sales
+                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $stmt = $conn->prepare($cascade_query);
+                $stmt->bind_param("ss", $nextMonthYear, $itemCode);
+                $stmt->execute();
+                $stmt->close();
+            }
+            
+            // Get last day's closing for next month
+            $last_day = str_pad($days_in_next_month, 2, '0', STR_PAD_LEFT);
+            $get_closing = "SELECT DAY_{$last_day}_CLOSING as closing 
+                           FROM $next_table 
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $stmt = $conn->prepare($get_closing);
+            $stmt->bind_param("ss", $nextMonthYear, $itemCode);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $carry_forward = $row['closing'] ?? 0;
+            $stmt->close();
+        } else {
+            // If record doesn't exist, create it with the carry forward
+            $insert_query = "INSERT INTO $next_table 
+                            (STK_MONTH, ITEM_CODE, LIQ_FLAG, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                            VALUES (?, ?, 'F', ?, 0, 0, ?)";
+            $insert_stmt = $conn->prepare($insert_query);
+            $insert_stmt->bind_param("ssii", $nextMonthYear, $itemCode, $carry_forward, $carry_forward);
+            $insert_stmt->execute();
+            $insert_stmt->close();
+            
+            // For days 2 to end of month, keep them as 0
+            $carry_forward = $carry_forward; // carry forward unchanged for next month
         }
-        
-        // Get last day's closing for next month
-        $last_day = str_pad($days_in_next_month, 2, '0', STR_PAD_LEFT);
-        $get_closing = "SELECT DAY_{$last_day}_CLOSING as closing 
-                       FROM $next_table 
-                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $stmt = $conn->prepare($get_closing);
-        $stmt->bind_param("ss", $nextMonthYear, $itemCode);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $carry_forward = $row['closing'] ?? 0;
-        $stmt->close();
         
         // Move to next month
         $next_month++;
@@ -550,7 +574,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->begin_transaction();
     
     try {
-        // ===== STEP 1: REMOVE ALL STOCK FROM OLD DATE =====
+        // ===== STEP 1: REMOVE ALL STOCK FROM OLD DATE FOR ALL ITEMS =====
         foreach ($existingItems as $existingItem) {
             removeStockFromDate(
                 $existingItem['ItemCode'],
@@ -559,16 +583,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $existingItem['FreeCases'],
                 $existingItem['FreeBottles'],
                 $existingItem['BottlesPerCase'],
-                $oldDate,  // Use original date for removal
+                $oldDate,
                 $companyId,
                 $conn
             );
         }
         
-        // ===== STEP 2: CASCADE FROM OLD DATE AFTER REMOVAL =====
-        // This updates all future months after the old date
-        foreach ($existingItems as $existingItem) {
-            cascadeAllFutureMonths($conn, $companyId, $existingItem['ItemCode'], $oldDate);
+        // ===== STEP 2: CASCADE FROM OLD DATE AFTER ALL REMOVALS =====
+        // Get unique item codes from existing items to avoid redundant cascades
+        $oldItemCodes = array_unique(array_column($existingItems, 'ItemCode'));
+        foreach ($oldItemCodes as $itemCode) {
+            cascadeAllFutureMonths($conn, $companyId, $itemCode, $oldDate);
         }
         
         // ===== STEP 3: UPDATE PURCHASE HEADER =====
@@ -607,6 +632,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stockUpdates = [];
             $mrpUpdates = [];
             $newItems = []; // Store new items for later processing
+            $newItemCodes = []; // Track unique item codes for cascade
             
             foreach ($_POST['items'] as $index => $item) {
                 $item_code = $item['code'] ?? '';
@@ -656,6 +682,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'bottles_per_case' => $bottles_per_case,
                         'tot_bott' => $tot_bott
                     ];
+                    
+                    // Track unique item codes for cascade
+                    if (!in_array($item_code, $newItemCodes)) {
+                        $newItemCodes[] = $item_code;
+                    }
                 }
             }
             
@@ -678,7 +709,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // ===== STEP 6: ADD STOCK AT NEW DATE =====
+            // ===== STEP 6: ADD STOCK AT NEW DATE FOR ALL ITEMS =====
             foreach ($newItems as $item) {
                 addStockAtDate(
                     $item['code'],
@@ -693,9 +724,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
             
-            // ===== STEP 7: CASCADE FROM NEW DATE AFTER ADDITION =====
-            foreach ($newItems as $item) {
-                cascadeAllFutureMonths($conn, $companyId, $item['code'], $newDate);
+            // ===== STEP 7: CASCADE FROM NEW DATE AFTER ALL ADDITIONS =====
+            // Cascade for each unique item code after all additions
+            foreach ($newItemCodes as $itemCode) {
+                cascadeAllFutureMonths($conn, $companyId, $itemCode, $newDate);
             }
         }
         

@@ -267,6 +267,15 @@ function getItemSize($conn, $item_code, $mode) {
  * Now accepts available_dates parameter to filter out dry days
  */
 function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates = []) {
+    // DEBUG: Log what distribution was received
+    $distLog = "=== generateBillsWithLimits START ===" . PHP_EOL;
+    $distLog .= "Date array (" . count($date_array) . "): " . implode(',', $date_array) . PHP_EOL;
+    foreach ($daily_sales_data as $item => $dist) {
+        $distSum = array_sum($dist);
+        $distLog .= "Item $item distribution (" . count($dist) . "): [" . implode(',', $dist) . "] Sum=$distSum" . PHP_EOL;
+    }
+    error_log($distLog);
+    
     $category_limits = getCategoryLimits($conn, $comp_id);
     
     // Filter out dry days from the date array - only process available dates
