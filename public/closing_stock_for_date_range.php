@@ -4419,7 +4419,12 @@ function handleGenerateBills() {
 }
 
 // Function to load sales log content
-function loadSalesLog() {
+function loadSalesLog(sort) {
+    // Default to latest if no sort provided
+    if (!sort) {
+        sort = 'latest';
+    }
+    
     // Show loading state
     $('#salesLogContent').html(`
         <div class="text-center py-3">
@@ -4430,13 +4435,18 @@ function loadSalesLog() {
         </div>
     `);
     
-    // Load sales log content via AJAX
+    // Load sales log content via AJAX with sort parameter
     $.ajax({
-        url: 'sales_log_ajax.php',
+        url: 'sales_log_ajax.php?sort=' + sort,
         type: 'GET',
         dataType: 'html',
         success: function(response) {
             $('#salesLogContent').html(response);
+            
+            // Add event listener for sort dropdown change
+            $('#sortOrder').on('change', function() {
+                loadSalesLog($(this).val());
+            });
         },
         error: function() {
             $('#salesLogContent').html(`
