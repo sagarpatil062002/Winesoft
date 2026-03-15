@@ -52,7 +52,7 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
         'category_code' => '',
         'category_name' => '',
         'display_category' => 'OTHER',
-        'display_type' => 'OTHER', // New field for IMFL/Imported/MML differentiation
+        'display_type' => 'OTHER',
         'size_code' => $size_code,
         'size_desc' => '',
         'ml_volume' => 0,
@@ -78,12 +78,9 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                 
                 // Map category name to display category
                 $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
-                $display_category = 'OTHER';
                 
                 if ($category_name == 'SPIRIT') {
-                    $display_category = 'SPIRITS';
-                    
-                    // Determine spirit type based on class name or other criteria
+                    // Determine spirit type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
                         $hierarchy['display_type'] = 'IMPORTED';
@@ -93,8 +90,6 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                         $hierarchy['display_type'] = 'IMFL';
                     }
                 } elseif ($category_name == 'WINE') {
-                    $display_category = 'WINE';
-                    
                     // Determine wine type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
@@ -105,17 +100,12 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                         $hierarchy['display_type'] = 'INDIAN WINE';
                     }
                 } elseif ($category_name == 'FERMENTED BEER') {
-                    $display_category = 'FERMENTED BEER';
                     $hierarchy['display_type'] = 'FERMENTED BEER';
                 } elseif ($category_name == 'MILD BEER') {
-                    $display_category = 'MILD BEER';
                     $hierarchy['display_type'] = 'MILD BEER';
                 } elseif ($category_name == 'COUNTRY LIQUOR') {
-                    $display_category = 'COUNTRY LIQUOR';
                     $hierarchy['display_type'] = 'COUNTRY LIQUOR';
                 }
-                
-                $hierarchy['display_category'] = $display_category;
             }
             $stmt->close();
         }
@@ -149,15 +139,6 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
             $stmt->close();
         }
         
-        // Build full hierarchy string
-        $parts = [];
-        if (!empty($hierarchy['category_name'])) $parts[] = $hierarchy['category_name'];
-        if (!empty($hierarchy['class_name'])) $parts[] = $hierarchy['class_name'];
-        if (!empty($hierarchy['subclass_name'])) $parts[] = $hierarchy['subclass_name'];
-        if (!empty($hierarchy['size_desc'])) $parts[] = $hierarchy['size_desc'];
-        
-        $hierarchy['full_hierarchy'] = !empty($parts) ? implode(' > ', $parts) : 'N/A';
-        
     } catch (Exception $e) {
         error_log("Error in getItemHierarchy: " . $e->getMessage());
     }
@@ -166,19 +147,19 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
     return $hierarchy;
 }
 
-// Default values - Set to single date by default
+// Default values
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'Foreign Liquor';
 
 // Validate date range
 if (strtotime($from_date) > strtotime($to_date)) {
-    $from_date = $to_date; // Ensure from_date is not after to_date
+    $from_date = $to_date;
 }
 
 // Fetch company name and license number
-$companyName = "Digvijay WINE SHOP";
-$licenseNo = "3";
+$companyName = "";
+$licenseNo = "";
 $companyQuery = "SELECT COMP_NAME, COMP_FLNO FROM tblcompany WHERE CompID = ?";
 $companyStmt = $conn->prepare($companyQuery);
 $companyStmt->bind_param("i", $compID);
@@ -186,7 +167,7 @@ $companyStmt->execute();
 $companyResult = $companyStmt->get_result();
 if ($row = $companyResult->fetch_assoc()) {
     $companyName = $row['COMP_NAME'];
-    $licenseNo = $row['COMP_FLNO'] ? $row['COMP_FLNO'] : $licenseNo;
+    $licenseNo = $row['COMP_FLNO'] ?? '';
 }
 $companyStmt->close();
 
@@ -195,16 +176,10 @@ if ($mode == 'Country Liquor') {
     $display_categories = ['COUNTRY LIQUOR'];
     $category_display_names = ['COUNTRY LIQUOR' => 'COUNTRY LIQUOR'];
 } else {
-    // Updated categories: IMFL, Imported, MML for spirits, and three types for wine
     $display_categories = [
-        'IMFL',
-        'IMPORTED', 
-        'MML',
-        'INDIAN WINE',
-        'IMPORTED WINE',
-        'WINE MML',
-        'FERMENTED BEER',
-        'MILD BEER'
+        'IMFL', 'IMPORTED', 'MML',
+        'INDIAN WINE', 'IMPORTED WINE', 'WINE MML',
+        'FERMENTED BEER', 'MILD BEER'
     ];
     $category_display_names = [
         'IMFL' => 'IMFL',
@@ -218,20 +193,8 @@ if ($mode == 'Country Liquor') {
     ];
 }
 
-// Define size columns for each category - all spirit types use same sizes
+// Define size columns
 $spirit_sizes = [
-    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
-];
-
-$wine_sizes = [
-    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
-];
-
-$beer_sizes = [
     '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
     '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
     '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
@@ -241,15 +204,15 @@ $size_columns = [
     'IMFL' => $spirit_sizes,
     'IMPORTED' => $spirit_sizes,
     'MML' => $spirit_sizes,
-    'INDIAN WINE' => $wine_sizes,
-    'IMPORTED WINE' => $wine_sizes,
-    'WINE MML' => $wine_sizes,
-    'FERMENTED BEER' => $beer_sizes,
-    'MILD BEER' => $beer_sizes,
+    'INDIAN WINE' => $spirit_sizes,
+    'IMPORTED WINE' => $spirit_sizes,
+    'WINE MML' => $spirit_sizes,
+    'FERMENTED BEER' => $spirit_sizes,
+    'MILD BEER' => $spirit_sizes,
     'COUNTRY LIQUOR' => $spirit_sizes
 ];
 
-// Function to get volume label (copied from opening_balance.php)
+// Function to get volume label
 function getVolumeLabel($volume) {
     static $volume_label_cache = [];
     
@@ -257,10 +220,8 @@ function getVolumeLabel($volume) {
         return $volume_label_cache[$volume];
     }
     
-    // Format volume based on size
     if ($volume >= 1000) {
         $liters = $volume / 1000;
-        // Check if it's a whole number
         if ($liters == intval($liters)) {
             $label = intval($liters) . 'L';
         } else {
@@ -279,25 +240,19 @@ function getTableForDate($conn, $compID, $date) {
     $current_month = date('Y-m');
     $target_month = date('Y-m', strtotime($date));
     
-    // If current month, use main table
     if ($target_month == $current_month) {
         $tableName = "tbldailystock_" . $compID;
     } else {
-        // For previous months, use archive table format: tbldailystock_compID_MM_YY
         $month = date('m', strtotime($date));
         $year = date('y', strtotime($date));
         $tableName = "tbldailystock_" . $compID . "_" . $month . "_" . $year;
     }
     
-    // Check if table exists
     $tableCheckQuery = "SHOW TABLES LIKE '$tableName'";
     $tableCheckResult = $conn->query($tableCheckQuery);
     
     if ($tableCheckResult->num_rows == 0) {
-        // If archive table doesn't exist, fall back to main table
         $tableName = "tbldailystock_" . $compID;
-        
-        // Check if main table exists, if not use default
         $tableCheckQuery2 = "SHOW TABLES LIKE '$tableName'";
         $tableCheckResult2 = $conn->query($tableCheckQuery2);
         if ($tableCheckResult2->num_rows == 0) {
@@ -312,7 +267,6 @@ function getTableForDate($conn, $compID, $date) {
 function tableHasDayColumns($conn, $tableName, $day) {
     $day_padded = sprintf('%02d', $day);
     
-    // Check if all required columns for this day exist
     $columns_to_check = [
         "DAY_{$day_padded}_OPEN",
         "DAY_{$day_padded}_PURCHASE", 
@@ -324,39 +278,48 @@ function tableHasDayColumns($conn, $tableName, $day) {
         $checkColumnQuery = "SHOW COLUMNS FROM $tableName LIKE '$column'";
         $columnResult = $conn->query($checkColumnQuery);
         if ($columnResult->num_rows == 0) {
-            return false; // Column doesn't exist
+            return false;
         }
     }
     
-    return true; // All columns exist
+    return true;
 }
 
-// Initialize report data structure
-$dates = [];
+// ============================================================================
+// STEP 1: Get the dates the user wants to DISPLAY
+// ============================================================================
+$display_dates = [];
 $current_date = $from_date;
 while (strtotime($current_date) <= strtotime($to_date)) {
-    $dates[] = $current_date;
+    $display_dates[] = $current_date;
     $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
 }
 
-// Initialize daily data structure for each date
-$daily_data = [];
+// ============================================================================
+// STEP 2: Get ALL dates from April 1st to To Date for CALCULATIONS
+// ============================================================================
+$financial_year = date('Y', strtotime($from_date));
+$april_first = $financial_year . '-04-01';
+$calculation_dates = [];
 
-// Initialize T.P. Nos data
-$tp_nos_data = [];
+$current_date = $april_first;
+while (strtotime($current_date) <= strtotime($to_date)) {
+    $calculation_dates[] = $current_date;
+    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+}
 
-// Fetch item master data with size information - FILTERED BY LICENSE TYPE AND MODE
+// ============================================================================
+// STEP 3: Fetch item master data
+// ============================================================================
 $items = [];
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
-    // Updated query to use new hierarchy tables (CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE)
     if ($mode == 'Country Liquor') {
         $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
                       FROM tblitemmaster 
                       WHERE CLASS IN ($class_placeholders) AND LIQ_FLAG = 'C'";
     } else {
-        // For Foreign Liquor, include all items from allowed classes
         $itemQuery = "SELECT CODE, DETAILS, DETAILS2, CLASS, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, LIQ_FLAG 
                       FROM tblitemmaster 
                       WHERE CLASS IN ($class_placeholders)";
@@ -368,7 +331,6 @@ if (!empty($allowed_classes)) {
     $itemResult = $itemStmt->get_result();
     
     while ($row = $itemResult->fetch_assoc()) {
-        // Get hierarchy information
         $hierarchy = getItemHierarchy(
             $row['CLASS_CODE_NEW'], 
             $row['SUBCLASS_CODE_NEW'], 
@@ -391,8 +353,11 @@ if (!empty($allowed_classes)) {
     $itemStmt->close();
 }
 
-// Fetch T.P. Nos from tblpurchases for each date
-foreach ($dates as $date) {
+// ============================================================================
+// STEP 4: Fetch T.P. Nos for display dates only
+// ============================================================================
+$tp_nos_data = [];
+foreach ($display_dates as $date) {
     $tpQuery = "SELECT DISTINCT TPNO FROM tblpurchases WHERE DATE = ? AND CompID = ?";
     $tpStmt = $conn->prepare($tpQuery);
     $tpStmt->bind_param("si", $date, $compID);
@@ -410,12 +375,14 @@ foreach ($dates as $date) {
     $tpStmt->close();
 }
 
-// Initialize daily data structure with all categories and sizes
-foreach ($dates as $date) {
-    $daily_data[$date] = [];
-    
+// ============================================================================
+// STEP 5: Initialize data structures for ALL calculation dates
+// ============================================================================
+$all_daily_data = [];
+foreach ($calculation_dates as $date) {
+    $all_daily_data[$date] = [];
     foreach ($display_categories as $category) {
-        $daily_data[$date][$category] = [
+        $all_daily_data[$date][$category] = [
             'opening' => array_fill_keys($size_columns[$category], 0),
             'purchase' => array_fill_keys($size_columns[$category], 0),
             'sales' => array_fill_keys($size_columns[$category], 0),
@@ -424,23 +391,21 @@ foreach ($dates as $date) {
     }
 }
 
-// Process each date in the range with month-aware logic
-foreach ($dates as $date) {
+// ============================================================================
+// STEP 6: Fetch raw data for ALL calculation dates
+// ============================================================================
+foreach ($calculation_dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
     
-    // Get appropriate table for this date
     $dailyStockTable = getTableForDate($conn, $compID, $date);
     
-    // Check if this specific table has columns for this specific day
     if (!tableHasDayColumns($conn, $dailyStockTable, $day)) {
-        // Skip this date as the table doesn't have columns for this day
         continue;
     }
     
     $day_padded = sprintf('%02d', $day);
     
-    // Fetch stock data for this specific day (LIQ_FLAG removed - using hierarchy instead)
     $stockQuery = "SELECT ITEM_CODE,
                   DAY_{$day_padded}_OPEN as opening,
                   DAY_{$day_padded}_PURCHASE as purchase, 
@@ -457,36 +422,29 @@ foreach ($dates as $date) {
     while ($row = $stockResult->fetch_assoc()) {
         $item_code = $row['ITEM_CODE'];
         
-        // Skip if item not found in master (due to license filtering)
         if (!isset($items[$item_code])) continue;
         
         $item = $items[$item_code];
         $hierarchy = $item['hierarchy'];
         $display_type = $hierarchy['display_type'];
         
-        // For Country Liquor mode, force category to COUNTRY LIQUOR
         if ($mode == 'Country Liquor') {
             $display_type = 'COUNTRY LIQUOR';
         }
         
-        // Skip if display type is not in our categories
         if (!in_array($display_type, $display_categories)) {
             continue;
         }
         
-        // Get volume label for size grouping
         $volume_label = getVolumeLabel($hierarchy['ml_volume']);
         
         // Find matching size column
         $matched_size = null;
         if (isset($size_columns[$display_type])) {
-            // Try exact match first
             if (in_array($volume_label, $size_columns[$display_type])) {
                 $matched_size = $volume_label;
             } else {
-                // Try partial match
                 foreach ($size_columns[$display_type] as $size_col) {
-                    // Extract numeric part for comparison
                     preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
                     preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
                     
@@ -494,18 +452,15 @@ foreach ($dates as $date) {
                         $vol_num = floatval($vol_parts[1]);
                         $col_num = floatval($col_parts[1]);
                         
-                        // Check if units match (ML vs L)
                         $vol_unit = strtoupper($vol_parts[2]);
                         $col_unit = strtoupper($col_parts[2]);
                         
-                        // Convert to ML for comparison if needed
                         if ($vol_unit == 'L' && $col_unit == 'ML') {
                             $vol_num *= 1000;
                         } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
                             $col_num *= 1000;
                         }
                         
-                        // Allow small rounding differences
                         if (abs($vol_num - $col_num) < 1) {
                             $matched_size = $size_col;
                             break;
@@ -515,176 +470,72 @@ foreach ($dates as $date) {
             }
         }
         
-        // If still no match, use a default size or skip
         if (!$matched_size && !empty($size_columns[$display_type])) {
-            // Use first size as fallback
             $matched_size = $size_columns[$display_type][0];
         }
         
-        // Add to daily data if we have a matching size
-        if ($matched_size && isset($daily_data[$date][$display_type])) {
-            $daily_data[$date][$display_type]['opening'][$matched_size] += (int)$row['opening'];
-            $daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
-            $daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
-            $daily_data[$date][$display_type]['closing'][$matched_size] += (int)$row['closing'];
+        if ($matched_size && isset($all_daily_data[$date][$display_type])) {
+            $all_daily_data[$date][$display_type]['opening'][$matched_size] += (int)$row['opening'];
+            $all_daily_data[$date][$display_type]['purchase'][$matched_size] += (int)$row['purchase'];
+            $all_daily_data[$date][$display_type]['sales'][$matched_size] += (int)$row['sales'];
+            // Don't set closing from DB - we'll calculate it
         }
     }
     
     $stockStmt->close();
 }
 
-// OPENING BALANCE AND CLOSING CALCULATION LOGIC:
-// - First day of selection: Use first day of month's opening from DB (regardless of which date is selected)
-// - Subsequent days: Carry forward previous day's calculated closing as today's opening
-// - Closing = Opening + Purchase - Sold (calculated, not from DB)
+// ============================================================================
+// STEP 7: Calculate running balances from April 1st through To Date
+// ============================================================================
+$running_closing = [];
 
-// Get the first day of the month for the selected date's month
-$first_date = $dates[0];
-$month_start = date('Y-m-01', strtotime($first_date));
-$prev_date = $month_start; // e.g., April 1st
-
-// Initialize array to store first day of month's opening
-$prev_day_closing = [];
-
-// Get first day of month's month and day
-$prev_month = date('Y-m', strtotime($prev_date));
-$prev_day = date('d', strtotime($prev_date));
-$prev_day_padded = sprintf('%02d', $prev_day);
-
-// Get appropriate table for first day of month
-$prevStockTable = getTableForDate($conn, $compID, $prev_date);
-
-// Check if table exists and has the required columns
-if (tableHasDayColumns($conn, $prevStockTable, $prev_day)) {
-    // Fetch opening stock from first day of month
-    $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_OPEN as closing 
-                      FROM $prevStockTable 
-                      WHERE STK_MONTH = ?";
-    
-    $prevStockStmt = $conn->prepare($prevStockQuery);
-    $prevStockStmt->bind_param("s", $prev_month);
-    $prevStockStmt->execute();
-    $prevStockResult = $prevStockStmt->get_result();
-    
-    while ($row = $prevStockResult->fetch_assoc()) {
-        $item_code = $row['ITEM_CODE'];
-        if (!isset($items[$item_code])) continue;
-        
-        $item = $items[$item_code];
-        $hierarchy = $item['hierarchy'];
-        $display_type = $hierarchy['display_type'];
-        
-        if ($mode == 'Country Liquor') {
-            $display_type = 'COUNTRY LIQUOR';
-        }
-        
-        if (!in_array($display_type, $display_categories)) continue;
-        
-        $volume_label = getVolumeLabel($hierarchy['ml_volume']);
-        
-        // Find matching size
-        $matched_size = null;
-        if (isset($size_columns[$display_type])) {
-            if (in_array($volume_label, $size_columns[$display_type])) {
-                $matched_size = $volume_label;
-            } else {
-                // Try partial match logic
-                foreach ($size_columns[$display_type] as $size_col) {
-                    preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $volume_label, $vol_parts);
-                    preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size_col, $col_parts);
-                    
-                    if (isset($vol_parts[1]) && isset($col_parts[1])) {
-                        $vol_num = floatval($vol_parts[1]);
-                        $col_num = floatval($col_parts[1]);
-                        
-                        $vol_unit = strtoupper($vol_parts[2]);
-                        $col_unit = strtoupper($col_parts[2]);
-                        
-                        if ($vol_unit == 'L' && $col_unit == 'ML') {
-                            $vol_num *= 1000;
-                        } elseif ($vol_unit == 'ML' && $col_unit == 'L') {
-                            $col_num *= 1000;
-                        }
-                        
-                        if (abs($vol_num - $col_num) < 1) {
-                            $matched_size = $size_col;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        if ($matched_size) {
-            if (!isset($prev_day_closing[$display_type])) {
-                $prev_day_closing[$display_type] = [];
-            }
-            // Add to existing value (in case multiple items map to same size)
-            if (!isset($prev_day_closing[$display_type][$matched_size])) {
-                $prev_day_closing[$display_type][$matched_size] = 0;
-            }
-            $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
-        }
-    }
-    $prevStockStmt->close();
-}
-
-// NOW, apply the opening balance logic
-foreach ($dates as $index => $date) {
-    // Skip if this date was not processed
-    if (!isset($daily_data[$date])) continue;
-    
-    // For the FIRST date in the range, use first day of month's opening
-    if ($index == 0 && !empty($prev_day_closing)) {
-        foreach ($display_categories as $category) {
-            if (!isset($daily_data[$date][$category])) continue;
-            
-            foreach ($size_columns[$category] as $size) {
-                if (isset($prev_day_closing[$category][$size]) && $prev_day_closing[$category][$size] > 0) {
-                    // OVERRIDE the database opening with first day of month's opening
-                    $daily_data[$date][$category]['opening'][$size] = $prev_day_closing[$category][$size];
-                }
-            }
-        }
-    }
-    
-    // Carry forward opening from previous day's calculated closing for subsequent dates
-    if ($index > 0) {
-        $prev_date_loop = $dates[$index - 1];
-        if (isset($daily_data[$prev_date_loop])) {
-            foreach ($display_categories as $category) {
-                if (!isset($daily_data[$date][$category]) || !isset($daily_data[$prev_date_loop][$category])) continue;
-                
-                foreach ($size_columns[$category] as $size) {
-                    // Opening today = Previous day's calculated closing
-                    $prev_closing = $daily_data[$prev_date_loop][$category]['closing'][$size] ?? 0;
-                    if ($prev_closing > 0) {
-                        $daily_data[$date][$category]['opening'][$size] = $prev_closing;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Calculate closing: Opening + Purchase - Sold
+foreach ($calculation_dates as $index => $date) {
+    // For each category and size
     foreach ($display_categories as $category) {
-        if (!isset($daily_data[$date][$category])) continue;
+        if (!isset($all_daily_data[$date][$category])) continue;
         
         foreach ($size_columns[$category] as $size) {
-            $opening = $daily_data[$date][$category]['opening'][$size] ?? 0;
-            $purchase = $daily_data[$date][$category]['purchase'][$size] ?? 0;
-            $sales = $daily_data[$date][$category]['sales'][$size] ?? 0;
+            // Get opening balance
+            if ($index == 0) {
+                // First day (April 1st) - use database opening
+                $opening = $all_daily_data[$date][$category]['opening'][$size] ?? 0;
+            } else {
+                // Subsequent days - use previous day's closing
+                $opening = $running_closing[$category][$size] ?? 0;
+            }
             
-            // Calculate closing: Opening + Purchase - Sold
-            $calculated_closing = $opening + $purchase - $sales;
+            $purchase = $all_daily_data[$date][$category]['purchase'][$size] ?? 0;
+            $sales = $all_daily_data[$date][$category]['sales'][$size] ?? 0;
             
-            // Ensure non-negative
-            $daily_data[$date][$category]['closing'][$size] = max(0, $calculated_closing);
+            // Calculate closing
+            $closing = $opening + $purchase - $sales;
+            $closing = max(0, $closing);
+            
+            // Update the data array
+            $all_daily_data[$date][$category]['opening'][$size] = $opening;
+            $all_daily_data[$date][$category]['closing'][$size] = $closing;
+            
+            // Store for next day
+            if (!isset($running_closing[$category])) {
+                $running_closing[$category] = [];
+            }
+            $running_closing[$category][$size] = $closing;
         }
     }
 }
 
-// Calculate total columns count for table formatting
+// ============================================================================
+// STEP 8: Filter to only include display dates
+// ============================================================================
+$daily_data = [];
+foreach ($display_dates as $date) {
+    if (isset($all_daily_data[$date])) {
+        $daily_data[$date] = $all_daily_data[$date];
+    }
+}
+
+// Calculate total columns count
 $total_columns = 0;
 foreach ($display_categories as $category) {
     $total_columns += count($size_columns[$category]);
@@ -700,322 +551,38 @@ foreach ($display_categories as $category) {
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <style>
-    /* Screen styles */
-    body {
-      font-size: 12px;
-      background-color: #f8f9fa;
-    }
-    .company-header {
-      text-align: center;
-      margin-bottom: 15px;
-      padding: 10px;
-    }
-    .company-header h1 {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-    .company-header h5 {
-      font-size: 14px;
-      margin-bottom: 3px;
-    }
-    .company-header h6 {
-      font-size: 12px;
-      margin-bottom: 5px;
-    }
-    .report-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-      font-size: 10px;
-    }
-    .report-table th, .report-table td {
-      border: 1px solid #000;
-      padding: 4px;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      line-height: 1.2;
-    }
-    .report-table th {
-      background-color: #f0f0f0;
-      font-weight: bold;
-      padding: 6px 3px;
-    }
-    .vertical-text {
-      writing-mode: vertical-lr;
-      transform: rotate(180deg);
-      text-align: center;
-      white-space: nowrap;
-      padding: 8px 2px;
-      min-width: 25px;
-      max-width: 25px;
-      width: 25px;
-      font-size: 9px;
-      line-height: 1.1;
-      font-weight: bold;
-    }
-    .vertical-text-full {
-      writing-mode: vertical-lr;
-      transform: rotate(180deg);
-      text-align: center;
-      white-space: nowrap;
-      padding: 8px 2px;
-      min-width: 25px;
-      max-width: 25px;
-      width: 25px;
-      font-size: 9px;
-      line-height: 1.1;
-      font-weight: bold;
-    }
-    .summary-row {
-      background-color: #e9ecef;
-      font-weight: bold;
-    }
+    body { font-size: 12px; background-color: #f8f9fa; }
+    .company-header { text-align: center; margin-bottom: 15px; padding: 10px; }
+    .company-header h1 { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+    .company-header h5 { font-size: 14px; margin-bottom: 3px; }
+    .company-header h6 { font-size: 12px; margin-bottom: 5px; }
+    .report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10px; }
+    .report-table th, .report-table td { border: 1px solid #000; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; line-height: 1.2; }
+    .report-table th { background-color: #f0f0f0; font-weight: bold; padding: 6px 3px; }
+    .vertical-text-full { writing-mode: vertical-lr; transform: rotate(180deg); text-align: center; white-space: nowrap; padding: 8px 2px; min-width: 25px; max-width: 25px; width: 25px; font-size: 9px; line-height: 1.1; font-weight: bold; }
+    .double-line-right { border-right: 3px double #000 !important; }
+    .filter-card { background-color: #f8f9fa; }
+    .table-responsive { overflow-x: auto; max-width: 100%; }
+    .action-controls { display: flex; gap: 10px; align-items: center; }
+    .no-print { display: block; }
+    .tp-nos { font-size: 8px; line-height: 1.1; text-align: left; padding: 2px; }
+    .tp-nos span { display: inline-block; margin-right: 3px; }
+    .date-col { width: 30px; min-width: 30px; }
+    .tp-col { width: 50px; min-width: 50px; }
+    .type-col { width: 40px; min-width: 40px; }
+    .size-col { width: 25px; min-width: 25px; max-width: 25px; }
+    .date-display { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; line-height: 1; }
+    .date-display span { display: block; line-height: 1; margin: 0; padding: 0; }
     
-    /* Double line separators - using class-based approach */
-    .double-line-right {
-      border-right: 3px double #000 !important;
-    }
-    
-    .filter-card {
-      background-color: #f8f9fa;
-    }
-    .table-responsive {
-      overflow-x: auto;
-      max-width: 100%;
-    }
-    .action-controls {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    .no-print {
-      display: block;
-    }
-    .tp-nos {
-      font-size: 8px;
-      line-height: 1.1;
-      text-align: left;
-      padding: 2px;
-    }
-    .tp-nos span {
-      display: inline-block;
-      margin-right: 3px;
-    }
-    .type-col {
-      width: 40px;
-      min-width: 40px;
-    }
-    .date-col {
-      width: 30px;
-      min-width: 30px;
-    }
-    .tp-col {
-      width: 50px;
-      min-width: 50px;
-    }
-    .size-col {
-      width: 25px;
-      min-width: 25px;
-      max-width: 25px;
-    }
-    .date-display {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      line-height: 1;
-    }
-    .date-display span {
-      display: block;
-      line-height: 1;
-      margin: 0;
-      padding: 0;
-    }
-    .category-header {
-      font-weight: bold;
-      background-color: #e9ecef !important;
-    }
-
-    /* Print styles */
     @media print {
-      @page {
-        size: legal landscape;
-        margin: 0.2in;
-      }
-      
-      body {
-        margin: 0;
-        padding: 0;
-        font-size: 8px;
-        line-height: 1;
-        background: white;
-        width: 100%;
-        height: 100%;
-      }
-      
-      .no-print, .debug-info {
-        display: none !important;
-      }
-      
-      body * {
-        visibility: hidden;
-      }
-      
-      .print-section, .print-section * {
-        visibility: visible;
-      }
-      
-      .print-section {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      
-      .company-header {
-        text-align: center;
-        margin-bottom: 5px;
-        padding: 2px;
-        page-break-after: avoid;
-      }
-      
-      .company-header h1 {
-        font-size: 12px !important;
-        margin-bottom: 1px !important;
-      }
-      
-      .company-header h5 {
-        font-size: 9px !important;
-        margin-bottom: 1px !important;
-      }
-      
-      .company-header h6 {
-        font-size: 8px !important;
-        margin-bottom: 2px !important;
-      }
-      
-      .table-responsive {
-        overflow: visible;
-        width: 100%;
-        height: auto;
-      }
-      
-      .report-table {
-        width: 100% !important;
-        font-size: 7px !important;
-        table-layout: fixed;
-        border-collapse: collapse;
-        page-break-inside: avoid;
-      }
-      
-      .report-table th, .report-table td {
-        padding: 2px 1px !important;
-        line-height: 1;
-        height: 16px;
-        min-width: 20px;
-        max-width: 22px;
-        font-size: 7px !important;
-        border: 1px solid #000 !important;
-      }
-      
-      .report-table th {
-        background-color: #f0f0f0 !important;
-        padding: 3px 1px !important;
-        font-weight: bold;
-      }
-      
-      .vertical-text, .vertical-text-full {
-        writing-mode: vertical-lr;
-        transform: rotate(180deg);
-        text-align: center;
-        white-space: nowrap;
-        padding: 2px !important;
-        font-size: 6px !important;
-        min-width: 18px;
-        max-width: 20px;
-        width: 20px !important;
-        line-height: 1;
-        height: auto !important;
-      }
-      
-      .date-col {
-        width: 25px !important;
-        min-width: 25px !important;
-        max-width: 25px !important;
-      }
-      
-      .tp-col {
-        width: 40px !important;
-        min-width: 40px !important;
-        max-width: 40px !important;
-      }
-      
-      .type-col {
-        width: 30px !important;
-        min-width: 30px !important;
-        max-width: 30px !important;
-      }
-      
-      .size-col {
-        width: 20px !important;
-        min-width: 20px !important;
-        max-width: 20px !important;
-      }
-      
-      .summary-row {
-        background-color: #f8f9fa !important;
-        font-weight: bold;
-      }
-      
-      .tp-nos {
-        font-size: 6px !important;
-        line-height: 1;
-        padding: 1px !important;
-      }
-      
-      .footer-info {
-        text-align: center;
-        margin-top: 3px;
-        font-size: 7px;
-        page-break-before: avoid;
-      }
-      
-      tr {
-        page-break-inside: avoid;
-        page-break-after: auto;
-      }
-      
-      .date-display {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        line-height: 1;
-      }
-      
-      .date-display span {
-        display: block;
-        line-height: 1;
-        margin: 0;
-        padding: 0;
-      }
-      
-      /* Print double line separators */
-      .double-line-right {
-        border-right: 3px double #000 !important;
-      }
-      
-      .category-header {
-        background-color: #e9ecef !important;
-        font-weight: bold;
-      }
+      @page { size: legal landscape; margin: 0.2in; }
+      body { margin: 0; padding: 0; font-size: 8px; background: white; }
+      .no-print { display: none !important; }
+      .print-section * { visibility: visible; }
+      .print-section { position: absolute; left: 0; top: 0; width: 100%; }
+      .report-table { font-size: 7px !important; }
+      .report-table th, .report-table td { padding: 2px 1px !important; }
+      .vertical-text-full { font-size: 6px !important; min-width: 18px; max-width: 20px; }
     }
   </style>
 </head>
@@ -1071,7 +638,7 @@ foreach ($display_categories as $category) {
               <div class="col-md-3">
                 <label class="form-label">Date Range Info:</label>
                 <div class="form-control-plaintext">
-                  <small class="text-muted">Selected: <?= count($dates) ?> day(s)</small>
+                  <small class="text-muted">Selected: <?= count($display_dates) ?> day(s)</small>
                 </div>
               </div>
             </div>
@@ -1102,9 +669,10 @@ foreach ($display_categories as $category) {
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
+          <h6><em>Opening balances carried forward from <?= date('d-M-Y', strtotime($april_first)) ?></em></h6>
         </div>
         
-        <?php if (empty($dates) || empty($daily_data)): ?>
+        <?php if (empty($display_dates) || empty($daily_data)): ?>
           <div class="alert alert-warning text-center">
             <i class="fas fa-exclamation-triangle me-2"></i>
             No data available for the selected date range.
@@ -1137,21 +705,18 @@ foreach ($display_categories as $category) {
               <tbody>
                 <?php 
                 $date_count = 0;
-                $first_date = true;
-                foreach ($dates as $date): 
-                  // Skip if this date was not processed due to missing columns
-                  // But show dates that have opening (carried forward from previous day)
+                $first_displayed = false;
+                
+                foreach ($display_dates as $date): 
                   if (!isset($daily_data[$date])) continue;
                   
-                  // Check if there's any data to show (including carryforward opening)
+                  // Check if there's any data to show
                   $has_data = false;
                   foreach ($display_categories as $cat) {
                       if (isset($daily_data[$date][$cat])) {
                           $cat_data = $daily_data[$date][$cat];
-                          // Check for any non-zero values in opening, purchase, sales, or closing
                           foreach ($size_columns[$cat] as $size) {
-                              if (($cat_data['opening'][$size] ?? 0) > 0 || 
-                                  ($cat_data['purchase'][$size] ?? 0) > 0 || 
+                              if (($cat_data['purchase'][$size] ?? 0) > 0 || 
                                   ($cat_data['sales'][$size] ?? 0) > 0 || 
                                   ($cat_data['closing'][$size] ?? 0) > 0) {
                                   $has_data = true;
@@ -1162,6 +727,22 @@ foreach ($display_categories as $category) {
                       if ($has_data) break;
                   }
                   
+                  // For first date, also check opening
+                  if (!$first_displayed && !$has_data) {
+                      foreach ($display_categories as $cat) {
+                          if (isset($daily_data[$date][$cat])) {
+                              $cat_data = $daily_data[$date][$cat];
+                              foreach ($size_columns[$cat] as $size) {
+                                  if (($cat_data['opening'][$size] ?? 0) > 0) {
+                                      $has_data = true;
+                                      break;
+                                  }
+                              }
+                          }
+                          if ($has_data) break;
+                      }
+                  }
+                  
                   if (!$has_data) continue;
                   
                   $day_num = date('d', strtotime($date));
@@ -1169,159 +750,157 @@ foreach ($display_categories as $category) {
                   $year_num = date('y', strtotime($date));
                   $tp_nos = $tp_nos_data[$date] ?? [];
                   $date_count++;
+                  
+                  $is_first_displayed = !$first_displayed;
+                  
+                  if ($is_first_displayed): 
+                      $first_displayed = true;
                 ?>
+                  <!-- First displayed date - Show all 4 rows -->
+                  <tr>
+                    <td rowspan="4" class="date-col">
+                      <div class="date-display">
+                        <span><?= $day_num ?></span>
+                        <span><?= $month_num ?></span>
+                        <span><?= $year_num ?></span>
+                      </div>
+                    </td>
+                    <td rowspan="4" class="tp-nos">
+                      <?php if (!empty($tp_nos)): ?>
+                        <?php foreach ($tp_nos as $tp_no): ?>
+                          <span><?= $tp_no ?></span>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        &nbsp;
+                      <?php endif; ?>
+                    </td>
+                    <td>Op.</td>
+                    
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['opening'][$size] > 0 ? $daily_data[$date][$category]['opening'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
                   
-                  <?php if ($first_date): ?>
-                    <!-- First date - Show all 4 rows (Op, Rec, Sale, Clo) -->
-                    <tr>
-                      <td rowspan="4" class="date-col">
-                        <div class="date-display">
-                          <span><?= $day_num ?></span>
-                          <span><?= $month_num ?></span>
-                          <span><?= $year_num ?></span>
-                        </div>
-                      </td>
-                      <td rowspan="4" class="tp-nos">
-                        <?php if (!empty($tp_nos)): ?>
-                          <?php foreach ($tp_nos as $tp_no): ?>
-                            <span><?= $tp_no ?></span>
-                          <?php endforeach; ?>
-                        <?php else: ?>
-                          &nbsp;
-                        <?php endif; ?>
-                      </td>
-                      <td>Op.</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['opening'][$size] > 0 ? $daily_data[$date][$category]['opening'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
+                  <tr>
+                    <td>Rec.</td>
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['purchase'][$size] > 0 ? $daily_data[$date][$category]['purchase'][$size] : '' ?>
+                        </td>
                       <?php endforeach; ?>
-                    </tr>
-                    
-                    <tr>
-                      <td>Rec.</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['purchase'][$size] > 0 ? $daily_data[$date][$category]['purchase'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                    
-                    <tr>
-                      <td>Sale</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['sales'][$size] > 0 ? $daily_data[$date][$category]['sales'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                    
-                    <tr>
-                      <td>Clo.</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                    
-                    <?php $first_date = false; ?>
-                    
-                  <?php else: ?>
-                    <!-- Subsequent dates - Show only 3 rows (Rec, Sale, Clo) -->
-                    <tr>
-                      <td rowspan="3" class="date-col">
-                        <div class="date-display">
-                          <span><?= $day_num ?></span>
-                          <span><?= $month_num ?></span>
-                          <span><?= $year_num ?></span>
-                        </div>
-                      </td>
-                      <td rowspan="3" class="tp-nos">
-                        <?php if (!empty($tp_nos)): ?>
-                          <?php foreach ($tp_nos as $tp_no): ?>
-                            <span><?= $tp_no ?></span>
-                          <?php endforeach; ?>
-                        <?php else: ?>
-                          &nbsp;
-                        <?php endif; ?>
-                      </td>
-                      <td>Rec.</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['purchase'][$size] > 0 ? $daily_data[$date][$category]['purchase'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                    
-                    <tr>
-                      <td>Sale</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['sales'][$size] > 0 ? $daily_data[$date][$category]['sales'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                    
-                    <tr>
-                      <td>Clo.</td>
-                      
-                      <?php foreach ($display_categories as $cat_index => $category): ?>
-                        <?php 
-                        $sizes = $size_columns[$category];
-                        $last_index = count($sizes) - 1;
-                        foreach ($sizes as $size_index => $size): 
-                        ?>
-                          <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
-                            <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
-                          </td>
-                        <?php endforeach; ?>
-                      <?php endforeach; ?>
-                    </tr>
-                  <?php endif; ?>
+                    <?php endforeach; ?>
+                  </tr>
                   
+                  <tr>
+                    <td>Sale</td>
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['sales'][$size] > 0 ? $daily_data[$date][$category]['sales'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
+                  
+                  <tr>
+                    <td>Clo.</td>
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
+                  
+                <?php else: ?>
+                  <!-- Subsequent displayed dates - Show only 3 rows -->
+                  <tr>
+                    <td rowspan="3" class="date-col">
+                      <div class="date-display">
+                        <span><?= $day_num ?></span>
+                        <span><?= $month_num ?></span>
+                        <span><?= $year_num ?></span>
+                      </div>
+                    </td>
+                    <td rowspan="3" class="tp-nos">
+                      <?php if (!empty($tp_nos)): ?>
+                        <?php foreach ($tp_nos as $tp_no): ?>
+                          <span><?= $tp_no ?></span>
+                        <?php endforeach; ?>
+                      <?php else: ?>
+                        &nbsp;
+                      <?php endif; ?>
+                    </td>
+                    <td>Rec.</td>
+                    
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['purchase'][$size] > 0 ? $daily_data[$date][$category]['purchase'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
+                  
+                  <tr>
+                    <td>Sale</td>
+                    
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['sales'][$size] > 0 ? $daily_data[$date][$category]['sales'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
+                  
+                  <tr>
+                    <td>Clo.</td>
+                    
+                    <?php foreach ($display_categories as $cat_index => $category): ?>
+                      <?php 
+                      $sizes = $size_columns[$category];
+                      $last_index = count($sizes) - 1;
+                      foreach ($sizes as $size_index => $size): 
+                      ?>
+                        <td class="<?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>">
+                          <?= $daily_data[$date][$category]['closing'][$size] > 0 ? $daily_data[$date][$category]['closing'][$size] : '' ?>
+                        </td>
+                      <?php endforeach; ?>
+                    <?php endforeach; ?>
+                  </tr>
+                <?php endif; ?>
+                
                 <?php endforeach; ?>
                 
                 <?php if ($date_count == 0): ?>
@@ -1345,33 +924,18 @@ foreach ($display_categories as $category) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 function exportToExcel() {
-  // Get the table element
   var table = document.getElementById('excise-register-table');
-  
-  // Create a new workbook
   var wb = XLSX.utils.book_new();
-  
-  // Clone the table to avoid modifying the original
   var tableClone = table.cloneNode(true);
-  
-  // Convert table to worksheet
   var ws = XLSX.utils.table_to_sheet(tableClone);
-  
-  // Add worksheet to workbook
   XLSX.utils.book_append_sheet(wb, ws, 'Excise Register');
-  
-  // Generate Excel file and download
   var fileName = 'Excise_Register_<?= date('Y-m-d') ?>.xlsx';
   XLSX.writeFile(wb, fileName);
 }
 
-// Load XLSX library dynamically
 if (typeof XLSX === 'undefined') {
   var script = document.createElement('script');
   script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-  script.onload = function() {
-    console.log('XLSX library loaded');
-  };
   document.head.appendChild(script);
 }
 </script>
