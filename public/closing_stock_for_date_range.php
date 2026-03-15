@@ -1663,13 +1663,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $item = $all_items[$item_code];
                                 
                                 // NEW: Use saved distribution from session if available, otherwise generate random
-                                // FIX: Reverse the distribution array because UI shows dates in reverse order
+                                // Distribution is already in chronological order (same as dateArray)
+                                // The UI displays dates in chronological order via reversed header insertion
                                 $full_distribution = [];
                                 if (isset($_SESSION['item_distribution'][$item_code]) && is_array($_SESSION['item_distribution'][$item_code])) {
-                                    $saved_dist = $_SESSION['item_distribution'][$item_code];
-                                    // Reverse the distribution to match the date order (first element = first date)
-                                    $full_distribution = array_reverse($saved_dist);
-                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $saved_dist) . " -> reversed: " . implode(', ', $full_distribution));
+                                    $full_distribution = $_SESSION['item_distribution'][$item_code];
+                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $full_distribution));
                                 } else {
                                     // Generate random distribution if not saved
                                     $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
@@ -2803,10 +2802,6 @@ tr.global-restriction .qty-input {
 
         <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
-          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
-            <i class="fas fa-random"></i> Shuffle All
-          </button>
-          
           <!-- Single Button with Dual Functionality -->
           <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
             <i class="fas fa-save"></i> Generate Bills
@@ -2949,10 +2944,7 @@ tr.global-restriction .qty-input {
                        class="sale-qty-hidden" value="<?= $item_qty ?>">
             </td>
             <td class="action-column">
-                <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
-                        data-code="<?= htmlspecialchars($item_code); ?>">
-                    <i class="fas fa-random"></i> Shuffle
-                </button>
+                <!-- Individual shuffle removed - using Enter key instead -->
             </td>
             
             <!-- Date distribution cells will be inserted here by JavaScript -->
@@ -3884,9 +3876,10 @@ function displayDistributionInCellsClosing(itemCode, itemRow, distribution) {
     const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
     console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
     
-    // Add date distribution cells with proper styling
-    distribution.forEach((qty, index) => {
-        const date = dateArray[index];
+    // Add date distribution cells - iterate in REVERSE to match reversed header insertion
+    const reversedDist = [...distribution].reverse();
+    reversedDist.forEach((qty, i) => {
+        const date = dateArray[distribution.length - 1 - i];
         const cell = $(`<td class="date-distribution-cell"></td>`);
 
         // Check if this date is unavailable due to global sales
@@ -3928,8 +3921,12 @@ function displayDistributionInCellsClosing(itemCode, itemRow, distribution) {
 }
 
 // NEW: Function to shuffle distribution for closing stock when Enter is pressed
+
+// NEW: Function to shuffle distribution for closing stock when Enter is pressed
 function shuffleThisItemClosing(input) {
+    console.log('shuffleThisItemClosing called');
     const itemCode = $(input).data('code');
+    console.log('Item code:', itemCode);
     const currentStock = parseFloat($(input).data('stock'));
     const enteredClosing = parseInt($(input).val()) || 0;
     
@@ -3941,6 +3938,10 @@ function shuffleThisItemClosing(input) {
     if (saleQty > 0) {
         // Shuffle/randomize the distribution for this item
         const distribution = shuffleDistributionForItem(itemCode, saleQty);
+        
+        // CRITICAL FIX: Also update the JavaScript savedDistributions object
+        // This ensures updateDistributionPreviewWithGlobalRestrictions uses the shuffled distribution
+        savedDistributions[itemCode] = distribution.slice();
         
         // Save the shuffled distribution to session
         saveDistributionToSession(itemCode, distribution);
@@ -4874,243 +4875,9 @@ function initializeDistributionPreview() {
     }
 }
 
-// FIXED: Individual shuffle button click event - correctly handles global restrictions
-$(document).on('click', '.btn-shuffle-item', async function() {
-    const itemCode = $(this).data('code');
-    console.log(`DEBUG: Individual shuffle clicked for ${itemCode}`);
-    const inputField = $(`input[name="closing_balance[${itemCode}]"]`);
-    const totalQty = parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0;
+// Individual shuffle button handler removed - using Enter key instead
 
-    console.log(`DEBUG: Individual shuffle ${itemCode} - totalQty: ${totalQty}, disabled: ${inputField.prop('disabled')}`);
-
-    // Only shuffle if quantity > 0 and not disabled
-    if (totalQty > 0 && !inputField.prop('disabled')) {
-        // Get new distribution based on global restrictions
-        const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
-
-        // Update the distribution cells
-        const itemRow = inputField.closest('tr');
-        const dateCells = itemRow.find('.date-distribution-cell');
-
-        console.log(`DEBUG: Individual shuffle ${itemCode} - found ${dateCells.length} date cells`);
-
-        // Get global available/unavailable dates
-        const hasGlobalRestriction = inputField.data('has-global-restriction');
-        const availableDates = inputField.data('available-dates') || [];
-        const unavailableDates = inputField.data('unavailable-dates') || [];
-        const dryDates = inputField.data('dry-dates') || [];
-
-        console.log(`DEBUG: Individual shuffle ${itemCode} - availableDates:`, availableDates);
-        console.log(`DEBUG: Individual shuffle ${itemCode} - unavailableDates:`, unavailableDates);
-        console.log(`DEBUG: Individual shuffle ${itemCode} - dryDates:`, dryDates);
-
-        // Create date index map
-        const dateIndexMap = {};
-        dateArray.forEach((date, index) => {
-            dateIndexMap[date] = index;
-        });
-
-        newDistribution.forEach((qty, index) => {
-            if (dateCells.eq(index).length) {
-                const cell = dateCells.eq(index);
-                const date = dateArray[index];
-
-                console.log(`DEBUG: Individual shuffle ${itemCode} - updating cell ${index} for date ${date} with qty ${qty}`);
-
-                // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
-
-                // Check if this date is unavailable due to global sales
-                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-                
-                // Check if this date is a dry day
-                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-
-                // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
-
-                console.log(`DEBUG: Individual shuffle ${itemCode} - date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-                if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
-
-                } else if (isDryDate) {
-                    // Date is a dry day - show 🌙
-                    cell.addClass('dry-unavailable-date');
-                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-                    
-                    // Get dry day description
-                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
-                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to DRY DAY`);
-
-                } else if (isAvailable && qty > 0) {
-                    // Date is available and has new sales
-                    cell.addClass('available-date-with-sales');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to AVAILABLE WITH SALES`);
-
-                } else if (qty > 0) {
-                    cell.addClass('non-zero-distribution');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date}`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to NON-ZERO`);
-
-                } else {
-                    cell.addClass('zero-distribution');
-                    cell.text('0');
-                    cell.attr('title', `Date ${date} has 0 units assigned`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to ZERO`);
-                }
-            }
-        });
-
-        console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
-        
-        // Save this new distribution to savedDistributions
-        savedDistributions[itemCode] = newDistribution.slice();
-        
-        // Save distribution to session so it matches when generating bills
-        saveDistributionToSession(itemCode, newDistribution);
-    } else {
-        console.log(`DEBUG: Individual shuffle ${itemCode} - not shuffling (qty=${totalQty}, disabled=${inputField.prop('disabled')})`);
-    }
-});
-
-// FIXED: Shuffle all button click event - correctly handles global restrictions
-$('#shuffleBtn').off('click').on('click', async function() {
-    console.log('DEBUG: Shuffle all button clicked');
-    // Show loader
-    $('#ajaxLoader').show();
-
-    // Process all items with quantities
-    const itemsToShuffle = [];
-    $('input.closing-balance-input').each(function() {
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(`input[name="sale_qty[${itemCode}]"]`).val()) || 0;
-
-        // Only shuffle if quantity > 0, visible, and not disabled
-        if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
-            itemsToShuffle.push({ itemCode, totalQty });
-        }
-    });
-
-    console.log(`DEBUG: Shuffle all - found ${itemsToShuffle.length} items to shuffle:`, itemsToShuffle);
-
-    // Shuffle each item using global restrictions
-    for (const item of itemsToShuffle) {
-        console.log(`DEBUG: Shuffle all - processing item ${item.itemCode}`);
-        const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
-
-        // Update the distribution cells
-        const inputField = $(`input[name="closing_balance[${item.itemCode}]"]`);
-        const itemRow = inputField.closest('tr');
-        const dateCells = itemRow.find('.date-distribution-cell');
-
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} has ${dateCells.length} date cells`);
-
-        // Get global available/unavailable dates
-        const hasGlobalRestriction = inputField.data('has-global-restriction');
-        const availableDates = inputField.data('available-dates') || [];
-        const unavailableDates = inputField.data('unavailable-dates') || [];
-        const dryDates = inputField.data('dry-dates') || [];
-
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} availableDates:`, availableDates);
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} unavailableDates:`, unavailableDates);
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} dryDates:`, dryDates);
-
-        newDistribution.forEach((qty, index) => {
-            if (dateCells.eq(index).length) {
-                const cell = dateCells.eq(index);
-                const date = dateArray[index];
-
-                console.log(`DEBUG: Shuffle all - ${item.itemCode} updating cell ${index} for date ${date} with qty ${qty}`);
-
-                // Update styling and content based on value and availability
-                cell.removeClass('zero-distribution non-zero-distribution global-unavailable-date dry-unavailable-date available-date-with-sales');
-
-                // Check if this date is unavailable due to global sales
-                const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-                
-                // Check if this date is a dry day
-                const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-
-                // Check if this date is available
-                const isAvailable = availableDates.length > 0 && availableDates.includes(date);
-
-                console.log(`DEBUG: Shuffle all - ${item.itemCode} date ${date}: isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-                if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
-
-                } else if (isDryDate) {
-                    // Date is a dry day - show 🌙
-                    cell.addClass('dry-unavailable-date');
-                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-                    
-                    // Get dry day description
-                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
-                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to DRY DAY`);
-
-                } else if (isAvailable && qty > 0) {
-                    // Date is available and has new sales
-                    cell.addClass('available-date-with-sales');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to AVAILABLE WITH SALES`);
-
-                } else if (qty > 0) {
-                    cell.addClass('non-zero-distribution');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date}`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to NON-ZERO`);
-
-                } else {
-                    cell.addClass('zero-distribution');
-                    cell.text('0');
-                    cell.attr('title', `Date ${date} has 0 units assigned`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to ZERO`);
-                }
-            }
-        });
-    }
-
-    // Hide loader
-    $('#ajaxLoader').hide();
-
-    // Save all distributions to session
-    itemsToShuffle.forEach(item => {
-        const inputField = $(`input[name="closing_balance[${item.itemCode}]"]`);
-        const itemRow = inputField.closest('tr');
-        const dateCells = itemRow.find('.date-distribution-cell');
-        const distribution = [];
-        dateCells.each(function(index) {
-            const cell = $(this);
-            const text = cell.text();
-            const qty = parseInt(text) || 0;
-            distribution.push(qty);
-        });
-        
-        // Save to savedDistributions object
-        savedDistributions[item.itemCode] = distribution.slice();
-        
-        saveDistributionToSession(item.itemCode, distribution);
-    });
-
-    // Update total amount
-    calculateTotalAmount();
-    console.log('DEBUG: Shuffle all completed');
-});
+// Shuffle all button handler removed - using Enter key instead
 
 // OPTIMIZED: Document ready - Only process items with quantities > 0
 $(document).ready(function() {
@@ -5164,6 +4931,30 @@ $(document).ready(function() {
         if ($('#totalSalesModal').hasClass('show')) {
             console.log('Modal is open, updating total sales module with ALL modes data...');
             updateTotalSalesModule();
+        }
+    });
+    
+    // Closing balance Enter key handler - shuffle distribution when Enter is pressed
+    $(document).on('keydown', 'input.closing-balance-input', function(e) {
+        console.log('Enter key pressed on closing-balance-input');
+        if (e.key === 'Enter') {
+            console.log('Enter key confirmed - calling shuffleThisItemClosing');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Call shuffle function
+            shuffleThisItemClosing(this);
+            
+            // Prevent form submission
+            return false;
+        }
+    });
+    
+    // Also prevent form submission when pressing Enter in any input in the form
+    $('#salesForm').on('keydown', 'input', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            return false;
         }
     });
     
