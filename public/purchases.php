@@ -824,16 +824,41 @@ function continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDa
     debugLog("Cascading completed up to financial year end: " . $fy_end_date);
 }
 
-// Function to update item stock - NOW STORES FULL ITEM CODE WITHOUT CLEANING
+// ============================================================================
+// FIXED: updateItemStock function - Now with better logging and verification
+// ============================================================================
 function updateItemStock($conn, $itemCode, $totalBottles, $companyId, $fin_year_id) {
     $stockColumn = "CURRENT_STOCK" . $companyId;
     
-    debugLog("Updating item stock with FULL code", [
+    debugLog("=== updateItemStock CALLED ===", [
         'item_code' => $itemCode,
         'total_bottles' => $totalBottles,
         'company_id' => $companyId,
         'stock_column' => $stockColumn,
         'fin_year_id' => $fin_year_id
+    ]);
+    
+    // First, verify the stock column exists
+    $checkColumnQuery = "SHOW COLUMNS FROM tblitem_stock LIKE '$stockColumn'";
+    $checkColumnResult = $conn->query($checkColumnQuery);
+    if ($checkColumnResult->num_rows == 0) {
+        debugLog("ERROR: Stock column $stockColumn does not exist in tblitem_stock");
+        return false;
+    }
+    
+    // Get current stock before update for debugging
+    $currentStockQuery = "SELECT $stockColumn as current_stock FROM tblitem_stock WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
+    $currentStmt = $conn->prepare($currentStockQuery);
+    $currentStmt->bind_param("si", $itemCode, $fin_year_id);
+    $currentStmt->execute();
+    $currentResult = $currentStmt->get_result();
+    $currentRow = $currentResult->fetch_assoc();
+    $currentStock = $currentRow ? (int)$currentRow['current_stock'] : 0;
+    $currentStmt->close();
+    
+    debugLog("Current stock before update", [
+        'item_code' => $itemCode,
+        'current_stock' => $currentStock
     ]);
     
     // First check if record exists
@@ -846,62 +871,63 @@ function updateItemStock($conn, $itemCode, $totalBottles, $companyId, $fin_year_
     $exists = $row['count'] > 0;
     $checkStmt->close();
     
+    debugLog("Record existence check", [
+        'item_code' => $itemCode,
+        'exists' => $exists,
+        'fin_year' => $fin_year_id
+    ]);
+    
     if ($exists) {
-        // Update existing record
+        // Update existing record - ADD to existing stock
         $updateQuery = "UPDATE tblitem_stock 
                        SET $stockColumn = $stockColumn + ? 
                        WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
         $stmt = $conn->prepare($updateQuery);
         $stmt->bind_param("isi", $totalBottles, $itemCode, $fin_year_id);
+        debugLog("Executing UPDATE query", [
+            'query' => $updateQuery,
+            'params' => [$totalBottles, $itemCode, $fin_year_id]
+        ]);
     } else {
         // Insert new record
         $updateQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
                        VALUES (?, ?, ?)";
         $stmt = $conn->prepare($updateQuery);
         $stmt->bind_param("sii", $itemCode, $fin_year_id, $totalBottles);
+        debugLog("Executing INSERT query", [
+            'query' => $updateQuery,
+            'params' => [$itemCode, $fin_year_id, $totalBottles]
+        ]);
     }
     
     $result = $stmt->execute();
     $affectedRows = $stmt->affected_rows;
+    
+    if (!$result) {
+        debugLog("ERROR in updateItemStock: " . $stmt->error);
+    }
+    
     $stmt->close();
+    
+    // Verify the update by getting new stock value
+    $verifyQuery = "SELECT $stockColumn as new_stock FROM tblitem_stock WHERE ITEM_CODE = ? AND FIN_YEAR = ?";
+    $verifyStmt = $conn->prepare($verifyQuery);
+    $verifyStmt->bind_param("si", $itemCode, $fin_year_id);
+    $verifyStmt->execute();
+    $verifyResult = $verifyStmt->get_result();
+    $verifyRow = $verifyResult->fetch_assoc();
+    $newStock = $verifyRow ? (int)$verifyRow['new_stock'] : 0;
+    $verifyStmt->close();
     
     debugLog("Item stock update result", [
         'success' => $result,
         'operation' => $exists ? 'update' : 'insert',
-        'affected_rows' => $affectedRows
-    ]);
-    
-    return $result;
-}
-
-// Function to update MRP in tblitemmaster - USE CLEAN CODE FOR MRP UPDATE ONLY
-function updateItemMRP($conn, $itemCode, $mrp) {
-    // Clean the item code by removing SCM prefix for MRP update
-    // because tblitemmaster stores codes without SCM prefix
-    $cleanCode = cleanItemCode($itemCode);
-    
-    debugLog("Updating MRP for item (using clean code)", [
-        'original_code' => $itemCode,
-        'clean_code' => $cleanCode,
-        'mrp' => $mrp
-    ]);
-    
-    // Update MPRICE in tblitemmaster
-    $updateQuery = "UPDATE tblitemmaster SET MPRICE = ? WHERE CODE = ?";
-    $stmt = $conn->prepare($updateQuery);
-    $stmt->bind_param("ds", $mrp, $cleanCode);
-    
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    
-    debugLog("MRP update result", [
-        'success' => $result,
         'affected_rows' => $affectedRows,
-        'clean_code' => $cleanCode,
-        'mrp' => $mrp
+        'previous_stock' => $currentStock,
+        'added_bottles' => $totalBottles,
+        'new_stock' => $newStock,
+        'expected_stock' => $currentStock + $totalBottles
     ]);
-    
-    $stmt->close();
     
     return $result;
 }
@@ -1357,11 +1383,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $purchase_id = $conn->insert_id;
         
         // ============================================================================
+        // FIXED: Track updated items to prevent double stock updates
+        // ============================================================================
+        $updatedItems = []; // Track which items have been updated
+        $stockUpdates = []; // Collect stock updates for batch processing
+        
+        // ============================================================================
         // ULTRA-FAST: BULK INSERT PURCHASE DETAILS
         // ============================================================================
         if (isset($_POST['items']) && is_array($_POST['items']) && !empty($_POST['items'])) {
             $detailValues = [];
-            $stockUpdates = [];
             $mrpUpdates = [];
             
             foreach ($_POST['items'] as $index => $item) {
@@ -1402,7 +1433,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mrpUpdates[$cleanCode] = $mrp;
                 }
                 
-                // Collect stock updates for batch processing - STORE FULL ITEM CODE
+                // FIXED: Collect stock updates in an array - only once per item
                 if ($tot_bott > 0) {
                     if (!isset($stockUpdates[$item_code])) {
                         $stockUpdates[$item_code] = 0;
@@ -1414,120 +1445,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // ============================================================================
             // BULK INSERT ALL PURCHASE DETAILS AT ONCE
             // ============================================================================
+            $bulkInsertSuccess = false;
+            
             if (!empty($detailValues)) {
                 $detailBulkQuery = "INSERT INTO tblpurchasedetails (
                     PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
                     CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
                 ) VALUES " . implode(',', $detailValues);
                 
-                if (!$conn->query($detailBulkQuery)) {
-                    debugLog("Bulk insert failed, falling back to individual inserts: " . $conn->error);
-                    // Fall back to individual inserts if bulk fails
-                    $detailStmt = $conn->prepare("INSERT INTO tblpurchasedetails (
-                        PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
-                        CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    
-                    foreach ($_POST['items'] as $index => $item) {
-                        $item_code = $item['code'] ?? '';
-                        $item_name = $item['name'] ?? '';
-                        $item_size = $item['size'] ?? '';
-                        $cases = floatval($item['cases'] ?? 0);
-                        $bottles = intval($item['bottles'] ?? 0);
-                        $free_cases = floatval($item['free_cases'] ?? 0);
-                        $free_bottles = intval($item['free_bottles'] ?? 0);
-                        $case_rate = floatval($item['case_rate'] ?? 0);
-                        $mrp = floatval($item['mrp'] ?? 0);
-                        $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
-                        $batch_no = $item['batch_no'] ?? '';
-                        $auto_batch = $item['auto_batch'] ?? '';
-                        $mfg_month = $item['mfg_month'] ?? '';
-                        $bl = floatval($item['bl'] ?? 0);
-                        $vv = floatval($item['vv'] ?? 0);
-                        $tot_bott = intval($item['tot_bott'] ?? 0);
-                        $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
-                        
-                        $detailStmt->bind_param(
-                            "isssdddddddisssddi",
-                            $purchase_id, $item_code, $item_name, $item_size,
-                            $cases, $bottles, $free_cases, $free_bottles,
-                            $case_rate, $mrp, $amount, $bottles_per_case,
-                            $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
-                        );
-                        $detailStmt->execute();
-                        
-                        // Update MRP (use clean code for tblitemmaster)
-                        if ($mrp > 0) {
-                            updateItemMRP($conn, $item_code, $mrp);
-                        }
-                        
-                        // Update stock - PASS FULL ITEM CODE
-                        if ($tot_bott > 0) {
-                            updateStock($item_code, $tot_bott, $date, $companyId, $conn, $fin_year_id);
-                        }
-                    }
-                    $detailStmt->close();
+                if ($conn->query($detailBulkQuery)) {
+                    $bulkInsertSuccess = true;
+                    debugLog("Bulk insert succeeded for " . count($detailValues) . " items");
+                } else {
+                    debugLog("Bulk insert failed: " . $conn->error);
                 }
             }
             
             // ============================================================================
-            // BULK UPDATE MRP - FOR TBLITEMMASTER (USING CLEAN CODES)
+            // FALLBACK: Individual inserts if bulk insert fails
+            // ============================================================================
+            if (!$bulkInsertSuccess && !empty($_POST['items'])) {
+                debugLog("Falling back to individual inserts");
+                $detailStmt = $conn->prepare("INSERT INTO tblpurchasedetails (
+                    PurchaseID, ItemCode, ItemName, Size, Cases, Bottles, FreeCases, FreeBottles, 
+                    CaseRate, MRP, Amount, BottlesPerCase, BatchNo, AutoBatch, MfgMonth, BL, VV, TotBott
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                
+                foreach ($_POST['items'] as $index => $item) {
+                    $item_code = $item['code'] ?? '';
+                    $item_name = $item['name'] ?? '';
+                    $item_size = $item['size'] ?? '';
+                    $cases = floatval($item['cases'] ?? 0);
+                    $bottles = intval($item['bottles'] ?? 0);
+                    $free_cases = floatval($item['free_cases'] ?? 0);
+                    $free_bottles = intval($item['free_bottles'] ?? 0);
+                    $case_rate = floatval($item['case_rate'] ?? 0);
+                    $mrp = floatval($item['mrp'] ?? 0);
+                    $bottles_per_case = intval($item['bottles_per_case'] ?? 12);
+                    $batch_no = $item['batch_no'] ?? '';
+                    $auto_batch = $item['auto_batch'] ?? '';
+                    $mfg_month = $item['mfg_month'] ?? '';
+                    $bl = floatval($item['bl'] ?? 0);
+                    $vv = floatval($item['vv'] ?? 0);
+                    $tot_bott = intval($item['tot_bott'] ?? 0);
+                    $amount = ($cases * $case_rate) + ($bottles * ($case_rate / $bottles_per_case));
+                    
+                    $detailStmt->bind_param(
+                        "isssdddddddisssddi",
+                        $purchase_id, $item_code, $item_name, $item_size,
+                        $cases, $bottles, $free_cases, $free_bottles,
+                        $case_rate, $mrp, $amount, $bottles_per_case,
+                        $batch_no, $auto_batch, $mfg_month, $bl, $vv, $tot_bott
+                    );
+                    
+                    if (!$detailStmt->execute()) {
+                        debugLog("Error inserting item $index: " . $detailStmt->error);
+                    }
+                }
+                $detailStmt->close();
+            }
+            
+            // ============================================================================
+            // FIXED: BULK UPDATE MRP - FOR TBLITEMMASTER (USING CLEAN CODES)
             // ============================================================================
             if (!empty($mrpUpdates)) {
                 foreach ($mrpUpdates as $cleanCode => $mrp) {
-                    $mrp_esc = $conn->real_escape_string($mrp);
-                    $conn->query("UPDATE tblitemmaster SET MPRICE = '$mrp_esc' WHERE CODE = '$cleanCode'");
+                    $updateMRPQuery = "UPDATE tblitemmaster SET MPRICE = ? WHERE CODE = ?";
+                    $mrpStmt = $conn->prepare($updateMRPQuery);
+                    $mrpStmt->bind_param("ds", $mrp, $cleanCode);
+                    $mrpStmt->execute();
+                    $mrpStmt->close();
+                    
+                    debugLog("Updated MRP for item $cleanCode to $mrp");
                 }
             }
             
             // ============================================================================
-            // BULK UPDATE STOCK - FOR TBLITEM_STOCK (USING FULL ITEM CODES)
+            // FIXED: SINGLE PASS STOCK UPDATES - Each item updated exactly once
             // ============================================================================
             if (!empty($stockUpdates)) {
-                // First, update tblitem_stock with bulk operation
-                $stockColumn = "CURRENT_STOCK" . $companyId;
-                $stockValues = [];
+                debugLog("Processing stock updates - " . count($stockUpdates) . " unique items");
                 
-                foreach ($stockUpdates as $itemCode => $totalBottles) {
-                    // Store the FULL item code WITHOUT removing SCM prefix
-                    $code_esc = $conn->real_escape_string($itemCode);
-                    $stockValues[] = "('$code_esc', '$fin_year_id', $totalBottles)";
-                }
-                
-                if (!empty($stockValues)) {
-                    // Bulk upsert into tblitem_stock
-                    $stockBulkQuery = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stockColumn) 
-                                      VALUES " . implode(',', $stockValues) . "
-                                      ON DUPLICATE KEY UPDATE $stockColumn = $stockColumn + VALUES($stockColumn)";
-                    
-                    if ($conn->query($stockBulkQuery)) {
-                        debugLog("Bulk stock update successful", [
-                            'records' => count($stockValues)
-                        ]);
+                foreach ($stockUpdates as $item_code => $total_bottles) {
+                    // Check if this item has already been updated (prevent duplicates)
+                    if (!in_array($item_code, $updatedItems)) {
+                        debugLog("Updating stock for item: $item_code, bottles: $total_bottles");
+                        updateStock($item_code, $total_bottles, $date, $companyId, $conn, $fin_year_id);
+                        $updatedItems[] = $item_code;
                     } else {
-                        debugLog("Bulk stock update failed: " . $conn->error);
-                        
-                        // Fall back to individual updates
-                        foreach ($stockUpdates as $itemCode => $totalBottles) {
-                            updateItemStock($conn, $itemCode, $totalBottles, $companyId, $fin_year_id);
-                        }
-                    }
-                }
-                
-                // Now update daily stock - need to process each date separately
-                // Group by date first
-                $dailyStockByDate = [];
-                foreach ($stockUpdates as $itemCode => $totalBottles) {
-                    $dateKey = $date; // All items in same purchase date
-                    if (!isset($dailyStockByDate[$dateKey])) {
-                        $dailyStockByDate[$dateKey] = [];
-                    }
-                    $dailyStockByDate[$dateKey][$itemCode] = $totalBottles;
-                }
-                
-                foreach ($dailyStockByDate as $purchaseDate => $items) {
-                    foreach ($items as $itemCode => $totalBottles) {
-                        updateStock($itemCode, $totalBottles, $purchaseDate, $companyId, $conn, $fin_year_id);
+                        debugLog("WARNING: Attempted to update item $item_code twice - prevented");
                     }
                 }
             }
@@ -1550,6 +1556,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->query("SET UNIQUE_CHECKS = 1");
         
         debugLog("=== FORM SUBMISSION COMPLETED SUCCESSFULLY ===");
+        debugLog("Total unique items updated: " . count($updatedItems));
         header("Location: purchase_module.php?mode=".$mode."&success=1");
         exit;
     } else {
@@ -1573,6 +1580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+<?php FinancialYearModule::autoApplyConstraints(); ?>
 <style>
 .table-container {
     overflow-x: auto;

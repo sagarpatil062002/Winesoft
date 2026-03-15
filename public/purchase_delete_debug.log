@@ -1,0 +1,269 @@
+[2026-03-15 10:24:57] Starting delete operation for company ID: 5
+[2026-03-15 10:24:57] Single delete request for ID: 2
+[2026-03-15 10:24:57] Starting reverse for purchase ID: 2
+[2026-03-15 10:24:57] Purchase found: {
+    "date": "2021-04-08",
+    "tp_no": "18",
+    "is_previous_fy": true
+}
+[2026-03-15 10:24:57] Found 2 items with TotBott quantities: [
+    {
+        "ITEM_CODE": "SCMPL0010198",
+        "QTY": 240
+    },
+    {
+        "ITEM_CODE": "SCMPL0012496",
+        "QTY": 1440
+    }
+]
+[2026-03-15 10:24:57] Main stock updated for SCMPL0010198: subtracted 240 (was 240, now 0)
+[2026-03-15 10:24:57] Main stock updated for SCMPL0012496: subtracted 1440 (was 1440, now 0)
+[2026-03-15 10:24:57] Updating daily stock in table: tbldailystock_5_04_21 for date: 2021-04-08, day: 8
+[2026-03-15 10:24:57] Adjusting purchase for SCMPL0010198 on day 8: {
+    "current_purchase": 240,
+    "need_to_subtract": 240,
+    "actual_subtract": 240
+}
+[2026-03-15 10:24:57] Cascading stock in table: tbldailystock_5_04_21: {
+    "item_code": "SCMPL0010198",
+    "stk_month": "2021-04",
+    "start_day": 8
+}
+[2026-03-15 10:24:57] Start day 8 closing after recalculation: 0
+[2026-03-15 10:24:57] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Cascading completed for all days after 8 in tbldailystock_5_04_21
+[2026-03-15 10:24:57] Successfully reversed 240 bottles for SCMPL0010198 in month 2021-04, last day closing: 0
+[2026-03-15 10:24:57] Adjusting purchase for SCMPL0012496 on day 8: {
+    "current_purchase": 1440,
+    "need_to_subtract": 1440,
+    "actual_subtract": 1440
+}
+[2026-03-15 10:24:57] Cascading stock in table: tbldailystock_5_04_21: {
+    "item_code": "SCMPL0012496",
+    "stk_month": "2021-04",
+    "start_day": 8
+}
+[2026-03-15 10:24:57] Start day 8 closing after recalculation: 0
+[2026-03-15 10:24:57] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:57] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-03-15 10:24:58] Cascading completed for all days after 8 in tbldailystock_5_04_21
+[2026-03-15 10:24:58] Successfully reversed 1440 bottles for SCMPL0012496 in month 2021-04, last day closing: 0
+[2026-03-15 10:24:58] Cascading reversal to FY end: {
+    "item_code": "SCMPL0010198",
+    "purchase_date": "2021-04-08",
+    "purchase_month": 4,
+    "purchase_year": 2021,
+    "fy_end": "2022-3-31",
+    "reduction_qty": 240,
+    "starting_closing": 0
+}
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_05_21: {
+    "monthYear": "2021-05",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_05_21 to 0
+[2026-03-15 10:24:58] Month 5/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_06_21: {
+    "monthYear": "2021-06",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_06_21 to 0
+[2026-03-15 10:24:58] Month 6/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_07_21: {
+    "monthYear": "2021-07",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_07_21 to 0
+[2026-03-15 10:24:58] Month 7/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_08_21: {
+    "monthYear": "2021-08",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_08_21 to 0
+[2026-03-15 10:24:58] Month 8/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_09_21: {
+    "monthYear": "2021-09",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_09_21 to 0
+[2026-03-15 10:24:58] Month 9/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_10_21: {
+    "monthYear": "2021-10",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_10_21 to 0
+[2026-03-15 10:24:58] Month 10/2021 processed, carry forward: 0
+[2026-03-15 10:24:58] Processing month: tbldailystock_5_11_21: {
+    "monthYear": "2021-11",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:58] Updated day 1 opening in tbldailystock_5_11_21 to 0
+[2026-03-15 10:24:59] Month 11/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_12_21: {
+    "monthYear": "2021-12",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_12_21 to 0
+[2026-03-15 10:24:59] Month 12/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_01_22: {
+    "monthYear": "2022-01",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_01_22 to 0
+[2026-03-15 10:24:59] Month 1/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_02_22: {
+    "monthYear": "2022-02",
+    "daysInMonth": "28",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_02_22 to 0
+[2026-03-15 10:24:59] Month 2/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_03_22: {
+    "monthYear": "2022-03",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_03_22 to 0
+[2026-03-15 10:24:59] Month 3/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Cascading reversal completed to FY end: 2022-3-31
+[2026-03-15 10:24:59] Cascading reversal to FY end: {
+    "item_code": "SCMPL0012496",
+    "purchase_date": "2021-04-08",
+    "purchase_month": 4,
+    "purchase_year": 2021,
+    "fy_end": "2022-3-31",
+    "reduction_qty": 1440,
+    "starting_closing": 0
+}
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_05_21: {
+    "monthYear": "2021-05",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_05_21 to 0
+[2026-03-15 10:24:59] Month 5/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_06_21: {
+    "monthYear": "2021-06",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_06_21 to 0
+[2026-03-15 10:24:59] Month 6/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_07_21: {
+    "monthYear": "2021-07",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_07_21 to 0
+[2026-03-15 10:24:59] Month 7/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_08_21: {
+    "monthYear": "2021-08",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_08_21 to 0
+[2026-03-15 10:24:59] Month 8/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_09_21: {
+    "monthYear": "2021-09",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_09_21 to 0
+[2026-03-15 10:24:59] Month 9/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_10_21: {
+    "monthYear": "2021-10",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_10_21 to 0
+[2026-03-15 10:24:59] Month 10/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_11_21: {
+    "monthYear": "2021-11",
+    "daysInMonth": "30",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_11_21 to 0
+[2026-03-15 10:24:59] Month 11/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_12_21: {
+    "monthYear": "2021-12",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_12_21 to 0
+[2026-03-15 10:24:59] Month 12/2021 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_01_22: {
+    "monthYear": "2022-01",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_01_22 to 0
+[2026-03-15 10:24:59] Month 1/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_02_22: {
+    "monthYear": "2022-02",
+    "daysInMonth": "28",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_02_22 to 0
+[2026-03-15 10:24:59] Month 2/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Processing month: tbldailystock_5_03_22: {
+    "monthYear": "2022-03",
+    "daysInMonth": "31",
+    "carry_forward": 0
+}
+[2026-03-15 10:24:59] Updated day 1 opening in tbldailystock_5_03_22 to 0
+[2026-03-15 10:24:59] Month 3/2022 processed, carry forward: 0
+[2026-03-15 10:24:59] Cascading reversal completed to FY end: 2022-3-31
+[2026-03-15 10:24:59] Deleted 2 detail records
+[2026-03-15 10:24:59] Deleted purchase header, affected rows: 1
+[2026-03-15 10:24:59] VOC_NO renumbered for company 5 after deletion, affected rows: 0
+[2026-03-15 10:24:59] Transaction committed successfully

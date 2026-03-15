@@ -372,6 +372,7 @@ function getFinancialYearWhereClause($date_column = 'date') {
     }
 }
 
-// Auto-apply constraints when this file is included
-FinancialYearModule::autoApplyConstraints();
+// Auto-apply constraints should be called explicitly in the HTML section where needed
+// Use: FinancialYearModule::autoApplyConstraints();
+// This prevents output before header() calls
 ?>
