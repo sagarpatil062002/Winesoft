@@ -532,8 +532,8 @@ if (!$current_month_exists) {
     }
 }
 
-// ==================== PERFORMANCE OPTIMIZATION #3: Bulk Daily Stock Updates ====================
-// Function to update daily stock range (OPTIMIZED for bulk operations)
+// ==================== CORRECTED: Bulk Daily Stock Updates with Proper Cascade ====================
+// Function to update daily stock range (CORRECTED for proper cascade through entire financial year)
 // ONLY called for items with stock > 0
 function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date) {
     global $fy_dates;
@@ -547,23 +547,17 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
     ]);
     
     $start = new DateTime($start_date);
-    $end = new DateTime(); // Today
-    
-    // If end date is beyond financial year end, cap it at financial year end
-    $fy_end = new DateTime($fy_dates['end']);
-    if ($end > $fy_end) {
-        $end = $fy_end;
-    }
+    $end = new DateTime($fy_dates['end']); // Use financial year end instead of today
     
     debug_log("Date range for update", [
         'start' => $start->format('Y-m-d'),
         'end' => $end->format('Y-m-d')
     ]);
     
-    // Generate all months from start_date to end of financial year (or today)
+    // Generate all months from start_date to end of financial year
     $all_months = [];
     $current = new DateTime($start_date);
-    $current->modify('first day of month'); // Start from beginning of start month
+    $current->modify('first day of this month');
     
     while ($current <= $end) {
         $month = $current->format('Y-m');
@@ -575,113 +569,162 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
     
     debug_log("All months to process", ['months' => $all_months]);
     
-    // Process each month
-    foreach ($all_months as $month) {
-        $table_name = getTableForMonth($conn, $comp_id, $month);
-        
-        if (!$table_name) {
-            debug_log("Skipping month $month - table not available");
-            continue;
-        }
-        
-        // Ensure columns exist for this month
-        addDayColumnsForMonth($conn, $comp_id, $month, true);
-        
-        // Get days in this month
-        $year_month = explode('-', $month);
-        $year = $year_month[0];
-        $month_num = $year_month[1];
-        $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
-        $all_days_in_month = [];
-        for ($d = 1; $d <= $days_in_month; $d++) {
-            $all_days_in_month[] = str_pad($d, 2, '0', STR_PAD_LEFT);
-        }
-        
-        // Determine first day of the opening balance
-        $start_day_padded = date('d', strtotime($start_date));
-        $start_month = date('Y-m', strtotime($start_date));
-        
-        debug_log("Processing month with carry forward", [
-            'month' => $month,
-            'start_month' => $start_month,
-            'start_day' => $start_day_padded,
-            'days_in_month' => $all_days_in_month
-        ]);
-        
-        // Process each item for this month
-        foreach ($items_data as $item_code => $opening_balance) {
-            // Check if record exists for this month
-            $check_query = "SELECT 1 FROM $table_name WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ? LIMIT 1";
-            $check_stmt = $conn->prepare($check_query);
-            $check_stmt->bind_param("sss", $month, $item_code, $mode);
-            $check_stmt->execute();
-            $check_stmt->store_result();
-            $exists = $check_stmt->num_rows > 0;
-            $check_stmt->close();
+    // Start transaction for all operations
+    $conn->begin_transaction();
+    
+    try {
+        // STEP 1: First, ensure all months have tables and insert base records for all items
+        foreach ($all_months as $month_index => $month) {
+            $table_name = getTableForMonth($conn, $comp_id, $month);
             
-            if ($exists) {
-                // Build update query for ALL days in the month with carry forward across months
-                // CARRY FORWARD LOGIC:
-                // - If this is the start month: First day in range gets opening_balance
-                // - If this is after start month: First day gets previous month's last day's CLOSING
-                // - All subsequent days: OPEN = previous day's CLOSING
-                // - CLOSING = OPEN + PURCHASE - SALES (always recalculate)
-                debug_log("Updating existing record with full carry forward", [
-                    'item_code' => $item_code, 
-                    'month' => $month, 
-                    'opening_balance' => $opening_balance
-                ]);
+            if (!$table_name) {
+                debug_log("Skipping month $month - table not available");
+                continue;
+            }
+            
+            // Ensure columns exist for this month
+            addDayColumnsForMonth($conn, $comp_id, $month, true);
+            
+            // Get days in this month
+            $year_month = explode('-', $month);
+            $year = $year_month[0];
+            $month_num = $year_month[1];
+            $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+            
+            // For each item, ensure a record exists
+            foreach ($items_data as $item_code => $opening_balance) {
+                // Check if record exists for this month
+                $check_query = "SELECT 1 FROM $table_name WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ? LIMIT 1";
+                $check_stmt = $conn->prepare($check_query);
+                $check_stmt->bind_param("sss", $month, $item_code, $mode);
+                $check_stmt->execute();
+                $check_stmt->store_result();
+                $exists = $check_stmt->num_rows > 0;
+                $check_stmt->close();
                 
-                $update_parts = [];
-                $params = [];
-                $types = '';
-                
-                // Determine what OPEN should be for the first day of this month
-                $is_start_month = ($month === $start_month);
-                
-                // Get previous month's data for carry forward
-                $prev_month = date('Y-m', strtotime($month . ' -1 month'));
+                if (!$exists) {
+                    debug_log("Inserting base record for", [
+                        'item_code' => $item_code, 
+                        'month' => $month
+                    ]);
+                    
+                    // Insert base record with zeros for all days
+                    $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
+                    $placeholders = ['?', '?', '?'];
+                    $params = [$month, $item_code, $mode];
+                    $types = 'sss';
+                    
+                    // Add all day columns with zero values
+                    for ($day = 1; $day <= $days_in_month; $day++) {
+                        $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                        $columns[] = "DAY_{$day_padded}_OPEN";
+                        $columns[] = "DAY_{$day_padded}_PURCHASE";
+                        $columns[] = "DAY_{$day_padded}_SALES";
+                        $columns[] = "DAY_{$day_padded}_CLOSING";
+                        
+                        for ($i = 0; $i < 4; $i++) {
+                            $placeholders[] = '?';
+                            $params[] = 0;
+                            $types .= 'i';
+                        }
+                    }
+                    
+                    $insert_query = "INSERT INTO $table_name (" . implode(', ', $columns) . 
+                                  ") VALUES (" . implode(', ', $placeholders) . ")";
+                    
+                    $insert_stmt = $conn->prepare($insert_query);
+                    $insert_stmt->bind_param($types, ...$params);
+                    $insert_stmt->execute();
+                    $insert_stmt->close();
+                }
+            }
+        }
+        
+        // STEP 2: Process each month sequentially to set correct OPEN values based on previous month's CLOSING
+        for ($i = 0; $i < count($all_months); $i++) {
+            $current_month = $all_months[$i];
+            $table_name = getTableForMonth($conn, $comp_id, $current_month);
+            
+            if (!$table_name) continue;
+            
+            $year_month = explode('-', $current_month);
+            $year = $year_month[0];
+            $month_num = $year_month[1];
+            $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month_num, $year);
+            
+            // Determine previous month's closing balance source
+            $prev_table = null;
+            $prev_month_last_day = null;
+            
+            if ($i > 0) {
+                $prev_month = $all_months[$i - 1];
                 $prev_table = getTableForMonth($conn, $comp_id, $prev_month);
-                $prev_month_last_day = '';
                 
-                if ($prev_table && !$is_start_month) {
-                    // Get the last day of previous month
+                if ($prev_table) {
                     $prev_year_month = explode('-', $prev_month);
                     $prev_year = $prev_year_month[0];
                     $prev_month_num = $prev_year_month[1];
                     $prev_days_in_month = cal_days_in_month(CAL_GREGORIAN, $prev_month_num, $prev_year);
                     $prev_month_last_day = str_pad($prev_days_in_month, 2, '0', STR_PAD_LEFT);
                 }
+            }
+            
+            // Process each item
+            foreach ($items_data as $item_code => $opening_balance) {
+                $is_first_month = ($i == 0);
+                $start_day_padded = ($is_first_month) ? date('d', strtotime($start_date)) : '01';
                 
-                // For each day in the month
-                foreach ($all_days_in_month as $day_padded) {
-                    $day_num = intval($day_padded);
-                    
-                    if ($is_start_month && $day_padded === $start_day_padded) {
-                        // This is the first day in the start month where opening balance is set
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
-                        $params[] = $opening_balance;
-                        $types .= 'i';
-                    } elseif (!$is_start_month && $day_padded === '01') {
-                        // This is the first day of a month after the start month
-                        // Need to carry forward from previous month's last day
-                        if ($prev_table && !empty($prev_month_last_day)) {
-                            $update_parts[] = "DAY_{$day_padded}_OPEN = GREATEST(0, COALESCE((SELECT DAY_{$prev_month_last_day}_CLOSING FROM $prev_table WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?), 0))";
-                            $params[] = $prev_month;
-                            $params[] = $item_code;
-                            $params[] = $mode;
-                            $types .= 'sss';
-                        } else {
-                            // No previous month data, use 0
-                            $update_parts[] = "DAY_{$day_padded}_OPEN = 0";
+                // For tracking the running balance
+                $running_balance = 0;
+                
+                // For the first month, we need to know the opening balance
+                if ($is_first_month) {
+                    // Get the opening balance from the items_data
+                    $running_balance = $opening_balance;
+                } else {
+                    // Get the closing balance from previous month's last day
+                    if ($prev_table && $prev_month_last_day) {
+                        $prev_query = "SELECT DAY_{$prev_month_last_day}_CLOSING as prev_closing 
+                                      FROM $prev_table 
+                                      WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?
+                                      LIMIT 1";
+                        $prev_stmt = $conn->prepare($prev_query);
+                        $prev_stmt->bind_param("sss", $prev_month, $item_code, $mode);
+                        $prev_stmt->execute();
+                        $prev_result = $prev_stmt->get_result();
+                        
+                        if ($prev_row = $prev_result->fetch_assoc()) {
+                            $running_balance = (int)$prev_row['prev_closing'];
                         }
-                    } elseif ($day_num > 1) {
-                        // Subsequent days in the same month - use previous day's closing
-                        $prev_day = str_pad($day_num - 1, 2, '0', STR_PAD_LEFT);
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = GREATEST(0, COALESCE(DAY_{$prev_day}_CLOSING, 0))";
-                    } else {
-                        // Day 01 of start month (before the opening balance day) - set to 0
-                        $update_parts[] = "DAY_{$day_padded}_OPEN = 0";
+                        $prev_stmt->close();
+                    }
+                }
+                
+                // Build update query for all days in the month
+                $update_parts = [];
+                $params = [];
+                $types = '';
+                
+                // Process each day in the month
+                for ($day = 1; $day <= $days_in_month; $day++) {
+                    $day_padded = str_pad($day, 2, '0', STR_PAD_LEFT);
+                    
+                    if ($is_first_month && $day == intval($start_day_padded)) {
+                        // This is the start day - set OPEN to opening balance
+                        $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
+                        $params[] = $running_balance;
+                        $types .= 'i';
+                        
+                        // For days before the start day, they should remain 0 (already set)
+                    } elseif ($day == 1 && !$is_first_month) {
+                        // First day of subsequent month - set OPEN to previous month's closing
+                        $update_parts[] = "DAY_{$day_padded}_OPEN = ?";
+                        $params[] = $running_balance;
+                        $types .= 'i';
+                    } elseif ($day > 1) {
+                        // For days after the first, OPEN should be previous day's CLOSING
+                        $prev_day = str_pad($day - 1, 2, '0', STR_PAD_LEFT);
+                        $update_parts[] = "DAY_{$day_padded}_OPEN = DAY_{$prev_day}_CLOSING";
                     }
                     
                     // Always recalculate CLOSING: OPEN + PURCHASE - SALES
@@ -692,7 +735,7 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
                     $update_query = "UPDATE $table_name SET " . implode(', ', $update_parts) . 
                                   " WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
                     
-                    $params[] = $month;
+                    $params[] = $current_month;
                     $params[] = $item_code;
                     $params[] = $mode;
                     $types .= 'sss';
@@ -702,67 +745,18 @@ function updateDailyStockRange($conn, $comp_id, $items_data, $mode, $start_date)
                     $update_stmt->execute();
                     $update_stmt->close();
                 }
-            } else {
-                // Insert new record with ALL days in month
-                debug_log("Inserting new record with full carry forward", [
-                    'item_code' => $item_code, 
-                    'month' => $month, 
-                    'opening_balance' => $opening_balance
-                ]);
-                
-                $columns = ['STK_MONTH', 'ITEM_CODE', 'LIQ_FLAG'];
-                $placeholders = ['?', '?', '?'];
-                $params = [$month, $item_code, $mode];
-                $types = 'sss';
-                
-                $is_start_month = ($month === $start_month);
-                
-                // For insert, we set first day to opening balance and rest to carry forward logic
-                // But since we can't do subqueries easily in INSERT, we'll do a simple insert
-                // and let subsequent UPDATE calls handle the carry forward
-                foreach ($all_days_in_month as $day_padded) {
-                    $day_num = intval($day_padded);
-                    
-                    $columns[] = "DAY_{$day_padded}_OPEN";
-                    $columns[] = "DAY_{$day_padded}_PURCHASE";
-                    $columns[] = "DAY_{$day_padded}_SALES";
-                    $columns[] = "DAY_{$day_padded}_CLOSING";
-                    $placeholders[] = '?';
-                    $placeholders[] = '?';
-                    $placeholders[] = '?';
-                    $placeholders[] = '?';
-                    
-                    if ($is_start_month && $day_padded === $start_day_padded) {
-                        // First day with opening balance
-                        $params[] = $opening_balance;
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = $opening_balance;
-                    } elseif ($day_num == 1) {
-                        // First day of month (not start month) - we'll handle in UPDATE
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
-                    } else {
-                        // Other days - will be handled in UPDATE
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
-                        $params[] = 0;
-                    }
-                    $types .= 'iiii';
-                }
-                
-                $insert_query = "INSERT INTO $table_name (" . implode(', ', $columns) . 
-                              ") VALUES (" . implode(', ', $placeholders) . ")";
-                
-                $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param($types, ...$params);
-                $insert_stmt->execute();
-                $insert_stmt->close();
             }
         }
+        
+        // Commit transaction
+        $conn->commit();
+        debug_log("Successfully updated daily stock with cascade through all months");
+        
+    } catch (Exception $e) {
+        // Rollback on error
+        $conn->rollback();
+        debug_log("Error in updateDailyStockRange", ['error' => $e->getMessage()]);
+        throw $e;
     }
     
     debug_log("Completed updateDailyStockRange");
@@ -2787,7 +2781,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             // Get the relevant months
             $relevant_months = [];
             $start_ts = strtotime($start_date);
-            $end_ts = time();
+            $end_ts = strtotime($fy_dates['end']);
             for ($ts = $start_ts; $ts <= $end_ts; $ts = strtotime('+1 month', $ts)) {
                 $relevant_months[] = date('Y-m', $ts);
             }

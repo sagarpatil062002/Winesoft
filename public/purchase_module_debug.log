@@ -416,3 +416,1246 @@
 [15-Mar-2026 10:25:01 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
 [15-Mar-2026 10:25:01 Europe/Berlin] Found 0 purchase records
 [15-Mar-2026 10:25:01 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 10:44:15 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 10:44:15 Europe/Berlin] Company ID: 5
+[15-Mar-2026 10:44:15 Europe/Berlin] Mode: F
+[15-Mar-2026 10:44:15 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 10:44:15 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 10:44:15 Europe/Berlin] Database connection successful
+[15-Mar-2026 10:44:15 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 10:44:15 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 10:44:15 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 10:44:15 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 10:44:15 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 10:44:15 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 10:44:15 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 10:44:33 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 10:44:33 Europe/Berlin] Company ID: 5
+[15-Mar-2026 10:44:33 Europe/Berlin] Mode: F
+[15-Mar-2026 10:44:33 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 10:44:33 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 10:44:33 Europe/Berlin] Database connection successful
+[15-Mar-2026 10:44:33 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 10:44:33 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 10:44:33 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 10:44:33 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 10:44:33 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 10:44:33 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 10:44:33 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 10:45:38 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 10:45:38 Europe/Berlin] Company ID: 5
+[15-Mar-2026 10:45:38 Europe/Berlin] Mode: F
+[15-Mar-2026 10:45:38 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 10:45:38 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 10:45:38 Europe/Berlin] Database connection successful
+[15-Mar-2026 10:45:38 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 10:45:38 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 10:45:38 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 10:45:38 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 10:45:38 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 10:45:38 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 10:45:38 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 10:56:09 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 10:56:09 Europe/Berlin] Company ID: 5
+[15-Mar-2026 10:56:09 Europe/Berlin] Mode: ALL
+[15-Mar-2026 10:56:09 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 10:56:09 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 10:56:09 Europe/Berlin] Database connection successful
+[15-Mar-2026 10:56:09 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 10:56:09 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 10:56:09 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 10:56:09 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 10:56:09 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 10:56:09 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 10:56:09 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 10:57:05 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 10:57:05 Europe/Berlin] Company ID: 5
+[15-Mar-2026 10:57:05 Europe/Berlin] Mode: ALL
+[15-Mar-2026 10:57:05 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 10:57:05 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 10:57:05 Europe/Berlin] Database connection successful
+[15-Mar-2026 10:57:05 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 10:57:05 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 10:57:05 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 10:57:05 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 10:57:05 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 10:57:05 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 10:57:05 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:22:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:22:24 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:22:24 Europe/Berlin] Mode: F
+[15-Mar-2026 12:22:24 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:22:24 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:22:24 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:22:24 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 12:22:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:22:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:22:24 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:22:24 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:22:24 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:22:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:26:49 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:26:49 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:26:49 Europe/Berlin] Mode: F
+[15-Mar-2026 12:26:49 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:26:49 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:26:49 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:26:49 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 12:26:49 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:26:49 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:26:49 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:26:49 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:26:49 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:26:49 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:55:27 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:55:27 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:55:27 Europe/Berlin] Mode: ALL
+[15-Mar-2026 12:55:27 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:55:27 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:55:27 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:55:27 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 12:55:27 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:55:27 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:55:27 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:55:27 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:55:27 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:55:27 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:55:41 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:55:41 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:55:41 Europe/Berlin] Mode: ALL
+[15-Mar-2026 12:55:41 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:55:41 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:55:41 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:55:41 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 12:55:41 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:55:41 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:55:41 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:55:41 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:55:41 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:55:41 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:56:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:56:25 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:56:25 Europe/Berlin] Mode: ALL
+[15-Mar-2026 12:56:25 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:56:25 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:56:25 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:56:25 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 12:56:26 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:56:26 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:56:26 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:56:26 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:56:26 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:56:26 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:56:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:56:36 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:56:36 Europe/Berlin] Mode: ALL
+[15-Mar-2026 12:56:36 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:56:36 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:56:36 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:56:36 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 12:56:36 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:56:36 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:56:36 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:56:36 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:56:36 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 12:56:36 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:58:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:58:29 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:58:29 Europe/Berlin] Mode: F
+[15-Mar-2026 12:58:29 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:58:29 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:58:29 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:58:29 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 12:58:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:58:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:58:29 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:58:29 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:58:29 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:58:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 12:58:57 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 12:58:57 Europe/Berlin] Company ID: 5
+[15-Mar-2026 12:58:57 Europe/Berlin] Mode: F
+[15-Mar-2026 12:58:57 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 12:58:57 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 12:58:57 Europe/Berlin] Database connection successful
+[15-Mar-2026 12:58:57 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 12:58:57 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 12:58:57 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 12:58:57 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 12:58:57 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 12:58:57 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 12:58:57 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:00:54 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:00:54 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:00:54 Europe/Berlin] Mode: F
+[15-Mar-2026 13:00:54 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:00:54 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:00:54 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:00:54 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:00:54 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:00:54 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:00:54 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:00:54 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:00:54 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 13:00:54 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:01:11 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:01:11 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:01:11 Europe/Berlin] Mode: F
+[15-Mar-2026 13:01:11 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:01:11 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:01:11 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:01:11 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:01:11 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:01:11 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:01:11 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:01:11 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:01:11 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 13:01:11 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:04:03 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:04:03 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:04:03 Europe/Berlin] Mode: F
+[15-Mar-2026 13:04:03 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:04:03 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:04:03 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:04:03 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:04:03 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:04:03 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:04:03 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:04:03 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:04:03 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 13:04:03 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:52:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:52:37 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:52:37 Europe/Berlin] Mode: F
+[15-Mar-2026 13:52:37 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:52:37 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:52:37 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:52:37 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:52:37 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:52:37 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:52:37 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:52:37 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:52:37 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 13:52:37 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:53:05 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:53:05 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:53:05 Europe/Berlin] Mode: F
+[15-Mar-2026 13:53:05 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:53:05 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:53:05 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:53:05 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:53:05 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:53:05 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:53:05 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:53:05 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:53:05 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 13:53:05 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 13:53:38 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 13:53:38 Europe/Berlin] Company ID: 5
+[15-Mar-2026 13:53:38 Europe/Berlin] Mode: F
+[15-Mar-2026 13:53:38 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 13:53:38 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 13:53:38 Europe/Berlin] Database connection successful
+[15-Mar-2026 13:53:38 Europe/Berlin] Initial filters - Company: 5, Mode: F
+[15-Mar-2026 13:53:38 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 13:53:38 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 13:53:38 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 13:53:38 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 13:53:38 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 13:53:38 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:06:52 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:06:52 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:06:52 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:06:52 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:06:52 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:06:52 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:06:52 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:06:52 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:06:52 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:06:52 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:06:52 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:06:52 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:06:52 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:07:55 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:07:55 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:07:55 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:07:55 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:07:55 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:07:55 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:07:55 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:07:55 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:07:55 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:07:55 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:07:55 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:07:55 Europe/Berlin] Found 44 purchase records
+[15-Mar-2026 14:07:55 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:09:49 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:09:49 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:09:49 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:09:49 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:09:49 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:09:49 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:09:49 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:09:49 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:09:49 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:09:49 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:09:49 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:09:49 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:09:49 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:11:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:11:19 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:11:19 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:11:19 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:11:19 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:11:19 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:11:19 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:11:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:11:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:11:19 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:11:19 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:11:19 Europe/Berlin] Found 4 purchase records
+[15-Mar-2026 14:11:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:12:17 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:12:17 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:12:17 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:12:17 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:12:17 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:12:17 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:12:17 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:12:17 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:12:17 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:12:17 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:12:17 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:12:17 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:12:17 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:17:32 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:32 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:32 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:17:32 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:32 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:32 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:33 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:33 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:33 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:17:33 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:33 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:33 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:34 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:34 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:34 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:17:34 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:34 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:34 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:35 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:35 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:35 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:17:35 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:35 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:35 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:36 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:36 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:17:36 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:36 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:36 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:37 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:37 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:37 Europe/Berlin] Mode: F
+[15-Mar-2026 14:17:37 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:37 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:37 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:17:38 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:17:38 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:17:38 Europe/Berlin] Mode: F
+[15-Mar-2026 14:17:38 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:17:38 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:17:38 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown database 'winesoft' in C:\xampp\htdocs\Winesoft\config\db.php:7
+Stack trace:
+#0 C:\xampp\htdocs\Winesoft\config\db.php(7): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'winesoft')
+#1 C:\xampp\htdocs\Winesoft\public\purchase_module.php(24): include_once('C:\\xampp\\htdocs...')
+#2 {main}
+  thrown in C:\xampp\htdocs\Winesoft\config\db.php on line 7
+[15-Mar-2026 14:18:19 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:19 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:19 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:19 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:19 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:19 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:19 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:19 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:19 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:19 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:19 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:19 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:19 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:18:29 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:29 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:29 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:29 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:29 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:29 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:29 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:29 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:29 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:29 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:29 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:29 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:29 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:18:31 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:31 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:31 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:31 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:31 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:31 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:31 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:31 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:31 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:31 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:31 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:31 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:31 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:18:33 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:33 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:33 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:33 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:33 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:33 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:33 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:33 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:33 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:33 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:33 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:33 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:33 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:18:41 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:41 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:41 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:41 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:41 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:41 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:41 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:41 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:41 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:41 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:41 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:41 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:41 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:18:58 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:18:58 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:18:58 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:18:58 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:18:58 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:18:58 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:18:58 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:18:58 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:18:58 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:18:58 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:18:58 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:18:58 Europe/Berlin] Found 11 purchase records
+[15-Mar-2026 14:18:58 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:21:20 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:21:20 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:21:20 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:21:20 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:21:20 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:21:20 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:21:20 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:21:20 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:21:20 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:21:20 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:21:20 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:21:20 Europe/Berlin] Found 1 purchase records
+[15-Mar-2026 14:21:20 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:21:26 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:21:26 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:21:26 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:21:26 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:21:26 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:21:26 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:21:26 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:21:26 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:21:26 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:21:26 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:21:26 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:21:26 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:21:26 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:22:14 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:22:14 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:22:14 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:22:14 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:22:14 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:22:14 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:22:14 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:22:14 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:22:14 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:22:14 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:22:14 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:22:14 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:22:14 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:23:04 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:23:04 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:23:04 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:23:04 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:23:04 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:23:04 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:23:04 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:23:04 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:23:04 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:23:04 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:23:04 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:23:04 Europe/Berlin] Found 43 purchase records
+[15-Mar-2026 14:23:04 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:24:28 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:24:28 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:24:28 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:24:28 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:24:28 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:24:28 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:24:28 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:24:28 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:24:28 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:24:28 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:24:28 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:24:28 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:24:28 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:29:24 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:29:24 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:29:24 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:29:24 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:29:24 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:29:24 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:29:24 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:29:24 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:29:24 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:29:24 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:29:24 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:29:24 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:29:24 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:30:59 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:30:59 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:30:59 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:30:59 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:30:59 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:30:59 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:30:59 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:30:59 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:30:59 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:30:59 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:30:59 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:30:59 Europe/Berlin] Found 43 purchase records
+[15-Mar-2026 14:30:59 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:40:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:40:25 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:40:25 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:40:25 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:40:25 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:40:25 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:40:25 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:40:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:40:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:40:25 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:40:25 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:40:25 Europe/Berlin] Found 8 purchase records
+[15-Mar-2026 14:40:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:41:01 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:41:01 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:41:01 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:41:01 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:41:01 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:41:01 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:41:01 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:41:01 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:41:01 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:41:01 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:41:01 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:41:01 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:41:01 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:41:02 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:41:02 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:41:02 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:41:02 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:41:02 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:41:02 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:41:02 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:41:02 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:41:02 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:41:02 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:41:02 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:41:02 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:41:02 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:43:14 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:43:14 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:43:14 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:43:14 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:43:14 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:43:14 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:43:14 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:43:14 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:43:14 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:43:14 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:43:14 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:43:14 Europe/Berlin] Found 0 purchase records
+[15-Mar-2026 14:43:14 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:44:21 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:44:21 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:44:21 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:44:21 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:44:21 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:44:21 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:44:21 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:44:21 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:44:21 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:44:21 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:44:21 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:44:21 Europe/Berlin] Found 18 purchase records
+[15-Mar-2026 14:44:21 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:45:36 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:45:36 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:45:36 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:45:36 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:45:36 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:45:36 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:45:36 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:45:36 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:45:36 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:45:36 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:45:36 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:45:36 Europe/Berlin] Found 32 purchase records
+[15-Mar-2026 14:45:36 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:46:31 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:46:31 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:46:31 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:46:31 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:46:31 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:46:31 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:46:31 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:46:31 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:46:31 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:46:31 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:46:31 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:46:31 Europe/Berlin] Found 42 purchase records
+[15-Mar-2026 14:46:31 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:47:31 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:47:31 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:47:31 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:47:31 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:47:31 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:47:31 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:47:31 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:47:31 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:47:31 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:47:31 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:47:31 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:47:31 Europe/Berlin] Found 59 purchase records
+[15-Mar-2026 14:47:31 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:48:32 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:48:32 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:48:32 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:48:32 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:48:32 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:48:32 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:48:32 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:48:32 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:48:32 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:48:32 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:48:32 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:48:32 Europe/Berlin] Found 67 purchase records
+[15-Mar-2026 14:48:32 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:49:25 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:49:25 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:49:25 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:49:25 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:49:25 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:49:25 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:49:25 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:49:25 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:49:25 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:49:25 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:49:25 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:49:25 Europe/Berlin] Found 72 purchase records
+[15-Mar-2026 14:49:25 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:50:02 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:50:02 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:50:02 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:50:02 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:50:02 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:50:02 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:50:02 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:50:02 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:50:02 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:50:02 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:50:02 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:50:02 Europe/Berlin] Found 80 purchase records
+[15-Mar-2026 14:50:02 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:50:31 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:50:31 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:50:31 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:50:31 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:50:31 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:50:31 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:50:31 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:50:31 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:50:31 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:50:31 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:50:31 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:50:31 Europe/Berlin] Found 87 purchase records
+[15-Mar-2026 14:50:31 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:51:20 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:51:20 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:51:20 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:51:20 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:51:20 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:51:20 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:51:20 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:51:20 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:51:20 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:51:20 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:51:20 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:51:20 Europe/Berlin] Found 90 purchase records
+[15-Mar-2026 14:51:20 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:51:56 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:51:56 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:51:56 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:51:56 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:51:56 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:51:56 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:51:56 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:51:56 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:51:56 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:51:56 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:51:56 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:51:56 Europe/Berlin] Found 104 purchase records
+[15-Mar-2026 14:51:56 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:52:22 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:52:22 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:52:22 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:52:22 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:52:22 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:52:22 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:52:22 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:52:22 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:52:22 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:52:22 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:52:22 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:52:22 Europe/Berlin] Found 112 purchase records
+[15-Mar-2026 14:52:22 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
+[15-Mar-2026 14:52:45 Europe/Berlin] === PURCHASE MODULE DEBUG START ===
+[15-Mar-2026 14:52:45 Europe/Berlin] Company ID: 5
+[15-Mar-2026 14:52:45 Europe/Berlin] Mode: ALL
+[15-Mar-2026 14:52:45 Europe/Berlin] Session CompID: 5
+[15-Mar-2026 14:52:45 Europe/Berlin] Session User ID: 5
+[15-Mar-2026 14:52:45 Europe/Berlin] Database connection successful
+[15-Mar-2026 14:52:45 Europe/Berlin] Initial filters - Company: 5, Mode: ALL
+[15-Mar-2026 14:52:45 Europe/Berlin] Final Query: SELECT p.*, s.DETAILS as supplier_name,
+               COALESCE(p.TPNO, p.AUTO_TPNO) as TP_NO
+               FROM tblpurchases p
+               LEFT JOIN tblsupplier s ON TRIM(p.SUBCODE) = TRIM(s.CODE)
+               WHERE p.CompID = ?
+               ORDER BY p.VOC_NO DESC
+[15-Mar-2026 14:52:45 Europe/Berlin] Parameters: Array
+(
+    [0] => 5
+)
+
+[15-Mar-2026 14:52:45 Europe/Berlin] Parameter Types: i
+[15-Mar-2026 14:52:45 Europe/Berlin] Sort Column: p.VOC_NO, Sort Order: DESC
+[15-Mar-2026 14:52:45 Europe/Berlin] Found 117 purchase records
+[15-Mar-2026 14:52:45 Europe/Berlin] === PURCHASE MODULE DEBUG END ===
