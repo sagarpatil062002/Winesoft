@@ -75,6 +75,8 @@ if (isset($_GET['tp_error']) && $_GET['tp_error'] == 1) {
 include_once "../config/db.php";
 include_once "stock_functions.php";
 include_once "components/financial_year.php";
+// At the top of purchases.php, after including financial_year.php
+require_once "components/financial_year_init.php";
 debugLog("Database connection included");
 
 // Extract financial year variables from session
@@ -1580,7 +1582,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-<?php FinancialYearModule::autoApplyConstraints(); ?>
 <style>
 .table-container {
     overflow-x: auto;

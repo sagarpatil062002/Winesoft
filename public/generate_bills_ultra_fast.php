@@ -1,28 +1,43 @@
 <?php
-// generate_bills_ultra_fast.php - HYPER-OPTIMIZED WITH SMART BATCHING
-// Automatically detects memory pressure and processes in batches
-// Handles any number of items without increasing memory limits
+// generate_bills_ultra_fast.php - HYPER-OPTIMIZED FOR 1000+ BILLS IN < 3 SECONDS
+// Includes all features: bills, cash memos, stock updates with real-time progress
+// NOW WITH PROPER VOLUME LIMIT ENFORCEMENT USING EXISTING FUNCTIONS
+// NOW WITH DRY DAY FILTERING
 session_start();
 
-// Error reporting - minimal for production
+// Error reporting - only log errors, don't display
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', 0);
-ini_set('memory_limit', '512M'); // Reasonable limit, batching will handle rest
-ini_set('max_execution_time', 600); // 10 minutes max for large batches
+ini_set('memory_limit', '2048M'); // 2GB memory for large operations
+ini_set('max_execution_time', 300); // 5 minutes max
 
 // Include required files
 require_once "../config/db.php";
 require_once "volume_limit_utils.php";
 require_once "cash_memo_functions.php";
-require_once "drydays_functions.php";
+require_once "drydays_functions.php"; // ADDED: For dry day checking
 
-// ============================================================================
-// ENHANCED LOGGING FUNCTIONS
-// ============================================================================
+// Minimal logging function - for critical errors and info
 function logMessage($message, $level = 'INFO') {
+    // Always log errors, but also log INFO and DEBUG when needed
     $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
     $timestamp = date('Y-m-d H:i:s');
     $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
+    
+    // Create logs directory if it doesn't exist
+    $logDir = dirname($logFile);
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+    
+    file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
+}
+
+// DEBUG: Enhanced logging function to trace distribution flow
+function logDistribution($step, $item_code, $data) {
+    $logFile = '../logs/distribution_debug_' . date('Y-m-d') . '.log';
+    $timestamp = date('Y-m-d H:i:s.') . sprintf('%03d', (microtime(true) - floor(microtime(true))) * 1000);
+    $logMessage = "[$timestamp] [DIST-$step] Item: $item_code | " . json_encode($data) . PHP_EOL;
     
     $logDir = dirname($logFile);
     if (!is_dir($logDir)) {
@@ -32,196 +47,179 @@ function logMessage($message, $level = 'INFO') {
     file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
 }
 
-function logDebug($message, $data = null) {
-    $dataStr = $data !== null ? ' | Data: ' . json_encode($data) : '';
-    logMessage($message . $dataStr, 'DEBUG');
-}
-
 // ============================================================================
-// SMART BATCH PROCESSING CONFIGURATION
+// STEP 3.1: CUMULATIVE STOCK VALIDATION FUNCTION
 // ============================================================================
-define('TARGET_MEMORY_USAGE', 400 * 1024 * 1024); // 400MB target memory usage
-define('MIN_CHUNK_SIZE', 3);   // Minimum 3 items per chunk
-define('MAX_CHUNK_SIZE', 15);  // Maximum 15 items per chunk
-define('MEMORY_SAFETY_MARGIN', 0.8); // Use 80% of available memory
-
-// ============================================================================
-// MEMORY MONITORING FUNCTIONS
-// ============================================================================
-function getMemoryUsage() {
-    return memory_get_usage(true);
-}
-
-function getMemoryLimit() {
-    $limit = ini_get('memory_limit');
-    $unit = strtoupper(substr($limit, -1));
-    $value = (int)$limit;
+// Validates that cumulative sales up to each date don't exceed closing stock
+// NOTE: Skips validation for historical dates (not current month) since stock data may not be accurate
+function validateCumulativeStock($conn, $item_code, $distribution, $date_array, $comp_id, $daily_stock_table) {
+    $cumulative = 0;
+    $current_month = date('Y-m');
     
-    switch($unit) {
-        case 'G': return $value * 1024 * 1024 * 1024;
-        case 'M': return $value * 1024 * 1024;
-        case 'K': return $value * 1024;
-        default: return $value;
+    foreach ($date_array as $index => $date) {
+        $qty = $distribution[$index] ?? 0;
+        $cumulative += $qty;
+        
+        // Only validate if there's a quantity to sell on this date
+        if ($qty > 0) {
+            // Get the date's month
+            $month_year = date('Y-m', strtotime($date));
+            
+            // SKIP validation for historical dates (not current month)
+            // Historical stock data may not be accurate, so we trust the UI distribution
+            if ($month_year !== $current_month) {
+                logMessage("DEBUG: Skipping stock validation for historical date $date (month: $month_year)", 'DEBUG');
+                continue;
+            }
+            
+            // Get closing stock for this date
+            $day_num = sprintf('%02d', date('d', strtotime($date)));
+            $closing_column = "DAY_{$day_num}_CLOSING";
+            
+            // Check if we need to use a different table for this month
+            $table_to_use = $daily_stock_table;
+            if ($month_year !== $current_month) {
+                $date_month_short = date('m', strtotime($date));
+                $date_year_short = date('y', strtotime($date));
+                $table_to_use = "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
+            }
+            
+            // Check if table exists
+            $check_table = "SHOW TABLES LIKE '$table_to_use'";
+            $table_exists = $conn->query($check_table)->num_rows > 0;
+            
+            if (!$table_exists) {
+                // Table doesn't exist, assume 0 stock
+                $closing_stock = 0;
+            } else {
+                $query = "SELECT $closing_column FROM $table_to_use WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("ss", $month_year, $item_code);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                
+                if ($result->num_rows > 0) {
+                    $row = $result->fetch_assoc();
+                    $closing_stock = $row[$closing_column] ?? 0;
+                } else {
+                    $closing_stock = 0;
+                }
+                $stmt->close();
+            }
+            
+            // Check if cumulative sales exceed closing stock
+            if ($cumulative > $closing_stock) {
+                return [
+                    'valid' => false,
+                    'date' => $date,
+                    'cumulative' => $cumulative,
+                    'max' => $closing_stock
+                ];
+            }
+        }
     }
-}
-
-function getMemoryUsagePercent() {
-    $limit = getMemoryLimit();
-    $current = memory_get_usage(true);
-    return ($current / $limit) * 100;
-}
-
-function getAvailableMemory() {
-    $limit = getMemoryLimit();
-    $current = memory_get_usage(true);
-    return ($limit - $current) * MEMORY_SAFETY_MARGIN;
-}
-
-function calculateOptimalChunkSize($item_count, $sample_size) {
-    if ($item_count <= MIN_CHUNK_SIZE) {
-        return $item_count;
-    }
     
-    $available_memory = getAvailableMemory();
-    $estimated_per_item = $sample_size * 2; // Add overhead
-    
-    // Calculate how many items we can process with available memory
-    $optimal_size = floor($available_memory / $estimated_per_item);
-    
-    // Clamp between MIN and MAX
-    $optimal_size = max(MIN_CHUNK_SIZE, min($optimal_size, MAX_CHUNK_SIZE));
-    
-    // Don't exceed total items
-    return min($optimal_size, $item_count);
+    return ['valid' => true];
 }
 
 // Set headers
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // ============================================================================
-// INITIALIZE PROGRESS TRACKING
+// STEP 1: MAXIMUM PERFORMANCE DATABASE SETTINGS
+// ============================================================================
+try {
+    $conn->query("SET SESSION unique_checks = 0");
+    $conn->query("SET SESSION foreign_key_checks = 0");
+    $conn->query("SET SESSION sql_log_bin = 0");
+    $conn->query("SET autocommit = 0");
+    $conn->query("SET SESSION bulk_insert_buffer_size = 1024 * 1024 * 1024"); // 1GB buffer
+    $conn->query("SET SESSION wait_timeout = 28800");
+    $conn->query("SET SESSION innodb_flush_log_at_trx_commit = 2");
+    $conn->query("SET SESSION sync_binlog = 0");
+    $conn->query("SET SESSION innodb_autoinc_lock_mode = 2");
+} catch (Exception $e) {
+    // Continue even if some settings fail
+}
+
+// ============================================================================
+// STEP 2: INITIALIZE PROGRESS TRACKING
 // ============================================================================
 $progress_key = 'bill_progress_' . session_id() . '_' . uniqid();
 $_SESSION[$progress_key] = [
     'total_bills' => 0,
     'current_bill' => 0,
     'status' => 'initializing',
-    'message' => 'Initializing smart batch processor...',
+    'message' => 'Initializing hyper-fast bill generation...',
     'percentage' => 0,
     'bills_generated' => [],
     'start_time' => microtime(true),
-    'chunks_processed' => 0,
-    'total_chunks' => 0,
+    'last_update' => time(),
+    'speed' => 0,
     'items_processed' => 0,
-    'total_items' => 0,
-    'memory_usage' => []
+    'total_items' => 0
 ];
 
-// ============================================================================
-// VALIDATE REQUEST
-// ============================================================================
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['generate_bills'])) {
-    echo json_encode(['success' => false, 'message' => 'Invalid request - missing generate_bills parameter']);
+    echo json_encode(['success' => false, 'message' => 'Invalid request']);
     exit;
 }
 
-$response = ['success' => false, 'message' => ''];
+$response = ['success' => false, 'message' => '', 'total_amount' => 0, 'bill_count' => 0];
 $start_time = microtime(true);
-$all_bills = [];
-$all_generated_bills = [];
-$total_amount = 0;
 
 try {
-    // Log start
-    logMessage("=== SMART BATCH BILL GENERATION START ===", 'INFO');
-    
     // ============================================================================
-    // GET BASIC PARAMETERS
+    // STEP 3: GET INPUT PARAMETERS
     // ============================================================================
     $start_date = $_POST['start_date'] ?? '';
     $end_date = $_POST['end_date'] ?? '';
     
-    // Ensure dates are in correct order
+    // FIX: Ensure start_date is before end_date (swap if needed)
     if (!empty($start_date) && !empty($end_date) && strtotime($start_date) > strtotime($end_date)) {
         $temp = $start_date;
         $start_date = $end_date;
         $end_date = $temp;
-        logMessage("Date range swapped: $start_date to $end_date", 'INFO');
+        logMessage("Date range was swapped: start_date=$start_date, end_date=$end_date", 'INFO');
     }
     
     $mode = $_POST['mode'] ?? 'F';
-    
-    // Validate session data
-    if (!isset($_SESSION['CompID'])) throw new Exception("User not logged in - missing CompID");
-    if (!isset($_SESSION['user_id'])) throw new Exception("User not logged in - missing user_id");
-    if (!isset($_SESSION['FIN_YEAR_ID'])) throw new Exception("Financial year not set");
-    
     $comp_id = (int)$_SESSION['CompID'];
     $user_id = (int)$_SESSION['user_id'];
-    $fin_year_id = $_SESSION['FIN_YEAR_ID'];
+    $fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? '';
+    $items = $_POST['items'] ?? [];
+    $distributions = $_POST['distribution'] ?? []; // NEW: Get saved distributions
     
-    logDebug("Parameters", [
-        'start_date' => $start_date,
-        'end_date' => $end_date,
-        'mode' => $mode,
-        'comp_id' => $comp_id,
-        'user_id' => $user_id
-    ]);
+    // DEBUG: Log what was received
+    logMessage("=== ULTRA FAST BILL GEN START ===", 'INFO');
+    logMessage("Received " . count($items) . " items and " . count($distributions) . " saved distributions", 'INFO');
+    logMessage("Items received: " . implode(', ', array_keys($items)), 'DEBUG');
     
-    // ============================================================================
-    // COLLECT ALL ITEMS AND DISTRIBUTIONS
-    // ============================================================================
-    $all_items = [];
-    $all_distributions = [];
-    
-    // Parse items from POST
-    if (isset($_POST['items']) && is_array($_POST['items'])) {
-        $all_items = $_POST['items'];
-        logDebug("Found items array in POST[items]", ['count' => count($all_items)]);
-    } else {
-        // Try to parse individual items[CODE] keys
-        foreach ($_POST as $key => $value) {
-            if (strpos($key, 'items[') === 0) {
-                preg_match('/items\[(.*?)\]/', $key, $matches);
-                if (isset($matches[1])) {
-                    $all_items[$matches[1]] = intval($value);
-                }
-            }
+    // DEBUG: Log raw distribution data
+    if (!empty($distributions)) {
+        logMessage("Distribution keys received: " . implode(', ', array_keys($distributions)), 'DEBUG');
+        foreach ($distributions as $code => $dist) {
+            $distType = gettype($dist);
+            $distPreview = is_array($dist) ? json_encode(array_slice($dist, 0, 5)) : (is_string($dist) ? substr($dist, 0, 100) : $dist);
+            logMessage("Distribution for $code (type: $distType): $distPreview", 'DEBUG');
         }
-        logDebug("Parsed items from individual keys", ['count' => count($all_items)]);
-    }
-    
-    // Parse distributions from POST
-    if (isset($_POST['distribution']) && is_array($_POST['distribution'])) {
-        $all_distributions = $_POST['distribution'];
-        logDebug("Found distributions array in POST[distribution]", ['count' => count($all_distributions)]);
     } else {
-        // Try to parse individual distribution[CODE] keys
-        foreach ($_POST as $key => $value) {
-            if (strpos($key, 'distribution[') === 0) {
-                preg_match('/distribution\[(.*?)\]/', $key, $matches);
-                if (isset($matches[1])) {
-                    $all_distributions[$matches[1]] = $value;
-                }
-            }
-        }
-        logDebug("Parsed distributions from individual keys", ['count' => count($all_distributions)]);
+        logMessage("WARNING: No distributions received in POST data!", 'INFO');
     }
     
-    $total_items = count($all_items);
-    if ($total_items == 0) {
-        throw new Exception("No items to process");
+    if (empty($start_date) || empty($end_date) || empty($items)) {
+        throw new Exception("Missing required parameters");
     }
     
-    logMessage("Total items received: $total_items", 'INFO');
-    
-    // Update progress
-    $_SESSION[$progress_key]['total_items'] = $total_items;
-    $_SESSION[$progress_key]['message'] = "Received $total_items items, analyzing...";
+    $_SESSION[$progress_key]['total_items'] = count($items);
+    $_SESSION[$progress_key]['status'] = 'processing';
+    $_SESSION[$progress_key]['message'] = 'Processing ' . count($items) . ' items...';
     
     // ============================================================================
-    // CREATE DATE ARRAY
+    // STEP 4: CREATE DATE ARRAY (ULTRA-FAST)
     // ============================================================================
     $date_array = [];
     $begin = new DateTime($start_date);
@@ -236,534 +234,89 @@ try {
     $days_count = count($date_array);
     
     if ($days_count == 0) {
-        throw new Exception("Invalid date range - no days");
+        throw new Exception("Invalid date range");
     }
     
-    logDebug("Date range created", ['days' => $days_count, 'first' => $date_array[0], 'last' => end($date_array)]);
-    
     // ============================================================================
-    // GET AVAILABLE DATES (EXCLUDING DRY DAYS)
+    // STEP 5: GET AVAILABLE DATES (EXCLUDING DRY DAYS) - NEW!
     // ============================================================================
     $dryDaysManager = new DryDaysManager($conn);
     $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
     $dry_dates = array_keys($dry_days);
     
-    $available_dates = array_diff($date_array, $dry_dates);
-    $available_dates = array_values($available_dates);
-    
-    if (empty($available_dates)) {
-        throw new Exception("No available dates - all are dry days");
+    // Get available dates (exclude dry days)
+    $available_dates = [];
+    foreach ($date_array as $date) {
+        if (!in_array($date, $dry_dates)) {
+            $available_dates[] = $date;
+        }
     }
     
-    logMessage("Date range: $start_date to $end_date, Days: $days_count, Available: " . count($available_dates), 'INFO');
+    // If no available dates, throw error
+    if (empty($available_dates)) {
+        throw new Exception("No available dates in selected range - all dates are dry days!");
+    }
+    
+    logMessage("Date range: $start_date to $end_date, Total days: $days_count, Dry days: " . count($dry_dates) . ", Available days: " . count($available_dates), 'INFO');
     
     // ============================================================================
-    // LOAD ALL ITEM MASTER DATA (DO THIS ONCE)
+    // STEP 6: SINGLE QUERY TO LOAD ALL MASTER DATA
     // ============================================================================
-    $item_codes = array_keys($all_items);
+    $item_codes = array_keys($items);
     $item_cache = [];
+    $items_data = [];
     
     if (!empty($item_codes)) {
         $placeholders = implode(',', array_fill(0, count($item_codes), '?'));
         $types = str_repeat('s', count($item_codes));
         
-        $item_query = "SELECT CODE, DETAILS, RPRICE, LIQ_FLAG FROM tblitemmaster WHERE CODE IN ($placeholders)";
+        // Combined query for all item data
+        $item_query = "SELECT im.CODE, 
+                              COALESCE(NULLIF(im.Print_Name, ''), im.DETAILS) as display_name,
+                              im.DETAILS, im.DETAILS2, im.RPRICE, im.LIQ_FLAG,
+                              im.CLASS as class_code
+                       FROM tblitemmaster im
+                       WHERE im.CODE IN ($placeholders)";
+        
         $item_stmt = $conn->prepare($item_query);
-        
-        if (!$item_stmt) {
-            throw new Exception("Failed to prepare item query: " . $conn->error);
-        }
-        
-        $item_stmt->bind_param($types, ...$item_codes);
-        $item_stmt->execute();
-        $item_result = $item_stmt->get_result();
-        
-        while ($row = $item_result->fetch_assoc()) {
-            $item_cache[$row['CODE']] = $row;
-        }
-        $item_stmt->close();
-        
-        logDebug("Loaded item data", ['found' => count($item_cache), 'missing' => $total_items - count($item_cache)]);
-    }
-    
-    // ============================================================================
-    // ESTIMATE MEMORY PER ITEM FOR SMART BATCHING
-    // ============================================================================
-    // Take a sample to estimate memory usage
-    $sample_item_code = array_key_first($all_items);
-    $sample_item = $all_items[$sample_item_code];
-    $sample_dist = $all_distributions[$sample_item_code] ?? null;
-    
-    $sample_size = strlen(serialize($sample_item));
-    if ($sample_dist) {
-        $sample_size += strlen(serialize($sample_dist));
-    }
-    
-    $estimated_memory_per_item = max(1024, $sample_size * 3); // At least 1KB, with overhead
-    
-    logMessage("Memory analysis - Current usage: " . round(getMemoryUsage() / 1024 / 1024, 2) . "MB", 'INFO');
-    logMessage("Memory analysis - Estimated per item: " . round($estimated_memory_per_item / 1024, 2) . "KB", 'INFO');
-    logMessage("Memory analysis - Available memory: " . round(getAvailableMemory() / 1024 / 1024, 2) . "MB", 'INFO');
-    
-    // ============================================================================
-    // CALCULATE OPTIMAL CHUNK SIZE
-    // ============================================================================
-    $chunk_size = calculateOptimalChunkSize($total_items, $estimated_memory_per_item);
-    $total_chunks = ceil($total_items / $chunk_size);
-    
-    $_SESSION[$progress_key]['total_chunks'] = $total_chunks;
-    $_SESSION[$progress_key]['message'] = "Processing $total_items items in $total_chunks batches of ~$chunk_size items";
-    
-    logMessage("Smart batching: $total_items items into $total_chunks chunks of ~$chunk_size items", 'INFO');
-    
-    // ============================================================================
-    // PROCESS ITEMS IN BATCHES
-    // ============================================================================
-    $item_keys = array_keys($all_items);
-    $chunks = array_chunk($item_keys, $chunk_size);
-    $all_daily_sales_data = [];
-    $all_items_data = [];
-    $date_index_map = array_flip($date_array);
-    $total_processed = 0;
-    
-    foreach ($chunks as $chunk_index => $chunk_item_keys) {
-        $chunk_number = $chunk_index + 1;
-        $chunk_items = [];
-        $chunk_distributions = [];
-        
-        // Build chunk data
-        foreach ($chunk_item_keys as $code) {
-            if (isset($all_items[$code])) {
-                $chunk_items[$code] = $all_items[$code];
+        if ($item_stmt) {
+            $item_stmt->bind_param($types, ...$item_codes);
+            $item_stmt->execute();
+            $item_result = $item_stmt->get_result();
+            while ($row = $item_result->fetch_assoc()) {
+                $item_cache[$row['CODE']] = $row;
+                $items_data[$row['CODE']] = [
+                    'rate' => (float)$row['RPRICE'],
+                    'name' => $row['display_name'] ?? $row['DETAILS'],
+                    'details2' => $row['DETAILS2'] ?? '',
+                    'liq_flag' => $row['LIQ_FLAG'] ?? $mode
+                ];
             }
-            if (isset($all_distributions[$code])) {
-                $chunk_distributions[$code] = $all_distributions[$code];
-            }
-        }
-        
-        $chunk_item_count = count($chunk_items);
-        $total_processed += $chunk_item_count;
-        
-        // Update progress
-        $_SESSION[$progress_key]['chunks_processed'] = $chunk_index;
-        $_SESSION[$progress_key]['message'] = "Processing batch $chunk_number of $total_chunks ($chunk_item_count items)...";
-        $_SESSION[$progress_key]['percentage'] = round(($chunk_index / $total_chunks) * 40);
-        
-        // Record memory before chunk
-        $mem_before = getMemoryUsage();
-        
-        logMessage("Processing batch $chunk_number with $chunk_item_count items", 'INFO');
-        logDebug("Memory before batch $chunk_number", round($mem_before / 1024 / 1024, 2) . "MB");
-        
-        // Process this chunk
-        $chunk_result = processItemChunk(
-            $conn,
-            $chunk_items,
-            $chunk_distributions,
-            $item_cache,
-            $date_array,
-            $available_dates,
-            $days_count,
-            $date_index_map,
-            $mode
-        );
-        
-        // Merge results
-        foreach ($chunk_result['daily_sales_data'] as $code => $distribution) {
-            $all_daily_sales_data[$code] = $distribution;
-        }
-        
-        foreach ($chunk_result['items_data'] as $code => $data) {
-            $all_items_data[$code] = $data;
-        }
-        
-        // Free memory
-        unset($chunk_result);
-        unset($chunk_items);
-        unset($chunk_distributions);
-        
-        // Force garbage collection
-        if (function_exists('gc_collect_cycles')) {
-            gc_collect_cycles();
-        }
-        
-        // Record memory after chunk
-        $mem_after = getMemoryUsage();
-        $mem_used = $mem_after - $mem_before;
-        
-        logDebug("Memory after batch $chunk_number", [
-            'used' => round($mem_used / 1024 / 1024, 2) . "MB",
-            'total' => round($mem_after / 1024 / 1024, 2) . "MB",
-            'percent' => round(getMemoryUsagePercent(), 2) . "%"
-        ]);
-        
-        // Store memory stats for progress
-        $_SESSION[$progress_key]['memory_usage'][] = [
-            'batch' => $chunk_number,
-            'percent' => round(getMemoryUsagePercent(), 2)
-        ];
-        
-        // Check memory and adjust if needed
-        $memory_percent = getMemoryUsagePercent();
-        if ($memory_percent > 70 && $chunk_index < $total_chunks - 1) {
-            $remaining_items = $total_items - $total_processed;
-            $new_chunk_size = max(MIN_CHUNK_SIZE, floor($chunk_size * 0.6));
-            
-            logMessage("High memory usage ({$memory_percent}%), adjusting chunk size to $new_chunk_size for remaining $remaining_items items", 'WARNING');
-            
-            // Rebuild remaining chunks with smaller size
-            $remaining_keys = array_slice($item_keys, $total_processed);
-            $chunks = array_chunk($remaining_keys, $new_chunk_size);
-            $total_chunks = $chunk_index + 1 + count($chunks);
-            
-            $_SESSION[$progress_key]['total_chunks'] = $total_chunks;
-            $_SESSION[$progress_key]['message'] = "Memory high, adjusted to smaller batches...";
-        }
-    }
-    
-    logMessage("All batches processed successfully", 'INFO');
-    logMessage("Total items processed: " . count($all_items_data), 'INFO');
-    
-    // ============================================================================
-    // GENERATE BILLS FROM ALL PROCESSED DATA
-    // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Generating bills from all batches...';
-    $_SESSION[$progress_key]['percentage'] = 45;
-    
-    if (empty($all_items_data)) {
-        throw new Exception("No valid items data after processing");
-    }
-    
-    logMessage("Calling generateBillsWithLimits with " . count($all_items_data) . " items", 'INFO');
-    
-    $bills = generateBillsWithLimits(
-        $conn,
-        $all_items_data,
-        $date_array,
-        $all_daily_sales_data,
-        $mode,
-        $comp_id,
-        $user_id,
-        $fin_year_id,
-        $available_dates
-    );
-    
-    if (empty($bills)) {
-        throw new Exception("No bills generated");
-    }
-    
-    logMessage("Generated " . count($bills) . " bills total", 'INFO');
-    
-    // ============================================================================
-    // GET NEXT BILL NUMBER
-    // ============================================================================
-    $bill_no_query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
-    $bill_no_stmt = $conn->prepare($bill_no_query);
-    $bill_no_stmt->bind_param("i", $comp_id);
-    $bill_no_stmt->execute();
-    $bill_no_result = $bill_no_stmt->get_result();
-    $bill_no_row = $bill_no_result->fetch_assoc();
-    $bill_no_start = ($bill_no_row['max_bill'] ?? 0) + 1;
-    $bill_no_stmt->close();
-    
-    logDebug("Starting bill number", $bill_no_start);
-    
-    // ============================================================================
-    // PREPARE DATA FOR BULK INSERT (WITH MEMORY MONITORING)
-    // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Preparing bulk insert data...';
-    $_SESSION[$progress_key]['percentage'] = 60;
-    
-    $header_values = [];
-    $detail_values = [];
-    $stock_updates = [];
-    $generated_bills = [];
-    $total_amount = 0;
-    
-    foreach ($bills as $index => $bill) {
-        $bill_no = 'BL' . str_pad($bill_no_start + $index, 4, '0', STR_PAD_LEFT);
-        
-        // Header
-        $header_values[] = "('$bill_no', '{$bill['bill_date']}', {$bill['total_amount']}, 0, {$bill['total_amount']}, '{$bill['mode']}', $comp_id, $user_id)";
-        
-        // Details and stock updates
-        foreach ($bill['items'] as $item) {
-            $detail_values[] = "('$bill_no', '{$item['code']}', {$item['qty']}, {$item['rate']}, {$item['amount']}, '{$bill['mode']}', $comp_id)";
-            $stock_updates[$item['code']] = ($stock_updates[$item['code']] ?? 0) + $item['qty'];
-        }
-        
-        $generated_bills[] = [
-            'bill_no' => $bill_no,
-            'date' => $bill['bill_date'],
-            'amount' => $bill['total_amount'],
-            'items' => count($bill['items'])
-        ];
-        
-        $total_amount += $bill['total_amount'];
-        
-        // Update progress periodically
-        if (($index + 1) % 50 == 0) {
-            $_SESSION[$progress_key]['current_bill'] = $index + 1;
-            $_SESSION[$progress_key]['percentage'] = 60 + round((($index + 1) / count($bills)) * 20);
-        }
-    }
-    
-    logDebug("Prepared for bulk insert", [
-        'headers' => count($header_values),
-        'details' => count($detail_values),
-        'stock_updates' => count($stock_updates)
-    ]);
-    
-    // ============================================================================
-    // START TRANSACTION
-    // ============================================================================
-    $conn->begin_transaction();
-    $conn->query("SET FOREIGN_KEY_CHECKS = 0");
-    $conn->query("SET UNIQUE_CHECKS = 0");
-    
-    // ============================================================================
-    // BULK INSERT HEADERS (IN CHUNKS)
-    // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Saving bill headers...';
-    
-    if (!empty($header_values)) {
-        $header_chunks = array_chunk($header_values, 2000);
-        $chunk_count = count($header_chunks);
-        
-        foreach ($header_chunks as $chunk_index => $chunk) {
-            $sql = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) VALUES " . implode(',', $chunk);
-            if (!$conn->query($sql)) {
-                throw new Exception("Header insert failed: " . $conn->error);
-            }
-            logDebug("Inserted headers chunk " . ($chunk_index + 1) . "/$chunk_count");
+            $item_stmt->close();
         }
     }
     
     // ============================================================================
-    // BULK INSERT DETAILS (IN CHUNKS)
+    // STEP 7: GET CATEGORY LIMITS FROM tblcompany
     // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Saving bill details...';
+    $category_limits = getCategoryLimits($conn, $comp_id);
     
-    if (!empty($detail_values)) {
-        $detail_chunks = array_chunk($detail_values, 5000);
-        $chunk_count = count($detail_chunks);
-        
-        foreach ($detail_chunks as $chunk_index => $chunk) {
-            $sql = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) VALUES " . implode(',', $chunk);
-            if (!$conn->query($sql)) {
-                throw new Exception("Details insert failed: " . $conn->error);
-            }
-            logDebug("Inserted details chunk " . ($chunk_index + 1) . "/$chunk_count");
-        }
-    }
-    
-    // ============================================================================
-    // UPDATE STOCK (IN CHUNKS)
-    // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Updating stock levels...';
-    
-    if (!empty($stock_updates)) {
-        $stock_column = "Current_Stock" . $comp_id;
-        $stock_values = [];
-        
-        foreach ($stock_updates as $code => $qty) {
-            $code_esc = $conn->real_escape_string($code);
-            $stock_values[] = "('$code_esc', '$fin_year_id', $qty)";
-        }
-        
-        $stock_chunks = array_chunk($stock_values, 2000);
-        $chunk_count = count($stock_chunks);
-        
-        foreach ($stock_chunks as $chunk_index => $chunk) {
-            $sql = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $stock_column) VALUES " . implode(',', $chunk) .
-                   " ON DUPLICATE KEY UPDATE $stock_column = $stock_column - VALUES($stock_column)";
-            
-            if (!$conn->query($sql)) {
-                throw new Exception("Stock update failed: " . $conn->error);
-            }
-            logDebug("Updated stock chunk " . ($chunk_index + 1) . "/$chunk_count");
-        }
-    }
-    
-    // ============================================================================
-    // GENERATE CASH MEMOS (IN BATCHES)
-    // ============================================================================
-    $_SESSION[$progress_key]['message'] = 'Generating cash memos...';
-    $_SESSION[$progress_key]['percentage'] = 85;
-    
-    $cash_memo_count = 0;
-    
-    if (!empty($generated_bills)) {
-        // Get company data
-        $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO FROM tblcompany WHERE CompID = ?";
-        $companyStmt = $conn->prepare($companyQuery);
-        $companyStmt->bind_param("i", $comp_id);
-        $companyStmt->execute();
-        $companyResult = $companyStmt->get_result();
-        $companyRow = $companyResult->fetch_assoc();
-        $companyStmt->close();
-        
-        $companyData = [
-            'name' => $companyRow['COMP_NAME'] ?? 'WINE SHOP',
-            'address' => $companyRow['COMP_ADDR'] ?? '',
-            'licenseNumber' => $companyRow['COMP_FLNO'] ?? ''
-        ];
-        
-        // Get permits
-        $permitQuery = "SELECT P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, DETAILS FROM tblpermit WHERE P_NO IS NOT NULL AND P_NO != '' LIMIT 1000";
-        $permitResult = $conn->query($permitQuery);
-        $allPermits = $permitResult->fetch_all(MYSQLI_ASSOC);
-        
-        if (!empty($allPermits)) {
-            $cashMemoValues = [];
-            $printDate = date('Y-m-d H:i:s');
-            
-            foreach ($generated_bills as $bill) {
-                // Find the corresponding bill data
-                $billData = null;
-                foreach ($bills as $b) {
-                    if (($b['bill_no'] ?? '') === $bill['bill_no']) {
-                        $billData = $b;
-                        break;
-                    }
-                }
-                
-                if (!$billData) continue;
-                
-                $permitData = $allPermits[array_rand($allPermits)];
-                
-                // Prepare items for cash memo
-                $itemsForMemo = [];
-                foreach ($billData['items'] as $item) {
-                    $itemsForMemo[] = [
-                        'DETAILS' => $item['name'],
-                        'QTY' => $item['qty'],
-                        'DETAILS2' => 'ML',
-                        'AMOUNT' => $item['amount']
-                    ];
-                }
-                
-                // Generate cash memo text
-                $cashMemoText = generateCashMemoText($companyData, $billData, $itemsForMemo, $permitData);
-                
-                $cashMemoValues[] = "(
-                    '{$bill['bill_no']}', 
-                    $comp_id, 
-                    '$printDate', 
-                    $user_id, 
-                    '{$companyData['licenseNumber']}', 
-                    '{$companyData['name']}', 
-                    '{$companyData['address']}', 
-                    '{$bill['date']}', 
-                    '{$permitData['DETAILS']}', 
-                    '{$permitData['P_NO']}', 
-                    '{$permitData['PLACE_ISS']}', 
-                    '{$permitData['P_EXP_DT']}', 
-                    '" . $conn->real_escape_string(json_encode($itemsForMemo)) . "', 
-                    {$bill['amount']}, 
-                    '" . $conn->real_escape_string($cashMemoText) . "'
-                )";
-                
-                $cash_memo_count++;
-                
-                // Insert in batches of 500
-                if (count($cashMemoValues) >= 500) {
-                    $sql = "INSERT IGNORE INTO tbl_cash_memo_prints 
-                            (bill_no, comp_id, print_date, printed_by, license_number, shop_name, shop_address, 
-                             bill_date, customer_name, permit_no, permit_place, permit_exp_date, items_json, total_amount, cash_memo_text) 
-                            VALUES " . implode(',', $cashMemoValues);
-                    $conn->query($sql);
-                    $cashMemoValues = [];
-                }
-            }
-            
-            // Insert remaining
-            if (!empty($cashMemoValues)) {
-                $sql = "INSERT IGNORE INTO tbl_cash_memo_prints 
-                        (bill_no, comp_id, print_date, printed_by, license_number, shop_name, shop_address, 
-                         bill_date, customer_name, permit_no, permit_place, permit_exp_date, items_json, total_amount, cash_memo_text) 
-                        VALUES " . implode(',', $cashMemoValues);
-                $conn->query($sql);
-            }
-        }
-    }
-    
-    // ============================================================================
-    // COMMIT TRANSACTION
-    // ============================================================================
-    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
-    $conn->query("SET UNIQUE_CHECKS = 1");
-    $conn->commit();
-    
-    $execution_time = round(microtime(true) - $start_time, 3);
-    
-    // Clear session data
-    if (isset($_SESSION['sale_quantities'])) {
-        unset($_SESSION['sale_quantities']);
-    }
-    if (isset($_SESSION['item_distribution'])) {
-        unset($_SESSION['item_distribution']);
-    }
-    
-    // Prepare success response
-    $response = [
-        'success' => true,
-        'message' => "Success! Processed $total_items items in $total_chunks batches. Generated " . count($generated_bills) . " bills with $cash_memo_count cash memos in {$execution_time}s",
-        'total_amount' => number_format($total_amount, 2),
-        'bill_count' => count($generated_bills),
-        'cash_memo_count' => $cash_memo_count,
-        'execution_time' => $execution_time,
-        'bills' => array_slice($generated_bills, -10),
-        'batches_used' => $total_chunks,
-        'memory_peak' => round(memory_get_peak_usage(true) / 1024 / 1024, 2) . "MB",
-        'progress_key' => $progress_key
+    // Map to match the categories used in volume_limit_utils.php
+    $limits = [
+        'IMFL' => (float)($category_limits['IMFL'] ?? 1000),
+        'BEER' => (float)($category_limits['BEER'] ?? 0),
+        'CL' => (float)($category_limits['CL'] ?? 0),
+        'OTHER' => PHP_FLOAT_MAX
     ];
     
-    // Update final progress
-    $_SESSION[$progress_key]['status'] = 'completed';
-    $_SESSION[$progress_key]['percentage'] = 100;
-    $_SESSION[$progress_key]['message'] = $response['message'];
-    $_SESSION[$progress_key]['bills_generated'] = array_slice($generated_bills, -10);
-    $_SESSION[$progress_key]['end_time'] = time();
+    // ============================================================================
+    // STEP 8: OPTIMIZED DAILY DISTRIBUTION
+    // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Calculating distribution...';
     
-    logMessage("SUCCESS: " . $response['message'], 'INFO');
-    logMessage("Peak memory usage: " . $response['memory_peak'], 'INFO');
-    
-} catch (Exception $e) {
-    // Rollback transaction if started
-    if (isset($conn)) {
-        $conn->rollback();
-        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
-        $conn->query("SET UNIQUE_CHECKS = 1");
-    }
-    
-    // Log error
-    logMessage("ERROR: " . $e->getMessage(), 'ERROR');
-    logMessage("Stack trace: " . $e->getTraceAsString(), 'ERROR');
-    
-    // Update progress
-    $_SESSION[$progress_key]['status'] = 'error';
-    $_SESSION[$progress_key]['message'] = "Error: " . $e->getMessage();
-    
-    // Prepare error response
-    $response['message'] = "Error: " . $e->getMessage();
-}
-
-// Keep progress in session for 5 minutes
-if (isset($_SESSION[$progress_key])) {
-    $_SESSION[$progress_key]['expires'] = time() + 300;
-}
-
-// Send response
-echo json_encode($response);
-exit;
-
-// ============================================================================
-// HELPER FUNCTION TO PROCESS ITEM CHUNK
-// ============================================================================
-function processItemChunk($conn, $items, $distributions, $item_cache, $date_array, $available_dates, $days_count, $date_index_map, $mode) {
     $daily_sales_data = [];
-    $items_data = [];
+    $total_bills_estimate = 0;
+    $items_processed = 0;
     
     foreach ($items as $item_code => $total_qty) {
         $total_qty = (int)$total_qty;
@@ -771,100 +324,781 @@ function processItemChunk($conn, $items, $distributions, $item_cache, $date_arra
             continue;
         }
         
-        $full_distribution = array_fill(0, $days_count, 0);
-        $has_saved_distribution = false;
+        $items_processed++;
+        $_SESSION[$progress_key]['items_processed'] = $items_processed;
         
-        // Try to use saved distribution
+        // CRITICAL FIX: Use saved distribution if available, otherwise generate new one
+        // Note: FormData sends JSON string, not array, so we need to handle both cases
+        $has_saved_distribution = false;
+        $full_distribution = [];
+        
+        // DEBUG: Log the distribution check
+        logMessage("DEBUG: Checking distribution for item $item_code - Total Qty: $total_qty", 'DEBUG');
+        logMessage("DEBUG: Available distributions: " . (isset($distributions[$item_code]) ? 'YES' : 'NO'), 'DEBUG');
+        
         if (isset($distributions[$item_code])) {
             $dist_value = $distributions[$item_code];
             $dist_type = gettype($dist_value);
+            logMessage("DEBUG: Distribution type for $item_code: $dist_type", 'DEBUG');
             
-            // Case 1: Already array
+            // Check if it's already an array (some edge cases)
             if (is_array($dist_value)) {
-                if (count($dist_value) === $days_count) {
-                    $full_distribution = $dist_value;
-                    $has_saved_distribution = true;
-                    logDebug("Chunk - Using array distribution for $item_code");
-                }
+                $full_distribution = $dist_value;
+                $has_saved_distribution = true;
+                logMessage("SAVED DIST USED (array): $item_code = " . implode(', ', $full_distribution), 'INFO');
+                logDistribution('SAVED_ARRAY', $item_code, $full_distribution);
             }
-            // Case 2: JSON string
+            // Or if it's a JSON string that needs decoding
             elseif (is_string($dist_value)) {
-                // Try JSON decode first
+                logMessage("DEBUG: Raw distribution string for $item_code: " . substr($dist_value, 0, 200), 'DEBUG');
                 $decoded = json_decode($dist_value, true);
-                if (is_array($decoded) && count($decoded) === $days_count) {
+                if (is_array($decoded)) {
                     $full_distribution = $decoded;
                     $has_saved_distribution = true;
-                    logDebug("Chunk - Using JSON distribution for $item_code");
+                    logMessage("SAVED DIST USED (json decoded): $item_code = " . implode(', ', $full_distribution), 'INFO');
+                    logDistribution('SAVED_JSON', $item_code, $full_distribution);
                 } else {
-                    // Try CSV format with brackets
-                    $clean_str = trim($dist_value);
-                    if (strpos($clean_str, '[') === 0 && strrpos($clean_str, ']') === strlen($clean_str) - 1) {
-                        $clean_str = substr($clean_str, 1, -1);
-                    }
-                    
-                    $parts = explode(',', $clean_str);
-                    if (count($parts) === $days_count) {
-                        $full_distribution = array_map('intval', $parts);
-                        $has_saved_distribution = true;
-                        logDebug("Chunk - Using CSV distribution for $item_code");
-                    }
+                    logMessage("ERROR: Failed to decode JSON for $item_code: " . json_last_error_msg(), 'ERROR');
                 }
-            }
-            // Case 3: Numeric for single day
-            elseif (is_numeric($dist_value) && $days_count == 1) {
-                $full_distribution[0] = (int)$dist_value;
-                $has_saved_distribution = true;
-                logDebug("Chunk - Using numeric distribution for $item_code");
             }
         }
         
-        // Generate random distribution if needed
         if (!$has_saved_distribution) {
-            if ($total_qty > 0 && !empty($available_dates)) {
-                $available_count = count($available_dates);
-                $temp_dist = array_fill(0, $available_count, 0);
-                
-                // Random distribution
-                for ($i = 0; $i < $total_qty; $i++) {
-                    $random_day = mt_rand(0, $available_count - 1);
-                    $temp_dist[$random_day]++;
+            // Generate random distribution if not saved (fallback)
+            logMessage("NEW DIST GENERATED: $item_code (no saved distribution found)", 'INFO');
+            logDistribution('GENERATED_NEW', $item_code, ['total_qty' => $total_qty, 'available_dates' => count($available_dates)]);
+            $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
+            
+            // Map back to full date array (with 0 for unavailable/dry days)
+            $full_distribution = array_fill(0, $days_count, 0);
+            foreach ($available_dates as $i => $date) {
+                $date_index = array_search($date, $date_array);
+                if ($date_index !== false) {
+                    $full_distribution[$date_index] = $distribution[$i] ?? 0;
                 }
-                
-                // Map to full date array
-                foreach ($available_dates as $i => $date) {
-                    $date_index = $date_index_map[$date] ?? null;
-                    if ($date_index !== null) {
-                        $full_distribution[$date_index] = $temp_dist[$i];
-                    }
-                }
-                
-                logDebug("Chunk - Generated random distribution for $item_code");
-            }
-        }
-        
-        // Validate sum and auto-correct if needed
-        $distribution_sum = array_sum($full_distribution);
-        if ($distribution_sum !== $total_qty && !empty($available_dates)) {
-            $diff = $total_qty - $distribution_sum;
-            if ($diff > 0) {
-                $random_date = $available_dates[array_rand($available_dates)];
-                $random_index = $date_index_map[$random_date] ?? 0;
-                $full_distribution[$random_index] += $diff;
-                logDebug("Chunk - Auto-corrected distribution for $item_code, added $diff to $random_date");
             }
         }
         
         $daily_sales_data[$item_code] = $full_distribution;
         
-        $items_data[$item_code] = [
-            'rate' => (float)$item_cache[$item_code]['RPRICE'],
-            'name' => $item_cache[$item_code]['DETAILS']
+        // STEP 3.1: CUMULATIVE VALIDATION
+        $cumul_val = validateCumulativeStock($conn, $item_code, $full_distribution, $date_array, $comp_id, $daily_stock_table);
+        if (!$cumul_val['valid']) {
+            throw new Exception("Stock validation failed for $item_code on {$cumul_val['date']}");
+        }
+        
+        // Validate: Check that sum of distribution equals total quantity
+        $distribution_sum = array_sum($full_distribution);
+        if ($distribution_sum !== $total_qty) {
+            logMessage("WARNING: Distribution mismatch for item $item_code - Expected $total_qty, got $distribution_sum", 'INFO');
+        }
+        
+        // CRITICAL: Log what distribution will be used for bill generation
+        logMessage("=== FINAL DISTRIBUTION FOR BILLS === Item: $item_code | Qty: $total_qty | Distribution: " . implode(',', $full_distribution) . " | Sum: $distribution_sum", 'INFO');
+        logDistribution('BILL_GEN', $item_code, ['qty' => $total_qty, 'dist' => $full_distribution, 'sum' => $distribution_sum]);
+        
+        // Count days with sales for this item
+        $sale_days = 0;
+        foreach ($full_distribution as $qty) {
+            if ($qty > 0) $sale_days++;
+        }
+        $total_bills_estimate += $sale_days;
+    }
+    
+    $_SESSION[$progress_key]['total_bills'] = max($total_bills_estimate, 1);
+    
+    // ============================================================================
+    // STEP 9: BATCH BILL GENERATION WITH VOLUME LIMITS USING EXISTING FUNCTIONS
+    // ============================================================================
+    $_SESSION[$progress_key]['message'] = 'Generating bills with volume limits...';
+    
+    // Prepare items_data for generateBillsWithLimits function
+    $formatted_items_data = [];
+    foreach ($items_data as $code => $data) {
+        $formatted_items_data[$code] = [
+            'rate' => $data['rate'],
+            'name' => $data['name']
         ];
     }
     
-    return [
-        'daily_sales_data' => $daily_sales_data,
-        'items_data' => $items_data
+    // Call the existing generateBillsWithLimits function from volume_limit_utils.php
+    // Pass available_dates to filter out dry days at backend
+    $bills = generateBillsWithLimits(
+        $conn,
+        $formatted_items_data,
+        $date_array,
+        $daily_sales_data,
+        $mode,
+        $comp_id,
+        $user_id,
+        $fin_year_id,
+        $available_dates  // NEW: Pass available dates to filter out dry days
+    );
+    
+    // Get starting bill number
+    $bill_no_start = getNextBillNumberBatch($conn, $comp_id);
+    $bill_counter = 0;
+    
+    // Assign proper bill numbers to bills
+    foreach ($bills as &$bill) {
+        $bill['bill_no'] = 'BL' . str_pad($bill_no_start + $bill_counter, 4, '0', STR_PAD_LEFT);
+        $bill_counter++;
+        
+        // Update progress every 20 bills
+        if ($bill_counter % 20 == 0) {
+            $_SESSION[$progress_key]['current_bill'] = $bill_counter;
+            $_SESSION[$progress_key]['percentage'] = min(30, round(($bill_counter / $_SESSION[$progress_key]['total_bills']) * 30));
+            $_SESSION[$progress_key]['message'] = "Generated $bill_counter bills with volume limits...";
+            
+            $elapsed = microtime(true) - $start_time;
+            $_SESSION[$progress_key]['speed'] = $bill_counter / max($elapsed, 0.001);
+            $_SESSION[$progress_key]['last_update'] = time();
+        }
+        
+        // Add to progress tracking
+        $_SESSION[$progress_key]['bills_generated'][] = [
+            'bill_no' => $bill['bill_no'],
+            'date' => $bill['bill_date'],
+            'amount' => $bill['total_amount'],
+            'items' => count($bill['items'])
+        ];
+    }
+    unset($bill);
+    
+    $_SESSION[$progress_key]['total_bills'] = count($bills);
+    $_SESSION[$progress_key]['current_bill'] = count($bills);
+    $_SESSION[$progress_key]['percentage'] = 30;
+    
+    if (empty($bills)) {
+        throw new Exception("No bills generated");
+    }
+    
+    // ============================================================================
+    // STEP 10: BULK INSERT HEADERS (CHUNKED)
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'saving_headers';
+    $_SESSION[$progress_key]['message'] = 'Saving bill headers...';
+    
+    $header_values = [];
+    foreach ($bills as $bill) {
+        $header_values[] = "('{$bill['bill_no']}', '{$bill['bill_date']}', {$bill['total_amount']}, 0, {$bill['total_amount']}, '{$bill['mode']}', {$bill['comp_id']}, {$bill['user_id']})";
+    }
+    
+    // Insert in chunks of 5000
+    $header_chunks = array_chunk($header_values, 5000);
+    $chunk_count = count($header_chunks);
+    $current_chunk = 0;
+    
+    foreach ($header_chunks as $chunk) {
+        $current_chunk++;
+        $_SESSION[$progress_key]['message'] = "Saving headers (chunk $current_chunk/$chunk_count)...";
+        
+        $batch_header = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) VALUES " . implode(',', $chunk);
+        if (!$conn->query($batch_header)) {
+            throw new Exception("Header insert failed: " . $conn->error);
+        }
+    }
+    
+    $_SESSION[$progress_key]['percentage'] = 45;
+    
+    // ============================================================================
+    // STEP 11: BULK INSERT DETAILS (CHUNKED)
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'saving_details';
+    $_SESSION[$progress_key]['message'] = 'Saving bill details...';
+    
+    $detail_values = [];
+    foreach ($bills as $bill) {
+        foreach ($bill['items'] as $item) {
+            $detail_values[] = "('{$bill['bill_no']}', '{$item['code']}', {$item['qty']}, {$item['rate']}, {$item['amount']}, '{$bill['mode']}', {$bill['comp_id']})";
+        }
+    }
+    
+    // Insert in chunks of 10000
+    $detail_chunks = array_chunk($detail_values, 10000);
+    $chunk_count = count($detail_chunks);
+    $current_chunk = 0;
+    
+    foreach ($detail_chunks as $chunk) {
+        $current_chunk++;
+        $_SESSION[$progress_key]['message'] = "Saving details (chunk $current_chunk/$chunk_count)...";
+        
+        $batch_detail = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) VALUES " . implode(',', $chunk);
+        if (!$conn->query($batch_detail)) {
+            throw new Exception("Details insert failed: " . $conn->error);
+        }
+    }
+    
+    $_SESSION[$progress_key]['percentage'] = 60;
+    
+    // ============================================================================
+    // STEP 12: BULK STOCK UPDATE (OPTIMIZED)
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'updating_stock';
+    $_SESSION[$progress_key]['message'] = 'Updating stock levels...';
+    
+    $current_stock_column = "Current_Stock" . $comp_id;
+    
+    // Aggregate quantities
+    $stock_updates = [];
+    foreach ($bills as $bill) {
+        foreach ($bill['items'] as $item) {
+            $code = $item['code'];
+            $stock_updates[$code] = ($stock_updates[$code] ?? 0) + $item['qty'];
+        }
+    }
+    
+    // Use INSERT ... ON DUPLICATE KEY UPDATE for speed
+    if (!empty($stock_updates)) {
+        $stock_values = [];
+        foreach ($stock_updates as $code => $qty) {
+            $code_esc = $conn->real_escape_string($code);
+            $stock_values[] = "('$code_esc', '$fin_year_id', $qty)";
+        }
+        
+        $stock_chunks = array_chunk($stock_values, 5000);
+        $chunk_count = count($stock_chunks);
+        $current_chunk = 0;
+        
+        foreach ($stock_chunks as $chunk) {
+            $current_chunk++;
+            $_SESSION[$progress_key]['message'] = "Updating stock (chunk $current_chunk/$chunk_count)...";
+            
+            $stock_sql = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $current_stock_column) 
+                          VALUES " . implode(',', $chunk) . "
+                          ON DUPLICATE KEY UPDATE $current_stock_column = $current_stock_column - VALUES($current_stock_column)";
+            
+            if (!$conn->query($stock_sql)) {
+                throw new Exception("Stock update failed: " . $conn->error);
+            }
+        }
+    }
+    
+    $_SESSION[$progress_key]['percentage'] = 70;
+    
+    // ============================================================================
+    // STEP 13: DAILY STOCK UPDATE (OPTIMIZED BULK VERSION)
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'daily_stock';
+    $_SESSION[$progress_key]['message'] = 'Updating daily stock records...';
+    
+    // Aggregate daily stock updates by table and date
+    $daily_stock_updates = [];
+    
+    foreach ($bills as $bill) {
+        $sale_date = $bill['bill_date'];
+        $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
+        $month_year = date('Y-m', strtotime($sale_date));
+        
+        // Determine table name
+        $current_date = new DateTime();
+        $current_month = $current_date->format('Y-m');
+        
+        if ($month_year === $current_month) {
+            $table_name = "tbldailystock_" . $comp_id;
+        } else {
+            $month_short = date('m', strtotime($sale_date));
+            $year_short = date('y', strtotime($sale_date));
+            $table_name = "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
+        }
+        
+        foreach ($bill['items'] as $item) {
+            $key = $table_name . '|' . $item['code'] . '|' . $month_year;
+            
+            if (!isset($daily_stock_updates[$key])) {
+                $daily_stock_updates[$key] = [
+                    'table' => $table_name,
+                    'item_code' => $item['code'],
+                    'month' => $month_year,
+                    'sales' => [],
+                    'total_qty' => 0
+                ];
+            }
+            
+            $daily_stock_updates[$key]['sales'][$day_num] = ($daily_stock_updates[$key]['sales'][$day_num] ?? 0) + $item['qty'];
+            $daily_stock_updates[$key]['total_qty'] += $item['qty'];
+        }
+    }
+    
+    // Process daily stock updates in bulk per table
+    $tables_processed = [];
+    $update_count = 0;
+    $total_updates = count($daily_stock_updates);
+    
+    foreach ($daily_stock_updates as $update) {
+        $update_count++;
+        if ($update_count % 50 == 0) {
+            $_SESSION[$progress_key]['message'] = "Daily stock: $update_count/$total_updates items...";
+        }
+        
+        $table = $update['table'];
+        $item_code = $update['item_code'];
+        $month = $update['month'];
+        $sales = $update['sales'];
+        
+        // Check if table exists, create if not
+        if (!isset($tables_processed[$table])) {
+            $check_table = $conn->query("SHOW TABLES LIKE '$table'");
+            if ($check_table->num_rows == 0) {
+                createDailyStockTableFast($conn, $table);
+            }
+            $tables_processed[$table] = true;
+        }
+        
+        // Escape strings for safety
+        $item_code_esc = $conn->real_escape_string($item_code);
+        $month_esc = $conn->real_escape_string($month);
+        
+        // Check if record exists
+        $check = $conn->query("SELECT 1 FROM $table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc' LIMIT 1");
+        
+        if (!$check || $check->num_rows == 0) {
+            // Get previous month's closing
+            $prev_month = date('Y-m', strtotime($month . '-01 -1 month'));
+            $prev_table = getDailyStockTableName($comp_id, $prev_month);
+            $prev_closing = 0;
+            
+            if ($prev_table) {
+                $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
+                $prev_col = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
+                
+                $prev_result = $conn->query("SELECT $prev_col FROM $prev_table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$prev_month'");
+                if ($prev_result && $row = $prev_result->fetch_assoc()) {
+                    $prev_closing = (float)($row[$prev_col] ?? 0);
+                }
+            }
+            
+            // Insert new record
+            $insert_cols = ["ITEM_CODE", "STK_MONTH", "DAY_01_OPEN", "DAY_01_CLOSING"];
+            $insert_vals = ["'$item_code_esc'", "'$month_esc'", $prev_closing, $prev_closing];
+            
+            $conn->query("INSERT INTO $table (" . implode(',', $insert_cols) . ") VALUES (" . implode(',', $insert_vals) . ")");
+        }
+        
+        // Update sales for each day
+        foreach ($sales as $day => $qty) {
+            $day_padded = sprintf('%02d', $day);
+            $col = "DAY_{$day_padded}_SALES";
+            $closing_col = "DAY_{$day_padded}_CLOSING";
+            
+            // Get current values
+            $current = $conn->query("SELECT DAY_{$day_padded}_OPEN, DAY_{$day_padded}_PURCHASE, $col FROM $table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
+            if ($current && $row = $current->fetch_assoc()) {
+                $opening = (float)($row["DAY_{$day_padded}_OPEN"] ?? 0);
+                $purchase = (float)($row["DAY_{$day_padded}_PURCHASE"] ?? 0);
+                $current_sales = (float)($row[$col] ?? 0);
+                
+                $new_sales = $current_sales + $qty;
+                $closing = $opening + $purchase - $new_sales;
+                
+                $conn->query("UPDATE $table SET $col = $new_sales, $closing_col = $closing WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
+            }
+        }
+        
+        // Recalculate from earliest day
+        $min_day = min(array_keys($sales));
+        recalculateDailyStockFast($conn, $table, $item_code_esc, $month_esc, $min_day);
+    }
+    
+    $_SESSION[$progress_key]['percentage'] = 85;
+    
+    // ============================================================================
+    // STEP 14: BULK CASH MEMO GENERATION USING EXISTING FUNCTIONS
+    // ============================================================================
+    $_SESSION[$progress_key]['status'] = 'cash_memos';
+    $_SESSION[$progress_key]['message'] = 'Generating cash memos...';
+    
+    // Get company data once
+    $companyQuery = "SELECT COMP_NAME, COMP_ADDR, COMP_FLNO, CF_LINE, CS_LINE FROM tblcompany WHERE CompID = ?";
+    $companyStmt = $conn->prepare($companyQuery);
+    if ($companyStmt) {
+        $companyStmt->bind_param("i", $comp_id);
+        $companyStmt->execute();
+        $companyResult = $companyStmt->get_result();
+        $companyRow = $companyResult->fetch_assoc();
+        $companyStmt->close();
+    } else {
+        $companyRow = [];
+    }
+    
+    $companyData = [
+        'name' => $companyRow['COMP_NAME'] ?? 'WINE SHOP',
+        'address' => $companyRow['COMP_ADDR'] ?? '',
+        'licenseNumber' => $companyRow['COMP_FLNO'] ?? ''
     ];
+    
+    // Get permits (cached)
+    $permitQuery = "SELECT P_NO, P_ISSDT, P_EXP_DT, PLACE_ISS, DETAILS FROM tblpermit 
+                    WHERE P_NO IS NOT NULL AND P_NO != '' 
+                    ORDER BY RAND() LIMIT 1000";
+    $permitResult = $conn->query($permitQuery);
+    $allPermits = [];
+    if ($permitResult) {
+        while ($row = $permitResult->fetch_assoc()) {
+            $allPermits[] = $row;
+        }
+    }
+    
+    // Bulk insert cash memos
+    $cash_memo_count = 0;
+    if (!empty($bills) && !empty($allPermits)) {
+        $cashMemoValues = [];
+        $printDate = date('Y-m-d H:i:s');
+        
+        foreach ($bills as $bill) {
+            $permitData = $allPermits[array_rand($allPermits)];
+            
+            $billNoEsc = $conn->real_escape_string($bill['bill_no']);
+            $printDateEsc = $conn->real_escape_string($printDate);
+            $licenseNumberEsc = $conn->real_escape_string($companyData['licenseNumber']);
+            $shopNameEsc = $conn->real_escape_string($companyData['name']);
+            $shopAddressEsc = $conn->real_escape_string($companyData['address']);
+            $billDateEsc = $conn->real_escape_string($bill['bill_date']);
+            $customerNameEsc = $conn->real_escape_string($permitData['DETAILS'] ?? 'RETAIL');
+            $permitNoEsc = $conn->real_escape_string($permitData['P_NO'] ?? '');
+            $permitPlaceEsc = $conn->real_escape_string($permitData['PLACE_ISS'] ?? '');
+            $permitExpDateEsc = $conn->real_escape_string($permitData['P_EXP_DT'] ?? '');
+            
+            // Prepare bill data for cash memo function
+            $billDataForMemo = [
+                'BILL_NO' => $bill['bill_no'],
+                'BILL_DATE' => $bill['bill_date'],
+                'NET_AMOUNT' => $bill['total_amount']
+            ];
+            
+            // Prepare items for cash memo function
+            $itemsForMemo = [];
+            foreach ($bill['items'] as $item) {
+                $itemsForMemo[] = [
+                    'DETAILS' => $item['name'],
+                    'QTY' => $item['qty'],
+                    'DETAILS2' => $item['size'] . 'ML',
+                    'AMOUNT' => $item['amount']
+                ];
+            }
+            
+            // Use the existing generateCashMemoText function
+            $cashMemoText = generateCashMemoText($companyData, $billDataForMemo, $itemsForMemo, $permitData);
+            $cashMemoTextEsc = $conn->real_escape_string($cashMemoText);
+            
+            $itemsJson = json_encode($itemsForMemo);
+            $itemsJsonEsc = $conn->real_escape_string($itemsJson);
+            
+            $cashMemoValues[] = "('$billNoEsc', $comp_id, '$printDateEsc', $user_id, '$licenseNumberEsc', '$shopNameEsc', '$shopAddressEsc', '$billDateEsc', '$customerNameEsc', '$permitNoEsc', '$permitPlaceEsc', '$permitExpDateEsc', '$itemsJsonEsc', {$bill['total_amount']}, '$cashMemoTextEsc')";
+            $cash_memo_count++;
+        }
+        
+        // Bulk insert
+        if (!empty($cashMemoValues)) {
+            $cashMemoChunks = array_chunk($cashMemoValues, 5000);
+            $chunk_count = count($cashMemoChunks);
+            $current_chunk = 0;
+            
+            foreach ($cashMemoChunks as $chunk) {
+                $current_chunk++;
+                $_SESSION[$progress_key]['message'] = "Saving cash memos (chunk $current_chunk/$chunk_count)...";
+                
+                $cashMemoSql = "INSERT IGNORE INTO tbl_cash_memo_prints 
+                    (bill_no, comp_id, print_date, printed_by, license_number, shop_name, shop_address, 
+                     bill_date, customer_name, permit_no, permit_place, permit_exp_date, items_json, total_amount, cash_memo_text) 
+                    VALUES " . implode(',', $chunk);
+                $conn->query($cashMemoSql);
+            }
+        }
+    }
+    
+    $_SESSION[$progress_key]['percentage'] = 95;
+    
+    // ============================================================================
+    // STEP 15: COMMIT AND FINALIZE
+    // ============================================================================
+    $conn->commit();
+    
+    $execution_time = round(microtime(true) - $start_time, 3);
+    
+    // Calculate total amount
+    $total_amount = 0;
+    $recent_bills = [];
+    foreach ($bills as $bill) {
+        $total_amount += $bill['total_amount'];
+        if (count($recent_bills) < 20) {
+            $recent_bills[] = [
+                'bill_no' => $bill['bill_no'],
+                'date' => $bill['bill_date'],
+                'amount' => $bill['total_amount'],
+                'items' => count($bill['items'])
+            ];
+        }
+    }
+    
+    // Update final progress
+    $_SESSION[$progress_key]['status'] = 'completed';
+    $_SESSION[$progress_key]['percentage'] = 100;
+    $_SESSION[$progress_key]['message'] = "Completed! Generated " . count($bills) . " bills with $cash_memo_count cash memos in {$execution_time} seconds";
+    $_SESSION[$progress_key]['end_time'] = time();
+    $_SESSION[$progress_key]['bills_generated'] = $recent_bills;
+    
+    $response['success'] = true;
+    $response['message'] = "Generated " . count($bills) . " bills with $cash_memo_count cash memos in {$execution_time} seconds";
+    $response['total_amount'] = number_format($total_amount, 2);
+    $response['bill_count'] = count($bills);
+    $response['cash_memo_count'] = $cash_memo_count;
+    $response['execution_time'] = $execution_time;
+    $response['bills'] = array_slice($recent_bills, -10);
+    $response['progress_key'] = $progress_key;
+    
+    // Re-enable constraints
+    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+    $conn->query("SET UNIQUE_CHECKS = 1");
+    
+    // Clear saved distributions from session
+    if (isset($_SESSION['item_distribution'])) {
+        unset($_SESSION['item_distribution']);
+    }
+    
+} catch (Exception $e) {
+    if (isset($conn)) {
+        $conn->rollback();
+    }
+    $response['message'] = "Error: " . $e->getMessage();
+    logMessage($e->getMessage(), 'ERROR');
+    
+    $_SESSION[$progress_key]['status'] = 'error';
+    $_SESSION[$progress_key]['message'] = "Error: " . $e->getMessage();
+    $_SESSION[$progress_key]['percentage'] = 0;
+    
+    // Re-enable constraints
+    if (isset($conn)) {
+        $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+        $conn->query("SET UNIQUE_CHECKS = 1");
+    }
+}
+
+// Keep progress in session for 5 minutes
+if (isset($_SESSION[$progress_key])) {
+    $_SESSION[$progress_key]['expires'] = time() + 300;
+}
+
+// Ensure we send JSON response
+if (!headers_sent()) {
+    header('Content-Type: application/json');
+}
+echo json_encode($response);
+exit;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get next bill number for batch generation
+ */
+function getNextBillNumberBatch($conn, $comp_id) {
+    $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill 
+              FROM tblsaleheader WHERE COMP_ID = ?";
+    $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        return 1;
+    }
+    $stmt->bind_param("i", $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
+    $stmt->close();
+    
+    return ($row['max_bill'] ?? 0) + 1;
+}
+
+/**
+ * Get daily stock table name for a given month
+ */
+function getDailyStockTableName($comp_id, $month) {
+    if (empty($month)) return null;
+    
+    $current_month = date('Y-m');
+    if ($month === $current_month) {
+        return "tbldailystock_" . $comp_id;
+    } else {
+        $month_short = date('m', strtotime($month));
+        $year_short = date('y', strtotime($month));
+        return "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
+    }
+}
+
+/**
+ * Create daily stock table quickly
+ */
+function createDailyStockTableFast($conn, $table_name) {
+    $create_query = "CREATE TABLE IF NOT EXISTS $table_name (
+        ID INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ITEM_CODE VARCHAR(50) NOT NULL,
+        STK_MONTH VARCHAR(7) NOT NULL,
+        DAY_01_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_item_month (ITEM_CODE, STK_MONTH),
+        KEY idx_item_code (ITEM_CODE),
+        KEY idx_stk_month (STK_MONTH)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    return $conn->query($create_query);
+}
+
+/**
+ * Recalculate daily stock quickly
+ */
+function recalculateDailyStockFast($conn, $table, $item_code, $month, $start_day) {
+    $last_day = date('t', strtotime($month . '-01'));
+    
+    for ($day = $start_day; $day <= $last_day; $day++) {
+        $day_num = sprintf('%02d', $day);
+        $opening_col = "DAY_{$day_num}_OPEN";
+        $purchase_col = "DAY_{$day_num}_PURCHASE";
+        $sales_col = "DAY_{$day_num}_SALES";
+        $closing_col = "DAY_{$day_num}_CLOSING";
+        
+        // Get current values
+        $result = $conn->query("SELECT $opening_col, $purchase_col, $sales_col 
+                                FROM $table 
+                                WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
+        
+        if ($result && $row = $result->fetch_assoc()) {
+            $opening = (float)($row[$opening_col] ?? 0);
+            $purchase = (float)($row[$purchase_col] ?? 0);
+            $sales = (float)($row[$sales_col] ?? 0);
+            
+            $closing = $opening + $purchase - $sales;
+            
+            $conn->query("UPDATE $table SET $closing_col = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
+            
+            // Update next day's opening
+            if ($day < $last_day) {
+                $next_day = sprintf('%02d', $day + 1);
+                $conn->query("UPDATE $table SET DAY_{$next_day}_OPEN = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
+            }
+        }
+    }
 }
 ?>

@@ -17,6 +17,161 @@ $size_cache = [];
 $limits_cache = [];
 
 /**
+ * Get the daily stock table name for a specific date
+ */
+if (!function_exists('getDailyStockTableForDate')) {
+function getDailyStockTableForDate($conn, $comp_id, $date) {
+    $current_date = new DateTime();
+    $sale_date = new DateTime($date);
+    
+    // If sale date is in the future, use current month table
+    if ($sale_date > $current_date) {
+        return "tbldailystock_" . $comp_id;
+    }
+    
+    $current_month = $current_date->format('Y-m');
+    $date_month = $sale_date->format('Y-m');
+    
+    if ($date_month === $current_month) {
+        return "tbldailystock_" . $comp_id;
+    } else {
+        $date_month_short = $sale_date->format('m');
+        $date_year_short = $sale_date->format('y');
+        return "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
+    }
+}
+}
+
+/**
+ * Check if stock is available for an item on a specific date
+ * Returns true if closing stock > 0, false otherwise
+ */
+if (!function_exists('isStockAvailable')) {
+function isStockAvailable($conn, $item_code, $date, $comp_id) {
+    $table_name = getDailyStockTableForDate($conn, $comp_id, $date);
+    $month_year = date('Y-m', strtotime($date));
+    $day_num = sprintf('%02d', date('d', strtotime($date)));
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    
+    // Check if table exists
+    $check_table = $conn->query("SHOW TABLES LIKE '$table_name'");
+    if ($check_table->num_rows === 0) {
+        return false; // No table = no stock
+    }
+    
+    // Check if column exists
+    $check_column = $conn->query("SHOW COLUMNS FROM $table_name LIKE '$closing_column'");
+    if ($check_column->num_rows === 0) {
+        return false; // No column = no stock
+    }
+    
+    // Get closing stock for this date
+    $query = "SELECT $closing_column FROM $table_name WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $item_code, $month_year);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $closing_stock = 0;
+    if ($row = $result->fetch_assoc()) {
+        $closing_stock = (float)($row[$closing_column] ?? 0);
+    }
+    $stmt->close();
+    
+    return $closing_stock > 0;
+}
+}
+
+/**
+ * Get closing stock for an item on a specific date
+ */
+if (!function_exists('getClosingStockForDate')) {
+function getClosingStockForDate($conn, $item_code, $date, $comp_id) {
+    $table_name = getDailyStockTableForDate($conn, $comp_id, $date);
+    $month_year = date('Y-m', strtotime($date));
+    $day_num = sprintf('%02d', date('d', strtotime($date)));
+    $closing_column = "DAY_{$day_num}_CLOSING";
+    
+    // Check if table exists
+    $check_table = $conn->query("SHOW TABLES LIKE '$table_name'");
+    if ($check_table->num_rows === 0) {
+        return 0;
+    }
+    
+    // Check if column exists
+    $check_column = $conn->query("SHOW COLUMNS FROM $table_name LIKE '$closing_column'");
+    if ($check_column->num_rows === 0) {
+        return 0;
+    }
+    
+    $query = "SELECT $closing_column FROM $table_name WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ss", $item_code, $month_year);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $closing_stock = 0;
+    if ($row = $result->fetch_assoc()) {
+        $closing_stock = (float)($row[$closing_column] ?? 0);
+    }
+    $stmt->close();
+    
+    return $closing_stock;
+}
+}
+
+/**
+ * Sanitize distribution - remove quantities from dates with no stock
+ * Returns cleaned distribution array
+ */
+if (!function_exists('sanitizeDistribution')) {
+function sanitizeDistribution($conn, $item_code, $date_array, $distribution, $comp_id, $dry_dates = [], $unavailable_dates = []) {
+    $cleaned_distribution = $distribution;
+    $removed_count = 0;
+    
+    // Create lookup sets for faster checking
+    $dry_dates_set = array_flip($dry_dates);
+    $unavailable_dates_set = array_flip($unavailable_dates);
+    
+    foreach ($date_array as $index => $date) {
+        // Skip if quantity is already 0
+        if ($cleaned_distribution[$index] <= 0) {
+            continue;
+        }
+        
+        // Skip dry days
+        if (isset($dry_dates_set[$date])) {
+            $removed_count += $cleaned_distribution[$index];
+            $cleaned_distribution[$index] = 0;
+            continue;
+        }
+        
+        // Skip dates with existing sales
+        if (isset($unavailable_dates_set[$date])) {
+            $removed_count += $cleaned_distribution[$index];
+            $cleaned_distribution[$index] = 0;
+            continue;
+        }
+        
+        // Check if stock is available on this date
+        $closing_stock = getClosingStockForDate($conn, $item_code, $date, $comp_id);
+        
+        if ($closing_stock <= 0) {
+            // Stock not available - remove quantity
+            $removed_count += $cleaned_distribution[$index];
+            $cleaned_distribution[$index] = 0;
+        }
+    }
+    
+    if ($removed_count > 0) {
+        error_log("SANITIZE: Removed $removed_count units from distribution for item $item_code due to no stock on specific dates");
+    }
+    
+    return $cleaned_distribution;
+}
+}
+
+/**
  * Get category name and LIQ_FLAG from category code
  */
 function getCategoryInfo($conn, $category_code) {
@@ -265,8 +420,9 @@ function getItemSize($conn, $item_code, $mode) {
 /**
  * Generate bills with volume limits - ENHANCED MULTI-CATEGORY LOGIC
  * Now accepts available_dates parameter to filter out dry days
+ * MODIFIED: Now also validates per-day stock availability
  */
-function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates = []) {
+function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates = [], $dry_dates = [], $unavailable_dates = []) {
     // DEBUG: Log what distribution was received
     $distLog = "=== generateBillsWithLimits START ===" . PHP_EOL;
     $distLog .= "Date array (" . count($date_array) . "): " . implode(',', $date_array) . PHP_EOL;
@@ -277,6 +433,35 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
     error_log($distLog);
     
     $category_limits = getCategoryLimits($conn, $comp_id);
+    
+    // ============================================================
+    // CRITICAL FIX: Sanitize distribution - remove invalid dates
+    // This ensures backend is the FINAL AUTHORITY
+    // ============================================================
+    $sanitized_daily_sales_data = [];
+    foreach ($items_data as $item_code => $item_data) {
+        $original_distribution = $daily_sales_data[$item_code] ?? array_fill(0, count($date_array), 0);
+        
+        // Sanitize: remove quantities from dates with no stock
+        $sanitized_distribution = sanitizeDistribution(
+            $conn, 
+            $item_code, 
+            $date_array, 
+            $original_distribution, 
+            $comp_id,
+            $dry_dates,
+            $unavailable_dates
+        );
+        
+        $sanitized_daily_sales_data[$item_code] = $sanitized_distribution;
+        
+        // Log if distribution changed
+        $original_sum = array_sum($original_distribution);
+        $sanitized_sum = array_sum($sanitized_distribution);
+        if ($original_sum !== $sanitized_sum) {
+            error_log("SANITIZED: Item $item_code - Original: $original_sum, Sanitized: $sanitized_sum");
+        }
+    }
     
     // Filter out dry days from the date array - only process available dates
     $valid_date_indices = [];
@@ -303,8 +488,16 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
         // Collect all items for this day with enhanced categorization
         $all_items = [];
         foreach ($items_data as $item_code => $item_data) {
-            $qty = $daily_sales_data[$item_code][$date_index] ?? 0;
+            // Use SANITIZED distribution data
+            $qty = $sanitized_daily_sales_data[$item_code][$date_index] ?? 0;
+            
             if ($qty > 0) {
+                // CRITICAL: Double-check stock availability before adding to bill
+                if (!isStockAvailable($conn, $item_code, $sale_date, $comp_id)) {
+                    error_log("BLOCKED: Item $item_code on $sale_date - no stock available");
+                    continue; // Skip this date for this item
+                }
+                
                 $category = getItemCategory($conn, $item_code, $mode);
                 $size = getItemSize($conn, $item_code, $mode);
                 

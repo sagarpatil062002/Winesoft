@@ -3582,13 +3582,18 @@ function displayDistributionInCells(itemCode, itemRow, distribution) {
 
         // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
         if (isDryDate) {
-            // Date is a dry day - show dYOT (always with 0 quantity)
+            // Date is a dry day - show 🌙 (always with 0 quantity)
             cell.addClass('dry-unavailable-date');
-            cell.html('<span class="text-warning">dYOT</span><span class="small-icon">(dry day)</span>');
-        } else if (isGlobalUnavailable) {
-            // Date has existing sales - show X with 0 quantity
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            
+            // Get dry day description
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+        } else if (isGlobalUnavailable && !isDryDate) {
+            // Date has existing global sales - show ✗
             cell.addClass('global-unavailable-date');
-            cell.html('<span class="text-danger">X</span><span class="small-icon">(has sales)</span>');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
         } else if (qty > 0) {
             // Normal available date with quantity - show the quantity
             cell.addClass('has-quantity');

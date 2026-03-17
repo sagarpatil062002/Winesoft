@@ -204,6 +204,24 @@ if (!file_exists('../temp_exports')) {
         </div>
       <?php endif; ?>
       
+      <?php if (isset($_SESSION['stock_warnings']) && !empty($_SESSION['stock_warnings'])): ?>
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong><i class="fas fa-exclamation-triangle"></i> Stock Warnings:</strong>
+        <ul class="mb-0 mt-1">
+        <?php foreach (array_slice($_SESSION['stock_warnings'], 0, 5) as $warning): ?>
+          <li><?= htmlspecialchars($warning) ?></li>
+        <?php endforeach; ?>
+        <?php if (count($_SESSION['stock_warnings']) > 5): ?>
+          <li>... and <?= (count($_SESSION['stock_warnings']) - 5) ?> more warnings</li>
+        <?php endif; ?>
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <?php 
+        // Clear warnings after displaying
+        unset($_SESSION['stock_warnings']);
+      endif; ?>
+      
       <?php if (isset($error_message)): ?>
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
           <i class="fa-solid fa-circle-exclamation me-2"></i> <?= htmlspecialchars($error_message) ?>
