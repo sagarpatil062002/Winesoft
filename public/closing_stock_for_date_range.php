@@ -5005,5 +5005,6 @@ function initializeClosingBalancesFromSession() {
     }
 }
 </script>
+
 </body>
 </html>

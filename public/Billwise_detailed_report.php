@@ -1,7 +1,6 @@
 <?php
 session_start();
-
-// Ensure user is logged in and company is selected
+require_once 'components/financial_year_init.php';// Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
     header("Location: index.php");
     exit;

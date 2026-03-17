@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'components/financial_year_init.php';// Ensure user is logged in and company is selected
 
 // Increase execution time for large reports
 set_time_limit(180); // 3 minutes
@@ -197,6 +198,15 @@ $display_sizes_spirit = ['2000 ML', '1000 ML', '750 ML', '700 ML', '500 ML', '37
 $display_sizes_wine = ['750 ML', '375 ML', '180 ML', '90 ML'];
 $display_sizes_beer = ['1000 ML', '650 ML', '500 ML', '330 ML', '275 ML', '250 ML'];
 
+// Define categories and size columns for FLR Datewise
+$display_categories = ['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'];
+$size_columns = [
+    'Spirit' => $display_sizes_spirit,
+    'Wine' => $display_sizes_wine,
+    'Fermented Beer' => $display_sizes_beer,
+    'Mild Beer' => $display_sizes_beer
+];
+
 // Fetch item master data - FILTERED BY LICENSE TYPE using new hierarchy
 $items = [];
 if (!empty($allowed_classes)) {
@@ -350,51 +360,48 @@ function tableHasClosingColumn($conn, $tableName, $day, &$table_columns_cache) {
     return isset($table_columns_cache[$tableName][$columnName]);
 }
 
-// Initialize report data structure
-$dates = [];
+// ============================================================================
+// STEP 1: Get the dates the user wants to DISPLAY
+// ============================================================================
+$display_dates = [];
 $current_date = $from_date;
 while (strtotime($current_date) <= strtotime($to_date)) {
-    $dates[] = $current_date;
+    $display_dates[] = $current_date;
     $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
 }
 
-// Initialize daily data structure for each date - using 4 categories
-$daily_data = [];
+// ============================================================================
+// STEP 2: Get ALL dates from start of month to To Date for CALCULATIONS
+// ============================================================================
+$month_start = date('Y-m-01', strtotime($from_date));
+$calculation_dates = [];
 
-// Initialize totals
-$totals = [
-    'Spirit' => [
-        'purchase' => array_fill_keys($display_sizes_spirit, 0),
-        'sales' => array_fill_keys($display_sizes_spirit, 0),
-        'closing' => array_fill_keys($display_sizes_spirit, 0)
-    ],
-    'Wine' => [
-        'purchase' => array_fill_keys($display_sizes_wine, 0),
-        'sales' => array_fill_keys($display_sizes_wine, 0),
-        'closing' => array_fill_keys($display_sizes_wine, 0)
-    ],
-    'Fermented Beer' => [
-        'purchase' => array_fill_keys($display_sizes_beer, 0),
-        'sales' => array_fill_keys($display_sizes_beer, 0),
-        'closing' => array_fill_keys($display_sizes_beer, 0)
-    ],
-    'Mild Beer' => [
-        'purchase' => array_fill_keys($display_sizes_beer, 0),
-        'sales' => array_fill_keys($display_sizes_beer, 0),
-        'closing' => array_fill_keys($display_sizes_beer, 0)
-    ]
-];
+$current_date = $month_start;
+while (strtotime($current_date) <= strtotime($to_date)) {
+    $calculation_dates[] = $current_date;
+    $current_date = date('Y-m-d', strtotime($current_date . ' +1 day'));
+}
 
-// Initialize opening balance data
-$opening_balance_data = [
-    'Spirit' => array_fill_keys($display_sizes_spirit, 0),
-    'Wine' => array_fill_keys($display_sizes_wine, 0),
-    'Fermented Beer' => array_fill_keys($display_sizes_beer, 0),
-    'Mild Beer' => array_fill_keys($display_sizes_beer, 0)
-];
+// ============================================================================
+// STEP 3: Initialize data structures for ALL calculation dates
+// ============================================================================
+$all_daily_data = [];
+foreach ($calculation_dates as $date) {
+    $all_daily_data[$date] = [];
+    foreach ($display_categories as $category) {
+        $all_daily_data[$date][$category] = [
+            'opening' => array_fill_keys($size_columns[$category], 0),
+            'purchase' => array_fill_keys($size_columns[$category], 0),
+            'sales' => array_fill_keys($size_columns[$category], 0),
+            'closing' => array_fill_keys($size_columns[$category], 0)
+        ];
+    }
+}
 
-// Process each date in the range
-foreach ($dates as $date) {
+// ============================================================================
+// STEP 4: Fetch raw data for ALL calculation dates
+// ============================================================================
+foreach ($calculation_dates as $date) {
     $day = date('d', strtotime($date));
     $month = date('Y-m', strtotime($date));
     $day_padded = sprintf('%02d', $day);
@@ -402,36 +409,12 @@ foreach ($dates as $date) {
     // Get appropriate table for this date
     $dailyStockTable = getTableForDate($conn, $compID, $date, $table_exists_cache);
     
-    // Initialize daily data for this date
-    $daily_data[$date] = [
-        'Spirit' => [
-            'purchase' => array_fill_keys($display_sizes_spirit, 0),
-            'sales' => array_fill_keys($display_sizes_spirit, 0),
-            'closing' => array_fill_keys($display_sizes_spirit, 0)
-        ],
-        'Wine' => [
-            'purchase' => array_fill_keys($display_sizes_wine, 0),
-            'sales' => array_fill_keys($display_sizes_wine, 0),
-            'closing' => array_fill_keys($display_sizes_wine, 0)
-        ],
-        'Fermented Beer' => [
-            'purchase' => array_fill_keys($display_sizes_beer, 0),
-            'sales' => array_fill_keys($display_sizes_beer, 0),
-            'closing' => array_fill_keys($display_sizes_beer, 0)
-        ],
-        'Mild Beer' => [
-            'purchase' => array_fill_keys($display_sizes_beer, 0),
-            'sales' => array_fill_keys($display_sizes_beer, 0),
-            'closing' => array_fill_keys($display_sizes_beer, 0)
-        ]
-    ];
-    
     // Check if table has columns for this day (using cache)
     if (!tableHasDayColumns($conn, $dailyStockTable, $day, $table_columns_cache)) {
         continue;
     }
     
-    // Fetch stock data for this specific day (LIQ_FLAG removed - using hierarchy instead)
+    // Fetch stock data for this specific day
     $stockQuery = "SELECT ITEM_CODE,
                   DAY_{$day_padded}_OPEN as opening,
                   DAY_{$day_padded}_PURCHASE as purchase, 
@@ -456,6 +439,9 @@ foreach ($dates as $date) {
             $hierarchy = $item['hierarchy'];
             $liquor_type = $hierarchy['display_type']; // Spirit, Wine, Fermented Beer, Mild Beer
             
+            // Skip if not in display categories
+            if (!in_array($liquor_type, $display_categories)) continue;
+            
             // Get volume
             $volume = $hierarchy['ml_volume'];
             
@@ -463,21 +449,7 @@ foreach ($dates as $date) {
             if ($volume <= 0) continue;
             
             // Determine which display sizes to use based on liquor type
-            $target_display_sizes = [];
-            switch ($liquor_type) {
-                case 'Spirit':
-                    $target_display_sizes = $display_sizes_spirit;
-                    break;
-                case 'Wine':
-                    $target_display_sizes = $display_sizes_wine;
-                    break;
-                case 'Fermented Beer':
-                case 'Mild Beer':
-                    $target_display_sizes = $display_sizes_beer;
-                    break;
-                default:
-                    $target_display_sizes = $display_sizes_spirit;
-            }
+            $target_display_sizes = $size_columns[$liquor_type];
             
             // Find closest matching display size based on volume
             $matched_size = null;
@@ -526,105 +498,30 @@ foreach ($dates as $date) {
                 continue;
             }
             
-            // For opening balance (first date only)
-            if ($date == $from_date) {
-                $opening_balance_data[$liquor_type][$matched_size] += $row['opening'];
+            // Add data to all_daily_data
+            if (isset($all_daily_data[$date][$liquor_type])) {
+                $all_daily_data[$date][$liquor_type]['opening'][$matched_size] += (int)$row['opening'];
+                $all_daily_data[$date][$liquor_type]['purchase'][$matched_size] += (int)$row['purchase'];
+                $all_daily_data[$date][$liquor_type]['sales'][$matched_size] += (int)$row['sales'];
+                // Don't set closing from DB - we'll calculate it
             }
-            
-            // Daily data
-            $daily_data[$date][$liquor_type]['purchase'][$matched_size] += $row['purchase'];
-            $daily_data[$date][$liquor_type]['sales'][$matched_size] += $row['sales'];
-            $daily_data[$date][$liquor_type]['closing'][$matched_size] += $row['closing'];
-            
-            // Totals
-            $totals[$liquor_type]['purchase'][$matched_size] += $row['purchase'];
-            $totals[$liquor_type]['sales'][$matched_size] += $row['sales'];
-            $totals[$liquor_type]['closing'][$matched_size] += $row['closing'];
         }
         
         $stockStmt->close();
     }
 }
 
-// OPENING BALANCE AND CLOSING CALCULATION LOGIC:
-// - First day of selection: Use first day of month's opening OR previous month's last day closing
-// - Subsequent days: Carry forward previous day's calculated closing as today's opening
-// - Closing = Opening + Purchase - Sold (calculated, not from DB)
+// ============================================================================
+// STEP 5: Get previous month's closing if needed (for opening balance on first day of month)
+// ============================================================================
+$prev_month_closing = [];
 
-// Define categories and size columns for FLR Datewise
-$display_categories = ['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'];
-$size_columns = [
-    'Spirit' => $display_sizes_spirit,
-    'Wine' => $display_sizes_wine,
-    'Fermented Beer' => $display_sizes_beer,
-    'Mild Beer' => $display_sizes_beer
-];
+// Check if selected from_date is the first day of month
+$is_first_day_of_month = ($from_date == $month_start);
 
-// Get the first date in selected range
-$first_date = $dates[0];
-$month_start = date('Y-m-01', strtotime($first_date));
-
-// Check if selected date is already the first day of month
-$is_first_day_of_month = ($first_date == $month_start);
-
-// Variable to store opening data
-$prev_day_closing = [];
-
-if (!$is_first_day_of_month) {
-    // Case 1: Not selecting from 1st of month - use 1st of month's opening
-    $prev_date = $month_start;
-    $prev_month = date('Y-m', strtotime($prev_date));
-    $prev_day = date('d', strtotime($prev_date));
-    $prev_day_padded = sprintf('%02d', $prev_day);
-    
-    $prevStockTable = getTableForDate($conn, $compID, $prev_date, $table_exists_cache);
-    
-    if (tableHasDayColumns($conn, $prevStockTable, $prev_day, $table_columns_cache)) {
-        $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_OPEN as closing 
-                          FROM $prevStockTable 
-                          WHERE STK_MONTH = ?
-                          LIMIT 500";
-        
-        $prevStockStmt = $conn->prepare($prevStockQuery);
-        $prevStockStmt->bind_param("s", $prev_month);
-        $prevStockStmt->execute();
-        $prevStockResult = $prevStockStmt->get_result();
-        
-        while ($row = $prevStockResult->fetch_assoc()) {
-            $item_code = $row['ITEM_CODE'];
-            if (!isset($items[$item_code])) continue;
-            
-            $item = $items[$item_code];
-            $hierarchy = $item['hierarchy'];
-            $display_type = $hierarchy['display_type'];
-            
-            if (!in_array($display_type, $display_categories)) continue;
-            
-            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
-            
-            $matched_size = null;
-            if (isset($size_columns[$display_type])) {
-                if (in_array($volume_label, $size_columns[$display_type])) {
-                    $matched_size = $volume_label;
-                }
-            }
-            
-            if ($matched_size) {
-                if (!isset($prev_day_closing[$display_type])) {
-                    $prev_day_closing[$display_type] = [];
-                }
-                if (!isset($prev_day_closing[$display_type][$matched_size])) {
-                    $prev_day_closing[$display_type][$matched_size] = 0;
-                }
-                $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
-            }
-        }
-        $prevStockStmt->close();
-    }
-} else {
-    // Case 2: Selecting from 1st of month - use PREVIOUS MONTH'S LAST DAY closing
-    // This handles month-to-month transition (e.g., April 30th -> May 1st)
-    $prev_month_date = date('Y-m-01', strtotime($first_date . ' -1 month'));
+if ($is_first_day_of_month) {
+    // We need previous month's last day closing
+    $prev_month_date = date('Y-m-01', strtotime($from_date . ' -1 month'));
     $prev_month_last_day = date('t', strtotime($prev_month_date)); // Last day of previous month
     $prev_month = date('Y-m', strtotime($prev_month_date));
     $prev_day_padded = sprintf('%02d', $prev_month_last_day);
@@ -632,8 +529,7 @@ if (!$is_first_day_of_month) {
     // Try to get from previous month's archive table
     $prevStockTable = getTableForDate($conn, $compID, $prev_month_date, $table_exists_cache);
     
-    // First try: Check for CLOSING column in archive table
-    $found_data = false;
+    // Check for CLOSING column
     if (tableHasClosingColumn($conn, $prevStockTable, $prev_month_last_day, $table_columns_cache)) {
         $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_CLOSING as closing 
                           FROM $prevStockTable 
@@ -645,9 +541,7 @@ if (!$is_first_day_of_month) {
         $prevStockStmt->execute();
         $prevStockResult = $prevStockStmt->get_result();
         
-        $row_count = 0;
         while ($row = $prevStockResult->fetch_assoc()) {
-            $row_count++;
             $item_code = $row['ITEM_CODE'];
             if (!isset($items[$item_code])) continue;
             
@@ -657,35 +551,39 @@ if (!$is_first_day_of_month) {
             
             if (!in_array($display_type, $display_categories)) continue;
             
-            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+            $volume = $hierarchy['ml_volume'];
+            if ($volume <= 0) continue;
             
+            $target_display_sizes = $size_columns[$display_type];
+            
+            // Find matching size
             $matched_size = null;
-            if (isset($size_columns[$display_type])) {
-                if (in_array($volume_label, $size_columns[$display_type])) {
-                    $matched_size = $volume_label;
+            foreach ($target_display_sizes as $display_size) {
+                preg_match('/(\d+\.?\d*)/', $display_size, $display_matches);
+                if (isset($display_matches[1])) {
+                    $display_volume = floatval($display_matches[1]);
+                    if (strpos($display_size, 'L') !== false && strpos($display_size, 'ML') === false) {
+                        $display_volume *= 1000;
+                    }
+                    if (abs($volume - $display_volume) < 1) {
+                        $matched_size = $display_size;
+                        break;
+                    }
                 }
             }
             
             if ($matched_size) {
-                if (!isset($prev_day_closing[$display_type])) {
-                    $prev_day_closing[$display_type] = [];
+                if (!isset($prev_month_closing[$display_type])) {
+                    $prev_month_closing[$display_type] = array_fill_keys($target_display_sizes, 0);
                 }
-                if (!isset($prev_day_closing[$display_type][$matched_size])) {
-                    $prev_day_closing[$display_type][$matched_size] = 0;
-                }
-                $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
+                $prev_month_closing[$display_type][$matched_size] += (int)$row['closing'];
             }
         }
         $prevStockStmt->close();
-        
-        if ($row_count > 0) {
-            $found_data = true;
-        }
     }
     
-    // Fallback: If no data from archive, try the current month's table for previous month
-    // This handles case where previous month's data is in current table
-    if (!$found_data) {
+    // Fallback: Try current month table
+    if (empty($prev_month_closing)) {
         $currentMonthTable = "tbldailystock_" . $compID;
         if (tableHasClosingColumn($conn, $currentMonthTable, $prev_month_last_day, $table_columns_cache)) {
             $prevStockQuery = "SELECT ITEM_CODE, DAY_{$prev_day_padded}_CLOSING as closing 
@@ -708,23 +606,31 @@ if (!$is_first_day_of_month) {
                 
                 if (!in_array($display_type, $display_categories)) continue;
                 
-                $volume_label = getVolumeLabel($hierarchy['ml_volume']);
+                $volume = $hierarchy['ml_volume'];
+                if ($volume <= 0) continue;
+                
+                $target_display_sizes = $size_columns[$display_type];
                 
                 $matched_size = null;
-                if (isset($size_columns[$display_type])) {
-                    if (in_array($volume_label, $size_columns[$display_type])) {
-                        $matched_size = $volume_label;
+                foreach ($target_display_sizes as $display_size) {
+                    preg_match('/(\d+\.?\d*)/', $display_size, $display_matches);
+                    if (isset($display_matches[1])) {
+                        $display_volume = floatval($display_matches[1]);
+                        if (strpos($display_size, 'L') !== false && strpos($display_size, 'ML') === false) {
+                            $display_volume *= 1000;
+                        }
+                        if (abs($volume - $display_volume) < 1) {
+                            $matched_size = $display_size;
+                            break;
+                        }
                     }
                 }
                 
                 if ($matched_size) {
-                    if (!isset($prev_day_closing[$display_type])) {
-                        $prev_day_closing[$display_type] = [];
+                    if (!isset($prev_month_closing[$display_type])) {
+                        $prev_month_closing[$display_type] = array_fill_keys($target_display_sizes, 0);
                     }
-                    if (!isset($prev_day_closing[$display_type][$matched_size])) {
-                        $prev_day_closing[$display_type][$matched_size] = 0;
-                    }
-                    $prev_day_closing[$display_type][$matched_size] += (int)$row['closing'];
+                    $prev_month_closing[$display_type][$matched_size] += (int)$row['closing'];
                 }
             }
             $prevStockStmt->close();
@@ -732,137 +638,135 @@ if (!$is_first_day_of_month) {
     }
 }
 
-// NOW, apply the opening balance logic
-// Also update opening_balance_data for summary row
-foreach ($dates as $index => $date) {
-    // Skip if this date was not processed
-    if (!isset($daily_data[$date])) continue;
-    
-    // For the FIRST date in the range and only if we have prev month data
-    if ($index == 0 && !empty($prev_day_closing)) {
-        foreach ($display_categories as $category) {
-            if (!isset($daily_data[$date][$category])) continue;
-            
-            // Initialize opening if not exists
-            if (!isset($daily_data[$date][$category]['opening'])) {
-                $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
-            }
-            
-            foreach ($size_columns[$category] as $size) {
-                if (isset($prev_day_closing[$category][$size]) && $prev_day_closing[$category][$size] > 0) {
-                    // OVERRIDE the database opening with previous month's last day closing
-                    $daily_data[$date][$category]['opening'][$size] = $prev_day_closing[$category][$size];
-                    
-                    // Also update opening_balance_data for summary row
-                    $opening_balance_data[$category][$size] = $prev_day_closing[$category][$size];
-                }
-            }
-        }
-    } else if ($index == 0) {
-        // First date but no prev_day_closing - initialize opening from DB
-        foreach ($display_categories as $category) {
-            if (!isset($daily_data[$date][$category])) continue;
-            if (!isset($daily_data[$date][$category]['opening'])) {
-                $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
-            }
-            // Also sync opening_balance_data from first date's DB opening
-            foreach ($size_columns[$category] as $size) {
-                if (isset($daily_data[$date][$category]['closing'][$size])) {
-                    // opening_balance_data was already set from DB in lines 498-501
-                }
-            }
-        }
-    }
-    
-    // Carry forward opening from previous day's calculated closing for subsequent dates
-    if ($index > 0) {
-        $prev_date_loop = $dates[$index - 1];
-        if (isset($daily_data[$prev_date_loop])) {
-            // Initialize opening for current date if not exists
-            if (!isset($daily_data[$date][$display_categories[0]]['opening'])) {
-                foreach ($display_categories as $category) {
-                    if (!isset($daily_data[$date][$category])) continue;
-                    $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
-                }
-            }
-            
-            foreach ($display_categories as $category) {
-                if (!isset($daily_data[$date][$category]) || !isset($daily_data[$prev_date_loop][$category])) continue;
-                
-                // Initialize opening array if needed
-                if (!isset($daily_data[$date][$category]['opening'])) {
-                    $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
-                }
-                
-                foreach ($size_columns[$category] as $size) {
-                    // Opening today = Previous day's calculated closing
-                    $prev_closing = $daily_data[$prev_date_loop][$category]['closing'][$size] ?? 0;
-                    if ($prev_closing > 0) {
-                        $daily_data[$date][$category]['opening'][$size] = $prev_closing;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Calculate closing: Opening + Purchase - Sold
+// ============================================================================
+// STEP 6: Calculate running balances from month start through To Date
+// ============================================================================
+$running_closing = [];
+
+foreach ($calculation_dates as $index => $date) {
+    // For each category and size
     foreach ($display_categories as $category) {
-        if (!isset($daily_data[$date][$category])) continue;
-        
-        // Ensure opening array exists
-        if (!isset($daily_data[$date][$category]['opening'])) {
-            $daily_data[$date][$category]['opening'] = array_fill_keys($size_columns[$category], 0);
-        }
+        if (!isset($all_daily_data[$date][$category])) continue;
         
         foreach ($size_columns[$category] as $size) {
-            $opening = $daily_data[$date][$category]['opening'][$size] ?? 0;
-            $purchase = $daily_data[$date][$category]['purchase'][$size] ?? 0;
-            $sales = $daily_data[$date][$category]['sales'][$size] ?? 0;
+            // Get opening balance
+            if ($index == 0) {
+                // First day (month start)
+                if ($is_first_day_of_month && !empty($prev_month_closing)) {
+                    // Use previous month's closing if we're on first day and have previous month data
+                    $opening = $prev_month_closing[$category][$size] ?? $all_daily_data[$date][$category]['opening'][$size] ?? 0;
+                } else {
+                    // Use database opening
+                    $opening = $all_daily_data[$date][$category]['opening'][$size] ?? 0;
+                }
+            } else {
+                // Subsequent days - use previous day's closing
+                $opening = $running_closing[$category][$size] ?? 0;
+            }
             
-            // Calculate closing: Opening + Purchase - Sold
-            $calculated_closing = $opening + $purchase - $sales;
+            $purchase = $all_daily_data[$date][$category]['purchase'][$size] ?? 0;
+            $sales = $all_daily_data[$date][$category]['sales'][$size] ?? 0;
             
-            // Ensure non-negative
-            $daily_data[$date][$category]['closing'][$size] = max(0, $calculated_closing);
+            // Calculate closing
+            $closing = $opening + $purchase - $sales;
+            $closing = max(0, $closing);
+            
+            // Update the data array
+            $all_daily_data[$date][$category]['opening'][$size] = $opening;
+            $all_daily_data[$date][$category]['closing'][$size] = $closing;
+            
+            // Store for next day
+            if (!isset($running_closing[$category])) {
+                $running_closing[$category] = [];
+            }
+            $running_closing[$category][$size] = $closing;
         }
     }
 }
 
-// Calculate total columns count for table formatting - Original FLR Datewise layout
+// ============================================================================
+// STEP 7: Filter to only include display dates
+// ============================================================================
+$daily_data = [];
+foreach ($display_dates as $date) {
+    if (isset($all_daily_data[$date])) {
+        $daily_data[$date] = $all_daily_data[$date];
+    }
+}
+
+// Calculate total columns count for table formatting
 $total_columns_per_section = count($display_sizes_spirit) + count($display_sizes_wine) + (count($display_sizes_beer) * 2);
 
-// CLOSING BALANCE - Calculated using formula: Opening + Purchase - Sold
-// This matches the monthly register calculation
-$closing_balance = [
-    'Spirit' => [],
-    'Wine' => [],
-    'Fermented Beer' => [],
-    'Mild Beer' => []
+// Calculate totals for summary rows
+$totals = [
+    'Spirit' => [
+        'purchase' => array_fill_keys($display_sizes_spirit, 0),
+        'sales' => array_fill_keys($display_sizes_spirit, 0)
+    ],
+    'Wine' => [
+        'purchase' => array_fill_keys($display_sizes_wine, 0),
+        'sales' => array_fill_keys($display_sizes_wine, 0)
+    ],
+    'Fermented Beer' => [
+        'purchase' => array_fill_keys($display_sizes_beer, 0),
+        'sales' => array_fill_keys($display_sizes_beer, 0)
+    ],
+    'Mild Beer' => [
+        'purchase' => array_fill_keys($display_sizes_beer, 0),
+        'sales' => array_fill_keys($display_sizes_beer, 0)
+    ]
 ];
 
-// Calculate closing using: Opening + Received - Sold
-foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
-    $type_sizes = [];
-    switch($type) {
-        case 'Spirit':
-            $type_sizes = $display_sizes_spirit;
-            break;
-        case 'Wine':
-            $type_sizes = $display_sizes_wine;
-            break;
-        case 'Fermented Beer':
-        case 'Mild Beer':
-            $type_sizes = $display_sizes_beer;
-            break;
+// Initialize opening_balance_data
+$opening_balance_data = [
+    'Spirit' => array_fill_keys($display_sizes_spirit, 0),
+    'Wine' => array_fill_keys($display_sizes_wine, 0),
+    'Fermented Beer' => array_fill_keys($display_sizes_beer, 0),
+    'Mild Beer' => array_fill_keys($display_sizes_beer, 0)
+];
+
+// Set opening balance from first day
+if (!empty($display_dates)) {
+    $first_date = $display_dates[0];
+    if (isset($daily_data[$first_date])) {
+        foreach ($display_categories as $category) {
+            if (isset($daily_data[$first_date][$category]['opening'])) {
+                foreach ($size_columns[$category] as $size) {
+                    $opening_balance_data[$category][$size] = $daily_data[$first_date][$category]['opening'][$size] ?? 0;
+                }
+            }
+        }
     }
+}
+
+// Calculate totals from all display dates
+foreach ($display_dates as $date) {
+    if (!isset($daily_data[$date])) continue;
     
-    foreach ($type_sizes as $size) {
-        $opening = isset($opening_balance_data[$type][$size]) ? $opening_balance_data[$type][$size] : 0;
-        $received = isset($totals[$type]['purchase'][$size]) ? $totals[$type]['purchase'][$size] : 0;
-        $sold = isset($totals[$type]['sales'][$size]) ? $totals[$type]['sales'][$size] : 0;
+    foreach ($display_categories as $category) {
+        if (!isset($daily_data[$date][$category])) continue;
         
-        // Calculate closing: Opening + Received - Sold
-        $closing_balance[$type][$size] = $opening + $received - $sold;
+        foreach ($size_columns[$category] as $size) {
+            $totals[$category]['purchase'][$size] += $daily_data[$date][$category]['purchase'][$size] ?? 0;
+            $totals[$category]['sales'][$size] += $daily_data[$date][$category]['sales'][$size] ?? 0;
+        }
+    }
+}
+
+// Calculate closing balance (Opening + Total Received - Total Sold)
+$closing_balance = [
+    'Spirit' => array_fill_keys($display_sizes_spirit, 0),
+    'Wine' => array_fill_keys($display_sizes_wine, 0),
+    'Fermented Beer' => array_fill_keys($display_sizes_beer, 0),
+    'Mild Beer' => array_fill_keys($display_sizes_beer, 0)
+];
+
+foreach ($display_categories as $category) {
+    foreach ($size_columns[$category] as $size) {
+        $opening = $opening_balance_data[$category][$size] ?? 0;
+        $received = $totals[$category]['purchase'][$size] ?? 0;
+        $sold = $totals[$category]['sales'][$size] ?? 0;
+        $closing_balance[$category][$size] = $opening + $received - $sold;
     }
 }
 ?>
@@ -950,6 +854,45 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
         border-radius: 5px;
         padding: 10px;
         margin-bottom: 15px;
+    }
+    .date-col {
+      width: 30px;
+      min-width: 30px;
+    }
+    .permit-col {
+      width: 50px;
+      min-width: 50px;
+    }
+    .type-col {
+      width: 40px;
+      min-width: 40px;
+      font-weight: bold;
+    }
+    .size-col {
+      width: 25px;
+      min-width: 25px;
+      max-width: 25px;
+    }
+    .date-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      line-height: 1;
+    }
+    .date-display span {
+      display: block;
+      line-height: 1;
+      margin: 0;
+      padding: 0;
+    }
+    .row-label {
+      font-weight: bold;
+      background-color: #f5f5f5;
+    }
+    .double-line-right {
+      border-right: 3px double #000 !important;
     }
 
     @media print {
@@ -1058,7 +1001,7 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
         height: 25px !important;
       }
       
-      .date-col, .permit-col, .signature-col {
+      .date-col, .permit-col, .type-col {
         width: 25px !important;
         min-width: 25px !important;
         max-width: 25px !important;
@@ -1137,7 +1080,7 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
               <div class="col-md-3">
                 <label class="form-label">Date Range Info:</label>
                 <div class="form-control-plaintext">
-                  <small class="text-muted">Selected: <?= count($dates) ?> day(s)</small>
+                  <small class="text-muted">Selected: <?= count($display_dates) ?> day(s)</small>
                 </div>
               </div>
             </div>
@@ -1182,10 +1125,10 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
               <tr>
                 <th rowspan="3" class="date-col">Date</th>
                 <th rowspan="3" class="permit-col">Permit No</th>
+                <th rowspan="3" class="type-col">Type</th>
                 <th colspan="<?= $total_columns_per_section ?>">Received</th>
                 <th colspan="<?= $total_columns_per_section ?>">Sold</th>
                 <th colspan="<?= $total_columns_per_section ?>">Closing Balance</th>
-                <th rowspan="3" class="signature-col">Signature</th>
               </tr>
               <tr>
                 <th colspan="<?= count($display_sizes_spirit) ?>">Spirit</th>
@@ -1213,13 +1156,13 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
                 <?php endforeach; ?>
 
                 <!-- Received - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <?php foreach ($display_sizes_beer as $index => $size): ?>
+                  <th class="size-col vertical-text <?= ($index == count($display_sizes_beer) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                 <?php endforeach; ?>
 
                 <!-- Received - Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <?php foreach ($display_sizes_beer as $index => $size): ?>
+                  <th class="size-col vertical-text <?= ($index == count($display_sizes_beer) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                 <?php endforeach; ?>
 
                 <!-- Sold - Spirit -->
@@ -1233,13 +1176,13 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
                 <?php endforeach; ?>
 
                 <!-- Sold - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <?php foreach ($display_sizes_beer as $index => $size): ?>
+                  <th class="size-col vertical-text <?= ($index == count($display_sizes_beer) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                 <?php endforeach; ?>
 
                 <!-- Sold - Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <?php foreach ($display_sizes_beer as $index => $size): ?>
+                  <th class="size-col vertical-text <?= ($index == count($display_sizes_beer) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                 <?php endforeach; ?>
 
                 <!-- Closing - Spirit -->
@@ -1253,8 +1196,8 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
                 <?php endforeach; ?>
 
                 <!-- Closing - Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <th class="size-col vertical-text"><?= $size ?></th>
+                <?php foreach ($display_sizes_beer as $index => $size): ?>
+                  <th class="size-col vertical-text <?= ($index == count($display_sizes_beer) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                 <?php endforeach; ?>
 
                 <!-- Closing - Mild Beer -->
@@ -1264,230 +1207,390 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($dates as $date): ?>
-                <?php if (!isset($daily_data[$date])) continue; ?>
+              <?php 
+              $first_displayed = false;
+              $date_count = 0;
+              
+              foreach ($display_dates as $date): 
+                if (!isset($daily_data[$date])) continue;
+                
+                // Check if there's any data to show
+                $has_data = false;
+                foreach ($display_categories as $category) {
+                    if (isset($daily_data[$date][$category])) {
+                        foreach ($size_columns[$category] as $size) {
+                            if (($daily_data[$date][$category]['purchase'][$size] ?? 0) > 0 || 
+                                ($daily_data[$date][$category]['sales'][$size] ?? 0) > 0 || 
+                                ($daily_data[$date][$category]['closing'][$size] ?? 0) > 0) {
+                                $has_data = true;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+                
+                // For first date, also check opening
+                if (!$first_displayed && !$has_data) {
+                    foreach ($display_categories as $category) {
+                        if (isset($daily_data[$date][$category])) {
+                            foreach ($size_columns[$category] as $size) {
+                                if (($daily_data[$date][$category]['opening'][$size] ?? 0) > 0) {
+                                    $has_data = true;
+                                    break 2;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!$has_data) continue;
+                
+                $day_num = date('d', strtotime($date));
+                $month_num = date('m', strtotime($date));
+                $year_num = date('y', strtotime($date));
+                $date_count++;
+                
+                $is_first_displayed = !$first_displayed;
+                
+                if ($is_first_displayed): 
+                    $first_displayed = true;
+              ?>
+                <!-- First displayed date - Show all 4 rows (Opening, Received, Sold, Closing) -->
                 <tr>
-                  <td class="date-col"><?= date('d-M', strtotime($date)) ?></td>
-                  <td class="permit-col"></td>
+                  <td rowspan="4" class="date-col">
+                    <div class="date-display">
+                      <span><?= $day_num ?></span>
+                      <span><?= $month_num ?></span>
+                      <span><?= $year_num ?></span>
+                    </div>
+                  </td>
+                  <td rowspan="4" class="permit-col"></td>
+                  <td class="type-col row-label">Op.</td>
                   
-                  <!-- Received - Spirit -->
+                  <!-- Received Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Sold Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Closing Section - Show Opening Balance -->
+                  <?php foreach ($display_sizes_spirit as $size): ?>
+                    <td><?= isset($daily_data[$date]['Spirit']['opening'][$size]) && $daily_data[$date]['Spirit']['opening'][$size] > 0 ? $daily_data[$date]['Spirit']['opening'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_wine as $size): ?>
+                    <td><?= isset($daily_data[$date]['Wine']['opening'][$size]) && $daily_data[$date]['Wine']['opening'][$size] > 0 ? $daily_data[$date]['Wine']['opening'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Fermented Beer']['opening'][$size]) && $daily_data[$date]['Fermented Beer']['opening'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['opening'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Mild Beer']['opening'][$size]) && $daily_data[$date]['Mild Beer']['opening'][$size] > 0 ? $daily_data[$date]['Mild Beer']['opening'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                </tr>
+                
+                <tr>
+                  <td class="type-col row-label">Rec.</td>
+                  
+                  <!-- Received Section - Show purchase data -->
                   <?php foreach ($display_sizes_spirit as $size): ?>
                     <td><?= isset($daily_data[$date]['Spirit']['purchase'][$size]) && $daily_data[$date]['Spirit']['purchase'][$size] > 0 ? $daily_data[$date]['Spirit']['purchase'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Received - Wine -->
+                  
                   <?php foreach ($display_sizes_wine as $size): ?>
                     <td><?= isset($daily_data[$date]['Wine']['purchase'][$size]) && $daily_data[$date]['Wine']['purchase'][$size] > 0 ? $daily_data[$date]['Wine']['purchase'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Received - Fermented Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Fermented Beer']['purchase'][$size]) && $daily_data[$date]['Fermented Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['purchase'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Received - Mild Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Mild Beer']['purchase'][$size]) && $daily_data[$date]['Mild Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Mild Beer']['purchase'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Sold - Spirit -->
+                  
+                  <!-- Sold Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Closing Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                </tr>
+                
+                <tr>
+                  <td class="type-col row-label">Sold</td>
+                  
+                  <!-- Received Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Sold Section - Show sales data -->
                   <?php foreach ($display_sizes_spirit as $size): ?>
                     <td><?= isset($daily_data[$date]['Spirit']['sales'][$size]) && $daily_data[$date]['Spirit']['sales'][$size] > 0 ? $daily_data[$date]['Spirit']['sales'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Sold - Wine -->
+                  
                   <?php foreach ($display_sizes_wine as $size): ?>
                     <td><?= isset($daily_data[$date]['Wine']['sales'][$size]) && $daily_data[$date]['Wine']['sales'][$size] > 0 ? $daily_data[$date]['Wine']['sales'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Sold - Fermented Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Fermented Beer']['sales'][$size]) && $daily_data[$date]['Fermented Beer']['sales'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['sales'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Sold - Mild Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Mild Beer']['sales'][$size]) && $daily_data[$date]['Mild Beer']['sales'][$size] > 0 ? $daily_data[$date]['Mild Beer']['sales'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Closing - Spirit -->
+                  
+                  <!-- Closing Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                </tr>
+                
+                <tr>
+                  <td class="type-col row-label">Clo.</td>
+                  
+                  <!-- Received Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Sold Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Closing Section - Show calculated closing -->
                   <?php foreach ($display_sizes_spirit as $size): ?>
                     <td><?= isset($daily_data[$date]['Spirit']['closing'][$size]) && $daily_data[$date]['Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Spirit']['closing'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Closing - Wine -->
+                  
                   <?php foreach ($display_sizes_wine as $size): ?>
                     <td><?= isset($daily_data[$date]['Wine']['closing'][$size]) && $daily_data[$date]['Wine']['closing'][$size] > 0 ? $daily_data[$date]['Wine']['closing'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Closing - Fermented Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Fermented Beer']['closing'][$size]) && $daily_data[$date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['closing'][$size] : '' ?></td>
                   <?php endforeach; ?>
-
-                  <!-- Closing - Mild Beer -->
+                  
                   <?php foreach ($display_sizes_beer as $size): ?>
                     <td><?= isset($daily_data[$date]['Mild Beer']['closing'][$size]) && $daily_data[$date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$date]['Mild Beer']['closing'][$size] : '' ?></td>
                   <?php endforeach; ?>
-                  
-                  <td class="signature-col"></td>
                 </tr>
+                
+              <?php else: ?>
+                <!-- Subsequent displayed dates - Show only 3 rows (Received, Sold, Closing) -->
+                <tr>
+                  <td rowspan="3" class="date-col">
+                    <div class="date-display">
+                      <span><?= $day_num ?></span>
+                      <span><?= $month_num ?></span>
+                      <span><?= $year_num ?></span>
+                    </div>
+                  </td>
+                  <td rowspan="3" class="permit-col"></td>
+                  <td class="type-col row-label">Rec.</td>
+                  
+                  <!-- Received Section - Show purchase data -->
+                  <?php foreach ($display_sizes_spirit as $size): ?>
+                    <td><?= isset($daily_data[$date]['Spirit']['purchase'][$size]) && $daily_data[$date]['Spirit']['purchase'][$size] > 0 ? $daily_data[$date]['Spirit']['purchase'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_wine as $size): ?>
+                    <td><?= isset($daily_data[$date]['Wine']['purchase'][$size]) && $daily_data[$date]['Wine']['purchase'][$size] > 0 ? $daily_data[$date]['Wine']['purchase'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Fermented Beer']['purchase'][$size]) && $daily_data[$date]['Fermented Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['purchase'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Mild Beer']['purchase'][$size]) && $daily_data[$date]['Mild Beer']['purchase'][$size] > 0 ? $daily_data[$date]['Mild Beer']['purchase'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <!-- Sold Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Closing Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                </tr>
+                
+                <tr>
+                  <td class="type-col row-label">Sold</td>
+                  
+                  <!-- Received Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Sold Section - Show sales data -->
+                  <?php foreach ($display_sizes_spirit as $size): ?>
+                    <td><?= isset($daily_data[$date]['Spirit']['sales'][$size]) && $daily_data[$date]['Spirit']['sales'][$size] > 0 ? $daily_data[$date]['Spirit']['sales'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_wine as $size): ?>
+                    <td><?= isset($daily_data[$date]['Wine']['sales'][$size]) && $daily_data[$date]['Wine']['sales'][$size] > 0 ? $daily_data[$date]['Wine']['sales'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Fermented Beer']['sales'][$size]) && $daily_data[$date]['Fermented Beer']['sales'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['sales'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Mild Beer']['sales'][$size]) && $daily_data[$date]['Mild Beer']['sales'][$size] > 0 ? $daily_data[$date]['Mild Beer']['sales'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <!-- Closing Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                </tr>
+                
+                <tr>
+                  <td class="type-col row-label">Clo.</td>
+                  
+                  <!-- Received Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Sold Section - Empty -->
+                  <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
+                    <td></td>
+                  <?php endfor; ?>
+                  
+                  <!-- Closing Section - Show calculated closing -->
+                  <?php foreach ($display_sizes_spirit as $size): ?>
+                    <td><?= isset($daily_data[$date]['Spirit']['closing'][$size]) && $daily_data[$date]['Spirit']['closing'][$size] > 0 ? $daily_data[$date]['Spirit']['closing'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_wine as $size): ?>
+                    <td><?= isset($daily_data[$date]['Wine']['closing'][$size]) && $daily_data[$date]['Wine']['closing'][$size] > 0 ? $daily_data[$date]['Wine']['closing'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Fermented Beer']['closing'][$size]) && $daily_data[$date]['Fermented Beer']['closing'][$size] > 0 ? $daily_data[$date]['Fermented Beer']['closing'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                  
+                  <?php foreach ($display_sizes_beer as $size): ?>
+                    <td><?= isset($daily_data[$date]['Mild Beer']['closing'][$size]) && $daily_data[$date]['Mild Beer']['closing'][$size] > 0 ? $daily_data[$date]['Mild Beer']['closing'][$size] : '' ?></td>
+                  <?php endforeach; ?>
+                </tr>
+              <?php endif; ?>
               <?php endforeach; ?>
               
-              <!-- Summary rows - Opening Balance -->
+              <?php if ($date_count == 0): ?>
+                <tr>
+                  <td colspan="<?= 3 + ($total_columns_per_section * 3) ?>" class="text-center">No data available for the selected date range.</td>
+                </tr>
+              <?php endif; ?>
+              
+              <!-- Summary rows -->
               <tr class="summary-row">
-                <td>Opening Balance</td>
-                <td></td>
-
-                <!-- Received Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-
-                <!-- Sold Section - Empty -->
-                <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
-                  <td></td>
-                <?php endfor; ?>
-
-                <!-- Closing Balance Section - Show opening balance -->
-                <!-- Spirit -->
-                <?php foreach ($display_sizes_spirit as $size): ?>
-                  <td><?= isset($opening_balance_data['Spirit'][$size]) && $opening_balance_data['Spirit'][$size] > 0 ? $opening_balance_data['Spirit'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Wine -->
-                <?php foreach ($display_sizes_wine as $size): ?>
-                  <td><?= isset($opening_balance_data['Wine'][$size]) && $opening_balance_data['Wine'][$size] > 0 ? $opening_balance_data['Wine'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($opening_balance_data['Fermented Beer'][$size]) && $opening_balance_data['Fermented Beer'][$size] > 0 ? $opening_balance_data['Fermented Beer'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <!-- Mild Beer -->
-                <?php foreach ($display_sizes_beer as $size): ?>
-                  <td><?= isset($opening_balance_data['Mild Beer'][$size]) && $opening_balance_data['Mild Beer'][$size] > 0 ? $opening_balance_data['Mild Beer'][$size] : '' ?></td>
-                <?php endforeach; ?>
-
-                <td></td>
-              </tr>
-
-              <!-- Summary rows - Total Received -->
-              <tr class="summary-row">
-                <td>Total Received</td>
-                <td></td>
-
+                <td colspan="3">Total Received</td>
+                
                 <!-- Received Section - Show purchase totals -->
-                <!-- Spirit -->
                 <?php foreach ($display_sizes_spirit as $size): ?>
                   <td><?= isset($totals['Spirit']['purchase'][$size]) && $totals['Spirit']['purchase'][$size] > 0 ? $totals['Spirit']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
+                
                 <?php foreach ($display_sizes_wine as $size): ?>
                   <td><?= isset($totals['Wine']['purchase'][$size]) && $totals['Wine']['purchase'][$size] > 0 ? $totals['Wine']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($totals['Fermented Beer']['purchase'][$size]) && $totals['Fermented Beer']['purchase'][$size] > 0 ? $totals['Fermented Beer']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Mild Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($totals['Mild Beer']['purchase'][$size]) && $totals['Mild Beer']['purchase'][$size] > 0 ? $totals['Mild Beer']['purchase'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
+                
                 <!-- Sold Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Closing Balance Section - Empty -->
+                
+                <!-- Closing Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <td></td>
               </tr>
-
-              <!-- Summary rows - Total Sold -->
+              
               <tr class="summary-row">
-                <td>Total Sold</td>
-                <td></td>
-
+                <td colspan="3">Total Sold</td>
+                
                 <!-- Received Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
+                
                 <!-- Sold Section - Show sales totals -->
-                <!-- Spirit -->
                 <?php foreach ($display_sizes_spirit as $size): ?>
                   <td><?= isset($totals['Spirit']['sales'][$size]) && $totals['Spirit']['sales'][$size] > 0 ? $totals['Spirit']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
+                
                 <?php foreach ($display_sizes_wine as $size): ?>
                   <td><?= isset($totals['Wine']['sales'][$size]) && $totals['Wine']['sales'][$size] > 0 ? $totals['Wine']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($totals['Fermented Beer']['sales'][$size]) && $totals['Fermented Beer']['sales'][$size] > 0 ? $totals['Fermented Beer']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Mild Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($totals['Mild Beer']['sales'][$size]) && $totals['Mild Beer']['sales'][$size] > 0 ? $totals['Mild Beer']['sales'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Closing Balance Section - Empty -->
+                
+                <!-- Closing Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <td></td>
               </tr>
-
-              <!-- Summary rows - Closing Balance (Opening + Received - Sold) -->
+              
               <tr class="summary-row">
-                <td>Closing Balance</td>
-                <td></td>
-
+                <td colspan="3">Closing Balance</td>
+                
                 <!-- Received Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
+                
                 <!-- Sold Section - Empty -->
                 <?php for ($i = 0; $i < $total_columns_per_section; $i++): ?>
                   <td></td>
                 <?php endfor; ?>
-
-                <!-- Closing Balance Section - Show calculated closing balance -->
-                <!-- Spirit -->
+                
+                <!-- Closing Section - Show calculated closing balance -->
                 <?php foreach ($display_sizes_spirit as $size): ?>
                   <td><?= isset($closing_balance['Spirit'][$size]) && $closing_balance['Spirit'][$size] > 0 ? $closing_balance['Spirit'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Wine -->
+                
                 <?php foreach ($display_sizes_wine as $size): ?>
                   <td><?= isset($closing_balance['Wine'][$size]) && $closing_balance['Wine'][$size] > 0 ? $closing_balance['Wine'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Fermented Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($closing_balance['Fermented Beer'][$size]) && $closing_balance['Fermented Beer'][$size] > 0 ? $closing_balance['Fermented Beer'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <!-- Mild Beer -->
+                
                 <?php foreach ($display_sizes_beer as $size): ?>
                   <td><?= isset($closing_balance['Mild Beer'][$size]) && $closing_balance['Mild Beer'][$size] > 0 ? $closing_balance['Mild Beer'][$size] : '' ?></td>
                 <?php endforeach; ?>
-
-                <td></td>
               </tr>
             </tbody>
           </table>
@@ -1495,7 +1598,7 @@ foreach (['Spirit', 'Wine', 'Fermented Beer', 'Mild Beer'] as $type) {
         
         <div class="footer-info">
           <p>Note: This is a computer generated report and does not require signature.</p>
-          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Total Days: <?= count($dates) ?></p>
+          <p>Generated on: <?= date('d-M-Y h:i A') ?> | Total Days: <?= $date_count ?></p>
         </div>
       </div>
     </div>
@@ -1554,5 +1657,7 @@ document.querySelectorAll('input[type="date"]').forEach(input => {
   });
 });
 </script>
+<?php require_once 'components/financial_year_footer.php'; ?>
+
 </body>
 </html>

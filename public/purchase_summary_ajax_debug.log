@@ -1863,3 +1863,475 @@
         }
     }
 }
+[16-Mar-2026 15:44:23 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[16-Mar-2026 15:44:23 Europe/Berlin] Processed 0 items into 0 TP numbers
+[16-Mar-2026 15:44:23 Europe/Berlin] Unique TP Numbers found: 
+[16-Mar-2026 15:44:23 Europe/Berlin] Final Summary Structure: []
+[16-Mar-2026 15:44:45 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: JAMBO P WHISKY(35.0), Code: SCMPL0012496, Class: 'W', Details: 'JAMBO P WHISKY(35.0)', Details2: '180 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 1440
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 1440, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 1440
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: MASTER NOI DR BRANDY, Code: SCMPL0010198, Class: 'D', Details: 'MASTER NOI DR BRANDY', Details2: '180 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 240
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: D
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 18, Category SPIRITS, Size 180 ML: 240
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: Sula Port Wine 1000, Code: SCMWN0019724, Class: 'V', Details: 'Sula Port Wine 1000', Details2: '375 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 36
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: WINE, Volume: 375, Column: 375 W, Qty: 36, Class: V
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 49, Category WINE, Size 375 W: 36
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028276, Class: 'W', Details: '8 PM Special Whisky', Details2: '180 ML (Pet)'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 576
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 576, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 180 ML: 576
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: 8 PM Special Whisky, Code: SCMPL0028274, Class: 'W', Details: '8 PM Special Whisky', Details2: '90 ML (Pet)-100'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 300
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 117, Category SPIRITS, Size 90 ML: 300
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010679, Class: 'G', Details: 'BRIHANS GOA DRY GIN & LIME DUET', Details2: '180 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 336
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 336, Class: G
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 180 ML: 336
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME, Code: SCMPL0010676, Class: 'G', Details: 'BRIHANS GOA DRY GIN & LIME', Details2: '375 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 48
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 375, Column: 375 ML, Qty: 48, Class: G
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 375 ML: 48
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: BRIHANS GOA DRY GIN & LIME DUET, Code: SCMPL0010678, Class: 'W', Details: 'BRIHANS GOA DRY GIN & LIME DUET', Details2: '
+                            '
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 200
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 161, Category SPIRITS, Size 90 ML: 200
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010445, Class: 'W', Details: 'Directors Special Black Deluxe Whisky', Details2: '180 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 192
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 192, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 192
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: McDowell's No. 1 Original Reserve Whisky, Code: SCMPL0010451, Class: 'W', Details: 'McDowell's No. 1 Original Reserve Whisky', Details2: '180 ML'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 2400
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 2400, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 180 ML: 2400
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: Directors Special Black Deluxe Whisky, Code: SCMPL0010612, Class: 'W', Details: 'Directors Special Black Deluxe Whisky', Details2: '90 ML (Pet)-100'
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 100
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 100, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 90 ML: 100
+[16-Mar-2026 15:44:45 Europe/Berlin] Item: McDowell's No.1 Celebration XXX Matured Rum, Code: SCMPL0012597, Class: 'W', Details: 'McDowell's No.1 Celebration XXX Matured Rum', Details2: '
+                            '
+[16-Mar-2026 15:44:45 Europe/Berlin] Using TotBott column: 18
+[16-Mar-2026 15:44:45 Europe/Berlin] Categorized as: SPIRITS, Volume: 1000, Column: 1L, Qty: 18, Class: W
+[16-Mar-2026 15:44:45 Europe/Berlin] Added to TP 240, Category SPIRITS, Size 1L: 18
+[16-Mar-2026 15:44:45 Europe/Berlin] Processed 12 items into 5 TP numbers
+[16-Mar-2026 15:44:45 Europe/Berlin] Unique TP Numbers found: 18, 49, 117, 161, 240
+[16-Mar-2026 15:44:45 Europe/Berlin] Final Summary Structure: {
+    "18": {
+        "tp_no": "18",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1680,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "49": {
+        "tp_no": "49",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 36,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "117": {
+        "tp_no": "117",
+        "tp_details": {
+            "purchase_date": "2021-04-09",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 576,
+                "170 ML": 0,
+                "90 ML": 300,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "161": {
+        "tp_no": "161",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 48,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 336,
+                "170 ML": 0,
+                "90 ML": 200,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "240": {
+        "tp_no": "240",
+        "tp_details": {
+            "purchase_date": "2021-04-08",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 18,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 2592,
+                "170 ML": 0,
+                "90 ML": 100,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[16-Mar-2026 17:15:17 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[16-Mar-2026 17:15:17 Europe/Berlin] Processed 0 items into 0 TP numbers
+[16-Mar-2026 17:15:17 Europe/Berlin] Unique TP Numbers found: 
+[16-Mar-2026 17:15:17 Europe/Berlin] Final Summary Structure: []

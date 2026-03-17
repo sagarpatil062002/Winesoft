@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'components/financial_year_init.php';// Ensure user is logged in and company is selected
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -224,5 +225,7 @@ function generateReport() {
   window.scrollTo(0, document.getElementById('reportContent').offsetTop);
 }
 </script>
+<?php require_once 'components/financial_year_footer.php'; ?>
+
 </body>
 </html>
