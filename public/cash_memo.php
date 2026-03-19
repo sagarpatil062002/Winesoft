@@ -1,7 +1,6 @@
 <?php
 // Start session at the very beginning
 session_start();
-require_once 'components/financial_year_auto.php';
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -1352,8 +1351,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<?php require_once 'components/financial_year_footer.php'; ?>
-
 </body>
 </html>
 <?php

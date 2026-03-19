@@ -53,15 +53,20 @@ function isStockAvailable($conn, $item_code, $date, $comp_id) {
     $day_num = sprintf('%02d', date('d', strtotime($date)));
     $closing_column = "DAY_{$day_num}_CLOSING";
     
+    // DEBUG: Log the query details
+    error_log("isStockAvailable: Item=$item_code, Date=$date, Table=$table_name, Column=$closing_column");
+    
     // Check if table exists
     $check_table = $conn->query("SHOW TABLES LIKE '$table_name'");
     if ($check_table->num_rows === 0) {
+        error_log("isStockAvailable: Table $table_name does not exist - returning false");
         return false; // No table = no stock
     }
     
     // Check if column exists
     $check_column = $conn->query("SHOW COLUMNS FROM $table_name LIKE '$closing_column'");
     if ($check_column->num_rows === 0) {
+        error_log("isStockAvailable: Column $closing_column does not exist - returning false");
         return false; // No column = no stock
     }
     
@@ -77,6 +82,8 @@ function isStockAvailable($conn, $item_code, $date, $comp_id) {
         $closing_stock = (float)($row[$closing_column] ?? 0);
     }
     $stmt->close();
+    
+    error_log("isStockAvailable: Item=$item_code, Date=$date, Stock=$closing_stock, Result=" . ($closing_stock > 0 ? 'true' : 'false'));
     
     return $closing_stock > 0;
 }
@@ -121,8 +128,9 @@ function getClosingStockForDate($conn, $item_code, $date, $comp_id) {
 }
 
 /**
- * Sanitize distribution - remove quantities from dates with no stock
- * Returns cleaned distribution array
+ * Sanitize distribution - remove quantities from dry days and dates with existing sales.
+ * Does NOT remove based on stock availability — the UI already handled that.
+ * Returns cleaned distribution array.
  */
 if (!function_exists('sanitizeDistribution')) {
 function sanitizeDistribution($conn, $item_code, $date_array, $distribution, $comp_id, $dry_dates = [], $unavailable_dates = []) {
@@ -133,38 +141,38 @@ function sanitizeDistribution($conn, $item_code, $date_array, $distribution, $co
     $dry_dates_set = array_flip($dry_dates);
     $unavailable_dates_set = array_flip($unavailable_dates);
     
+    error_log("SANITIZE DEBUG: Item=$item_code, Dates=" . count($date_array) . ", Dist=" . implode(',', $distribution));
+    
     foreach ($date_array as $index => $date) {
-        // Skip if quantity is already 0
-        if ($cleaned_distribution[$index] <= 0) {
+        if (($cleaned_distribution[$index] ?? 0) <= 0) {
             continue;
         }
         
-        // Skip dry days
+        // Remove from dry days
         if (isset($dry_dates_set[$date])) {
             $removed_count += $cleaned_distribution[$index];
             $cleaned_distribution[$index] = 0;
+            error_log("SANITIZE: Item $item_code on $date - removed (dry day)");
             continue;
         }
         
-        // Skip dates with existing sales
+        // Remove from dates with existing sales
         if (isset($unavailable_dates_set[$date])) {
             $removed_count += $cleaned_distribution[$index];
             $cleaned_distribution[$index] = 0;
+            error_log("SANITIZE: Item $item_code on $date - removed (existing sales)");
             continue;
         }
         
-        // Check if stock is available on this date
-        $closing_stock = getClosingStockForDate($conn, $item_code, $date, $comp_id);
-        
-        if ($closing_stock <= 0) {
-            // Stock not available - remove quantity
-            $removed_count += $cleaned_distribution[$index];
-            $cleaned_distribution[$index] = 0;
-        }
+        // NOTE: We intentionally do NOT strip based on stock here.
+        // The UI (closing_stock_for_date_range.php) already ensures quantities
+        // are only assigned to dates that have stock. Stripping here caused
+        // valid distributions (e.g., for 13/14/15 Apr) to be wrongly removed.
     }
     
     if ($removed_count > 0) {
-        error_log("SANITIZE: Removed $removed_count units from distribution for item $item_code due to no stock on specific dates");
+        error_log("SANITIZE: Removed $removed_count units from $item_code due to dry/unavailable dates");
+        error_log("SANITIZE: Cleaned distribution: " . implode(',', $cleaned_distribution));
     }
     
     return $cleaned_distribution;
@@ -492,11 +500,11 @@ function generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_d
             $qty = $sanitized_daily_sales_data[$item_code][$date_index] ?? 0;
             
             if ($qty > 0) {
-                // CRITICAL: Double-check stock availability before adding to bill
-                if (!isStockAvailable($conn, $item_code, $sale_date, $comp_id)) {
-                    error_log("BLOCKED: Item $item_code on $sale_date - no stock available");
-                    continue; // Skip this date for this item
-                }
+                // NOTE: We do NOT call isStockAvailable() here as a double-check.
+                // The distribution was already validated by the UI which checked stock
+                // per-date before assigning quantities. An extra isStockAvailable check
+                // using the DB closing stock (which reflects BEFORE the current sale batch)
+                // would wrongly block legitimate sales.
                 
                 $category = getItemCategory($conn, $item_code, $mode);
                 $size = getItemSize($conn, $item_code, $mode);

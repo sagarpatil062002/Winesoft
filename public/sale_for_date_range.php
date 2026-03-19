@@ -994,9 +994,13 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
 // FIXED: ENHANCED DAILY STOCK UPDATE WITH PROPER CASCADING TO TODAY'S DATE
 // ============================================================================
 
-// ENHANCED: Function to update daily stock table with MULTI-MONTH cascading updates
+// ENHANCED: Function to update daily stock table with CASCADE TO FINANCIAL YEAR END
 function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     logMessage("Starting daily stock update for item $item_code sold on $sale_date (Qty: $qty)", 'INFO');
+    
+    // Get financial year end from session
+    $fin_year_end = $_SESSION['FIN_YEAR_END']; // Format: YYYY-MM-DD (e.g., 2022-03-31)
+    $fin_year_end_obj = new DateTime($fin_year_end);
     
     // Get the correct table for the sale date
     $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
@@ -1125,155 +1129,104 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
     
     // ============================================================================
-    // STEP 3: CASCADE TO CURRENT MONTH (CRITICAL FIX - THIS WAS MISSING)
+    // STEP 3: CASCADE TO ALL SUBSEQUENT MONTHS UNTIL FINANCIAL YEAR END
     // ============================================================================
     
-    logMessage("Starting cascading to current month for item $item_code sold on $sale_date", 'INFO');
+    logMessage("Starting cascading to all months until financial year end $fin_year_end for item $item_code sold on $sale_date", 'INFO');
     
-    // If sale is not in current month, we need to cascade to current month
-    if ($month_year_full < $current_month) {
-        logMessage("Sale in archived month $month_year_full, cascading to current month $current_month", 'INFO');
+    // Cascade to all subsequent months until financial year end
+    // Create a month iterator starting from sale month
+    $current_month_obj = new DateTime($month_year_full . '-01');
+    
+    while (true) {
+        // Move to next month
+        $current_month_obj->modify('+1 month');
+        $next_month = $current_month_obj->format('Y-m');
+        $next_month_first_day = $current_month_obj->format('Y-m-01');
         
-        // Create a month iterator starting from sale month
-        $current_month_obj = new DateTime($month_year_full . '-01');
+        // Check if we've reached or passed the financial year end
+        if ($next_month_first_day > $fin_year_end) {
+            logMessage("Reached month $next_month which extends beyond financial year end $fin_year_end, stopping cascade", 'INFO');
+            break;
+        }
         
-        while (true) {
-            // Move to next month
-            $current_month_obj->modify('+1 month');
-            $next_month = $current_month_obj->format('Y-m');
-            
-            // Stop if we've reached beyond current month
-            if ($next_month > $current_month) {
-                logMessage("Reached month $next_month which is beyond current month $current_month, stopping cascade", 'INFO');
-                break;
-            }
-            
-            // Get the table for this month
-            $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month . '-01');
-            
-            // Check if table exists
-            $check_table = "SHOW TABLES LIKE '$next_month_table'";
-            if ($conn->query($check_table)->num_rows == 0) {
-                // Create the table
-                createDailyStockTable($conn, $next_month_table);
-                logMessage("Created table $next_month_table for cascading", 'INFO');
-            }
-            
-            // Get previous month's closing
-            $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
-            $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
-            $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-            $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-            
-            // Get previous month's closing
-            $prev_closing = 0;
-            if ($prev_month) {
-                $prev_query = "SELECT $prev_closing_column FROM $prev_table 
-                              WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $prev_stmt = $conn->prepare($prev_query);
-                $prev_stmt->bind_param("ss", $prev_month, $item_code);
-                if ($prev_stmt->execute()) {
-                    $prev_result = $prev_stmt->get_result();
-                    if ($prev_result->num_rows > 0) {
-                        $prev_row = $prev_result->fetch_assoc();
-                        $prev_closing = $prev_row[$prev_closing_column] ?? 0;
-                    } else {
-                        // If no record in previous month, use 0
-                        $prev_closing = 0;
-                    }
-                }
-                $prev_stmt->close();
-            }
-            
-            // Update or create record in next month
-            $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
-                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $check_stmt = $conn->prepare($check_record);
-            $check_stmt->bind_param("ss", $next_month, $item_code);
-            $check_stmt->execute();
-            $check_result = $check_stmt->get_result();
-            
-            if ($check_result->num_rows == 0) {
-                // Create new record
-                $check_stmt->close();
-                $insert_query = "INSERT INTO $next_month_table 
-                                (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
-                                VALUES (?, ?, ?, 0, 0, ?)";
-                $insert_stmt = $conn->prepare($insert_query);
-                $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
-                $insert_stmt->execute();
-                $insert_stmt->close();
-                logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
+        logMessage("Cascading to month $next_month", 'INFO');
+        
+        // Get the table for this month
+        $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month_first_day);
+        
+        // Check if table exists
+        $check_table = "SHOW TABLES LIKE '$next_month_table'";
+        if ($conn->query($check_table)->num_rows == 0) {
+            // Create the table
+            createDailyStockTable($conn, $next_month_table);
+            logMessage("Created table $next_month_table for cascading", 'INFO');
+        }
+        
+        // Get previous month's closing
+        $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
+        $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
+        $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
+        $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
+        
+        // Get previous month's closing
+        $prev_closing = 0;
+        $prev_query = "SELECT $prev_closing_column FROM $prev_table 
+                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $prev_stmt = $conn->prepare($prev_query);
+        $prev_stmt->bind_param("ss", $prev_month, $item_code);
+        if ($prev_stmt->execute()) {
+            $prev_result = $prev_stmt->get_result();
+            if ($prev_result->num_rows > 0) {
+                $prev_row = $prev_result->fetch_assoc();
+                $prev_closing = $prev_row[$prev_closing_column] ?? 0;
             } else {
-                // Update existing record
-                $check_stmt->close();
-                $update_query = "UPDATE $next_month_table 
-                               SET DAY_01_OPEN = ?,
-                                   LAST_UPDATED = CURRENT_TIMESTAMP 
-                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_stmt = $conn->prepare($update_query);
-                $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
-                $update_stmt->execute();
-                $update_stmt->close();
-                logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
-            }
-            
-            // Recalculate the entire month
-            recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
-            
-            logMessage("Completed cascading for month $next_month", 'INFO');
-            
-            // Break after updating current month
-            if ($next_month >= $current_month) {
-                logMessage("Reached current month $current_month, stopping cascading", 'INFO');
-                break;
+                // If no record in previous month, use 0
+                $prev_closing = 0;
             }
         }
-    }
-    
-    // ============================================================================
-    // STEP 4: UPDATE CURRENT MONTH'S STOCK IF SALE DATE IS IN ARCHIVED MONTH
-    // ============================================================================
-    
-    // Get current month table
-    $current_daily_stock_table = "tbldailystock_" . $comp_id;
-    
-    // If sale is in archived month, update current month's stock
-    if ($month_year_full < $current_month) {
-        logMessage("Sale in archived month, updating current month's stock", 'INFO');
+        $prev_stmt->close();
         
-        // Get previous month (the month before current month)
-        $prev_month_of_current = date('Y-m', strtotime($current_month . '-01 -1 month'));
+        // Update or create record in next month
+        $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
+                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $check_stmt = $conn->prepare($check_record);
+        $check_stmt->bind_param("ss", $next_month, $item_code);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
         
-        if ($prev_month_of_current == $month_year_full) {
-            // Sale was in the month just before current month, update current month's opening
-            $current_record_check = "SELECT DAY_01_OPEN FROM $current_daily_stock_table 
-                                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-            $current_check_stmt = $conn->prepare($current_record_check);
-            $current_check_stmt->bind_param("ss", $current_month, $item_code);
-            $current_check_stmt->execute();
-            $current_check_result = $current_check_stmt->get_result();
-            
-            if ($current_check_result->num_rows > 0) {
-                // Update current month's opening (deduct the sale)
-                $update_current_query = "UPDATE $current_daily_stock_table 
-                                        SET DAY_01_OPEN = DAY_01_OPEN - ?,
-                                            LAST_UPDATED = CURRENT_TIMESTAMP 
-                                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $update_current_stmt = $conn->prepare($update_current_query);
-                $update_current_stmt->bind_param("dss", $qty, $current_month, $item_code);
-                $update_current_stmt->execute();
-                $update_current_stmt->close();
-                
-                // Recalculate current month
-                recalculateDailyStockFromDay($conn, $current_daily_stock_table, $item_code, $current_month, 1);
-                logMessage("Updated current month's opening by deducting $qty", 'INFO');
-            }
-            $current_check_stmt->close();
+        if ($check_result->num_rows == 0) {
+            // Create new record
+            $check_stmt->close();
+            $insert_query = "INSERT INTO $next_month_table 
+                            (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                            VALUES (?, ?, ?, 0, 0, ?)";
+            $insert_stmt = $conn->prepare($insert_query);
+            $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
+            $insert_stmt->execute();
+            $insert_stmt->close();
+            logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
+        } else {
+            // Update existing record
+            $check_stmt->close();
+            $update_query = "UPDATE $next_month_table 
+                           SET DAY_01_OPEN = ?,
+                               LAST_UPDATED = CURRENT_TIMESTAMP 
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
+            $update_stmt->execute();
+            $update_stmt->close();
+            logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
         }
+        
+        // Recalculate the entire month
+        recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
+        
+        logMessage("Completed cascading for month $next_month", 'INFO');
     }
     
-    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing", 'INFO');
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing with cascade to financial year end $fin_year_end", 'INFO');
     
     return true;
 }
@@ -3473,56 +3426,47 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
 
     console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
 
-    // Add date distribution cells with proper styling
+    // SAVE THIS DISTRIBUTION - this is what the user sees
+    savedDistributions[itemCode] = distribution.slice();
+
+    // *** FIX: Collect all cells first, then insert in reverse ***
+    const cellsToInsert_preview = [];
+
     distribution.forEach((qty, index) => {
         const date = dateArray[index];
         const cell = $(`<td class="date-distribution-cell"></td>`);
 
-        // Check if this date is unavailable due to global sales
         const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        
-        // Check if this date is a dry day
         const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-        
-        // Check if this date is available
         const isAvailable = trulyAvailableDates.length > 0 && trulyAvailableDates.includes(date);
 
         console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
 
-        // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
         if (isDryDate) {
-            // Date is a dry day - show 🌙 (always with 0 quantity)
             cell.addClass('dry-unavailable-date');
             cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            
-            // Get dry day description
             const dryDescription = dryDaysInfo[date] || 'Dry Day';
             cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
         } else if (isGlobalUnavailable && !isDryDate) {
-            // Date has existing global sales - show ✗
             cell.addClass('global-unavailable-date');
             cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
             cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
         } else if (isAvailable && qty > 0) {
-            // Date is available and has new sales
             cell.addClass('available-date-with-sales');
             cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
         } else if (qty > 0) {
-            // Normal distribution (no restrictions)
             cell.addClass('non-zero-distribution');
             cell.text(qty);
             cell.attr('title', `${qty} units scheduled for ${date}`);
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
         } else {
-            // Zero quantity
             cell.addClass('zero-distribution');
             cell.text('0');
             console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to ZERO DISTRIBUTION`);
-
             if (isAvailable) {
                 cell.attr('title', `Date ${date} is available but has 0 units assigned`);
             } else if (!hasGlobalRestriction) {
@@ -3530,9 +3474,13 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
             }
         }
 
-        // Insert distribution cells after the action column
-        cell.insertAfter(itemRow.find('.action-column'));
+        cellsToInsert_preview.push(cell);
     });
+
+    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
+    for (let i = cellsToInsert_preview.length - 1; i >= 0; i--) {
+        cellsToInsert_preview[i].insertAfter(itemRow.find('.action-column'));
+    }
 
     console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
     
@@ -3543,21 +3491,18 @@ function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
     // Show date columns
     $('.date-header, .date-distribution-cell').show();
     
-    // CRITICAL: SAVE THIS DISTRIBUTION - this is what the user sees
-    savedDistributions[itemCode] = distribution.slice(); // Create a copy
-    console.log(`DEBUG: ${itemCode} - Saved distribution to savedDistributions:`, savedDistributions[itemCode]);
-    
     // Save distribution to session so it matches when generating bills
     saveDistributionToSession(itemCode, distribution);
 }
 
-// NEW: Helper function to display saved distribution in cells (avoids regenerating random distribution)
 function displayDistributionInCells(itemCode, itemRow, distribution) {
     console.log(`DEBUG: ${itemCode} - displayDistributionInCells called with:`, distribution);
     
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     const unavailableDates = inputField.data('unavailable-dates') || [];
     const dryDates = inputField.data('dry-dates') || [];
+    const availableDates = inputField.data('available-dates') || [];
+    const hasGlobalRestriction = inputField.data('has-global-restriction');
     
     // Remove any existing distribution cells
     itemRow.find('.date-distribution-cell').remove();
@@ -3565,56 +3510,74 @@ function displayDistributionInCells(itemCode, itemRow, distribution) {
     // Show date columns
     $('.date-header, .date-distribution-cell').show();
     
-    // Calculate total for this distribution
     const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
     console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
     
-    // Add date distribution cells with proper styling
+    // *** FIX: Collect all cells first, then insert in reverse order ***
+    // Headers are inserted via insertAfter(action-column) in REVERSE → each new header
+    // pushes previous ones right → earliest date ends up leftmost.
+    // Cells must use the SAME reverse-insert pattern to align with headers.
+    const cellsToInsert_display = [];
+    
     distribution.forEach((qty, index) => {
         const date = dateArray[index];
         const cell = $(`<td class="date-distribution-cell"></td>`);
 
-        // Check if this date is unavailable due to global sales
         const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        
-        // Check if this date is a dry day
         const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        const isAvailable = availableDates.length > 0 && availableDates.includes(date);
 
-        // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
+        // CRITICAL: Check dry day FIRST
         if (isDryDate) {
-            // Date is a dry day - show 🌙 (always with 0 quantity)
             cell.addClass('dry-unavailable-date');
             cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            
-            // Get dry day description
             const dryDescription = dryDaysInfo[date] || 'Dry Day';
             cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            console.log(`DEBUG: ${itemCode} - cell ${date} → DRY DAY`);
         } else if (isGlobalUnavailable && !isDryDate) {
-            // Date has existing global sales - show ✗
             cell.addClass('global-unavailable-date');
             cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
             cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            console.log(`DEBUG: ${itemCode} - cell ${date} → GLOBAL UNAVAILABLE (✗)`);
+        } else if (isAvailable && qty > 0) {
+            cell.addClass('available-date-with-sales');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
+            console.log(`DEBUG: ${itemCode} - cell ${date} → AVAILABLE WITH SALES (${qty})`);
         } else if (qty > 0) {
-            // Normal available date with quantity - show the quantity
-            cell.addClass('has-quantity');
-            cell.html(`<span class="qty-badge">${qty}</span>`);
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date}`);
+            console.log(`DEBUG: ${itemCode} - cell ${date} → NON-ZERO (${qty})`);
         } else {
-            // Available date but 0 quantity
-            cell.addClass('zero-quantity');
-            cell.html('<span class="text-muted">0</span>');
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            console.log(`DEBUG: ${itemCode} - cell ${date} → ZERO`);
+            if (isAvailable) {
+                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
+            } else if (!hasGlobalRestriction) {
+                cell.attr('title', `Date ${date} has 0 units assigned`);
+            }
         }
 
-        // Insert after the item details columns
-        const actionColumn = itemRow.find('td.action-column');
-        if (actionColumn.length > 0) {
-            cell.insertAfter(actionColumn);
-        } else {
-            // Fallback: append to row
-            itemRow.append(cell);
-        }
+        cellsToInsert_display.push(cell);
     });
+
+    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
+    for (let i = cellsToInsert_display.length - 1; i >= 0; i--) {
+        cellsToInsert_display[i].insertAfter(itemRow.find('.action-column'));
+    }
+
+    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
+    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - FINAL TOTAL DISTRIBUTED: ${finalTotal} (should equal ${totalDistributed})`);
     
-    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+    $('.date-header, .date-distribution-cell').show();
+    
+    savedDistributions[itemCode] = distribution.slice();
+    console.log(`DEBUG: ${itemCode} - Saved distribution to savedDistributions:`, savedDistributions[itemCode]);
+    
+    saveDistributionToSession(itemCode, distribution);
 }
 
 // NEW: Function to shuffle distribution for a specific item when Enter is pressed
@@ -4837,96 +4800,47 @@ function initializeDistributionPreview() {
     }
 }
 
-// FIXED: Individual shuffle button click event - correctly handles global restrictions
-$(document).on('click', '.btn-shuffle-item', async function() {
-    const itemCode = $(this).data('code');
-    console.log(`DEBUG: Individual shuffle clicked for ${itemCode}`);
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const totalQty = parseInt(inputField.val()) || 0;
+    // *** FIX: Collect all cells first, then insert in reverse ***
+    const cellsToInsert_saved = [];
 
-    console.log(`DEBUG: Individual shuffle ${itemCode} - totalQty: ${totalQty}, disabled: ${inputField.prop('disabled')}`);
+    [...distribution].forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell"></td>`);
 
-    // Only shuffle if quantity > 0 and not disabled
-    if (totalQty > 0 && !inputField.prop('disabled')) {
-        // Get new distribution based on global restrictions
-        const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
 
-        // Update the distribution cells
-        const itemRow = inputField.closest('tr');
-        const dateCells = itemRow.find('.date-distribution-cell');
+        if (isDryDate) {
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+        } else if (isGlobalUnavailable && !isDryDate) {
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+        } else if (qty > 0) {
+            cell.addClass('has-quantity');
+            cell.html(`<span class="qty-badge">${qty}</span>`);
+        } else {
+            cell.addClass('zero-quantity');
+            cell.html('<span class="text-muted">0</span>');
+        }
 
-        console.log(`DEBUG: Individual shuffle ${itemCode} - found ${dateCells.length} date cells`);
+        cellsToInsert_saved.push(cell);
+    });
 
-        // Get global available/unavailable dates
-        const hasGlobalRestriction = inputField.data('has-global-restriction');
-        const availableDates = inputField.data('available-dates') || [];
-        const unavailableDates = inputField.data('unavailable-dates') || [];
-        const dryDates = inputField.data('dry-dates') || [];
-
-        console.log(`DEBUG: Individual shuffle ${itemCode} - availableDates:`, availableDates);
-        console.log(`DEBUG: Individual shuffle ${itemCode} - unavailableDates:`, unavailableDates);
-        console.log(`DEBUG: Individual shuffle ${itemCode} - dryDates:`, dryDates);
-
-        // Create date index map
-        const dateIndexMap = {};
-        dateArray.forEach((date, index) => {
-            dateIndexMap[date] = index;
-        });
-
-        newDistribution.forEach((qty, index) => {
-            if (dateCells.eq(index).length) {
-                const cell = dateCells.eq(index);
-                const date = dateArray[index];
-
-                console.log(`DEBUG: Individual shuffle ${itemCode} - updating cell ${index} for date ${date} with qty ${qty}`);
-
-                // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
-                if (isDryDate) {
-                    // Date is a dry day - show 🌙
-                    cell.addClass('dry-unavailable-date');
-                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-                    
-                    // Get dry day description
-                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
-                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to DRY DAY`);
-                } else if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to GLOBAL UNAVAILABLE`);
-                } else if (isAvailable && qty > 0) {
-                    // Date is available and has new sales
-                    cell.addClass('available-date-with-sales');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to AVAILABLE WITH SALES`);
-                } else if (qty > 0) {
-                    cell.addClass('non-zero-distribution');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date}`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to NON-ZERO`);
-                } else {
-                    cell.addClass('zero-distribution');
-                    cell.text('0');
-                    cell.attr('title', `Date ${date} has 0 units assigned`);
-                    console.log(`DEBUG: Individual shuffle ${itemCode} - set cell ${index} to ZERO`);
-                }
-            }
-        });
-
-        console.log(`Shuffled distribution for item ${itemCode}:`, newDistribution);
-        
-        // CRITICAL: Save this new distribution to savedDistributions
-        savedDistributions[itemCode] = newDistribution.slice();
-        
-        // Save distribution to session so it matches when generating bills
-        saveDistributionToSession(itemCode, newDistribution);
-    } else {
-        console.log(`DEBUG: Individual shuffle ${itemCode} - not shuffling (qty=${totalQty}, disabled=${inputField.prop('disabled')})`);
+    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
+    const savedActionCol = itemRow.find('td.action-column');
+    for (let i = cellsToInsert_saved.length - 1; i >= 0; i--) {
+        if (savedActionCol.length > 0) {
+            cellsToInsert_saved[i].insertAfter(savedActionCol);
+        } else {
+            itemRow.prepend(cellsToInsert_saved[i]);
+        }
     }
-});
+    
+    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
 
 // FIXED: Shuffle all button click event - correctly handles global restrictions
 $('#shuffleBtn').off('click').on('click', async function() {

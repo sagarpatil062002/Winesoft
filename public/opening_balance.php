@@ -1453,7 +1453,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [],
                         im.SUBCLASS_CODE_NEW,
                         im.SIZE_CODE,
                         ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
-                        COALESCE(st.OPENING_STOCK{$comp_id}, 0) as OPENING_STOCK_VALUE
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
                       INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -1495,7 +1495,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [],
         $volume_totals = [];
         
         foreach ($items as $item) {
-            $opening_stock = (int)$item['OPENING_STOCK_VALUE'];
+            $current_stock = (int)$item['CURRENT_STOCK'];
             
             // Get hierarchy information - use CLASS_CODE_NEW if available, otherwise fallback to CLASS
             $class_to_use = !empty($item['CLASS_CODE_NEW']) ? $item['CLASS_CODE_NEW'] : $item['CLASS'];
@@ -1515,20 +1515,20 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [],
             }
             
             // Update statistics
-            $total_stock += $opening_stock;
-            $category_totals[$display_category] += $opening_stock;
+            $total_stock += $current_stock;
+            $category_totals[$display_category] += $current_stock;
             $category_counts[$display_category]++;
             
-            if ($opening_stock > 0) {
+            if ($current_stock > 0) {
                 $items_with_stock++;
             }
             
-            if ($opening_stock > $max_stock) {
-                $max_stock = $opening_stock;
+            if ($current_stock > $max_stock) {
+                $max_stock = $current_stock;
             }
             
-            if ($opening_stock < $min_stock && $opening_stock > 0) {
-                $min_stock = $opening_stock;
+            if ($current_stock < $min_stock && $current_stock > 0) {
+                $min_stock = $current_stock;
             }
             
             // Use ML volume from hierarchy for volume breakdown
@@ -1536,7 +1536,7 @@ function getOpeningBalanceSummary($conn, $comp_id, $mode, $allowed_classes = [],
                 if (!isset($volume_totals[$ml_volume])) {
                     $volume_totals[$ml_volume] = 0;
                 }
-                $volume_totals[$ml_volume] += $opening_stock;
+                $volume_totals[$ml_volume] += $current_stock;
             }
         }
         
@@ -1683,7 +1683,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                         im.SUBCLASS_CODE_NEW,
                         im.SIZE_CODE,
                         ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
-                        COALESCE(st.OPENING_STOCK{$comp_id}, 0) as OPENING_STOCK_VALUE
+                        COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                       FROM tblitemmaster im
                       INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                       LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -1715,15 +1715,15 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
         debug_log("Volume summary query returned rows", ['count' => $row_count]);
         
         while ($item = $result->fetch_assoc()) {
-            $opening_stock = (int)$item['OPENING_STOCK_VALUE'];
+            $current_stock = (int)$item['CURRENT_STOCK'];
             debug_log("Processing item", [
                 'code' => $item['CODE'],
-                'opening_stock' => $opening_stock,
+                'current_stock' => $current_stock,
                 'class_code_new' => $item['CLASS_CODE_NEW'],
                 'class' => $item['CLASS']
             ]);
             
-            if ($opening_stock > 0) {
+            if ($current_stock > 0) {
                 // Get hierarchy information - use CLASS_CODE_NEW if available, otherwise fallback to CLASS
                 $class_to_use = !empty($item['CLASS_CODE_NEW']) ? $item['CLASS_CODE_NEW'] : $item['CLASS'];
                 $hierarchy = getItemHierarchy(
@@ -1759,7 +1759,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                 
                 // Add to summary
                 if (isset($volumeSummary[$display_category][$mappedColumn])) {
-                    $volumeSummary[$display_category][$mappedColumn] += $opening_stock;
+                    $volumeSummary[$display_category][$mappedColumn] += $current_stock;
                     debug_log("Added to volume summary", [
                         'category' => $display_category,
                         'volume' => $mappedColumn,
@@ -1767,7 +1767,7 @@ function getOpeningBalanceVolumeSummary($conn, $comp_id, $mode, $allowed_classes
                     ]);
                 } elseif ($display_category !== 'OTHER') {
                     // For unknown sizes in known categories, add to smallest size as fallback
-                    $volumeSummary[$display_category]['50 ML'] += $opening_stock;
+                    $volumeSummary[$display_category]['50 ML'] += $current_stock;
                     debug_log("Added to fallback (50 ML)", [
                         'category' => $display_category,
                         'new_total' => $volumeSummary[$display_category]['50 ML']
@@ -1805,7 +1805,7 @@ if (isset($_GET['export'])) {
             fwrite($output, "\xEF\xBB\xBF");
             
             // Headers
-            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock']);
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
             
             fclose($output);
             debug_log("Export completed - empty (no first batch data)");
@@ -1824,7 +1824,7 @@ if (isset($_GET['export'])) {
             header('Content-Disposition: attachment; filename=opening_balance_empty_' . $mode . '_' . date('Y-m-d') . '.csv');
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock']);
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
             fclose($output);
             exit;
         }
@@ -1838,7 +1838,7 @@ if (isset($_GET['export'])) {
             header('Content-Disposition: attachment; filename=opening_balance_empty_' . $mode . '_' . date('Y-m-d') . '.csv');
             $output = fopen('php://output', 'w');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock']);
+            fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock']);
             fclose($output);
             exit;
         }
@@ -1863,7 +1863,7 @@ if (isset($_GET['export'])) {
                     im.SIZE_CODE,
                     sz.SIZE_DESC,
                     ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
-                    COALESCE(st.OPENING_STOCK{$comp_id}, 0) as OPENING_STOCK_VALUE
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
                   INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -1891,7 +1891,7 @@ if (isset($_GET['export'])) {
                     im.SIZE_CODE,
                     sz.SIZE_DESC,
                     ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
-                    COALESCE(st.OPENING_STOCK{$comp_id}, 0) as OPENING_STOCK_VALUE
+                    COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK
                   FROM tblitemmaster im
                   INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                   LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -1925,15 +1925,15 @@ if (isset($_GET['export'])) {
         // Use comma as delimiter for consistent export
         $delimiter = ',';
         
-        // UPDATED HEADERS - Only 4 columns: Item_Code, Item_Name, Size, Opening_Stock
-        fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock'], $delimiter);
+        // UPDATED HEADERS - Only 4 columns: Item_Code, Item_Name, Size, Current_Stock
+        fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'], $delimiter);
         
         while ($item = $result->fetch_assoc()) {
             fputcsv($output, [
                 $item['CODE'],
                 $item['DETAILS'],
                 $item['SIZE_DESC'] ?? '',
-                $item['OPENING_STOCK_VALUE']
+                $item['CURRENT_STOCK']
             ], $delimiter);
         }
         
@@ -1983,7 +1983,7 @@ if (isset($_GET['download_template'])) {
     $delimiter = ',';
     
     // UPDATED HEADERS - Only 4 columns
-    fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock'], $delimiter);
+    fputcsv($output, ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'], $delimiter);
     
     while ($item = $template_result->fetch_assoc()) {
         fputcsv($output, [
@@ -2066,8 +2066,8 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
     // For with_stock view: stock > 0
     // For without_stock view: stock = 0
     $stock_condition = ($view_type === 'with_stock') 
-        ? "AND COALESCE(st.OPENING_STOCK{$comp_id}, 0) > 0" 
-        : "AND (st.OPENING_STOCK{$comp_id} IS NULL OR COALESCE(st.OPENING_STOCK{$comp_id}, 0) = 0)";
+        ? "AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0" 
+        : "AND (st.CURRENT_STOCK{$comp_id} IS NULL OR COALESCE(st.CURRENT_STOCK{$comp_id}, 0) = 0)";
     
     // Count query with proper stock filtering - excludes negative stock
     $count_query = "SELECT 
@@ -2085,7 +2085,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
                           ) pp
                           WHERE pp.ITEM_CODE = im.CODE
                       )
-                      AND COALESCE(st.OPENING_STOCK{$comp_id}, 0) >= 0";
+                      AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) >= 0";
     
     $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
     $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
@@ -2118,7 +2118,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
                 im.ITEM_GROUP,
                 im.SIZE_CODE,
                 ds.DAY_{$batch_day}_OPEN as OPENING_STOCK,
-                COALESCE(st.OPENING_STOCK{$comp_id}, 0) as OPENING_STOCK_VALUE,
+                COALESCE(st.CURRENT_STOCK$comp_id, 0) as CURRENT_STOCK,
                 sz.SIZE_DESC
               FROM tblitemmaster im
               INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
@@ -2182,7 +2182,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_items') {
             'size_desc' => $hierarchy['size_desc'] ?: ($row['SIZE_DESC'] ?? getSizeDescriptionFromCode($row['SIZE_CODE'], $conn)),
             'ml_volume' => $hierarchy['ml_volume'],
             'full_hierarchy' => $hierarchy['full_hierarchy'],
-            'opening_stock_value' => (int)$row['OPENING_STOCK_VALUE'],
+            'current_stock' => (int)$row['CURRENT_STOCK'],
             'opening_stock' => (int)$row['OPENING_STOCK']
         ];
     }
@@ -2399,7 +2399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     }
     
     // Check if CSV has the correct format (4 columns)
-    $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock'];
+    $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Current_Stock'];
     
     // Normalize headers: trim whitespace and remove BOM
     $header = array_map(function($h) {
@@ -2562,8 +2562,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         
         // Prepare statements for batch operations
         $check_stmt = $conn->prepare("SELECT 1 FROM tblitem_stock WHERE ITEM_CODE = ? LIMIT 1");
-        $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
-        $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id) VALUES (?, ?, ?)");
+        $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
+        $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
         
         if (!$check_stmt || !$update_stmt || !$insert_stmt) {
             throw new Exception("Failed to prepare statements: " . $conn->error);
@@ -2684,10 +2684,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                             $check_stmt->free_result();
                             
                             if ($exists) {
-                                $update_stmt->bind_param("is", $item['balance'], $item['code']);
+                                $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                                 $update_stmt->execute();
                             } else {
-                                $insert_stmt->bind_param("sis", $item['code'], $fin_year_id, $item['balance']);
+                                $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                                 $insert_stmt->execute();
                             }
                         }
@@ -2738,10 +2738,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                 $check_stmt->free_result();
                 
                 if ($exists) {
-                    $update_stmt->bind_param("is", $item['balance'], $item['code']);
+                    $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                     $update_stmt->execute();
                 } else {
-                    $insert_stmt->bind_param("sis", $item['code'], $fin_year_id, $item['balance']);
+                    $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                     $insert_stmt->execute();
                 }
             }
@@ -2934,8 +2934,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
             try {
                 // Prepare statements for batch processing
                 $check_stmt = $conn->prepare("SELECT 1 FROM tblitem_stock WHERE ITEM_CODE = ? LIMIT 1");
-                $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
-                $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id) VALUES (?, ?, ?)");
+                $update_stmt = $conn->prepare("UPDATE tblitem_stock SET OPENING_STOCK$comp_id = ?, CURRENT_STOCK$comp_id = ? WHERE ITEM_CODE = ?");
+                $insert_stmt = $conn->prepare("INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, OPENING_STOCK$comp_id, CURRENT_STOCK$comp_id) VALUES (?, ?, ?, ?)");
                 
                 if (!$check_stmt || !$update_stmt || !$insert_stmt) {
                     throw new Exception("Failed to prepare statements: " . $conn->error);
@@ -2953,10 +2953,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_balances'])) {
                         $check_stmt->free_result();
                         
                         if ($exists) {
-                            $update_stmt->bind_param("is", $item['balance'], $item['code']);
+                            $update_stmt->bind_param("iis", $item['balance'], $item['balance'], $item['code']);
                             $update_stmt->execute();
                         } else {
-                            $insert_stmt->bind_param("sis", $item['code'], $fin_year_id, $item['balance']);
+                            $insert_stmt->bind_param("siii", $item['code'], $fin_year_id, $item['balance'], $item['balance']);
                             $insert_stmt->execute();
                         }
                     }
@@ -3018,8 +3018,8 @@ if (!empty($allowed_classes) && $first_batch_data) {
         // Only count items with stock >= 0 (exclude negative stock)
         $count_query = "SELECT 
                             COUNT(DISTINCT im.CODE) as total,
-                            SUM(CASE WHEN COALESCE(st.OPENING_STOCK{$comp_id}, 0) > 0 THEN 1 ELSE 0 END) as with_stock,
-                            SUM(CASE WHEN COALESCE(st.OPENING_STOCK{$comp_id}, 0) = 0 THEN 1 ELSE 0 END) as without_stock
+                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) > 0 THEN 1 ELSE 0 END) as with_stock,
+                            SUM(CASE WHEN COALESCE(st.CURRENT_STOCK{$comp_id}, 0) = 0 THEN 1 ELSE 0 END) as without_stock
                         FROM tblitemmaster im
                         INNER JOIN {$batch_table} ds ON im.CODE = ds.ITEM_CODE
                         LEFT JOIN tblitem_stock st ON im.CODE = st.ITEM_CODE
@@ -3033,7 +3033,7 @@ if (!empty($allowed_classes) && $first_batch_data) {
                               ) pp
                               WHERE pp.ITEM_CODE = im.CODE
                           )
-                          AND COALESCE(st.OPENING_STOCK{$comp_id}, 0) >= 0";
+                          AND COALESCE(st.CURRENT_STOCK{$comp_id}, 0) >= 0";
         
         $params = array_merge([$batch_month, $mode], $allowed_classes, $allowed_classes);
         $types = "ss" . str_repeat('s', count($allowed_classes) * 2);
@@ -3409,7 +3409,7 @@ debug_log("Script completed, rendering page");
         <h5><i class="fas fa-file-import"></i> Import Opening Balances from CSV/TSV</h5>
         <p class="text-muted small">
           <strong>Supported formats:</strong> CSV (comma-separated), TSV (tab-separated), or semicolon-separated<br>
-          <strong>Format:</strong> Item_Code, Item_Name, Size, Opening_Stock (4 columns only)<br>
+          <strong>Format:</strong> Item_Code, Item_Name, Size, Current_Stock (4 columns only)<br>
           <strong>System automatically detects:</strong> CSV (,), TSV (tab), or Semicolon (;) files
         </p>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end" id="importForm">
@@ -3585,7 +3585,7 @@ debug_log("Script completed, rendering page");
                 <th>Item Name / Hierarchy</th>
                 <th>Size</th>
                 <th class="company-column">
-                  Opening Stock (OPENING_STOCK<?= $comp_id ?>)
+                  Current Stock (CURRENT_STOCK<?= $comp_id ?>)
                 </th>
               </tr>
             </thead>
@@ -3635,7 +3635,7 @@ debug_log("Script completed, rendering page");
         <div class="modal-content">
             <div class="modal-header bg-info text-dark">
                 <h5 class="modal-title" id="openingBalanceVolumeModalLabel">
-                    <i class="fas fa-wine-bottle me-2"></i>Opening Balance Volume Summary (OPENING_STOCK<?= $comp_id ?>)
+                    <i class="fas fa-wine-bottle me-2"></i>Opening Balance Volume Summary (CURRENT_STOCK<?= $comp_id ?>)
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -3815,7 +3815,7 @@ function renderItems(append = false) {
         
         const sizeDesc = item.size_desc || 'N/A';
         const mlVolume = item.ml_volume > 0 ? getVolumeLabel(item.ml_volume) : '';
-        const openingStock = item.opening_stock_value || 0;
+        const currentStock = item.current_stock || 0;
         
         html += '<tr>';
         html += '<td><strong>' + escapeHtml(item.code) + '</strong></td>';
@@ -3829,11 +3829,11 @@ function renderItems(append = false) {
         html += '</td>';
         html += '<td class="company-column">';
         html += '<input type="number" name="opening_stock[' + escapeHtml(item.code) + ']" ';
-        html += 'value="' + openingStock + '" min="0" ';
+        html += 'value="' + currentStock + '" min="0" ';
         html += 'class="form-control opening-balance-input" ';
-        html += 'data-original="' + openingStock + '">';
+        html += 'data-original="' + currentStock + '">';
         html += '<input type="hidden" name="original_stock[' + escapeHtml(item.code) + ']" ';
-        html += 'value="' + openingStock + '">';
+        html += 'value="' + currentStock + '">';
         html += '</td>';
         html += '</tr>';
     });
@@ -4148,7 +4148,7 @@ function generateVolumeSummaryHTML(data) {
             <div class="col-md-4">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
-                        <h6 class="card-title"><i class="fas fa-wine-bottle me-2"></i>Total Opening Stock Bottles</h6>
+                        <h6 class="card-title"><i class="fas fa-wine-bottle me-2"></i>Total Bottles</h6>
                         <h2 class="mb-0">${totalBottles.toLocaleString()}</h2>
                     </div>
                 </div>

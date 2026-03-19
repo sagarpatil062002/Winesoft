@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once 'components/financial_year_init.php';// Ensure user is logged in and company is selected
 
 // ---- Auth / company guards ----
 if (!isset($_SESSION['user_id'])) { header("Location: index.php"); exit; }
@@ -2099,7 +2098,5 @@ $(document).on('keydown', function(e) {
     }
 });
 </script>
-<?php require_once 'components/financial_year_footer.php'; ?>
-
 </body>
 </html>
