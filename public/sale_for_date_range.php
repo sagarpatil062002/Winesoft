@@ -740,6 +740,81 @@ foreach ($date_range as $date) {
 $days_count = count($date_array);
 
 // ============================================================================
+// NEW: FETCH DAILY STOCK DATA FOR EACH ITEM FOR STOCK-AWARE DISTRIBUTION
+// ============================================================================
+$daily_stock_for_js = [];
+$dates_by_month = []; // Initialize to avoid undefined variable error
+
+// Only fetch if we have items and the date range is valid
+if (!empty($items) && !empty($date_array)) {
+    // Group dates by month to optimize queries
+    $dates_by_month = [];
+    foreach ($date_array as $date) {
+        $month_year = date('Y-m', strtotime($date));
+        if (!isset($dates_by_month[$month_year])) {
+            $dates_by_month[$month_year] = [];
+        }
+        $dates_by_month[$month_year][] = $date;
+    }
+    
+    // Fetch stock for each item
+    foreach ($items as $item) {
+        $item_code = $item['CODE'];
+        $daily_stock_for_js[$item_code] = [];
+        
+        // For each month, fetch stock data
+        foreach ($dates_by_month as $month_year => $month_dates) {
+            // Determine which table to use for this month
+            $current_month = date('Y-m');
+            if ($month_year === $current_month) {
+                $stock_table = "tbldailystock_" . $comp_id;
+            } else {
+                $month_short = date('m', strtotime($month_year . '-01'));
+                $year_short = date('y', strtotime($month_year . '-01'));
+                $stock_table = "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
+            }
+            
+            // Check if table exists
+            $check_table = $conn->query("SHOW TABLES LIKE '$stock_table'");
+            if ($check_table->num_rows === 0) {
+                // Table doesn't exist - set all dates in this month to 0
+                foreach ($month_dates as $date) {
+                    $daily_stock_for_js[$item_code][$date] = 0;
+                }
+                continue;
+            }
+            
+            // Query stock for this item and month
+            $stock_query = "SELECT * FROM $stock_table WHERE ITEM_CODE = ? AND STK_MONTH = ?";
+            $stock_stmt = $conn->prepare($stock_query);
+            $stock_stmt->bind_param("ss", $item_code, $month_year);
+            $stock_stmt->execute();
+            $stock_result = $stock_stmt->get_result();
+            
+            $stock_row = null;
+            if ($row = $stock_result->fetch_assoc()) {
+                $stock_row = $row;
+            }
+            $stock_stmt->close();
+            
+            // Extract closing stock for each date in this month
+            foreach ($month_dates as $date) {
+                $day_num = sprintf('%02d', date('d', strtotime($date)));
+                $closing_column = "DAY_{$day_num}_CLOSING";
+                
+                if ($stock_row && isset($stock_row[$closing_column])) {
+                    $daily_stock_for_js[$item_code][$date] = (float)$stock_row[$closing_column];
+                } else {
+                    $daily_stock_for_js[$item_code][$date] = 0;
+                }
+            }
+        }
+    }
+    
+    logMessage("Daily stock data fetched for " . count($daily_stock_for_js) . " items across " . count($dates_by_month) . " months", 'INFO');
+}
+
+// ============================================================================
 // NEW: GET UNAVAILABLE DATES (GLOBAL SALES + DRY DAYS)
 // ============================================================================
 $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
@@ -1809,20 +1884,20 @@ $debug_info = [
     'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
     'comp_id' => $comp_id,
-    'license_type' => $license_type, // ADDED: License info in debug
-    'allowed_classes' => $allowed_classes, // ADDED: Allowed classes in debug
-    'end_date_day' => $end_date_day, // NEW: Added end date info
-    'closing_column' => $closing_column, // NEW: Added closing column info
-    'end_date_month' => $end_date_month, // NEW: Added month info
-    'stock_filter' => '> 0', // NEW: Added stock filter info
-    'daily_stock_table' => $daily_stock_table, // NEW: Added table name info
-    'table_suffix' => $table_suffix, // NEW: Added table suffix info
-    'current_month' => date('Y-m'), // NEW: Added current month info
-    'has_restrictions' => $has_restrictions, // NEW: Global restriction info
-    'available_dates' => $available_dates_global, // NEW: Available dates
-    'unavailable_dates' => $unavailable_dates_global, // NEW: Unavailable dates
-    'dry_dates' => $dry_dates, // NEW: Dry dates
-    'latest_global_sale' => $restrictions['latest_existing_sale'] ?? null // NEW: Latest global sale
+    'license_type' => $license_type,
+    'allowed_classes' => $allowed_classes,
+    'end_date_day' => $end_date_day,
+    'closing_column' => $closing_column,
+    'end_date_month' => $end_date_month,
+    'stock_filter' => '> 0',
+    'daily_stock_table' => $daily_stock_table,
+    'table_suffix' => $table_suffix,
+    'current_month' => date('Y-m'),
+    'has_restrictions' => $has_restrictions,
+    'available_dates' => $available_dates_global,
+    'unavailable_dates' => $unavailable_dates_global,
+    'dry_dates' => $dry_dates,
+    'latest_global_sale' => $restrictions['latest_existing_sale'] ?? null
 ];
 logArray($debug_info, "Sales Page Load Debug Info");
 ?>
@@ -1838,6 +1913,8 @@ logArray($debug_info, "Sales Page Load Debug Info");
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <style>
+    /* Add all the CSS styles from closing_stock_for_date_range.php here */
+    /* [Include all the CSS styles from the working version] */
     .ajax-loader {
       display: none;
       text-align: center;
@@ -1857,7 +1934,6 @@ logArray($debug_info, "Sales Page Load Debug Info");
       100% { transform: rotate(360deg); }
     }
    
-    /* Remove spinner arrows from number inputs */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
       -webkit-appearance: none;
@@ -1867,13 +1943,11 @@ logArray($debug_info, "Sales Page Load Debug Info");
       -moz-appearance: textfield;
     }
     
-    /* Highlight current row */
     .highlight-row {
       background-color: #f8f9fa !important;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
     
-    /* Volume limit info */
     .volume-limit-info {
       background-color: #e9ecef;
       padding: 10px;
@@ -1881,545 +1955,495 @@ logArray($debug_info, "Sales Page Load Debug Info");
       margin-bottom: 15px;
     }
 
-    /* Closing balance warning styles */
-.text-warning {
-    color: #ffc107 !important;
-}
-
-.fw-bold {
-    font-weight: bold !important;
-}
-
-/* Negative closing balance (should never happen with validation) */
-.text-danger {
-    color: #dc3545 !important;
-    background-color: #f8d7da;
-}
-
-/* Reduce space between table rows */
-.styled-table tbody tr {
-    height: 35px !important; /* Reduced from default */
-    line-height: 1.2 !important;
-}
-
-.styled-table tbody td {
-    padding: 4px 8px !important; /* Reduced padding */
-}
-
-/* Reduce input field height */
-.qty-input {
-    height: 30px !important;
-    padding: 2px 6px !important;
-}
-
-/* Reduce button size */
-.btn-sm {
-    padding: 2px 6px !important;
-    font-size: 12px !important;
-}
-
-/* Highlight rows with quantities */
-tr.has-quantity {
-    background-color: #e8f5e8 !important; /* Light green background */
-    border-left: 3px solid #28a745 !important;
-}
-
-/* Make the highlight more noticeable */
-tr.has-quantity td {
-    font-weight: 500;
-}
-
-/* Global restriction styles */
-tr.global-restriction {
-    background-color: #ffffff !important;
-    border-left: 4px solid #6c757d !important;
-}
-
-tr.global-restriction td {
-    color: #6c757d !important;
-    font-weight: normal;
-}
-
-tr.global-restriction .qty-input {
-    background-color: #f8f9fa !important;
-    border-color: #dee2e6 !important;
-    color: #6c757d !important;
-    cursor: not-allowed !important;
-}
-
-/* Dry day specific styling */
-.dry-date {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-}
-
-.dry-date td {
-    color: #856404 !important;
-}
-
-.dry-date .qty-input {
-    background-color: #fff3cd !important;
-    border-color: #ffc107 !important;
-    color: #856404 !important;
-    cursor: not-allowed !important;
-}
-
-.badge.bg-danger {
-    font-size: 10px;
-    padding: 3px 8px;
-    max-width: 200px;
-    white-space: normal;
-    text-align: left;
-}
-
-.badge.bg-warning {
-    font-size: 10px;
-    padding: 3px 8px;
-    max-width: 200px;
-    white-space: normal;
-    text-align: left;
-}
-
-/* Tooltip for restriction information */
-.restriction-tooltip {
-    max-width: 350px !important;
-    white-space: normal !important;
-}
-
-/* Enhanced validation styles */
-.is-invalid {
-    border-color: #dc3545 !important;
-    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-}
-
-.quantity-saving {
-    background-color: #e8f5e8 !important;
-    transition: background-color 0.3s ease;
-}
-
-.quantity-error {
-    background-color: #f8d7da !important;
-    transition: background-color 0.3s ease;
-}
-
-/* Button loading state */
-.btn-loading {
-    position: relative;
-    color: transparent !important;
-}
-
-.btn-loading:after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    margin-left: -10px;
-    margin-top: -10px;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-}
-
-/* Enhanced Pagination Styles */
-.pagination {
-    margin: 15px 0;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.pagination .page-item .page-link {
-    color: #007bff;
-    border: 1px solid #dee2e6;
-    padding: 6px 12px;
-    font-size: 14px;
-    margin: 2px;
-}
-
-.pagination .page-item.active .page-link {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-
-.pagination .page-item.disabled .page-link {
-    color: #6c757d;
-    pointer-events: none;
-    background-color: #fff;
-    border-color: #dee2e6;
-}
-
-.pagination .page-link:hover {
-    background-color: #e9ecef;
-    border-color: #dee2e6;
-}
-
-.pagination-info {
-    text-align: center;
-    margin: 10px 0;
-    color: #6c757d;
-    font-size: 14px;
-}
-
-/* Smart pagination - show limited pages */
-.pagination-smart .page-item {
-    display: none;
-}
-
-.pagination-smart .page-item:first-child,
-.pagination-smart .page-item:last-child,
-.pagination-smart .page-item.active,
-.pagination-smart .page-item:nth-child(2),
-.pagination-smart .page-item:nth-last-child(2) {
-    display: block;
-}
-
-/* Show ellipsis for hidden pages */
-.pagination-ellipsis {
-    display: inline-block;
-    padding: 6px 12px;
-    margin: 2px;
-    color: #6c757d;
-}
-
-/* Total Sales Summary Table Styles */
-#totalSalesTable th {
-    font-size: 11px;
-    padding: 4px 2px;
-    text-align: center;
-    white-space: nowrap;
-}
-
-#totalSalesTable td {
-    font-size: 11px;
-    padding: 4px 2px;
-    text-align: center;
-}
-
-.table-responsive {
-    max-height: 600px;
-    overflow: auto;
-}
-
-.table-success {
-    background-color: #d1edff !important;
-    font-weight: bold;
-}
-
-/* Client-side validation styles */
-.validation-alert {
-    display: none;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    max-width: 500px;
-}
-
-.stock-checking {
-    background-color: #fff3cd !important;
-}
-
-/* Stock status indicator */
-.stock-status {
-    font-size: 11px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    margin-left: 5px;
-}
-
-.stock-available {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.stock-low {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.stock-out {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-/* Table source indicator */
-.table-source-indicator {
-    font-size: 11px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background-color: #e9ecef;
-    color: #495057;
-    margin-left: 5px;
-}
-
-.table-current {
-    background-color: #d1ecf1 !important;
-    color: #0c5460 !important;
-}
-
-.table-archive {
-    background-color: #ffffff !important;
-    color: #6c757d !important;
-}
-
-/* Simplified stock display - hide decimal points */
-.stock-integer {
-    font-weight: bold;
-}
-
-.stock-decimal {
-    display: none !important;
-}
-
-/* Compact info display */
-.compact-info {
-    font-size: 11px;
-    color: #6c757d;
-}
-
-/* Special styling for items with partial date distribution due to global restrictions */
-.global-restriction-item {
-    background-color: #ffffff !important;
-    border-left: 3px solid #6c757d !important;
-}
-
-.global-restriction-item td {
-    color: #6c757d !important;
-}
-
-/* Enhanced styling for unavailable date cells */
-.unavailable-date-cell {
-    background-color: #ffffff !important;
-    color: #6c757d !important;
-    text-align: center;
-    position: relative;
-    font-weight: normal;
-}
-
-.unavailable-date-cell span {
-    font-size: 14px;
-    display: block;
-}
-
-.unavailable-date-cell .small-icon {
-    font-size: 12px;
-    display: block;
-    margin-top: 2px;
-    color: #6c757d;
-}
-
-/* Dry day cell styling */
-.dry-date-cell {
-    background-color: #fff3cd !important;
-    color: #856404 !important;
-    text-align: center;
-    font-weight: bold;
-    border-left: 2px solid #ffc107 !important;
-}
-
-.dry-date-cell .small-icon {
-    font-size: 12px;
-    display: block;
-    margin-top: 2px;
-}
-
-/* Available date cell with new sales */
-.available-date-cell {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-    text-align: center;
-    font-weight: bold;
-}
-
-/* Partial distribution item row styling */
-.partial-distribution-item {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-}
-
-.partial-distribution-item td {
-    color: #856404 !important;
-}
-
-/* Distribution column styles */
-.date-distribution-cell {
-    text-align: center !important;
-    font-weight: bold !important;
-    font-size: 12px !important;
-    padding: 3px 5px !important;
-    min-width: 35px !important;
-    border-left: 1px solid #dee2e6 !important;
-    border-right: 1px solid #dee2e6 !important;
-}
-
-.date-distribution-cell.zero-distribution {
-    color: #6c757d !important;
-    font-weight: normal !important;
-}
-
-.date-distribution-cell.non-zero-distribution {
-    color: #198754 !important;
-    background-color: rgba(25, 135, 84, 0.1) !important;
-}
-
-.date-distribution-cell.global-unavailable-date {
-    background-color: #ffffff !important;
-    color: #6c757d !important;
-}
-
-.date-distribution-cell.dry-unavailable-date {
-    background-color: #fff3cd !important;
-    color: #856404 !important;
-}
-
-.date-header {
-    text-align: center !important;
-    font-size: 11px !important;
-    padding: 4px 6px !important;
-    min-width: 40px !important;
-    background-color: #f8f9fa !important;
-    border-left: 1px solid #dee2e6 !important;
-    border-right: 1px solid #dee2e6 !important;
-    font-weight: bold !important;
-    vertical-align: middle !important;
-}
-
-/* Make sure the table headers and columns are visible */
-.date-header, .date-distribution-cell {
-    display: table-cell !important;
-    visibility: visible !important;
-}
-
-/* Action column adjustment */
-.action-column {
-    width: 120px !important;
-    min-width: 120px !important;
-}
-
-/* Ensure the table layout doesn't break with date columns */
-.table-container {
-    overflow-x: auto;
-    max-width: 100%;
-}
-
-.styled-table {
-    min-width: 1200px; /* Minimum width to ensure all columns are visible */
-}
-
-/* Style for Shuffle button in action column */
-.btn-shuffle-item {
-    font-size: 11px !important;
-    padding: 2px 8px !important;
-}
-
-/* ENHANCED: Date distribution cell styling for better visual representation */
-.date-distribution-cell.available-date-cell {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-    font-weight: bold;
-    position: relative;
-}
-
-.date-distribution-cell.available-date-cell:after {
-    content: "✓";
-    position: absolute;
-    top: 0;
-    right: 2px;
-    font-size: 10px;
-    color: #28a745;
-}
-
-.date-distribution-cell.unavailable-date-cell {
-    background-color: #ffffff !important;
-    color: #6c757d !important;
-}
-
-.date-distribution-cell.unavailable-date-cell span {
-    display: block;
-    font-size: 14px;
-}
-
-.date-distribution-cell.dry-date-cell {
-    background-color: #fff3cd !important;
-    color: #856404 !important;
-}
-
-.date-distribution-cell.dry-date-cell span {
-    display: block;
-    font-size: 14px;
-}
-
-.date-distribution-cell.non-zero-distribution {
-    background-color: #cce5ff !important;
-    color: #004085 !important;
-    font-weight: bold;
-}
-
-.date-distribution-cell.zero-distribution {
-    color: #6c757d !important;
-    background-color: #f8f9fa !important;
-}
-
-/* Enhanced tooltip for date cells */
-.date-distribution-cell {
-    position: relative;
-    cursor: help;
-}
-
-/* Visual indicator for partial date items */
-.partial-distribution-item {
-    background-color: #fff3cd !important;
-    border-left: 3px solid #ffc107 !important;
-}
-
-.partial-distribution-item td {
-    color: #856404 !important;
-}
-
-/* FIXED: Special styling for unavailable dates (global sales) */
-.unavailable-date {
-    background-color: #ffffff !important;
-    color: #6c757d !important;
-    font-weight: normal;
-    position: relative;
-}
-
-/* FIXED: Dry date styling */
-.dry-date {
-    background-color: #fff3cd !important;
-    color: #856404 !important;
-    font-weight: bold;
-    position: relative;
-}
-
-/* FIXED: Available date styling */
-.available-date-with-sales {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-    font-weight: bold;
-}
-
-/* Restriction info banner */
-.restriction-banner {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-    color: #6c757d;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-}
-
-.dry-day-banner {
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    color: #856404;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 15px;
-}
+    .text-warning {
+        color: #ffc107 !important;
+    }
+
+    .fw-bold {
+        font-weight: bold !important;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+        background-color: #f8d7da;
+    }
+
+    .styled-table tbody tr {
+        height: 35px !important;
+        line-height: 1.2 !important;
+    }
+
+    .styled-table tbody td {
+        padding: 4px 8px !important;
+    }
+
+    .qty-input {
+        height: 30px !important;
+        padding: 2px 6px !important;
+    }
+
+    .btn-sm {
+        padding: 2px 6px !important;
+        font-size: 12px !important;
+    }
+
+    tr.has-quantity {
+        background-color: #e8f5e8 !important;
+        border-left: 3px solid #28a745 !important;
+    }
+
+    tr.has-quantity td {
+        font-weight: 500;
+    }
+
+    tr.global-restriction {
+        background-color: #ffffff !important;
+        border-left: 4px solid #6c757d !important;
+    }
+
+    tr.global-restriction td {
+        color: #6c757d !important;
+        font-weight: normal;
+    }
+
+    tr.global-restriction .qty-input {
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+        cursor: not-allowed !important;
+    }
+
+    .dry-date {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .dry-date td {
+        color: #856404 !important;
+    }
+
+    .dry-date .qty-input {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+        color: #856404 !important;
+        cursor: not-allowed !important;
+    }
+
+    .badge.bg-danger {
+        font-size: 10px;
+        padding: 3px 8px;
+        max-width: 200px;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .badge.bg-warning {
+        font-size: 10px;
+        padding: 3px 8px;
+        max-width: 200px;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .restriction-tooltip {
+        max-width: 350px !important;
+        white-space: normal !important;
+    }
+
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+
+    .quantity-saving {
+        background-color: #e8f5e8 !important;
+        transition: background-color 0.3s ease;
+    }
+
+    .quantity-error {
+        background-color: #f8d7da !important;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-loading {
+        position: relative;
+        color: transparent !important;
+    }
+
+    .btn-loading:after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        margin-left: -10px;
+        margin-top: -10px;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
+    }
+
+    .pagination {
+        margin: 15px 0;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .pagination .page-item .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 2px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #dee2e6;
+    }
+
+    .pagination-info {
+        text-align: center;
+        margin: 10px 0;
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .validation-alert {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 500px;
+    }
+
+    .stock-checking {
+        background-color: #fff3cd !important;
+    }
+
+    .stock-status {
+        font-size: 11px;
+        padding: 1px 4px;
+        border-radius: 3px;
+        margin-left: 5px;
+    }
+
+    .stock-available {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .stock-low {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .stock-out {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .table-source-indicator {
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background-color: #e9ecef;
+        color: #495057;
+        margin-left: 5px;
+    }
+
+    .table-current {
+        background-color: #d1ecf1 !important;
+        color: #0c5460 !important;
+    }
+
+    .table-archive {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    .stock-integer {
+        font-weight: bold;
+    }
+
+    .stock-decimal {
+        display: none !important;
+    }
+
+    .compact-info {
+        font-size: 11px;
+        color: #6c757d;
+    }
+
+    .global-restriction-item {
+        background-color: #ffffff !important;
+        border-left: 3px solid #6c757d !important;
+    }
+
+    .global-restriction-item td {
+        color: #6c757d !important;
+    }
+
+    .unavailable-date-cell {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+        text-align: center;
+        position: relative;
+        font-weight: normal;
+    }
+
+    .unavailable-date-cell span {
+        font-size: 14px;
+        display: block;
+    }
+
+    .unavailable-date-cell .small-icon {
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+        color: #6c757d;
+    }
+
+    .dry-date-cell {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        text-align: center;
+        font-weight: bold;
+        border-left: 2px solid #ffc107 !important;
+    }
+
+    .dry-date-cell .small-icon {
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .available-date-cell {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .partial-distribution-item {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .partial-distribution-item td {
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell {
+        text-align: center !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        padding: 3px 5px !important;
+        min-width: 35px !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+    }
+
+    .date-distribution-cell.zero-distribution {
+        color: #6c757d !important;
+        font-weight: normal !important;
+    }
+
+    .date-distribution-cell.non-zero-distribution {
+        color: #198754 !important;
+        background-color: rgba(25, 135, 84, 0.1) !important;
+    }
+
+    .date-distribution-cell.global-unavailable-date {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    .date-distribution-cell.dry-unavailable-date {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell.no-stock-date {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+
+    .date-header {
+        text-align: center !important;
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        min-width: 40px !important;
+        background-color: #f8f9fa !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    }
+
+    .dry-date-header {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .unavailable-date-header {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    .date-header, .date-distribution-cell {
+        display: table-cell !important;
+        visibility: visible !important;
+    }
+
+    .action-column {
+        width: 120px !important;
+        min-width: 120px !important;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .styled-table {
+        min-width: 1200px;
+    }
+
+    .btn-shuffle-item {
+        font-size: 11px !important;
+        padding: 2px 8px !important;
+    }
+
+    .date-distribution-cell.available-date-cell {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+        position: relative;
+    }
+
+    .date-distribution-cell.available-date-cell:after {
+        content: "✓";
+        position: absolute;
+        top: 0;
+        right: 2px;
+        font-size: 10px;
+        color: #28a745;
+    }
+
+    .date-distribution-cell.unavailable-date-cell {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    .date-distribution-cell.unavailable-date-cell span {
+        display: block;
+        font-size: 14px;
+    }
+
+    .date-distribution-cell.dry-date-cell {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell.dry-date-cell span {
+        display: block;
+        font-size: 14px;
+    }
+
+    .date-distribution-cell.non-zero-distribution {
+        background-color: #cce5ff !important;
+        color: #004085 !important;
+        font-weight: bold;
+    }
+
+    .date-distribution-cell.zero-distribution {
+        color: #6c757d !important;
+        background-color: #f8f9fa !important;
+    }
+
+    .no-stock-date {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+        text-align: center !important;
+        font-weight: normal !important;
+        position: relative;
+    }
+
+    .no-stock-date .small-icon {
+        font-size: 10px;
+        display: block;
+        margin-top: 2px;
+        color: #721c24;
+    }
+
+    .date-distribution-cell {
+        position: relative;
+        cursor: help;
+    }
+
+    .partial-distribution-item {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .partial-distribution-item td {
+        color: #856404 !important;
+    }
+
+    .unavailable-date {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+        font-weight: normal;
+        position: relative;
+    }
+
+    .dry-date {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        font-weight: bold;
+        position: relative;
+    }
+
+    .available-date-with-sales {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+    }
+
+    .restriction-banner {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .dry-day-banner {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
@@ -2440,113 +2464,104 @@ tr.global-restriction .qty-input {
 
       <h3 class="mb-4">Sales by Date Range</h3>
 
-      <!-- SIMPLIFIED License Restriction Info -->
+      <!-- License Restriction Info -->
       <div class="alert alert-info mb-3 py-2">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
       <!-- Bill Generation Progress Modal -->
-<div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+      <div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-cogs"></i> Generating Bills
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 class="modal-title">
+                <i class="fas fa-cogs"></i> Generating Bills
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <!-- Status Message -->
-                <div class="alert alert-info" id="progressStatus">
-                    <i class="fas fa-spinner fa-spin"></i> <span id="progressMessage">Initializing...</span>
+              <div class="alert alert-info" id="progressStatus">
+                <i class="fas fa-spinner fa-spin"></i> <span id="progressMessage">Initializing...</span>
+              </div>
+              <div class="progress mb-3" style="height: 30px;">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                  0%
                 </div>
-                
-                <!-- Progress Bar -->
-                <div class="progress mb-3" style="height: 30px;">
-                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                         role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                        0%
+              </div>
+              <div class="row text-center mb-3">
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="currentBillCount">0</h3>
+                      <small class="text-muted">Bills Generated</small>
                     </div>
+                  </div>
                 </div>
-                
-                <!-- Bill Counter -->
-                <div class="row text-center mb-3">
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 id="currentBillCount">0</h3>
-                                <small class="text-muted">Bills Generated</small>
-                            </div>
-                        </div>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="totalBillCount">0</h3>
+                      <small class="text-muted">Total Bills</small>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 id="totalBillCount">0</h3>
-                                <small class="text-muted">Total Bills</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h3 id="timeRemaining">--</h3>
-                                <small class="text-muted">Time Remaining</small>
-                            </div>
-                        </div>
-                    </div>
+                  </div>
                 </div>
-                
-                <!-- Bills Generated List -->
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0">Recently Generated Bills</h6>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="timeRemaining">--</h3>
+                      <small class="text-muted">Time Remaining</small>
                     </div>
-                    <div class="card-body" style="max-height: 200px; overflow-y: auto;">
-                        <table class="table table-sm table-hover" id="billsListTable">
-                            <thead>
-                                <tr>
-                                    <th>Bill No</th>
-                                    <th>Date</th>
-                                    <th>Items</th>
-                                    <th>Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody id="billsListBody">
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">Waiting to start...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                  </div>
                 </div>
-                
-                <!-- Performance Stats -->
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <i class="fas fa-tachometer-alt"></i> 
-                            Speed: <span id="generationSpeed">--</span> bills/sec
-                        </small>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <small class="text-muted">
-                            <i class="fas fa-clock"></i>
-                            Elapsed: <span id="elapsedTime">0s</span>
-                        </small>
-                    </div>
+              </div>
+              <div class="card">
+                <div class="card-header bg-light">
+                  <h6 class="mb-0">Recently Generated Bills</h6>
                 </div>
+                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                  <table class="table table-sm table-hover" id="billsListTable">
+                    <thead>
+                      <tr>
+                        <th>Bill No</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody id="billsListBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Waiting to start...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-6">
+                  <small class="text-muted">
+                    <i class="fas fa-tachometer-alt"></i> 
+                    Speed: <span id="generationSpeed">--</span> bills/sec
+                  </small>
+                </div>
+                <div class="col-md-6 text-end">
+                  <small class="text-muted">
+                    <i class="fas fa-clock"></i>
+                    Elapsed: <span id="elapsedTime">0s</span>
+                  </small>
+                </div>
+              </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="viewResultsBtn" style="display: none;" onclick="viewResults()">
-                    <i class="fas fa-eye"></i> View Results
-                </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="viewResultsBtn" style="display: none;" onclick="viewResults()">
+                <i class="fas fa-eye"></i> View Results
+              </button>
             </div>
+          </div>
         </div>
-    </div>
-</div>
+      </div>
 
       <style>
       .progress-bar {
@@ -2555,27 +2570,22 @@ tr.global-restriction .qty-input {
           font-size: 14px;
           line-height: 30px;
       }
-
       #billsListBody tr:last-child {
           animation: highlightNew 1s ease;
       }
-
       @keyframes highlightNew {
           0% { background-color: #d4edda; }
           100% { background-color: transparent; }
       }
-
       .card .card-body {
           padding: 10px;
       }
-
       #currentBillCount, #totalBillCount {
           font-size: 28px;
           font-weight: bold;
           margin: 0;
           color: #007bff;
       }
-
       #timeRemaining {
           font-size: 20px;
           font-weight: bold;
@@ -2584,7 +2594,6 @@ tr.global-restriction .qty-input {
       }
       </style>
 
-<!-- Success/Error Messages -->
       <?php if (isset($success_message)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?= $success_message ?>
@@ -2599,7 +2608,6 @@ tr.global-restriction .qty-input {
       </div>
       <?php endif; ?>
 
-      <!-- Client-side Validation Alert -->
       <div class="alert alert-warning validation-alert" id="clientValidationAlert">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="validationMessage"></span>
@@ -2638,7 +2646,7 @@ tr.global-restriction .qty-input {
           </a>
           <a href="?mode=<?= $mode ?>&sequence_type=group_defined&search=<?= urlencode($search) ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>&page=1"
              class="btn btn-outline-primary <?= $sequence_type === 'group_defined' ? 'sequence-active' : '' ?>">
-                         Group Defined
+            Group Defined
           </a>
         </div>
       </div>
@@ -2670,7 +2678,7 @@ tr.global-restriction .qty-input {
           <div class="col-md-4">
             <label class="form-label">Date Range: 
               <span class="fw-bold">
-<?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
+                <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
                 (<?= $days_count ?> days)
               </span>
               <?php if ($has_restrictions): ?>
@@ -2726,17 +2734,14 @@ tr.global-restriction .qty-input {
             <i class="fas fa-random"></i> Shuffle All
           </button>
           
-          <!-- Single Button with Dual Functionality -->
           <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
             <i class="fas fa-save"></i> Generate Bills
           </button>
           
-          <!-- Clear Session Button -->
           <button type="button" id="clearSessionBtn" class="btn btn-danger">
             <i class="fas fa-trash"></i> Clear All Quantities
           </button>
           
-          <!-- Sales Log Button -->
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
               <i class="fas fa-file-alt"></i> View Sales Log
           </button>
@@ -2767,12 +2772,9 @@ tr.global-restriction .qty-input {
                 <th>Category</th>
                 <th>Rate (₹)</th>
                 <th>Available Stock</th>
-                <th>Sale Qty (Auto-calculated)</th>
-                <th>Closing Stock (End Date)</th>
+                <th>Sale Qty</th>
+                <th>Closing Stock</th>
                 <th class="action-column">Action</th>
-                
-                <!-- Date Distribution Headers (will be populated by JavaScript) -->
-                
                 <th>Amount (₹)</th>
               </tr>
             </thead>
@@ -2784,22 +2786,18 @@ tr.global-restriction .qty-input {
         $item_total = $item_qty * $item['RPRICE'];
         $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
         
-        // Format numbers to remove decimals for display
         $display_stock = floor($item['CURRENT_STOCK']);
         $display_rate = intval($item['RPRICE']);
         $display_closing = floor($closing_balance);
         $display_amount = intval($item_total);
         
-        // Extract size from item details
         $size = 0;
         if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
             $size = $matches[1];
         }
         
-        // Get class code - now available from the query
-        $class_code = $item['CLASS'] ?? 'O'; // Default to 'O' if not set
+        $class_code = $item['CLASS'] ?? 'O';
         
-        // Determine stock status for styling
         $stock_status_class = '';
         if ($item['CURRENT_STOCK'] <= 0) {
             $stock_status_class = 'stock-out';
@@ -2809,26 +2807,23 @@ tr.global-restriction .qty-input {
             $stock_status_class = 'stock-available';
         }
         
-        // Check if there are any available dates
         $has_available_dates = !empty($available_dates_global);
-        
-        // Disable input if NO available dates
         $should_disable_input = !$has_available_dates;
-        
         $restriction_class = $should_disable_input ? 'global-restriction' : '';
         $restriction_title = $should_disable_input ? 
             "No available dates in selected range due to existing sales or dry days." : 
             '';
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
-    data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
-    data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-    class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $restriction_class ?>"
-    data-has-global-restriction='<?= $should_disable_input ? 'true' : 'false' ?>'
-    data-available-dates='<?= json_encode($available_dates_global) ?>'
-    data-unavailable-dates='<?= json_encode($unavailable_dates_global) ?>'
-    data-dry-dates='<?= json_encode($dry_dates) ?>'
-    data-latest-global-sale='<?= json_encode($restrictions['latest_existing_sale'] ?? '') ?>'>
+            data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
+            data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
+            class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $restriction_class ?>"
+            data-has-global-restriction='<?= $should_disable_input ? 'true' : 'false' ?>'
+            data-available-dates='<?= json_encode($available_dates_global) ?>'
+            data-unavailable-dates='<?= json_encode($unavailable_dates_global) ?>'
+            data-dry-dates='<?= json_encode($dry_dates) ?>'
+            data-stock-data='<?= htmlspecialchars(json_encode($daily_stock_for_js[$item_code] ?? [])) ?>'
+            data-latest-global-sale='<?= json_encode($restrictions['latest_existing_sale'] ?? '') ?>'>
             <td><?= htmlspecialchars($item_code); ?></td>
             <td><?= htmlspecialchars($item['DETAILS']); ?></td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
@@ -2857,6 +2852,7 @@ tr.global-restriction .qty-input {
                        data-rate="<?= $item['RPRICE'] ?>"
                        data-code="<?= htmlspecialchars($item_code); ?>"
                        data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                       data-stock-data='<?= htmlspecialchars(json_encode($daily_stock_for_js[$item_code] ?? [])) ?>'
                        data-size="<?= $size ?>"
                        data-has-global-restriction="<?= $should_disable_input ? 'true' : 'false' ?>"
                        data-available-dates='<?= htmlspecialchars(json_encode($available_dates_global)) ?>'
@@ -2879,7 +2875,6 @@ tr.global-restriction .qty-input {
                 }
                 ?>
                 <span class="stock-integer <?= $closing_class ?>" style="<?= $closing_bg ?>"><?= number_format($closing_stock_display) ?></span>
-                <!-- Show stock status for closing stock too -->
                 <?php if ($closing_balance < 0): ?>
                     <br><span class="stock-status stock-out" style="<?= $closing_bg ?>">Out</span>
                 <?php elseif ($closing_balance < 10 && $closing_balance >= 0): ?>
@@ -2892,13 +2887,10 @@ tr.global-restriction .qty-input {
                     <i class="fas fa-random"></i> Shuffle
                 </button>
             </td>
-            
-            <!-- Date distribution cells will be inserted here by JavaScript -->
-            
             <td class="amount-cell" id="amount_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_amount) ?></span>
             </td>
-        </tr>
+          </tr>
     <?php endforeach; ?>
 <?php else: ?>
     <tr>
@@ -2910,11 +2902,11 @@ tr.global-restriction .qty-input {
                     <p class="mb-1">Try a different search term</p>
                 <?php endif; ?>
                 <p class="mb-0"><small>Note: Only items with stock > 0 are shown</small></p>
-            </td>
+            </div>
+        </td>
     </tr>
 <?php endif; ?>
 </tbody>
-            </tfoot>
           </table>
         </div>
         
@@ -2922,7 +2914,6 @@ tr.global-restriction .qty-input {
         <?php if ($total_pages > 1): ?>
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
-                <!-- Previous Button -->
                 <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page - 1])) ?>" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
@@ -2930,17 +2921,14 @@ tr.global-restriction .qty-input {
                 </li>
                 
                 <?php
-                // Smart pagination - show limited pages
-                $show_pages = 5; // Number of page links to show
+                $show_pages = 5;
                 $start_page = max(1, $current_page - floor($show_pages / 2));
                 $end_page = min($total_pages, $start_page + $show_pages - 1);
                 
-                // Adjust if we're near the end
                 if ($end_page - $start_page < $show_pages - 1) {
                     $start_page = max(1, $end_page - $show_pages + 1);
                 }
                 
-                // Always show first page
                 if ($start_page > 1): ?>
                     <li class="page-item <?= 1 == $current_page ? 'active' : '' ?>">
                         <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => 1])) ?>">1</a>
@@ -2952,14 +2940,12 @@ tr.global-restriction .qty-input {
                     <?php endif;
                 endif;
                 
-                // Show page numbers
                 for ($i = $start_page; $i <= $end_page; $i++): ?>
                     <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
                         <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
                     </li>
                 <?php endfor;
                 
-                // Always show last page
                 if ($end_page < $total_pages): ?>
                     <?php if ($end_page < $total_pages - 1): ?>
                         <li class="page-item disabled">
@@ -2971,7 +2957,6 @@ tr.global-restriction .qty-input {
                     </li>
                 <?php endif; ?>
                 
-                <!-- Next Button -->
                 <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page + 1])) ?>" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
@@ -2990,7 +2975,6 @@ tr.global-restriction .qty-input {
         </div>
         <?php endif; ?>
         
-        <!-- Ajax Loader -->
         <div id="ajaxLoader" class="ajax-loader">
           <div class="loader"></div>
           <p>Calculating distribution...</p>
@@ -3006,13 +2990,12 @@ tr.global-restriction .qty-input {
 <div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-                        <div class="modal-header">
+            <div class="modal-header">
                 <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="salesLogContent" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Sales log content will be loaded here -->
                     <div class="text-center py-3">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -3043,7 +3026,6 @@ tr.global-restriction .qty-input {
                         <thead class="table-light">
                             <tr>
                                 <th>Category</th>
-                                <!-- ML Sizes -->
                                 <th>50 ML</th>
                                 <th>60 ML</th>
                                 <th>90 ML</th>
@@ -3060,7 +3042,6 @@ tr.global-restriction .qty-input {
                                 <th>700 ML</th>
                                 <th>750 ML</th>
                                 <th>1000 ML</th>
-                                <!-- Liter Sizes -->
                                 <th>1.5L</th>
                                 <th>1.75L</th>
                                 <th>2L</th>
@@ -3073,7 +3054,6 @@ tr.global-restriction .qty-input {
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Rows will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -3089,84 +3069,405 @@ tr.global-restriction .qty-input {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Global variables
-let savedDistributions = {}; // NEW: Store distribution shown to user
+let savedDistributions = {};
 const dateArray = <?= json_encode($date_array) ?>;
 const daysCount = <?= $days_count ?>;
-// Pass ALL session quantities to JavaScript
 const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
-// NEW: Pass ALL items data to JavaScript for Total Sales Summary (ALL modes)
 const allItemsData = <?= json_encode($all_items_data) ?>;
 
-// NEW: Global restriction variables
+// Daily stock data for each item and date (for stock-aware distribution)
+const dailyStockData = <?= json_encode($daily_stock_for_js ?? []) ?>;
+console.log('Daily stock data loaded:', dailyStockData);
+
+// Global restriction variables
 const globalAvailableDates = <?= json_encode($available_dates_global) ?>;
 const globalUnavailableDates = <?= json_encode($unavailable_dates_global) ?>;
 const globalDryDates = <?= json_encode($dry_dates) ?>;
 const hasGlobalRestrictions = <?= json_encode($has_restrictions) ?>;
 const latestGlobalSale = <?= json_encode($restrictions['latest_existing_sale'] ?? null) ?>;
 
-// NEW: Dry days info
+// Dry days info
 const dryDaysInfo = <?= json_encode($restrictions['dry_days_info'] ?? []) ?>;
 
 // ============================================================================
-// FIXED: Enhanced distribution functions with dry day exclusion and auto-correction
+// STOCK-AWARE DISTRIBUTION FUNCTION
 // ============================================================================
-
-// FIXED: Enhanced distribution function that correctly handles global restrictions AND EXCLUDES DRY DAYS
-// UPDATED: Now uses TRULY RANDOM distribution - each unit randomly assigned to a day
-function distributeSalesWithGlobalRestrictions(totalQty, availableDates, dryDates, unavailableDates) {
-    if (totalQty <= 0) return new Array(daysCount).fill(0);
+function getStockAwareDistribution(itemCode, totalQty, dateArray, availableDates, dryDates, unavailableDates, dailyStockData) {
+    if (totalQty <= 0) return new Array(dateArray.length).fill(0);
     
-    // Create a map of date to index in the dateArray
+    console.log(`Stock-aware distribution for ${itemCode}, Qty: ${totalQty}`);
+    
+    const stockData = dailyStockData[itemCode] || {};
+    console.log(`Stock data for ${itemCode}:`, stockData);
+    
+    const currentMonth = '<?= date('Y-m') ?>';
+    const firstDateInRange = dateArray[0];
+    const isHistorical = !firstDateInRange.startsWith(currentMonth);
+    
+    if (isHistorical) {
+        console.log(`Historical date range detected (${firstDateInRange}), using regular random distribution`);
+        return getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates);
+    }
+    
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    
+    if (trulyAvailableDates.length === 0) {
+        console.log(`No truly available dates for ${itemCode}`);
+        return new Array(dateArray.length).fill(0);
+    }
+    
+    const datesWithStock = [];
+    const stockLevels = {};
+    
+    trulyAvailableDates.forEach(date => {
+        const stock = stockData[date] || 0;
+        if (stock > 0) {
+            datesWithStock.push(date);
+            stockLevels[date] = stock;
+        }
+    });
+    
+    if (datesWithStock.length === 0) {
+        console.log(`No dates with stock for ${itemCode}, using regular distribution`);
+        return getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates);
+    }
+    
+    console.log(`Dates with stock for ${itemCode}:`, datesWithStock);
+    
     const dateIndexMap = {};
     dateArray.forEach((date, index) => {
         dateIndexMap[date] = index;
     });
     
-    // Create distribution array
-    const distribution = new Array(daysCount).fill(0);
+    const distribution = new Array(dateArray.length).fill(0);
+    const cumulativeSales = {};
+    datesWithStock.forEach(date => { cumulativeSales[date] = 0; });
     
-    // FIXED: Filter out dry days from available dates
-    // Create truly available dates by excluding dry days
+    for (let i = 0; i < totalQty; i++) {
+        const availableNow = datesWithStock.filter(date => {
+            const stock = stockLevels[date] || 0;
+            const used = cumulativeSales[date] || 0;
+            return used < stock;
+        });
+        
+        if (availableNow.length === 0) {
+            console.warn(`No dates with remaining stock for ${itemCode} after ${i} units`);
+            break;
+        }
+        
+        const randomDate = availableNow[Math.floor(Math.random() * availableNow.length)];
+        cumulativeSales[randomDate]++;
+        
+        const dateIndex = dateIndexMap[randomDate];
+        if (dateIndex !== undefined) {
+            distribution[dateIndex]++;
+        }
+    }
+    
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed < totalQty) {
+        console.warn(`Could only distribute ${totalDistributed} of ${totalQty} units for ${itemCode} due to stock limits`);
+    }
+    
+    console.log(`Final distribution for ${itemCode}:`, distribution);
+    return distribution;
+}
+
+function getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates) {
+    if (totalQty <= 0) return new Array(dateArray.length).fill(0);
+    
+    console.log(`Regular random distribution for ${itemCode}, Qty: ${totalQty}`);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    const distribution = new Array(dateArray.length).fill(0);
     const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
     
-    console.log(`DEBUG: distribute - Original available dates:`, availableDates);
-    console.log(`DEBUG: distribute - Dry dates to exclude:`, dryDates);
-    console.log(`DEBUG: distribute - Truly available dates (after dry day filter):`, trulyAvailableDates);
-    
-    // If no truly available dates, return zeros
     if (trulyAvailableDates.length === 0) {
-        console.log(`No truly available dates for distribution`);
+        console.log(`No truly available dates for ${itemCode}`);
         return distribution;
     }
     
-    // NEW: TRULY RANDOM distribution - each unit is randomly assigned to a day
-    // This creates more extreme variations (e.g., one day 5 sales, another day 0, etc.)
     const availableDaysCount = trulyAvailableDates.length;
+    const dailySales = new Array(availableDaysCount).fill(0);
     
     for (let i = 0; i < totalQty; i++) {
-        // Randomly pick a day from available days using Math.random
         const randomDay = Math.floor(Math.random() * availableDaysCount);
-        distribution[trulyAvailableDates[randomDay]] = (distribution[trulyAvailableDates[randomDay]] || 0) + 1;
+        dailySales[randomDay]++;
     }
     
-    // Now map back to the correct positions in the dateArray
-    const finalDistribution = new Array(daysCount).fill(0);
     trulyAvailableDates.forEach((date, index) => {
         const dateIndex = dateIndexMap[date];
         if (dateIndex !== undefined) {
-            finalDistribution[dateIndex] = distribution[date] || 0;
+            distribution[dateIndex] = dailySales[index];
         }
     });
     
-    console.log(`Distributing ${totalQty} on ${availableDaysCount} truly available dates (excluding dry days):`, trulyAvailableDates);
-    console.log(`Final distribution:`, finalDistribution);
-    console.log(`Total distributed:`, finalDistribution.reduce((sum, qty) => sum + qty, 0));
-    
-    return finalDistribution;
+    console.log(`Regular distribution for ${itemCode}:`, distribution);
+    return distribution;
 }
 
-// FIXED: Enhanced distribution function for shuffle that correctly handles global restrictions AND EXCLUDES DRY DAYS
-// UPDATED: Now uses TRULY RANDOM distribution - each unit randomly assigned to a day
+// ============================================================================
+// UPDATE DISTRIBUTION PREVIEW FUNCTION
+// ============================================================================
+function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
+    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const itemRow = inputField.closest('tr');
+
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        const savedDistribution = savedDistributions[itemCode];
+        const savedTotal = savedDistribution.reduce((sum, qty) => sum + qty, 0);
+        
+        if (savedTotal === totalQty) {
+            console.log(`DEBUG: ${itemCode} - Using SAVED distribution`);
+            displayDistributionInCells(itemCode, itemRow, savedDistribution);
+            return;
+        }
+    }
+
+    if (totalQty <= 0) {
+        itemRow.find('.date-distribution-cell').remove();
+        delete savedDistributions[itemCode];
+
+        const currentStock = parseFloat(inputField.data('stock'));
+        const displayClosing = Math.floor(currentStock);
+        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
+
+        if ($('input[name^="sale_qty"]').filter(function() {
+            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+
+        return;
+    }
+
+    const hasGlobalRestriction = inputField.data('has-global-restriction');
+    const availableDates = inputField.data('available-dates') || [];
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    let stockData = dailyStockData[itemCode] || {};
+    
+    console.log(`DEBUG: ${itemCode} - Stock data:`, stockData);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    let distribution = new Array(daysCount).fill(0);
+    let trulyAvailableDates = [];
+    
+    if (hasGlobalRestriction && availableDates.length > 0) {
+        trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Item ${itemCode}: Stock-aware distribution on ${trulyAvailableDates.length} available dates`);
+            itemRow.addClass('partial-distribution-item');
+        } else {
+            console.log(`Item ${itemCode}: No truly available dates for distribution`);
+            itemRow.addClass('partial-distribution-item');
+        }
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Item ${itemCode}: Stock-aware distribution across ${trulyAvailableDates.length} non-dry dates`);
+            itemRow.removeClass('partial-distribution-item');
+        } else {
+            console.log(`Item ${itemCode}: No non-dry dates available`);
+            itemRow.addClass('partial-distribution-item');
+        }
+    } else {
+        console.log(`Item ${itemCode}: No available dates for distribution`);
+        itemRow.addClass('partial-distribution-item');
+    }
+
+    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
+    
+    itemRow.find('.date-distribution-cell').remove();
+
+    savedDistributions[itemCode] = distribution.slice();
+
+    const cellsToInsert = [];
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell">`);
+
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        const stockAvailable = (stockData[date] || 0) > 0;
+
+        if (isGlobalUnavailable && !isDryDate) {
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+
+        } else if (isDryDate) {
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+
+        } else if (!stockAvailable) {
+            cell.addClass('no-stock-date');
+            cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+            cell.attr('title', `No stock available on ${date}`);
+
+        } else if (qty > 0) {
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+
+        } else {
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+        }
+
+        cellsToInsert.push(cell);
+    });
+
+    for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+        cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+    }
+
+    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (finalTotal !== totalQty) {
+        console.error(`CRITICAL: Final total (${finalTotal}) doesn't match totalQty (${totalQty}) for item ${itemCode}`);
+        
+        const missingQty = totalQty - finalTotal;
+        for (let i = 0; i < distribution.length; i++) {
+            const date = dateArray[i];
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const hasStock = (stockData[date] || 0) > 0;
+            
+            if (!isDryDate && !isGlobalUnavailable && hasStock) {
+                distribution[i] += missingQty;
+                const cellVisualIndex = distribution.length - 1 - i;
+                const cell = itemRow.find('.date-distribution-cell').eq(cellVisualIndex);
+                if (cell.length) {
+                    cell.text(distribution[i]);
+                    cell.addClass('non-zero-distribution');
+                    cell.removeClass('zero-distribution');
+                    cell.attr('title', `${distribution[i]} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+                }
+                console.log(`Last resort correction: Added ${missingQty} to ${date}`);
+                break;
+            }
+        }
+    }
+    
+    $('.date-header, .date-distribution-cell').show();
+    saveDistributionToSession(itemCode, distribution);
+}
+
+function displayDistributionInCells(itemCode, itemRow, distribution) {
+    console.log(`DEBUG: ${itemCode} - displayDistributionInCells called with:`, distribution);
+    
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    let stockData = dailyStockData[itemCode] || {};
+    if (Object.keys(stockData).length === 0) {
+        try {
+            const stockStr = inputField.data('stock-data');
+            if (stockStr) {
+                stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
+            }
+        } catch(e) {
+            console.error('Error parsing stock data:', e);
+        }
+    }
+    
+    itemRow.find('.date-distribution-cell').remove();
+    $('.date-header, .date-distribution-cell').show();
+    
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
+    
+    const cellsToInsert = [];
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell">`);
+
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        const stockAvailable = (stockData[date] || 0) > 0;
+
+        if (isDryDate) {
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+
+        } else if (isGlobalUnavailable) {
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+
+        } else if (!stockAvailable) {
+            cell.addClass('no-stock-date');
+            cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+            cell.attr('title', `No stock available on ${date}`);
+
+        } else if (qty > 0) {
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+
+        } else {
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+        }
+
+        cellsToInsert.push(cell);
+    });
+
+    const actionColumn = itemRow.find('td.action-column');
+    for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+        if (actionColumn.length > 0) {
+            cellsToInsert[i].insertAfter(actionColumn);
+        } else {
+            itemRow.append(cellsToInsert[i]);
+        }
+    }
+    
+    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+}
+
+// ============================================================================
+// SHUFFLE DISTRIBUTION FOR ITEM FUNCTION
+// ============================================================================
 function shuffleDistributionForItem(itemCode, totalQty) {
     console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
@@ -3179,6 +3480,20 @@ function shuffleDistributionForItem(itemCode, totalQty) {
     let unavailableDates = [];
     let dryDates = [];
     
+    let stockData = dailyStockData[itemCode] || {};
+    if (Object.keys(stockData).length === 0) {
+        try {
+            const stockStr = inputField.data('stock-data');
+            if (stockStr) {
+                stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
+            }
+        } catch(e) {
+            console.error('Error parsing stock data:', e);
+        }
+    }
+    
+    console.log(`DEBUG: shuffle ${itemCode} - stockData:`, stockData);
+    
     try {
         availableDates = availableDatesJson || [];
         unavailableDates = unavailableDatesJson || [];
@@ -3188,399 +3503,91 @@ function shuffleDistributionForItem(itemCode, totalQty) {
     }
 
     console.log(`DEBUG: shuffle ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
-    console.log(`DEBUG: shuffle ${itemCode} - availableDates:`, availableDates);
-    console.log(`DEBUG: shuffle ${itemCode} - unavailableDates:`, unavailableDates);
-    console.log(`DEBUG: shuffle ${itemCode} - dryDates:`, dryDates);
     
-    // Create date index map
     const dateIndexMap = {};
     dateArray.forEach((date, index) => {
         dateIndexMap[date] = index;
     });
 
-    // FIXED: Filter out dry days from available dates
-    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
-    console.log(`DEBUG: shuffle ${itemCode} - Truly available dates (after dry day filter):`, trulyAvailableDates);
-
     let distribution = new Array(daysCount).fill(0);
-
-    if (hasGlobalRestriction && trulyAvailableDates.length > 0) {
-        console.log(`DEBUG: shuffle ${itemCode} - Distributing on ${trulyAvailableDates.length} truly available dates`);
-        
-        // NEW: TRULY RANDOM distribution - each unit is randomly assigned to a day
-        // This creates more extreme variations (e.g., one day 5 sales, another day 0, etc.)
-        const availableDaysCount = trulyAvailableDates.length;
-        
-        for (let i = 0; i < totalQty; i++) {
-            // Randomly pick a day from available days
-            const randomDay = Math.floor(Math.random() * availableDaysCount);
-            const randomDate = trulyAvailableDates[randomDay];
-            const dateIndex = dateIndexMap[randomDate];
-            if (dateIndex !== undefined) {
-                distribution[dateIndex]++;
-            }
-        }
-
-        console.log(`Shuffled ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} truly available dates`);
-    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
-        console.log(`DEBUG: shuffle ${itemCode} - Distributing across all dates but EXCLUDING dry days`);
-        
-        // Get all dates that are NOT dry days
-        const nonDryDates = dateArray.filter(date => !dryDates.includes(date));
-        const nonDryDaysCount = nonDryDates.length;
-        
-        if (nonDryDaysCount > 0) {
-            // NEW: TRULY RANDOM distribution - each unit is randomly assigned to a day
-            for (let i = 0; i < totalQty; i++) {
-                // Randomly pick a day from non-dry days
-                const randomDay = Math.floor(Math.random() * nonDryDaysCount);
-                const randomDate = nonDryDates[randomDay];
-                const dateIndex = dateIndexMap[randomDate];
-                if (dateIndex !== undefined) {
-                    distribution[dateIndex]++;
-                }
-            }
-            
-            console.log(`Shuffled ${itemCode}: Distributing ${totalQty} across ${nonDryDaysCount} non-dry dates`);
-        }
-    } else {
-        console.log(`DEBUG: shuffle ${itemCode} - No truly available dates, returning zeros`);
-    }
-
-    // Verify total distribution equals total quantity
-    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
-    if (totalDistributed !== totalQty && trulyAvailableDates.length > 0) {
-        console.warn(`Shuffle distribution mismatch: Total ${totalQty} vs Distributed ${totalDistributed} - Auto-correcting`);
-        
-        if (totalDistributed < totalQty) {
-            const missing = totalQty - totalDistributed;
-            // Add missing to a random available date
-            const randomDay = Math.floor(Math.random() * trulyAvailableDates.length);
-            const randomDate = trulyAvailableDates[randomDay];
-            const randomIndex = dateIndexMap[randomDate];
-            if (randomIndex !== undefined) {
-                distribution[randomIndex] += missing;
-                console.log(`Added ${missing} to ${randomDate}`);
-            }
-        }
-    }
-
-    console.log(`DEBUG: shuffle ${itemCode} - final distribution:`, distribution);
-    console.log(`DEBUG: shuffle ${itemCode} - total distributed:`, distribution.reduce((sum, qty) => sum + qty, 0));
+    let trulyAvailableDates = [];
     
+    if (hasGlobalRestriction && availableDates.length > 0) {
+        trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: shuffle ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Shuffled ${itemCode}: Stock-aware distribution on ${trulyAvailableDates.length} available dates`);
+        }
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: shuffle ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Shuffled ${itemCode}: Stock-aware distribution across ${trulyAvailableDates.length} non-dry dates`);
+        }
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - returning distribution:`, distribution);
     return distribution;
 }
 
-// FIXED: Enhanced function to update distribution preview - correctly handles dry day exclusion
-// UPDATED: Now uses TRULY RANDOM distribution - each unit randomly assigned to a day
-// CRITICAL FIX: Uses saved distribution if available instead of generating new one
-function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
-    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const itemRow = inputField.closest('tr');
+// ============================================================================
+// INITIALIZE TABLE HEADERS (newest on left)
+// ============================================================================
+function initializeTableHeaders() {
+    $('.date-header').remove();
 
-    // CRITICAL FIX: Check if we already have a saved distribution and use it instead of generating new one
-    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
-        const savedDistribution = savedDistributions[itemCode];
-        const savedTotal = savedDistribution.reduce((sum, qty) => sum + qty, 0);
-        
-        // Verify the saved distribution matches the current quantity
-        if (savedTotal === totalQty) {
-            console.log(`DEBUG: ${itemCode} - Using SAVED distribution instead of generating new one`);
-            // Use the saved distribution for UI display
-            displayDistributionInCells(itemCode, itemRow, savedDistribution);
-            return;
-        } else {
-            console.log(`DEBUG: ${itemCode} - Saved distribution total (${savedTotal}) doesn't match current qty (${totalQty}), will regenerate`);
-        }
-    }
+    const displayDates = [...dateArray].reverse();
 
-    if (totalQty <= 0) {
-        // Remove distribution cells if quantity is 0
-        itemRow.find('.date-distribution-cell').remove();
+    const actionColumn = $('.table-header tr th.action-column');
+    if (actionColumn.length > 0) {
+        displayDates.forEach(date => {
+            const dateObj = new Date(date);
+            const day = dateObj.getDate();
+            const month = dateObj.toLocaleString('default', { month: 'short' });
 
-        // Clear saved distribution
-        delete savedDistributions[itemCode];
-        console.log(`DEBUG: ${itemCode} - Cleared saved distribution (qty=0)`);
+            let title = date;
+            let headerClass = '';
 
-        // Reset closing balance and amount
-        const currentStock = parseFloat(inputField.data('stock'));
-        const displayClosing = Math.floor(currentStock);
-        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
-        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
-
-        // Hide date columns if no items have quantity
-        if ($('input[name^="sale_qty"]').filter(function() {
-            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
-        }).length === 0) {
-            $('.date-header, .date-distribution-cell').hide();
-        }
-
-        return;
-    }
-
-    // Get global available/unavailable dates
-    const hasGlobalRestriction = inputField.data('has-global-restriction');
-    const availableDates = inputField.data('available-dates') || [];
-    const unavailableDates = inputField.data('unavailable-dates') || [];
-    const dryDates = inputField.data('dry-dates') || [];
-
-    console.log(`DEBUG: ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
-    console.log(`DEBUG: ${itemCode} - availableDates:`, availableDates);
-    console.log(`DEBUG: ${itemCode} - unavailableDates:`, unavailableDates);
-    console.log(`DEBUG: ${itemCode} - dryDates:`, dryDates);
-    
-    // FIXED: Create truly available dates by excluding dry days
-    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
-    console.log(`DEBUG: ${itemCode} - Truly available dates (after dry day filter):`, trulyAvailableDates);
-    
-    // Create date index map
-    const dateIndexMap = {};
-    dateArray.forEach((date, index) => {
-        dateIndexMap[date] = index;
-    });
-
-    console.log(`DEBUG: ${itemCode} - dateIndexMap:`, dateIndexMap);
-
-    // Calculate distribution based on truly available dates
-    let distribution = new Array(daysCount).fill(0);
-
-    if (hasGlobalRestriction && trulyAvailableDates.length > 0) {
-        console.log(`DEBUG: ${itemCode} - Has global restriction with ${trulyAvailableDates.length} truly available dates`);
-        
-        // NEW: TRULY RANDOM distribution - each unit is randomly assigned to a day
-        // This creates more extreme variations (e.g., one day 5 sales, another day 0, etc.)
-        const availableDaysCount = trulyAvailableDates.length;
-        
-        for (let i = 0; i < totalQty; i++) {
-            // Randomly pick a day from available days
-            const randomDay = Math.floor(Math.random() * availableDaysCount);
-            const randomDate = trulyAvailableDates[randomDay];
-            const dateIndex = dateIndexMap[randomDate];
-            if (dateIndex !== undefined) {
-                distribution[dateIndex]++;
+            if (globalDryDates.includes(date)) {
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                title = `${date} - DRY DAY: ${dryDescription}`;
+                headerClass = 'dry-date-header';
+            } else if (globalUnavailableDates.includes(date) && !globalDryDates.includes(date)) {
+                title = `${date} - Has existing sales`;
+                headerClass = 'unavailable-date-header';
+            } else {
+                title = `${date} - Available for new sales`;
             }
-        }
 
-        console.log(`Item ${itemCode}: Distributing ${totalQty} on ${availableDaysCount} truly available dates:`, trulyAvailableDates);
-        console.log(`Distribution array:`, distribution);
-
-        // Add special class to row to indicate partial distribution
-        itemRow.addClass('partial-distribution-item');
-        itemRow.attr('title', `Only ${trulyAvailableDates.length} of ${daysCount} dates are truly available (excluding dry days). New sales will be distributed only on truly available dates.`);
-    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
-        console.log(`DEBUG: ${itemCode} - No restrictions or all dates available, but EXCLUDING dry days`);
-        
-        // Get all dates that are NOT dry days
-        const nonDryDates = dateArray.filter(date => !dryDates.includes(date));
-        const nonDryDaysCount = nonDryDates.length;
-        
-        if (nonDryDaysCount > 0) {
-            // NEW: TRULY RANDOM distribution - each unit is randomly assigned to a day
-            for (let i = 0; i < totalQty; i++) {
-                // Randomly pick a day from non-dry days
-                const randomDay = Math.floor(Math.random() * nonDryDaysCount);
-                const randomDate = nonDryDates[randomDay];
-                const dateIndex = dateIndexMap[randomDate];
-                if (dateIndex !== undefined) {
-                    distribution[dateIndex]++;
-                }
-            }
-            
-            console.log(`Item ${itemCode}: Distributing ${totalQty} across ${nonDryDaysCount} non-dry dates`);
-        } else {
-            console.log(`Item ${itemCode}: No non-dry dates available for distribution`);
-        }
-        
-        itemRow.removeClass('partial-distribution-item');
-    } else {
-        console.log(`DEBUG: ${itemCode} - No truly available dates for distribution`);
-        console.log(`Item ${itemCode}: No truly available dates for distribution`);
-        itemRow.addClass('partial-distribution-item');
-        itemRow.attr('title', 'No truly available dates in selected range (all dates are dry days or have existing sales)');
+            $(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`)
+                .insertAfter(actionColumn);
+        });
     }
-
-    // Verify total distribution equals total quantity and auto-correct if needed
-    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
-    if (totalDistributed !== totalQty && trulyAvailableDates.length > 0) {
-        console.warn(`Distribution mismatch for ${itemCode}: Total ${totalQty} vs Distributed ${totalDistributed} - Auto-correcting`);
-        
-        if (totalDistributed < totalQty) {
-            const missing = totalQty - totalDistributed;
-            // Add missing to a random available date
-            const randomDay = Math.floor(Math.random() * trulyAvailableDates.length);
-            const randomDate = trulyAvailableDates[randomDay];
-            const randomIndex = dateIndexMap[randomDate];
-            if (randomIndex !== undefined) {
-                distribution[randomIndex] += missing;
-                console.log(`Added ${missing} to ${randomDate}`);
-            }
-        }
-    }
-
-    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
-    console.log(`DEBUG: ${itemCode} - Total distributed:`, distribution.reduce((sum, qty) => sum + qty, 0));
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-
-    console.log(`DEBUG: ${itemCode} - Creating cells for ${distribution.length} dates`);
-
-    // SAVE THIS DISTRIBUTION - this is what the user sees
-    savedDistributions[itemCode] = distribution.slice();
-
-    // *** FIX: Collect all cells first, then insert in reverse ***
-    const cellsToInsert_preview = [];
-
-    distribution.forEach((qty, index) => {
-        const date = dateArray[index];
-        const cell = $(`<td class="date-distribution-cell"></td>`);
-
-        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-        const isAvailable = trulyAvailableDates.length > 0 && trulyAvailableDates.includes(date);
-
-        console.log(`DEBUG: ${itemCode} - Date ${date} (index ${index}): qty=${qty}, isGlobalUnavailable=${isGlobalUnavailable}, isDryDate=${isDryDate}, isAvailable=${isAvailable}`);
-
-        if (isDryDate) {
-            cell.addClass('dry-unavailable-date');
-            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to DRY DAY (🌙)`);
-        } else if (isGlobalUnavailable && !isDryDate) {
-            cell.addClass('global-unavailable-date');
-            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to GLOBAL UNAVAILABLE (✗)`);
-        } else if (isAvailable && qty > 0) {
-            cell.addClass('available-date-with-sales');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to AVAILABLE WITH SALES (${qty})`);
-        } else if (qty > 0) {
-            cell.addClass('non-zero-distribution');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date}`);
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to NON-ZERO (${qty})`);
-        } else {
-            cell.addClass('zero-distribution');
-            cell.text('0');
-            console.log(`DEBUG: ${itemCode} - Setting cell for ${date} to ZERO DISTRIBUTION`);
-            if (isAvailable) {
-                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
-            } else if (!hasGlobalRestriction) {
-                cell.attr('title', `Date ${date} has 0 units assigned`);
-            }
-        }
-
-        cellsToInsert_preview.push(cell);
-    });
-
-    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
-    for (let i = cellsToInsert_preview.length - 1; i >= 0; i--) {
-        cellsToInsert_preview[i].insertAfter(itemRow.find('.action-column'));
-    }
-
-    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
-    
-    // Final verification
-    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
-    console.log(`DEBUG: ${itemCode} - FINAL TOTAL DISTRIBUTED: ${finalTotal} (should equal ${totalQty})`);
-    
-    // Show date columns
-    $('.date-header, .date-distribution-cell').show();
-    
-    // Save distribution to session so it matches when generating bills
-    saveDistributionToSession(itemCode, distribution);
 }
 
-function displayDistributionInCells(itemCode, itemRow, distribution) {
-    console.log(`DEBUG: ${itemCode} - displayDistributionInCells called with:`, distribution);
-    
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    const unavailableDates = inputField.data('unavailable-dates') || [];
-    const dryDates = inputField.data('dry-dates') || [];
-    const availableDates = inputField.data('available-dates') || [];
-    const hasGlobalRestriction = inputField.data('has-global-restriction');
-    
-    // Remove any existing distribution cells
-    itemRow.find('.date-distribution-cell').remove();
-    
-    // Show date columns
-    $('.date-header, .date-distribution-cell').show();
-    
-    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
-    console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
-    
-    // *** FIX: Collect all cells first, then insert in reverse order ***
-    // Headers are inserted via insertAfter(action-column) in REVERSE → each new header
-    // pushes previous ones right → earliest date ends up leftmost.
-    // Cells must use the SAME reverse-insert pattern to align with headers.
-    const cellsToInsert_display = [];
-    
-    distribution.forEach((qty, index) => {
-        const date = dateArray[index];
-        const cell = $(`<td class="date-distribution-cell"></td>`);
-
-        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
-        const isAvailable = availableDates.length > 0 && availableDates.includes(date);
-
-        // CRITICAL: Check dry day FIRST
-        if (isDryDate) {
-            cell.addClass('dry-unavailable-date');
-            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-            console.log(`DEBUG: ${itemCode} - cell ${date} → DRY DAY`);
-        } else if (isGlobalUnavailable && !isDryDate) {
-            cell.addClass('global-unavailable-date');
-            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-            console.log(`DEBUG: ${itemCode} - cell ${date} → GLOBAL UNAVAILABLE (✗)`);
-        } else if (isAvailable && qty > 0) {
-            cell.addClass('available-date-with-sales');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-            console.log(`DEBUG: ${itemCode} - cell ${date} → AVAILABLE WITH SALES (${qty})`);
-        } else if (qty > 0) {
-            cell.addClass('non-zero-distribution');
-            cell.text(qty);
-            cell.attr('title', `${qty} units scheduled for ${date}`);
-            console.log(`DEBUG: ${itemCode} - cell ${date} → NON-ZERO (${qty})`);
-        } else {
-            cell.addClass('zero-distribution');
-            cell.text('0');
-            console.log(`DEBUG: ${itemCode} - cell ${date} → ZERO`);
-            if (isAvailable) {
-                cell.attr('title', `Date ${date} is available but has 0 units assigned`);
-            } else if (!hasGlobalRestriction) {
-                cell.attr('title', `Date ${date} has 0 units assigned`);
-            }
-        }
-
-        cellsToInsert_display.push(cell);
-    });
-
-    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
-    for (let i = cellsToInsert_display.length - 1; i >= 0; i--) {
-        cellsToInsert_display[i].insertAfter(itemRow.find('.action-column'));
-    }
-
-    console.log(`DEBUG: ${itemCode} - Finished creating distribution cells`);
-    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
-    console.log(`DEBUG: ${itemCode} - FINAL TOTAL DISTRIBUTED: ${finalTotal} (should equal ${totalDistributed})`);
-    
-    $('.date-header, .date-distribution-cell').show();
-    
-    savedDistributions[itemCode] = distribution.slice();
-    console.log(`DEBUG: ${itemCode} - Saved distribution to savedDistributions:`, savedDistributions[itemCode]);
-    
-    saveDistributionToSession(itemCode, distribution);
-}
-
-// NEW: Function to shuffle distribution for a specific item when Enter is pressed
+// ============================================================================
+// SHUFFLE THIS ITEM FUNCTION (Enter key handler)
+// ============================================================================
 function shuffleThisItem(input) {
     const itemCode = $(input).data('code');
     const qty = parseInt($(input).val()) || 0;
@@ -3588,31 +3595,423 @@ function shuffleThisItem(input) {
     console.log(`Enter key pressed for item ${itemCode} with qty ${qty}`);
     
     if (qty > 0) {
-        // Shuffle/randomize the distribution for this item
-        const distribution = shuffleDistributionForItem(itemCode, qty);
-        
-        // Save the shuffled distribution to session
-        saveDistributionToSession(itemCode, distribution);
-        
-        // Update the distribution preview for this item
-        updateDistributionPreviewWithGlobalRestrictions(itemCode, qty);
-        
-        console.log(`Shuffled distribution for item ${itemCode}:`, distribution);
-    } else {
-        // If quantity is 0, clear the distribution
         delete savedDistributions[itemCode];
         
-        // Update the UI to show no distribution
-        updateDistributionPreviewWithGlobalRestrictions(itemCode, 0);
+        const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+        const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
+        const availableDatesJson = inputField.data('available-dates');
+        const unavailableDatesJson = inputField.data('unavailable-dates');
+        const dryDatesJson = inputField.data('dry-dates');
+
+        let availableDates = [];
+        let unavailableDates = [];
+        let dryDates = [];
         
+        let stockData = dailyStockData[itemCode] || {};
+        if (Object.keys(stockData).length === 0) {
+            try {
+                const stockStr = inputField.data('stock-data');
+                if (stockStr) {
+                    stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
+                }
+            } catch(e) {
+                console.error('Error parsing stock data:', e);
+            }
+        }
+        
+        try {
+            availableDates = availableDatesJson || [];
+            unavailableDates = unavailableDatesJson || [];
+            dryDates = dryDatesJson || [];
+        } catch (e) {
+            console.error('Error parsing date arrays:', e);
+        }
+        
+        const dateIndexMap = {};
+        dateArray.forEach((date, index) => {
+            dateIndexMap[date] = index;
+        });
+        
+        let distribution = new Array(daysCount).fill(0);
+        let trulyAvailableDates = [];
+        
+        if (hasGlobalRestriction && availableDates.length > 0) {
+            trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+            
+            const datesWithStock = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (datesWithStock.length > 0) {
+                trulyAvailableDates = datesWithStock;
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+                
+                console.log(`Shuffled ${itemCode}: Random distribution on ${availableDaysCount} stock-available dates`);
+            }
+            
+        } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+            trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+            
+            const datesWithStock = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (datesWithStock.length > 0) {
+                trulyAvailableDates = datesWithStock;
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+                
+                console.log(`Shuffled ${itemCode}: Random distribution across ${datesWithStock.length} non-dry dates with stock`);
+            }
+        }
+
+        let stockViolation = false;
+        distribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            if (qty > 0) {
+                const stock = stockData[date] || 0;
+                if (stock === 0) {
+                    console.error(`STOCK VIOLATION: ${itemCode} assigned ${qty} to ${date} with 0 stock!`);
+                    stockViolation = true;
+                }
+            }
+        });
+        
+        if (stockViolation) {
+            console.error('Stock violation detected in shuffle - regeneration with proper filtering!');
+            trulyAvailableDates = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (trulyAvailableDates.length > 0) {
+                distribution = new Array(daysCount).fill(0);
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+            }
+        }
+        
+        console.log(`Shuffled distribution for ${itemCode}:`, distribution);
+        
+        saveDistributionToSession(itemCode, distribution);
+        savedDistributions[itemCode] = distribution.slice();
+        
+        const itemRow = inputField.closest('tr');
+        itemRow.find('.date-distribution-cell').remove();
+        
+        const cellsToInsert = [];
+        distribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            const cell = $(`<td class="date-distribution-cell">`);
+
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const stockAvailable = (stockData[date] || 0) > 0;
+
+            if (isDryDate) {
+                cell.addClass('dry-unavailable-date');
+                cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            } else if (isGlobalUnavailable && !isDryDate) {
+                cell.addClass('global-unavailable-date');
+                cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            } else if (!stockAvailable) {
+                cell.addClass('no-stock-date');
+                cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+                cell.attr('title', `No stock available on ${date}`);
+            } else if (qty > 0) {
+                cell.addClass('non-zero-distribution');
+                cell.text(qty);
+                cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+            } else {
+                cell.addClass('zero-distribution');
+                cell.text('0');
+                cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+            }
+
+            cellsToInsert.push(cell);
+        });
+
+        for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+            cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+        }
+
+        console.log('DEBUG: Distribution shuffled for item ' + itemCode + ':', distribution);
+    } else {
+        delete savedDistributions[itemCode];
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, 0);
         console.log(`Cleared distribution for item ${itemCode} (qty=0)`);
     }
 }
 
-// Function to check global restrictions before submission
+// ============================================================================
+// VALIDATE QUANTITY FUNCTION
+// ============================================================================
+function validateQuantity(input) {
+    const itemCode = $(input).data('code');
+    const currentStock = parseFloat($(input).data('stock'));
+    let enteredQty = parseInt($(input).val()) || 0;
+    
+    let previousQty = 0;
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        previousQty = savedDistributions[itemCode].reduce((a, b) => a + b, 0);
+    } else if (allSessionQuantities[itemCode] !== undefined) {
+        previousQty = allSessionQuantities[itemCode];
+    }
+    
+    if ($(input).prop('disabled')) {
+        return false;
+    }
+    
+    if (isNaN(enteredQty) || enteredQty < 0) {
+        enteredQty = 0;
+        $(input).val(0);
+    }
+    
+    if (enteredQty > currentStock) {
+        const maxAllowed = Math.floor(currentStock);
+        enteredQty = maxAllowed;
+        $(input).val(maxAllowed);
+        $(input).addClass('is-invalid');
+        setTimeout(() => $(input).removeClass('is-invalid'), 2000);
+    } else {
+        $(input).removeClass('is-invalid');
+    }
+    
+    if (enteredQty !== previousQty) {
+        console.log(`DEBUG: Quantity changed for ${itemCode}: ${previousQty} -> ${enteredQty}, updating distribution`);
+        
+        updateItemUI(itemCode, enteredQty, currentStock);
+        saveQuantityToSession(itemCode, enteredQty);
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, enteredQty);
+    } else {
+        console.log(`DEBUG: Quantity unchanged for ${itemCode}: ${enteredQty}, skipping distribution update`);
+    }
+    
+    return true;
+}
+
+// ============================================================================
+// UPDATE ITEM UI FUNCTION
+// ============================================================================
+function updateItemUI(itemCode, qty, currentStock) {
+    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
+    const closingStock = currentStock - qty;
+    const amount = qty * rate;
+    
+    const displayClosing = Math.floor(closingStock);
+    const displayAmount = Math.floor(amount);
+    
+    $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
+    
+    const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
+    row.toggleClass('has-quantity', qty > 0);
+    
+    const closingCell = $(`#closing_${itemCode}`);
+    closingCell.removeClass('text-warning text-danger fw-bold');
+    closingCell.css('background-color', '');
+    
+    if (closingStock < 0) {
+        closingCell.addClass('text-danger fw-bold');
+        closingCell.css('background-color', '#f8d7da');
+    } else if (closingStock < (currentStock * 0.1) && closingStock >= 0) {
+        closingCell.addClass('text-warning fw-bold');
+    }
+}
+
+// ============================================================================
+// SAVE QUANTITY TO SESSION
+// ============================================================================
+function saveQuantityToSession(itemCode, qty) {
+    if (typeof saveQuantityToSession.debounce === 'undefined') {
+        saveQuantityToSession.debounce = null;
+    }
+    
+    clearTimeout(saveQuantityToSession.debounce);
+    saveQuantityToSession.debounce = setTimeout(() => {
+        $.ajax({
+            url: 'update_session_quantity.php',
+            type: 'POST',
+            data: {
+                item_code: itemCode,
+                quantity: qty
+            },
+            success: function(response) {
+                console.log('Quantity saved to session:', itemCode, qty);
+                allSessionQuantities[itemCode] = qty;
+            },
+            error: function() {
+                console.error('Failed to save quantity to session');
+            }
+        });
+    }, 200);
+}
+
+// ============================================================================
+// SAVE DISTRIBUTION TO SESSION
+// ============================================================================
+function saveDistributionToSession(itemCode, distribution) {
+    $.ajax({
+        url: 'save_distribution_to_session.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            item_code: itemCode,
+            distribution: distribution
+        }),
+        success: function(response) {
+            console.log('Distribution saved for ' + itemCode + ':', distribution);
+        },
+        error: function() {
+            console.error('Failed to save distribution for ' + itemCode);
+        }
+    });
+}
+
+// ============================================================================
+// CLEAR SESSION QUANTITIES
+// ============================================================================
+function clearSessionQuantities() {
+    $.ajax({
+        url: 'clear_session_quantities.php',
+        type: 'POST',
+        success: function(response) {
+            console.log('Session quantities cleared');
+            location.reload();
+        },
+        error: function() {
+            console.log('Error clearing session quantities');
+            alert('Error clearing quantities. Please try again.');
+        }
+    });
+}
+
+// ============================================================================
+// INITIALIZE QUANTITIES FROM SESSION
+// ============================================================================
+function initializeQuantitiesFromSession() {
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        if (allSessionQuantities[itemCode] !== undefined) {
+            const sessionQty = allSessionQuantities[itemCode];
+            $(this).val(sessionQty);
+            
+            const currentStock = parseFloat($(this).data('stock'));
+            updateItemUI(itemCode, sessionQty, currentStock);
+        }
+    });
+    
+    const hasQuantities = $('input[name^="sale_qty"]').filter(function() { 
+        return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+    }).length > 0;
+    
+    if (hasQuantities) {
+        $('.date-header').show();
+    }
+}
+
+// ============================================================================
+// INITIALIZE DISTRIBUTION PREVIEW
+// ============================================================================
+function initializeDistributionPreview() {
+    console.log('Initializing distribution preview for items with quantities...');
+    
+    let itemsWithQuantity = 0;
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+        
+        if (totalQty > 0 && !$(this).prop('disabled')) {
+            updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty);
+            itemsWithQuantity++;
+        }
+    });
+    
+    console.log(`Initialized distribution preview for ${itemsWithQuantity} items with quantities`);
+    
+    if (itemsWithQuantity > 0) {
+        $('.date-header, .date-distribution-cell').show();
+    }
+}
+
+// ============================================================================
+// SETUP ROW NAVIGATION
+// ============================================================================
+function setupRowNavigation() {
+    const qtyInputs = $('input.qty-input:enabled');
+    let currentRowIndex = -1;
+    
+    $(document).on('focus', 'input.qty-input:enabled', function() {
+        $('tr').removeClass('highlight-row');
+        $(this).closest('tr').addClass('highlight-row');
+        currentRowIndex = qtyInputs.index(this);
+    });
+    
+    $(document).on('keydown', 'input.qty-input:enabled', function(e) {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        
+        e.preventDefault();
+        
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+            newIndex = currentRowIndex - 1;
+        } else {
+            newIndex = currentRowIndex + 1;
+        }
+        
+        if (newIndex >= 0 && newIndex < qtyInputs.length) {
+            $(qtyInputs[newIndex]).focus().select();
+        }
+    });
+}
+
+// ============================================================================
+// CHECK GLOBAL RESTRICTIONS BEFORE SUBMIT
+// ============================================================================
 function checkGlobalRestrictionsBeforeSubmit() {
     return new Promise((resolve, reject) => {
-        // Check if there are any available dates
         if (globalAvailableDates.length === 0) {
             const errorMessage = "No available dates in the selected range due to existing sales or dry days.";
             showClientValidationAlert(errorMessage);
@@ -3620,7 +4019,6 @@ function checkGlobalRestrictionsBeforeSubmit() {
             return;
         }
 
-        // Check if we have any quantities > 0
         let hasQuantity = false;
         for (const itemCode in allSessionQuantities) {
             if (allSessionQuantities[itemCode] > 0) {
@@ -3640,10 +4038,11 @@ function checkGlobalRestrictionsBeforeSubmit() {
     });
 }
 
-// NEW: Function to check stock availability via AJAX before submission
+// ============================================================================
+// CHECK STOCK AVAILABILITY BEFORE SUBMIT
+// ============================================================================
 function checkStockAvailabilityBeforeSubmit() {
     return new Promise((resolve, reject) => {
-        // Check if we have any quantities > 0
         let hasQuantity = false;
         for (const itemCode in allSessionQuantities) {
             if (allSessionQuantities[itemCode] > 0) {
@@ -3657,11 +4056,9 @@ function checkStockAvailabilityBeforeSubmit() {
             return;
         }
 
-        // Show checking state
         $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
         $('tr.has-quantity').addClass('stock-checking');
 
-        // Prepare data for AJAX check
         const checkData = {
             start_date: '<?= $start_date ?>',
             end_date: '<?= $end_date ?>',
@@ -3704,797 +4101,38 @@ function checkStockAvailabilityBeforeSubmit() {
     });
 }
 
-// NEW: Function to show client-side validation alert
+// ============================================================================
+// SHOW CLIENT VALIDATION ALERT
+// ============================================================================
 function showClientValidationAlert(message) {
     $('#validationMessage').text(message);
     $('#clientValidationAlert').fadeIn();
     
-    // Auto-hide after 10 seconds
     setTimeout(() => {
         $('#clientValidationAlert').fadeOut();
     }, 10000);
 }
 
-// Function to save distribution to session via AJAX
-function saveDistributionToSession(itemCode, distribution) {
-    $.ajax({
-        url: 'save_distribution_to_session.php',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            item_code: itemCode,
-            distribution: distribution
-        }),
-        success: function(response) {
-            console.log('Distribution saved for ' + itemCode + ':', distribution);
-        },
-        error: function() {
-            console.error('Failed to save distribution for ' + itemCode);
-        }
+// ============================================================================
+// INITIALIZE RESTRICTION TOOLTIPS
+// ============================================================================
+function initializeRestrictionTooltips() {
+    $('[data-bs-toggle="tooltip"]').tooltip({
+        placement: 'top',
+        trigger: 'hover',
+        container: 'body',
+        template: '<div class="tooltip restriction-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
     });
-}
-
-// Function to clear session quantities via AJAX
-function clearSessionQuantities() {
-    $.ajax({
-        url: 'clear_session_quantities.php',
-        type: 'POST',
-        success: function(response) {
-            console.log('Session quantities cleared');
-            // Reload the page to reflect changes
-            location.reload();
-        },
-        error: function() {
-            console.log('Error clearing session quantities');
-            alert('Error clearing quantities. Please try again.');
-        }
-    });
-}
-
-// Enhanced quantity validation function
-function validateQuantity(input) {
-    const itemCode = $(input).data('code');
-    const currentStock = parseFloat($(input).data('stock'));
-    let enteredQty = parseInt($(input).val()) || 0;
-    
-    // Get the previous quantity from savedDistributions or session
-    // Handle null case (distribution not yet generated)
-    let previousQty = 0;
-    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
-        previousQty = savedDistributions[itemCode].reduce((a, b) => a + b, 0);
-    } else if (allSessionQuantities[itemCode] !== undefined) {
-        previousQty = allSessionQuantities[itemCode];
-    }
-    
-    // If input is disabled due to global restrictions, don't validate
-    if ($(input).prop('disabled')) {
-        return false;
-    }
-    
-    // Validate input
-    if (isNaN(enteredQty) || enteredQty < 0) {
-        enteredQty = 0;
-        $(input).val(0);
-    }
-    
-    // Prevent exceeding stock with better feedback
-    if (enteredQty > currentStock) {
-        const maxAllowed = Math.floor(currentStock);
-        enteredQty = maxAllowed;
-        $(input).val(maxAllowed);
-        
-        // Show warning but don't prevent operation
-        $(input).addClass('is-invalid');
-        setTimeout(() => $(input).removeClass('is-invalid'), 2000);
-    } else {
-        $(input).removeClass('is-invalid');
-    }
-    
-    // CRITICAL FIX: Only recalculate distribution if quantity actually changed
-    // This prevents reshuffling when using arrow keys or other navigation
-    if (enteredQty !== previousQty) {
-        console.log(`DEBUG: Quantity changed for ${itemCode}: ${previousQty} -> ${enteredQty}, updating distribution`);
-        
-        // Update UI immediately
-        updateItemUI(itemCode, enteredQty, currentStock);
-        
-        // Save to session via AJAX to prevent data loss
-        saveQuantityToSession(itemCode, enteredQty);
-        
-        // Update distribution preview with global restrictions
-        updateDistributionPreviewWithGlobalRestrictions(itemCode, enteredQty);
-    } else {
-        console.log(`DEBUG: Quantity unchanged for ${itemCode}: ${enteredQty}, skipping distribution update`);
-    }
-    
-    return true;
-}
-
-// New function to update all UI elements for an item
-function updateItemUI(itemCode, qty, currentStock) {
-    const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
-    // Closing Stock (End Date) = Available Stock - Sale Qty (Auto-calculated)
-    const closingStock = currentStock - qty;
-    const amount = qty * rate;
-    
-    // Format to remove decimals for display
-    const displayClosing = Math.floor(closingStock);
-    const displayAmount = Math.floor(amount);
-    
-    // Update all related UI elements
-    $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
-    $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
-    
-    // Update row styling
-    const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
-    row.toggleClass('has-quantity', qty > 0);
-    
-    // Update closing balance styling - highlight in RED if negative
-    const closingCell = $(`#closing_${itemCode}`);
-    closingCell.removeClass('text-warning text-danger fw-bold');
-    closingCell.css('background-color', '');
-    
-    if (closingStock < 0) {
-        // Negative closing stock - highlight in RED
-        closingCell.addClass('text-danger fw-bold');
-        closingCell.css('background-color', '#f8d7da');
-    } else if (closingStock < (currentStock * 0.1) && closingStock >= 0) {
-        // Low stock but still positive - highlight in yellow/warning
-        closingCell.addClass('text-warning fw-bold');
-    }
-}
-
-// New function to save quantity to session via AJAX
-function saveQuantityToSession(itemCode, qty) {
-    // Debounce to prevent too many requests
-    if (typeof saveQuantityToSession.debounce === 'undefined') {
-        saveQuantityToSession.debounce = null;
-    }
-    
-    clearTimeout(saveQuantityToSession.debounce);
-    saveQuantityToSession.debounce = setTimeout(() => {
-        $.ajax({
-            url: 'update_session_quantity.php',
-            type: 'POST',
-            data: {
-                item_code: itemCode,
-                quantity: qty
-            },
-            success: function(response) {
-                console.log('Quantity saved to session:', itemCode, qty);
-                // Update global session quantities object
-                allSessionQuantities[itemCode] = qty;
-            },
-            error: function() {
-                console.error('Failed to save quantity to session');
-            }
-        });
-    }, 200);
-}
-
-// Function to validate all quantities before form submission
-function validateAllQuantities() {
-    let isValid = true;
-    let errorItems = [];
-    
-    // Validate ONLY session quantities > 0 (optimization)
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            // Find the stock data from the input field or use a default
-            const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-            let currentStock;
-            
-            if (inputField.length > 0) {
-                currentStock = parseFloat(inputField.data('stock'));
-            } else {
-                // If item not in current view, get from allItemsData
-                if (allItemsData[itemCode]) {
-                    currentStock = parseFloat(allItemsData[itemCode].CURRENT_STOCK);
-                } else {
-                    continue; // Skip if we can't validate
-                }
-            }
-            
-            const closingBalance = currentStock - qty;
-            
-            if (closingBalance < 0) {
-                isValid = false;
-                errorItems.push({
-                    code: itemCode,
-                    stock: currentStock,
-                    qty: qty
-                });
-            }
-        }
-    }
-    
-    if (!isValid) {
-        let errorMessage = "The following items have insufficient stock:\n\n";
-        errorItems.forEach(item => {
-            errorMessage += `• Item ${item.code}: Stock ${Math.floor(item.stock)}, Quantity ${item.qty}\n`;
-        });
-        errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
-        alert(errorMessage);
-    }
-    
-    return isValid;
-}
-
-// Function to initialize date headers and closing balance column
-function initializeTableHeaders() {
-    // Remove existing date headers if any
-    $('.date-header').remove();
-    
-    // FIXED: Insert headers in reverse order so first date appears on the left
-    // When we insert each header after the action column, they get placed in reverse
-    // So we need to iterate in reverse to get correct left-to-right order
-    const reversedDates = [...dateArray].reverse();
-    
-    reversedDates.forEach(date => {
-        const dateObj = new Date(date);
-        const day = dateObj.getDate();
-        const month = dateObj.toLocaleString('default', { month: 'short' });
-        
-        // Add tooltip to show if date is a dry day or has sales
-        let title = date;
-        let headerClass = '';
-        
-        if (globalDryDates.includes(date)) {
-            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-            title = `${date} - DRY DAY: ${dryDescription}`;
-            headerClass = 'dry-date-header';
-        } else if (globalUnavailableDates.includes(date) && !globalDryDates.includes(date)) {
-            title = `${date} - Has existing sales`;
-            headerClass = 'unavailable-date-header';
-        } else {
-            title = `${date} - Available for new sales`;
-        }
-        
-        // Insert date headers after the action column header
-        $(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`).insertAfter($('.table-header tr th.action-column'));
-    });
-}
-
-// Function to handle row navigation with arrow keys
-function setupRowNavigation() {
-    const qtyInputs = $('input.qty-input:enabled');
-    let currentRowIndex = -1;
-    
-    // Highlight row when input is focused
-    $(document).on('focus', 'input.qty-input:enabled', function() {
-        // Remove highlight from all rows
-        $('tr').removeClass('highlight-row');
-        
-        // Add highlight to current row
-        $(this).closest('tr').addClass('highlight-row');
-        
-        // Update current row index
-        currentRowIndex = qtyInputs.index(this);
-    });
-    
-    // Handle arrow key navigation
-    $(document).on('keydown', 'input.qty-input:enabled', function(e) {
-        // Only handle arrow keys
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        
-        e.preventDefault(); // Prevent default scrolling behavior
-        
-        // Calculate new row index
-        let newIndex;
-        if (e.key === 'ArrowUp') {
-            newIndex = currentRowIndex - 1;
-        } else { // ArrowDown
-            newIndex = currentRowIndex + 1;
-        }
-        
-        // Check if new index is valid
-        if (newIndex >= 0 && newIndex < qtyInputs.length) {
-            // Focus the input in the new row
-            $(qtyInputs[newIndex]).focus().select();
-        }
-    });
-}
-
-// ORIGINAL: Function to generate bills immediately
-function generateBills() {
-    // Show loader and submit the form
-    $('#ajaxLoader').show();
-    document.getElementById('salesForm').submit();
-}
-
-// Function to show the progress section on page
-function showProgressModal() {
-    // Reset progress bar
-    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
-    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
-    $('#progressMessage').text('Initializing...');
-    $('#currentBillCount').text('0');
-    $('#totalBillCount').text('0');
-    $('#timeRemaining').text('--');
-    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Waiting to start...</td></tr>');
-    $('#generationSpeed').text('--');
-    $('#elapsedTime').text('0s');
-    
-    // Show the progress section on the page
-    $('#billProgressSection').show();
-    
-    // Scroll to the progress section
-    $('html, body').animate({
-        scrollTop: $('#billProgressSection').offset().top - 100
-    }, 500);
-    
-    // Hide the items table temporarily to focus on progress
-    $('#itemsTable').closest('.table-container').hide();
 }
 
 // ============================================================================
-// ULTRA-FAST BILL GENERATION WITH REAL-TIME PROGRESS
+// LOAD SALES LOG
 // ============================================================================
-
-// Global variables for progress tracking
-let progressKey = null;
-let progressPollingInterval = null;
-let generationStartTime = null;
-
-// Function to start ultra-fast bill generation
-function startUltraFastBillGeneration() {
-    // Check if already generating
-    if (isGeneratingBills) {
-        console.log('Already generating bills, please wait...');
-        return false;
-    }
-    
-    // Check if there are any available dates
-    if (globalAvailableDates.length === 0) {
-        alert('No available dates in the selected range due to existing sales or dry days.');
-        return false;
-    }
-    
-    // Check if we have any quantities > 0
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Show confirmation
-    const userChoice = confirm(
-        "Generate Bills Options:\n\n" +
-        "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
-        "Click Cancel to save to pending sales (will save for later processing, no stock update)."
-    );
-    
-    if (userChoice === true) {
-        // User clicked OK - Generate bills immediately
-        isGeneratingBills = true;
-        $('#generateBillsBtn').prop('disabled', true).html('<i class=\"fas fa-spinner fa-spin\"></i> Generating...');
-        generateBillsUltraFast();
-    } else {
-        // User clicked Cancel - Save to pending sales
-        isGeneratingBills = true;
-        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
-        saveToPendingSales();
-    }
-}
-
-// Function to generate bills using ultra-fast endpoint
-function generateBillsUltraFast() {
-    // Show the progress modal
-    const progressModal = new bootstrap.Modal(document.getElementById('billProgressModal'));
-    progressModal.show();
-    
-    // Reset progress display
-    resetProgressDisplay();
-    
-    // Collect form data
-    const formData = new FormData();
-    formData.append('generate_bills', 'true');
-    formData.append('start_date', '<?= $start_date ?>');
-    formData.append('end_date', '<?= $end_date ?>');
-    formData.append('mode', '<?= $mode ?>');
-    formData.append('source_page', 'sale_for_date_range');
-    
-    // DEBUG: Log what's in savedDistributions
-    console.log('=== DEBUG: generateBillsUltraFast ===');
-    console.log('savedDistributions object:', savedDistributions);
-    console.log('allSessionQuantities:', allSessionQuantities);
-    
-    // Add each item's quantity from session
-    let distributionSentCount = 0;
-    for (const itemCode in allSessionQuantities) {
-        const qty = allSessionQuantities[itemCode];
-        if (qty > 0) {
-            formData.append(`items[${itemCode}]`, qty);
-            
-            // CRITICAL FIX: Also send the saved distribution for this item
-            if (savedDistributions[itemCode]) {
-                // Send distribution as JSON string
-                const distJson = JSON.stringify(savedDistributions[itemCode]);
-                formData.append(`distribution[${itemCode}]`, distJson);
-                distributionSentCount++;
-                console.log(`✓ Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
-                console.log(`  JSON string length: ${distJson.length} chars`);
-            } else {
-                console.warn(`✗ No saved distribution found for ${itemCode} - will recalculate on server`);
-            }
-        }
-    }
-    console.log(`=== END DEBUG: Sent ${distributionSentCount} distributions ===`);
-    
-    // Update status
-    updateProgressStatus('Starting ultra-fast bill generation...', 'info');
-    
-    // Start elapsed time counter
-    generationStartTime = Date.now();
-    
-    // Make AJAX request to ultra-fast endpoint
-    $.ajax({
-        url: 'generate_bills_ultra_fast.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        success: function(result) {
-            if (result.success) {
-                // Store the progress key for polling
-                progressKey = result.progress_key;
-                
-                // Start polling for progress updates
-                startProgressPolling();
-                
-                // Final update when complete
-                updateFinalProgress(result);
-                
-                // Clear session quantities and saved distributions
-                clearSessionQuantities();
-                savedDistributions = {};
-                
-                // Hide modal and redirect after short delay
-                setTimeout(function() {
-                    progressModal.hide();
-                    window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                }, 2000);
-                
-            } else {
-                // Error occurred
-                updateProgressStatus('Error: ' + result.message, 'danger');
-                isGeneratingBills = false;
-                $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
-                
-                setTimeout(function() {
-                    progressModal.hide();
-                }, 3000);
-            }
-        },
-        error: function(xhr, status, error) {
-            let errorMsg = 'Error: ' + error;
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.message) {
-                    errorMsg = response.message;
-                }
-            } catch(e) {}
-            updateProgressStatus(errorMsg, 'danger');
-            isGeneratingBills = false;
-            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
-            
-            setTimeout(function() {
-                progressModal.hide();
-            }, 3000);
-        }
-    });
-}
-
-// Function to start polling for progress updates
-function startProgressPolling() {
-    if (progressPollingInterval) {
-        clearInterval(progressPollingInterval);
-    }
-    
-    // Poll every 200ms for real-time updates
-    progressPollingInterval = setInterval(function() {
-        if (!progressKey) return;
-        
-        $.ajax({
-            url: 'bill_progress_ajax.php',
-            type: 'GET',
-            data: { progress_key: progressKey },
-            dataType: 'json',
-            success: function(result) {
-                // If result is already parsed (string), parse it again
-                if (typeof result === 'string') {
-                    try {
-                        result = JSON.parse(result);
-                    } catch(e) {
-                        console.error('JSON parse error:', e);
-                        return;
-                    }
-                }
-                
-                // Update progress display
-                updateProgressDisplay(result);
-                
-                // Stop polling if complete
-                if (result.is_complete || result.has_error) {
-                    clearInterval(progressPollingInterval);
-                    progressPollingInterval = null;
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Progress polling error:', error);
-            }
-        });
-    }, 200);
-}
-
-// Function to reset progress display
-function resetProgressDisplay() {
-    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
-    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
-    $('#progressMessage').text('Initializing...');
-    $('#currentBillCount').text('0');
-    $('#totalBillCount').text('0');
-    $('#timeRemaining').text('--');
-    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Waiting to start...</td></tr>');
-    $('#generationSpeed').text('--');
-    $('#elapsedTime').text('0s');
-}
-
-// Function to update progress status
-function updateProgressStatus(message, type) {
-    $('#progressStatus').removeClass('alert-info alert-success alert-danger').addClass('alert-' + type);
-    $('#progressMessage').text(message);
-}
-
-// Function to update progress display
-function updateProgressDisplay(progress) {
-    // Update progress bar
-    const percentage = progress.percentage || 0;
-    $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
-    
-    // Update status message
-    if (progress.message) {
-        $('#progressMessage').text(progress.message);
-    }
-    
-    // Update counters
-    $('#currentBillCount').text(progress.current_bill || 0);
-    $('#totalBillCount').text(progress.total_bills || 0);
-    
-    // Update time remaining
-    if (progress.estimated_remaining > 0) {
-        $('#timeRemaining').text(progress.estimated_remaining + 's');
-    } else if (progress.is_complete) {
-        $('#timeRemaining').text('Done');
-    }
-    
-    // Update speed
-    if (progress.speed > 0) {
-        $('#generationSpeed').text(progress.speed.toFixed(1));
-    }
-    
-    // Update elapsed time
-    if (generationStartTime) {
-        const elapsed = Math.floor((Date.now() - generationStartTime) / 1000);
-        $('#elapsedTime').text(elapsed + 's');
-    }
-    
-    // Update recent bills list
-    if (progress.recent_bills && progress.recent_bills.length > 0) {
-        let billsHtml = '';
-        progress.recent_bills.forEach(function(bill) {
-            billsHtml += `<tr>
-                <td>${bill.bill_no}</td>
-                <td>${bill.date}</td>
-                <td>${bill.items}</td>
-                <td>₹${bill.amount.toLocaleString()}</td>
-            </tr>`;
-        });
-        $('#billsListBody').html(billsHtml);
-    }
-    
-    // Update status based on progress
-    if (progress.status === 'completed') {
-        $('#progressStatus').removeClass('alert-info').addClass('alert-success');
-    } else if (progress.status === 'error') {
-        $('#progressStatus').removeClass('alert-info').addClass('alert-danger');
-    }
-}
-
-// Function to update final progress
-function updateFinalProgress(result) {
-    // Update progress bar to 100%
-    $('#progressBar').css('width', '100%').attr('aria-valuenow', 100).text('100%');
-    $('#progressStatus').removeClass('alert-info').addClass('alert-success');
-    $('#progressMessage').text('Generation completed! ' + result.message);
-    $('#currentBillCount').text(result.bill_count);
-    $('#totalBillCount').text(result.bill_count);
-    $('#timeRemaining').text('Done');
-    
-    if (result.execution_time > 0) {
-        $('#generationSpeed').text((result.bill_count / result.execution_time).toFixed(1));
-    }
-    
-    // Show bills list
-    if (result.bills && result.bills.length > 0) {
-        let billsHtml = '';
-        result.bills.forEach(function(bill) {
-            billsHtml += `<tr>
-                <td>${bill.bill_no}</td>
-                <td>${bill.date}</td>
-                <td>${bill.items}</td>
-                <td>₹${bill.amount.toLocaleString()}</td>
-            </tr>`;
-        });
-        $('#billsListBody').html(billsHtml);
-    }
-    
-    // Stop polling
-    if (progressPollingInterval) {
-        clearInterval(progressPollingInterval);
-        progressPollingInterval = null;
-    }
-    
-    isGeneratingBills = false;
-}
-
-// Function to view results
-function viewResults() {
-    window.location.href = 'retail_sale.php';
-}
-
-// Function to save to pending sales via AJAX
-function saveToPendingSales() {
-    // First check global restrictions
-    checkGlobalRestrictionsBeforeSubmit()
-        .then(() => {
-            // Then validate basic quantities
-            if (!validateAllQuantities()) {
-                throw new Error('Quantity validation failed');
-            }
-            
-            // Then check stock availability
-            return checkStockAvailabilityBeforeSubmit();
-        })
-        .then(() => {
-            // Show loader and disable button
-            $('#ajaxLoader').show();
-            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-            
-            // Collect all the data
-            const formData = new FormData();
-            formData.append('save_pending', 'true');
-            formData.append('start_date', '<?= $start_date ?>');
-            formData.append('end_date', '<?= $end_date ?>');
-            formData.append('mode', '<?= $mode ?>');
-            
-            // Add each item's quantity from session (not just visible ones)
-            for (const itemCode in allSessionQuantities) {
-                const qty = allSessionQuantities[itemCode];
-                if (qty > 0) {
-                    formData.append(`sale_qty[${itemCode}]`, qty);
-                }
-            }
-            
-            // Send AJAX request
-            $.ajax({
-                url: 'save_pending_sales.php',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    $('#ajaxLoader').hide();
-                    // Reset flag on success - page will redirect
-                    isGeneratingBills = false;
-                    
-                    try {
-                        const result = JSON.parse(response);
-                        if (result.success) {
-                            // Clear session quantities
-                            clearSessionQuantities();
-                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
-                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
-                        } else {
-                            alert('Error: ' + result.message);
-                            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
-                        }
-                    } catch (e) {
-                        alert('Error processing response: ' + response);
-                        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
-                    }
-                },
-                error: function() {
-                    $('#ajaxLoader').hide();
-                    // Reset flag on error
-                    isGeneratingBills = false;
-                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
-                    alert('Error saving data to pending. Please try again.');
-                }
-            });
-        })
-        .catch((error) => {
-            // Validation failed, don't proceed - reset flag
-            isGeneratingBills = false;
-            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
-            console.log('Client-side validation failed for pending sales:', error);
-        });
-}
-
-// ============================================================================
-// FRONTEND OPTIMIZATION: Add debounce protection to prevent double-clicks
-// ============================================================================
-
-// Global flag to prevent double-click
-let isGeneratingBills = false;
-
-// Function to handle generate bills with debounce
-function handleGenerateBills() {
-    // Check if already generating to prevent double-click
-    if (isGeneratingBills) {
-        console.log('Already generating bills, please wait...');
-        return false;
-    }
-    
-    // Check if there are any available dates
-    if (globalAvailableDates.length === 0) {
-        alert('No available dates in the selected range due to existing sales or dry days.');
-        return false;
-    }
-    
-    // Check if we have any quantities > 0 (optimized check)
-    let hasQuantity = false;
-    for (const itemCode in allSessionQuantities) {
-        if (allSessionQuantities[itemCode] > 0) {
-            hasQuantity = true;
-            break;
-        }
-    }
-    
-    if (!hasQuantity) {
-        alert('Please enter quantities for at least one item.');
-        return false;
-    }
-    
-    // Show confirmation dialog with two options
-    const userChoice = confirm(
-        "Generate Bills Options:\n\n" +
-        "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
-        "Click Cancel to save to pending sales (will save for later processing, no stock update)."
-    );
-    
-    if (userChoice === true) {
-        // User clicked OK - Generate bills immediately
-        // Set flag and disable button
-        isGeneratingBills = true;
-        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
-        generateBills();
-    } else {
-        // User clicked Cancel - Save to pending sales
-        // Set flag and disable button
-        isGeneratingBills = true;
-        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
-        saveToPendingSales();
-    }
-}
-
-// Function to load sales log content
 function loadSalesLog(sort) {
-    // Default to latest if no sort provided
     if (!sort) {
         sort = 'latest';
     }
     
-    // Show loading state
     $('#salesLogContent').html(`
         <div class="text-center py-3">
             <div class="spinner-border text-primary" role="status">
@@ -4504,7 +4142,6 @@ function loadSalesLog(sort) {
         </div>
     `);
     
-    // Load sales log content via AJAX
     $.ajax({
         url: 'sales_log_ajax.php?sort=' + sort,
         type: 'GET',
@@ -4512,7 +4149,6 @@ function loadSalesLog(sort) {
         success: function(response) {
             $('#salesLogContent').html(response);
             
-            // Add event listener for sort dropdown change
             $('#sortOrder').on('change', function() {
                 loadSalesLog($(this).val());
             });
@@ -4528,7 +4164,9 @@ function loadSalesLog(sort) {
     });
 }
 
-// Function to print sales log
+// ============================================================================
+// PRINT SALES LOG
+// ============================================================================
 function printSalesLog() {
     const printContent = $('#salesLogContent').html();
     const printWindow = window.open('', '_blank');
@@ -4562,9 +4200,10 @@ function printSalesLog() {
     }, 250);
 }
 
-// Function to get item data from ALL items data (not just visible rows)
+// ============================================================================
+// GET ITEM DATA
+// ============================================================================
 function getItemData(itemCode) {
-    // First try to get from visible row
     const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
     if (inputField.length > 0) {
         const itemRow = inputField.closest('tr');
@@ -4575,7 +4214,6 @@ function getItemData(itemCode) {
             quantity: parseInt(inputField.val()) || 0
         };
     } else {
-        // If not in current view, get from allItemsData (now includes all modes)
         if (allItemsData[itemCode]) {
             return {
                 classCode: allItemsData[itemCode].CLASS,
@@ -4588,63 +4226,61 @@ function getItemData(itemCode) {
     return null;
 }
 
-// UPDATED: Function to classify product type from class code - ADDED COUNTRY LIQUOR
+// ============================================================================
+// GET PRODUCT TYPE
+// ============================================================================
 function getProductType(classCode) {
     const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
     if (spirits.includes(classCode)) return 'SPIRITS';
     if (classCode === 'V') return 'WINE';
     if (classCode === 'F') return 'FERMENTED BEER';
     if (classCode === 'M') return 'MILD BEER';
-    if (classCode === 'L') return 'COUNTRY LIQUOR'; // ADDED COUNTRY LIQUOR
+    if (classCode === 'L') return 'COUNTRY LIQUOR';
     return 'OTHER';
 }
 
-// Function to extract volume from details
+// ============================================================================
+// EXTRACT VOLUME
+// ============================================================================
 function extractVolume(details, details2) {
-    // Priority: details2 column first
     if (details2) {
-        // Handle liter sizes with decimal points (1.5L, 2.0L, etc.)
         const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
         if (literMatch) {
             let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
+            return Math.round(volume * 1000);
         }
         
-        // Handle ML sizes
         const mlMatch = details2.match(/(\d+)\s*ML\b/i);
         if (mlMatch) {
             return parseInt(mlMatch[1]);
         }
     }
     
-    // Fallback: parse details column
     if (details) {
-        // Handle special cases
         if (details.includes('QUART')) return 750;
         if (details.includes('PINT')) return 375;
         if (details.includes('NIP')) return 90;
         
-        // Handle liter sizes with decimal points
         const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
         if (literMatch) {
             let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000); // Convert liters to ML
+            return Math.round(volume * 1000);
         }
         
-        // Handle ML sizes
         const mlMatch = details.match(/(\d+)\s*ML\b/i);
         if (mlMatch) {
             return parseInt(mlMatch[1]);
         }
     }
     
-    return 0; // Unknown volume
+    return 0;
 }
 
-// Function to map volume to column - UPDATED WITH ALL SIZES
+// ============================================================================
+// GET VOLUME COLUMN
+// ============================================================================
 function getVolumeColumn(volume) {
     const volumeMap = {
-        // ML sizes
         50: '50 ML',
         60: '60 ML', 
         90: '90 ML',
@@ -4661,43 +4297,40 @@ function getVolumeColumn(volume) {
         700: '700 ML',
         750: '750 ML',
         1000: '1000 ML',
-        
-        // Liter sizes (converted to ML for consistency)
-        1500: '1.5L',    // 1.5L = 1500ML
-        1750: '1.75L',   // 1.75L = 1750ML
-        2000: '2L',      // 2L = 2000ML
-        3000: '3L',      // 3L = 3000ML
-        4500: '4.5L',    // 4.5L = 4500ML
-        15000: '15L',    // 15L = 15000ML
-        20000: '20L',    // 20L = 20000ML
-        30000: '30L',    // 30L = 30000ML
-        50000: '50L'     // 50L = 50000ML
+        1500: '1.5L',
+        1750: '1.75L',
+        2000: '2L',
+        3000: '3L',
+        4500: '4.5L',
+        15000: '15L',
+        20000: '20L',
+        30000: '30L',
+        50000: '50L'
     };
     
     return volumeMap[volume] || null;
 }
 
-// UPDATED: Function to update total sales module - PROCESS ALL ITEMS FROM ALL MODES
+// ============================================================================
+// UPDATE TOTAL SALES MODULE
+// ============================================================================
 function updateTotalSalesModule() {
     console.log('updateTotalSalesModule called - Processing ALL items from ALL modes');
     
-    // Initialize empty summary object with ALL sizes
     const allSizes = [
         '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
         '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
         '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
     ];
     
-    // UPDATED: Added COUNTRY LIQUOR category in the requested order
     const salesSummary = {
         'SPIRITS': {},
         'WINE': {},
         'FERMENTED BEER': {},
         'MILD BEER': {},
-        'COUNTRY LIQUOR': {} // ADDED COUNTRY LIQUOR AT THE END
+        'COUNTRY LIQUOR': {}
     };
     
-    // Initialize all sizes to 0 for each category
     Object.keys(salesSummary).forEach(category => {
         allSizes.forEach(size => {
             salesSummary[category][size] = 0;
@@ -4706,12 +4339,10 @@ function updateTotalSalesModule() {
 
     console.log('Processing ALL session quantities from ALL modes:', allSessionQuantities);
 
-    // Process ALL session quantities > 0 (from ALL modes)
     let processedItems = 0;
     for (const itemCode in allSessionQuantities) {
         const quantity = allSessionQuantities[itemCode];
         if (quantity > 0) {
-            // Get item data from ALL items data (works for items from all modes)
             const itemData = getItemData(itemCode);
             if (itemData) {
                 const productType = getProductType(itemData.classCode);
@@ -4731,18 +4362,15 @@ function updateTotalSalesModule() {
     console.log(`Processed ${processedItems} items with quantities from ALL modes`);
     console.log('Final sales summary:', salesSummary);
 
-    // Update the modal table
     updateSalesModalTable(salesSummary, allSizes);
 }
 
-// UPDATED: Function to update modal table with calculated values - ADDED COUNTRY LIQUOR ROW
 function updateSalesModalTable(salesSummary, allSizes) {
     const tbody = $('#totalSalesTable tbody');
     tbody.empty();
     
     console.log('Updating modal table with categories:', Object.keys(salesSummary));
     
-    // UPDATED: Added COUNTRY LIQUOR in the requested order
     const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
     
     categories.forEach(category => {
@@ -4753,7 +4381,6 @@ function updateSalesModalTable(salesSummary, allSizes) {
             const value = salesSummary[category] ? (salesSummary[category][size] || 0) : 0;
             const cell = $('<td>').text(value > 0 ? value : '');
             
-            // Add subtle highlighting for non-zero values
             if (value > 0) {
                 cell.addClass('table-success');
             }
@@ -4767,94 +4394,428 @@ function updateSalesModalTable(salesSummary, allSizes) {
     console.log('Modal table updated successfully with data from ALL modes');
 }
 
-// Initialize enhanced tooltips
-function initializeRestrictionTooltips() {
-    $('[data-bs-toggle="tooltip"]').tooltip({
-        placement: 'top',
-        trigger: 'hover',
-        container: 'body',
-        template: '<div class="tooltip restriction-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+// ============================================================================
+// HANDLE GENERATE BILLS
+// ============================================================================
+let isGeneratingBills = false;
+let progressPollingInterval = null;
+let progressModal = null;
+
+function startUltraFastBillGeneration() {
+    const modalElement = document.getElementById('billProgressModal');
+    progressModal = new bootstrap.Modal(modalElement);
+    
+    resetProgressDisplay();
+    progressModal.show();
+    
+    const itemsWithQuantities = {};
+    for (const itemCode in allSessionQuantities) {
+        const qty = parseInt(allSessionQuantities[itemCode]) || 0;
+        if (qty > 0) {
+            itemsWithQuantities[itemCode] = qty;
+        }
+    }
+    
+    if (Object.keys(itemsWithQuantities).length === 0) {
+        updateProgressStatus('error', 'No items with quantities!');
+        setTimeout(() => {
+            progressModal.hide();
+            resetGeneratingState();
+        }, 3000);
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('generate_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    formData.append('source_page', 'sale_for_date_range');
+    
+    for (const itemCode in itemsWithQuantities) {
+        const qty = itemsWithQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+            
+            if (savedDistributions[itemCode]) {
+                formData.append(`distribution[${itemCode}]`, JSON.stringify(savedDistributions[itemCode]));
+                console.log(`Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
+            } else {
+                console.warn(`No saved distribution found for ${itemCode} - will recalculate on server`);
+            }
+        }
+    }
+    
+    window.generationStartTime = Date.now();
+    updateProgressStatus('info', 'Starting bill generation...');
+    
+    $.ajax({
+        url: 'generate_bills_ultra_fast.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+            console.log('Bill generation response:', response);
+            
+            if (response.success) {
+                const progressKey = response.progress_key;
+                startProgressPolling(progressKey);
+                updateProgressStatus('info', response.message || 'Processing bills...');
+                clearSessionQuantities();
+                savedDistributions = {};
+            } else {
+                updateProgressStatus('error', 'Error: ' + response.message);
+                setTimeout(() => {
+                    progressModal.hide();
+                    resetGeneratingState();
+                }, 3000);
+            }
+        },
+        error: function(xhr, status, error) {
+            let errorMsg = 'Error: ' + error;
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+            } catch(e) {}
+            
+            updateProgressStatus('error', errorMsg);
+            setTimeout(() => {
+                progressModal.hide();
+                resetGeneratingState();
+            }, 3000);
+        }
     });
 }
 
-// Function to initialize distribution preview for all items with quantities
-function initializeDistributionPreview() {
-    console.log('Initializing distribution preview for items with quantities...');
+function resetProgressDisplay() {
+    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
+    $('#progressMessage').text('Initializing...');
+    $('#currentBillCount').text('0');
+    $('#totalBillCount').text('0');
+    $('#timeRemaining').text('--');
+    $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Starting bill generation...</td></tr>');
+    $('#generationSpeed').text('--');
+    $('#elapsedTime').text('0s');
+    $('#viewResultsBtn').hide();
+}
+
+function updateProgressStatus(type, message) {
+    $('#progressStatus').removeClass('alert-info alert-success alert-danger').addClass('alert-' + type);
+    $('#progressMessage').text(message);
     
-    let itemsWithQuantity = 0;
-    $('input[name^="sale_qty"]').each(function() {
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(this).val()) || 0;
+    const iconElement = $('#progressStatus i');
+    if (type === 'info') {
+        iconElement.removeClass().addClass('fas fa-spinner fa-spin');
+    } else if (type === 'success') {
+        iconElement.removeClass().addClass('fas fa-check-circle');
+    } else if (type === 'error') {
+        iconElement.removeClass().addClass('fas fa-exclamation-triangle');
+    }
+}
+
+function startProgressPolling(progressKey) {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+    }
+    
+    progressPollingInterval = setInterval(function() {
+        if (!progressKey) return;
         
-        if (totalQty > 0 && !$(this).prop('disabled')) {
-            updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty);
-            itemsWithQuantity++;
-        }
-    });
+        $.ajax({
+            url: 'bill_progress_ajax.php',
+            type: 'GET',
+            data: { progress_key: progressKey },
+            dataType: 'json',
+            success: function(result) {
+                if (typeof result === 'string') {
+                    try {
+                        result = JSON.parse(result);
+                    } catch(e) {
+                        console.error('JSON parse error:', e);
+                        return;
+                    }
+                }
+                
+                updateProgressFromResult(result);
+                
+                if (result.is_complete) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('success', 'Bill generation completed successfully!');
+                    $('#viewResultsBtn').show();
+                    
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        if (result.redirect_url) {
+                            window.location.href = result.redirect_url;
+                        } else {
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message || 'Bills generated successfully');
+                        }
+                        resetGeneratingState();
+                    }, 2000);
+                    
+                } else if (result.has_error) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('error', 'Error: ' + (result.message || 'Unknown error'));
+                    
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        resetGeneratingState();
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Progress polling error:', error);
+            }
+        });
+    }, 500);
+}
+
+function updateProgressFromResult(result) {
+    const percentage = result.percentage || 0;
+    $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
     
-    console.log(`Initialized distribution preview for ${itemsWithQuantity} items with quantities`);
+    if (result.message) {
+        $('#progressMessage').text(result.message);
+    }
     
-    // Show date headers if we have any items with quantity
-    if (itemsWithQuantity > 0) {
-        $('.date-header, .date-distribution-cell').show();
+    $('#currentBillCount').text(result.current_bill || 0);
+    $('#totalBillCount').text(result.total_bills || 0);
+    
+    if (result.estimated_remaining > 0) {
+        $('#timeRemaining').text(result.estimated_remaining + 's');
+    } else if (result.is_complete) {
+        $('#timeRemaining').text('Done');
+    }
+    
+    if (result.speed > 0) {
+        $('#generationSpeed').text(result.speed.toFixed(1));
+    }
+    
+    if (window.generationStartTime) {
+        const elapsed = Math.floor((Date.now() - window.generationStartTime) / 1000);
+        $('#elapsedTime').text(elapsed + 's');
+    }
+    
+    if (result.recent_bills && result.recent_bills.length > 0) {
+        let billsHtml = '';
+        result.recent_bills.forEach(function(bill) {
+            billsHtml += `<tr>
+                <td>${bill.bill_no}</td>
+                <td>${bill.date}</td>
+                <td>${bill.items}</td>
+                <td>₹${bill.amount.toLocaleString()}</td>
+            </tr>`;
+        });
+        $('#billsListBody').html(billsHtml);
     }
 }
 
-    // *** FIX: Collect all cells first, then insert in reverse ***
-    const cellsToInsert_saved = [];
+function resetGeneratingState() {
+    isGeneratingBills = false;
+    $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+    
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+}
 
-    [...distribution].forEach((qty, index) => {
-        const date = dateArray[index];
-        const cell = $(`<td class="date-distribution-cell"></td>`);
+function viewResults() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    if (progressModal) {
+        progressModal.hide();
+    }
+    window.location.href = 'retail_sale.php';
+    resetGeneratingState();
+}
 
-        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
-        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+function saveToPendingSales() {
+    checkGlobalRestrictionsBeforeSubmit()
+        .then(() => {
+            if (!validateAllQuantities()) {
+                throw new Error('Quantity validation failed');
+            }
+            return checkStockAvailabilityBeforeSubmit();
+        })
+        .then(() => {
+            $('#ajaxLoader').show();
+            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+            
+            const formData = new FormData();
+            formData.append('save_pending', 'true');
+            formData.append('start_date', '<?= $start_date ?>');
+            formData.append('end_date', '<?= $end_date ?>');
+            formData.append('mode', '<?= $mode ?>');
+            
+            for (const itemCode in allSessionQuantities) {
+                const qty = allSessionQuantities[itemCode];
+                if (qty > 0) {
+                    formData.append(`sale_qty[${itemCode}]`, qty);
+                }
+            }
+            
+            $.ajax({
+                url: 'save_pending_sales.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#ajaxLoader').hide();
+                    isGeneratingBills = false;
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success) {
+                            clearSessionQuantities();
+                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                        }
+                    } catch (e) {
+                        alert('Error processing response: ' + response);
+                        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoader').hide();
+                    isGeneratingBills = false;
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                    alert('Error saving data to pending. Please try again.');
+                }
+            });
+        })
+        .catch((error) => {
+            isGeneratingBills = false;
+            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+            console.log('Client-side validation failed for pending sales:', error);
+        });
+}
 
-        if (isDryDate) {
-            cell.addClass('dry-unavailable-date');
-            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-        } else if (isGlobalUnavailable && !isDryDate) {
-            cell.addClass('global-unavailable-date');
-            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-        } else if (qty > 0) {
-            cell.addClass('has-quantity');
-            cell.html(`<span class="qty-badge">${qty}</span>`);
-        } else {
-            cell.addClass('zero-quantity');
-            cell.html('<span class="text-muted">0</span>');
-        }
-
-        cellsToInsert_saved.push(cell);
-    });
-
-    // *** KEY FIX: Insert in REVERSE → index 0 (Apr1) ends up LEFTMOST ***
-    const savedActionCol = itemRow.find('td.action-column');
-    for (let i = cellsToInsert_saved.length - 1; i >= 0; i--) {
-        if (savedActionCol.length > 0) {
-            cellsToInsert_saved[i].insertAfter(savedActionCol);
-        } else {
-            itemRow.prepend(cellsToInsert_saved[i]);
+function validateAllQuantities() {
+    let isValid = true;
+    let errorItems = [];
+    
+    for (const itemCode in allSessionQuantities) {
+        const qty = allSessionQuantities[itemCode];
+        if (qty > 0) {
+            const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+            let currentStock;
+            
+            if (inputField.length > 0) {
+                currentStock = parseFloat(inputField.data('stock'));
+            } else {
+                if (allItemsData[itemCode]) {
+                    currentStock = parseFloat(allItemsData[itemCode].CURRENT_STOCK);
+                } else {
+                    continue;
+                }
+            }
+            
+            const closingBalance = currentStock - qty;
+            
+            if (closingBalance < 0) {
+                isValid = false;
+                errorItems.push({
+                    code: itemCode,
+                    stock: currentStock,
+                    qty: qty
+                });
+            }
         }
     }
     
-    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+    if (!isValid) {
+        let errorMessage = "The following items have insufficient stock:\n\n";
+        errorItems.forEach(item => {
+            errorMessage += `• Item ${item.code}: Stock ${Math.floor(item.stock)}, Quantity ${item.qty}\n`;
+        });
+        errorMessage += "\nPlease adjust quantities to avoid negative closing balance.";
+        alert(errorMessage);
+    }
+    
+    return isValid;
+}
 
-// FIXED: Shuffle all button click event - correctly handles global restrictions
-$('#shuffleBtn').off('click').on('click', async function() {
+function handleGenerateBills() {
+    if (isGeneratingBills) {
+        console.log('Already generating bills, please wait...');
+        return false;
+    }
+    
+    if (globalAvailableDates.length === 0) {
+        alert('No available dates in the selected range due to existing sales or dry days.');
+        return false;
+    }
+    
+    let hasQuantity = false;
+    for (const itemCode in allSessionQuantities) {
+        if (allSessionQuantities[itemCode] > 0) {
+            hasQuantity = true;
+            break;
+        }
+    }
+    
+    if (!hasQuantity) {
+        alert('Please enter quantities for at least one item.');
+        return false;
+    }
+    
+    const userChoice = confirm(
+        "Generate Bills Options:\n\n" +
+        "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
+        "Click Cancel to save to pending sales (will save for later processing, no stock update)."
+    );
+    
+    if (userChoice === true) {
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        startUltraFastBillGeneration();
+    } else {
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+        saveToPendingSales();
+    }
+}
+
+function calculateTotalAmount() {
+    let total = 0;
+    $('.amount-cell').each(function() {
+        total += parseFloat($(this).text()) || 0;
+    });
+    $('#totalAmount').text(Math.floor(total));
+}
+
+// ============================================================================
+// SHUFFLE ALL BUTTON CLICK HANDLER
+// ============================================================================
+$('#shuffleBtn').off('click').on('click', function() {
     console.log('DEBUG: Shuffle all button clicked');
-    // Show loader
     $('#ajaxLoader').show();
 
-    // Process all items with quantities
     const itemsToShuffle = [];
     $('input.qty-input').each(function() {
         const itemCode = $(this).data('code');
         const totalQty = parseInt($(this).val()) || 0;
 
-        // Only shuffle if quantity > 0, visible, and not disabled
         if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
             itemsToShuffle.push({ itemCode, totalQty });
         }
@@ -4862,122 +4823,100 @@ $('#shuffleBtn').off('click').on('click', async function() {
 
     console.log(`DEBUG: Shuffle all - found ${itemsToShuffle.length} items to shuffle:`, itemsToShuffle);
 
-    // Shuffle each item using global restrictions
     for (const item of itemsToShuffle) {
         console.log(`DEBUG: Shuffle all - processing item ${item.itemCode}`);
+        
+        delete savedDistributions[item.itemCode];
         const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
-
-        // Update the distribution cells
+        savedDistributions[item.itemCode] = newDistribution.slice();
+        saveDistributionToSession(item.itemCode, newDistribution);
+        
         const inputField = $(`input[name="sale_qty[${item.itemCode}]"]`);
         const itemRow = inputField.closest('tr');
-        const dateCells = itemRow.find('.date-distribution-cell');
-
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} has ${dateCells.length} date cells`);
-
-        // Get global available/unavailable dates
+        itemRow.find('.date-distribution-cell').remove();
+        
         const hasGlobalRestriction = inputField.data('has-global-restriction');
         const availableDates = inputField.data('available-dates') || [];
         const unavailableDates = inputField.data('unavailable-dates') || [];
         const dryDates = inputField.data('dry-dates') || [];
-
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} availableDates:`, availableDates);
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} unavailableDates:`, unavailableDates);
-        console.log(`DEBUG: Shuffle all - ${item.itemCode} dryDates:`, dryDates);
-
-        newDistribution.forEach((qty, index) => {
-            if (dateCells.eq(index).length) {
-                const cell = dateCells.eq(index);
-                const date = dateArray[index];
-
-                console.log(`DEBUG: Shuffle all - ${item.itemCode} updating cell ${index} for date ${date} with qty ${qty}`);
-
-                // CRITICAL: Check if this date is a dry day FIRST - must be before any quantity check
-                if (isDryDate) {
-                    // Date is a dry day - show 🌙
-                    cell.addClass('dry-unavailable-date');
-                    cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-                    
-                    // Get dry day description
-                    const dryDescription = dryDaysInfo[date] || 'Dry Day';
-                    cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to DRY DAY`);
-                } else if (isGlobalUnavailable && !isDryDate) {
-                    // Date has existing global sales - show ✗
-                    cell.addClass('global-unavailable-date');
-                    cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                    cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to GLOBAL UNAVAILABLE`);
-                } else if (isAvailable && qty > 0) {
-                    // Date is available and has new sales
-                    cell.addClass('available-date-with-sales');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to AVAILABLE WITH SALES`);
-                } else if (qty > 0) {
-                    cell.addClass('non-zero-distribution');
-                    cell.text(qty);
-                    cell.attr('title', `${qty} units scheduled for ${date}`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to NON-ZERO`);
-                } else {
-                    cell.addClass('zero-distribution');
-                    cell.text('0');
-                    cell.attr('title', `Date ${date} has 0 units assigned`);
-                    console.log(`DEBUG: Shuffle all - ${item.itemCode} set cell ${index} to ZERO`);
-                }
-            }
+        let stockData = dailyStockData[item.itemCode] || {};
+        
+        const dateIndexMap = {};
+        dateArray.forEach((date, index) => {
+            dateIndexMap[date] = index;
         });
+        
+        const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+
+        const cellsToInsert = [];
+        newDistribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            const cell = $(`<td class="date-distribution-cell">`);
+
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const stockAvailable = (stockData[date] || 0) > 0;
+
+            if (isDryDate) {
+                cell.addClass('dry-unavailable-date');
+                cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            } else if (isGlobalUnavailable && !isDryDate) {
+                cell.addClass('global-unavailable-date');
+                cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            } else if (!stockAvailable) {
+                cell.addClass('no-stock-date');
+                cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+                cell.attr('title', `No stock available on ${date}`);
+            } else if (qty > 0) {
+                cell.addClass('non-zero-distribution');
+                cell.text(qty);
+                cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+            } else {
+                cell.addClass('zero-distribution');
+                cell.text('0');
+                cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+            }
+
+            cellsToInsert.push(cell);
+        });
+
+        for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+            cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+        }
     }
 
-    // Hide loader
     $('#ajaxLoader').hide();
-
-    // Save all distributions to savedDistributions and session
-    itemsToShuffle.forEach(item => {
-        const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
-        savedDistributions[item.itemCode] = newDistribution.slice();
-        saveDistributionToSession(item.itemCode, newDistribution);
-    });
-
-    // Update total amount
     calculateTotalAmount();
     console.log('DEBUG: Shuffle all completed');
 });
 
-// OPTIMIZED: Document ready - Only process items with quantities > 0
+// ============================================================================
+// DOCUMENT READY
+// ============================================================================
 $(document).ready(function() {
     console.log('Document ready - Initializing...');
     
-    // Initialize table headers and columns
     initializeTableHeaders();
-    
-    // Set up row navigation with arrow keys
     setupRowNavigation();
-    
-    // Initialize quantities in visible inputs from session
     initializeQuantitiesFromSession();
-    
-    // Initialize distribution preview for items with quantities
     initializeDistributionPreview();
-    
-    // Initialize enhanced tooltips
     initializeRestrictionTooltips();
     
-    // Clear session button click event
     $('#clearSessionBtn').click(function() {
         if (confirm('Are you sure you want to clear all quantities? This action cannot be undone.')) {
             clearSessionQuantities();
         }
     });
     
-    // Single button with dual functionality - ULTRA FAST VERSION
-    // First, unbind any existing click handlers to prevent duplicates
     $('#generateBillsBtn').off('click').on('click', function(e) {
         e.preventDefault();
         console.log('=== Generate Bills Button Clicked ===');
-        startUltraFastBillGeneration();
+        handleGenerateBills();
     });
     
-    // OPTIMIZED: Event delegation with debouncing
     let quantityTimeout;
     $(document).off('input', 'input.qty-input').on('input', 'input.qty-input', function(e) {
         clearTimeout(quantityTimeout);
@@ -4986,144 +4925,43 @@ $(document).ready(function() {
         }, 200);
     });
     
-    // NEW: Handle Enter key press in quantity input to shuffle distribution for that item only
     $(document).on('keydown', 'input.qty-input', function(e) {
         if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault(); // Prevent form submission
-            
-            const itemCode = $(this).data('code');
-            const totalQty = parseInt($(this).val()) || 0;
-            
-            console.log('DEBUG: Enter pressed for item ' + itemCode + ' with qty ' + totalQty);
-            
-            if (totalQty > 0 && !$(this).prop('disabled')) {
-                // Shuffle distribution for this specific item only
-                const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
-                
-                // Update the distribution cells for this row
-                const itemRow = $(this).closest('tr');
-                const dateCells = itemRow.find('.date-distribution-cell');
-                
-                // Get the date information
-                const hasGlobalRestriction = $(this).data('has-global-restriction');
-                const availableDates = $(this).data('available-dates') || [];
-                const unavailableDates = $(this).data('unavailable-dates') || [];
-                const dryDates = $(this).data('dry-dates') || [];
-                
-                // Update each date cell
-                newDistribution.forEach((qty, index) => {
-                    if (dateCells.eq(index).length) {
-                        const cell = dateCells.eq(index);
-                        const date = dateArray[index];
-                        const isDryDate = dryDates.includes(date);
-                        const isGlobalUnavailable = unavailableDates.includes(date);
-                        const trulyAvailableDates = availableDates.filter(d => !dryDates.includes(d));
-                        const isAvailable = trulyAvailableDates.includes(date);
-                        
-                        // Clear previous classes
-                        cell.removeClass('dry-unavailable-date global-unavailable-date available-date-with-sales non-zero-distribution zero-distribution');
-                        
-                        if (isDryDate) {
-                            cell.addClass('dry-unavailable-date');
-                            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
-                            const dryDescription = dryDaysInfo[date] || 'Dry Day';
-                            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
-                        } else if (isGlobalUnavailable && !isDryDate) {
-                            cell.addClass('global-unavailable-date');
-                            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
-                            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
-                        } else if (isAvailable && qty > 0) {
-                            cell.addClass('available-date-with-sales');
-                            cell.text(qty);
-                            cell.attr('title', `${qty} units scheduled for ${date} (available date)`);
-                        } else if (qty > 0) {
-                            cell.addClass('non-zero-distribution');
-                            cell.text(qty);
-                            cell.attr('title', `${qty} units scheduled for ${date}`);
-                        } else {
-                            cell.addClass('zero-distribution');
-                            cell.text('0');
-                            cell.attr('title', `Date ${date} has 0 units assigned`);
-                        }
-                    }
-                });
-                
-                // Save this distribution
-                savedDistributions[itemCode] = newDistribution.slice();
-                saveDistributionToSession(itemCode, newDistribution);
-                
-                console.log('DEBUG: Distribution shuffled for item ' + itemCode + ':', newDistribution);
-            }
-            
-            return false; // Prevent default behavior
+            e.preventDefault();
+            shuffleThisItem(this);
+            return false;
         }
     });
     
-    // Quantity input change event - also check if quantity changed
-    $(document).on('change', 'input[name^="sale_qty"]', function() {
-        // Only process if quantity actually changed - validateQuantity already handles this
-        validateQuantity(this);
-        
-        // Update total amount
-        calculateTotalAmount();
-        
-        // Also update total sales module if modal is open
-        if ($('#totalSalesModal').hasClass('show')) {
-            console.log('Modal is open, updating total sales module with ALL modes data...');
-            updateTotalSalesModule();
+    $('#salesForm').on('keydown', 'input', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            return false;
         }
     });
     
-    // Auto-load sales log when modal is shown
     $('#salesLogModal').on('shown.bs.modal', function() {
         loadSalesLog();
     });
     
-    // Update total sales module when modal is shown
     $('#totalSalesModal').on('show.bs.modal', function() {
         console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
     });
     
-    // Also update when modal is already shown but data changes
     $('#totalSalesModal').on('shown.bs.modal', function() {
         console.log('Total Sales Modal shown - refreshing data from ALL modes...');
         updateTotalSalesModule();
     });
 });
 
-// NEW FUNCTION: Initialize input values from session on page load
-function initializeQuantitiesFromSession() {
-    $('input[name^="sale_qty"]').each(function() {
-        const itemCode = $(this).data('code');
-        if (allSessionQuantities[itemCode] !== undefined) {
-            const sessionQty = allSessionQuantities[itemCode];
-            $(this).val(sessionQty);
-            
-            // Update UI for this item
-            const currentStock = parseFloat($(this).data('stock'));
-            updateItemUI(itemCode, sessionQty, currentStock);
-        }
-    });
-    
-    // Show date headers if any items have quantities > 0 and are not disabled
-    const hasQuantities = $('input[name^="sale_qty"]').filter(function() { 
-        return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
-    }).length > 0;
-    
-    if (hasQuantities) {
-        $('.date-header').show();
+$(document).on('click', '#billProgressModal .btn-close, #billProgressModal .btn-secondary', function() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
     }
-}
-
-// Function to calculate total amount
-function calculateTotalAmount() {
-    let total = 0;
-    $('.amount-cell').each(function() {
-        total += parseFloat($(this).text()) || 0;
-    });
-    $('#totalAmount').text(Math.floor(total));
-}
+    resetGeneratingState();
+});
 </script>
 </body>
 </html>

@@ -19,9 +19,9 @@ $optimized = isset($_POST['optimized']) && $_POST['optimized'] == 'true';
 
 // Optimize PHP settings
 if ($optimized) {
-    set_time_limit(120); // Increased for bulk operations
-    ini_set('max_execution_time', 120);
-    ini_set('memory_limit', '512M');
+    set_time_limit(300); // Increased for very large bulk operations
+    ini_set('max_execution_time', 300);
+    ini_set('memory_limit', '1024M'); // Increased memory for large batches
     ini_set('mysql.connect_timeout', 300);
     ini_set('default_socket_timeout', 300);
     
@@ -294,6 +294,44 @@ function cascadeDailyStockForSales($conn, $table_name, $item_code, $stk_month, $
     }
 }
 
+// NEW FUNCTION: Process bills in batches
+function reverseStockUpdatesBulkOptimizedInBatches($conn, $bill_nos, $comp_id, $batch_size = 200) {
+    if (empty($bill_nos)) {
+        return 0;
+    }
+    
+    // Convert to array if single bill
+    if (!is_array($bill_nos)) {
+        $bill_nos = [$bill_nos];
+    }
+    
+    $total_deleted = 0;
+    $total_batches = ceil(count($bill_nos) / $batch_size);
+    $successful_batches = 0;
+    
+    // Process in batches
+    for ($i = 0; $i < count($bill_nos); $i += $batch_size) {
+        $batch = array_slice($bill_nos, $i, $batch_size);
+        $batch_num = floor($i / $batch_size) + 1;
+        
+        error_log("Processing batch $batch_num of $total_batches with " . count($batch) . " bills");
+        
+        $deleted_in_batch = reverseStockUpdatesBulkOptimized($conn, $batch, $comp_id);
+        
+        if ($deleted_in_batch > 0) {
+            $total_deleted += $deleted_in_batch;
+            $successful_batches++;
+        }
+        
+        // Optional: Small pause between batches to reduce server load
+        if ($i + $batch_size < count($bill_nos)) {
+            usleep(100000); // 0.1 second pause
+        }
+    }
+    
+    return $total_deleted;
+}
+
 // Ultra-optimized: Function to reverse stock updates for multiple bills in bulk
 function reverseStockUpdatesBulkOptimized($conn, $bill_nos, $comp_id) {
     if (empty($bill_nos)) {
@@ -460,7 +498,7 @@ function reverseStockUpdatesBulkOptimized($conn, $bill_nos, $comp_id) {
 
 // Optimized: Function to reverse stock updates for a bill (UPDATED with cash memo deletion)
 function reverseStockUpdatesOptimized($conn, $bill_no, $comp_id) {
-    return reverseStockUpdatesBulkOptimized($conn, $bill_no, $comp_id);
+    return reverseStockUpdatesBulkOptimized($conn, [$bill_no], $comp_id);
 }
 
 // Optimized: Function to renumber bills after deletion (UPDATED with cash memo updates)
@@ -573,24 +611,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     try {
         if (isset($_POST['bulk_delete']) && isset($_POST['bill_nos'])) {
-            // Bulk delete - use ultra-optimized bulk function
+            // Bulk delete - use batch processing for large numbers
             $bill_nos = json_decode($_POST['bill_nos'], true);
             
-            // Use optimized bulk function
-            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bill_nos, $compID);
-            
-            // Renumber bills after deletion
-            if ($deleted_count > 0) {
-                renumberBills($conn, $compID);
+            // Check if we should use batch processing (for large deletions)
+            $batch_size = 200; // Default batch size
+            if (isset($_POST['batch_size']) && is_numeric($_POST['batch_size'])) {
+                $batch_size = intval($_POST['batch_size']);
             }
             
-            $response = [
-                'success' => true,
-                'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos, and renumbered remaining bills."
-            ];
+            // Use batch processing for large deletions
+            if (count($bill_nos) > $batch_size) {
+                $deleted_count = reverseStockUpdatesBulkOptimizedInBatches($conn, $bill_nos, $compID, $batch_size);
+                
+                // Only renumber once after all batches are complete
+                if ($deleted_count > 0) {
+                    renumberBills($conn, $compID);
+                }
+                
+                $response = [
+                    'success' => true,
+                    'message' => "Successfully deleted $deleted_count bill(s) (processed in batches of $batch_size) and renumbered remaining bills."
+                ];
+            } else {
+                // Use regular bulk function for smaller deletions
+                $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bill_nos, $compID);
+                
+                // Renumber bills after deletion
+                if ($deleted_count > 0) {
+                    renumberBills($conn, $compID);
+                }
+                
+                $response = [
+                    'success' => true,
+                    'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos, and renumbered remaining bills."
+                ];
+            }
             
         } elseif (isset($_POST['delete_by_date']) && isset($_POST['delete_date'])) {
-            // Delete by date - get all bills first then use bulk function
+            // Delete by date - get all bills first then use batch function
             $delete_date = $_POST['delete_date'];
             
             // Get all bills for the date
@@ -607,24 +666,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $get_stmt->close();
             
-            // Use optimized bulk function
-            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bills_to_delete, $compID);
-            
-            // Renumber bills after deletion
-            if ($deleted_count > 0) {
-                renumberBills($conn, $compID);
+            if (empty($bills_to_delete)) {
+                $response = [
+                    'success' => false,
+                    'message' => "No bills found for date: $delete_date"
+                ];
+            } else {
+                // Use batch processing for large deletions
+                $batch_size = 200;
+                if (isset($_POST['batch_size']) && is_numeric($_POST['batch_size'])) {
+                    $batch_size = intval($_POST['batch_size']);
+                }
+                
+                if (count($bills_to_delete) > $batch_size) {
+                    $deleted_count = reverseStockUpdatesBulkOptimizedInBatches($conn, $bills_to_delete, $compID, $batch_size);
+                    
+                    // Only renumber once after all batches are complete
+                    if ($deleted_count > 0) {
+                        renumberBills($conn, $compID);
+                    }
+                    
+                    $response = [
+                        'success' => true,
+                        'message' => "Successfully deleted $deleted_count bill(s) for $delete_date (processed in batches of $batch_size), and renumbered remaining bills."
+                    ];
+                } else {
+                    $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bills_to_delete, $compID);
+                    
+                    // Renumber bills after deletion
+                    if ($deleted_count > 0) {
+                        renumberBills($conn, $compID);
+                    }
+                    
+                    $response = [
+                        'success' => true,
+                        'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos for $delete_date, and renumbered remaining bills."
+                    ];
+                }
             }
-            
-            $response = [
-                'success' => true,
-                'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos for $delete_date, and renumbered remaining bills."
-            ];
             
         } elseif (isset($_POST['bill_no'])) {
             // Single bill delete - use optimized function
             $bill_no = $_POST['bill_no'];
             
-            $deleted_count = reverseStockUpdatesBulkOptimized($conn, $bill_no, $compID);
+            $deleted_count = reverseStockUpdatesBulkOptimized($conn, [$bill_no], $compID);
             
             if ($deleted_count > 0) {
                 // Renumber bills after deletion

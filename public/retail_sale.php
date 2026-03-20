@@ -163,6 +163,15 @@ if (!file_exists('../temp_exports')) {
     .btn-excise i {
       margin-right: 5px;
     }
+    .progress-batch {
+      height: 30px;
+      margin-top: 10px;
+    }
+    .batch-info {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -501,16 +510,28 @@ if (!file_exists('../temp_exports')) {
   </div>
 </div>
 
-<!-- Loading Spinner Modal -->
+<!-- Loading/Progress Modal for Batch Processing -->
 <div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-sm">
+  <div class="modal-dialog">
     <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-spinner fa-spin me-2"></i>
+          Processing Deletion
+        </h5>
+      </div>
       <div class="modal-body text-center py-4">
-        <div class="spinner-border text-primary mb-3" role="status">
-          <span class="visually-hidden">Loading...</span>
+        <div class="mb-3">
+          <div class="progress" style="height: 25px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 id="batchProgressBar" style="width: 0%;">0%</div>
+          </div>
         </div>
-        <h6>Processing...</h6>
-        <p class="text-muted small mb-0" id="loadingMessage">Please wait while we update the bill sequence</p>
+        <p id="loadingMessage" class="fw-bold">Initializing...</p>
+        <p id="batchInfo" class="text-muted small batch-info"></p>
+        <div id="batchDetails" class="text-start mt-3 p-2 bg-light rounded" style="max-height: 150px; overflow-y: auto;">
+          <small class="text-muted">Batch details will appear here...</small>
+        </div>
       </div>
     </div>
   </div>
@@ -616,6 +637,7 @@ let currentBillToDelete = '';
 let deleteDate = '';
 let isProcessing = false;
 let currentExportFile = '';
+const BATCH_SIZE = 200; // Process 200 bills at a time
 
 // Update selected count
 function updateSelectedCount() {
@@ -737,43 +759,139 @@ $('#confirmDeleteBtn').on('click', function() {
     }
 });
 
-// Perform delete operation
+// Perform delete operation with batch processing
 function performDelete(billArray) {
     if (isProcessing) return;
+    
+    const totalBills = billArray.length;
+    const totalBatches = Math.ceil(totalBills / BATCH_SIZE);
+    
+    // Show warning for large deletions
+    if (totalBills > 500) {
+        if (!confirm(`You are about to delete ${totalBills} bills. This will be processed in ${totalBatches} batches and may take several minutes. Continue?`)) {
+            return;
+        }
+    }
+    
     isProcessing = true;
     
+    // Reset and show progress modal
+    $('#batchProgressBar').css('width', '0%').text('0%');
+    $('#loadingMessage').text(`Processing 0 of ${totalBills} bills...`);
+    $('#batchInfo').text(`Batch 1 of ${totalBatches}`);
+    $('#batchDetails').html('<small class="text-muted">Starting deletion process...</small>');
     $('#loadingModal').modal('show');
     
+    let deletedCount = 0;
+    let processedBatches = 0;
+    let batchDetails = [];
+    
+    function processBatch(startIndex) {
+        const endIndex = Math.min(startIndex + BATCH_SIZE, totalBills);
+        const currentBatch = billArray.slice(startIndex, endIndex);
+        const batchNum = Math.floor(startIndex / BATCH_SIZE) + 1;
+        
+        // Update progress UI
+        const percentComplete = Math.round((endIndex / totalBills) * 100);
+        $('#batchProgressBar').css('width', percentComplete + '%').text(percentComplete + '%');
+        $('#loadingMessage').text(`Processing batch ${batchNum} of ${totalBatches} (${currentBatch.length} bills)...`);
+        $('#batchInfo').text(`Deleted so far: ${deletedCount} of ${totalBills} bills`);
+        
+        // Add batch detail
+        batchDetails.push(`Batch ${batchNum}: Processing ${currentBatch.length} bills...`);
+        $('#batchDetails').html(batchDetails.map(d => `<small>${d}</small>`).join('<br>'));
+        $('#batchDetails').scrollTop($('#batchDetails')[0].scrollHeight);
+        
         $.ajax({
-        url: 'delete_bill.php',
-        method: 'POST',
-        data: {
-            bill_nos: JSON.stringify(billArray),
-            bulk_delete: billArray.length > 1 ? 'true' : 'false',
-            optimized: 'true'
-        },
-        dataType: 'json',
-        success: function(response) {
-            $('#loadingModal').modal('hide');
-            isProcessing = false;
-            
-            if (response.success) {
-                showAlert('success', response.message);
-                selectedBills.clear();
-                updateSelectedCount();
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                showAlert('danger', response.message);
+            url: 'delete_bill.php',
+            method: 'POST',
+            data: {
+                bill_nos: JSON.stringify(currentBatch),
+                bulk_delete: 'true',
+                optimized: 'true',
+                batch_size: BATCH_SIZE
+            },
+            dataType: 'json',
+            timeout: 300000, // 5 minute timeout for large batches
+            success: function(response) {
+                if (response.success) {
+                    // Extract number from response message
+                    const match = response.message.match(/deleted (\d+)/);
+                    if (match && match[1]) {
+                        deletedCount += parseInt(match[1]);
+                    } else {
+                        deletedCount += currentBatch.length;
+                    }
+                    
+                    processedBatches++;
+                    
+                    // Update batch detail with success
+                    batchDetails[batchDetails.length - 1] = 
+                        `Batch ${batchNum}: ✅ Completed (${currentBatch.length} bills deleted)`;
+                    $('#batchDetails').html(batchDetails.map(d => `<small>${d}</small>`).join('<br>'));
+                    
+                    // Update progress
+                    const newPercent = Math.round((deletedCount / totalBills) * 100);
+                    $('#batchProgressBar').css('width', newPercent + '%').text(newPercent + '%');
+                    $('#loadingMessage').text(`Processed ${deletedCount} of ${totalBills} bills...`);
+                    $('#batchInfo').text(`Completed ${processedBatches} of ${totalBatches} batches`);
+                    
+                    if (endIndex < totalBills) {
+                        // Process next batch with a small delay
+                        setTimeout(() => {
+                            processBatch(endIndex);
+                        }, 500);
+                    } else {
+                        // All batches complete
+                        batchDetails.push(`<strong class="text-success">✅ All ${totalBatches} batches completed successfully!</strong>`);
+                        $('#batchDetails').html(batchDetails.map(d => `<small>${d}</small>`).join('<br>'));
+                        $('#loadingMessage').text(`Successfully deleted ${deletedCount} bills!`);
+                        $('#batchInfo').text('Renumbering bills...');
+                        
+                        // Final success
+                        setTimeout(() => {
+                            $('#loadingModal').modal('hide');
+                            isProcessing = false;
+                            
+                            showAlert('success', `Successfully deleted ${deletedCount} bill(s) in ${totalBatches} batches and renumbered remaining bills.`);
+                            selectedBills.clear();
+                            updateSelectedCount();
+                            
+                            // Reload after a short delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        }, 1000);
+                    }
+                } else {
+                    // Batch failed
+                    batchDetails.push(`<small class="text-danger">❌ Batch ${batchNum} failed: ${response.message}</small>`);
+                    $('#batchDetails').html(batchDetails.map(d => `<small>${d}</small>`).join('<br>'));
+                    
+                    $('#loadingModal').modal('hide');
+                    isProcessing = false;
+                    showAlert('danger', `Error in batch ${batchNum}: ${response.message}`);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Handle timeout or network errors
+                let errorMsg = error;
+                if (status === 'timeout') {
+                    errorMsg = 'Request timeout - batch took too long to process';
+                }
+                
+                batchDetails.push(`<small class="text-danger">❌ Batch ${batchNum} error: ${errorMsg}</small>`);
+                $('#batchDetails').html(batchDetails.map(d => `<small>${d}</small>`).join('<br>'));
+                
+                $('#loadingModal').modal('hide');
+                isProcessing = false;
+                showAlert('danger', `Network error in batch ${batchNum}: ${errorMsg}`);
             }
-        },
-        error: function(xhr, status, error) {
-            $('#loadingModal').modal('hide');
-            isProcessing = false;
-            showAlert('danger', 'Network error: ' + error);
-        }
-    });
+        });
+    }
+    
+    // Start processing first batch
+    processBatch(0);
 }
 
 // Delete all bills for date
@@ -803,34 +921,44 @@ $('#confirmDeleteDateBtn').on('click', function() {
     
     $('#deleteDateModal').modal('hide');
     isProcessing = true;
+    
+    // Show loading modal
+    $('#batchProgressBar').css('width', '0%').text('0%');
+    $('#loadingMessage').text('Fetching bills for selected date...');
+    $('#batchInfo').text('Please wait...');
+    $('#batchDetails').html('<small class="text-muted">Retrieving bill list...</small>');
     $('#loadingModal').modal('show');
     
-     $.ajax({
-        url: 'delete_bill.php',
+    // First, get all bills for the date
+    $.ajax({
+        url: 'get_bills_by_date.php',
         method: 'POST',
         data: {
-            delete_date: deleteDate,
-            delete_by_date: 'true',
-            optimized: 'true'
+            delete_date: deleteDate
         },
         dataType: 'json',
+        timeout: 60000, // 1 minute timeout
         success: function(response) {
-            $('#loadingModal').modal('hide');
-            isProcessing = false;
-            
-            if (response.success) {
-                showAlert('success', response.message);
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+            if (response.success && response.bills && response.bills.length > 0) {
+                const totalBills = response.bills.length;
+                $('#loadingModal').modal('hide');
+                
+                // Now perform the delete with the actual bills
+                performDelete(response.bills);
             } else {
-                showAlert('danger', response.message);
+                $('#loadingModal').modal('hide');
+                isProcessing = false;
+                if (response.bills && response.bills.length === 0) {
+                    showAlert('warning', 'No bills found for the selected date');
+                } else {
+                    showAlert('danger', response.message || 'Error fetching bills');
+                }
             }
         },
         error: function(xhr, status, error) {
             $('#loadingModal').modal('hide');
             isProcessing = false;
-            showAlert('danger', 'Network error: ' + error);
+            showAlert('danger', 'Error fetching bills: ' + error);
         }
     });
 });
@@ -931,6 +1059,15 @@ $(document).ready(function() {
     setTimeout(function() {
         $('.alert').alert('close');
     }, 5000);
+});
+
+// Handle page unload during processing
+window.addEventListener('beforeunload', function (e) {
+    if (isProcessing) {
+        e.preventDefault();
+        e.returnValue = 'Deletion is in progress. Are you sure you want to leave?';
+        return 'Deletion is in progress. Are you sure you want to leave?';
+    }
 });
 </script>
 </body>

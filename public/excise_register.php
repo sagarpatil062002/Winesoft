@@ -166,6 +166,32 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
     return $hierarchy;
 }
 
+// Helper function to convert size string to milliliters for sorting
+function convertToML($size) {
+    if (preg_match('/(\d+\.?\d*)\s*(ML|L)/i', $size, $matches)) {
+        $value = floatval($matches[1]);
+        $unit = strtoupper($matches[2]);
+        if ($unit == 'L') {
+            return $value * 1000;
+        }
+        return $value;
+    }
+    return 0;
+}
+
+// Function to sort sizes in descending order (larger first)
+function sortSizesDescending($sizes) {
+    usort($sizes, function($a, $b) {
+        // Convert to ML for comparison
+        $a_ml = convertToML($a);
+        $b_ml = convertToML($b);
+        
+        // Sort in descending order (larger first)
+        return $b_ml - $a_ml;
+    });
+    return $sizes;
+}
+
 // Default values - Set to single date by default
 $from_date = isset($_GET['from_date']) ? $_GET['from_date'] : date('Y-m-d');
 $to_date = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
@@ -218,7 +244,7 @@ if ($mode == 'Country Liquor') {
     ];
 }
 
-// Define size columns for each category - all spirit types use same sizes
+// Define size columns for each category
 $spirit_sizes = [
     '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
     '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
@@ -236,6 +262,11 @@ $beer_sizes = [
     '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
     '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
 ];
+
+// Sort all size arrays in descending order (larger first)
+$spirit_sizes = sortSizesDescending($spirit_sizes);
+$wine_sizes = sortSizesDescending($wine_sizes);
+$beer_sizes = sortSizesDescending($beer_sizes);
 
 $size_columns = [
     'IMFL' => $spirit_sizes,
