@@ -445,11 +445,11 @@ function getSortLink($column, $label) {
     background-color: #d1ecf1 !important;
   }
   
-  .category-fermented {
+  .category-fermented-beer {
     background-color: #d4edda !important;
   }
   
-  .category-mild {
+  .category-mild-beer {
     background-color: #f8d7da !important;
   }
   
@@ -808,7 +808,7 @@ function getSortLink($column, $label) {
                       <input class="form-check-input purchase-checkbox" type="checkbox" 
                              value="<?= htmlspecialchars($purchase['ID']) ?>">
                     </div>
-                  </td>
+                   </td>
                   <td class="col-voucher"><?=htmlspecialchars($purchase['VOC_NO'])?></td>
                   <td class="col-date"><?=htmlspecialchars($purchase['DATE'])?></td>
                   <td class="col-tp"><?=htmlspecialchars($purchase['TP_NO'])?></td>
@@ -818,7 +818,7 @@ function getSortLink($column, $label) {
                   <td class="col-total">₹<?=number_format($purchase['TAMT'], 2)?></td>
                   <td class="col-status">
                     <span class="status-badge <?=$statusClass?>"><?=$status?></span>
-                  </td>
+                   </td>
                   <td class="col-actions">
                     <div class="action-buttons">
                       <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
@@ -833,8 +833,8 @@ function getSortLink($column, $label) {
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
-                  </td>
-                </tr>
+                   </td>
+                 </tr>
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
@@ -922,17 +922,17 @@ function getSortLink($column, $label) {
                         <thead class="table-light">
                             <tr id="sizeHeaders">
                                 <!-- Headers will be dynamically generated -->
-                            </tr>
+                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                             <tr>
                                 <td colspan="52" class="text-center text-muted py-4">
                                     <i class="fas fa-info-circle fa-2x mb-3"></i><br>
                                     <h5>Ready to Load Data</h5>
                                     <p class="mb-0">Click "Update Summary" to load purchase summary data</p>
                                     <small class="text-info">Note: Sizes >1L are grouped together</small>
-                                </td>
-                            </tr>
+                                 </td>
+                             </tr>
                         </tbody>
                     </table>
                 </div>
@@ -1133,14 +1133,13 @@ function getSortLink($column, $label) {
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Categories based on CLASS field mapping
-// Sizes ordered from SMALL to LARGE as requested by user
-// Note: Wine sizes use "ML" suffix for display but internal mapping uses "W"
+// Sizes ordered from LARGEST to SMALLEST (descending order)
 const categories = [
     { 
         name: 'SPIRITS',
         sizes: [
-            '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-            '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1L', '>1L'
+            '>1L', '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML',
+            '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
         ],
         columnClass: 'size-column',
         bgColor: '#e9ecef',
@@ -1149,11 +1148,12 @@ const categories = [
     { 
         name: 'WINE', 
         sizes: [
-            '100 ML', '180 ML', '250 ML', '330 ML', '375 ML', '500 ML', '700 ML', '750 ML', '1L', '>1L'
+            '>1L', '1L', '750 ML', '700 ML', '500 ML', '375 ML', '330 ML', 
+            '250 ML', '180 ML', '100 ML'
         ],
-        // Internal mapping still uses W suffix for data matching
         internalSizes: [
-            '100 W', '180 W', '250 W', '330 W', '375 W', '500 W', '700 W', '750 W', '1L W', '>1L'
+            '>1L', '1L W', '750 W', '700 W', '500 W', '375 W', '330 W', 
+            '250 W', '180 W', '100 W'
         ],
         columnClass: 'size-column',
         bgColor: '#d1ecf1',
@@ -1162,7 +1162,8 @@ const categories = [
     { 
         name: 'FERMENTED BEER', 
         sizes: [
-            '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
+            '>1L', '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
         ],
         columnClass: 'size-column',
         bgColor: '#d4edda',
@@ -1171,7 +1172,8 @@ const categories = [
     { 
         name: 'MILD BEER', 
         sizes: [
-            '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
+            '>1L', '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+            '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
         ],
         columnClass: 'size-column',
         bgColor: '#f8d7da',
@@ -1343,15 +1345,15 @@ function loadPurchaseSummary() {
     
     // Show loading state
     $('#purchaseSummaryTable tbody').html(`
-        <tr>
+         <tr>
             <td colspan="${totalColumns}" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-2">Loading purchase summary data...</p>
                 <small class="text-muted">This may take a moment for large date ranges</small>
-            </td>
-        </tr>
+             </td>
+         </tr>
     `);
     
     // Show scroll hints
@@ -1386,13 +1388,13 @@ function loadPurchaseSummary() {
             } catch (e) {
                 console.error('Error parsing response:', e);
                 $('#purchaseSummaryTable tbody').html(`
-                    <tr>
+                     <tr>
                         <td colspan="${totalColumns}" class="text-center text-danger py-4">
                             <i class="fas fa-exclamation-triangle"></i><br>
                             Error loading purchase summary<br>
                             <small>${e.message}</small>
-                        </td>
-                    </tr>
+                         </td>
+                     </tr>
                 `);
             }
         },
@@ -1412,19 +1414,19 @@ function loadPurchaseSummary() {
             }
             
             $('#purchaseSummaryTable tbody').html(`
-                <tr>
+                 <tr>
                     <td colspan="${totalColumns}" class="text-center text-danger py-4">
                         <i class="fas fa-exclamation-triangle"></i><br>
                         ${errorMessage}<br>
                         <small>Status: ${status}, Error: ${error}</small>
-                    </td>
-                </tr>
+                     </td>
+                 </tr>
             `);
         }
     });
 }
 
-// Function to update the purchase summary table with TP-wise data
+// Function to update the purchase summary table with TP-wise data (dynamic filtering)
 function updatePurchaseSummaryTable(summaryData) {
     const tbody = $('#purchaseSummaryTable tbody');
     
@@ -1432,6 +1434,74 @@ function updatePurchaseSummaryTable(summaryData) {
     $('#purchaseSummaryTable thead').empty();
     tbody.empty();
 
+    // First, analyze which categories and sizes actually have data
+    const activeCategories = {};
+    const activeSizesByCategory = {};
+    
+    // Initialize tracking for all categories
+    categories.forEach(category => {
+        activeSizesByCategory[category.name] = new Set();
+        activeCategories[category.name] = false;
+    });
+    
+    // Analyze data to find active categories and sizes
+    Object.values(summaryData).forEach(tpData => {
+        if (tpData && tpData.categories) {
+            categories.forEach(category => {
+                const catData = tpData.categories[category.name];
+                if (catData) {
+                    let hasDataInCategory = false;
+                    
+                    category.sizes.forEach((size, sizeIndex) => {
+                        // For wine, use internal size key for data lookup
+                        let dataSize = size;
+                        if (category.internalSizes && category.internalSizes[sizeIndex]) {
+                            dataSize = category.internalSizes[sizeIndex];
+                        }
+                        
+                        const value = catData[dataSize] || 0;
+                        if (value > 0) {
+                            hasDataInCategory = true;
+                            activeSizesByCategory[category.name].add(size);
+                        }
+                    });
+                    
+                    if (hasDataInCategory) {
+                        activeCategories[category.name] = true;
+                    }
+                }
+            });
+        }
+    });
+    
+    // Filter categories to only those with data
+    const filteredCategories = categories.filter(category => activeCategories[category.name]);
+    
+    // If no categories have data, show empty state
+    if (filteredCategories.length === 0) {
+        const totalColumns = 1; // Just TP column
+        tbody.html(`
+             <tr>
+                <td colspan="${totalColumns}" class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3"></i><br>
+                    <h5>No Data Found</h5>
+                    <p class="mb-0">No purchase data found for the selected date range</p>
+                 </td>
+             </tr>
+        `);
+        $('#tpCount').text('0');
+        return;
+    }
+    
+    // Calculate total columns based on filtered categories
+    let totalSizeColumns = 0;
+    filteredCategories.forEach(cat => {
+        const activeSizes = activeSizesByCategory[cat.name];
+        const sizeCount = cat.sizes.filter(size => activeSizes.has(size)).length;
+        totalSizeColumns += sizeCount;
+    });
+    const totalColumns = totalSizeColumns + 1; // +1 for TP column
+    
     // Create main header row with category groups
     const mainHeaderRow = $('<tr>').addClass('summary-header-group');
     
@@ -1447,33 +1517,40 @@ function updatePurchaseSummaryTable(summaryData) {
             'border': '2px solid #495057'
         }));
     
-    // Add category headers with colspan and distinct colors
-    categories.forEach((category, index) => {
-        const headerCell = $('<th>')
-            .attr('colspan', category.sizes.length)
-            .text(category.name)
-            .addClass('text-center')
-            .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
-            .css({
-                'font-weight': 'bold',
-                'background-color': category.bgColor,
-                'border': '2px solid ' + category.borderColor,
-                'border-left': index === 0 ? '2px solid ' + category.borderColor : '3px solid #495057',
-                'color': '#212529'
-            });
+    // Add category headers with colspan (only for categories with data)
+    filteredCategories.forEach((category, index) => {
+        const activeSizes = activeSizesByCategory[category.name];
+        const sizeCount = category.sizes.filter(size => activeSizes.has(size)).length;
         
-        mainHeaderRow.append(headerCell);
+        if (sizeCount > 0) {
+            const headerCell = $('<th>')
+                .attr('colspan', sizeCount)
+                .text(category.name)
+                .addClass('text-center')
+                .addClass('category-' + category.name.toLowerCase().replace(' ', '-'))
+                .css({
+                    'font-weight': 'bold',
+                    'background-color': category.bgColor,
+                    'border': '2px solid ' + category.borderColor,
+                    'border-left': index === 0 ? '2px solid ' + category.borderColor : '3px solid #495057',
+                    'color': '#212529'
+                });
+            
+            mainHeaderRow.append(headerCell);
+        }
     });
     
-    // Create size header row
+    // Create size header row (only for active sizes)
     const sizeHeaderRow = $('<tr>').addClass('summary-size-header');
     
-    categories.forEach((category, catIndex) => {
-        category.sizes.forEach((size, sizeIndex) => {
-            // >1L is now at the last position, not first
-            const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
+    filteredCategories.forEach((category, catIndex) => {
+        const activeSizes = activeSizesByCategory[category.name];
+        const categorySizes = category.sizes.filter(size => activeSizes.has(size));
+        
+        categorySizes.forEach((size, sizeIndex) => {
+            const isLargeSizeColumn = size === '>1L';
             const isFirstColumnInCategory = sizeIndex === 0;
-            const isLastColumnInCategory = sizeIndex === category.sizes.length - 1;
+            const isLastColumnInCategory = sizeIndex === categorySizes.length - 1;
             
             const sizeCell = $('<th>')
                 .text(size)
@@ -1485,7 +1562,7 @@ function updatePurchaseSummaryTable(summaryData) {
                     'background-color': isLargeSizeColumn ? '#e3f2fd' : category.bgColor,
                     'border-top': '1px solid #dee2e6',
                     'border-left': isFirstColumnInCategory ? '3px solid #495057' : '1px solid #dee2e6',
-                    'border-right': isLastColumnInCategory && catIndex === categories.length - 1 ? '1px solid #dee2e6' : '1px solid #dee2e6'
+                    'border-right': isLastColumnInCategory && catIndex === filteredCategories.length - 1 ? '1px solid #dee2e6' : '1px solid #dee2e6'
                 });
             
             sizeHeaderRow.append(sizeCell);
@@ -1493,27 +1570,7 @@ function updatePurchaseSummaryTable(summaryData) {
     });
     
     $('#purchaseSummaryTable thead').append(mainHeaderRow, sizeHeaderRow);
-
-    // Calculate total columns
-    let totalSizeColumns = 0;
-    categories.forEach(cat => totalSizeColumns += cat.sizes.length);
-    const totalColumns = totalSizeColumns + 1;
-
-    // Check if we have data
-    if (!summaryData || typeof summaryData !== 'object' || Object.keys(summaryData).length === 0) {
-        tbody.html(`
-            <tr>
-                <td colspan="${totalColumns}" class="text-center text-muted py-4">
-                    <i class="fas fa-info-circle fa-2x mb-3"></i><br>
-                    <h5>No Data Found</h5>
-                    <p class="mb-0">No purchase data found for the selected date range</p>
-                </td>
-            </tr>
-        `);
-        $('#tpCount').text('0');
-        return;
-    }
-
+    
     // Create rows for each TP number
     let serialNumber = 1;
     const tpNumbers = Object.keys(summaryData);
@@ -1532,20 +1589,22 @@ function updatePurchaseSummaryTable(summaryData) {
             .text(tpNo)
             .attr('title', 'TP No: ' + tpNo));
         
-        // Add data for each category and size
-        categories.forEach((category, catIndex) => {
-            let categoryTotal = 0;
-            category.sizes.forEach((size, sizeIndex) => {
-                // >1L is now at the last position, not first
-                const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
+        // Add data for each filtered category and active size
+        filteredCategories.forEach((category, catIndex) => {
+            const activeSizes = activeSizesByCategory[category.name];
+            const categorySizes = category.sizes.filter(size => activeSizes.has(size));
+            
+            categorySizes.forEach((size, sizeIndex) => {
+                const isLargeSizeColumn = size === '>1L';
                 const isFirstColumnInCategory = sizeIndex === 0;
                 
                 let value = 0;
                 
                 // For wine, use internal size key for data lookup
                 let dataSize = size;
-                if (category.internalSizes && category.internalSizes[sizeIndex]) {
-                    dataSize = category.internalSizes[sizeIndex];
+                const sizeIndexInFullList = category.sizes.indexOf(size);
+                if (category.internalSizes && category.internalSizes[sizeIndexInFullList]) {
+                    dataSize = category.internalSizes[sizeIndexInFullList];
                 }
                 
                 // Check if data exists for this category and size
@@ -1553,7 +1612,6 @@ function updatePurchaseSummaryTable(summaryData) {
                     tpData.categories[category.name] && 
                     tpData.categories[category.name][dataSize]) {
                     value = tpData.categories[category.name][dataSize];
-                    categoryTotal += value;
                 }
                 
                 const cell = $('<td>')
@@ -1586,9 +1644,9 @@ function updatePurchaseSummaryTable(summaryData) {
         tbody.append(row);
         serialNumber++;
     });
-
-    // Add a total row
-    addTotalRow(summaryData, categories);
+    
+    // Add total row (only for active categories and sizes)
+    addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCategory);
     
     // Update statistics
     $('#tpCount').text(tpNumbers.length);
@@ -1613,23 +1671,30 @@ function updatePurchaseSummaryTable(summaryData) {
     }, 500);
 }
 
-// Function to add total row
-function addTotalRow(summaryData, categories) {
+// Function to add total row dynamically for active categories and sizes
+function addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCategory) {
     const totals = {};
     
-    // Initialize totals
-    categories.forEach(category => {
+    // Initialize totals for active categories and sizes
+    filteredCategories.forEach(category => {
         totals[category.name] = {};
+        const activeSizes = activeSizesByCategory[category.name];
         category.sizes.forEach(size => {
-            totals[category.name][size] = 0;
+            if (activeSizes.has(size)) {
+                totals[category.name][size] = 0;
+            }
         });
     });
     
     // Calculate totals
     Object.values(summaryData).forEach(tpData => {
         if (tpData && tpData.categories) {
-            categories.forEach(category => {
+            filteredCategories.forEach(category => {
+                const activeSizes = activeSizesByCategory[category.name];
+                
                 category.sizes.forEach((size, sizeIndex) => {
+                    if (!activeSizes.has(size)) return;
+                    
                     // For wine, use internal size key for data lookup
                     let dataSize = size;
                     if (category.internalSizes && category.internalSizes[sizeIndex]) {
@@ -1646,9 +1711,10 @@ function addTotalRow(summaryData, categories) {
     
     // Check if we have any totals
     let hasTotals = false;
-    categories.forEach(category => {
+    filteredCategories.forEach(category => {
+        const activeSizes = activeSizesByCategory[category.name];
         category.sizes.forEach(size => {
-            if (totals[category.name][size] > 0) {
+            if (activeSizes.has(size) && totals[category.name][size] > 0) {
                 hasTotals = true;
             }
         });
@@ -1666,10 +1732,12 @@ function addTotalRow(summaryData, categories) {
             })
             .text('TOTAL'));
         
-        categories.forEach((category, catIndex) => {
-            category.sizes.forEach((size, sizeIndex) => {
-                // >1L is now at the last position, not first
-                const isLargeSizeColumn = sizeIndex === category.sizes.length - 1;
+        filteredCategories.forEach((category, catIndex) => {
+            const activeSizes = activeSizesByCategory[category.name];
+            const categorySizes = category.sizes.filter(size => activeSizes.has(size));
+            
+            categorySizes.forEach((size, sizeIndex) => {
+                const isLargeSizeColumn = size === '>1L';
                 const isFirstColumnInCategory = sizeIndex === 0;
                 const value = totals[category.name][size];
                 const cell = $('<td>')
@@ -1822,7 +1890,8 @@ function printPurchaseSummary() {
                 </div>
                 <div class="note">
                     Note: All sizes greater than 1 liter are grouped in ">1L" column<br>
-                    Categories: SPIRITS | WINE | FERMENTED BEER | MILD BEER
+                    Categories: SPIRITS | WINE | FERMENTED BEER | MILD BEER<br>
+                    Only categories and sizes with data are displayed
                 </div>
             </div>
             ${printContent}

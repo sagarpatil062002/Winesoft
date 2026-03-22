@@ -117,12 +117,8 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                 
                 // Map category name to display category
                 $category_name = strtoupper($row['CATEGORY_NAME'] ?? '');
-                $display_category = 'OTHER';
                 
                 if ($category_name == 'SPIRIT') {
-                    $display_category = 'SPIRITS';
-                    
-                    // Determine spirit type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
                         $hierarchy['display_type'] = 'IMPORTED SPIRIT';
@@ -132,29 +128,21 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
                         $hierarchy['display_type'] = 'SPIRITS';
                     }
                 } elseif ($category_name == 'WINE') {
-                    $display_category = 'WINE';
-                    
-                    // Determine wine type based on class name
                     $class_name_upper = strtoupper($row['CLASS_NAME'] ?? '');
                     if (strpos($class_name_upper, 'IMPORTED') !== false || strpos($class_name_upper, 'IMP') !== false) {
                         $hierarchy['display_type'] = 'IMPORTED WINE';
                     } elseif (strpos($class_name_upper, 'MML') !== false) {
                         $hierarchy['display_type'] = 'WINE MML';
                     } else {
-                        $hierarchy['display_type'] = 'WINES';
+                        $hierarchy['display_type'] = 'INDIAN WINE';
                     }
                 } elseif ($category_name == 'FERMENTED BEER') {
-                    $display_category = 'FERMENTED BEER';
                     $hierarchy['display_type'] = 'FERMENTED BEER';
                 } elseif ($category_name == 'MILD BEER') {
-                    $display_category = 'MILD BEER';
                     $hierarchy['display_type'] = 'MILD BEER';
                 } elseif ($category_name == 'COUNTRY LIQUOR') {
-                    $display_category = 'COUNTRY LIQUOR';
                     $hierarchy['display_type'] = 'COUNTRY LIQUOR';
                 }
-                
-                $hierarchy['display_category'] = $display_category;
             }
             $stmt->close();
         }
@@ -219,12 +207,12 @@ if ($row = $companyResult->fetch_assoc()) {
 }
 $companyStmt->close();
 
-// Define display categories based on hierarchy
+// Define display categories (match excise register)
 $display_categories = [
     'SPIRITS',
     'IMPORTED SPIRIT',
     'MML',
-    'WINES',
+    'INDIAN WINE',
     'IMPORTED WINE',
     'WINE MML',
     'FERMENTED BEER',
@@ -235,47 +223,30 @@ $category_display_names = [
     'SPIRITS' => 'SPIRITS',
     'IMPORTED SPIRIT' => 'IMPORTED SPIRIT',
     'MML' => 'MML',
-    'WINES' => 'WINES',
+    'INDIAN WINE' => 'INDIAN WINE',
     'IMPORTED WINE' => 'IMPORTED WINE',
     'WINE MML' => 'WINE MML',
     'FERMENTED BEER' => 'FERMENTED BEER',
     'MILD BEER' => 'MILD BEER'
 ];
 
-// Function to get volume label with new grouping
-function getVolumeLabel($volume) {
-    static $volume_label_cache = [];
-    
-    if (isset($volume_label_cache[$volume])) {
-        return $volume_label_cache[$volume];
+// Function to get standardized size label (same as excise register)
+function getStandardizedSizeLabel($size_desc, $ml_volume) {
+    if ($ml_volume >= 1000) {
+        $liters = $ml_volume / 1000;
+        if ($liters == intval($liters)) {
+            return intval($liters) . 'L';
+        }
+        return rtrim(rtrim(number_format($liters, 1), '0'), '.') . 'L';
     }
-    
-    // Group all volumes > 2000 ML (2L) into ">2L"
-    if ($volume > 2000) {
-        $label = '>2L';
-    } elseif ($volume == 2000) {
-        $label = '2L';
-    } elseif ($volume == 1000) {
-        $label = '1L';
-    } else {
-        $label = $volume . ' ML';
-    }
-    
-    $volume_label_cache[$volume] = $label;
-    return $label;
+    return $ml_volume . ' ML';
 }
-
-// Define all possible display sizes (will be filtered later)
-$possible_display_sizes = [
-    '>2L', '2L', '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', 
-    '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
-];
 
 // Function to extract brand name from item details
 function getBrandName($details) {
     // Remove size patterns (ML, CL, L, etc. with numbers)
     $brandName = preg_replace('/\s*\d+\s*(ML|CL|L).*$/i', '', $details);
-    $brandName = preg_replace('/\s*\([^)]*\)\s*$/', '', $brandName);
+    $brandName = preg_replace('/\s*\([^)]*\)\s*$/', '', $details);
     $brandName = preg_replace('/\s*-\s*\d+$/', '', $brandName);
     return trim($brandName);
 }
@@ -349,7 +320,7 @@ function tableHasDayColumns($conn, $tableName, $day) {
 }
 
 // ============================================================================
-// STEP 1: Get ALL dates from April 1st to To Date for CALCULATIONS (like excise register)
+// STEP 1: Get ALL dates from April 1st to To Date for CALCULATIONS
 // ============================================================================
 $financial_year = date('Y', strtotime($from_date));
 $april_first = $financial_year . '-04-01';
@@ -375,7 +346,7 @@ while (strtotime($current_date) <= strtotime($to_date)) {
 // STEP 3: Fetch item master data
 // ============================================================================
 $items = [];
-$all_volume_labels = [];
+$all_size_labels = [];
 
 if (!empty($allowed_classes)) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
@@ -399,14 +370,14 @@ if (!empty($allowed_classes)) {
         
         // Only store if display type is in our categories
         if (in_array($hierarchy['display_type'], $display_categories)) {
-            $volume_label = getVolumeLabel($hierarchy['ml_volume']);
-            $all_volume_labels[$volume_label] = true;
+            $size_label = getStandardizedSizeLabel($hierarchy['size_desc'], $hierarchy['ml_volume']);
+            $all_size_labels[$size_label] = true;
             
             $items[$row['CODE']] = [
                 'code' => $row['CODE'],
                 'details' => $row['DETAILS'],
                 'hierarchy' => $hierarchy,
-                'volume_label' => $volume_label
+                'size_label' => $size_label
             ];
         }
     }
@@ -422,7 +393,7 @@ foreach ($calculation_dates as $date) {
 }
 
 // ============================================================================
-// STEP 5: Fetch TP Nos for display dates only (like excise register)
+// STEP 5: Fetch TP Nos for display dates only
 // ============================================================================
 $tp_nos_data = [];
 foreach ($display_dates as $date) {
@@ -442,7 +413,7 @@ foreach ($display_dates as $date) {
 }
 
 // ============================================================================
-// STEP 6: Fetch raw data for ALL calculation dates (like excise register)
+// STEP 6: Fetch raw data for ALL calculation dates
 // ============================================================================
 $dates_by_month = [];
 foreach ($calculation_dates as $date) {
@@ -486,7 +457,7 @@ foreach ($dates_by_month as $month => $dates) {
         
         $item = $items[$item_code];
         $display_type = $item['hierarchy']['display_type'];
-        $volume_label = $item['volume_label'];
+        $size_label = $item['size_label'];
         $brandName = getBrandName($item['details']);
         
         if (empty($brandName)) continue;
@@ -498,11 +469,12 @@ foreach ($dates_by_month as $month => $dates) {
             $purchase = (int)($row["purchase_$day"] ?? 0);
             $sales = (int)($row["sales_$day"] ?? 0);
             
+            // Skip if all zeros (like excise register)
             if ($opening == 0 && $purchase == 0 && $sales == 0) {
                 continue;
             }
             
-            // Initialize data structure for this brand and size
+            // Initialize data structure for this brand, category, and size
             if (!isset($all_daily_data[$date][$brandName])) {
                 $all_daily_data[$date][$brandName] = [
                     'display_type' => $display_type,
@@ -510,8 +482,8 @@ foreach ($dates_by_month as $month => $dates) {
                 ];
             }
             
-            if (!isset($all_daily_data[$date][$brandName]['sizes'][$volume_label])) {
-                $all_daily_data[$date][$brandName]['sizes'][$volume_label] = [
+            if (!isset($all_daily_data[$date][$brandName]['sizes'][$size_label])) {
+                $all_daily_data[$date][$brandName]['sizes'][$size_label] = [
                     'opening' => 0,
                     'purchase' => 0,
                     'sales' => 0,
@@ -519,16 +491,17 @@ foreach ($dates_by_month as $month => $dates) {
                 ];
             }
             
-            $all_daily_data[$date][$brandName]['sizes'][$volume_label]['opening'] = $opening;
-            $all_daily_data[$date][$brandName]['sizes'][$volume_label]['purchase'] += $purchase;
-            $all_daily_data[$date][$brandName]['sizes'][$volume_label]['sales'] += $sales;
+            // Aggregate data (multiple items might have same brand/size)
+            $all_daily_data[$date][$brandName]['sizes'][$size_label]['opening'] += $opening;
+            $all_daily_data[$date][$brandName]['sizes'][$size_label]['purchase'] += $purchase;
+            $all_daily_data[$date][$brandName]['sizes'][$size_label]['sales'] += $sales;
         }
     }
     $stockStmt->close();
 }
 
 // ============================================================================
-// STEP 7: Calculate running balances (exactly like excise register)
+// STEP 7: Calculate running balances (EXACTLY like excise register)
 // ============================================================================
 $running_closing = []; // [brand][size] = closing balance
 
@@ -537,7 +510,7 @@ foreach ($calculation_dates as $index => $date) {
     
     foreach ($all_daily_data[$date] as $brand => &$brand_info) {
         foreach ($brand_info['sizes'] as $size => &$data) {
-            // Get opening balance (like excise register)
+            // Get opening balance (same logic as excise register)
             if ($index == 0) {
                 // First day (April 1st) - use actual opening from table
                 $opening = $data['opening'];
@@ -579,7 +552,7 @@ foreach ($display_dates as $date) {
 }
 
 // ============================================================================
-// STEP 9: Determine which sizes have data
+// STEP 9: Determine which sizes have data across all dates
 // ============================================================================
 $active_sizes = [];
 foreach ($daily_data as $date => $date_data) {
@@ -593,18 +566,45 @@ foreach ($daily_data as $date => $date_data) {
     }
 }
 
-// Filter to only include sizes that have data
-$display_sizes = array_filter($possible_display_sizes, function($size) use ($active_sizes) {
-    return isset($active_sizes[$size]);
+// Sort sizes by volume (largest to smallest) like excise register
+$all_possible_sizes = [
+    '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
+    '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1L',
+    '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+];
+
+function getSizeVolumeInML($size_str) {
+    if (preg_match('/(\d+(?:\.\d+)?)\s*(ML|L)/i', $size_str, $matches)) {
+        $value = (float)$matches[1];
+        $unit = strtoupper($matches[2]);
+        if ($unit == 'L') {
+            return $value * 1000;
+        }
+        return $value;
+    }
+    return 0;
+}
+
+// Build display sizes from active sizes, sorted largest to smallest
+$display_sizes = [];
+foreach ($all_possible_sizes as $size) {
+    if (isset($active_sizes[$size])) {
+        $display_sizes[] = $size;
+    }
+}
+
+// Sort by volume (largest to smallest)
+usort($display_sizes, function($a, $b) {
+    $vol_a = getSizeVolumeInML($a);
+    $vol_b = getSizeVolumeInML($b);
+    if ($vol_a == $vol_b) return 0;
+    return ($vol_a > $vol_b) ? -1 : 1;
 });
 
 // If no sizes found, use at least one default
 if (empty($display_sizes)) {
     $display_sizes = ['1L'];
 }
-
-// Re-index array
-$display_sizes = array_values($display_sizes);
 
 // ============================================================================
 // STEP 10: Filter out brands with zero stock and ensure all sizes exist
@@ -663,15 +663,10 @@ foreach ($daily_data as $date => &$date_data) {
 }
 
 // Calculate column positions for double lines
-$opening_start = 3; // After Sr No, Brand Name, TP NO
-$opening_end = $opening_start + count($display_sizes);
-$received_start = $opening_end;
-$received_end = $received_start + count($display_sizes);
-$sold_start = $received_end;
-$sold_end = $sold_start + count($display_sizes);
-$closing_start = $sold_end;
-$closing_end = $closing_start + count($display_sizes);
 $total_columns = count($display_sizes) * 4; // Opening, Received, Sold, Closing
+
+// Ensure the report is shown correctly
+$show_report = $show_report && !empty($display_dates) && !empty($display_sizes);
 ?>
 
 <!DOCTYPE html>
@@ -799,20 +794,22 @@ $total_columns = count($display_sizes) * 4; // Opening, Received, Sold, Closing
     }
 
     /* Double line separators between sections */
-    .report-table td:nth-child(<?= $opening_end ?>),
-    .report-table th:nth-child(<?= $opening_end ?>) {
+    <?php if (!empty($display_sizes)): ?>
+    .report-table td:nth-child(<?= 3 + count($display_sizes) ?>),
+    .report-table th:nth-child(<?= 3 + count($display_sizes) ?>) {
       border-right: double 3px #000 !important;
     }
 
-    .report-table td:nth-child(<?= $received_end ?>),
-    .report-table th:nth-child(<?= $received_end ?>) {
+    .report-table td:nth-child(<?= 3 + (count($display_sizes) * 2) ?>),
+    .report-table th:nth-child(<?= 3 + (count($display_sizes) * 2) ?>) {
       border-right: double 3px #000 !important;
     }
 
-    .report-table td:nth-child(<?= $sold_end ?>),
-    .report-table th:nth-child(<?= $sold_end ?>) {
+    .report-table td:nth-child(<?= 3 + (count($display_sizes) * 3) ?>),
+    .report-table th:nth-child(<?= 3 + (count($display_sizes) * 3) ?>) {
       border-right: double 3px #000 !important;
     }
+    <?php endif; ?>
 
     .filter-card {
       background-color: #f8f9fa;
@@ -996,16 +993,6 @@ $total_columns = count($display_sizes) * 4; // Opening, Received, Sold, Closing
         font-size: 6px;
       }
 
-      /* Double lines in print */
-      .report-table td:nth-child(<?= $opening_end ?>),
-      .report-table th:nth-child(<?= $opening_end ?>),
-      .report-table td:nth-child(<?= $received_end ?>),
-      .report-table th:nth-child(<?= $received_end ?>),
-      .report-table td:nth-child(<?= $sold_end ?>),
-      .report-table th:nth-child(<?= $sold_end ?>) {
-        border-right: double 3px #000 !important;
-      }
-
       .tp-nos-list {
         font-size: 5px !important;
         line-height: 1;
@@ -1069,6 +1056,7 @@ $total_columns = count($display_sizes) * 4; // Opening, Received, Sold, Closing
         <strong><i class="fas fa-flask"></i> Note:</strong> Only sizes with data are displayed. 
         Sizes shown: <?= implode(', ', $display_sizes) ?>
         <br><strong>Opening balances are carried forward from <?= date('d-M-Y', strtotime($april_first)) ?></strong>
+        <br><strong>Note:</strong> Opening balance for each date is the closing balance of the previous day. Closing = Opening + Received - Sold.
       </div>
 
       <!-- Report Filters -->
@@ -1130,11 +1118,6 @@ $total_columns = count($display_sizes) * 4; // Opening, Received, Sold, Closing
           <h6>Financial Year: <?= date('d-m-Y', strtotime($fin_year_start)) ?> to <?= date('d-m-Y', strtotime($fin_year_end)) ?></h6>
           <h6>From Date : <?= date('d-M-Y', strtotime($from_date)) ?> To Date : <?= date('d-M-Y', strtotime($to_date)) ?></h6>
           <h6><em>Opening balances carried forward from <?= date('d-M-Y', strtotime($april_first)) ?></em></h6>
-        </div>
-        
-        <!-- Stock Info Note -->
-        <div class="stock-info-note">
-          <strong><i class="fas fa-info-circle"></i> Note:</strong> Opening balance for each date is the closing balance of the previous day. Closing = Opening + Received - Sold.
         </div>
         
         <!-- FIXED SCROLLING CONTAINER -->

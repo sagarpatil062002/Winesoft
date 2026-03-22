@@ -35,22 +35,23 @@ $toDate = isset($_GET['to_date']) ? $_GET['to_date'] : date('Y-m-d');
 // Initialize summary structure for TP-wise data
 $tpWiseSummary = [];
 
-// Categories in order: SPIRITS, WINE, FERMENTED BEER, MILD BEER
-// Sizes ordered from SMALL to LARGE as requested by user
-// Note: Wine sizes use "ML" suffix for display but internal data uses "W" suffix
+// Categories with correct internal size formats - LARGEST to SMALLEST
 $categorySizes = [
     'SPIRITS' => [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
-        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1L', '>1L'
+        '>1L', '1L', '750 ML', '700 ML', '650 ML', '500 ML', '375 ML', '355 ML', 
+        '330 ML', '275 ML', '250 ML', '200 ML', '180 ML', '170 ML', '90 ML', '60 ML', '50 ML'
     ],
     'WINE' => [
-        '100 ML', '180 ML', '250 ML', '330 ML', '375 ML', '500 ML', '700 ML', '750 ML', '1L', '>1L'
+        '>1L', '1L W', '750 W', '700 W', '500 W', '375 W', '330 W', 
+        '250 W', '180 W', '100 W'
     ],
     'FERMENTED BEER' => [
-        '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
+        '>1L', '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+        '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
     ],
     'MILD BEER' => [
-        '60 ML', '90 ML', '180 ML', '250 ML', '275 ML', '330 ML', '375 ML', '500 ML', '650 ML', '750 ML', '1L', '>1L'
+        '>1L', '1L', '750 ML', '650 ML', '500 ML', '375 ML', '330 ML', 
+        '275 ML', '250 ML', '180 ML', '90 ML', '60 ML'
     ]
 ];
 
@@ -121,11 +122,11 @@ function initializeTPEntry($tpNo) {
 }
 
 try {
-    // Query to get purchase details with new schema - using tblsize, tblclass_new, tblsubclass_new
+    // Query to get purchase details with class from tblitemmaster
     $query = "
         SELECT 
             pd.ItemCode,
-            pd.Size as PurchaseSize,
+            pd.Size,
             pd.Cases,
             pd.Bottles,
             pd.BottlesPerCase,
@@ -135,30 +136,12 @@ try {
             p.DATE as PurchaseDate,
             p.PUR_FLAG,
             COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
-            -- Get size information from tblsize
-            sz.ML_VOLUME,
-            sz.SIZE_DESC as SizeDescription,
-            sz.BOTTLE_PER_CASE as SizeBottlesPerCase,
-            -- Get class and category information from new tables
-            cn.CLASS_NAME,
-            cn.CATEGORY_CODE as ClassCategoryCode,
-            sn.SUBCLASS_NAME,
-            cat.CATEGORY_NAME,
-            -- Also get old fields for fallback
-            im.CLASS as OldClass,
-            im.CLASS_CODE_NEW,
-            im.SUBCLASS_CODE_NEW,
-            im.SIZE_CODE,
-            im.ITEM_GROUP
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
         FROM tblpurchasedetails pd
         INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
         LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
-        -- Join with new size table using SIZE_CODE (preferred) or ITEM_GROUP (fallback)
-        LEFT JOIN tblsize sz ON (im.SIZE_CODE = sz.SIZE_CODE) OR (im.ITEM_GROUP = sz.OLD_ITEM_GROUP)
-        -- Join with new class tables using CLASS_CODE_NEW
-        LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE
-        LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE
-        LEFT JOIN tblcategory cat ON cn.CATEGORY_CODE = cat.CATEGORY_CODE
         WHERE p.CompID = ?
         AND p.DATE BETWEEN ? AND ?
         AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
@@ -224,73 +207,63 @@ try {
             ];
         }
         
-        // Get item details from new schema
+        // Get ItemClass from tblitemmaster
+        $itemClass = $row['ItemClass'] ?? 'UNKNOWN';
         $itemName = $row['ItemName'] ?? '';
         $itemCode = $row['ItemCode'] ?? '';
-        
-        // Get category from new tables - CATEGORY_NAME from tblcategory via tblclass_new
-        $categoryName = $row['CATEGORY_NAME'] ?? '';
-        $className = $row['CLASS_NAME'] ?? '';
-        $classCategoryCode = $row['ClassCategoryCode'] ?? '';
-        $oldClass = $row['OldClass'] ?? '';
+        $itemDetails = $row['ItemDetails'] ?? '';
+        $itemDetails2 = $row['ItemDetails2'] ?? '';
         
         // Log item information for debugging
-        error_log("Item: {$itemName}, Code: {$itemCode}, Category: '{$categoryName}', ClassName: '{$className}', CategoryCode: '{$classCategoryCode}', OldClass: '{$oldClass}'");
+        error_log("Item: {$itemName}, Code: {$itemCode}, Class: '{$itemClass}', Details: '{$itemDetails}', Details2: '{$itemDetails2}'");
         
-        // Determine product category based on new CATEGORY_NAME or CATEGORY_CODE
+        // Check if item was found in tblitemmaster
+        if ($itemClass === 'UNKNOWN') {
+            $missingItems[] = [
+                'item_code' => $itemCode,
+                'item_name' => $itemName
+            ];
+            error_log("WARNING: Item not found in tblitemmaster: {$itemCode} - {$itemName}");
+        }
+        
+        // Determine product category based on CLASS field
         $productType = 'SPIRITS'; // Default
         
-        if (!empty($categoryName)) {
-            $categoryUpper = strtoupper($categoryName);
-            if (strpos($categoryUpper, 'WINE') !== false) {
+        // First, check direct mapping
+        if (isset($classToCategory[$itemClass])) {
+            $productType = $classToCategory[$itemClass];
+        } else {
+            // Check for patterns in class code
+            $itemClassUpper = strtoupper($itemClass);
+            
+            if (strpos($itemClassUpper, 'WINE') !== false || 
+                strpos($itemClassUpper, 'WN') !== false ||
+                strpos($itemClassUpper, 'VW') !== false) {
                 $productType = 'WINE';
-            } elseif (strpos($categoryUpper, 'MILD') !== false || strpos($categoryUpper, 'BEER') !== false) {
-                // Check if it's MILD BEER or FERMENTED BEER
-                if (strpos($categoryUpper, 'MILD') !== false) {
-                    $productType = 'MILD BEER';
-                } else {
-                    $productType = 'FERMENTED BEER';
-                }
+            } elseif (strpos($itemClassUpper, 'M') !== false) {
+                $productType = 'MILD BEER';
+            } elseif (strpos($itemClassUpper, 'F') !== false || 
+                      strpos($itemClassUpper, 'B') !== false ||
+                      strpos($itemClassUpper, 'BEER') !== false) {
+                $productType = 'FERMENTED BEER';
             } else {
+                // Default to SPIRITS
                 $productType = 'SPIRITS';
             }
-        } elseif (!empty($classCategoryCode)) {
-            // Fallback to category code mapping
-            $catCodeUpper = strtoupper($classCategoryCode);
-            if (strpos($catCodeUpper, 'WINE') !== false) {
-                $productType = 'WINE';
-            } elseif (strpos($catCodeUpper, 'MILD') !== false) {
-                $productType = 'MILD BEER';
-            } elseif (strpos($catCodeUpper, 'FB') !== false || strpos($catCodeUpper, 'BEER') !== false) {
-                $productType = 'FERMENTED BEER';
-            }
-        } else {
-            // Fallback to old class mapping
-            $productType = getProductTypeFromOldClass($oldClass ?? '');
+            
+            $unclassifiedItems[] = [
+                'item' => $itemName,
+                'code' => $itemCode,
+                'class' => $itemClass,
+                'assigned_category' => $productType
+            ];
         }
         
-        // Get volume - PRIORITY: 1) ML_VOLUME from tblsize, 2) parse from strings
-        $mlVolume = $row['ML_VOLUME'] ?? null;
-        $sizeDescription = $row['SizeDescription'] ?? '';
-        $purchaseSize = $row['PurchaseSize'] ?? '';
+        // Extract volume from Size or ItemDetails2
+        $size = $row['Size'] ?? '';
+        $volume = extractVolumeFromSize($size, $itemDetails2, $itemName);
         
-        // Use ML_VOLUME from tblsize if available
-        $volume = 0;
-        if (!empty($mlVolume) && floatval($mlVolume) > 0) {
-            $volume = floatval($mlVolume);
-            error_log("Using ML_VOLUME from tblsize: {$volume}");
-        } else {
-            // Fall back to parsing from strings
-            $volume = extractVolumeFromSize($purchaseSize, $sizeDescription, $itemName);
-        }
-        
-        // Debug log for 1L items
-        if ($volume == 1000 || $volume == 1000.0) {
-            error_log("1L item found: {$itemName}, Volume: {$volume}, Category: {$productType}");
-        }
-        
-        // === FIXED: Calculate total bottles properly ===
-        // Check if TotBott column has valid value
+        // Calculate total bottles properly
         if (isset($row['TotBott']) && $row['TotBott'] > 0) {
             $totalQty = intval($row['TotBott']);
             error_log("Using TotBott column: {$totalQty}");
@@ -298,13 +271,12 @@ try {
             // Calculate manually from Cases and Bottles
             $cases = floatval($row['Cases'] ?? 0);
             $bottles = intval($row['Bottles'] ?? 0);
-            // Use BottlesPerCase from tblsize if available, otherwise from row
-            $bottlesPerCase = intval($row['SizeBottlesPerCase'] ?? $row['BottlesPerCase'] ?? 12);
+            $bottlesPerCase = intval($row['BottlesPerCase'] ?? 12);
             
             // Handle special case where BottlesPerCase is 0 or negative
             if ($bottlesPerCase <= 0) {
                 $bottlesPerCase = 1; // Default to 1 if invalid
-                error_log("Warning: Invalid BottlesPerCase={$bottlesPerCase}, using 1");
+                error_log("Warning: Invalid BottlesPerCase={$row['BottlesPerCase']}, using 1");
             }
             
             // Calculate total bottles: (cases × bottles per case) + loose bottles
@@ -314,7 +286,7 @@ try {
             error_log("Calculated manually: Cases={$cases}, Bottles={$bottles}, BPC={$bottlesPerCase}, Total={$totalQty}");
         }
         
-        // Get the column for this volume
+        // Get the column for this volume - now returns internal format
         $volumeColumn = getVolumeColumnForCategory($volume, $productType);
         
         // Log categorization for debugging
@@ -322,14 +294,13 @@ try {
         
         // Map the product to the correct category
         if ($volumeColumn && isset($tpWiseSummary[$tpNo]['categories'][$productType])) {
-            // Check if this is a large size (>1L) - use normalized volume for accurate comparison
-            $normalizedVolume = normalizeVolume($volume);
-            $isLargeSize = isVolumeLargeSize($normalizedVolume);
+            // Check if this is a large size (>1L)
+            $isLargeSize = isVolumeLargeSize($volume);
             $targetColumn = $isLargeSize ? '>1L' : $volumeColumn;
             
-            // For wine, get internal size key (with 'W' suffix)
-            if ($productType === 'WINE') {
-                $targetColumn = getInternalSizeKey($targetColumn, $productType);
+            // For wine, ensure we're using the correct internal format
+            if ($productType === 'WINE' && !$isLargeSize && $targetColumn !== '>1L') {
+                $targetColumn = getWineInternalKey($volume);
             }
             
             if (isset($tpWiseSummary[$tpNo]['categories'][$productType][$targetColumn])) {
@@ -392,67 +363,6 @@ echo json_encode($tpWiseSummary);
 function isVolumeLargeSize($volume) {
     // Use >= 1001 to be more precise - 1000ml (1L) should NOT be considered >1L
     return floatval($volume) >= 1001;
-}
-
-// Helper function to normalize volume value (handles 1000ml = 1L)
-function normalizeVolume($volume) {
-    $v = floatval($volume);
-    // If volume is between 999 and 1001, treat as 1000 (1L)
-    if ($v >= 999 && $v <= 1001) {
-        return 1000;
-    }
-    return $v;
-}
-
-// Helper function to get product type from old single-character CLASS field
-function getProductTypeFromOldClass($oldClass) {
-    $classToCategory = [
-        // SPIRITS - Whisky, Brandy, Rum, Vodka, Gin, etc.
-        'W' => 'SPIRITS', // Whisky
-        'D' => 'SPIRITS', // Brandy
-        'R' => 'SPIRITS', // Rum
-        'V' => 'SPIRITS', // Vodka
-        'G' => 'SPIRITS', // Gin
-        'S' => 'SPIRITS', // Scotch
-        'I' => 'SPIRITS', // Imported Spirits
-        'O' => 'SPIRITS', // Other Spirits
-        'L' => 'SPIRITS', // Liquor
-        'P' => 'SPIRITS', // Port
-        'K' => 'SPIRITS', // Other spirits
-        
-        // WINE
-        'WINE' => 'WINE',
-        'WN' => 'WINE',
-        'VW' => 'WINE',
-        
-        // BEER
-        'M' => 'MILD BEER',    // Mild Beer
-        'F' => 'FERMENTED BEER', // Fermented Beer
-        'B' => 'FERMENTED BEER', // Beer
-        'BEER' => 'FERMENTED BEER',
-        
-        // Default to SPIRITS for unknown classes
-        '' => 'SPIRITS',
-        NULL => 'SPIRITS',
-        'UNKNOWN' => 'SPIRITS'
-    ];
-    
-    $classUpper = strtoupper(trim($oldClass ?? ''));
-    
-    if (isset($classToCategory[$classUpper])) {
-        return $classToCategory[$classUpper];
-    }
-    
-    // Check for patterns
-    if (strpos($classUpper, 'WINE') !== false || strpos($classUpper, 'WN') !== false) {
-        return 'WINE';
-    } elseif (strpos($classUpper, 'M') !== false) {
-        return 'MILD BEER';
-    } elseif (strpos($classUpper, 'F') !== false || strpos($classUpper, 'B') !== false) {
-        return 'FERMENTED BEER';
-    }
-    
-    return 'SPIRITS'; // Default
 }
 
 // Helper function to extract volume from size field
@@ -523,24 +433,41 @@ function extractVolumeFromSize($size, $details2, $itemName) {
 }
 
 // Helper function to get volume column for a category
-// Returns display size (with ML suffix) for all categories including wine
+// Returns the appropriate format based on category
 function getVolumeColumnForCategory($volume, $category) {
     if ($volume == 0) {
         return null; // Cannot determine size
     }
     
-    // Check for exactly 1L (1000 ML) FIRST - before checking > 1000
-    if ($volume == 1000) {
-        return '1L';
-    }
+    // Normalize volume for 1L detection
+    $normalizedVolume = normalizeVolume($volume);
     
-    // For volumes > 1000 ML (but not exactly 1000)
-    if ($volume > 1000) {
-        // All other sizes > 1L go to >1L column
+    // Check for large sizes (>1L)
+    if ($normalizedVolume >= 1001) {
         return '>1L';
     }
     
-    // Standard size mappings (display format - ML suffix)
+    // For exactly 1L (1000 ML)
+    if ($normalizedVolume == 1000) {
+        return ($category === 'WINE') ? '1L W' : '1L';
+    }
+    
+    // Wine specific mappings (internal format with 'W' suffix)
+    if ($category === 'WINE') {
+        $wineMap = [
+            750 => '750 W',
+            700 => '700 W',
+            500 => '500 W',
+            375 => '375 W',
+            330 => '330 W',
+            250 => '250 W',
+            180 => '180 W',
+            100 => '100 W'
+        ];
+        return $wineMap[$normalizedVolume] ?? null;
+    }
+    
+    // Standard mappings (ML suffix) - LARGEST to SMALLEST order
     $standardMap = [
         750 => '750 ML',
         700 => '700 ML',
@@ -559,33 +486,42 @@ function getVolumeColumnForCategory($volume, $category) {
         50 => '50 ML'
     ];
     
-    // Wine size mappings (display format - ML suffix)
-    $wineMap = [
-        750 => '750 ML',
-        700 => '700 ML',
-        500 => '500 ML',
-        375 => '375 ML',
-        330 => '330 ML',
-        250 => '250 ML',
-        180 => '180 ML',
-        100 => '100 ML'
-    ];
-    
-    if ($category === 'WINE') {
-        return $wineMap[$volume] ?? null;
-    } else {
-        return $standardMap[$volume] ?? null;
-    }
+    return $standardMap[$normalizedVolume] ?? null;
 }
 
-// Helper function to get internal size key for data storage
-// Wine uses 'W' suffix internally, others use 'ML'
-function getInternalSizeKey($displaySize, $category) {
-    global $wineInternalSizes;
+// Helper function to get wine internal key
+function getWineInternalKey($volume) {
+    $normalizedVolume = normalizeVolume($volume);
     
-    if ($category === 'WINE' && isset($wineInternalSizes[$displaySize])) {
-        return $wineInternalSizes[$displaySize];
+    if ($normalizedVolume >= 1001) {
+        return '>1L';
     }
-    return $displaySize;
+    
+    if ($normalizedVolume == 1000) {
+        return '1L W';
+    }
+    
+    $wineMap = [
+        750 => '750 W',
+        700 => '700 W',
+        500 => '500 W',
+        375 => '375 W',
+        330 => '330 W',
+        250 => '250 W',
+        180 => '180 W',
+        100 => '100 W'
+    ];
+    
+    return $wineMap[$normalizedVolume] ?? null;
+}
+
+// Helper function to normalize volume value (handles 1000ml = 1L)
+function normalizeVolume($volume) {
+    $v = floatval($volume);
+    // If volume is between 999 and 1001, treat as 1000 (1L)
+    if ($v >= 999 && $v <= 1001) {
+        return 1000;
+    }
+    return $v;
 }
 ?>
