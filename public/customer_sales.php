@@ -1,17 +1,16 @@
 <?php
 session_start();
-
-// Include necessary functions
-require_once 'drydays_functions.php';
-require_once 'license_functions.php';
-require_once 'cash_memo_functions.php';
+require_once 'drydays_functions.php'; // Single include
+require_once 'license_functions.php'; // ADDED: Include license 
+require_once 'cash_memo_functions.php'; // ADDED: Include cash memo functions
 
 // Logging function
 function logMessage($message, $level = 'INFO') {
-    $logFile = '../logs/customer_sales_' . date('Y-m-d') . '.log';
+    $logFile = '../logs/sales_' . date('Y-m-d') . '.log';
     $timestamp = date('Y-m-d H:i:s');
     $logMessage = "[$timestamp] [$level] $message" . PHP_EOL;
     
+    // Create logs directory if it doesn't exist
     $logDir = dirname($logFile);
     if (!is_dir($logDir)) {
         mkdir($logDir, 0755, true);
@@ -20,7 +19,7 @@ function logMessage($message, $level = 'INFO') {
     file_put_contents($logFile, $logMessage, FILE_APPEND | LOCK_EX);
 }
 
-// Function to log array data
+// Function to log array data in a readable format
 function logArray($data, $title = 'Array data') {
     ob_start();
     print_r($data);
@@ -28,9 +27,409 @@ function logArray($data, $title = 'Array data') {
     logMessage("$title:\n$output");
 }
 
-// DEBUG: Log page access
-logMessage("=== CUSTOMER SALES PAGE ACCESS ===");
+// DEBUG: Log page access and basic info
+logMessage("=== PAGE ACCESS ===");
 logMessage("Request method: " . $_SERVER['REQUEST_METHOD']);
+logMessage("Search term: '" . ($_GET['search'] ?? '') . "'");
+logMessage("Current session ID: " . session_id());
+
+// Function to clear session quantities
+function clearSessionQuantities() {
+    if (isset($_SESSION['sale_quantities'])) {
+        unset($_SESSION['sale_quantities']);
+        logMessage("Session quantities cleared");
+    }
+}
+
+// ============================================================================
+// CUSTOMER MANAGEMENT FUNCTIONS
+// ============================================================================
+
+/**
+ * Get all customers from database
+ */
+function getAllCustomers($conn) {
+    $customers = [];
+    $query = "SELECT LCODE, LHEAD FROM tbllheads WHERE GCODE = 32 ORDER BY LHEAD";
+    $result = $conn->query($query);
+    if ($result && $result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            $customers[$row['LCODE']] = $row['LHEAD'];
+        }
+    }
+    return $customers;
+}
+
+/**
+ * Get next customer LCODE
+ */
+function getNextCustomerCode($conn) {
+    $query = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE = 32";
+    $result = $conn->query($query);
+    if ($result && $result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return ($row['max_code'] ? $row['max_code'] + 1 : 1);
+    }
+    return 1;
+}
+
+/**
+ * Create new customer
+ */
+function createNewCustomer($conn, $customerName) {
+    $customerName = trim($customerName);
+    if (empty($customerName)) {
+        return false;
+    }
+    
+    // Check if customer already exists
+    $checkQuery = "SELECT LCODE FROM tbllheads WHERE GCODE = 32 AND LHEAD = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    $checkStmt->bind_param("s", $customerName);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
+    
+    if ($checkResult->num_rows > 0) {
+        $row = $checkResult->fetch_assoc();
+        $checkStmt->close();
+        logMessage("Customer already exists: $customerName (ID: {$row['LCODE']})", 'INFO');
+        return $row['LCODE'];
+    }
+    $checkStmt->close();
+    
+    // Get next customer code
+    $newCode = getNextCustomerCode($conn);
+    
+    // Insert new customer
+    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
+    $insertStmt = $conn->prepare($insertQuery);
+    $insertStmt->bind_param("is", $newCode, $customerName);
+    
+    if ($insertStmt->execute()) {
+        logMessage("New customer created: $customerName (ID: $newCode)", 'INFO');
+        $insertStmt->close();
+        return $newCode;
+    }
+    
+    $insertStmt->close();
+    return false;
+}
+
+/**
+ * Get customer-specific prices
+ */
+function getCustomerPrices($conn, $customerCode) {
+    $prices = [];
+    if (!$customerCode) {
+        return $prices;
+    }
+    
+    $query = "SELECT Code, WPrice FROM tblcustomerprices WHERE LCode = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("i", $customerCode);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    while ($row = $result->fetch_assoc()) {
+        $prices[$row['Code']] = $row['WPrice'];
+    }
+    $stmt->close();
+    
+    return $prices;
+}
+
+/**
+ * Record customer sale in tblcustomersales
+ */
+function recordCustomerSale($conn, $billNo, $billDate, $customerCode, $itemCode, $itemName, $itemSize, $rate, $quantity, $amount, $compId, $userId) {
+    // First, check if SaleID needs to be auto-generated
+    // Check if SaleID is auto_increment or if we need to provide a value
+    $check_query = "SHOW COLUMNS FROM tblcustomersales WHERE Field = 'SaleID'";
+    $result = $conn->query($check_query);
+    $column_info = $result->fetch_assoc();
+    
+    $query = "INSERT INTO tblcustomersales (BillNo, BillDate, LCode, ItemCode, ItemName, ItemSize, Rate, Quantity, Amount, CompID, UserID, CreatedDate) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+    
+    // Check if we need to handle SaleID manually
+    if ($column_info && stripos($column_info['Extra'], 'auto_increment') === false) {
+        // SaleID is NOT auto_increment, need to get max value and add 1
+        $max_query = "SELECT MAX(SaleID) as max_id FROM tblcustomersales";
+        $max_result = $conn->query($max_query);
+        $max_row = $max_result->fetch_assoc();
+        $new_sale_id = ($max_row['max_id'] ?? 0) + 1;
+        
+        $query = "INSERT INTO tblcustomersales (SaleID, BillNo, BillDate, LCode, ItemCode, ItemName, ItemSize, Rate, Quantity, Amount, CompID, UserID, CreatedDate) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+        
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            logMessage("Failed to prepare customer sale statement: " . $conn->error, 'ERROR');
+            return false;
+        }
+        
+        $stmt->bind_param("iisissddiiii", $new_sale_id, $billNo, $billDate, $customerCode, $itemCode, $itemName, $itemSize, $rate, $quantity, $amount, $compId, $userId);
+    } else {
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            logMessage("Failed to prepare customer sale statement: " . $conn->error, 'ERROR');
+            return false;
+        }
+        
+        $stmt->bind_param("isissddiiii", $billNo, $billDate, $customerCode, $itemCode, $itemName, $itemSize, $rate, $quantity, $amount, $compId, $userId);
+    }
+    
+    if (!$stmt->execute()) {
+        logMessage("Failed to record customer sale: " . $stmt->error, 'ERROR');
+        logMessage("BillNo: $billNo, BillDate: $billDate, Customer: $customerCode, Item: $itemCode, Qty: $quantity", 'ERROR');
+        $stmt->close();
+        return false;
+    }
+    
+    $affected = $stmt->affected_rows;
+    $stmt->close();
+    
+    if ($affected > 0) {
+        logMessage("Customer sale recorded: BillNo=$billNo, Customer=$customerCode, Item=$itemCode, Qty=$quantity", 'INFO');
+        return true;
+    } else {
+        logMessage("No rows inserted for customer sale - possibly duplicate or constraint issue", 'WARNING');
+        return false;
+    }
+}
+
+/**
+ * Extract bottle size from item details
+ */
+function extractItemSize($details, $details2) {
+    if ($details2) {
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details2, $matches);
+        if ($literMatch) {
+            $volume = floatval($matches[1]);
+            return $volume >= 1 ? $volume . 'L' : ($volume * 1000) . 'ML';
+        }
+        
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details2, $matches);
+        if ($mlMatch) {
+            return $matches[1] . 'ML';
+        }
+    }
+    
+    if ($details) {
+        if (stripos($details, 'QUART') !== false) return '750ML';
+        if (stripos($details, 'PINT') !== false) return '375ML';
+        if (stripos($details, 'NIP') !== false) return '90ML';
+        
+        $literMatch = preg_match('/(\d+\.?\d*)\s*L\b/i', $details, $matches);
+        if ($literMatch) {
+            $volume = floatval($matches[1]);
+            return $volume >= 1 ? $volume . 'L' : ($volume * 1000) . 'ML';
+        }
+        
+        $mlMatch = preg_match('/(\d+)\s*ML\b/i', $details, $matches);
+        if ($mlMatch) {
+            return $matches[1] . 'ML';
+        }
+    }
+    
+    return '';
+}
+
+// Enhanced stock validation function
+function validateStock($current_stock, $requested_qty, $item_code) {
+    if ($requested_qty <= 0) return true;
+    
+    if ($requested_qty > $current_stock) {
+        logMessage("Stock validation failed for item $item_code: Available: $current_stock, Requested: $requested_qty", 'WARNING');
+        return false;
+    }
+    
+    // Additional safety check - prevent negative values
+    if ($current_stock - $requested_qty < 0) {
+        logMessage("Negative closing balance prevented for item $item_code", 'WARNING');
+        return false;
+    }
+    
+    return true;
+}
+
+// ============================================================================
+// ENHANCED CHRONOLOGICAL INTEGRITY CHECK: GLOBAL BLOCKING
+// ============================================================================
+
+/**
+ * Check if ANY sales exist for ANY item within or after the given date range
+ * Returns array with allowed dates (after latest global sale)
+ */
+function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
+    // Query to get all sales in or after the date range for ANY item
+    $query = "SELECT DISTINCT sh.BILL_DATE
+              FROM tblsaleheader sh
+              WHERE sh.BILL_DATE >= ? 
+              AND sh.COMP_ID = ?
+              ORDER BY sh.BILL_DATE ASC";
+    
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("si", $start_date, $comp_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    $existing_dates = [];
+    while ($row = $result->fetch_assoc()) {
+        $existing_dates[] = $row['BILL_DATE'];
+    }
+    $stmt->close();
+    
+    // Create date range array
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day'); // Include end date
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
+    }
+    
+    if (!empty($existing_dates)) {
+        // Find the latest existing sale date
+        $latest_existing = max($existing_dates);
+        $latest_existing_date = new DateTime($latest_existing);
+        
+        // Determine which dates are available (after latest sale date)
+        $available_dates = [];
+        $unavailable_dates = [];
+        
+        foreach ($all_dates as $date) {
+            $current_date = new DateTime($date);
+            if ($current_date > $latest_existing_date) {
+                $available_dates[] = $date;
+            } else {
+                $unavailable_dates[] = $date;
+            }
+        }
+        
+        logMessage("GLOBAL CHECK: Latest existing sale: $latest_existing", 'INFO');
+        logMessage("Available dates: " . implode(', ', $available_dates), 'INFO');
+        logMessage("Unavailable dates (has existing sales): " . implode(', ', $unavailable_dates), 'INFO');
+        
+        return [
+            'restricted' => !empty($unavailable_dates), // Restricted if ANY dates are unavailable
+            'latest_existing_sale' => $latest_existing,
+            'available_dates' => $available_dates,
+            'unavailable_dates' => $unavailable_dates,
+            'all_existing_dates' => $existing_dates,
+            'message' => !empty($unavailable_dates) ? 
+                "Global sales exist on: " . implode(', ', $unavailable_dates) . ". Available dates: " . implode(', ', $available_dates) :
+                "No sales restrictions"
+        ];
+    }
+    
+    return [
+        'restricted' => false,
+        'latest_existing_sale' => null,
+        'available_dates' => $all_dates, // All dates available if no existing sales
+        'unavailable_dates' => [],
+        'all_existing_dates' => [],
+        'message' => "No global sales restrictions"
+    ];
+}
+
+// ============================================================================
+// DRY DAY VALIDATION
+// ============================================================================
+
+/**
+ * Check if any dry days fall within the date range
+ */
+function checkDryDaysInRange($conn, $start_date, $end_date) {
+    $dryDaysManager = new DryDaysManager($conn);
+    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
+    
+    if (!empty($dry_days)) {
+        logMessage("DRY DAYS FOUND: " . implode(', ', array_keys($dry_days)), 'INFO');
+    }
+    
+    return [
+        'has_dry_days' => !empty($dry_days),
+        'dry_days' => $dry_days,
+        'dry_dates' => array_keys($dry_days),
+        'message' => !empty($dry_days) ? 
+            "Dry days found: " . implode(', ', array_keys($dry_days)) : 
+            "No dry days in selected range"
+    ];
+}
+
+/**
+ * Validate both global sales and dry days restrictions
+ */
+function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
+    // Check global sales restrictions
+    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
+    
+    // Check dry days
+    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
+    
+    // Combine restrictions - a date is unavailable if it has sales OR is a dry day
+    $all_unavailable_dates = array_merge(
+        $global_check['unavailable_dates'],
+        $dry_days_check['dry_dates']
+    );
+    
+    // Remove duplicates
+    $all_unavailable_dates = array_unique($all_unavailable_dates);
+    sort($all_unavailable_dates);
+    
+    // Calculate available dates (all dates minus unavailable)
+    $begin = new DateTime($start_date);
+    $end = new DateTime($end_date);
+    $end = $end->modify('+1 day');
+    $interval = new DateInterval('P1D');
+    $date_range = new DatePeriod($begin, $interval, $end);
+    
+    $all_dates = [];
+    foreach ($date_range as $date) {
+        $all_dates[] = $date->format("Y-m-d");
+    }
+    
+    $available_dates = array_diff($all_dates, $all_unavailable_dates);
+    $available_dates = array_values($available_dates); // Re-index
+    
+    // Prepare messages
+    $messages = [];
+    if ($global_check['restricted']) {
+        $messages[] = "Existing sales on: " . implode(', ', $global_check['unavailable_dates']);
+    }
+    if ($dry_days_check['has_dry_days']) {
+        $messages[] = "Dry days: " . implode(', ', $dry_days_check['dry_dates']);
+    }
+    
+    return [
+        'restricted' => !empty($all_unavailable_dates),
+        'global_restricted' => $global_check['restricted'],
+        'has_dry_days' => $dry_days_check['has_dry_days'],
+        'latest_existing_sale' => $global_check['latest_existing_sale'],
+        'available_dates' => $available_dates,
+        'unavailable_dates' => $all_unavailable_dates,
+        'unavailable_sales_dates' => $global_check['unavailable_dates'],
+        'dry_dates' => $dry_days_check['dry_dates'],
+        'dry_days_info' => $dry_days_check['dry_days'],
+        'message' => !empty($messages) ? implode(' | ', $messages) : "No restrictions",
+        'full_message' => !empty($messages) ? 
+            "<strong>Date Range Restrictions:</strong><br>" . implode('<br>', $messages) . 
+            "<br><strong>Available dates:</strong> " . (empty($available_dates) ? 'None' : implode(', ', $available_dates)) :
+            "No date range restrictions"
+    ];
+}
+
+/**
+ * NEW: Get unavailable dates due to global sales and dry days
+ */
+function getUnavailableDates($conn, $start_date, $end_date, $comp_id) {
+    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+    return $restrictions['unavailable_dates'];
+}
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -47,7 +446,7 @@ if(!isset($_SESSION['CompID']) || !isset($_SESSION['FIN_YEAR_ID'])) {
 include_once "../config/db.php"; // MySQLi connection in $conn
 
 // ============================================================================
-// LICENSE-BASED FILTERING
+// LICENSE-BASED FILTERING - ADDED FROM ITEM_MASTER.PHP
 // ============================================================================
 
 // Get company's license type and available classes
@@ -62,93 +461,70 @@ foreach ($available_classes as $class) {
 }
 
 // ============================================================================
-// CUSTOMER MANAGEMENT
+// CUSTOMER MANAGEMENT - GET CUSTOMERS AND SELECTED CUSTOMER
 // ============================================================================
 
-// Fetch customers from tbllheads
-$customers = [];
-$customerQuery = "SELECT LCODE, LHEAD FROM tbllheads WHERE GCODE=32 ORDER BY LHEAD";
-$customerResult = $conn->query($customerQuery);
-if ($customerResult) {
-    while ($row = $customerResult->fetch_assoc()) {
-        $customers[$row['LCODE']] = $row['LHEAD'];
-    }
-} else {
-    logMessage("Error fetching customers: " . $conn->error, 'ERROR');
-}
+// Get all customers
+$customers = getAllCustomers($conn);
 
-// Handle customer selection/creation
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Handle customer selection/creation
-    if (isset($_POST['customer_field'])) {
-        $customerField = trim($_POST['customer_field']);
-
-        if (!empty($customerField)) {
-            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
-            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
-                // Extract customer name (remove "new:" prefix if present)
-                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
-
-                if (!empty($customerName)) {
-                    // Get the next available LCODE for GCODE=32
-                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
-                    $maxResult = $conn->query($maxCodeQuery);
-                    $maxCode = 1;
-                    if ($maxResult && $maxResult->num_rows > 0) {
-                        $maxData = $maxResult->fetch_assoc();
-                        $maxCode = $maxData['max_code'] + 1;
-                    }
-
-                    // Insert new customer
-                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
-                    $stmt = $conn->prepare($insertQuery);
-                    $stmt->bind_param("is", $maxCode, $customerName);
-
-                    if ($stmt->execute()) {
-                        $_SESSION['selected_customer'] = $maxCode;
-                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
-                        logMessage("New customer created: $customerName (ID: $maxCode)", 'INFO');
-
-                        // Refresh customers list
-                        $customerResult = $conn->query($customerQuery);
-                        $customers = [];
-                        if ($customerResult) {
-                            while ($row = $customerResult->fetch_assoc()) {
-                                $customers[$row['LCODE']] = $row['LHEAD'];
-                            }
-                        }
-                    } else {
-                        $_SESSION['error_message'] = "Error creating customer: " . $conn->error;
-                        logMessage("Error creating customer: " . $conn->error, 'ERROR');
-                    }
-                    $stmt->close();
+// Handle customer selection/creation from POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['customer_field'])) {
+    $customerField = trim($_POST['customer_field']);
+    
+    if (!empty($customerField)) {
+        // Check if it's a new customer (starts with "new:" or not numeric)
+        if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
+            // Extract customer name (remove "new:" prefix)
+            $customerName = preg_replace('/^new:\s*/i', '', $customerField);
+            $customerName = trim($customerName);
+            
+            if (!empty($customerName)) {
+                $customerCode = createNewCustomer($conn, $customerName);
+                if ($customerCode) {
+                    $_SESSION['selected_customer'] = $customerCode;
+                    $_SESSION['selected_customer_name'] = $customerName;
+                    $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
+                    logMessage("New customer created: $customerName (ID: $customerCode)", 'INFO');
+                    
+                    // Refresh customers list
+                    $customers = getAllCustomers($conn);
+                } else {
+                    $_SESSION['error_message'] = "Error creating customer. Please try again.";
                 }
             } else {
-                // It's an existing customer code
-                $customerCode = intval($customerField);
-                if (array_key_exists($customerCode, $customers)) {
-                    $_SESSION['selected_customer'] = $customerCode;
-                    $_SESSION['success_message'] = "Customer selected successfully!";
-                    logMessage("Customer selected: ID $customerCode", 'INFO');
-                } else {
-                    $_SESSION['error_message'] = "Invalid customer code!";
-                    logMessage("Invalid customer code: $customerCode", 'WARNING');
-                }
+                $_SESSION['error_message'] = "Please enter a valid customer name.";
             }
         } else {
-            // Empty field is not allowed - show error
-            $_SESSION['error_message'] = "Please select a customer or create a new one";
-            logMessage("Empty customer field submitted", 'WARNING');
+            // It's an existing customer code
+            $customerCode = intval($customerField);
+            if (array_key_exists($customerCode, $customers)) {
+                $_SESSION['selected_customer'] = $customerCode;
+                $_SESSION['selected_customer_name'] = $customers[$customerCode];
+                $_SESSION['success_message'] = "Customer selected: " . $customers[$customerCode];
+                logMessage("Customer selected: ID $customerCode - {$customers[$customerCode]}", 'INFO');
+            } else {
+                $_SESSION['error_message'] = "Invalid customer selected. Please choose from the list.";
+            }
         }
-
-        // Redirect to avoid form resubmission
-        header("Location: customer_sales.php");
-        exit;
+    } else {
+        $_SESSION['error_message'] = "Please select a customer or create a new one.";
     }
+    
+    // Redirect to avoid form resubmission
+    header("Location: " . $_SERVER['PHP_SELF'] . "?" . http_build_query($_GET));
+    exit;
 }
 
 // Get selected customer from session
 $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
+$selectedCustomerName = isset($_SESSION['selected_customer_name']) ? $_SESSION['selected_customer_name'] : '';
+
+// Get customer-specific prices if customer is selected
+$customerPrices = [];
+if ($selectedCustomer) {
+    $customerPrices = getCustomerPrices($conn, $selectedCustomer);
+    logMessage("Loaded " . count($customerPrices) . " customer-specific prices for customer ID: $selectedCustomer", 'INFO');
+}
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION: DATABASE INDEXING
@@ -172,7 +548,6 @@ foreach ($index_queries as $query) {
 // Include volume limit utilities
 include_once "volume_limit_utils.php";
 include_once "stock_functions.php";
-include_once "components/financial_year.php";
 
 // Mode selection (default Foreign Liquor = 'F')
 $mode = isset($_GET['mode']) ? $_GET['mode'] : 'F';
@@ -183,37 +558,22 @@ $sequence_type = isset($_GET['sequence_type']) ? $_GET['sequence_type'] : 'user_
 // Search keyword
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Date selection (default to current day)
-$sale_date = isset($_GET['sale_date']) ? $_GET['sale_date'] : date('Y-m-d');
+// Date range selection - Default to financial year range
+$fin_year_start = isset($_SESSION['FIN_YEAR_START']) ? $_SESSION['FIN_YEAR_START'] : date('Y-m-d');
+$fin_year_end = isset($_SESSION['FIN_YEAR_END']) ? $_SESSION['FIN_YEAR_END'] : date('Y-m-d');
 
-// Date range selection (for customer sales with date range)
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
-$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
-
-// Ensure $_GET has the correct date parameters for pagination
-$_GET['start_date'] = $start_date;
-$_GET['end_date'] = $end_date;
-
-// Remove old sale_date from GET if present
-if (isset($_GET['sale_date'])) {
-    unset($_GET['sale_date']);
-}
-
-// Calculate days in range
-$days_count = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24) + 1;
-
-// If single date is used, set range to that date
-if (!isset($_GET['start_date']) && !isset($_GET['end_date'])) {
-    $start_date = $sale_date;
-    $end_date = $sale_date;
-    $days_count = 1;
-}
-
-// For backward compatibility: if only sale_date is provided, use it as both start and end
-if (isset($_GET['sale_date']) && !isset($_GET['start_date'])) {
-    $start_date = $_GET['sale_date'];
-    $end_date = $_GET['sale_date'];
-    $days_count = 1;
+// If no dates provided, default to TODAY's date
+// Otherwise use provided dates (maintains backward compatibility)
+if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
+    $start_date = date('Y-m-d'); // Default to today
+    $end_date = date('Y-m-d');   // Default to today
+} else {
+    $start_date = $_GET['start_date'];
+    $end_date = $_GET['end_date'];
+    
+    // Validate dates are within financial year
+    if ($start_date < $fin_year_start) $start_date = $fin_year_start;
+    if ($end_date > $fin_year_end) $end_date = $fin_year_end;
 }
 
 // Get company ID
@@ -222,6 +582,7 @@ $current_stock_column = "Current_Stock" . $comp_id;
 $opening_stock_column = "Opening_Stock" . $comp_id;
 
 // Check if the stock columns exist, if not create them
+// Cache this check in session to avoid repeated queries
 if (!isset($_SESSION['stock_columns_checked'])) {
     $check_column_query = "SHOW COLUMNS FROM tblitem_stock LIKE '$current_stock_column'";
     $column_result = $conn->query($check_column_query);
@@ -237,38 +598,25 @@ if (!isset($_SESSION['stock_columns_checked'])) {
     $_SESSION['stock_columns_checked'] = true;
 }
 
-// Calculate the day number for the sale_date to get closing balance
-$sale_day = date('d', strtotime($start_date));
-$closing_column = "DAY_" . sprintf('%02d', $sale_day) . "_CLOSING";
-$sale_month = date('Y-m', strtotime($start_date));
+// NEW: Calculate the day number for the end_date to get closing balance
+$end_date_day = date('d', strtotime($end_date));
+$closing_column = "DAY_" . sprintf('%02d', $end_date_day) . "_CLOSING";
+$end_date_month = date('Y-m', strtotime($end_date));
 
-// Determine which daily stock table to use based on start_date
-$current_month = date('Y-m');
-$sale_month_year = date('m_Y', strtotime($start_date));
+// NEW: Determine which daily stock table to use based on end_date
+$current_month = date('Y-m'); // Current month in "YYYY-MM" format
+$end_date_month_year = date('m_Y', strtotime($end_date)); // e.g., "12_2025"
 
-if ($sale_month === $current_month) {
+if ($end_date_month === $current_month) {
     // Use current month table (no suffix)
     $daily_stock_table = "tbldailystock_" . $comp_id;
     $table_suffix = "";
 } else {
     // Use archived month table (with suffix mm_yyyy)
-    $sale_month_short = date('m', strtotime($start_date));
-    $sale_year_short = date('y', strtotime($start_date));
-    $daily_stock_table = "tbldailystock_" . $comp_id . "_" . $sale_month_short . "_" . $sale_year_short;
-    $table_suffix = "_" . $sale_month_short . "_" . $sale_year_short;
-}
-
-// Validate date range restrictions
-$restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
-$unavailable_dates_global = $restrictions['unavailable_dates'];
-
-// Get all dates in range for distribution
-$all_dates_in_range = [];
-$current = strtotime($start_date);
-$end = strtotime($end_date);
-while ($current <= $end) {
-    $all_dates_in_range[] = date('Y-m-d', $current);
-    $current = strtotime('+1 day', $current);
+    $end_date_month_short = date('m', strtotime($end_date)); // e.g., "12"
+    $end_date_year_short = date('y', strtotime($end_date)); // e.g., "25"
+    $daily_stock_table = "tbldailystock_" . $comp_id . "_" . $end_date_month_short . "_" . $end_date_year_short;
+    $table_suffix = "_" . $end_date_month_short . "_" . $end_date_year_short;
 }
 
 // Build the order clause based on sequence type
@@ -285,7 +633,7 @@ if ($sequence_type === 'system_defined') {
 // ============================================================================
 // PERFORMANCE OPTIMIZATION: PAGINATION WITH LICENSE FILTERING
 // ============================================================================
-$items_per_page = 50;
+$items_per_page = 50; // Adjust based on your needs
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $items_per_page;
 
@@ -295,15 +643,159 @@ $table_result = $conn->query($check_table_query);
 $table_exists = $table_result->num_rows > 0;
 
 if (!$table_exists) {
-    // Table doesn't exist, create it
-    createDailyStockTable($conn, $daily_stock_table);
-    $table_exists = true;
+    // Table doesn't exist, create it with proper structure
+    $create_table_query = "CREATE TABLE IF NOT EXISTS $daily_stock_table (
+        ID INT(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        ITEM_CODE VARCHAR(50) NOT NULL,
+        STK_MONTH VARCHAR(7) NOT NULL,
+        DAY_01_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_01_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_02_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_03_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_04_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_05_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_06_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_07_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_08_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_09_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_10_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_11_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_12_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_13_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_14_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_15_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_16_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_17_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_18_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_19_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_20_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_21_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_22_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_23_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_24_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_25_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_26_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_27_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_28_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_29_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_30_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_OPEN DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_PURCHASE DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_SALES DECIMAL(10,3) DEFAULT 0.000,
+        DAY_31_CLOSING DECIMAL(10,3) DEFAULT 0.000,
+        LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_item_month (ITEM_CODE, STK_MONTH),
+        KEY idx_item_code (ITEM_CODE),
+        KEY idx_stk_month (STK_MONTH)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    
+    if ($conn->query($create_table_query)) {
+        logMessage("Created daily stock table: $daily_stock_table");
+        $table_exists = true;
+        
+        // Initialize the table with items from current month if it's an archive table
+        if ($end_date_month !== $current_month) {
+            initializeArchiveTable($conn, $comp_id, $end_date_month, $daily_stock_table);
+        }
+    } else {
+        logMessage("Failed to create daily stock table: " . $conn->error, 'ERROR');
+    }
 }
 
 // MODIFIED: Get total count for pagination with license filtering AND stock > 0 condition
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
+    // UPDATED: Count query that checks for stock > 0 - CORRECTED FILTER
     $count_query = "SELECT COUNT(DISTINCT im.CODE) as total 
                     FROM tblitemmaster im
                     LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
@@ -312,9 +804,10 @@ if (!empty($allowed_classes) && $table_exists) {
                     AND im.CLASS IN ($class_placeholders)
                     AND COALESCE(ds.$closing_column, 0) > 0";
     
-    $count_params = array_merge([$sale_month, $mode], $allowed_classes);
+    $count_params = array_merge([$end_date_month, $mode], $allowed_classes);
     $count_types = str_repeat('s', count($count_params));
 } else {
+    // If no classes allowed or table doesn't exist, show empty result
     $count_query = "SELECT COUNT(*) as total FROM tblitemmaster im WHERE 1 = 0";
     $count_params = [];
     $count_types = "";
@@ -340,6 +833,7 @@ $count_stmt->close();
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     
+    // UPDATED: Query that fetches closing balance from daily stock table for end_date - WITH stock > 0 filter
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
@@ -350,9 +844,10 @@ if (!empty($allowed_classes) && $table_exists) {
               AND im.CLASS IN ($class_placeholders)
               AND COALESCE(ds.$closing_column, 0) > 0";
     
-    $params = array_merge([$sale_month, $mode], $allowed_classes);
+    $params = array_merge([$end_date_month, $mode], $allowed_classes);
     $types = str_repeat('s', count($params));
 } else {
+    // If no classes allowed or table doesn't exist, show empty result
     $query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, 
                      COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
                      ds.STK_MONTH as stock_month
@@ -360,7 +855,7 @@ if (!empty($allowed_classes) && $table_exists) {
               LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
                   AND ds.STK_MONTH = ?
               WHERE 1 = 0";
-    $params = [$sale_month];
+    $params = [$end_date_month];
     $types = "s";
 }
 
@@ -389,40 +884,69 @@ $stmt->close();
 $total_pages = ceil($total_items / $items_per_page);
 
 // ============================================================================
-// SESSION QUANTITY PRESERVATION
+// FIXED: SESSION QUANTITY PRESERVATION WITH PAGINATION
 // ============================================================================
 
 // Initialize session if not exists
-if (!isset($_SESSION['customer_sale_quantities'])) {
-    $_SESSION['customer_sale_quantities'] = [];
+if (!isset($_SESSION['sale_quantities'])) {
+    $_SESSION['sale_quantities'] = [];
 }
 
 // Handle form submission to update session quantities
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sale_qty'])) {
-    // Update date range from POST
-    if (isset($_POST['start_date'])) {
-        $start_date = $_POST['start_date'];
-    }
-    if (isset($_POST['end_date'])) {
-        $end_date = $_POST['end_date'];
-    }
-    
-    // Recalculate days count
-    $days_count = (strtotime($end_date) - strtotime($start_date)) / (60 * 60 * 24) + 1;
-    
     foreach ($_POST['sale_qty'] as $item_code => $qty) {
         $qty_val = intval($qty);
         if ($qty_val > 0) {
-            $_SESSION['customer_sale_quantities'][$item_code] = $qty_val;
+            $_SESSION['sale_quantities'][$item_code] = $qty_val;
         } else {
-            unset($_SESSION['customer_sale_quantities'][$item_code]);
+            // Remove zero quantities to keep session clean
+            unset($_SESSION['sale_quantities'][$item_code]);
         }
     }
     
-    logMessage("Customer session quantities updated: " . count($_SESSION['customer_sale_quantities']) . " items");
+    // Log the update
+    logMessage("Session quantities updated from POST: " . count($_SESSION['sale_quantities']) . " items");
 }
 
-// MODIFIED: Get ALL items data for JavaScript from ALL modes
+// Function to initialize archive table with data from current month
+function initializeArchiveTable($conn, $comp_id, $archive_month, $archive_table) {
+    $current_table = "tbldailystock_" . $comp_id;
+    
+    // Check if current table exists
+    $check_current = "SHOW TABLES LIKE '$current_table'";
+    $current_exists = $conn->query($check_current)->num_rows > 0;
+    
+    if (!$current_exists) {
+        logMessage("Current table $current_table doesn't exist, cannot initialize archive", 'WARNING');
+        return false;
+    }
+    
+    // Copy structure and data from current table for the previous month end
+    $prev_month = date('Y-m', strtotime($archive_month . ' -1 month'));
+    
+    // Get items from current table that have stock
+    $copy_query = "INSERT INTO $archive_table (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING)
+                   SELECT ITEM_CODE, ?, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING 
+                   FROM $current_table 
+                   WHERE STK_MONTH = ?";
+    
+    $copy_stmt = $conn->prepare($copy_query);
+    $copy_stmt->bind_param("ss", $archive_month, $prev_month);
+    
+    if ($copy_stmt->execute()) {
+        $affected_rows = $copy_stmt->affected_rows;
+        logMessage("Initialized archive table $archive_table with $affected_rows items from $prev_month");
+        $copy_stmt->close();
+        return true;
+    } else {
+        logMessage("Failed to initialize archive table: " . $copy_stmt->error, 'ERROR');
+        $copy_stmt->close();
+        return false;
+    }
+}
+
+// MODIFIED: Get ALL items data for JavaScript from ALL modes for Total Sales Summary
+// NEW: Also get stock from daily stock table for end_date - WITH stock > 0 filter
 if (!empty($allowed_classes) && $table_exists) {
     $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.CLASS, im.LIQ_FLAG, im.RPRICE,
@@ -435,7 +959,7 @@ if (!empty($allowed_classes) && $table_exists) {
                         AND COALESCE(ds.$closing_column, 0) > 0";
     
     $all_items_stmt = $conn->prepare($all_items_query);
-    $all_items_params = array_merge([$sale_month], $allowed_classes);
+    $all_items_params = array_merge([$end_date_month], $allowed_classes);
     $all_items_types = str_repeat('s', count($all_items_params));
     $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
 } else {
@@ -448,7 +972,7 @@ if (!empty($allowed_classes) && $table_exists) {
                         WHERE 1 = 0";
     
     $all_items_stmt = $conn->prepare($all_items_query);
-    $all_items_params = [$sale_month];
+    $all_items_params = [$end_date_month];
     $all_items_types = "s";
     $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
 }
@@ -461,113 +985,103 @@ while ($row = $all_items_result->fetch_assoc()) {
 }
 $all_items_stmt->close();
 
+// Create date range array
+$begin = new DateTime($start_date);
+$end = new DateTime($end_date);
+$end = $end->modify('+1 day'); // Include end date
+
+$interval = new DateInterval('P1D');
+$date_range = new DatePeriod($begin, $interval, $end);
+
+$date_array = [];
+foreach ($date_range as $date) {
+    $date_array[] = $date->format("Y-m-d");
+}
+$days_count = count($date_array);
+
 // ============================================================================
-// DAILY STOCK DATA FOR DISTRIBUTION (like sale_for_date_range.php)
+// NEW: FETCH DAILY STOCK DATA FOR EACH ITEM FOR STOCK-AWARE DISTRIBUTION
 // ============================================================================
 $daily_stock_for_js = [];
-$dates_by_month = [];
+$dates_by_month = []; // Initialize to avoid undefined variable error
 
-// Group dates by month for efficient querying
-foreach ($all_dates_in_range as $date) {
-    $month = date('Y-m', strtotime($date));
-    if (!isset($dates_by_month[$month])) {
-        $dates_by_month[$month] = [];
+// Only fetch if we have items and the date range is valid
+if (!empty($items) && !empty($date_array)) {
+    // Group dates by month to optimize queries
+    $dates_by_month = [];
+    foreach ($date_array as $date) {
+        $month_year = date('Y-m', strtotime($date));
+        if (!isset($dates_by_month[$month_year])) {
+            $dates_by_month[$month_year] = [];
+        }
+        $dates_by_month[$month_year][] = $date;
     }
-    $dates_by_month[$month][] = $date;
-}
-
-// Fetch daily stock for each item for each date in range
-foreach ($all_items_data as $item_code => $item) {
-    $daily_stock_for_js[$item_code] = [];
     
-    foreach ($dates_by_month as $month => $month_dates) {
-        // Determine which table to query for this month
-        $month_year_short = date('m_y', strtotime($month . '-01'));
-        $current_month = date('Y-m');
+    // Fetch stock for each item
+    foreach ($items as $item) {
+        $item_code = $item['CODE'];
+        $daily_stock_for_js[$item_code] = [];
         
-        if ($month === $current_month) {
-            $stock_table = "tbldailystock_" . $comp_id;
-        } else {
-            $stock_table = "tbldailystock_" . $comp_id . "_" . $month_year_short;
-        }
-        
-        // Check if table exists
-        $table_check = "SHOW TABLES LIKE '$stock_table'";
-        $table_result = $conn->query($table_check);
-        
-        if ($table_result->num_rows == 0) {
-            // Table doesn't exist, set all dates in this month to 0
-            foreach ($month_dates as $date) {
-                $daily_stock_for_js[$item_code][$date] = 0;
+        // For each month, fetch stock data
+        foreach ($dates_by_month as $month_year => $month_dates) {
+            // Determine which table to use for this month
+            $current_month = date('Y-m');
+            if ($month_year === $current_month) {
+                $stock_table = "tbldailystock_" . $comp_id;
+            } else {
+                $month_short = date('m', strtotime($month_year . '-01'));
+                $year_short = date('y', strtotime($month_year . '-01'));
+                $stock_table = "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
             }
-            continue;
-        }
-        
-        // Query stock for each date in this month
-        foreach ($month_dates as $date) {
-            $day = sprintf('%02d', date('d', strtotime($date)));
-            $closing_column = "DAY_" . $day . "_CLOSING";
             
-            // Check if column exists
-            $col_check = "SHOW COLUMNS FROM $stock_table LIKE '$closing_column'";
-            $col_result = $conn->query($col_check);
-            
-            if ($col_result->num_rows == 0) {
-                $daily_stock_for_js[$item_code][$date] = 0;
+            // Check if table exists
+            $check_table = $conn->query("SHOW TABLES LIKE '$stock_table'");
+            if ($check_table->num_rows === 0) {
+                // Table doesn't exist - set all dates in this month to 0
+                foreach ($month_dates as $date) {
+                    $daily_stock_for_js[$item_code][$date] = 0;
+                }
                 continue;
             }
             
-            $stock_query = "SELECT $closing_column FROM $stock_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            // Query stock for this item and month
+            $stock_query = "SELECT * FROM $stock_table WHERE ITEM_CODE = ? AND STK_MONTH = ?";
             $stock_stmt = $conn->prepare($stock_query);
-            $stock_stmt->bind_param("ss", $month, $item_code);
+            $stock_stmt->bind_param("ss", $item_code, $month_year);
             $stock_stmt->execute();
             $stock_result = $stock_stmt->get_result();
             
-            if ($stock_row = $stock_result->fetch_assoc()) {
-                $daily_stock_for_js[$item_code][$date] = isset($stock_row[$closing_column]) ? (float)$stock_row[$closing_column] : 0;
-            } else {
-                $daily_stock_for_js[$item_code][$date] = 0;
+            $stock_row = null;
+            if ($row = $stock_result->fetch_assoc()) {
+                $stock_row = $row;
             }
             $stock_stmt->close();
+            
+            // Extract closing stock for each date in this month
+            foreach ($month_dates as $date) {
+                $day_num = sprintf('%02d', date('d', strtotime($date)));
+                $closing_column = "DAY_{$day_num}_CLOSING";
+                
+                if ($stock_row && isset($stock_row[$closing_column])) {
+                    $daily_stock_for_js[$item_code][$date] = (float)$stock_row[$closing_column];
+                } else {
+                    $daily_stock_for_js[$item_code][$date] = 0;
+                }
+            }
         }
     }
+    
+    logMessage("Daily stock data fetched for " . count($daily_stock_for_js) . " items across " . count($dates_by_month) . " months", 'INFO');
 }
-
-logMessage("Daily stock data fetched for " . count($daily_stock_for_js) . " items across " . count($all_dates_in_range) . " dates", 'INFO');
 
 // ============================================================================
-// FUNCTIONS FROM sale_for_date_range.php
+// NEW: GET UNAVAILABLE DATES (GLOBAL SALES + DRY DAYS)
 // ============================================================================
-
-// Function to clear session quantities
-function clearSessionQuantities() {
-    if (isset($_SESSION['customer_sale_quantities'])) {
-        unset($_SESSION['customer_sale_quantities']);
-        logMessage("Customer session quantities cleared");
-    }
-    // Also clear distribution
-    if (isset($_SESSION['customer_item_distribution'])) {
-        unset($_SESSION['customer_item_distribution']);
-        logMessage("Customer item distribution cleared");
-    }
-}
-
-// Enhanced stock validation function
-function validateStock($current_stock, $requested_qty, $item_code) {
-    if ($requested_qty <= 0) return true;
-    
-    if ($requested_qty > $current_stock) {
-        logMessage("Stock validation failed for item $item_code: Available: $current_stock, Requested: $requested_qty", 'WARNING');
-        return false;
-    }
-    
-    if ($current_stock - $requested_qty < 0) {
-        logMessage("Negative closing balance prevented for item $item_code", 'WARNING');
-        return false;
-    }
-    
-    return true;
-}
+$restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+$unavailable_dates_global = $restrictions['unavailable_dates'];
+$dry_dates = $restrictions['dry_dates'];
+$has_restrictions = $restrictions['restricted'];
+$available_dates_global = $restrictions['available_dates'];
 
 // Function to update item stock
 function updateItemStock($conn, $item_code, $qty, $current_stock_column, $opening_stock_column, $fin_year_id) {
@@ -590,43 +1104,106 @@ function updateItemStock($conn, $item_code, $qty, $current_stock_column, $openin
         $insert_stock_query = "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, $opening_stock_column, $current_stock_column) 
                                VALUES (?, ?, ?, ?)";
         $insert_stock_stmt = $conn->prepare($insert_stock_query);
-        $current_stock = -$qty;
+        $current_stock = -$qty; // Negative since we're deducting
         $insert_stock_stmt->bind_param("ssdd", $item_code, $fin_year_id, $current_stock, $current_stock);
         $insert_stock_stmt->execute();
         $insert_stock_stmt->close();
     }
 }
 
-// Function to get the correct daily stock table for a specific date
+// ============================================================================
+// NEW: ENHANCED DISTRIBUTION LOGIC WITH GLOBAL BLOCKING AND DRY DAYS
+// ============================================================================
+
+/**
+ * Enhanced distribution function that handles global restrictions
+ * Distributes only across available dates (after latest global sale, excluding dry days)
+ * Uses RANDOM distribution for each unit
+ */
+function distributeSalesWithGlobalRestrictions($total_qty, $available_dates) {
+    if ($total_qty <= 0 || empty($available_dates)) return [];
+    
+    $available_days_count = count($available_dates);
+    
+    // Initialize distribution array with zeros
+    $distribution = array_fill(0, $available_days_count, 0);
+    
+    // Randomly distribute each unit to a day using mt_rand for better randomness
+    for ($i = 0; $i < $total_qty; $i++) {
+        $random_day = mt_rand(0, $available_days_count - 1);
+        $distribution[$random_day]++;
+    }
+    
+    return $distribution;
+}
+
+/**
+ * Get final distribution array for all dates (with zeros for unavailable dates)
+ */
+function getFullDistribution($total_qty, $date_array, $available_dates) {
+    $full_distribution = array_fill(0, count($date_array), 0);
+    
+    if ($total_qty <= 0 || empty($available_dates)) {
+        return $full_distribution;
+    }
+    
+    // Create date index map
+    $date_index_map = [];
+    foreach ($date_array as $index => $date) {
+        $date_index_map[$date] = $index;
+    }
+    
+    // Get distribution for available dates
+    $distribution = distributeSalesWithGlobalRestrictions($total_qty, $available_dates);
+    
+    // Fill in the distribution
+    foreach ($available_dates as $i => $date) {
+        $index = $date_index_map[$date] ?? null;
+        if ($index !== null) {
+            $full_distribution[$index] = $distribution[$i] ?? 0;
+        }
+    }
+    
+    return $full_distribution;
+}
+
+// Function to get the correct daily stock table for a specific date with validation
 function getDailyStockTableForDate($conn, $comp_id, $date) {
     $current_date = new DateTime();
     $sale_date = new DateTime($date);
     
+    // If sale date is in the future, use current month table
     if ($sale_date > $current_date) {
         logMessage("Sale date $date is in future, using current month table", 'WARNING');
         return "tbldailystock_" . $comp_id;
     }
     
-    $current_month = $current_date->format('Y-m');
-    $date_month = $sale_date->format('Y-m');
+    $current_month = $current_date->format('Y-m'); // Current month in "YYYY-MM" format
+    $date_month = $sale_date->format('Y-m'); // Date month in "YYYY-MM" format
     
     if ($date_month === $current_month) {
+        // Use current month table (no suffix)
         return "tbldailystock_" . $comp_id;
     } else {
-        $date_month_short = $sale_date->format('m');
-        $date_year_short = $sale_date->format('y');
+        // Use archived month table (with suffix mm_yy)
+        $date_month_short = $sale_date->format('m'); // e.g., "12"
+        $date_year_short = $sale_date->format('y'); // e.g., "25"
         return "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
     }
 }
 
-// Function to recalculate daily stock from a specific day onward
+// ENHANCED: Function to recalculate daily stock from a specific day onward with proper rollover
 function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month, $start_day = 1) {
     logMessage("Recalculating stock from day $start_day for item $item_code in $stk_month in table $table_name", 'INFO');
     
+    // Get the current date to know if we're dealing with current or future month
     $current_date = new DateTime();
     $table_month = new DateTime($stk_month . '-01');
+    
+    // Get last day of this month
     $last_day_of_month = date('t', strtotime($stk_month . '-01'));
     
+    // Start from the specified day and recalculate forward
     for ($day = $start_day; $day <= 31; $day++) {
         $day_num = sprintf('%02d', $day);
         $opening_column = "DAY_{$day_num}_OPEN";
@@ -634,13 +1211,15 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
         $sales_column = "DAY_{$day_num}_SALES";
         $closing_column = "DAY_{$day_num}_CLOSING";
         
+        // Check if day columns exist
         $check_columns = "SHOW COLUMNS FROM $table_name LIKE '$opening_column'";
         $column_result = $conn->query($check_columns);
         
         if ($column_result->num_rows == 0) {
-            continue;
+            continue; // Day doesn't exist in table
         }
         
+        // Get current values for this day
         $day_query = "SELECT $opening_column, $purchase_column, $sales_column 
                       FROM $table_name 
                       WHERE ITEM_CODE = ? AND STK_MONTH = ?";
@@ -655,8 +1234,10 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
             $purchase = $day_values[$purchase_column] ?? 0;
             $sales = $day_values[$sales_column] ?? 0;
             
+            // Calculate closing using the formula: Closing = Opening + Purchase - Sales
             $closing = $opening + $purchase - $sales;
             
+            // Update closing
             $update_query = "UPDATE $table_name 
                             SET $closing_column = ?,
                                 LAST_UPDATED = CURRENT_TIMESTAMP 
@@ -666,11 +1247,13 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
             $update_stmt->execute();
             $update_stmt->close();
             
+            // Set next day's opening to this day's closing (but only within same month)
             $next_day = $day + 1;
             if ($next_day <= $last_day_of_month && $next_day <= 31) {
                 $next_day_num = sprintf('%02d', $next_day);
                 $next_opening_column = "DAY_{$next_day_num}_OPEN";
                 
+                // Check if next day exists
                 $check_next = "SHOW COLUMNS FROM $table_name LIKE '$next_opening_column'";
                 $next_result = $conn->query($check_next);
                 
@@ -685,24 +1268,32 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
                     $update_next_stmt->close();
                 }
             }
+            
+            logMessage("Day $day: Opening=$opening, Purchase=$purchase, Sales=$sales, Closing=$closing", 'DEBUG');
         }
         $day_stmt->close();
         
+        // Break if we've processed all days of the month
         if ($day >= $last_day_of_month) {
             break;
         }
     }
     
+    // Handle month-to-month rollover
     if ($start_day == 1) {
+        // If we're recalculating from day 1, we need to ensure consistency with previous month
         $prev_month = date('Y-m', strtotime($stk_month . '-01 -1 month'));
         if ($prev_month) {
             $prev_table = getDailyStockTableForDate($conn, $_SESSION['CompID'], $prev_month . '-01');
             
+            // Check if previous month table exists
             $check_prev_table = "SHOW TABLES LIKE '$prev_table'";
             if ($conn->query($check_prev_table)->num_rows > 0) {
+                // Get last day of previous month
                 $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
                 $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
                 
+                // Get previous month's closing
                 $prev_query = "SELECT $prev_closing_column FROM $prev_table 
                               WHERE STK_MONTH = ? AND ITEM_CODE = ?";
                 $prev_stmt = $conn->prepare($prev_query);
@@ -713,6 +1304,7 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
                         $prev_row = $prev_result->fetch_assoc();
                         $prev_closing = $prev_row[$prev_closing_column] ?? 0;
                         
+                        // Update current month's day 1 opening to match previous month's closing
                         $update_opening_query = "UPDATE $table_name 
                                                 SET DAY_01_OPEN = ?,
                                                     LAST_UPDATED = CURRENT_TIMESTAMP 
@@ -721,38 +1313,59 @@ function recalculateDailyStockFromDay($conn, $table_name, $item_code, $stk_month
                         $update_opening_stmt->bind_param("dss", $prev_closing, $stk_month, $item_code);
                         $update_opening_stmt->execute();
                         $update_opening_stmt->close();
+                        
+                        logMessage("Updated DAY_01_OPEN to $prev_closing based on previous month's closing", 'INFO');
                     }
                 }
                 $prev_stmt->close();
             }
         }
     }
+    
+    logMessage("Completed recalculating stock for $stk_month from day $start_day", 'INFO');
 }
 
-// Function to update daily stock table
+// ============================================================================
+// FIXED: ENHANCED DAILY STOCK UPDATE WITH PROPER CASCADING TO TODAY'S DATE
+// ============================================================================
+
+// ENHANCED: Function to update daily stock table with CASCADE TO FINANCIAL YEAR END
 function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
-    $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
-    $current_daily_stock_table = "tbldailystock_" . $comp_id;
+    logMessage("Starting daily stock update for item $item_code sold on $sale_date (Qty: $qty)", 'INFO');
     
+    // Get financial year end from session
+    $fin_year_end = $_SESSION['FIN_YEAR_END']; // Format: YYYY-MM-DD (e.g., 2022-03-31)
+    $fin_year_end_obj = new DateTime($fin_year_end);
+    
+    // Get the correct table for the sale date
+    $sale_daily_stock_table = getDailyStockTableForDate($conn, $comp_id, $sale_date);
+    
+    // Extract day number from date (e.g., 2025-09-27 → day 27)
     $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
     $sales_column = "DAY_{$day_num}_SALES";
     $closing_column = "DAY_{$day_num}_CLOSING";
     $opening_column = "DAY_{$day_num}_OPEN";
     $purchase_column = "DAY_{$day_num}_PURCHASE";
     
-    $month_year_full = date('Y-m', strtotime($sale_date));
+    $month_year_full = date('Y-m', strtotime($sale_date)); // e.g., "2025-09"
     $sale_date_obj = new DateTime($sale_date);
     $current_date = new DateTime();
+    $current_month = $current_date->format('Y-m');
     
-    // Check if table exists
+    // ============================================================================
+    // STEP 1: UPDATE THE STOCK TABLE FOR THE SALE DATE
+    // ============================================================================
+    
+    // First, check if the required table exists
     $check_table_query = "SHOW TABLES LIKE '$sale_daily_stock_table'";
     $table_result = $conn->query($check_table_query);
     
     if ($table_result->num_rows == 0) {
+        // Table doesn't exist, create it
         createDailyStockTable($conn, $sale_daily_stock_table);
     }
     
-    // Check if record exists
+    // Check if record exists for this month and item
     $check_query = "SELECT $closing_column, $opening_column, $purchase_column, $sales_column 
                     FROM $sale_daily_stock_table 
                     WHERE STK_MONTH = ? AND ITEM_CODE = ?";
@@ -762,13 +1375,16 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $check_result = $check_stmt->get_result();
     
     if ($check_result->num_rows == 0) {
+        // Record doesn't exist, create it with initial values
         $check_stmt->close();
         
+        // Get previous month's closing if available
         $prev_month = date('Y-m', strtotime($month_year_full . '-01 -1 month'));
         $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
         
         $prev_closing = 0;
         if ($prev_month) {
+            // Get last day of previous month
             $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
             $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
             
@@ -786,6 +1402,7 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
             $prev_stmt->close();
         }
         
+        // Insert new record
         $insert_query = "INSERT INTO $sale_daily_stock_table 
                         (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
                         VALUES (?, ?, ?, 0, 0, ?)";
@@ -794,6 +1411,7 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
         $insert_stmt->execute();
         $insert_stmt->close();
         
+        // Now get the record
         $check_stmt = $conn->prepare($check_query);
         $check_stmt->bind_param("ss", $month_year_full, $item_code);
         $check_stmt->execute();
@@ -808,17 +1426,22 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     $current_purchase = $current_values[$purchase_column] ?? 0;
     $current_sales = $current_values[$sales_column] ?? 0;
     
+    // Validate closing stock is sufficient for the sale quantity
     if ($current_closing < $qty) {
+        // Try to get stock from another source or calculate from opening + purchase
         $available_stock = $current_opening + $current_purchase - $current_sales;
         if ($available_stock < $qty) {
             throw new Exception("Insufficient closing stock for item $item_code on $sale_date. Available: $available_stock, Requested: $qty");
         }
+        // If we got here, use the calculated available stock
         $current_closing = $available_stock;
     }
     
+    // Calculate new sales and closing
     $new_sales = $current_sales + $qty;
     $new_closing = $current_opening + $current_purchase - $new_sales;
     
+    // Update existing record with correct closing calculation
     $update_query = "UPDATE $sale_daily_stock_table 
                      SET $sales_column = ?, 
                          $closing_column = ?,
@@ -834,9 +1457,111 @@ function updateDailyStock($conn, $item_code, $sale_date, $qty, $comp_id) {
     }
     $update_stmt->close();
     
+    // ============================================================================
+    // STEP 2: CASCADE UPDATES TO SUBSEQUENT DAYS IN THE SAME MONTH
+    // ============================================================================
+    
     recalculateDailyStockFromDay($conn, $sale_daily_stock_table, $item_code, $month_year_full, $day_num);
     
-    logMessage("Daily stock updated successfully for item $item_code on $sale_date: Sales=$new_sales, Closing=$new_closing", 'INFO');
+    // ============================================================================
+    // STEP 3: CASCADE TO ALL SUBSEQUENT MONTHS UNTIL FINANCIAL YEAR END
+    // ============================================================================
+    
+    logMessage("Starting cascading to all months until financial year end $fin_year_end for item $item_code sold on $sale_date", 'INFO');
+    
+    // Cascade to all subsequent months until financial year end
+    // Create a month iterator starting from sale month
+    $current_month_obj = new DateTime($month_year_full . '-01');
+    
+    while (true) {
+        // Move to next month
+        $current_month_obj->modify('+1 month');
+        $next_month = $current_month_obj->format('Y-m');
+        $next_month_first_day = $current_month_obj->format('Y-m-01');
+        
+        // Check if we've reached or passed the financial year end
+        if ($next_month_first_day > $fin_year_end) {
+            logMessage("Reached month $next_month which extends beyond financial year end $fin_year_end, stopping cascade", 'INFO');
+            break;
+        }
+        
+        logMessage("Cascading to month $next_month", 'INFO');
+        
+        // Get the table for this month
+        $next_month_table = getDailyStockTableForDate($conn, $comp_id, $next_month_first_day);
+        
+        // Check if table exists
+        $check_table = "SHOW TABLES LIKE '$next_month_table'";
+        if ($conn->query($check_table)->num_rows == 0) {
+            // Create the table
+            createDailyStockTable($conn, $next_month_table);
+            logMessage("Created table $next_month_table for cascading", 'INFO');
+        }
+        
+        // Get previous month's closing
+        $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
+        $prev_table = getDailyStockTableForDate($conn, $comp_id, $prev_month . '-01');
+        $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
+        $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
+        
+        // Get previous month's closing
+        $prev_closing = 0;
+        $prev_query = "SELECT $prev_closing_column FROM $prev_table 
+                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $prev_stmt = $conn->prepare($prev_query);
+        $prev_stmt->bind_param("ss", $prev_month, $item_code);
+        if ($prev_stmt->execute()) {
+            $prev_result = $prev_stmt->get_result();
+            if ($prev_result->num_rows > 0) {
+                $prev_row = $prev_result->fetch_assoc();
+                $prev_closing = $prev_row[$prev_closing_column] ?? 0;
+            } else {
+                // If no record in previous month, use 0
+                $prev_closing = 0;
+            }
+        }
+        $prev_stmt->close();
+        
+        // Update or create record in next month
+        $check_record = "SELECT DAY_01_OPEN FROM $next_month_table 
+                       WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+        $check_stmt = $conn->prepare($check_record);
+        $check_stmt->bind_param("ss", $next_month, $item_code);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        
+        if ($check_result->num_rows == 0) {
+            // Create new record
+            $check_stmt->close();
+            $insert_query = "INSERT INTO $next_month_table 
+                            (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_PURCHASE, DAY_01_SALES, DAY_01_CLOSING) 
+                            VALUES (?, ?, ?, 0, 0, ?)";
+            $insert_stmt = $conn->prepare($insert_query);
+            $insert_stmt->bind_param("ssdd", $item_code, $next_month, $prev_closing, $prev_closing);
+            $insert_stmt->execute();
+            $insert_stmt->close();
+            logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
+        } else {
+            // Update existing record
+            $check_stmt->close();
+            $update_query = "UPDATE $next_month_table 
+                           SET DAY_01_OPEN = ?,
+                               LAST_UPDATED = CURRENT_TIMESTAMP 
+                           WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $update_stmt = $conn->prepare($update_query);
+            $update_stmt->bind_param("dss", $prev_closing, $next_month, $item_code);
+            $update_stmt->execute();
+            $update_stmt->close();
+            logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
+        }
+        
+        // Recalculate the entire month
+        recalculateDailyStockFromDay($conn, $next_month_table, $item_code, $next_month, 1);
+        
+        logMessage("Completed cascading for month $next_month", 'INFO');
+    }
+    
+    logMessage("Daily stock updated successfully for item $item_code on $sale_date in table $sale_daily_stock_table: Sales=$new_sales, Closing=$new_closing with cascade to financial year end $fin_year_end", 'INFO');
     
     return true;
 }
@@ -986,13 +1711,16 @@ function createDailyStockTable($conn, $table_name) {
     }
 }
 
-// Function to get next bill number
+// FIXED: Function to get next bill number with proper zero-padding
+// UPDATED: Function to get next bill number with proper zero-padding AND CompID consideration
 function getNextBillNumber($conn, $comp_id) {
     logMessage("Getting next bill number for CompID: $comp_id", 'INFO');
     
+    // Use transaction for atomic operation
     $conn->begin_transaction();
     
     try {
+        // Get the maximum numeric part of bill numbers FOR THIS COMPANY
         $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $comp_id);
@@ -1002,6 +1730,7 @@ function getNextBillNumber($conn, $comp_id) {
         $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
         $stmt->close();
         
+        // Double-check this bill number doesn't exist FOR THIS COMPANY (prevent race conditions)
         $check_query = "SELECT COUNT(*) as count FROM tblsaleheader WHERE BILL_NO = ? AND COMP_ID = ?";
         $check_stmt = $conn->prepare($check_query);
         $bill_no_to_check = "BL" . str_pad($next_bill, 4, '0', STR_PAD_LEFT);
@@ -1012,6 +1741,7 @@ function getNextBillNumber($conn, $comp_id) {
         $check_stmt->close();
         
         if ($exists) {
+            // If it exists, increment and check again
             $next_bill++;
         }
         
@@ -1024,6 +1754,7 @@ function getNextBillNumber($conn, $comp_id) {
         $conn->rollback();
         logMessage("Error getting next bill number for CompID $comp_id: " . $e->getMessage(), 'ERROR');
         
+        // Fallback method
         $query = "SELECT MAX(CAST(SUBSTRING(BILL_NO, 3) AS UNSIGNED)) as max_bill FROM tblsaleheader WHERE COMP_ID = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("i", $comp_id);
@@ -1035,490 +1766,413 @@ function getNextBillNumber($conn, $comp_id) {
     }
 }
 
-// Function to get next customer bill number
-function getNextCustomerBillNumber($conn, $comp_id) {
-    logMessage("Getting next customer bill number for CompID: $comp_id", 'INFO');
-    
-    $query = "SELECT MAX(BillNo) as max_bill FROM tblcustomersales WHERE CompID = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $comp_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    $next_bill = ($row['max_bill'] ? $row['max_bill'] + 1 : 1);
-    $stmt->close();
-    
-    logMessage("Next customer bill number for CompID $comp_id: $next_bill", 'INFO');
-    return $next_bill;
-}
-
 // ============================================================================
-// DRY DAYS AND BACKDATED SALES CHECK FUNCTIONS (from sale_for_date_range.php)
+// PERFORMANCE OPTIMIZATION: BULK OPERATION HANDLING
 // ============================================================================
 
-/**
- * Check for global backdated sales in a date range
- */
-function checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id) {
-    $today = date('Y-m-d');
-    
-    // If end_date is in the future or today, no backdated restriction
-    if ($end_date >= $today) {
-        return [
-            'has_restriction' => false,
-            'unavailable_dates' => []
-        ];
-    }
-    
-    // Check if there are any existing sales between start_date and today
-    $query = "SELECT DISTINCT DATE(BILL_DATE) as sale_date 
-              FROM tblsaleheader 
-              WHERE COMP_ID = ? 
-              AND BILL_DATE BETWEEN ? AND ?";
-    
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("iss", $comp_id, $start_date, $today);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $existing_dates = [];
-    while ($row = $result->fetch_assoc()) {
-        $existing_dates[] = $row['sale_date'];
-    }
-    $stmt->close();
-    
-    return [
-        'has_restriction' => !empty($existing_dates),
-        'unavailable_dates' => $existing_dates
-    ];
-}
-
-/**
- * Check for dry days in a date range
- */
-function checkDryDaysInRange($conn, $start_date, $end_date) {
-    $dryDaysManager = new DryDaysManager($conn);
-    $dry_days = $dryDaysManager->getDryDaysInRange($start_date, $end_date);
-    
-    return [
-        'has_dry_days' => !empty($dry_days),
-        'dry_days' => $dry_days,
-        'unavailable_dates' => array_keys($dry_days)
-    ];
-}
-
-/**
- * Validate date range restrictions (both backdated sales and dry days)
- */
-function validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id) {
-    // Check global sales restrictions
-    $global_check = checkGlobalBackdatedSales($conn, $start_date, $end_date, $comp_id);
-    
-    // Check dry days
-    $dry_days_check = checkDryDaysInRange($conn, $start_date, $end_date);
-    
-    // Combine unavailable dates
-    $all_unavailable = array_unique(array_merge(
-        $global_check['unavailable_dates'],
-        $dry_days_check['unavailable_dates']
-    ));
-    
-    return [
-        'has_restriction' => $global_check['has_restriction'] || $dry_days_check['has_dry_days'],
-        'has_backdated_sales' => $global_check['has_restriction'],
-        'has_dry_days' => $dry_days_check['has_dry_days'],
-        'dry_days_list' => $dry_days_check['dry_days'],
-        'unavailable_dates' => $all_unavailable
-    ];
-}
-
-/**
- * Get unavailable dates for the date range
- */
-function getUnavailableDates($conn, $start_date, $end_date, $comp_id) {
-    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
-    return $restrictions['unavailable_dates'];
-}
-
-// ============================================================================
-// HANDLE SALE FINALIZATION WITH BILL GENERATION
-// ============================================================================
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || isset($_POST['generate_bills']))) {
-    set_time_limit(0);
+// Handle form submission for sales update
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ============================================================================
+    // PERFORMANCE OPTIMIZATION - PREVENT TIMEOUT FOR LARGE OPERATIONS
+    // ============================================================================
+    set_time_limit(0); // No time limit
     ini_set('max_execution_time', 0);
-    ini_set('memory_limit', '1024M');
+    ini_set('memory_limit', '1024M'); // 1GB memory
     
+    // Database optimizations
     $conn->query("SET SESSION wait_timeout = 28800");
     $conn->query("SET autocommit = 0");
     
-    // Handle customer selection from sales form - check if customer_field was posted
-    if (isset($_POST['customer_field'])) {
-        $customerField = trim($_POST['customer_field']);
+    // Check if this is a bulk operation
+    $bulk_operation = (count($_SESSION['sale_quantities'] ?? []) > 100);
+    
+    if ($bulk_operation) {
+        logMessage("Starting bulk sales operation with " . count($_SESSION['sale_quantities']) . " items - Performance mode enabled", 'INFO');
+    }
+    
+    // Check if this is a duplicate submission
+    if (isset($_SESSION['last_submission']) && (time() - $_SESSION['last_submission']) < 5) {
+        $error_message = "Duplicate submission detected. Please wait a few seconds before trying again.";
+        logMessage("Duplicate submission prevented for user " . $_SESSION['user_id'], 'WARNING');
+    } else {
+        $_SESSION['last_submission'] = time();
         
-        if (!empty($customerField)) {
-            // Check if it's a new customer (starts with "new:" or doesn't match existing customer codes)
-            if (preg_match('/^new:/i', $customerField) || !is_numeric($customerField)) {
-                // Extract customer name (remove "new:" prefix if present)
-                $customerName = preg_replace('/^new:\s*/i', '', $customerField);
+        if (isset($_POST['update_sales'])) {
+            // Validate customer selection before proceeding
+            if (empty($selectedCustomer)) {
+                $error_message = "<strong>Customer Required:</strong> Please select a customer or create a new one before generating bills.";
+                logMessage("Sales prevented - no customer selected", 'WARNING');
+                goto render_page;
+            }
+            
+            $start_date = $_POST['start_date'];
+            $end_date = $_POST['end_date'];
+            $comp_id = $_SESSION['CompID'];
+            $user_id = $_SESSION['user_id'];
+            $fin_year_id = $_SESSION['FIN_YEAR_ID'];
+            
+            // NEW: Enhanced global backdated sales check with dry days
+            $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
+            
+            if ($restrictions['restricted'] && empty($restrictions['available_dates'])) {
+                $error_message = "<strong>Cannot enter sales in the selected date range:</strong><br><br>";
                 
-                if (!empty($customerName)) {
-                    // Get the next available LCODE for GCODE=32
-                    $maxCodeQuery = "SELECT MAX(LCODE) as max_code FROM tbllheads WHERE GCODE=32";
-                    $maxResult = $conn->query($maxCodeQuery);
-                    $maxCode = 1;
-                    if ($maxResult && $maxResult->num_rows > 0) {
-                        $maxData = $maxResult->fetch_assoc();
-                        $maxCode = $maxData['max_code'] + 1;
+                if (!empty($restrictions['unavailable_sales_dates'])) {
+                    $error_message .= "<div class='mb-2'>";
+                    $error_message .= "<strong>Existing Sales Dates:</strong> " . implode(', ', $restrictions['unavailable_sales_dates']) . "<br>";
+                    $error_message .= "</div>";
+                }
+                
+                if (!empty($restrictions['dry_dates'])) {
+                    $dryDaysManager = new DryDaysManager($conn);
+                    $dry_days_info = $restrictions['dry_days_info'];
+                    
+                    $error_message .= "<div class='mb-2'>";
+                    $error_message .= "<strong>Dry Days in Range:</strong><br>";
+                    foreach ($restrictions['dry_dates'] as $dry_date) {
+                        $description = $dry_days_info[$dry_date] ?? 'Dry Day';
+                        $error_message .= "<span class='text-danger'>• $dry_date - $description</span><br>";
+                    }
+                    $error_message .= "</div>";
+                }
+                
+                $error_message .= "<br><div class='alert alert-warning mt-2'>";
+                $error_message .= "<strong>Latest Global Sale:</strong> " . ($restrictions['latest_existing_sale'] ?? 'None') . "<br>";
+                $error_message .= "<strong>Available Dates:</strong> " . (empty($restrictions['available_dates']) ? 'None' : implode(', ', $restrictions['available_dates']));
+                $error_message .= "</div>";
+                
+                logMessage("Global backdated/dry day sales prevented - No available dates", 'WARNING');
+                
+                // Skip further processing
+                goto render_page;
+            }
+            
+            // NEW: Get closing column for end_date
+            $end_date_day = date('d', strtotime($end_date));
+            $closing_column = "DAY_" . sprintf('%02d', $end_date_day) . "_CLOSING";
+            $end_date_month = date('Y-m', strtotime($end_date));
+            
+            // MODIFIED: Get ALL items from database for validation WITHOUT mode filtering
+            // NEW: Get stock from daily stock table for end_date - WITH stock > 0 filter
+            if (!empty($allowed_classes)) {
+                $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
+                                           COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
+                                           ds.STK_MONTH as stock_month
+                                    FROM tblitemmaster im
+                                    LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                                        AND ds.STK_MONTH = ?
+                                    WHERE im.CLASS IN ($class_placeholders)
+                                    AND COALESCE(ds.$closing_column, 0) > 0";
+                
+                $all_items_stmt = $conn->prepare($all_items_query);
+                $all_items_params = array_merge([$end_date_month], $allowed_classes);
+                $all_items_types = str_repeat('s', count($all_items_params));
+                $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
+            } else {
+                $all_items_query = "SELECT im.CODE, im.DETAILS, im.DETAILS2, im.RPRICE, im.CLASS, im.LIQ_FLAG,
+                                           COALESCE(ds.$closing_column, 0) as CURRENT_STOCK,
+                                           ds.STK_MONTH as stock_month
+                                    FROM tblitemmaster im
+                                    LEFT JOIN $daily_stock_table ds ON im.CODE = ds.ITEM_CODE 
+                                        AND ds.STK_MONTH = ?
+                                    WHERE 1 = 0";
+                
+                $all_items_stmt = $conn->prepare($all_items_query);
+                $all_items_params = [$end_date_month];
+                $all_items_types = "s";
+                $all_items_stmt->bind_param($all_items_types, ...$all_items_params);
+            }
+            
+            $all_items_stmt->execute();
+            $all_items_result = $all_items_stmt->get_result();
+            $all_items = [];
+            while ($row = $all_items_result->fetch_assoc()) {
+                $all_items[$row['CODE']] = $row;
+            }
+            $all_items_stmt->close();
+            
+            // Enhanced stock validation before transaction
+            $stock_errors = [];
+            if (isset($_SESSION['sale_quantities'])) {
+                $item_count = 0;
+                foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                    $item_count++;
+                    // Reduce logging frequency for bulk operations
+                    if ($bulk_operation && $item_count % 50 == 0) {
+                        logMessage("Stock validation progress: $item_count/" . count($_SESSION['sale_quantities']) . " items checked", 'INFO');
                     }
                     
-                    // Insert new customer
-                    $insertQuery = "INSERT INTO tbllheads (GCODE, LCODE, LHEAD) VALUES (32, ?, ?)";
-                    $stmt = $conn->prepare($insertQuery);
-                    $stmt->bind_param("is", $maxCode, $customerName);
-                    
-                    if ($stmt->execute()) {
-                        $_SESSION['selected_customer'] = $maxCode;
-                        $_SESSION['success_message'] = "Customer '$customerName' created successfully!";
-                        logMessage("New customer created from sales form: $customerName (ID: $maxCode)", 'INFO');
+                    if ($total_qty > 0 && isset($all_items[$item_code])) {
+                        $current_stock = $all_items[$item_code]['CURRENT_STOCK'];
+                        
+                        // Enhanced stock validation
+                        if (!validateStock($current_stock, $total_qty, $item_code)) {
+                            $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
+                        }
                     }
-                    $stmt->close();
+                }
+            }
+            
+            // If stock errors found, stop processing
+            if (!empty($stock_errors)) {
+                $error_message = "Stock validation failed:<br>" . implode("<br>", array_slice($stock_errors, 0, 5));
+                if (count($stock_errors) > 5) {
+                    $error_message .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
                 }
             } else {
-                // It's an existing customer code
-                $customerCode = intval($customerField);
-                if (array_key_exists($customerCode, $customers)) {
-                    $_SESSION['selected_customer'] = $customerCode;
-                }
-            }
-        }
-        // Note: Empty field is handled by validation below
-        
-        // Update selectedCustomer variable
-        $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
-    }
-    
-    // Validate customer selection - customer is required (no walk-in)
-    // Customer code must be numeric (existing customer) or new: prefix (new customer)
-    if (empty($selectedCustomer)) {
-        $_SESSION['error'] = "Please select a customer or create a new one";
-        header("Location: customer_sales.php");
-        exit;
-    }
-    
-    // Check if customer field is empty in the POST (directly from form)
-    if (isset($_POST['customer_field']) && empty(trim($_POST['customer_field']))) {
-        $_SESSION['error'] = "Please select a customer or create a new one";
-        header("Location: customer_sales.php");
-        exit;
-    }
-    
-    // Validate items in cart
-    if (empty($_SESSION['customer_sale_quantities'])) {
-        $_SESSION['error'] = "No items in cart to finalize sale";
-        header("Location: customer_sales.php");
-        exit;
-    }
-    
-    // Check if we have any quantities > 0
-    $hasQuantity = false;
-    $itemsWithQuantity = [];
-    foreach ($_SESSION['customer_sale_quantities'] as $item_code => $qty) {
-        if ($qty > 0) {
-            $hasQuantity = true;
-            $itemsWithQuantity[] = $item_code;
-            break;
-        }
-    }
-    
-    if (!$hasQuantity) {
-        $_SESSION['error'] = "Please enter quantities for at least one item";
-        header("Location: customer_sales.php");
-        exit;
-    }
-    
-    // Check for backdated sales and dry days validation
-    // Use the new comprehensive validation function
-    $restrictions = validateDateRangeRestrictions($conn, $start_date, $end_date, $comp_id);
-    
-    if ($restrictions['has_restriction']) {
-        $error_message = "<strong>Cannot generate bills for the selected date range:</strong><br><br>";
-        
-        if ($restrictions['has_backdated_sales']) {
-            $error_message .= "<div class='mb-2 text-danger'>";
-            $error_message .= "<strong>Existing sales found in date range!</strong><br>";
-            $error_message .= "<small>Please select a future date range or dates with no existing sales.</small>";
-            $error_message .= "</div>";
-        }
-        
-        if ($restrictions['has_dry_days']) {
-            $error_message .= "<div class='mb-2 text-danger'>";
-            $error_message .= "<strong>Dry days found in selected range:</strong><br>";
-            foreach ($restrictions['dry_days_list'] as $dry_date => $day_name) {
-                $error_message .= "<small>• " . date('d-M-Y', strtotime($dry_date)) . " - $day_name</small><br>";
-            }
-            $error_message .= "</div>";
-        }
-        
-        $_SESSION['error'] = $error_message;
-        header("Location: customer_sales.php?start_date=$start_date&end_date=$end_date");
-        exit;
-    }
-    
-    // Enhanced stock validation before transaction
-    $stock_errors = [];
-    $item_count = 0;
-    foreach ($_SESSION['customer_sale_quantities'] as $item_code => $total_qty) {
-        $item_count++;
-        
-        if ($total_qty > 0 && isset($all_items_data[$item_code])) {
-            $current_stock = $all_items_data[$item_code]['CURRENT_STOCK'];
-            
-            if (!validateStock($current_stock, $total_qty, $item_code)) {
-                $stock_errors[] = "Item {$item_code}: Available stock {$current_stock}, Requested {$total_qty}";
-            }
-        }
-    }
-    
-    // If stock errors found, stop processing
-    if (!empty($stock_errors)) {
-        $_SESSION['error'] = "Stock validation failed:<br>" . implode("<br>", array_slice($stock_errors, 0, 5));
-        if (count($stock_errors) > 5) {
-            $_SESSION['error'] .= "<br>... and " . (count($stock_errors) - 5) . " more errors";
-        }
-        header("Location: customer_sales.php");
-        exit;
-    }
-    
-    // Start transaction
-    $conn->begin_transaction();
-    
-    try {
-        $comp_id = $_SESSION['CompID'];
-        $user_id = $_SESSION['user_id'];
-        $fin_year_id = $_SESSION['FIN_YEAR_ID'];
-        $current_date = $sale_date;
-        
-        // Get next bill numbers
-        $retail_bill_number = getNextBillNumber($conn, $comp_id);
-        $retail_bill_no = "BL" . str_pad($retail_bill_number, 4, '0', STR_PAD_LEFT);
-        
-        // Get customer bill number
-        $customer_bill_no = getNextCustomerBillNumber($conn, $comp_id);
-        
-        // Process items for both tables
-        $total_amount = 0;
-        $customer_total_amount = 0;
-        $items_data = [];
-        
-        // Get customer-specific prices if available
-        $customer_prices = [];
-        if ($selectedCustomer !== '') {
-            $priceQuery = "SELECT Code, WPrice FROM tblcustomerprices WHERE LCode = ?";
-            $priceStmt = $conn->prepare($priceQuery);
-            $priceStmt->bind_param("i", $selectedCustomer);
-            $priceStmt->execute();
-            $priceResult = $priceStmt->get_result();
-            while ($priceRow = $priceResult->fetch_assoc()) {
-                $customer_prices[$priceRow['Code']] = $priceRow['WPrice'];
-            }
-            $priceStmt->close();
-        }
-        
-        // Also get any price from tblcustomerprices (fallback)
-        $anyPriceQuery = "SELECT Code, WPrice FROM tblcustomerprices GROUP BY Code";
-        $anyPriceResult = $conn->query($anyPriceQuery);
-        $any_prices = [];
-        while ($priceRow = $anyPriceResult->fetch_assoc()) {
-            $any_prices[$priceRow['Code']] = $priceRow['WPrice'];
-        }
-        
-        foreach ($_SESSION['customer_sale_quantities'] as $item_code => $qty) {
-            if ($qty > 0 && isset($all_items_data[$item_code])) {
-                $item = $all_items_data[$item_code];
+                // Start transaction
+                $conn->begin_transaction();
                 
-                // Determine price - priority: customer price > any customer price > retail price
-                $price = $customer_prices[$item_code] ?? ($any_prices[$item_code] ?? $item['RPRICE']);
-                $amount = $qty * $price;
-                $total_amount += $amount;
-                $customer_total_amount += $amount;
-                
-                $items_data[$item_code] = [
-                    'code' => $item_code,
-                    'name' => $item['DETAILS'],
-                    'size' => $item['DETAILS2'],
-                    'rate' => $price,
-                    'qty' => $qty,
-                    'amount' => $amount,
-                    'mode' => $item['LIQ_FLAG'],
-                    'class' => $item['CLASS']
-                ];
-            }
-        }
-        
-        if (empty($items_data)) {
-            throw new Exception("No valid items to process");
-        }
-        
-        // Determine mode for retail sale (use most common mode from items)
-        $mode_counts = [];
-        foreach ($items_data as $item) {
-            $mode = $item['mode'];
-            $mode_counts[$mode] = isset($mode_counts[$mode]) ? $mode_counts[$mode] + 1 : 1;
-        }
-        arsort($mode_counts);
-        $retail_mode = key($mode_counts);
-        
-        // ========== PART 1: Save to tblcustomersales (if customer is selected) ==========
-        if ($selectedCustomer !== '') {
-            $customer_success = true;
-            
-            foreach ($items_data as $item_code => $item) {
-                $customerInsertQuery = "INSERT INTO tblcustomersales (BillNo, BillDate, LCode, ItemCode, ItemName, ItemSize, Rate, Quantity, Amount, CompID, UserID) 
-                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                $customerInsertStmt = $conn->prepare($customerInsertQuery);
-                
-                $customerInsertStmt->bind_param(
-                    "isisssdiiii", 
-                    $customer_bill_no, 
-                    $current_date, 
-                    $selectedCustomer, 
-                    $item_code, 
-                    $item['name'], 
-                    $item['size'], 
-                    $item['rate'], 
-                    $item['qty'], 
-                    $item['amount'],
-                    $comp_id,
-                    $user_id
-                );
-                
-                if (!$customerInsertStmt->execute()) {
-                    $customer_success = false;
-                    logMessage("Error saving to customer sales for item $item_code: " . $conn->error, 'ERROR');
-                    break;
-                }
-                $customerInsertStmt->close();
-            }
-            
-            if (!$customer_success) {
-                throw new Exception("Error saving to customer sales table");
-            }
-        }
-        
-        // ========== PART 2: Save to retail sales (tblsaleheader/tblsaledetails) ==========
-        // Insert sale header
-        $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
-                         VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
-        $header_stmt = $conn->prepare($header_query);
-        $header_stmt->bind_param("ssddssi", $retail_bill_no, $current_date, $total_amount, 
-                                $total_amount, $retail_mode, $comp_id, $user_id);
-        if (!$header_stmt->execute()) {
-            throw new Exception("Error saving retail sale header: " . $conn->error);
-        }
-        $header_stmt->close();
-        
-        // Insert sale details and update stock
-        $current_stock_column = "Current_Stock" . $comp_id;
-        $opening_stock_column = "Opening_Stock" . $comp_id;
-        
-        foreach ($items_data as $item_code => $item) {
-            // Insert sale detail
-            $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
-                             VALUES (?, ?, ?, ?, ?, ?, ?)";
-            $detail_stmt = $conn->prepare($detail_query);
-            $detail_stmt->bind_param("ssddssi", $retail_bill_no, $item_code, $item['qty'], 
-                                    $item['rate'], $item['amount'], $retail_mode, $comp_id);
-            if (!$detail_stmt->execute()) {
-                throw new Exception("Error saving retail sale detail for item $item_code: " . $conn->error);
-            }
-            $detail_stmt->close();
-            
-            // Update item stock
-            updateItemStock($conn, $item_code, $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
-            
-            // Update daily stock
-            updateDailyStock($conn, $item_code, $current_date, $item['qty'], $comp_id);
-        }
-        
-        // ========== PART 3: Generate Cash Memo ==========
-        $cash_memos_generated = 0;
-        $cash_memo_errors = [];
-        
-        if (file_exists("cash_memo_functions.php")) {
-            include_once "cash_memo_functions.php";
-            if (function_exists('autoGenerateCashMemoForBill')) {
                 try {
-                    if (autoGenerateCashMemoForBill($conn, $retail_bill_no, $comp_id, $user_id)) {
-                        $cash_memos_generated++;
-                        logMessage("Cash memo generated for bill: $retail_bill_no", 'INFO');
+                    $total_amount = 0;
+                    $items_data = [];
+                    $daily_sales_data = [];
+                    
+                    // Process ALL session quantities > 0 (from ALL modes)
+                    if (isset($_SESSION['sale_quantities'])) {
+                        $item_count = 0;
+                        foreach ($_SESSION['sale_quantities'] as $item_code => $total_qty) {
+                            $item_count++;
+                            // Reduce logging frequency for bulk operations
+                            if ($bulk_operation && $item_count % 50 == 0) {
+                                logMessage("Processing progress: $item_count/" . count($_SESSION['sale_quantities']) . " items processed", 'INFO');
+                            }
+                            
+                            if ($total_qty > 0 && isset($all_items[$item_code])) {
+                                $item = $all_items[$item_code];
+                                
+                                // Apply customer-specific pricing if available
+                                $rate = $item['RPRICE'];
+                                if (!empty($customerPrices) && isset($customerPrices[$item_code])) {
+                                    $rate = $customerPrices[$item_code];
+                                    logMessage("Applied customer-specific price for item $item_code: $rate (regular: {$item['RPRICE']})", 'INFO');
+                                }
+                                
+                                // NEW: Use saved distribution from session if available, otherwise generate random
+                                $full_distribution = [];
+                                if (isset($_SESSION['item_distribution'][$item_code]) && is_array($_SESSION['item_distribution'][$item_code])) {
+                                    $full_distribution = $_SESSION['item_distribution'][$item_code];
+                                    logMessage("Using saved distribution for item $item_code: " . implode(', ', $full_distribution));
+                                } else {
+                                    // Generate random distribution if not saved
+                                    $full_distribution = getFullDistribution($total_qty, $date_array, $available_dates_global);
+                                    logMessage("Generated new random distribution for item $item_code: " . implode(', ', $full_distribution));
+                                }
+                                $daily_sales_data[$item_code] = $full_distribution;
+                                
+                                // Store item data with correct rate
+                                $items_data[$item_code] = [
+                                    'name' => $item['DETAILS'],
+                                    'rate' => $rate,
+                                    'total_qty' => $total_qty,
+                                    'mode' => $item['LIQ_FLAG'] // Use item's actual mode
+                                ];
+                            }
+                        }
+                    }
+                    
+                    // Only proceed if we have items with quantities
+                    if (!empty($items_data)) {
+                        // FIXED: Use volume_limit_utils.php function for bill generation
+                        // Pass available_dates to filter out dry days at backend
+                        $bills = generateBillsWithLimits($conn, $items_data, $date_array, $daily_sales_data, $mode, $comp_id, $user_id, $fin_year_id, $available_dates_global);
+                        
+                        // Get stock column names
+                        $current_stock_column = "Current_Stock" . $comp_id;
+                        $opening_stock_column = "Opening_Stock" . $comp_id;
+                        
+                        // Get next bill number once to ensure proper numerical order
+                        $next_bill_number = getNextBillNumber($conn, $comp_id);
+                        
+                        // Process each bill in chronological AND numerical order
+                        usort($bills, function($a, $b) {
+                            return strtotime($a['bill_date']) - strtotime($b['bill_date']);
+                        });
+                        
+                        // Process each bill with proper zero-padded bill numbers
+                        $bill_count = 0;
+                        $total_bills = count($bills);
+                        
+                        foreach ($bills as $bill) {
+                            $bill_count++;
+                            if ($bulk_operation && $bill_count % 10 == 0) {
+                                logMessage("Bill generation progress: $bill_count/$total_bills bills created", 'INFO');
+                            }
+                            
+                            $padded_bill_no = "BL" . str_pad($next_bill_number++, 4, '0', STR_PAD_LEFT);
+                            $numeric_bill_no = intval($next_bill_number - 1); // Store numeric bill number for customer sales
+                            
+                            // Insert sale header
+                            $header_query = "INSERT INTO tblsaleheader (BILL_NO, BILL_DATE, TOTAL_AMOUNT, DISCOUNT, NET_AMOUNT, LIQ_FLAG, COMP_ID, CREATED_BY) 
+                                             VALUES (?, ?, ?, 0, ?, ?, ?, ?)";
+                            $header_stmt = $conn->prepare($header_query);
+                            $header_stmt->bind_param("ssddssi", $padded_bill_no, $bill['bill_date'], $bill['total_amount'], 
+                                                    $bill['total_amount'], $bill['mode'], $bill['comp_id'], $bill['user_id']);
+                            $header_stmt->execute();
+                            $header_stmt->close();
+                            
+                            // Insert sale details for each item in the bill
+                            foreach ($bill['items'] as $item) {
+                                $detail_query = "INSERT INTO tblsaledetails (BILL_NO, ITEM_CODE, QTY, RATE, AMOUNT, LIQ_FLAG, COMP_ID) 
+                                                 VALUES (?, ?, ?, ?, ?, ?, ?)";
+                                $detail_stmt = $conn->prepare($detail_query);
+                                $detail_stmt->bind_param("ssddssi", $padded_bill_no, $item['code'], $item['qty'], 
+                                                        $item['rate'], $item['amount'], $bill['mode'], $bill['comp_id']);
+                                $detail_stmt->execute();
+                                $detail_stmt->close();
+                                
+                                // Update item stock
+                                updateItemStock($conn, $item['code'], $item['qty'], $current_stock_column, $opening_stock_column, $fin_year_id);
+                                
+                                // Update daily stock with cascading logic - USING THE FIXED FUNCTION
+                                logMessage("Calling updateDailyStock for item: " . $item['code'] . " date: " . $bill['bill_date'] . " qty: " . $item['qty'], 'INFO');
+                                updateDailyStock($conn, $item['code'], $bill['bill_date'], $item['qty'], $comp_id);
+                                logMessage("Completed updateDailyStock for item: " . $item['code'], 'INFO');
+                                
+                                // ============================================================================
+                                // RECORD CUSTOMER SALE IN tblcustomersales
+                                // ============================================================================
+                                $itemName = $item['name'];
+                                $itemSize = extractItemSize($itemName, '');
+                                $rate = $item['rate'];
+                                $quantity = $item['qty'];
+                                $amount = $item['amount'];
+                                
+                                // DEBUG: Log the parameters being passed
+                                logMessage("Recording customer sale - BillNo: $numeric_bill_no, Item: {$item['code']}, Qty: $quantity, Rate: $rate", 'INFO');
+                                
+                                // Log detailed debug info
+                                logMessage("Customer sale debug - BillNo: $numeric_bill_no, BillDate: {$bill['bill_date']}, CustomerID: $selectedCustomer, ItemCode: {$item['code']}, ItemName: $itemName, ItemSize: $itemSize, Rate: $rate, Qty: $quantity, Amount: $amount, CompID: $comp_id, UserID: $user_id", 'DEBUG');
+                                
+                                $customerSaleResult = recordCustomerSale($conn, $numeric_bill_no, $bill['bill_date'], $selectedCustomer, 
+                                                  $item['code'], $itemName, $itemSize, $rate, $quantity, $amount, 
+                                                  $comp_id, $user_id);
+                                
+                                if (!$customerSaleResult) {
+                                    logMessage("WARNING: Failed to record customer sale for bill $padded_bill_no, item {$item['code']}", 'WARNING');
+                                    // Continue processing - don't rollback entire transaction for customer sale failure
+                                }
+                            }
+                            
+                            $total_amount += $bill['total_amount'];
+                        }
+                        
+                        // ============================================================================
+                        // OPTIMIZED CASH MEMO GENERATION - PERFORMANCE SAFE
+                        // ============================================================================
+                        $cash_memos_generated = 0;
+                        $cash_memo_errors = [];
+                        
+                        if (count($bills) > 0) {
+                            logMessage("Starting optimized cash memo generation for " . count($bills) . " bills", 'INFO');
+                            
+                            $cash_memo_start_time = time();
+                            $MAX_CASH_MEMO_TIME = 30; // seconds - safety limit (increased for cascading updates)
+                            $cash_memo_count = 0;
+                            
+                            // Reset next_bill_number to original for cash memo generation
+                            $next_bill_number = getNextBillNumber($conn, $comp_id);
+                            
+                            foreach ($bills as $bill_index => $bill) {
+                                // SAFETY: Break if cash memo generation takes too long
+                                if ((time() - $cash_memo_start_time) > $MAX_CASH_MEMO_TIME) {
+                                    logMessage("Cash memo generation timeout after $MAX_CASH_MEMO_TIME seconds - skipping remaining bills", 'WARNING');
+                                    break;
+                                }
+                                
+                                $cash_memo_count++;
+                                $padded_bill_no = "BL" . str_pad(($next_bill_number - count($bills) + $bill_index), 4, '0', STR_PAD_LEFT);
+                                
+                                try {
+                                    if (autoGenerateCashMemoForBill($conn, $padded_bill_no, $comp_id, $_SESSION['user_id'])) {
+                                        $cash_memos_generated++;
+                                        logMessage("Cash memo generated for bill: $padded_bill_no", 'INFO');
+                                    } else {
+                                        $cash_memo_errors[] = $padded_bill_no;
+                                        logMessage("Failed to generate cash memo for bill: $padded_bill_no", 'WARNING');
+                                    }
+                                } catch (Exception $e) {
+                                    $cash_memo_errors[] = $padded_bill_no;
+                                    logMessage("Exception generating cash memo for $padded_bill_no: " . $e->getMessage(), 'ERROR');
+                                    // CONTINUE with next bill - don't stop entire process
+                                }
+                                
+                                // Small delay for large batches to prevent database overload
+                                if (count($bills) > 50 && $cash_memo_count % 10 == 0) {
+                                    usleep(100000); // 0.1 second delay
+                                }
+                            }
+                            
+                            logMessage("Cash memo generation completed: $cash_memos_generated successful, " . count($cash_memo_errors) . " failed", 'INFO');
+                        }
+                        
+                        // Commit transaction
+                        $conn->commit();
+                        
+                        // CLEAR SESSION QUANTITIES AFTER SUCCESS
+                        clearSessionQuantities();
+                        
+                        // Also clear the saved distributions
+                        if (isset($_SESSION['item_distribution'])) {
+                            unset($_SESSION['item_distribution']);
+                        }
+                        
+                        $success_message = "Sales distributed successfully! Generated " . count($bills) . " bills. Total Amount: ₹" . number_format($total_amount, 2);
+                        $success_message .= "<br><strong>Customer:</strong> " . htmlspecialchars($selectedCustomerName);
+                        
+                        // Add cash memo info to success message
+                        if ($cash_memos_generated > 0) {
+                            $success_message .= " | Cash Memos Generated: " . $cash_memos_generated;
+                        }
+                        
+                        if (!empty($cash_memo_errors)) {
+                            $success_message .= " | Failed to generate cash memos for bills: " . implode(", ", array_slice($cash_memo_errors, 0, 5));
+                            if (count($cash_memo_errors) > 5) {
+                                $success_message .= " and " . (count($cash_memo_errors) - 5) . " more";
+                            }
+                        }
+                        
+                        // Clean up memory
+                        unset($all_items);
+                        unset($items_data);
+                        unset($daily_sales_data);
+                        unset($bills);
+                        gc_collect_cycles();
+                        
+                        if ($bulk_operation) {
+                            logMessage("Bulk sales operation completed successfully", 'INFO');
+                        }
+                        
+                        // Redirect to retail_sale.php
+                        header("Location: retail_sale.php?success=" . urlencode($success_message));
+                        exit;
                     } else {
-                        $cash_memo_errors[] = $retail_bill_no;
-                        logMessage("Failed to generate cash memo for bill: $retail_bill_no", 'WARNING');
+                        $error_message = "No quantities entered for any items.";
                     }
                 } catch (Exception $e) {
-                    $cash_memo_errors[] = $retail_bill_no;
-                    logMessage("Exception generating cash memo for $retail_bill_no: " . $e->getMessage(), 'ERROR');
+                    // Rollback transaction on error
+                    $conn->rollback();
+                    $error_message = "Error updating sales: " . $e->getMessage();
+                    logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
                 }
             }
         }
-        
-        // Commit transaction
-        $conn->commit();
-        
-        // Clear session quantities
-        clearSessionQuantities();
-        
-        // Calculate totals for display
-        $taxRate = 0.08; // 8% tax
-        $taxAmount = $total_amount * $taxRate;
-        $finalAmount = $total_amount + $taxAmount;
-        
-        // Store bill data in session (for potential future use)
-        $customerName = $customers[$selectedCustomer] ?? 'Unknown Customer';
-        $customerIdForDisplay = $selectedCustomer;
-        
-        $_SESSION['last_customer_bill_data'] = [
-            'bill_no' => ($selectedCustomer === '') ? $retail_bill_no : $customer_bill_no,
-            'retail_bill_no' => $retail_bill_no,
-            'customer_bill_no' => $customer_bill_no,
-            'customer_id' => $customerIdForDisplay,
-            'customer_name' => $customerName,
-            'bill_date' => $current_date,
-            'items' => $items_data,
-            'total_amount' => $total_amount,
-            'tax_rate' => $taxRate,
-            'tax_amount' => $taxAmount,
-            'final_amount' => $finalAmount,
-            'cash_memos_generated' => $cash_memos_generated,
-            'cash_memo_errors' => $cash_memo_errors
-        ];
-        
-        // Clear selected customer - but keep it for next sale
-        // unset($_SESSION['selected_customer']);
-        
-        // Store success message instead of redirecting to preview (which doesn't exist)
-        $customerName = $customers[$selectedCustomer] ?? 'Unknown Customer';
-        $_SESSION['success_message'] = "Bill generated successfully for $customerName! Bill No: $retail_bill_no";
-        
-        // Redirect back to the same page with success message
-        header("Location: customer_sales.php?start_date=$start_date&end_date=$end_date");
-        exit;
-        
-    } catch (Exception $e) {
-        $conn->rollback();
-        $_SESSION['error'] = "Error processing sale: " . $e->getMessage();
-        logMessage("Transaction rolled back: " . $e->getMessage(), 'ERROR');
-        header("Location: customer_sales.php");
-        exit;
     }
+    
+    // Re-enable database constraints
+    $conn->query("SET FOREIGN_KEY_CHECKS = 1");
+    $conn->query("SET UNIQUE_CHECKS = 1");
 }
 
-// ============================================================================
-// RENDER PAGE
-// ============================================================================
+render_page:
 
-// Clear customer-related session messages after displaying
+// Check for success message in URL
+if (isset($_GET['success'])) {
+    $success_message = $_GET['success'];
+}
+
+// Check for success/error messages from customer selection
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
     unset($_SESSION['success_message']);
@@ -1528,23 +2182,41 @@ if (isset($_SESSION['error_message'])) {
     unset($_SESSION['error_message']);
 }
 
+// Log final state for debugging
+logMessage("Final session quantities count: " . count($_SESSION['sale_quantities']), 'INFO');
+logMessage("Items in current view: " . count($items), 'INFO');
+logMessage("Selected customer: ID $selectedCustomer - $selectedCustomerName", 'INFO');
+
 // Debug info
 $debug_info = [
     'total_items' => $total_items,
     'current_page' => $current_page,
     'total_pages' => $total_pages,
-    'session_quantities_count' => count($_SESSION['customer_sale_quantities'] ?? []),
-    'date' => $sale_date,
+    'session_quantities_count' => count($_SESSION['sale_quantities']),
+    'post_quantities_count' => ($_SERVER['REQUEST_METHOD'] === 'POST') ? count($_POST['sale_qty'] ?? []) : 0,
+    'date_range' => "$start_date to $end_date",
+    'days_count' => $days_count,
     'user_id' => $_SESSION['user_id'],
     'comp_id' => $comp_id,
     'license_type' => $license_type,
     'allowed_classes' => $allowed_classes,
-    'sale_day' => $sale_day,
+    'end_date_day' => $end_date_day,
     'closing_column' => $closing_column,
-    'sale_month' => $sale_month,
-    'selected_customer' => $selectedCustomer
+    'end_date_month' => $end_date_month,
+    'stock_filter' => '> 0',
+    'daily_stock_table' => $daily_stock_table,
+    'table_suffix' => $table_suffix,
+    'current_month' => date('Y-m'),
+    'has_restrictions' => $has_restrictions,
+    'available_dates' => $available_dates_global,
+    'unavailable_dates' => $unavailable_dates_global,
+    'dry_dates' => $dry_dates,
+    'latest_global_sale' => $restrictions['latest_existing_sale'] ?? null,
+    'selected_customer' => $selectedCustomer,
+    'selected_customer_name' => $selectedCustomerName,
+    'customer_prices_count' => count($customerPrices)
 ];
-logArray($debug_info, "Customer Sales Page Load Debug Info");
+logArray($debug_info, "Sales Page Load Debug Info");
 ?>
 
 <!DOCTYPE html>
@@ -1552,13 +2224,14 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customer Sales - liqoursoft</title>
+  <title>Customer Sales</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
   <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
   <style>
-    /* All CSS from sale_for_date_range.php */
+    /* Add all the CSS styles from closing_stock_for_date_range.php here */
+    /* [Include all the CSS styles from the working version] */
     .ajax-loader {
       display: none;
       text-align: center;
@@ -1640,20 +2313,36 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         font-weight: 500;
     }
 
-    .backdated-restriction {
-        background-color: #f8d7da !important;
-        border-left: 4px solid #dc3545 !important;
+    tr.global-restriction {
+        background-color: #ffffff !important;
+        border-left: 4px solid #6c757d !important;
     }
 
-    .backdated-restriction td {
-        color: #721c24 !important;
-        font-weight: 600;
+    tr.global-restriction td {
+        color: #6c757d !important;
+        font-weight: normal;
     }
 
-    .backdated-restriction .qty-input {
-        background-color: #f5c6cb !important;
-        border-color: #f5c6cb !important;
-        color: #721c24 !important;
+    tr.global-restriction .qty-input {
+        background-color: #f8f9fa !important;
+        border-color: #dee2e6 !important;
+        color: #6c757d !important;
+        cursor: not-allowed !important;
+    }
+
+    .dry-date {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .dry-date td {
+        color: #856404 !important;
+    }
+
+    .dry-date .qty-input {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+        color: #856404 !important;
         cursor: not-allowed !important;
     }
 
@@ -1665,8 +2354,16 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         text-align: left;
     }
 
-    .backdated-tooltip {
-        max-width: 300px !important;
+    .badge.bg-warning {
+        font-size: 10px;
+        padding: 3px 8px;
+        max-width: 200px;
+        white-space: normal;
+        text-align: left;
+    }
+
+    .restriction-tooltip {
+        max-width: 350px !important;
         white-space: normal !important;
     }
 
@@ -1744,25 +2441,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         font-size: 14px;
     }
 
-    .pagination-smart .page-item {
-        display: none;
-    }
-
-    .pagination-smart .page-item:first-child,
-    .pagination-smart .page-item:last-child,
-    .pagination-smart .page-item.active,
-    .pagination-smart .page-item:nth-child(2),
-    .pagination-smart .page-item:nth-last-child(2) {
-        display: block;
-    }
-
-    .pagination-ellipsis {
-        display: inline-block;
-        padding: 6px 12px;
-        margin: 2px;
-        color: #6c757d;
-    }
-
     .validation-alert {
         display: none;
         position: fixed;
@@ -1813,8 +2491,8 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
     }
 
     .table-archive {
-        background-color: #f8d7da !important;
-        color: #721c24 !important;
+        background-color: #ffffff !important;
+        color: #6c757d !important;
     }
 
     .stock-integer {
@@ -1829,15 +2507,292 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         font-size: 11px;
         color: #6c757d;
     }
-    
-    /* Customer field styling */
-    .customer-combined-field {
+
+    .global-restriction-item {
+        background-color: #ffffff !important;
+        border-left: 3px solid #6c757d !important;
+    }
+
+    .global-restriction-item td {
+        color: #6c757d !important;
+    }
+
+    .unavailable-date-cell {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+        text-align: center;
+        position: relative;
+        font-weight: normal;
+    }
+
+    .unavailable-date-cell span {
+        font-size: 14px;
+        display: block;
+    }
+
+    .unavailable-date-cell .small-icon {
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+        color: #6c757d;
+    }
+
+    .dry-date-cell {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        text-align: center;
+        font-weight: bold;
+        border-left: 2px solid #ffc107 !important;
+    }
+
+    .dry-date-cell .small-icon {
+        font-size: 12px;
+        display: block;
+        margin-top: 2px;
+    }
+
+    .available-date-cell {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .partial-distribution-item {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .partial-distribution-item td {
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell {
+        text-align: center !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        padding: 3px 5px !important;
+        min-width: 35px !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+    }
+
+    .date-distribution-cell.zero-distribution {
+        color: #6c757d !important;
+        font-weight: normal !important;
+    }
+
+    .date-distribution-cell.non-zero-distribution {
+        color: #198754 !important;
+        background-color: rgba(25, 135, 84, 0.1) !important;
+    }
+
+    .date-distribution-cell.global-unavailable-date {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    .date-distribution-cell.dry-unavailable-date {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell.no-stock-date {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+
+    .date-header {
+        text-align: center !important;
+        font-size: 11px !important;
+        padding: 4px 6px !important;
+        min-width: 40px !important;
+        background-color: #f8f9fa !important;
+        border-left: 1px solid #dee2e6 !important;
+        border-right: 1px solid #dee2e6 !important;
+        font-weight: bold !important;
+        vertical-align: middle !important;
+    }
+
+    .dry-date-header {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .unavailable-date-header {
+        background-color: #e9ecef !important;
+        color: #495057 !important;
+    }
+
+    .date-header, .date-distribution-cell {
+        display: table-cell !important;
+        visibility: visible !important;
+    }
+
+    .action-column {
+        width: 120px !important;
+        min-width: 120px !important;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .styled-table {
+        min-width: 1200px;
+    }
+
+    .btn-shuffle-item {
+        font-size: 11px !important;
+        padding: 2px 8px !important;
+    }
+
+    .date-distribution-cell.available-date-cell {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
         position: relative;
     }
+
+    .date-distribution-cell.available-date-cell:after {
+        content: "✓";
+        position: absolute;
+        top: 0;
+        right: 2px;
+        font-size: 10px;
+        color: #28a745;
+    }
+
+    .date-distribution-cell.unavailable-date-cell {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+    }
+
+    .date-distribution-cell.unavailable-date-cell span {
+        display: block;
+        font-size: 14px;
+    }
+
+    .date-distribution-cell.dry-date-cell {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+    }
+
+    .date-distribution-cell.dry-date-cell span {
+        display: block;
+        font-size: 14px;
+    }
+
+    .date-distribution-cell.non-zero-distribution {
+        background-color: #cce5ff !important;
+        color: #004085 !important;
+        font-weight: bold;
+    }
+
+    .date-distribution-cell.zero-distribution {
+        color: #6c757d !important;
+        background-color: #f8f9fa !important;
+    }
+
+    .no-stock-date {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+        text-align: center !important;
+        font-weight: normal !important;
+        position: relative;
+    }
+
+    .no-stock-date .small-icon {
+        font-size: 10px;
+        display: block;
+        margin-top: 2px;
+        color: #721c24;
+    }
+
+    .date-distribution-cell {
+        position: relative;
+        cursor: help;
+    }
+
+    .partial-distribution-item {
+        background-color: #fff3cd !important;
+        border-left: 3px solid #ffc107 !important;
+    }
+
+    .partial-distribution-item td {
+        color: #856404 !important;
+    }
+
+    .unavailable-date {
+        background-color: #ffffff !important;
+        color: #6c757d !important;
+        font-weight: normal;
+        position: relative;
+    }
+
+    .dry-date {
+        background-color: #fff3cd !important;
+        color: #856404 !important;
+        font-weight: bold;
+        position: relative;
+    }
+
+    .available-date-with-sales {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        font-weight: bold;
+    }
+
+    .restriction-banner {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #6c757d;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .dry-day-banner {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+        color: #856404;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+    
+    /* Customer selection styles */
+    .customer-section {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .customer-section .form-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
     .customer-hint {
-        font-size: 0.875rem;
+        font-size: 12px;
         color: #6c757d;
         margin-top: 5px;
+    }
+    
+    .customer-hint i {
+        margin-right: 3px;
+    }
+    
+    .selected-customer-badge {
+        background-color: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        display: inline-block;
     }
   </style>
 </head>
@@ -1850,15 +2805,190 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
     <?php include 'components/header.php'; ?>
 
     <div class="content-area">
+      
+      <!-- Financial Year Indicator -->
+      <div class="alert alert-info mb-3 py-2">
+          <strong><i class="fas fa-calendar"></i> Financial Year: <?= htmlspecialchars($fin_year_start . ' to ' . $fin_year_end) ?></strong>
+          <span class="ms-2 text-muted">(Working with year: <?= htmlspecialchars($_SESSION['FIN_YEAR_ID'] ?? 'Not Set') ?>)</span>
+      </div>
+
       <h3 class="mb-4">Customer Sales</h3>
 
-      <!-- SIMPLIFIED License Restriction Info -->
+      <!-- Customer Selection Section -->
+      <div class="customer-section">
+        <div class="row align-items-end">
+          <div class="col-md-8">
+            <form method="POST" id="customerForm" class="customer-form">
+              <label for="customer_field" class="form-label">
+                <i class="fas fa-user"></i> Select or Create Customer
+                <span class="text-danger">*</span>
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="customer_field" 
+                     name="customer_field" 
+                     list="customerOptions"
+                     autocomplete="off"
+                     placeholder="Type to search customers or type 'new: Customer Name' to create new"
+                     value="<?= htmlspecialchars($selectedCustomerName) ?>"
+                     required>
+              <datalist id="customerOptions">
+                <?php foreach ($customers as $code => $name): ?>
+                  <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
+                <?php endforeach; ?>
+              </datalist>
+              <div class="customer-hint">
+                <i class="fas fa-info-circle"></i>
+                Select existing customer from dropdown or type <strong>"new: Customer Name"</strong> to create new customer.
+                <span class="text-danger">* Required</span>
+              </div>
+            </form>
+          </div>
+          <div class="col-md-4">
+            <?php if ($selectedCustomer): ?>
+              <div class="selected-customer-badge">
+                <i class="fas fa-check-circle"></i> Current: <?= htmlspecialchars($selectedCustomerName) ?>
+              </div>
+              <?php if (!empty($customerPrices)): ?>
+                <div class="small text-muted mt-2">
+                  <i class="fas fa-tag"></i> <?= count($customerPrices) ?> item(s) with special pricing
+                </div>
+              <?php endif; ?>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+
+      <!-- License Restriction Info -->
       <div class="alert alert-info mb-3 py-2">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
           <p class="mb-0 compact-info">Showing items with available stock > 0</p>
       </div>
 
-      <!-- Success/Error Messages -->
+      <!-- Bill Generation Progress Modal -->
+      <div class="modal fade" id="billProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">
+                <i class="fas fa-cogs"></i> Generating Bills
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-info" id="progressStatus">
+                <i class="fas fa-spinner fa-spin"></i> <span id="progressMessage">Initializing...</span>
+              </div>
+              <div class="progress mb-3" style="height: 30px;">
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                  0%
+                </div>
+              </div>
+              <div class="row text-center mb-3">
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="currentBillCount">0</h3>
+                      <small class="text-muted">Bills Generated</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="totalBillCount">0</h3>
+                      <small class="text-muted">Total Bills</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body">
+                      <h3 id="timeRemaining">--</h3>
+                      <small class="text-muted">Time Remaining</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header bg-light">
+                  <h6 class="mb-0">Recently Generated Bills</h6>
+                </div>
+                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                  <table class="table table-sm table-hover" id="billsListTable">
+                    <thead>
+                       <tr>
+                        <th>Bill No</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                       </tr>
+                    </thead>
+                    <tbody id="billsListBody">
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">Waiting to start...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="row mt-3">
+                <div class="col-md-6">
+                  <small class="text-muted">
+                    <i class="fas fa-tachometer-alt"></i> 
+                    Speed: <span id="generationSpeed">--</span> bills/sec
+                  </small>
+                </div>
+                <div class="col-md-6 text-end">
+                  <small class="text-muted">
+                    <i class="fas fa-clock"></i>
+                    Elapsed: <span id="elapsedTime">0s</span>
+                  </small>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="viewResultsBtn" style="display: none;" onclick="viewResults()">
+                <i class="fas fa-eye"></i> View Results
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+      .progress-bar {
+          transition: width 0.3s ease;
+          font-weight: bold;
+          font-size: 14px;
+          line-height: 30px;
+      }
+      #billsListBody tr:last-child {
+          animation: highlightNew 1s ease;
+      }
+      @keyframes highlightNew {
+          0% { background-color: #d4edda; }
+          100% { background-color: transparent; }
+      }
+      .card .card-body {
+          padding: 10px;
+      }
+      #currentBillCount, #totalBillCount {
+          font-size: 28px;
+          font-weight: bold;
+          margin: 0;
+          color: #007bff;
+      }
+      #timeRemaining {
+          font-size: 20px;
+          font-weight: bold;
+          margin: 0;
+          color: #28a745;
+      }
+      </style>
+
       <?php if (isset($success_message)): ?>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <?= $success_message ?>
@@ -1872,58 +3002,10 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
-      
-      <?php if (isset($_SESSION['error'])): ?>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <?= $_SESSION['error'] ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      <?php unset($_SESSION['error']); ?>
-      <?php endif; ?>
 
-      <!-- Client-side Validation Alert -->
       <div class="alert alert-warning validation-alert" id="clientValidationAlert">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="validationMessage"></span>
-      </div>
-
-      <!-- Combined Customer Field -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0"><i class="fas fa-user"></i> Customer Information</h5>
-            </div>
-            <div class="card-body">
-              <form method="POST" id="customerForm">
-                <div class="customer-combined-field">
-                  <label for="customer_field" class="form-label">Select or Create Customer</label>
-                  <input type="text"
-                         class="form-control"
-                         id="customer_field"
-                         name="customer_field"
-                         list="customerOptions"
-                         required
-                         placeholder="Type to search customers or type 'new: Customer Name' to create new"
-                         value="<?= !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : '' ?>">
-                  <datalist id="customerOptions">
-                    <?php foreach ($customers as $code => $name): ?>
-                      <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
-                    <?php endforeach; ?>
-                  </datalist>
-                  <div class="customer-hint">
-                    <i class="fas fa-info-circle"></i>
-                    Select existing customer from dropdown or type "new: Customer Name" to create new customer.
-                    <span class="text-danger">* Required</span>
-                  </div>
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">
-                  <i class="fas fa-save"></i> Save Customer Selection
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Liquor Mode Selector -->
@@ -1964,7 +3046,7 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         </div>
       </div>
 
-      <!-- Date Selection -->
+      <!-- Date Range Selection -->
       <div class="date-range-container mb-4">
         <form method="GET" class="row g-3 align-items-end">
           <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
@@ -1972,32 +3054,36 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
           <input type="hidden" name="search" value="<?= htmlspecialchars($search); ?>">
           <input type="hidden" name="page" value="1">
           
-          <div class="col-md-4">
-            <label for="sale_date" class="form-label">Sale Date</label>
-            <input type="date" name="sale_date" class="form-control" 
-                   value="<?= htmlspecialchars($sale_date); ?>" required>
-          </div>
-          
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label for="start_date" class="form-label">Start Date</label>
             <input type="date" name="start_date" class="form-control" 
-                   value="<?= htmlspecialchars($start_date); ?>">
+                   value="<?= htmlspecialchars($start_date); ?>"
+                   min="<?= htmlspecialchars($fin_year_start); ?>"
+                   max="<?= htmlspecialchars($fin_year_end); ?>" required>
           </div>
           
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label for="end_date" class="form-label">End Date</label>
             <input type="date" name="end_date" class="form-control" 
-                   value="<?= htmlspecialchars($end_date); ?>">
+                   value="<?= htmlspecialchars($end_date); ?>"
+                   min="<?= htmlspecialchars($fin_year_start); ?>"
+                   max="<?= htmlspecialchars($fin_year_end); ?>" required>
           </div>
           
           <div class="col-md-4">
-            <label class="form-label">Selected Range: 
-              <span class="fw-bold"><?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?> (<?= $days_count ?> days)</span>
+            <label class="form-label">Date Range: 
+              <span class="fw-bold">
+                <?= date('d-M-Y', strtotime($start_date)) . " to " . date('d-M-Y', strtotime($end_date)) ?>
+                (<?= $days_count ?> days)
+              </span>
+              <?php if ($has_restrictions): ?>
+                <span class="badge bg-warning"><?= count($available_dates_global) ?> available</span>
+              <?php endif; ?>
             </label>
           </div>
           
           <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Apply Date</button>
+            <button type="submit" class="btn btn-primary w-100">Apply Date Range</button>
           </div>
         </form>
       </div>
@@ -2008,7 +3094,8 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
           <form method="GET" class="search-control">
             <input type="hidden" name="mode" value="<?= htmlspecialchars($mode); ?>">
             <input type="hidden" name="sequence_type" value="<?= htmlspecialchars($sequence_type); ?>">
-            <input type="hidden" name="sale_date" value="<?= htmlspecialchars($sale_date); ?>">
+            <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
+            <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
             <input type="hidden" name="page" value="1">
             <div class="input-group">
               <input type="text" name="search" class="form-control"
@@ -2023,10 +3110,9 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         <div class="col-md-6 text-end">
           <div class="text-muted">
             Total Items with Stock: <?= $total_items ?> | Page: <?= $current_page ?> of <?= $total_pages ?>
-            <?php if (count($_SESSION['customer_sale_quantities']) > 0): ?>
-              | <span class="text-success"><?= count($_SESSION['customer_sale_quantities']) ?> items with quantities</span>
+            <?php if (count($_SESSION['sale_quantities']) > 0): ?>
+              | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities</span>
             <?php endif; ?>
-            <span class="compact-info"> | Stock filter: > 0</span>
           </div>
         </div>
       </div>
@@ -2035,26 +3121,27 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
       <form method="POST" id="salesForm">
         <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date); ?>">
         <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date); ?>">
-        <input type="hidden" name="customer_field" id="salesCustomerField" value="<?= !empty($selectedCustomer) ? htmlspecialchars($selectedCustomer) : '' ?>">
+        <input type="hidden" name="update_sales" value="1">
+        <input type="hidden" name="customer_id" id="salesCustomerId" value="<?= htmlspecialchars($selectedCustomer) ?>">
 
-        <!-- Action Buttons (like sale_for_date_range.php) -->
+        <!-- Action Buttons -->
         <div class="d-flex gap-2 mb-3 flex-wrap">
-          <!-- Generate Bills Button -->
-          <button type="submit" name="generate_bills" id="generateBillsBtn" class="btn btn-success btn-action">
+          <button type="button" id="shuffleBtn" class="btn btn-warning btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
+            <i class="fas fa-random"></i> Shuffle All
+          </button>
+          
+          <button type="button" id="generateBillsBtn" class="btn btn-success btn-action" <?= empty($available_dates_global) ? 'disabled' : '' ?>>
             <i class="fas fa-save"></i> Generate Bills
           </button>
           
-          <!-- Clear Session Button -->
           <button type="button" id="clearSessionBtn" class="btn btn-danger">
             <i class="fas fa-trash"></i> Clear All Quantities
           </button>
           
-          <!-- Shuffle All Button -->
-          <button type="button" id="shuffleAllBtn" class="btn btn-warning">
-            <i class="fas fa-random"></i> Shuffle All
+          <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#salesLogModal" onclick="loadSalesLog()">
+              <i class="fas fa-file-alt"></i> View Sales Log
           </button>
-          
-          <!-- Total Sales Summary Button -->
+
           <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#totalSalesModal">
               <i class="fas fa-chart-bar"></i> View Total Sales Summary
           </button>
@@ -2064,45 +3151,56 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
           </a>
         </div>
 
-        <!-- Items Table -->
+        <?php if ($has_restrictions && empty($available_dates_global)): ?>
+          <div class="alert alert-warning mb-3">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>Note:</strong> Some dates in range are restricted due to existing sales or dry days.
+          </div>
+        <?php endif; ?>
+
+        <!-- Items Table with Integrated Distribution Preview -->
         <div class="table-container">
           <table class="styled-table table-striped" id="itemsTable">
             <thead class="table-header">
-              <tr>
+               <tr>
                 <th>Item Code</th>
                 <th>Item Name</th>
                 <th>Category</th>
                 <th>Rate (₹)</th>
                 <th>Available Stock</th>
                 <th>Sale Qty</th>
-                <th>Closing Balance</th>
+                <th>Closing Stock</th>
+                <th class="action-column">Action</th>
                 <th>Amount (₹)</th>
-              </tr>
+               </tr>
             </thead>
             <tbody>
 <?php if (!empty($items)): ?>
     <?php foreach ($items as $item): 
         $item_code = $item['CODE'];
-        $item_qty = isset($_SESSION['customer_sale_quantities'][$item_code]) ? $_SESSION['customer_sale_quantities'][$item_code] : 0;
-        $item_total = $item_qty * $item['RPRICE'];
+        $item_qty = isset($_SESSION['sale_quantities'][$item_code]) ? $_SESSION['sale_quantities'][$item_code] : 0;
+        
+        // Apply customer-specific pricing if available
+        $rate = $item['RPRICE'];
+        if (!empty($customerPrices) && isset($customerPrices[$item_code])) {
+            $rate = $customerPrices[$item_code];
+        }
+        
+        $item_total = $item_qty * $rate;
         $closing_balance = $item['CURRENT_STOCK'] - $item_qty;
         
-        // Format numbers to remove decimals for display
         $display_stock = floor($item['CURRENT_STOCK']);
-        $display_rate = intval($item['RPRICE']);
+        $display_rate = intval($rate);
         $display_closing = floor($closing_balance);
         $display_amount = intval($item_total);
         
-        // Extract size from item details
         $size = 0;
         if (preg_match('/(\d+)\s*ML\b/i', $item['DETAILS'], $matches)) {
             $size = $matches[1];
         }
         
-        // Get class code
         $class_code = $item['CLASS'] ?? 'O';
         
-        // Determine stock status for styling
         $stock_status_class = '';
         if ($item['CURRENT_STOCK'] <= 0) {
             $stock_status_class = 'stock-out';
@@ -2112,39 +3210,48 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
             $stock_status_class = 'stock-available';
         }
         
-        // Check for backdated sales (simplified version)
-        $has_backdated_restriction = false;
-        $earliest_sale = null;
-        $latest_sale = null;
-        $sale_count = 0;
-        
-        // Note: You should implement the full backdated check like in sale_for_date_range.php
-        // For now, we'll skip it
-        
-        $backdated_class = $has_backdated_restriction ? 'backdated-restriction' : '';
-        $backdated_title = $has_backdated_restriction ? 
-            "Sales exist from $earliest_sale to $latest_sale (Total: $sale_count sales)" : '';
+        $has_available_dates = !empty($available_dates_global);
+        $should_disable_input = !$has_available_dates || empty($selectedCustomer);
+        $restriction_class = $should_disable_input ? 'global-restriction' : '';
+        $restriction_title = '';
+        if (empty($selectedCustomer)) {
+            $restriction_title = "Please select a customer first";
+        } elseif (!$has_available_dates) {
+            $restriction_title = "No available dates in selected range due to existing sales or dry days.";
+        }
     ?>
         <tr data-class="<?= htmlspecialchars($class_code) ?>" 
             data-details="<?= htmlspecialchars($item['DETAILS']) ?>" 
             data-details2="<?= htmlspecialchars($item['DETAILS2']) ?>"
-            class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $backdated_class ?>">
+            class="<?= $item_qty > 0 ? 'has-quantity' : '' ?> <?= $restriction_class ?>"
+            data-has-global-restriction='<?= $should_disable_input ? 'true' : 'false' ?>'
+            data-available-dates='<?= json_encode($available_dates_global) ?>'
+            data-unavailable-dates='<?= json_encode($unavailable_dates_global) ?>'
+            data-dry-dates='<?= json_encode($dry_dates) ?>'
+            data-stock-data='<?= htmlspecialchars(json_encode($daily_stock_for_js[$item_code] ?? [])) ?>'
+            data-latest-global-sale='<?= json_encode($restrictions['latest_existing_sale'] ?? '') ?>'>
             <td><?= htmlspecialchars($item_code); ?></td>
-            <td><?= htmlspecialchars($item['DETAILS']); ?></td>
+            <td><?= htmlspecialchars($item['DETAILS']); ?>
+                <?php if (!empty($customerPrices) && isset($customerPrices[$item_code])): ?>
+                    <span class="badge bg-info ms-1" title="Customer special price">special</span>
+                <?php endif; ?>
+            </td>
             <td><?= htmlspecialchars($item['DETAILS2']); ?></td>
             <td class="stock-integer"><?= number_format($display_rate); ?></td>
             <td>
                 <span class="stock-info">
                     <span class="stock-integer"><?= number_format($display_stock); ?></span>
                     <span class="stock-status <?= $stock_status_class ?>">
-                        <?php if ($item['CURRENT_STOCK'] <= 0): ?>
-                            Out
-                        <?php elseif ($item['CURRENT_STOCK'] < 10): ?>
-                            Low
-                        <?php else: ?>
-                            Available
-                        <?php endif; ?>
+                        <?php if ($item['CURRENT_STOCK'] <= 0): ?>Out
+                        <?php elseif ($item['CURRENT_STOCK'] < 10): ?>Low
+                        <?php else: ?>Available<?php endif; ?>
                     </span>
+                    <?php if ($has_restrictions && $has_available_dates): ?>
+                        <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                              title="Only <?= count($available_dates_global) ?> of <?= $days_count ?> dates are available due to existing sales or dry days.">
+                            <i class="fas fa-calendar-day"></i> Partial Range
+                        </span>
+                    <?php endif; ?>
                 </span>
             </td>
             <td>
@@ -2152,29 +3259,52 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                        class="form-control qty-input" min="0" 
                        max="<?= floor($item['CURRENT_STOCK']); ?>" 
                        step="1" value="<?= $item_qty ?>" 
-                       data-rate="<?= $item['RPRICE'] ?>"
+                       data-rate="<?= $rate ?>"
                        data-code="<?= htmlspecialchars($item_code); ?>"
                        data-stock="<?= $item['CURRENT_STOCK'] ?>"
+                       data-stock-data='<?= htmlspecialchars(json_encode($daily_stock_for_js[$item_code] ?? [])) ?>'
                        data-size="<?= $size ?>"
+                       data-has-global-restriction="<?= $should_disable_input ? 'true' : 'false' ?>"
+                       data-available-dates='<?= htmlspecialchars(json_encode($available_dates_global)) ?>'
+                       data-unavailable-dates='<?= htmlspecialchars(json_encode($unavailable_dates_global)) ?>'
+                       data-dry-dates='<?= htmlspecialchars(json_encode($dry_dates)) ?>'
                        oninput="validateQuantity(this)"
-                       <?= $has_backdated_restriction ? 'disabled title="' . htmlspecialchars($backdated_title) . '"' : '' ?>>
+                       onkeydown="if(event.key === 'Enter') { event.preventDefault(); shuffleThisItem(this); }"
+                       <?= $should_disable_input ? 'disabled title="' . htmlspecialchars($restriction_title) . '"' : '' ?>>
             </td>
             <td class="closing-balance-cell" id="closing_<?= htmlspecialchars($item_code); ?>">
-                <span class="stock-integer"><?= number_format($display_closing) ?></span>
-                <?php if ($closing_balance <= 0): ?>
-                    <br><span class="stock-status stock-out">Out</span>
-                <?php elseif ($closing_balance < 10): ?>
+                <?php 
+                $closing_stock_display = floor($closing_balance);
+                $closing_class = '';
+                $closing_bg = '';
+                if ($closing_balance < 0) {
+                    $closing_class = 'text-danger fw-bold';
+                    $closing_bg = 'background-color: #f8d7da;';
+                } elseif ($closing_balance < 10 && $closing_balance >= 0) {
+                    $closing_class = 'text-warning fw-bold';
+                }
+                ?>
+                <span class="stock-integer <?= $closing_class ?>" style="<?= $closing_bg ?>"><?= number_format($closing_stock_display) ?></span>
+                <?php if ($closing_balance < 0): ?>
+                    <br><span class="stock-status stock-out" style="<?= $closing_bg ?>">Out</span>
+                <?php elseif ($closing_balance < 10 && $closing_balance >= 0): ?>
                     <br><span class="stock-status stock-low">Low</span>
                 <?php endif; ?>
+            </td>
+            <td class="action-column">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-shuffle-item" 
+                        data-code="<?= htmlspecialchars($item_code); ?>">
+                    <i class="fas fa-random"></i> Shuffle
+                </button>
             </td>
             <td class="amount-cell" id="amount_<?= htmlspecialchars($item_code); ?>">
                 <span class="stock-integer"><?= number_format($display_amount) ?></span>
             </td>
-        </tr>
+           </tr>
     <?php endforeach; ?>
 <?php else: ?>
     <tr>
-        <td colspan="8" class="text-center text-muted">
+        <td colspan="9" class="text-center text-muted">
             <div class="py-4">
                 <i class="fas fa-box-open fa-2x mb-3 text-muted"></i>
                 <h5>No items found with available stock</h5>
@@ -2186,7 +3316,7 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         </td>
     </tr>
 <?php endif; ?>
-            </tbody>
+</tbody>
           </table>
         </div>
         
@@ -2194,7 +3324,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         <?php if ($total_pages > 1): ?>
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center">
-                <!-- Previous Button -->
                 <li class="page-item <?= $current_page <= 1 ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page - 1])) ?>" aria-label="Previous">
                         <span aria-hidden="true">&laquo;</span>
@@ -2238,7 +3367,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                     </li>
                 <?php endif; ?>
                 
-                <!-- Next Button -->
                 <li class="page-item <?= $current_page >= $total_pages ? 'disabled' : '' ?>">
                     <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $current_page + 1])) ?>" aria-label="Next">
                         <span aria-hidden="true">&raquo;</span>
@@ -2248,16 +3376,18 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
         </nav>
         <div class="pagination-info">
             Showing <?= count($items) ?> of <?= $total_items ?> items with stock > 0 (Page <?= $current_page ?> of <?= $total_pages ?>)
-            <?php if (count($_SESSION['customer_sale_quantities']) > 0): ?>
-              | <span class="text-success"><?= count($_SESSION['customer_sale_quantities']) ?> items with quantities across all pages</span>
+            <?php if (count($_SESSION['sale_quantities']) > 0): ?>
+              | <span class="text-success"><?= count($_SESSION['sale_quantities']) ?> items with quantities across all pages</span>
+            <?php endif; ?>
+            <?php if ($has_restrictions): ?>
+              | <span class="text-warning"><?= count($available_dates_global) ?> available dates</span>
             <?php endif; ?>
         </div>
         <?php endif; ?>
         
-        <!-- Ajax Loader -->
         <div id="ajaxLoader" class="ajax-loader">
           <div class="loader"></div>
-          <p>Processing sale...</p>
+          <p>Calculating distribution...</p>
         </div>
       </form>
     </div>
@@ -2266,7 +3396,33 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
   </div>
 </div>
 
-<!-- Total Sales Modal (from sale_for_date_range.php) -->
+<!-- Sales Log Modal -->
+<div class="modal fade" id="salesLogModal" tabindex="-1" aria-labelledby="salesLogModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="salesLogModalLabel">Sales Log - Foreign Export</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="salesLogContent" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading sales log...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printSalesLog()">Print</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Total Sales Modal -->
 <div class="modal fade" id="totalSalesModal" tabindex="-1" aria-labelledby="totalSalesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -2280,7 +3436,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                         <thead class="table-light">
                             <tr>
                                 <th>Category</th>
-                                <!-- ML Sizes -->
                                 <th>50 ML</th>
                                 <th>60 ML</th>
                                 <th>90 ML</th>
@@ -2297,7 +3452,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                                 <th>700 ML</th>
                                 <th>750 ML</th>
                                 <th>1000 ML</th>
-                                <!-- Liter Sizes -->
                                 <th>1.5L</th>
                                 <th>1.75L</th>
                                 <th>2L</th>
@@ -2310,7 +3464,6 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Rows will be populated by JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -2326,319 +3479,878 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Global variables
-const allSessionQuantities = <?= json_encode($_SESSION['customer_sale_quantities'] ?? []) ?>;
+let savedDistributions = {};
+const dateArray = <?= json_encode($date_array) ?>;
+const daysCount = <?= $days_count ?>;
+const allSessionQuantities = <?= json_encode($_SESSION['sale_quantities'] ?? []) ?>;
 const allItemsData = <?= json_encode($all_items_data) ?>;
-const saleDate = '<?= $start_date ?>';
-const startDate = '<?= $start_date ?>';
-const endDate = '<?= $end_date ?>';
-const daysInRange = <?= $days_count ?>;
-const unavailableDatesGlobal = <?= json_encode($unavailable_dates_global ?? []) ?>;
-const allDatesInRange = <?= json_encode($all_dates_in_range ?? []) ?>;
 
 // Daily stock data for each item and date (for stock-aware distribution)
 const dailyStockData = <?= json_encode($daily_stock_for_js ?? []) ?>;
 console.log('Daily stock data loaded:', dailyStockData);
 
-// Distribution data from session
-const itemDistribution = <?= json_encode($_SESSION['customer_item_distribution'] ?? []) ?>;
-console.log('Distribution data loaded:', itemDistribution);
+// Global restriction variables
+const globalAvailableDates = <?= json_encode($available_dates_global) ?>;
+const globalUnavailableDates = <?= json_encode($unavailable_dates_global) ?>;
+const globalDryDates = <?= json_encode($dry_dates) ?>;
+const hasGlobalRestrictions = <?= json_encode($has_restrictions) ?>;
+const latestGlobalSale = <?= json_encode($restrictions['latest_existing_sale'] ?? null) ?>;
 
-// Function to get unavailable dates for JavaScript
-function getUnavailableDatesJS() {
-    return unavailableDatesGlobal;
-}
+// Dry days info
+const dryDaysInfo = <?= json_encode($restrictions['dry_days_info'] ?? []) ?>;
 
-// Function to get dates in range
-function getDatesInRange() {
-    return allDatesInRange;
-}
+// Customer selection
+let selectedCustomer = <?= json_encode($selectedCustomer) ?>;
+let selectedCustomerName = <?= json_encode($selectedCustomerName) ?>;
 
-// Function to get stock-aware distribution for an item
-function getStockAwareDistributionJS(itemCode, totalQty) {
-    const dates = getDatesInRange();
-    const unavailable = getUnavailableDatesJS();
+// ============================================================================
+// CUSTOMER SELECTION VALIDATION
+// ============================================================================
+function validateCustomerSelection() {
+    const customerField = document.getElementById('customer_field');
+    const customerValue = customerField ? customerField.value.trim() : '';
     
-    // Filter available dates (not dry days, not backdated)
-    const availableDates = dates.filter(d => !unavailable.includes(d));
-    
-    if (availableDates.length === 0) {
-        return {};
+    if (customerValue === '' || customerValue === '0' || customerValue === null) {
+        showClientValidationAlert('Please select a customer or create a new one');
+        if (customerField) customerField.focus();
+        return false;
     }
     
-    // Get stock for each date for this item
-    const stockForItem = dailyStockData[itemCode] || {};
-    
-    // Filter dates with available stock
-    const stockAvailableDates = availableDates.filter(date => {
-        const stock = stockForItem[date] || 0;
-        return stock > 0;
-    });
-    
-    if (stockAvailableDates.length === 0) {
-        // No stock available on any date, return empty distribution
-        const distribution = {};
-        dates.forEach(d => distribution[d] = 0);
-        return distribution;
+    // Check if it's a valid customer code (numeric)
+    if (!isNaN(customerValue) && customerValue !== '') {
+        return true;
     }
     
-    // Distribute quantity across available dates with stock
-    const distribution = {};
-    dates.forEach(d => distribution[d] = 0);
+    // Check if it's a new customer (starts with "new:")
+    if (customerValue.toLowerCase().startsWith('new:')) {
+        return true;
+    }
     
-    let remaining = totalQty;
-    
-    // First pass: distribute evenly as much as possible
-    const qtyPerDate = Math.floor(totalQty / stockAvailableDates.length);
-    const remainder = totalQty % stockAvailableDates.length;
-    
-    stockAvailableDates.forEach((date, index) => {
-        const maxStock = stockForItem[date] || 0;
-        const qty = Math.min(qtyPerDate, maxStock);
-        distribution[date] = qty;
-        remaining -= qty;
-    });
-    
-    // Second pass: distribute remaining randomly among dates with stock
-    if (remaining > 0) {
-        const availableForRemainder = stockAvailableDates.filter(date => {
-            const currentQty = distribution[date];
-            const maxStock = stockForItem[date] || 0;
-            return currentQty < maxStock;
-        });
-        
-        while (remaining > 0 && availableForRemainder.length > 0) {
-            const randomIndex = Math.floor(Math.random() * availableForRemainder.length);
-            const date = availableForRemainder[randomIndex];
-            
-            const maxStock = stockForItem[date] || 0;
-            if (distribution[date] < maxStock) {
-                distribution[date]++;
-                remaining--;
-            } else {
-                // Remove this date from available list
-                availableForRemainder.splice(randomIndex, 1);
+    // Check if it matches an existing customer name
+    const customerOptions = document.getElementById('customerOptions');
+    if (customerOptions) {
+        const options = customerOptions.options;
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].text === customerValue) {
+                return true;
             }
         }
     }
     
+    showClientValidationAlert('Please select a valid customer from the list or type "new: Customer Name" to create a new one');
+    if (customerField) customerField.focus();
+    return false;
+}
+
+// Sync customer field to hidden form field before submission
+function syncCustomerField() {
+    const customerValue = $('#customer_field').val();
+    $('#salesCustomerId').val(customerValue);
+    console.log('Customer field synced to hidden field:', customerValue);
+}
+
+// Auto-submit customer form when selection changes
+function setupCustomerAutoSubmit() {
+    let customerTimeout;
+    
+    $('#customer_field').on('input', function() {
+        clearTimeout(customerTimeout);
+        const value = $(this).val();
+        
+        // Auto-submit after typing stops (for new customer creation)
+        if (value.toLowerCase().startsWith('new:')) {
+            customerTimeout = setTimeout(() => {
+                if (value.trim().length > 5) {
+                    $('#customerForm').submit();
+                }
+            }, 1000);
+        }
+    });
+    
+    $('#customer_field').on('change', function() {
+        const value = $(this).val();
+        // Auto-submit if a valid customer is selected
+        if (!value.toLowerCase().startsWith('new:') && value !== '') {
+            $('#customerForm').submit();
+        }
+    });
+}
+
+// ============================================================================
+// STOCK-AWARE DISTRIBUTION FUNCTION
+// ============================================================================
+function getStockAwareDistribution(itemCode, totalQty, dateArray, availableDates, dryDates, unavailableDates, dailyStockData) {
+    if (totalQty <= 0) return new Array(dateArray.length).fill(0);
+    
+    console.log(`Stock-aware distribution for ${itemCode}, Qty: ${totalQty}`);
+    
+    const stockData = dailyStockData[itemCode] || {};
+    console.log(`Stock data for ${itemCode}:`, stockData);
+    
+    const currentMonth = '<?= date('Y-m') ?>';
+    const firstDateInRange = dateArray[0];
+    const isHistorical = !firstDateInRange.startsWith(currentMonth);
+    
+    if (isHistorical) {
+        console.log(`Historical date range detected (${firstDateInRange}), using regular random distribution`);
+        return getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates);
+    }
+    
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    
+    if (trulyAvailableDates.length === 0) {
+        console.log(`No truly available dates for ${itemCode}`);
+        return new Array(dateArray.length).fill(0);
+    }
+    
+    const datesWithStock = [];
+    const stockLevels = {};
+    
+    trulyAvailableDates.forEach(date => {
+        const stock = stockData[date] || 0;
+        if (stock > 0) {
+            datesWithStock.push(date);
+            stockLevels[date] = stock;
+        }
+    });
+    
+    if (datesWithStock.length === 0) {
+        console.log(`No dates with stock for ${itemCode}, using regular distribution`);
+        return getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates);
+    }
+    
+    console.log(`Dates with stock for ${itemCode}:`, datesWithStock);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    const distribution = new Array(dateArray.length).fill(0);
+    const cumulativeSales = {};
+    datesWithStock.forEach(date => { cumulativeSales[date] = 0; });
+    
+    for (let i = 0; i < totalQty; i++) {
+        const availableNow = datesWithStock.filter(date => {
+            const stock = stockLevels[date] || 0;
+            const used = cumulativeSales[date] || 0;
+            return used < stock;
+        });
+        
+        if (availableNow.length === 0) {
+            console.warn(`No dates with remaining stock for ${itemCode} after ${i} units`);
+            break;
+        }
+        
+        const randomDate = availableNow[Math.floor(Math.random() * availableNow.length)];
+        cumulativeSales[randomDate]++;
+        
+        const dateIndex = dateIndexMap[randomDate];
+        if (dateIndex !== undefined) {
+            distribution[dateIndex]++;
+        }
+    }
+    
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (totalDistributed < totalQty) {
+        console.warn(`Could only distribute ${totalDistributed} of ${totalQty} units for ${itemCode} due to stock limits`);
+    }
+    
+    console.log(`Final distribution for ${itemCode}:`, distribution);
     return distribution;
 }
 
-// Function to shuffle a single item's distribution
+function getRegularDistribution(itemCode, totalQty, dateArray, availableDates, dryDates) {
+    if (totalQty <= 0) return new Array(dateArray.length).fill(0);
+    
+    console.log(`Regular random distribution for ${itemCode}, Qty: ${totalQty}`);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+    
+    const distribution = new Array(dateArray.length).fill(0);
+    const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+    
+    if (trulyAvailableDates.length === 0) {
+        console.log(`No truly available dates for ${itemCode}`);
+        return distribution;
+    }
+    
+    const availableDaysCount = trulyAvailableDates.length;
+    const dailySales = new Array(availableDaysCount).fill(0);
+    
+    for (let i = 0; i < totalQty; i++) {
+        const randomDay = Math.floor(Math.random() * availableDaysCount);
+        dailySales[randomDay]++;
+    }
+    
+    trulyAvailableDates.forEach((date, index) => {
+        const dateIndex = dateIndexMap[date];
+        if (dateIndex !== undefined) {
+            distribution[dateIndex] = dailySales[index];
+        }
+    });
+    
+    console.log(`Regular distribution for ${itemCode}:`, distribution);
+    return distribution;
+}
+
+// ============================================================================
+// UPDATE DISTRIBUTION PREVIEW FUNCTION
+// ============================================================================
+function updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty) {
+    console.log(`DEBUG: updateDistributionPreviewWithGlobalRestrictions called for ${itemCode} with qty ${totalQty}`);
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const itemRow = inputField.closest('tr');
+
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        const savedDistribution = savedDistributions[itemCode];
+        const savedTotal = savedDistribution.reduce((sum, qty) => sum + qty, 0);
+        
+        if (savedTotal === totalQty) {
+            console.log(`DEBUG: ${itemCode} - Using SAVED distribution`);
+            displayDistributionInCells(itemCode, itemRow, savedDistribution);
+            return;
+        }
+    }
+
+    if (totalQty <= 0) {
+        itemRow.find('.date-distribution-cell').remove();
+        delete savedDistributions[itemCode];
+
+        const currentStock = parseFloat(inputField.data('stock'));
+        const displayClosing = Math.floor(currentStock);
+        $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
+        $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
+
+        if ($('input[name^="sale_qty"]').filter(function() {
+            return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+        }).length === 0) {
+            $('.date-header, .date-distribution-cell').hide();
+        }
+
+        return;
+    }
+
+    const hasGlobalRestriction = inputField.data('has-global-restriction');
+    const availableDates = inputField.data('available-dates') || [];
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    let stockData = dailyStockData[itemCode] || {};
+    
+    console.log(`DEBUG: ${itemCode} - Stock data:`, stockData);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    let distribution = new Array(daysCount).fill(0);
+    let trulyAvailableDates = [];
+    
+    if (hasGlobalRestriction && availableDates.length > 0) {
+        trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Item ${itemCode}: Stock-aware distribution on ${trulyAvailableDates.length} available dates`);
+            itemRow.addClass('partial-distribution-item');
+        } else {
+            console.log(`Item ${itemCode}: No truly available dates for distribution`);
+            itemRow.addClass('partial-distribution-item');
+        }
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Item ${itemCode}: Stock-aware distribution across ${trulyAvailableDates.length} non-dry dates`);
+            itemRow.removeClass('partial-distribution-item');
+        } else {
+            console.log(`Item ${itemCode}: No non-dry dates available`);
+            itemRow.addClass('partial-distribution-item');
+        }
+    } else {
+        console.log(`Item ${itemCode}: No available dates for distribution`);
+        itemRow.addClass('partial-distribution-item');
+    }
+
+    console.log(`DEBUG: ${itemCode} - Final distribution array:`, distribution);
+    
+    itemRow.find('.date-distribution-cell').remove();
+
+    savedDistributions[itemCode] = distribution.slice();
+
+    const cellsToInsert = [];
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell">`);
+
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        const stockAvailable = (stockData[date] || 0) > 0;
+
+        if (isGlobalUnavailable && !isDryDate) {
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+
+        } else if (isDryDate) {
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+
+        } else if (!stockAvailable) {
+            cell.addClass('no-stock-date');
+            cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+            cell.attr('title', `No stock available on ${date}`);
+
+        } else if (qty > 0) {
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+
+        } else {
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+        }
+
+        cellsToInsert.push(cell);
+    });
+
+    for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+        cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+    }
+
+    const finalTotal = distribution.reduce((sum, qty) => sum + qty, 0);
+    if (finalTotal !== totalQty) {
+        console.error(`CRITICAL: Final total (${finalTotal}) doesn't match totalQty (${totalQty}) for item ${itemCode}`);
+        
+        const missingQty = totalQty - finalTotal;
+        for (let i = 0; i < distribution.length; i++) {
+            const date = dateArray[i];
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const hasStock = (stockData[date] || 0) > 0;
+            
+            if (!isDryDate && !isGlobalUnavailable && hasStock) {
+                distribution[i] += missingQty;
+                const cellVisualIndex = distribution.length - 1 - i;
+                const cell = itemRow.find('.date-distribution-cell').eq(cellVisualIndex);
+                if (cell.length) {
+                    cell.text(distribution[i]);
+                    cell.addClass('non-zero-distribution');
+                    cell.removeClass('zero-distribution');
+                    cell.attr('title', `${distribution[i]} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+                }
+                console.log(`Last resort correction: Added ${missingQty} to ${date}`);
+                break;
+            }
+        }
+    }
+    
+    $('.date-header, .date-distribution-cell').show();
+    saveDistributionToSession(itemCode, distribution);
+}
+
+function displayDistributionInCells(itemCode, itemRow, distribution) {
+    console.log(`DEBUG: ${itemCode} - displayDistributionInCells called with:`, distribution);
+    
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const unavailableDates = inputField.data('unavailable-dates') || [];
+    const dryDates = inputField.data('dry-dates') || [];
+    
+    let stockData = dailyStockData[itemCode] || {};
+    if (Object.keys(stockData).length === 0) {
+        try {
+            const stockStr = inputField.data('stock-data');
+            if (stockStr) {
+                stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
+            }
+        } catch(e) {
+            console.error('Error parsing stock data:', e);
+        }
+    }
+    
+    itemRow.find('.date-distribution-cell').remove();
+    $('.date-header, .date-distribution-cell').show();
+    
+    const totalDistributed = distribution.reduce((sum, qty) => sum + qty, 0);
+    console.log(`DEBUG: ${itemCode} - Total in saved distribution: ${totalDistributed}`);
+    
+    const cellsToInsert = [];
+    distribution.forEach((qty, index) => {
+        const date = dateArray[index];
+        const cell = $(`<td class="date-distribution-cell">`);
+
+        const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+        const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+        const stockAvailable = (stockData[date] || 0) > 0;
+
+        if (isDryDate) {
+            cell.addClass('dry-unavailable-date');
+            cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+            const dryDescription = dryDaysInfo[date] || 'Dry Day';
+            cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+
+        } else if (isGlobalUnavailable) {
+            cell.addClass('global-unavailable-date');
+            cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+            cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+
+        } else if (!stockAvailable) {
+            cell.addClass('no-stock-date');
+            cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+            cell.attr('title', `No stock available on ${date}`);
+
+        } else if (qty > 0) {
+            cell.addClass('non-zero-distribution');
+            cell.text(qty);
+            cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+
+        } else {
+            cell.addClass('zero-distribution');
+            cell.text('0');
+            cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+        }
+
+        cellsToInsert.push(cell);
+    });
+
+    const actionColumn = itemRow.find('td.action-column');
+    for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+        if (actionColumn.length > 0) {
+            cellsToInsert[i].insertAfter(actionColumn);
+        } else {
+            itemRow.append(cellsToInsert[i]);
+        }
+    }
+    
+    console.log(`DEBUG: ${itemCode} - Displayed saved distribution in UI`);
+}
+
+// ============================================================================
+// SHUFFLE DISTRIBUTION FOR ITEM FUNCTION
+// ============================================================================
+function shuffleDistributionForItem(itemCode, totalQty) {
+    console.log(`DEBUG: shuffleDistributionForItem called for ${itemCode} with qty ${totalQty}`);
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
+    const availableDatesJson = inputField.data('available-dates');
+    const unavailableDatesJson = inputField.data('unavailable-dates');
+    const dryDatesJson = inputField.data('dry-dates');
+
+    let availableDates = [];
+    let unavailableDates = [];
+    let dryDates = [];
+    
+    let stockData = dailyStockData[itemCode] || {};
+    if (Object.keys(stockData).length === 0) {
+        try {
+            const stockStr = inputField.data('stock-data');
+            if (stockStr) {
+                stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
+            }
+        } catch(e) {
+            console.error('Error parsing stock data:', e);
+        }
+    }
+    
+    console.log(`DEBUG: shuffle ${itemCode} - stockData:`, stockData);
+    
+    try {
+        availableDates = availableDatesJson || [];
+        unavailableDates = unavailableDatesJson || [];
+        dryDates = dryDatesJson || [];
+    } catch (e) {
+        console.error('Error parsing date arrays:', e);
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - hasGlobalRestriction: ${hasGlobalRestriction}`);
+    
+    const dateIndexMap = {};
+    dateArray.forEach((date, index) => {
+        dateIndexMap[date] = index;
+    });
+
+    let distribution = new Array(daysCount).fill(0);
+    let trulyAvailableDates = [];
+    
+    if (hasGlobalRestriction && availableDates.length > 0) {
+        trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: shuffle ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Shuffled ${itemCode}: Stock-aware distribution on ${trulyAvailableDates.length} available dates`);
+        }
+    } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+        trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+        console.log(`DEBUG: shuffle ${itemCode} - trulyAvailableDates after excluding dry days:`, trulyAvailableDates);
+        
+        if (trulyAvailableDates.length > 0) {
+            distribution = getStockAwareDistribution(
+                itemCode, 
+                totalQty, 
+                dateArray, 
+                trulyAvailableDates, 
+                dryDates, 
+                unavailableDates,
+                stockData
+            );
+            console.log(`Shuffled ${itemCode}: Stock-aware distribution across ${trulyAvailableDates.length} non-dry dates`);
+        }
+    }
+
+    console.log(`DEBUG: shuffle ${itemCode} - returning distribution:`, distribution);
+    return distribution;
+}
+
+// ============================================================================
+// INITIALIZE TABLE HEADERS (newest on left)
+// ============================================================================
+function initializeTableHeaders() {
+    $('.date-header').remove();
+
+    const displayDates = [...dateArray].reverse();
+
+    const actionColumn = $('.table-header tr th.action-column');
+    if (actionColumn.length > 0) {
+        displayDates.forEach(date => {
+            const dateObj = new Date(date);
+            const day = dateObj.getDate();
+            const month = dateObj.toLocaleString('default', { month: 'short' });
+
+            let title = date;
+            let headerClass = '';
+
+            if (globalDryDates.includes(date)) {
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                title = `${date} - DRY DAY: ${dryDescription}`;
+                headerClass = 'dry-date-header';
+            } else if (globalUnavailableDates.includes(date) && !globalDryDates.includes(date)) {
+                title = `${date} - Has existing sales`;
+                headerClass = 'unavailable-date-header';
+            } else {
+                title = `${date} - Available for new sales`;
+            }
+
+            $(`<th class="date-header ${headerClass}" title="${title}">${day}<br>${month}</th>`)
+                .insertAfter(actionColumn);
+        });
+    }
+}
+
+// ============================================================================
+// SHUFFLE THIS ITEM FUNCTION (Enter key handler)
+// ============================================================================
 function shuffleThisItem(input) {
     const itemCode = $(input).data('code');
-    const totalQty = parseInt($(input).val()) || 0;
+    const qty = parseInt($(input).val()) || 0;
     
-    if (totalQty <= 0) {
-        alert('Please enter a quantity first');
-        return;
-    }
+    console.log(`Enter key pressed for item ${itemCode} with qty ${qty}`);
     
-    // Get stock-aware distribution
-    const distribution = getStockAwareDistributionJS(itemCode, totalQty);
-    
-    // Save to session
-    saveDistributionToSession(itemCode, distribution);
-    
-    // Update preview
-    updateDistributionPreview(itemCode, distribution);
-    
-    alert('Distribution shuffled for item ' + itemCode);
-}
+    if (qty > 0) {
+        delete savedDistributions[itemCode];
+        
+        const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+        const hasGlobalRestriction = inputField.data('has-global-restriction') === 'true';
+        const availableDatesJson = inputField.data('available-dates');
+        const unavailableDatesJson = inputField.data('unavailable-dates');
+        const dryDatesJson = inputField.data('dry-dates');
 
-// Function to update distribution preview in cells
-function updateDistributionPreview(itemCode, distribution) {
-    // This would update the distribution cells if they exist
-    // For now, just log it
-    console.log('Distribution preview for', itemCode, distribution);
-}
-
-// Function to display distribution in cells
-function displayDistributionInCells(itemCode, distribution) {
-    // This would display the distribution in table cells
-    console.log('Display distribution for', itemCode, distribution);
-}
-
-// Function to shuffle quantities across available dates
-function shuffleQuantities() {
-    if (!confirm('This will distribute all quantities randomly across available dates (excluding dry days and restricted dates). Continue?')) {
-        return;
-    }
-    
-    const dates = getDatesInRange();
-    const unavailable = getUnavailableDatesJS();
-    const availableDates = dates.filter(d => !unavailable.includes(d));
-    
-    if (availableDates.length === 0) {
-        alert('No available dates to distribute quantities!');
-        return;
-    }
-    
-    // For each item with quantity, distribute randomly
-    for (const itemCode in allSessionQuantities) {
-        const totalQty = allSessionQuantities[itemCode];
-        if (totalQty > 0) {
-            // Distribute quantity across available dates
-            let remaining = totalQty;
-            const distribution = {};
-            
-            availableDates.forEach(date => distribution[date] = 0);
-            
-            // Random distribution
-            while (remaining > 0) {
-                const randomIndex = Math.floor(Math.random() * availableDates.length);
-                const date = availableDates[randomIndex];
-                distribution[date]++;
-                remaining--;
-            }
-            
-            // Save distribution to session
-            saveDistributionToSession(itemCode, distribution);
-        }
-    }
-    
-    alert('Quantities shuffled across ' + availableDates.length + ' available dates!');
-    location.reload();
-}
-
-// Function to save distribution to session
-function saveDistributionToSession(itemCode, distribution) {
-    $.ajax({
-        url: 'save_customer_date_distribution.php',
-        type: 'POST',
-        data: {
-            item_code: itemCode,
-            distribution: JSON.stringify(distribution)
-        },
-        success: function(response) {
-            console.log('Distribution saved for item:', itemCode);
-        },
-        error: function() {
-            console.error('Failed to save distribution');
-        }
-    });
-}
-
-// Function to load volume limit information
-function loadVolumeLimitInfo() {
-    $.ajax({
-        url: 'get_volume_limits.php',
-        type: 'GET',
-        success: function(response) {
+        let availableDates = [];
+        let unavailableDates = [];
+        let dryDates = [];
+        
+        let stockData = dailyStockData[itemCode] || {};
+        if (Object.keys(stockData).length === 0) {
             try {
-                const data = JSON.parse(response);
-                let html = '<table class="table table-bordered table-sm">';
-                html += '<thead><tr><th>License Type</th><th>Volume Limit</th></tr></thead>';
-                html += '<tbody>';
-                for (const [type, limit] of Object.entries(data.limits)) {
-                    html += `<tr><td>${type}</td><td>${limit} ML</td></tr>`;
+                const stockStr = inputField.data('stock-data');
+                if (stockStr) {
+                    stockData = typeof stockStr === 'string' ? JSON.parse(stockStr) : stockStr;
                 }
-                html += '</tbody></table>';
-                $('#volumeLimitContent').html(html);
-            } catch (e) {
-                $('#volumeLimitContent').html('<p class="text-danger">Error loading volume limits</p>');
+            } catch(e) {
+                console.error('Error parsing stock data:', e);
             }
-        },
-        error: function() {
-            $('#volumeLimitContent').html('<p class="text-danger">Error connecting to server</p>');
         }
-    });
-}
-
-// Function to show client-side validation alert
-function showClientValidationAlert(message) {
-    $('#validationMessage').text(message);
-    $('#clientValidationAlert').fadeIn();
-    
-    setTimeout(() => {
-        $('#clientValidationAlert').fadeOut();
-    }, 10000);
-}
-
-// Function to clear session quantities via AJAX
-function clearSessionQuantities() {
-    $.ajax({
-        url: 'clear_customer_session_quantities.php',
-        type: 'POST',
-        success: function(response) {
-            console.log('Customer session quantities cleared');
-            location.reload();
-        },
-        error: function() {
-            console.log('Error clearing session quantities');
-            alert('Error clearing quantities. Please try again.');
+        
+        try {
+            availableDates = availableDatesJson || [];
+            unavailableDates = unavailableDatesJson || [];
+            dryDates = dryDatesJson || [];
+        } catch (e) {
+            console.error('Error parsing date arrays:', e);
         }
-    });
+        
+        const dateIndexMap = {};
+        dateArray.forEach((date, index) => {
+            dateIndexMap[date] = index;
+        });
+        
+        let distribution = new Array(daysCount).fill(0);
+        let trulyAvailableDates = [];
+        
+        if (hasGlobalRestriction && availableDates.length > 0) {
+            trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+            
+            const datesWithStock = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (datesWithStock.length > 0) {
+                trulyAvailableDates = datesWithStock;
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+                
+                console.log(`Shuffled ${itemCode}: Random distribution on ${availableDaysCount} stock-available dates`);
+            }
+            
+        } else if (!hasGlobalRestriction || availableDates.length === daysCount) {
+            trulyAvailableDates = dateArray.filter(date => !dryDates.includes(date));
+            
+            const datesWithStock = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (datesWithStock.length > 0) {
+                trulyAvailableDates = datesWithStock;
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+                
+                console.log(`Shuffled ${itemCode}: Random distribution across ${datesWithStock.length} non-dry dates with stock`);
+            }
+        }
+
+        let stockViolation = false;
+        distribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            if (qty > 0) {
+                const stock = stockData[date] || 0;
+                if (stock === 0) {
+                    console.error(`STOCK VIOLATION: ${itemCode} assigned ${qty} to ${date} with 0 stock!`);
+                    stockViolation = true;
+                }
+            }
+        });
+        
+        if (stockViolation) {
+            console.error('Stock violation detected in shuffle - regeneration with proper filtering!');
+            trulyAvailableDates = trulyAvailableDates.filter(date => {
+                const stock = stockData[date] || 0;
+                return stock > 0;
+            });
+            
+            if (trulyAvailableDates.length > 0) {
+                distribution = new Array(daysCount).fill(0);
+                const availableDaysCount = trulyAvailableDates.length;
+                const dailySales = new Array(availableDaysCount).fill(0);
+                
+                for (let i = 0; i < qty; i++) {
+                    const randomDay = Math.floor(Math.random() * availableDaysCount);
+                    dailySales[randomDay]++;
+                }
+                
+                trulyAvailableDates.forEach((date, index) => {
+                    const dateIndex = dateIndexMap[date];
+                    if (dateIndex !== undefined) {
+                        distribution[dateIndex] = dailySales[index];
+                    }
+                });
+            }
+        }
+        
+        console.log(`Shuffled distribution for ${itemCode}:`, distribution);
+        
+        saveDistributionToSession(itemCode, distribution);
+        savedDistributions[itemCode] = distribution.slice();
+        
+        const itemRow = inputField.closest('tr');
+        itemRow.find('.date-distribution-cell').remove();
+        
+        const cellsToInsert = [];
+        distribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            const cell = $(`<td class="date-distribution-cell">`);
+
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const stockAvailable = (stockData[date] || 0) > 0;
+
+            if (isDryDate) {
+                cell.addClass('dry-unavailable-date');
+                cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            } else if (isGlobalUnavailable && !isDryDate) {
+                cell.addClass('global-unavailable-date');
+                cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            } else if (!stockAvailable) {
+                cell.addClass('no-stock-date');
+                cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+                cell.attr('title', `No stock available on ${date}`);
+            } else if (qty > 0) {
+                cell.addClass('non-zero-distribution');
+                cell.text(qty);
+                cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+            } else {
+                cell.addClass('zero-distribution');
+                cell.text('0');
+                cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+            }
+
+            cellsToInsert.push(cell);
+        });
+
+        for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+            cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+        }
+
+        console.log('DEBUG: Distribution shuffled for item ' + itemCode + ':', distribution);
+    } else {
+        delete savedDistributions[itemCode];
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, 0);
+        console.log(`Cleared distribution for item ${itemCode} (qty=0)`);
+    }
 }
 
-// Enhanced quantity validation function
+// ============================================================================
+// VALIDATE QUANTITY FUNCTION
+// ============================================================================
 function validateQuantity(input) {
     const itemCode = $(input).data('code');
     const currentStock = parseFloat($(input).data('stock'));
     let enteredQty = parseInt($(input).val()) || 0;
     
-    // If input is disabled due to backdated restriction, don't validate
+    let previousQty = 0;
+    if (savedDistributions[itemCode] && Array.isArray(savedDistributions[itemCode])) {
+        previousQty = savedDistributions[itemCode].reduce((a, b) => a + b, 0);
+    } else if (allSessionQuantities[itemCode] !== undefined) {
+        previousQty = allSessionQuantities[itemCode];
+    }
+    
     if ($(input).prop('disabled')) {
         return false;
     }
     
-    // Validate input
     if (isNaN(enteredQty) || enteredQty < 0) {
         enteredQty = 0;
         $(input).val(0);
     }
     
-    // Prevent exceeding stock with better feedback
     if (enteredQty > currentStock) {
         const maxAllowed = Math.floor(currentStock);
         enteredQty = maxAllowed;
         $(input).val(maxAllowed);
-        
         $(input).addClass('is-invalid');
         setTimeout(() => $(input).removeClass('is-invalid'), 2000);
     } else {
         $(input).removeClass('is-invalid');
     }
     
-    // Update UI immediately
-    updateItemUI(itemCode, enteredQty, currentStock);
-    
-    // Save to session via AJAX to prevent data loss
-    saveQuantityToSession(itemCode, enteredQty);
+    if (enteredQty !== previousQty) {
+        console.log(`DEBUG: Quantity changed for ${itemCode}: ${previousQty} -> ${enteredQty}, updating distribution`);
+        
+        updateItemUI(itemCode, enteredQty, currentStock);
+        saveQuantityToSession(itemCode, enteredQty);
+        updateDistributionPreviewWithGlobalRestrictions(itemCode, enteredQty);
+    } else {
+        console.log(`DEBUG: Quantity unchanged for ${itemCode}: ${enteredQty}, skipping distribution update`);
+    }
     
     return true;
 }
 
-// Function to update all UI elements for an item
+// ============================================================================
+// UPDATE ITEM UI FUNCTION
+// ============================================================================
 function updateItemUI(itemCode, qty, currentStock) {
     const rate = parseFloat($(`input[name="sale_qty[${itemCode}]"]`).data('rate'));
-    const closingBalance = currentStock - qty;
+    const closingStock = currentStock - qty;
     const amount = qty * rate;
     
-    // Format to remove decimals for display
-    const displayClosing = Math.floor(closingBalance);
+    const displayClosing = Math.floor(closingStock);
     const displayAmount = Math.floor(amount);
     
-    // Update all related UI elements
     $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
     $(`#amount_${itemCode}`).html(`<span class="stock-integer">${displayAmount}</span>`);
     
-    // Update row styling
     const row = $(`input[name="sale_qty[${itemCode}]"]`).closest('tr');
     row.toggleClass('has-quantity', qty > 0);
     
-    // Update closing balance styling
     const closingCell = $(`#closing_${itemCode}`);
     closingCell.removeClass('text-warning text-danger fw-bold');
+    closingCell.css('background-color', '');
     
-    if (closingBalance < 0) {
+    if (closingStock < 0) {
         closingCell.addClass('text-danger fw-bold');
-    } else if (closingBalance < (currentStock * 0.1)) {
+        closingCell.css('background-color', '#f8d7da');
+    } else if (closingStock < (currentStock * 0.1) && closingStock >= 0) {
         closingCell.addClass('text-warning fw-bold');
     }
 }
 
-// Function to save quantity to session via AJAX
+// ============================================================================
+// SAVE QUANTITY TO SESSION
+// ============================================================================
 function saveQuantityToSession(itemCode, qty) {
     if (typeof saveQuantityToSession.debounce === 'undefined') {
         saveQuantityToSession.debounce = null;
@@ -2647,14 +4359,14 @@ function saveQuantityToSession(itemCode, qty) {
     clearTimeout(saveQuantityToSession.debounce);
     saveQuantityToSession.debounce = setTimeout(() => {
         $.ajax({
-            url: 'update_customer_session_quantity.php',
+            url: 'update_session_quantity.php',
             type: 'POST',
             data: {
                 item_code: itemCode,
                 quantity: qty
             },
             success: function(response) {
-                console.log('Customer quantity saved to session:', itemCode, qty);
+                console.log('Quantity saved to session:', itemCode, qty);
                 allSessionQuantities[itemCode] = qty;
             },
             error: function() {
@@ -2664,12 +4376,840 @@ function saveQuantityToSession(itemCode, qty) {
     }, 200);
 }
 
-// Function to validate all quantities before form submission
+// ============================================================================
+// SAVE DISTRIBUTION TO SESSION
+// ============================================================================
+function saveDistributionToSession(itemCode, distribution) {
+    $.ajax({
+        url: 'save_distribution_to_session.php',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            item_code: itemCode,
+            distribution: distribution
+        }),
+        success: function(response) {
+            console.log('Distribution saved for ' + itemCode + ':', distribution);
+        },
+        error: function() {
+            console.error('Failed to save distribution for ' + itemCode);
+        }
+    });
+}
+
+// ============================================================================
+// CLEAR SESSION QUANTITIES
+// ============================================================================
+function clearSessionQuantities() {
+    $.ajax({
+        url: 'clear_session_quantities.php',
+        type: 'POST',
+        success: function(response) {
+            console.log('Session quantities cleared');
+            location.reload();
+        },
+        error: function() {
+            console.log('Error clearing session quantities');
+            alert('Error clearing quantities. Please try again.');
+        }
+    });
+}
+
+// ============================================================================
+// INITIALIZE QUANTITIES FROM SESSION
+// ============================================================================
+function initializeQuantitiesFromSession() {
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        if (allSessionQuantities[itemCode] !== undefined) {
+            const sessionQty = allSessionQuantities[itemCode];
+            $(this).val(sessionQty);
+            
+            const currentStock = parseFloat($(this).data('stock'));
+            updateItemUI(itemCode, sessionQty, currentStock);
+        }
+    });
+    
+    const hasQuantities = $('input[name^="sale_qty"]').filter(function() { 
+        return parseInt($(this).val()) > 0 && !$(this).prop('disabled');
+    }).length > 0;
+    
+    if (hasQuantities) {
+        $('.date-header').show();
+    }
+}
+
+// ============================================================================
+// INITIALIZE DISTRIBUTION PREVIEW
+// ============================================================================
+function initializeDistributionPreview() {
+    console.log('Initializing distribution preview for items with quantities...');
+    
+    let itemsWithQuantity = 0;
+    $('input[name^="sale_qty"]').each(function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+        
+        if (totalQty > 0 && !$(this).prop('disabled')) {
+            updateDistributionPreviewWithGlobalRestrictions(itemCode, totalQty);
+            itemsWithQuantity++;
+        }
+    });
+    
+    console.log(`Initialized distribution preview for ${itemsWithQuantity} items with quantities`);
+    
+    if (itemsWithQuantity > 0) {
+        $('.date-header, .date-distribution-cell').show();
+    }
+}
+
+// ============================================================================
+// SETUP ROW NAVIGATION
+// ============================================================================
+function setupRowNavigation() {
+    const qtyInputs = $('input.qty-input:enabled');
+    let currentRowIndex = -1;
+    
+    $(document).on('focus', 'input.qty-input:enabled', function() {
+        $('tr').removeClass('highlight-row');
+        $(this).closest('tr').addClass('highlight-row');
+        currentRowIndex = qtyInputs.index(this);
+    });
+    
+    $(document).on('keydown', 'input.qty-input:enabled', function(e) {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        
+        e.preventDefault();
+        
+        let newIndex;
+        if (e.key === 'ArrowUp') {
+            newIndex = currentRowIndex - 1;
+        } else {
+            newIndex = currentRowIndex + 1;
+        }
+        
+        if (newIndex >= 0 && newIndex < qtyInputs.length) {
+            $(qtyInputs[newIndex]).focus().select();
+        }
+    });
+}
+
+// ============================================================================
+// CHECK GLOBAL RESTRICTIONS BEFORE SUBMIT
+// ============================================================================
+function checkGlobalRestrictionsBeforeSubmit() {
+    return new Promise((resolve, reject) => {
+        // Check customer selection first
+        if (!selectedCustomer || selectedCustomer === '') {
+            showClientValidationAlert("Please select a customer or create a new one.");
+            reject("No customer selected");
+            return;
+        }
+        
+        if (globalAvailableDates.length === 0) {
+            const errorMessage = "No available dates in the selected range due to existing sales or dry days.";
+            showClientValidationAlert(errorMessage);
+            reject(errorMessage);
+            return;
+        }
+
+        let hasQuantity = false;
+        for (const itemCode in allSessionQuantities) {
+            if (allSessionQuantities[itemCode] > 0) {
+                hasQuantity = true;
+                break;
+            }
+        }
+        
+        if (!hasQuantity) {
+            const errorMessage = "Please enter quantities for at least one item.";
+            showClientValidationAlert(errorMessage);
+            reject(errorMessage);
+            return;
+        }
+
+        resolve(true);
+    });
+}
+
+// ============================================================================
+// CHECK STOCK AVAILABILITY BEFORE SUBMIT
+// ============================================================================
+function checkStockAvailabilityBeforeSubmit() {
+    return new Promise((resolve, reject) => {
+        let hasQuantity = false;
+        for (const itemCode in allSessionQuantities) {
+            if (allSessionQuantities[itemCode] > 0) {
+                hasQuantity = true;
+                break;
+            }
+        }
+        
+        if (!hasQuantity) {
+            reject('Please enter quantities for at least one item.');
+            return;
+        }
+
+        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+        $('tr.has-quantity').addClass('stock-checking');
+
+        const checkData = {
+            start_date: '<?= $start_date ?>',
+            end_date: '<?= $end_date ?>',
+            mode: '<?= $mode ?>',
+            comp_id: '<?= $comp_id ?>',
+            quantities: allSessionQuantities,
+            daily_stock_table: '<?= $daily_stock_table ?>',
+            end_date_month: '<?= $end_date_month ?>'
+        };
+
+        $.ajax({
+            url: 'check_stock_availability.php',
+            type: 'POST',
+            data: JSON.stringify(checkData),
+            contentType: 'application/json',
+            success: function(response) {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                
+                try {
+                    const result = JSON.parse(response);
+                    if (result.success) {
+                        resolve(true);
+                    } else {
+                        showClientValidationAlert(result.message);
+                        reject(result.message);
+                    }
+                } catch (e) {
+                    showClientValidationAlert('Error checking stock availability. Please try again.');
+                    reject('Error checking stock availability.');
+                }
+            },
+            error: function() {
+                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
+                $('tr.has-quantity').removeClass('stock-checking');
+                showClientValidationAlert('Error connecting to server. Please try again.');
+                reject('Connection error');
+            }
+        });
+    });
+}
+
+// ============================================================================
+// SHOW CLIENT VALIDATION ALERT
+// ============================================================================
+function showClientValidationAlert(message) {
+    $('#validationMessage').text(message);
+    $('#clientValidationAlert').fadeIn();
+    
+    setTimeout(() => {
+        $('#clientValidationAlert').fadeOut();
+    }, 10000);
+}
+
+// ============================================================================
+// INITIALIZE RESTRICTION TOOLTIPS
+// ============================================================================
+function initializeRestrictionTooltips() {
+    $('[data-bs-toggle="tooltip"]').tooltip({
+        placement: 'top',
+        trigger: 'hover',
+        container: 'body',
+        template: '<div class="tooltip restriction-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+    });
+}
+
+// ============================================================================
+// LOAD SALES LOG
+// ============================================================================
+function loadSalesLog(sort) {
+    if (!sort) {
+        sort = 'latest';
+    }
+    
+    $('#salesLogContent').html(`
+        <div class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading sales log...</p>
+        </div>
+    `);
+    
+    $.ajax({
+        url: 'sales_log_ajax.php?sort=' + sort,
+        type: 'GET',
+        dataType: 'html',
+        success: function(response) {
+            $('#salesLogContent').html(response);
+            
+            $('#sortOrder').on('change', function() {
+                loadSalesLog($(this).val());
+            });
+        },
+        error: function() {
+            $('#salesLogContent').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Failed to load sales log. Please try again.
+                </div>
+            `);
+        }
+    });
+}
+
+// ============================================================================
+// PRINT SALES LOG
+// ============================================================================
+function printSalesLog() {
+    const printContent = $('#salesLogContent').html();
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Sales Log - Foreign Export</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f8f9fa; }
+                .text-center { text-align: center; }
+                .no-print { display: none; }
+            </style>
+        </head>
+        <body>
+            <h2 class="text-center">Sales Log - Foreign Export</h2>
+            ${printContent}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+// ============================================================================
+// GET ITEM DATA
+// ============================================================================
+function getItemData(itemCode) {
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    if (inputField.length > 0) {
+        const itemRow = inputField.closest('tr');
+        return {
+            classCode: itemRow.data('class'),
+            details: itemRow.data('details'),
+            details2: itemRow.data('details2'),
+            quantity: parseInt(inputField.val()) || 0
+        };
+    } else {
+        if (allItemsData[itemCode]) {
+            return {
+                classCode: allItemsData[itemCode].CLASS,
+                details: allItemsData[itemCode].DETAILS,
+                details2: allItemsData[itemCode].DETAILS2,
+                quantity: allSessionQuantities[itemCode] || 0
+            };
+        }
+    }
+    return null;
+}
+
+// ============================================================================
+// GET PRODUCT TYPE
+// ============================================================================
+function getProductType(classCode) {
+    const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
+    if (spirits.includes(classCode)) return 'SPIRITS';
+    if (classCode === 'V') return 'WINE';
+    if (classCode === 'F') return 'FERMENTED BEER';
+    if (classCode === 'M') return 'MILD BEER';
+    if (classCode === 'L') return 'COUNTRY LIQUOR';
+    return 'OTHER';
+}
+
+// ============================================================================
+// EXTRACT VOLUME
+// ============================================================================
+function extractVolume(details, details2) {
+    if (details2) {
+        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000);
+        }
+        
+        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
+        }
+    }
+    
+    if (details) {
+        if (details.includes('QUART')) return 750;
+        if (details.includes('PINT')) return 375;
+        if (details.includes('NIP')) return 90;
+        
+        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
+        if (literMatch) {
+            let volume = parseFloat(literMatch[1]);
+            return Math.round(volume * 1000);
+        }
+        
+        const mlMatch = details.match(/(\d+)\s*ML\b/i);
+        if (mlMatch) {
+            return parseInt(mlMatch[1]);
+        }
+    }
+    
+    return 0;
+}
+
+// ============================================================================
+// GET VOLUME COLUMN
+// ============================================================================
+function getVolumeColumn(volume) {
+    const volumeMap = {
+        50: '50 ML',
+        60: '60 ML', 
+        90: '90 ML',
+        170: '170 ML',
+        180: '180 ML',
+        200: '200 ML',
+        250: '250 ML',
+        275: '275 ML',
+        330: '330 ML',
+        355: '355 ML',
+        375: '375 ML',
+        500: '500 ML',
+        650: '650 ML',
+        700: '700 ML',
+        750: '750 ML',
+        1000: '1000 ML',
+        1500: '1.5L',
+        1750: '1.75L',
+        2000: '2L',
+        3000: '3L',
+        4500: '4.5L',
+        15000: '15L',
+        20000: '20L',
+        30000: '30L',
+        50000: '50L'
+    };
+    
+    return volumeMap[volume] || null;
+}
+
+// ============================================================================
+// UPDATE TOTAL SALES MODULE
+// ============================================================================
+function updateTotalSalesModule() {
+    console.log('updateTotalSalesModule called - Processing ALL items from ALL modes');
+    
+    const allSizes = [
+        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
+        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
+        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
+    ];
+    
+    const salesSummary = {
+        'SPIRITS': {},
+        'WINE': {},
+        'FERMENTED BEER': {},
+        'MILD BEER': {},
+        'COUNTRY LIQUOR': {}
+    };
+    
+    Object.keys(salesSummary).forEach(category => {
+        allSizes.forEach(size => {
+            salesSummary[category][size] = 0;
+        });
+    });
+
+    console.log('Processing ALL session quantities from ALL modes:', allSessionQuantities);
+
+    let processedItems = 0;
+    for (const itemCode in allSessionQuantities) {
+        const quantity = allSessionQuantities[itemCode];
+        if (quantity > 0) {
+            const itemData = getItemData(itemCode);
+            if (itemData) {
+                const productType = getProductType(itemData.classCode);
+                const volume = extractVolume(itemData.details, itemData.details2);
+                const volumeColumn = getVolumeColumn(volume);
+                
+                console.log(`Item ${itemCode}: Class=${itemData.classCode}, ProductType=${productType}, Volume=${volume}, VolumeColumn=${volumeColumn}, Quantity=${quantity}`);
+                
+                if (volumeColumn && salesSummary[productType]) {
+                    salesSummary[productType][volumeColumn] += quantity;
+                    processedItems++;
+                }
+            }
+        }
+    }
+
+    console.log(`Processed ${processedItems} items with quantities from ALL modes`);
+    console.log('Final sales summary:', salesSummary);
+
+    updateSalesModalTable(salesSummary, allSizes);
+}
+
+function updateSalesModalTable(salesSummary, allSizes) {
+    const tbody = $('#totalSalesTable tbody');
+    tbody.empty();
+    
+    console.log('Updating modal table with categories:', Object.keys(salesSummary));
+    
+    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR'];
+    
+    categories.forEach(category => {
+        const row = $('<tr>');
+        row.append($('<td>').text(category));
+        
+        allSizes.forEach(size => {
+            const value = salesSummary[category] ? (salesSummary[category][size] || 0) : 0;
+            const cell = $('<td>').text(value > 0 ? value : '');
+            
+            if (value > 0) {
+                cell.addClass('table-success');
+            }
+            
+            row.append(cell);
+        });
+        
+        tbody.append(row);
+    });
+    
+    console.log('Modal table updated successfully with data from ALL modes');
+}
+
+// ============================================================================
+// HANDLE GENERATE BILLS
+// ============================================================================
+let isGeneratingBills = false;
+let progressPollingInterval = null;
+let progressModal = null;
+
+function startUltraFastBillGeneration() {
+    const modalElement = document.getElementById('billProgressModal');
+    progressModal = new bootstrap.Modal(modalElement);
+    
+    resetProgressDisplay();
+    progressModal.show();
+    
+    const itemsWithQuantities = {};
+    for (const itemCode in allSessionQuantities) {
+        const qty = parseInt(allSessionQuantities[itemCode]) || 0;
+        if (qty > 0) {
+            itemsWithQuantities[itemCode] = qty;
+        }
+    }
+    
+    if (Object.keys(itemsWithQuantities).length === 0) {
+        updateProgressStatus('error', 'No items with quantities!');
+        setTimeout(() => {
+            progressModal.hide();
+            resetGeneratingState();
+        }, 3000);
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('generate_bills', 'true');
+    formData.append('start_date', '<?= $start_date ?>');
+    formData.append('end_date', '<?= $end_date ?>');
+    formData.append('mode', '<?= $mode ?>');
+    formData.append('source_page', 'sale_for_date_range');
+    formData.append('customer_id', selectedCustomer);
+    
+    for (const itemCode in itemsWithQuantities) {
+        const qty = itemsWithQuantities[itemCode];
+        if (qty > 0) {
+            formData.append(`items[${itemCode}]`, qty);
+            
+            if (savedDistributions[itemCode]) {
+                formData.append(`distribution[${itemCode}]`, JSON.stringify(savedDistributions[itemCode]));
+                console.log(`Sending saved distribution for ${itemCode}:`, savedDistributions[itemCode]);
+            } else {
+                console.warn(`No saved distribution found for ${itemCode} - will recalculate on server`);
+            }
+        }
+    }
+    
+    window.generationStartTime = Date.now();
+    updateProgressStatus('info', 'Starting bill generation...');
+    
+    $.ajax({
+        url: 'generate_bills_ultra_fast._customer.php',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(response) {
+            console.log('Bill generation response:', response);
+            
+            if (response.success) {
+                const progressKey = response.progress_key;
+                startProgressPolling(progressKey);
+                updateProgressStatus('info', response.message || 'Processing bills...');
+                clearSessionQuantities();
+                savedDistributions = {};
+            } else {
+                updateProgressStatus('error', 'Error: ' + response.message);
+                setTimeout(() => {
+                    progressModal.hide();
+                    resetGeneratingState();
+                }, 3000);
+            }
+        },
+        error: function(xhr, status, error) {
+            let errorMsg = 'Error: ' + error;
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMsg = response.message;
+                }
+            } catch(e) {}
+            
+            updateProgressStatus('error', errorMsg);
+            setTimeout(() => {
+                progressModal.hide();
+                resetGeneratingState();
+            }, 3000);
+        }
+    });
+}
+
+function resetProgressDisplay() {
+    $('#progressBar').css('width', '0%').attr('aria-valuenow', 0).text('0%');
+    $('#progressStatus').removeClass('alert-success alert-danger').addClass('alert-info');
+    $('#progressMessage').text('Initializing...');
+    $('#currentBillCount').text('0');
+    $('#totalBillCount').text('0');
+    $('#timeRemaining').text('--');
+        $('#billsListBody').html('<tr><td colspan="4" class="text-center text-muted">Starting bill generation...</td></tr>');
+    $('#generationSpeed').text('--');
+    $('#elapsedTime').text('0s');
+    $('#viewResultsBtn').hide();
+}
+
+function updateProgressStatus(type, message) {
+    $('#progressStatus').removeClass('alert-info alert-success alert-danger').addClass('alert-' + type);
+    $('#progressMessage').text(message);
+    
+    const iconElement = $('#progressStatus i');
+    if (type === 'info') {
+        iconElement.removeClass().addClass('fas fa-spinner fa-spin');
+    } else if (type === 'success') {
+        iconElement.removeClass().addClass('fas fa-check-circle');
+    } else if (type === 'error') {
+        iconElement.removeClass().addClass('fas fa-exclamation-triangle');
+    }
+}
+
+function startProgressPolling(progressKey) {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+    }
+    
+    progressPollingInterval = setInterval(function() {
+        if (!progressKey) return;
+        
+        $.ajax({
+            url: 'bill_progress_ajax.php',
+            type: 'GET',
+            data: { progress_key: progressKey },
+            dataType: 'json',
+            success: function(result) {
+                if (typeof result === 'string') {
+                    try {
+                        result = JSON.parse(result);
+                    } catch(e) {
+                        console.error('JSON parse error:', e);
+                        return;
+                    }
+                }
+                
+                updateProgressFromResult(result);
+                
+                if (result.is_complete) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('success', 'Bill generation completed successfully!');
+                    $('#viewResultsBtn').show();
+                    
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        if (result.redirect_url) {
+                            window.location.href = result.redirect_url;
+                        } else {
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message || 'Bills generated successfully');
+                        }
+                        resetGeneratingState();
+                    }, 2000);
+                    
+                } else if (result.has_error) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                    
+                    updateProgressStatus('error', 'Error: ' + (result.message || 'Unknown error'));
+                    
+                    setTimeout(() => {
+                        if (progressModal) {
+                            progressModal.hide();
+                        }
+                        resetGeneratingState();
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Progress polling error:', error);
+            }
+        });
+    }, 500);
+}
+
+function updateProgressFromResult(result) {
+    const percentage = result.percentage || 0;
+    $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
+    
+    if (result.message) {
+        $('#progressMessage').text(result.message);
+    }
+    
+    $('#currentBillCount').text(result.current_bill || 0);
+    $('#totalBillCount').text(result.total_bills || 0);
+    
+    if (result.estimated_remaining > 0) {
+        $('#timeRemaining').text(result.estimated_remaining + 's');
+    } else if (result.is_complete) {
+        $('#timeRemaining').text('Done');
+    }
+    
+    if (result.speed > 0) {
+        $('#generationSpeed').text(result.speed.toFixed(1));
+    }
+    
+    if (window.generationStartTime) {
+        const elapsed = Math.floor((Date.now() - window.generationStartTime) / 1000);
+        $('#elapsedTime').text(elapsed + 's');
+    }
+    
+    if (result.recent_bills && result.recent_bills.length > 0) {
+        let billsHtml = '';
+        result.recent_bills.forEach(function(bill) {
+            billsHtml += `<tr>
+                <td>${bill.bill_no}</td>
+                <td>${bill.date}</td>
+                <td>${bill.items}</td>
+                <td>₹${bill.amount.toLocaleString()}</td>
+            </tr>`;
+        });
+        $('#billsListBody').html(billsHtml);
+    }
+}
+
+function resetGeneratingState() {
+    isGeneratingBills = false;
+    $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+    
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+}
+
+function viewResults() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    if (progressModal) {
+        progressModal.hide();
+    }
+    window.location.href = 'retail_sale.php';
+    resetGeneratingState();
+}
+
+function saveToPendingSales() {
+    checkGlobalRestrictionsBeforeSubmit()
+        .then(() => {
+            if (!validateAllQuantities()) {
+                throw new Error('Quantity validation failed');
+            }
+            return checkStockAvailabilityBeforeSubmit();
+        })
+        .then(() => {
+            $('#ajaxLoader').show();
+            $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
+            
+            const formData = new FormData();
+            formData.append('save_pending', 'true');
+            formData.append('start_date', '<?= $start_date ?>');
+            formData.append('end_date', '<?= $end_date ?>');
+            formData.append('mode', '<?= $mode ?>');
+            formData.append('customer_id', selectedCustomer);
+            
+            for (const itemCode in allSessionQuantities) {
+                const qty = allSessionQuantities[itemCode];
+                if (qty > 0) {
+                    formData.append(`sale_qty[${itemCode}]`, qty);
+                }
+            }
+            
+            $.ajax({
+                url: 'save_pending_sales.php',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#ajaxLoader').hide();
+                    isGeneratingBills = false;
+                    
+                    try {
+                        const result = JSON.parse(response);
+                        if (result.success) {
+                            clearSessionQuantities();
+                            alert('Sales data saved to pending successfully! You can generate bills later from the "Post Daily Sales" page.');
+                            window.location.href = 'retail_sale.php?success=' + encodeURIComponent(result.message);
+                        } else {
+                            alert('Error: ' + result.message);
+                            $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                        }
+                    } catch (e) {
+                        alert('Error processing response: ' + response);
+                        $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                    }
+                },
+                error: function() {
+                    $('#ajaxLoader').hide();
+                    isGeneratingBills = false;
+                    $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading').html('<i class="fas fa-save"></i> Generate Bills');
+                    alert('Error saving data to pending. Please try again.');
+                }
+            });
+        })
+        .catch((error) => {
+            isGeneratingBills = false;
+            $('#generateBillsBtn').prop('disabled', false).html('<i class="fas fa-save"></i> Generate Bills');
+            console.log('Client-side validation failed for pending sales:', error);
+        });
+}
+
 function validateAllQuantities() {
     let isValid = true;
     let errorItems = [];
     
-    // Validate ONLY session quantities > 0
     for (const itemCode in allSessionQuantities) {
         const qty = allSessionQuantities[itemCode];
         if (qty > 0) {
@@ -2711,389 +5251,23 @@ function validateAllQuantities() {
     return isValid;
 }
 
-// Function to check stock availability via AJAX before submission
-function checkStockAvailabilityBeforeSubmit() {
-    return new Promise((resolve, reject) => {
-        // Check if we have any quantities > 0
-        let hasQuantity = false;
-        for (const itemCode in allSessionQuantities) {
-            if (allSessionQuantities[itemCode] > 0) {
-                hasQuantity = true;
-                break;
-            }
-        }
-        
-        if (!hasQuantity) {
-            reject('Please enter quantities for at least one item.');
-            return;
-        }
-
-        // Show checking state
-        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-        $('tr.has-quantity').addClass('stock-checking');
-
-        // Prepare data for AJAX check
-        const checkData = {
-            sale_date: saleDate,
-            mode: '<?= $mode ?>',
-            comp_id: '<?= $comp_id ?>',
-            quantities: allSessionQuantities,
-            daily_stock_table: '<?= $daily_stock_table ?>',
-            sale_month: '<?= $sale_month ?>'
-        };
-
-        $.ajax({
-            url: 'check_customer_stock_availability.php',
-            type: 'POST',
-            data: JSON.stringify(checkData),
-            contentType: 'application/json',
-            success: function(response) {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                $('tr.has-quantity').removeClass('stock-checking');
-                
-                try {
-                    const result = JSON.parse(response);
-                    if (result.success) {
-                        resolve(true);
-                    } else {
-                        showClientValidationAlert(result.message);
-                        reject(result.message);
-                    }
-                } catch (e) {
-                    showClientValidationAlert('Error checking stock availability. Please try again.');
-                    reject('Error checking stock availability.');
-                }
-            },
-            error: function() {
-                $('#generateBillsBtn').prop('disabled', false).removeClass('btn-loading');
-                $('tr.has-quantity').removeClass('stock-checking');
-                showClientValidationAlert('Error connecting to server. Please try again.');
-                reject('Connection error');
-            }
-        });
-    });
-}
-
-// Function to check customer selection
-function checkCustomerSelection() {
-    const customerField = document.getElementById('customer_field');
-    const customerValue = customerField.value.trim();
-    
-    // Check if customer is selected (required - no walk-in)
-    if (customerValue === '' || customerValue === '0' || customerValue === null) {
-        // Empty means no customer selected - show error
-        alert('Please select a customer or create a new one');
-        customerField.focus();
+function handleGenerateBills() {
+    if (isGeneratingBills) {
+        console.log('Already generating bills, please wait...');
         return false;
     }
     
-    // Check if it's a valid customer code (numeric)
-    if (!isNaN(customerValue) && customerValue !== '') {
-        return true;
-    }
-    
-    // Check if it's a new customer (starts with "new:")
-    if (customerValue.toLowerCase().startsWith('new:')) {
-        return true;
-    }
-    
-    // Check if it matches an existing customer name - get the code from the selected option
-    const customerOptions = document.getElementById('customerOptions');
-    if (!customerOptions) {
-        // If no datalist, allow the value (fallback)
-        return true;
-    }
-    
-    const options = customerOptions.options;
-    for (let i = 0; i < options.length; i++) {
-        // Check if the input value matches either the code or the name
-        if (options[i].text === customerValue || options[i].value === customerValue) {
-            return true;
-        }
-    }
-    
-    alert('Please select a customer or create a new one');
-    customerField.focus()
-    return false;
-}
-
-// Function to get item data from ALL items data
-function getItemData(itemCode) {
-    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
-    if (inputField.length > 0) {
-        const itemRow = inputField.closest('tr');
-        return {
-            classCode: itemRow.data('class'),
-            details: itemRow.data('details'),
-            details2: itemRow.data('details2'),
-            quantity: parseInt(inputField.val()) || 0
-        };
-    } else {
-        if (allItemsData[itemCode]) {
-            return {
-                classCode: allItemsData[itemCode].CLASS,
-                details: allItemsData[itemCode].DETAILS,
-                details2: allItemsData[itemCode].DETAILS2,
-                quantity: allSessionQuantities[itemCode] || 0
-            };
-        }
-    }
-    return null;
-}
-
-// Function to classify product type from class code
-function getProductType(classCode) {
-    const spirits = ['W', 'G', 'D', 'K', 'R', 'O'];
-    if (spirits.includes(classCode)) return 'SPIRITS';
-    if (classCode === 'V') return 'WINE';
-    if (classCode === 'F') return 'FERMENTED BEER';
-    if (classCode === 'M') return 'MILD BEER';
-    if (classCode === 'L') return 'COUNTRY LIQUOR';
-    return 'OTHER';
-}
-
-// Function to extract volume from details
-function extractVolume(details, details2) {
-    if (details2) {
-        const literMatch = details2.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000);
-        }
-        
-        const mlMatch = details2.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    if (details) {
-        if (details.includes('QUART')) return 750;
-        if (details.includes('PINT')) return 375;
-        if (details.includes('NIP')) return 90;
-        
-        const literMatch = details.match(/(\d+\.?\d*)\s*L\b/i);
-        if (literMatch) {
-            let volume = parseFloat(literMatch[1]);
-            return Math.round(volume * 1000);
-        }
-        
-        const mlMatch = details.match(/(\d+)\s*ML\b/i);
-        if (mlMatch) {
-            return parseInt(mlMatch[1]);
-        }
-    }
-    
-    return 0;
-}
-
-// Function to map volume to column
-function getVolumeColumn(volume) {
-    const volumeMap = {
-        50: '50 ML',
-        60: '60 ML', 
-        90: '90 ML',
-        170: '170 ML',
-        180: '180 ML',
-        200: '200 ML',
-        250: '250 ML',
-        275: '275 ML',
-        330: '330 ML',
-        355: '355 ML',
-        375: '375 ML',
-        500: '500 ML',
-        650: '650 ML',
-        700: '700 ML',
-        750: '750 ML',
-        1000: '1000 ML',
-        1500: '1.5L',
-        1750: '1.75L',
-        2000: '2L',
-        3000: '3L',
-        4500: '4.5L',
-        15000: '15L',
-        20000: '20L',
-        30000: '30L',
-        50000: '50L'
-    };
-    
-    return volumeMap[volume] || null;
-}
-
-// Function to update total sales module
-function updateTotalSalesModule() {
-    console.log('updateTotalSalesModule called - Processing ALL items');
-    
-    const allSizes = [
-        '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML', 
-        '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-        '1.5L', '1.75L', '2L', '3L', '4.5L', '15L', '20L', '30L', '50L'
-    ];
-    
-    const salesSummary = {
-        'SPIRITS': {},
-        'WINE': {},
-        'FERMENTED BEER': {},
-        'MILD BEER': {},
-        'COUNTRY LIQUOR': {},
-        'OTHER': {}
-    };
-    
-    Object.keys(salesSummary).forEach(category => {
-        allSizes.forEach(size => {
-            salesSummary[category][size] = 0;
-        });
-    });
-
-    console.log('Processing ALL session quantities:', allSessionQuantities);
-
-    let processedItems = 0;
-    for (const itemCode in allSessionQuantities) {
-        const quantity = allSessionQuantities[itemCode];
-        if (quantity > 0) {
-            const itemData = getItemData(itemCode);
-            if (itemData) {
-                const productType = getProductType(itemData.classCode);
-                const volume = extractVolume(itemData.details, itemData.details2);
-                const volumeColumn = getVolumeColumn(volume);
-                
-                console.log(`Item ${itemCode}: Class=${itemData.classCode}, ProductType=${productType}, Volume=${volume}, VolumeColumn=${volumeColumn}, Quantity=${quantity}`);
-                
-                if (volumeColumn && salesSummary[productType]) {
-                    salesSummary[productType][volumeColumn] += quantity;
-                    processedItems++;
-                }
-            }
-        }
-    }
-
-    console.log(`Processed ${processedItems} items with quantities`);
-    console.log('Final sales summary:', salesSummary);
-
-    updateSalesModalTable(salesSummary, allSizes);
-}
-
-// Function to update modal table with calculated values
-function updateSalesModalTable(salesSummary, allSizes) {
-    const tbody = $('#totalSalesTable tbody');
-    tbody.empty();
-    
-    console.log('Updating modal table with categories:', Object.keys(salesSummary));
-    
-    const categories = ['SPIRITS', 'WINE', 'FERMENTED BEER', 'MILD BEER', 'COUNTRY LIQUOR', 'OTHER'];
-    
-    categories.forEach(category => {
-        const row = $('<tr>');
-        row.append($('<td>').text(category));
-        
-        allSizes.forEach(size => {
-            const value = salesSummary[category] ? (salesSummary[category][size] || 0) : 0;
-            const cell = $('<td>').text(value > 0 ? value : '');
-            
-            if (value > 0) {
-                cell.addClass('table-success');
-            }
-            
-            row.append(cell);
-        });
-        
-        tbody.append(row);
-    });
-    
-    console.log('Modal table updated successfully');
-}
-
-// Function to setup row navigation with arrow keys
-function setupRowNavigation() {
-    const qtyInputs = $('input.qty-input');
-    let currentRowIndex = -1;
-    
-    $(document).on('focus', 'input.qty-input', function() {
-        $('tr').removeClass('highlight-row');
-        $(this).closest('tr').addClass('highlight-row');
-        currentRowIndex = qtyInputs.index(this);
-    });
-    
-    $(document).on('keydown', 'input.qty-input', function(e) {
-        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-        
-        e.preventDefault();
-        
-        let newIndex;
-        if (e.key === 'ArrowUp') {
-            newIndex = currentRowIndex - 1;
-        } else {
-            newIndex = currentRowIndex + 1;
-        }
-        
-        if (newIndex >= 0 && newIndex < qtyInputs.length) {
-            $(qtyInputs[newIndex]).focus().select();
-        }
-    });
-}
-
-// Initialize input values from session on page load
-function initializeQuantitiesFromSession() {
-    $('input[name^="sale_qty"]').each(function() {
-        const itemCode = $(this).data('code');
-        if (allSessionQuantities[itemCode] !== undefined) {
-            const sessionQty = allSessionQuantities[itemCode];
-            $(this).val(sessionQty);
-            
-            const currentStock = parseFloat($(this).data('stock'));
-            updateItemUI(itemCode, sessionQty, currentStock);
-        }
-    });
-}
-
-// Generate bills with validation
-function generateBills() {
-    // Sync customer field to hidden field first
-    const customerField = document.getElementById('customer_field');
-    const hiddenCustomerField = document.getElementById('salesCustomerField');
-    
-    // Sync the visible field value to hidden field
-    hiddenCustomerField.value = customerField.value;
-    
-    // Use hidden field value for validation
-    const customerValue = hiddenCustomerField.value.trim();
-    
-    // First validate customer selection using hidden field value
-    if (customerValue === '' || customerValue === '0' || customerValue === null) {
-        // Empty means no customer selected - required
-        alert('Please select a customer or create a new one');
-        customerField.focus();
-        return false;
-    } else if (!isNaN(customerValue) && customerValue !== '') {
-        // Valid numeric customer code
-    } else if (customerValue.toLowerCase().startsWith('new:')) {
-        // New customer creation - this is allowed
-    } else {
-        // Check if it matches an existing customer name
-        const customerOptions = document.getElementById('customerOptions');
-        if (customerOptions) {
-            const options = customerOptions.options;
-            let found = false;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].text === customerValue || options[i].value === customerValue) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                alert('Please select a customer or create a new one');
-                customerField.focus();
-                return false;
-            }
-        }
-    }
-    
-    // Then validate basic quantities
-    if (!validateAllQuantities()) {
+    // Check customer selection first
+    if (!selectedCustomer || selectedCustomer === '') {
+        alert('Please select a customer or create a new one before generating bills.');
         return false;
     }
     
-    // Check if we have any quantities > 0
+    if (globalAvailableDates.length === 0) {
+        alert('No available dates in the selected range due to existing sales or dry days.');
+        return false;
+    }
+    
     let hasQuantity = false;
     for (const itemCode in allSessionQuantities) {
         if (allSessionQuantities[itemCode] > 0) {
@@ -3107,132 +5281,278 @@ function generateBills() {
         return false;
     }
     
-    // Show confirmation
-    const customerField = document.getElementById('customer_field');
-    const customerName = customerField.value.trim();
+    const userChoice = confirm(
+        "Generate Bills Options:\n\n" +
+        "Customer: " + selectedCustomerName + "\n\n" +
+        "Click OK to generate bills immediately (will update stock and create actual sales).\n\n" +
+        "Click Cancel to save to pending sales (will save for later processing, no stock update)."
+    );
     
-    const confirmed = confirm(`Generate bills for ${customerName}?\n\nThis will:
-    1. Create customer sale record
-    2. Create retail sale record
-    3. Update stock
-    4. Generate cash memo
-    
-    Click OK to proceed.`);
-    
-    if (confirmed) {
-        // Show loader
-        $('#ajaxLoader').show();
-        $('#generateBillsBtn').prop('disabled', true).addClass('btn-loading');
-        return true;
+    if (userChoice === true) {
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        startUltraFastBillGeneration();
+    } else {
+        isGeneratingBills = true;
+        $('#generateBillsBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+        saveToPendingSales();
     }
-    
-    return false;
 }
 
-// Initialize backdated tooltips
-function initializeBackdatedTooltips() {
-    $('[data-bs-toggle="tooltip"]').tooltip({
-        placement: 'top',
-        trigger: 'hover',
-        container: 'body',
-        template: '<div class="tooltip backdated-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+function calculateTotalAmount() {
+    let total = 0;
+    $('.amount-cell').each(function() {
+        total += parseFloat($(this).text()) || 0;
     });
+    $('#totalAmount').text(Math.floor(total));
 }
 
-// Document ready
+// ============================================================================
+// SHUFFLE ALL BUTTON CLICK HANDLER
+// ============================================================================
+$('#shuffleBtn').off('click').on('click', function() {
+    console.log('DEBUG: Shuffle all button clicked');
+    $('#ajaxLoader').show();
+
+    const itemsToShuffle = [];
+    $('input.qty-input').each(function() {
+        const itemCode = $(this).data('code');
+        const totalQty = parseInt($(this).val()) || 0;
+
+        if (totalQty > 0 && $(this).is(':visible') && !$(this).prop('disabled')) {
+            itemsToShuffle.push({ itemCode, totalQty });
+        }
+    });
+
+    console.log(`DEBUG: Shuffle all - found ${itemsToShuffle.length} items to shuffle:`, itemsToShuffle);
+
+    for (const item of itemsToShuffle) {
+        console.log(`DEBUG: Shuffle all - processing item ${item.itemCode}`);
+        
+        delete savedDistributions[item.itemCode];
+        const newDistribution = shuffleDistributionForItem(item.itemCode, item.totalQty);
+        savedDistributions[item.itemCode] = newDistribution.slice();
+        saveDistributionToSession(item.itemCode, newDistribution);
+        
+        const inputField = $(`input[name="sale_qty[${item.itemCode}]"]`);
+        const itemRow = inputField.closest('tr');
+        itemRow.find('.date-distribution-cell').remove();
+        
+        const hasGlobalRestriction = inputField.data('has-global-restriction');
+        const availableDates = inputField.data('available-dates') || [];
+        const unavailableDates = inputField.data('unavailable-dates') || [];
+        const dryDates = inputField.data('dry-dates') || [];
+        let stockData = dailyStockData[item.itemCode] || {};
+        
+        const dateIndexMap = {};
+        dateArray.forEach((date, index) => {
+            dateIndexMap[date] = index;
+        });
+        
+        const trulyAvailableDates = availableDates.filter(date => !dryDates.includes(date));
+
+        const cellsToInsert = [];
+        newDistribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            const cell = $(`<td class="date-distribution-cell">`);
+
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const stockAvailable = (stockData[date] || 0) > 0;
+
+            if (isDryDate) {
+                cell.addClass('dry-unavailable-date');
+                cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            } else if (isGlobalUnavailable && !isDryDate) {
+                cell.addClass('global-unavailable-date');
+                cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            } else if (!stockAvailable) {
+                cell.addClass('no-stock-date');
+                cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+                cell.attr('title', `No stock available on ${date}`);
+            } else if (qty > 0) {
+                cell.addClass('non-zero-distribution');
+                cell.text(qty);
+                cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+            } else {
+                cell.addClass('zero-distribution');
+                cell.text('0');
+                cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+            }
+
+            cellsToInsert.push(cell);
+        });
+
+        for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+            cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+        }
+    }
+
+    $('#ajaxLoader').hide();
+    calculateTotalAmount();
+    console.log('DEBUG: Shuffle all completed');
+});
+
+// ============================================================================
+// SHUFFLE ITEM BUTTON CLICK HANDLER
+// ============================================================================
+$(document).on('click', '.btn-shuffle-item', function() {
+    const itemCode = $(this).data('code');
+    const inputField = $(`input[name="sale_qty[${itemCode}]"]`);
+    const totalQty = parseInt(inputField.val()) || 0;
+    
+    if (totalQty > 0 && !inputField.prop('disabled')) {
+        console.log(`Shuffle button clicked for item ${itemCode} with qty ${totalQty}`);
+        delete savedDistributions[itemCode];
+        const newDistribution = shuffleDistributionForItem(itemCode, totalQty);
+        savedDistributions[itemCode] = newDistribution.slice();
+        saveDistributionToSession(itemCode, newDistribution);
+        
+        const itemRow = inputField.closest('tr');
+        itemRow.find('.date-distribution-cell').remove();
+        
+        const hasGlobalRestriction = inputField.data('has-global-restriction');
+        const availableDates = inputField.data('available-dates') || [];
+        const unavailableDates = inputField.data('unavailable-dates') || [];
+        const dryDates = inputField.data('dry-dates') || [];
+        let stockData = dailyStockData[itemCode] || {};
+        
+        const cellsToInsert = [];
+        newDistribution.forEach((qty, index) => {
+            const date = dateArray[index];
+            const cell = $(`<td class="date-distribution-cell">`);
+
+            const isGlobalUnavailable = unavailableDates.length > 0 && unavailableDates.includes(date);
+            const isDryDate = dryDates.length > 0 && dryDates.includes(date);
+            const stockAvailable = (stockData[date] || 0) > 0;
+
+            if (isDryDate) {
+                cell.addClass('dry-unavailable-date');
+                cell.html('<span class="text-warning">🌙</span><span class="small-icon">(dry day)</span>');
+                const dryDescription = dryDaysInfo[date] || 'Dry Day';
+                cell.attr('title', `${dryDescription} - ${date} (Dry Day - No sales allowed)`);
+            } else if (isGlobalUnavailable && !isDryDate) {
+                cell.addClass('global-unavailable-date');
+                cell.html('<span style="color: #6c757d;">✗</span><span class="small-icon" style="color: #6c757d;">(sale)</span>');
+                cell.attr('title', `Sales already exist on ${date} - No new sales allowed`);
+            } else if (!stockAvailable) {
+                cell.addClass('no-stock-date');
+                cell.html('<span style="color: #dc3545;">!</span><span class="small-icon">(no stock)</span>');
+                cell.attr('title', `No stock available on ${date}`);
+            } else if (qty > 0) {
+                cell.addClass('non-zero-distribution');
+                cell.text(qty);
+                cell.attr('title', `${qty} units scheduled for ${date} (Stock: ${stockData[date] || 0})`);
+            } else {
+                cell.addClass('zero-distribution');
+                cell.text('0');
+                cell.attr('title', `Date ${date} has 0 units assigned (Stock: ${stockData[date] || 0})`);
+            }
+
+            cellsToInsert.push(cell);
+        });
+
+        for (let i = cellsToInsert.length - 1; i >= 0; i--) {
+            cellsToInsert[i].insertAfter(itemRow.find('.action-column'));
+        }
+        
+        console.log(`New distribution for ${itemCode}:`, newDistribution);
+        calculateTotalAmount();
+    } else if (totalQty === 0) {
+        alert('Please enter a quantity first before shuffling.');
+    }
+});
+
+// ============================================================================
+// DOCUMENT READY
+// ============================================================================
 $(document).ready(function() {
-    console.log('Customer Sales - Document ready');
+    console.log('Document ready - Initializing...');
     
-    // Shuffle button click event
-    $('#shuffleAllBtn').click(function() {
-        shuffleQuantities();
-    });
-    
-    // Volume limit modal - load info when shown
-    $('#volumeLimitModal').on('show.bs.modal', function() {
-        loadVolumeLimitInfo();
-    });
-    
-    // Update hidden customer field when customer selection form is submitted
-    $('#customerForm').on('submit', function() {
-        const customerValue = $('#customer_field').val();
-        $('#salesCustomerField').val(customerValue);
-        console.log('Customer field synced to hidden field:', customerValue);
-    });
-    
-    // Also sync on change of customer field
-    $('#customer_field').on('change', function() {
-        const customerValue = $(this).val();
-        $('#salesCustomerField').val(customerValue);
-        console.log('Customer field synced on change:', customerValue);
-    });
-    
-    // Set up row navigation
+    initializeTableHeaders();
     setupRowNavigation();
-    
-    // Initialize quantities from session
     initializeQuantitiesFromSession();
+    initializeDistributionPreview();
+    initializeRestrictionTooltips();
+    setupCustomerAutoSubmit();
     
-    // Initialize enhanced tooltips
-    initializeBackdatedTooltips();
-    
-    // Clear session button click event
     $('#clearSessionBtn').click(function() {
         if (confirm('Are you sure you want to clear all quantities? This action cannot be undone.')) {
             clearSessionQuantities();
         }
     });
     
-    // Generate bills button click event
-    $('#generateBillsBtn').click(function(e) {
-        if (!generateBills()) {
-            e.preventDefault();
-        }
+    $('#generateBillsBtn').off('click').on('click', function(e) {
+        e.preventDefault();
+        console.log('=== Generate Bills Button Clicked ===');
+        handleGenerateBills();
     });
     
-    // Quantity input change event with debouncing
     let quantityTimeout;
-    $(document).on('input', 'input.qty-input', function(e) {
+    $(document).off('input', 'input.qty-input').on('input', 'input.qty-input', function(e) {
         clearTimeout(quantityTimeout);
         quantityTimeout = setTimeout(() => {
             validateQuantity(this);
         }, 200);
     });
     
-    // Quantity input change event
-    $(document).on('change', 'input[name^="sale_qty"]', function() {
-        if (!validateQuantity(this)) {
-            return;
-        }
-        
-        const itemCode = $(this).data('code');
-        const totalQty = parseInt($(this).val()) || 0;
-        
-        if (totalQty <= 0) {
-            const currentStock = parseFloat($(this).data('stock'));
-            const displayClosing = Math.floor(currentStock);
-            $(`#closing_${itemCode}`).html(`<span class="stock-integer">${displayClosing}</span>`);
-            $(`#amount_${itemCode}`).html('<span class="stock-integer">0</span>');
-        }
-        
-        // Update total sales module if modal is open
-        if ($('#totalSalesModal').hasClass('show')) {
-            console.log('Modal is open, updating total sales module...');
-            updateTotalSalesModule();
+    $(document).on('keydown', 'input.qty-input', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            shuffleThisItem(this);
+            return false;
         }
     });
     
-    // Update total sales module when modal is shown
+    $('#salesForm').on('keydown', 'input', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    $('#salesLogModal').on('shown.bs.modal', function() {
+        loadSalesLog();
+    });
+    
     $('#totalSalesModal').on('show.bs.modal', function() {
-        console.log('Total Sales Modal opened - updating data...');
+        console.log('Total Sales Modal opened - updating data from ALL modes...');
         updateTotalSalesModule();
     });
     
-    // Also update when modal is already shown but data changes
     $('#totalSalesModal').on('shown.bs.modal', function() {
-        console.log('Total Sales Modal shown - refreshing data...');
+        console.log('Total Sales Modal shown - refreshing data from ALL modes...');
         updateTotalSalesModule();
     });
+    
+    // Sync customer field before form submission
+    $('#salesForm').on('submit', function() {
+        syncCustomerField();
+        if (!validateCustomerSelection()) {
+            return false;
+        }
+        return true;
+    });
+    
+    // Disable quantity inputs if no customer selected
+    if (!selectedCustomer || selectedCustomer === '') {
+        $('input.qty-input').prop('disabled', true);
+        $('.btn-shuffle-item').prop('disabled', true);
+        $('#shuffleBtn').prop('disabled', true);
+        $('#generateBillsBtn').prop('disabled', true);
+        console.log('Quantity inputs disabled - no customer selected');
+    }
+});
+
+$(document).on('click', '#billProgressModal .btn-close, #billProgressModal .btn-secondary', function() {
+    if (progressPollingInterval) {
+        clearInterval(progressPollingInterval);
+        progressPollingInterval = null;
+    }
+    resetGeneratingState();
 });
 </script>
 </body>
