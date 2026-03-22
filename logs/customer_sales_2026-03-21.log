@@ -1,0 +1,450 @@
+[2026-03-21 13:22:37] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:22:37] [INFO] Request method: GET
+[2026-03-21 13:22:37] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 
+)
+
+[2026-03-21 13:22:56] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:22:56] [INFO] Request method: POST
+[2026-03-21 13:22:56] [INFO] Walk-in customer selected
+[2026-03-21 13:22:56] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:22:56] [INFO] Request method: GET
+[2026-03-21 13:22:56] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 
+)
+
+[2026-03-21 13:43:36] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:43:36] [INFO] Request method: GET
+[2026-03-21 13:43:36] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 
+)
+
+[2026-03-21 13:43:37] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:43:37] [INFO] Request method: GET
+[2026-03-21 13:43:37] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 
+)
+
+[2026-03-21 13:51:34] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:51:34] [INFO] Request method: GET
+[2026-03-21 13:51:34] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 
+)
+
+[2026-03-21 13:51:42] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:51:42] [INFO] Request method: POST
+[2026-03-21 13:51:42] [INFO] Customer selected: ID 163
+[2026-03-21 13:51:42] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:51:42] [INFO] Request method: GET
+[2026-03-21 13:51:42] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 163
+)
+
+[2026-03-21 13:52:00] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:52:00] [INFO] Request method: GET
+[2026-03-21 13:52:00] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 72
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [date] => 2021-04-06
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 06
+    [closing_column] => DAY_06_CLOSING
+    [sale_month] => 2021-04
+    [selected_customer] => 163
+)
+
+[2026-03-21 13:52:13] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:52:13] [INFO] Request method: GET
+[2026-03-21 13:52:13] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 72
+    [current_page] => 1
+    [total_pages] => 2
+    [session_quantities_count] => 0
+    [date] => 2021-04-06
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 06
+    [closing_column] => DAY_06_CLOSING
+    [sale_month] => 2021-04
+    [selected_customer] => 163
+)
+
+[2026-03-21 13:52:22] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:52:22] [INFO] Request method: POST
+[2026-03-21 13:52:22] [INFO] Customer selected: ID 163
+[2026-03-21 13:52:22] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 13:52:22] [INFO] Request method: GET
+[2026-03-21 13:52:22] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [date] => 2026-03-21
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [sale_day] => 21
+    [closing_column] => DAY_21_CLOSING
+    [sale_month] => 2026-03
+    [selected_customer] => 163
+)
+
+[2026-03-21 14:57:50] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 14:57:50] [INFO] Request method: GET
+[2026-03-21 14:57:50] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [start_date] => 2026-03-21
+    [end_date] => 2026-03-21
+    [days_count] => 1
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [selected_customer] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-21
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+)
+
+[2026-03-21 14:58:02] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 14:58:02] [INFO] Request method: POST
+[2026-03-21 14:58:02] [WARNING] Invalid customer selection: Sagar
+[2026-03-21 14:58:02] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 14:58:02] [INFO] Request method: GET
+[2026-03-21 14:58:02] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [start_date] => 2026-03-21
+    [end_date] => 2026-03-21
+    [days_count] => 1
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [selected_customer] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-21
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+)
+
+[2026-03-21 14:58:10] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 14:58:10] [INFO] Request method: POST
+[2026-03-21 14:58:10] [INFO] Customer selected: ID 162
+[2026-03-21 14:58:10] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 14:58:10] [INFO] Request method: GET
+[2026-03-21 14:58:11] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [start_date] => 2026-03-21
+    [end_date] => 2026-03-21
+    [days_count] => 1
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [selected_customer] => 162
+    [available_dates] => Array
+        (
+            [0] => 2026-03-21
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+)
+
+[2026-03-21 16:11:45] [INFO] === CUSTOMER SALES PAGE ACCESS ===
+[2026-03-21 16:11:45] [INFO] Request method: GET
+[2026-03-21 16:11:45] [INFO] Customer Sales Page Load Debug Info:
+Array
+(
+    [total_items] => 0
+    [current_page] => 1
+    [total_pages] => 0
+    [session_quantities_count] => 0
+    [start_date] => 2026-03-21
+    [end_date] => 2026-03-21
+    [days_count] => 1
+    [user_id] => 5
+    [comp_id] => 5
+    [license_type] => FL-III
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [selected_customer] => 
+    [available_dates] => Array
+        (
+            [0] => 2026-03-21
+        )
+
+    [unavailable_dates] => Array
+        (
+        )
+
+)
+

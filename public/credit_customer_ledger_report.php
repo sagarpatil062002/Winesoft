@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'components/financial_year_auto.php';
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -367,5 +368,7 @@ if (isset($_GET['generate'])) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <?php require_once 'components/financial_year_footer.php'; ?>
+
 </body>
 </html>

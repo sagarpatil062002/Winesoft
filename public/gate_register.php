@@ -165,6 +165,25 @@ function getItemHierarchy($class_code, $subclass_code, $size_code, $conn) {
 }
 
 /**
+ * Convert size string to milliliters for sorting
+ */
+function getSizeVolumeInML($size_str) {
+    // Extract numeric value and unit
+    preg_match('/(\d+(?:\.\d+)?)\s*(ML|L)/i', $size_str, $matches);
+    if (empty($matches)) return 0;
+    
+    $value = (float)$matches[1];
+    $unit = strtoupper($matches[2]);
+    
+    // Convert to milliliters
+    if ($unit == 'L') {
+        return $value * 1000;
+    } else {
+        return $value;
+    }
+}
+
+/**
  * Group sizes - volumes above 1000ml are grouped together
  */
 function getGroupedSizeLabel($volume) {
@@ -260,18 +279,12 @@ if ($mode == 'Country Liquor') {
     ];
 }
 
-// Define size columns - include ABOVE 1000 ML as a grouped column
-$size_columns_def = [
+// Define all possible sizes (will be filtered later)
+$all_possible_sizes = [
     '50 ML', '60 ML', '90 ML', '170 ML', '180 ML', '200 ML', '250 ML', '275 ML',
     '330 ML', '355 ML', '375 ML', '500 ML', '650 ML', '700 ML', '750 ML', '1000 ML',
-    'ABOVE 1000 ML' // Grouped column for all sizes above 1000ml
+    'ABOVE 1000 ML'
 ];
-
-// All categories use the same size columns with grouped above 1000ml
-$size_columns = [];
-foreach ($display_categories as $category) {
-    $size_columns[$category] = $size_columns_def;
-}
 
 // Fetch item master data with hierarchy information
 $items = [];
@@ -311,7 +324,8 @@ if (!empty($allowed_classes)) {
             'subclass_code_new' => $row['SUBCLASS_CODE_NEW'],
             'size_code' => $row['SIZE_CODE'],
             'liq_flag' => $row['LIQ_FLAG'],
-            'hierarchy' => $hierarchy
+            'hierarchy' => $hierarchy,
+            'volume_label' => getVolumeLabel($hierarchy['ml_volume'])
         ];
     }
     $itemStmt->close();
@@ -320,7 +334,13 @@ if (!empty($allowed_classes)) {
 // Initialize liquor summary based on categories
 $liquor_summary = [];
 foreach ($display_categories as $category) {
-    $liquor_summary[$category] = array_fill_keys($size_columns_def, 0);
+    $liquor_summary[$category] = [];
+}
+
+// Track active sizes per category
+$active_sizes_by_category = [];
+foreach ($display_categories as $category) {
+    $active_sizes_by_category[$category] = [];
 }
 
 // Fetch gate register data from tbl_cash_memo_prints
@@ -381,7 +401,7 @@ while ($row = $gateResult->fetch_assoc()) {
     // Process items for this entry
     $entry_summary = [];
     foreach ($display_categories as $category) {
-        $entry_summary[$category] = array_fill_keys($size_columns_def, 0);
+        $entry_summary[$category] = [];
     }
     
     $items_json = $row['items_json'];
@@ -392,6 +412,8 @@ while ($row = $gateResult->fetch_assoc()) {
             // Try to find item by code first
             $item_code = $item['CODE'] ?? '';
             $item_found = false;
+            $ml_volume = 0;
+            $display_type = '';
             
             if (isset($items[$item_code])) {
                 $item_found = true;
@@ -400,7 +422,6 @@ while ($row = $gateResult->fetch_assoc()) {
                 $ml_volume = $hierarchy['ml_volume'];
             } else {
                 // If item not found in master, try to determine from DETAILS
-                // This is a fallback - you might want to adjust based on your data structure
                 $details = $item['DETAILS'] ?? '';
                 $details2 = $item['DETAILS2'] ?? '';
                 
@@ -438,8 +459,6 @@ while ($row = $gateResult->fetch_assoc()) {
                 continue;
             }
             
-            // Get volume and determine display size
-            $ml_volume = isset($hierarchy) ? $hierarchy['ml_volume'] : $ml_volume;
             $qty = floatval($item['QTY'] ?? 0);
             
             // Determine which size column to use
@@ -448,8 +467,15 @@ while ($row = $gateResult->fetch_assoc()) {
                 $size_key = 'ABOVE 1000 ML';
             } else {
                 $size_key = $ml_volume . ' ML';
-                // Check if this exact size exists in our columns, otherwise find closest match
-                if (!in_array($size_key, $size_columns_def)) {
+                // Check if this exact size exists in possible sizes, otherwise find closest match
+                $exact_match = false;
+                foreach ($all_possible_sizes as $possible_size) {
+                    if ($possible_size == $size_key) {
+                        $exact_match = true;
+                        break;
+                    }
+                }
+                if (!$exact_match && $ml_volume > 0) {
                     // Find closest standard size
                     $standard_sizes = [50, 60, 90, 170, 180, 200, 250, 275, 330, 355, 375, 500, 650, 700, 750, 1000];
                     $closest = 750; // Default
@@ -467,10 +493,18 @@ while ($row = $gateResult->fetch_assoc()) {
             }
             
             // Add to entry summary and overall summary
-            if (isset($entry_summary[$display_type][$size_key])) {
-                $entry_summary[$display_type][$size_key] += $qty;
-                $liquor_summary[$display_type][$size_key] += $qty;
+            if (!isset($entry_summary[$display_type][$size_key])) {
+                $entry_summary[$display_type][$size_key] = 0;
             }
+            $entry_summary[$display_type][$size_key] += $qty;
+            
+            if (!isset($liquor_summary[$display_type][$size_key])) {
+                $liquor_summary[$display_type][$size_key] = 0;
+            }
+            $liquor_summary[$display_type][$size_key] += $qty;
+            
+            // Track active sizes for this category
+            $active_sizes_by_category[$display_type][$size_key] = true;
         }
     }
 
@@ -491,16 +525,43 @@ $gateStmt->close();
 
 $total_records = count($gate_data);
 
+// Build size_columns based on active sizes (sorted largest to smallest)
+$size_columns = [];
+foreach ($display_categories as $category) {
+    $size_columns[$category] = [];
+    // Filter all_possible_sizes to only include active sizes for this category
+    foreach ($all_possible_sizes as $size) {
+        if (isset($active_sizes_by_category[$category][$size])) {
+            $size_columns[$category][] = $size;
+        }
+    }
+    
+    // Sort sizes from largest to smallest
+    usort($size_columns[$category], function($a, $b) {
+        $vol_a = getSizeVolumeInML($a);
+        $vol_b = getSizeVolumeInML($b);
+        
+        // Sort descending (largest first)
+        if ($vol_a == $vol_b) return 0;
+        return ($vol_a > $vol_b) ? -1 : 1;
+    });
+    
+    $size_columns[$category] = array_values($size_columns[$category]);
+}
+
 // Calculate total columns count for table formatting
 $total_columns = 0;
 foreach ($display_categories as $category) {
     $total_columns += count($size_columns[$category]);
 }
 
-// Calculate category totals
+// Calculate category totals based on active sizes only
 $category_totals = [];
 foreach ($display_categories as $category) {
-    $category_totals[$category] = array_sum($liquor_summary[$category]);
+    $category_totals[$category] = 0;
+    foreach ($size_columns[$category] as $size) {
+        $category_totals[$category] += isset($liquor_summary[$category][$size]) ? $liquor_summary[$category][$size] : 0;
+    }
 }
 $grand_total = array_sum($category_totals);
 
@@ -642,6 +703,13 @@ $grand_total = array_sum($category_totals);
       padding: 8px;
       background-color: #e9ecef;
       border-left: 4px solid #0d6efd;
+    }
+    .size-info-note {
+      background-color: #f0f7ff;
+      border-left: 4px solid #0066cc;
+      padding: 8px;
+      margin: 10px 0;
+      font-size: 0.9em;
     }
 
     /* Print styles - matching excise register */
@@ -786,6 +854,10 @@ $grand_total = array_sum($category_totals);
         background-color: #e9ecef !important;
         font-weight: bold;
       }
+      
+      .size-info-note {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -816,6 +888,18 @@ $grand_total = array_sum($category_totals);
               ?>
           </p>
       </div>
+
+      <!-- Size Info Note -->
+      <?php if (!empty($gate_data)): ?>
+      <div class="size-info-note no-print">
+        <strong><i class="fas fa-flask"></i> Note:</strong> Only sizes with data are displayed (sorted largest to smallest). 
+        <?php foreach ($display_categories as $category): ?>
+          <?php if (!empty($size_columns[$category])): ?>
+            <br><strong><?= $category_display_names[$category] ?>:</strong> <?= implode(', ', $size_columns[$category]) ?>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
 
       <!-- Filters -->
       <div class="card filter-card mb-4 no-print">
@@ -868,6 +952,7 @@ $grand_total = array_sum($category_totals);
           <h6><?= htmlspecialchars($companyName) ?> (LIC. NO:<?= htmlspecialchars($licenseNo) ?>)</h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
           <h6>Date: <?= date('d-M-Y', strtotime($selected_date)) ?></h6>
+          <h6><em>Sizes displayed from largest to smallest (only sizes with data)</em></h6>
         </div>
 
         <?php if (empty($gate_data)): ?>
@@ -888,17 +973,24 @@ $grand_total = array_sum($category_totals);
                   <th rowspan="2" class="district-col">Permit District</th>
                   
                   <?php foreach ($display_categories as $category): ?>
-                    <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                    <?php if (!empty($size_columns[$category])): ?>
+                      <th colspan="<?= count($size_columns[$category]) ?>"><?= $category_display_names[$category] ?></th>
+                    <?php endif; ?>
                   <?php endforeach; ?>
                 </tr>
                 <tr>
-                  <?php foreach ($display_categories as $cat_index => $category): ?>
-                    <?php 
+                  <?php 
+                  $cat_index = 0;
+                  $total_categories = count($display_categories);
+                  foreach ($display_categories as $cat_index => $category): 
+                    if (empty($size_columns[$category])) {
+                        continue;
+                    }
                     $sizes = $size_columns[$category];
                     $last_index = count($sizes) - 1;
                     foreach ($sizes as $size_index => $size): 
-                    ?>
-                      <th class="vertical-text-full <?= ($size_index == $last_index && $cat_index < count($display_categories) - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
+                  ?>
+                      <th class="vertical-text-full <?= ($size_index == $last_index && $cat_index < $total_categories - 1) ? 'double-line-right' : '' ?>"><?= $size ?></th>
                     <?php endforeach; ?>
                   <?php endforeach; ?>
                 </tr>
@@ -956,7 +1048,7 @@ $grand_total = array_sum($category_totals);
           </div>
 
           <div class="footer-info">
-            <p>Generated on: <?= date('d-M-Y h:i A') ?></p>
+            <p>Generated on: <?= date('d-M-Y h:i A') ?> | Sizes sorted: Largest to Smallest (only sizes with data)</p>
           </div>
         <?php endif; ?>
       </div>

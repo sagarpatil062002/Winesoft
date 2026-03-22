@@ -136,10 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         } else {
-            // Empty field means walk-in customer
-            $_SESSION['selected_customer'] = '';
-            $_SESSION['success_message'] = "Walk-in customer selected!";
-            logMessage("Walk-in customer selected", 'INFO');
+            // Empty field is not allowed - show error
+            $_SESSION['error_message'] = "Please select a customer or create a new one";
+            logMessage("Empty customer field submitted", 'WARNING');
         }
 
         // Redirect to avoid form resubmission
@@ -463,6 +462,80 @@ while ($row = $all_items_result->fetch_assoc()) {
 $all_items_stmt->close();
 
 // ============================================================================
+// DAILY STOCK DATA FOR DISTRIBUTION (like sale_for_date_range.php)
+// ============================================================================
+$daily_stock_for_js = [];
+$dates_by_month = [];
+
+// Group dates by month for efficient querying
+foreach ($all_dates_in_range as $date) {
+    $month = date('Y-m', strtotime($date));
+    if (!isset($dates_by_month[$month])) {
+        $dates_by_month[$month] = [];
+    }
+    $dates_by_month[$month][] = $date;
+}
+
+// Fetch daily stock for each item for each date in range
+foreach ($all_items_data as $item_code => $item) {
+    $daily_stock_for_js[$item_code] = [];
+    
+    foreach ($dates_by_month as $month => $month_dates) {
+        // Determine which table to query for this month
+        $month_year_short = date('m_y', strtotime($month . '-01'));
+        $current_month = date('Y-m');
+        
+        if ($month === $current_month) {
+            $stock_table = "tbldailystock_" . $comp_id;
+        } else {
+            $stock_table = "tbldailystock_" . $comp_id . "_" . $month_year_short;
+        }
+        
+        // Check if table exists
+        $table_check = "SHOW TABLES LIKE '$stock_table'";
+        $table_result = $conn->query($table_check);
+        
+        if ($table_result->num_rows == 0) {
+            // Table doesn't exist, set all dates in this month to 0
+            foreach ($month_dates as $date) {
+                $daily_stock_for_js[$item_code][$date] = 0;
+            }
+            continue;
+        }
+        
+        // Query stock for each date in this month
+        foreach ($month_dates as $date) {
+            $day = sprintf('%02d', date('d', strtotime($date)));
+            $closing_column = "DAY_" . $day . "_CLOSING";
+            
+            // Check if column exists
+            $col_check = "SHOW COLUMNS FROM $stock_table LIKE '$closing_column'";
+            $col_result = $conn->query($col_check);
+            
+            if ($col_result->num_rows == 0) {
+                $daily_stock_for_js[$item_code][$date] = 0;
+                continue;
+            }
+            
+            $stock_query = "SELECT $closing_column FROM $stock_table WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+            $stock_stmt = $conn->prepare($stock_query);
+            $stock_stmt->bind_param("ss", $month, $item_code);
+            $stock_stmt->execute();
+            $stock_result = $stock_stmt->get_result();
+            
+            if ($stock_row = $stock_result->fetch_assoc()) {
+                $daily_stock_for_js[$item_code][$date] = isset($stock_row[$closing_column]) ? (float)$stock_row[$closing_column] : 0;
+            } else {
+                $daily_stock_for_js[$item_code][$date] = 0;
+            }
+            $stock_stmt->close();
+        }
+    }
+}
+
+logMessage("Daily stock data fetched for " . count($daily_stock_for_js) . " items across " . count($all_dates_in_range) . " dates", 'INFO');
+
+// ============================================================================
 // FUNCTIONS FROM sale_for_date_range.php
 // ============================================================================
 
@@ -471,6 +544,11 @@ function clearSessionQuantities() {
     if (isset($_SESSION['customer_sale_quantities'])) {
         unset($_SESSION['customer_sale_quantities']);
         logMessage("Customer session quantities cleared");
+    }
+    // Also clear distribution
+    if (isset($_SESSION['customer_item_distribution'])) {
+        unset($_SESSION['customer_item_distribution']);
+        logMessage("Customer item distribution cleared");
     }
 }
 
@@ -1113,19 +1191,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
                     $_SESSION['selected_customer'] = $customerCode;
                 }
             }
-        } else {
-            // Empty field means walk-in customer
-            $_SESSION['selected_customer'] = '';
         }
+        // Note: Empty field is handled by validation below
         
         // Update selectedCustomer variable
         $selectedCustomer = isset($_SESSION['selected_customer']) ? $_SESSION['selected_customer'] : '';
     }
     
-    // Validate customer selection - allow empty for walk-in customer
-    // Empty string is valid (walk-in), customer code is valid (numeric), but invalid text is not
-    if ($selectedCustomer !== '' && !is_numeric($selectedCustomer)) {
-        $_SESSION['error'] = "Please select a valid customer or create a new one. Leave empty for walk-in customer.";
+    // Validate customer selection - customer is required (no walk-in)
+    // Customer code must be numeric (existing customer) or new: prefix (new customer)
+    if (empty($selectedCustomer)) {
+        $_SESSION['error'] = "Please select a customer or create a new one";
+        header("Location: customer_sales.php");
+        exit;
+    }
+    
+    // Check if customer field is empty in the POST (directly from form)
+    if (isset($_POST['customer_field']) && empty(trim($_POST['customer_field']))) {
+        $_SESSION['error'] = "Please select a customer or create a new one";
         header("Location: customer_sales.php");
         exit;
     }
@@ -1392,8 +1475,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
         $finalAmount = $total_amount + $taxAmount;
         
         // Store bill data in session (for potential future use)
-        $customerName = ($selectedCustomer === '') ? 'Walk-in Customer' : ($customers[$selectedCustomer] ?? 'Unknown Customer');
-        $customerIdForDisplay = ($selectedCustomer === '') ? 0 : $selectedCustomer;
+        $customerName = $customers[$selectedCustomer] ?? 'Unknown Customer';
+        $customerIdForDisplay = $selectedCustomer;
         
         $_SESSION['last_customer_bill_data'] = [
             'bill_no' => ($selectedCustomer === '') ? $retail_bill_no : $customer_bill_no,
@@ -1415,7 +1498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['finalize_sale']) || 
         // unset($_SESSION['selected_customer']);
         
         // Store success message instead of redirecting to preview (which doesn't exist)
-        $customerName = ($selectedCustomer === '') ? 'Walk-in Customer' : ($customers[$selectedCustomer] ?? 'Unknown Customer');
+        $customerName = $customers[$selectedCustomer] ?? 'Unknown Customer';
         $_SESSION['success_message'] = "Bill generated successfully for $customerName! Bill No: $retail_bill_no";
         
         // Redirect back to the same page with success message
@@ -1820,10 +1903,10 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                          id="customer_field"
                          name="customer_field"
                          list="customerOptions"
+                         required
                          placeholder="Type to search customers or type 'new: Customer Name' to create new"
                          value="<?= !empty($selectedCustomer) && isset($customers[$selectedCustomer]) ? $customers[$selectedCustomer] : '' ?>">
                   <datalist id="customerOptions">
-                    <option value="">Walk-in Customer</option>
                     <?php foreach ($customers as $code => $name): ?>
                       <option value="<?= $code ?>"><?= htmlspecialchars($name) ?></option>
                     <?php endforeach; ?>
@@ -1831,7 +1914,7 @@ logArray($debug_info, "Customer Sales Page Load Debug Info");
                   <div class="customer-hint">
                     <i class="fas fa-info-circle"></i>
                     Select existing customer from dropdown or type "new: Customer Name" to create new customer.
-                    Leave empty for walk-in customer.
+                    <span class="text-danger">* Required</span>
                   </div>
                 </div>
                 <button type="submit" class="btn btn-primary mt-3">
@@ -2252,6 +2335,14 @@ const daysInRange = <?= $days_count ?>;
 const unavailableDatesGlobal = <?= json_encode($unavailable_dates_global ?? []) ?>;
 const allDatesInRange = <?= json_encode($all_dates_in_range ?? []) ?>;
 
+// Daily stock data for each item and date (for stock-aware distribution)
+const dailyStockData = <?= json_encode($daily_stock_for_js ?? []) ?>;
+console.log('Daily stock data loaded:', dailyStockData);
+
+// Distribution data from session
+const itemDistribution = <?= json_encode($_SESSION['customer_item_distribution'] ?? []) ?>;
+console.log('Distribution data loaded:', itemDistribution);
+
 // Function to get unavailable dates for JavaScript
 function getUnavailableDatesJS() {
     return unavailableDatesGlobal;
@@ -2260,6 +2351,112 @@ function getUnavailableDatesJS() {
 // Function to get dates in range
 function getDatesInRange() {
     return allDatesInRange;
+}
+
+// Function to get stock-aware distribution for an item
+function getStockAwareDistributionJS(itemCode, totalQty) {
+    const dates = getDatesInRange();
+    const unavailable = getUnavailableDatesJS();
+    
+    // Filter available dates (not dry days, not backdated)
+    const availableDates = dates.filter(d => !unavailable.includes(d));
+    
+    if (availableDates.length === 0) {
+        return {};
+    }
+    
+    // Get stock for each date for this item
+    const stockForItem = dailyStockData[itemCode] || {};
+    
+    // Filter dates with available stock
+    const stockAvailableDates = availableDates.filter(date => {
+        const stock = stockForItem[date] || 0;
+        return stock > 0;
+    });
+    
+    if (stockAvailableDates.length === 0) {
+        // No stock available on any date, return empty distribution
+        const distribution = {};
+        dates.forEach(d => distribution[d] = 0);
+        return distribution;
+    }
+    
+    // Distribute quantity across available dates with stock
+    const distribution = {};
+    dates.forEach(d => distribution[d] = 0);
+    
+    let remaining = totalQty;
+    
+    // First pass: distribute evenly as much as possible
+    const qtyPerDate = Math.floor(totalQty / stockAvailableDates.length);
+    const remainder = totalQty % stockAvailableDates.length;
+    
+    stockAvailableDates.forEach((date, index) => {
+        const maxStock = stockForItem[date] || 0;
+        const qty = Math.min(qtyPerDate, maxStock);
+        distribution[date] = qty;
+        remaining -= qty;
+    });
+    
+    // Second pass: distribute remaining randomly among dates with stock
+    if (remaining > 0) {
+        const availableForRemainder = stockAvailableDates.filter(date => {
+            const currentQty = distribution[date];
+            const maxStock = stockForItem[date] || 0;
+            return currentQty < maxStock;
+        });
+        
+        while (remaining > 0 && availableForRemainder.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableForRemainder.length);
+            const date = availableForRemainder[randomIndex];
+            
+            const maxStock = stockForItem[date] || 0;
+            if (distribution[date] < maxStock) {
+                distribution[date]++;
+                remaining--;
+            } else {
+                // Remove this date from available list
+                availableForRemainder.splice(randomIndex, 1);
+            }
+        }
+    }
+    
+    return distribution;
+}
+
+// Function to shuffle a single item's distribution
+function shuffleThisItem(input) {
+    const itemCode = $(input).data('code');
+    const totalQty = parseInt($(input).val()) || 0;
+    
+    if (totalQty <= 0) {
+        alert('Please enter a quantity first');
+        return;
+    }
+    
+    // Get stock-aware distribution
+    const distribution = getStockAwareDistributionJS(itemCode, totalQty);
+    
+    // Save to session
+    saveDistributionToSession(itemCode, distribution);
+    
+    // Update preview
+    updateDistributionPreview(itemCode, distribution);
+    
+    alert('Distribution shuffled for item ' + itemCode);
+}
+
+// Function to update distribution preview in cells
+function updateDistributionPreview(itemCode, distribution) {
+    // This would update the distribution cells if they exist
+    // For now, just log it
+    console.log('Distribution preview for', itemCode, distribution);
+}
+
+// Function to display distribution in cells
+function displayDistributionInCells(itemCode, distribution) {
+    // This would display the distribution in table cells
+    console.log('Display distribution for', itemCode, distribution);
 }
 
 // Function to shuffle quantities across available dates
@@ -2582,10 +2779,12 @@ function checkCustomerSelection() {
     const customerField = document.getElementById('customer_field');
     const customerValue = customerField.value.trim();
     
-    // Check if customer is selected (can be empty for walk-in)
-    if (customerValue === '' || customerValue === '0') {
-        // Empty or 0 means walk-in customer - this is allowed
-        return true;
+    // Check if customer is selected (required - no walk-in)
+    if (customerValue === '' || customerValue === '0' || customerValue === null) {
+        // Empty means no customer selected - show error
+        alert('Please select a customer or create a new one');
+        customerField.focus();
+        return false;
     }
     
     // Check if it's a valid customer code (numeric)
@@ -2613,8 +2812,8 @@ function checkCustomerSelection() {
         }
     }
     
-    alert('Please select a valid customer or create a new one.\nLeave empty for walk-in customer.');
-    customerField.focus();
+    alert('Please select a customer or create a new one');
+    customerField.focus()
     return false;
 }
 
@@ -2860,8 +3059,11 @@ function generateBills() {
     const customerValue = hiddenCustomerField.value.trim();
     
     // First validate customer selection using hidden field value
-    if (customerValue === '' || customerValue === '0') {
-        // Empty or 0 means walk-in customer - this is allowed
+    if (customerValue === '' || customerValue === '0' || customerValue === null) {
+        // Empty means no customer selected - required
+        alert('Please select a customer or create a new one');
+        customerField.focus();
+        return false;
     } else if (!isNaN(customerValue) && customerValue !== '') {
         // Valid numeric customer code
     } else if (customerValue.toLowerCase().startsWith('new:')) {
@@ -2879,7 +3081,7 @@ function generateBills() {
                 }
             }
             if (!found) {
-                alert('Please select a valid customer or create a new one.\nLeave empty for walk-in customer.');
+                alert('Please select a customer or create a new one');
                 customerField.focus();
                 return false;
             }
@@ -2907,7 +3109,7 @@ function generateBills() {
     
     // Show confirmation
     const customerField = document.getElementById('customer_field');
-    const customerName = customerField.value.trim() === '' ? 'Walk-in Customer' : customerField.value;
+    const customerName = customerField.value.trim();
     
     const confirmed = confirm(`Generate bills for ${customerName}?\n\nThis will:
     1. Create customer sale record

@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once 'components/financial_year_auto.php';
 
 // Ensure user is logged in and company is selected
 if (!isset($_SESSION['user_id'])) {
@@ -365,6 +366,8 @@ if (isset($_GET['generate'])) {
     // Don't auto-update on page load - let the PHP-generated options stay
     // Only update when dates actually change
   });
+  <?php require_once 'components/financial_year_footer.php'; ?>
+
 </script>
 </body>
 </html>
