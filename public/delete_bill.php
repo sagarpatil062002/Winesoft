@@ -77,6 +77,53 @@ function deleteCashMemos($conn, $bill_nos, $comp_id) {
     return $deletedCashMemos;
 }
 
+// NEW FUNCTION: Delete customer sales records for bills
+function deleteCustomerSales($conn, $bill_nos, $comp_id) {
+    if (empty($bill_nos)) {
+        return 0;
+    }
+    
+    // Handle single bill or array of bills
+    if (!is_array($bill_nos)) {
+        $bill_nos = [$bill_nos];
+    }
+    
+    // First, we need to get the numeric bill numbers from the string format (e.g., "BL0001" -> 1)
+    $numeric_bill_nos = [];
+    foreach ($bill_nos as $bill_no) {
+        // Extract numeric part from bill number like "BL0001" -> 1
+        $numeric_part = preg_replace('/[^0-9]/', '', $bill_no);
+        if (!empty($numeric_part)) {
+            $numeric_bill_nos[] = intval($numeric_part);
+        }
+    }
+    
+    if (empty($numeric_bill_nos)) {
+        return 0;
+    }
+    
+    // Create placeholders for IN clause
+    $placeholders = implode(',', array_fill(0, count($numeric_bill_nos), '?'));
+    
+    // Delete from tblcustomersales
+    $deleteCustomerSalesSQL = "DELETE FROM tblcustomersales WHERE BillNo IN ($placeholders) AND CompID = ?";
+    $deleteCustomerSalesStmt = $conn->prepare($deleteCustomerSalesSQL);
+    
+    // Combine parameters: numeric bill numbers + comp_id
+    $params = array_merge($numeric_bill_nos, [$comp_id]);
+    $types = str_repeat('i', count($numeric_bill_nos)) . 'i';
+    $deleteCustomerSalesStmt->bind_param($types, ...$params);
+    $deleteCustomerSalesStmt->execute();
+    $deletedCustomerSales = $deleteCustomerSalesStmt->affected_rows;
+    $deleteCustomerSalesStmt->close();
+    
+    if ($deletedCustomerSales > 0) {
+        error_log("Deleted $deletedCustomerSales customer sales records for bills: " . implode(', ', $bill_nos));
+    }
+    
+    return $deletedCustomerSales;
+}
+
 // NEW FUNCTION: Update cash memo bill numbers after renumbering
 function updateCashMemoBillNumbers($conn, $old_bill_no, $new_bill_no, $comp_id) {
     $updateCashMemoSQL = "UPDATE tbl_cash_memo_prints 
@@ -401,6 +448,9 @@ function reverseStockUpdatesBulkOptimized($conn, $bill_nos, $comp_id) {
         // 1. Delete all cash memos in bulk (NEW - optimized)
         deleteCashMemos($conn, $bill_nos, $comp_id);
         
+        // 1.5. Delete customer sales records from tblcustomersales
+        deleteCustomerSales($conn, $bill_nos, $comp_id);
+        
         // 2. Batch restore main stock (group items by item code and sum quantities)
         $item_qty_map = [];
         foreach ($all_items as $item) {
@@ -644,7 +694,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $response = [
                     'success' => true,
-                    'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos, and renumbered remaining bills."
+                    'message' => "Successfully deleted $deleted_count bill(s), associated cash memos, and customer sales records, and renumbered remaining bills."
                 ];
             }
             
@@ -700,7 +750,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $response = [
                         'success' => true,
-                        'message' => "Successfully deleted $deleted_count bill(s) and associated cash memos for $delete_date, and renumbered remaining bills."
+                        'message' => "Successfully deleted $deleted_count bill(s), associated cash memos and customer sales records for $delete_date, and renumbered remaining bills."
                     ];
                 }
             }
@@ -717,7 +767,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $response = [
                     'success' => true,
-                    'message' => "Bill $bill_no deleted successfully, along with associated cash memos, and bills renumbered."
+                    'message' => "Bill $bill_no deleted successfully, along with associated cash memos and customer sales records, and bills renumbered."
                 ];
             } else {
                 $response = [

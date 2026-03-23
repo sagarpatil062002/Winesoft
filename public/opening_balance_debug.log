@@ -13139,3 +13139,2239 @@
 )
 
 [2026-03-22 05:02:09] AJAX volume_summary returning with categories count: 6
+[2026-03-23 04:59:23] Script started
+[2026-03-23 04:59:24] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-03-23 04:59:24] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-03-23 04:59:24] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:24] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:24] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:24] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-03-23 04:59:24] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-03-23 04:59:24] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:24] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-03-23 04:59:24] Initial counts (first batch) - Array
+(
+    [total] => 72
+    [with_stock] => 72
+)
+
+[2026-03-23 04:59:24] Script completed, rendering page
+[2026-03-23 04:59:24] Script started
+[2026-03-23 04:59:24] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-03-23 04:59:24] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-03-23 04:59:24] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:24] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:24] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:24] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-03-23 04:59:24] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-03-23 04:59:24] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:24] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:24] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2021-04-01
+            [month] => 2021-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-03-23 04:59:24] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-03-23 04:59:24] AJAX get_items count query result - Array
+(
+    [total] => 72
+    [batch_month] => 2021-04
+    [batch_day] => 01
+)
+
+[2026-03-23 04:59:24] AJAX get_items returning - Array
+(
+    [items_count] => 72
+    [total] => 72
+    [has_more] => 
+)
+
+[2026-03-23 04:59:25] Script started
+[2026-03-23 04:59:25] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-03-23 04:59:25] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-03-23 04:59:25] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:25] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-03-23 04:59:25] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-03-23 04:59:25] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:25] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-03-23 04:59:25] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-03-23 04:59:25] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-03-23 04:59:25] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:25] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-03-23 04:59:25] AJAX volume_summary called - Array
+(
+    [ajax] => volume_summary
+    [mode] => F
+    [t] => 1774238365687
+)
+
+[2026-03-23 04:59:25] Volume summary - checking table - Array
+(
+    [batch_table] => tbldailystock_5_04_21
+    [batch_month] => 2021-04
+)
+
+[2026-03-23 04:59:25] getOpeningBalanceVolumeSummary called - Array
+(
+    [mode] => F
+    [comp_id] => 5
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+    [first_batch_data] => Array
+        (
+            [date] => 2021-04-01
+            [month] => 2021-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-03-23 04:59:25] Processing volume summary - Array
+(
+    [batch_month] => 2021-04
+    [batch_day] => 01
+    [batch_date] => 2021-04-01
+    [batch_table] => tbldailystock_5_04_21
+)
+
+[2026-03-23 04:59:25] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-03-23 04:59:25] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-03-23 04:59:25] Volume summary query returned rows - Array
+(
+    [count] => 72
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0028274
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0028275
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0028356
+    [opening_stock] => 50
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 375
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 375 ML
+    [new_total] => 50
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0021532
+    [opening_stock] => 300
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 300
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009668
+    [opening_stock] => 60
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 560
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009688
+    [opening_stock] => 50
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 375
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 375 ML
+    [new_total] => 100
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0022277
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 1060
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0022280
+    [opening_stock] => 32
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 1000
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 1000 ML
+    [new_total] => 32
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0018737
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 1000
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMKS0026878
+    [opening_stock] => 50
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 1110
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009775
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => D
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 1610
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010676
+    [opening_stock] => 30
+    [class_code_new] => CLS001
+    [class] => G
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 375
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 375 ML
+    [new_total] => 130
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010677
+    [opening_stock] => 10
+    [class_code_new] => CLS001
+    [class] => G
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 750
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 750 ML
+    [new_total] => 10
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010678
+    [opening_stock] => 1500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 2500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010679
+    [opening_stock] => 1000
+    [class_code_new] => CLS001
+    [class] => G
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 2610
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018137
+    [opening_stock] => 300
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 330 ML
+    [new_total] => 300
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMKB0031391
+    [opening_stock] => 500
+    [class_code_new] => CLS008
+    [class] => M
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => MILD BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => MILD BEER
+    [volume] => 330 ML
+    [new_total] => 500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018142
+    [opening_stock] => 300
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 600
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0027089
+    [opening_stock] => 300
+    [class_code_new] => CLS008
+    [class] => M
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => MILD BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => MILD BEER
+    [volume] => 650 ML
+    [new_total] => 300
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018132
+    [opening_stock] => 121
+    [class_code_new] => CLS008
+    [class] => M
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => MILD BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => MILD BEER
+    [volume] => 650 ML
+    [new_total] => 421
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018158
+    [opening_stock] => 500
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 330 ML
+    [new_total] => 800
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0023258
+    [opening_stock] => 500
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 1100
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010445
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 3110
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010447
+    [opening_stock] => 20
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 750
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 750 ML
+    [new_total] => 30
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010612
+    [opening_stock] => 1000
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 3500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009770
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 3610
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0018648
+    [opening_stock] => 200
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 3810
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0033624
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 4000
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0012499
+    [opening_stock] => 15
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 1000
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 1000 ML
+    [new_total] => 47
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0011438
+    [opening_stock] => 96
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 3906
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0011418
+    [opening_stock] => 240
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 4146
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010234
+    [opening_stock] => 240
+    [class_code_new] => CLS001
+    [class] => R
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 4386
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018635
+    [opening_stock] => 200
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 1300
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0009847
+    [opening_stock] => 500
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 330 ML
+    [new_total] => 1300
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0029429
+    [opening_stock] => 500
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 330 ML
+    [new_total] => 1800
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0029431
+    [opening_stock] => 130
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 1430
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010541
+    [opening_stock] => 400
+    [class_code_new] => CLS001
+    [class] => D
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 4786
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010198
+    [opening_stock] => 384
+    [class_code_new] => CLS001
+    [class] => D
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 5170
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010450
+    [opening_stock] => 200
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 4200
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010451
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 5670
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010453
+    [opening_stock] => 30
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 750
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 750 ML
+    [new_total] => 60
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010056
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 6170
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0040482
+    [opening_stock] => 300
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 4500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009894
+    [opening_stock] => 100
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 6270
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009899
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => R
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 5000
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009902
+    [opening_stock] => 10
+    [class_code_new] => CLS001
+    [class] => R
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 750
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 750 ML
+    [new_total] => 70
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009903
+    [opening_stock] => 20
+    [class_code_new] => CLS001
+    [class] => R
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 1000
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 1000 ML
+    [new_total] => 67
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0011581
+    [opening_stock] => 15
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 1000
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 1000 ML
+    [new_total] => 82
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009936
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 6770
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0035367
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 5500
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010434
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 7270
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009942
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 7770
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0036711
+    [opening_stock] => 500
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 6000
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010701
+    [opening_stock] => 700
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 6700
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010702
+    [opening_stock] => 100
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 7870
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010076
+    [opening_stock] => 700
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 7400
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010088
+    [opening_stock] => 264
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 8134
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010075
+    [opening_stock] => 700
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 90
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 90 ML
+    [new_total] => 8100
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010087
+    [opening_stock] => 1200
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 9334
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010108
+    [opening_stock] => 10
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 750
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 750 ML
+    [new_total] => 80
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0029933
+    [opening_stock] => 6
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 9340
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0029928
+    [opening_stock] => 12
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 9352
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010360
+    [opening_stock] => 24
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 9376
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009968
+    [opening_stock] => 530
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 9906
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0009977
+    [opening_stock] => 542
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 10448
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMWN0019724
+    [opening_stock] => 130
+    [class_code_new] => CLS004
+    [class] => V
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => WINE
+    [ml_volume] => 375
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => WINE
+    [volume] => 375 ML
+    [new_total] => 130
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMKS0018253
+    [opening_stock] => 6
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 10454
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0037366
+    [opening_stock] => 48
+    [class_code_new] => CLS008
+    [class] => M
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => MILD BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => MILD BEER
+    [volume] => 330 ML
+    [new_total] => 548
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0023264
+    [opening_stock] => 200
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 650
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 650 ML
+    [new_total] => 1630
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMBR0018161
+    [opening_stock] => 130
+    [class_code_new] => CLS007
+    [class] => F
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => FERMENTED BEER
+    [ml_volume] => 330
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => FERMENTED BEER
+    [volume] => 330 ML
+    [new_total] => 1930
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMKS0026879
+    [opening_stock] => 21
+    [class_code_new] => CLS001
+    [class] => W
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 10475
+)
+
+[2026-03-23 04:59:25] Processing item - Array
+(
+    [code] => SCMPL0010020
+    [opening_stock] => 1225
+    [class_code_new] => CLS001
+    [class] => K
+)
+
+[2026-03-23 04:59:25] Item hierarchy - Array
+(
+    [display_category] => SPIRITS
+    [ml_volume] => 180
+)
+
+[2026-03-23 04:59:25] Added to volume summary - Array
+(
+    [category] => SPIRITS
+    [volume] => 180 ML
+    [new_total] => 11700
+)
+
+[2026-03-23 04:59:25] Final volume summary - Array
+(
+    [SPIRITS] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 82
+            [750 ML] => 80
+            [700 ML] => 0
+            [650 ML] => 0
+            [500 ML] => 0
+            [375 ML] => 130
+            [355 ML] => 0
+            [330 ML] => 0
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 11700
+            [170 ML] => 0
+            [90 ML] => 8100
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+    [WINE] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 0
+            [750 ML] => 0
+            [700 ML] => 0
+            [650 ML] => 0
+            [500 ML] => 0
+            [375 ML] => 130
+            [355 ML] => 0
+            [330 ML] => 0
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 0
+            [170 ML] => 0
+            [90 ML] => 0
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+    [FERMENTED BEER] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 0
+            [750 ML] => 0
+            [700 ML] => 0
+            [650 ML] => 1630
+            [500 ML] => 0
+            [375 ML] => 0
+            [355 ML] => 0
+            [330 ML] => 1930
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 0
+            [170 ML] => 0
+            [90 ML] => 0
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+    [MILD BEER] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 0
+            [750 ML] => 0
+            [700 ML] => 0
+            [650 ML] => 421
+            [500 ML] => 0
+            [375 ML] => 0
+            [355 ML] => 0
+            [330 ML] => 548
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 0
+            [170 ML] => 0
+            [90 ML] => 0
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+    [COUNTRY LIQUOR] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 0
+            [750 ML] => 0
+            [700 ML] => 0
+            [650 ML] => 0
+            [500 ML] => 0
+            [375 ML] => 0
+            [355 ML] => 0
+            [330 ML] => 0
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 0
+            [170 ML] => 0
+            [90 ML] => 0
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+    [OTHER] => Array
+        (
+            [50L] => 0
+            [30L] => 0
+            [20L] => 0
+            [15L] => 0
+            [4.5L] => 0
+            [3L] => 0
+            [2L] => 0
+            [1.75L] => 0
+            [1.5L] => 0
+            [1000 ML] => 0
+            [750 ML] => 0
+            [700 ML] => 0
+            [650 ML] => 0
+            [500 ML] => 0
+            [375 ML] => 0
+            [355 ML] => 0
+            [330 ML] => 0
+            [275 ML] => 0
+            [250 ML] => 0
+            [200 ML] => 0
+            [180 ML] => 0
+            [170 ML] => 0
+            [90 ML] => 0
+            [60 ML] => 0
+            [50 ML] => 0
+        )
+
+)
+
+[2026-03-23 04:59:25] AJAX volume_summary returning with categories count: 6
