@@ -1,4 +1,5 @@
 <?php
+
 // Remove time limit for this script completely
 set_time_limit(0);
 ignore_user_abort(true);
@@ -37,6 +38,7 @@ $comp_id = $_SESSION['CompID'];
 $fin_year_id = $_SESSION['FIN_YEAR_ID']; // This is the ID from tblfinyear
 
 include_once "../config/db.php"; // MySQLi connection in $conn
+include_once "../vendor/autoload.php"; // PhpSpreadsheet autoload
 include_once "components/financial_year.php";
 require_once 'license_functions.php'; // ADDED: Include license functions
 
@@ -2357,68 +2359,174 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     
     $start_date = $_POST['start_date'];
     $csv_file = $_FILES['csv_file']['tmp_name'];
+    $file_name = $_FILES['csv_file']['name'];
+    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
     
-    // ==================== NEW: DELIMITER DETECTION ====================
-    // Read first line to detect separator
-    $first_line = file_get_contents($csv_file, false, null, 0, 1000);
-    $first_line = trim($first_line);
+    // Determine if it's CSV or Excel
+    $is_excel = in_array($file_ext, ['xls', 'xlsx']);
     
-    // Detect separator based on first line
+    // Check if PhpSpreadsheet is available for Excel files
+    if ($is_excel && !class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+        $_SESSION['import_message'] = [
+            'success' => false,
+            'message' => "Excel import is not available. Please install PhpSpreadsheet or use CSV format."
+        ];
+        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+        exit;
+    }
+    
+    // Initialize variables for both CSV and Excel processing
+    $handle = null;
     $delimiter = ',';
-    if (strpos($first_line, "\t") !== false) {
-        $delimiter = "\t";
-    } elseif (strpos($first_line, ';') !== false) {
-        $delimiter = ';';
-    }
-    
-    debug_log("Detected delimiter", ['delimiter' => $delimiter === "\t" ? "TAB" : $delimiter]);
-    
-    $handle = fopen($csv_file, "r");
-    if (!$handle) {
-        debug_log("Failed to open file");
-        $_SESSION['import_message'] = [
-            'success' => false,
-            'message' => "Failed to open uploaded file"
-        ];
-        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
-        exit;
-    }
-
-    // Read and validate header row with detected delimiter
-    $header = fgetcsv($handle, 1000, $delimiter);
-    
-    if ($header === false) {
-        debug_log("Failed to read header");
-        fclose($handle);
-        $_SESSION['import_message'] = [
-            'success' => false,
-            'message' => "Failed to read CSV header"
-        ];
-        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
-        exit;
-    }
-    
-    // Check if CSV has the correct format (4 columns)
     $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock'];
+    $items_data_array = []; // Will hold data for both CSV and Excel
     
-    // Normalize headers: trim whitespace and remove BOM
-    $header = array_map(function($h) {
-        // Remove UTF-8 BOM if present
-        $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
-        return trim($h);
-    }, $header);
-    
-    if ($header !== $expected_headers) {
-        debug_log("Header mismatch", ['expected' => $expected_headers, 'found' => $header]);
+    if ($is_excel) {
+        // Process Excel file
+        try {
+            debug_log("Processing Excel file", ['name' => $file_name, 'ext' => $file_ext]);
+            
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($csv_file);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray();
+            
+            if (empty($rows)) {
+                throw new Exception("Excel file is empty");
+            }
+            
+            debug_log("Excel file loaded, rows count: " . count($rows));
+            
+            // First row should be headers
+            $header = isset($rows[0]) ? $rows[0] : [];
+            $header = array_map(function($h) {
+                // Remove UTF-8 BOM if present
+                $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
+                return is_null($h) ? '' : trim($h);
+            }, $header);
+            
+            // Validate headers
+            if ($header !== $expected_headers) {
+                debug_log("Excel Header mismatch", ['expected' => $expected_headers, 'found' => $header]);
+                $_SESSION['import_message'] = [
+                    'success' => false,
+                    'message' => "Excel format is incorrect. Expected headers: " . implode(', ', $expected_headers) . ". Found: " . implode(', ', $header)
+                ];
+                header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+                exit;
+            }
+            
+            // Process data rows (skip header)
+            for ($i = 1; $i < count($rows); $i++) {
+                $row = $rows[$i];
+                if (count($row) >= 4) {
+                    $code = isset($row[0]) ? trim($row[0]) : '';
+                    $name = isset($row[1]) ? trim($row[1]) : '';
+                    $size = isset($row[2]) ? trim($row[2]) : '';
+                    $balance = isset($row[3]) ? intval(trim($row[3] ?? '0')) : 0;
+                    
+                    $items_data_array[] = [
+                        'code' => $code,
+                        'name' => $name,
+                        'size' => $size,
+                        'balance' => $balance
+                    ];
+                }
+            }
+            
+            debug_log("Excel data parsed", ['rows' => count($items_data_array)]);
+            
+        } catch (Exception $e) {
+            debug_log("Error processing Excel file", ['error' => $e->getMessage()]);
+            $_SESSION['import_message'] = [
+                'success' => false,
+                'message' => "Error processing Excel file: " . $e->getMessage()
+            ];
+            header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+            exit;
+        }
+    } else {
+        // Process CSV file (original logic)
+        // ==================== NEW: DELIMITER DETECTION ====================
+        // Read first line to detect separator
+        $first_line = file_get_contents($csv_file, false, null, 0, 1000);
+        $first_line = trim($first_line);
+        
+        // Detect separator based on first line
+        $delimiter = ',';
+        if (strpos($first_line, "\t") !== false) {
+            $delimiter = "\t";
+        } elseif (strpos($first_line, ';') !== false) {
+            $delimiter = ';';
+        }
+        
+        debug_log("Detected delimiter", ['delimiter' => $delimiter === "\t" ? "TAB" : $delimiter]);
+        
+        $handle = fopen($csv_file, "r");
+        if (!$handle) {
+            debug_log("Failed to open file");
+            $_SESSION['import_message'] = [
+                'success' => false,
+                'message' => "Failed to open uploaded file"
+            ];
+            header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+            exit;
+        }
+
+        // Read and validate header row with detected delimiter
+        $header = fgetcsv($handle, 1000, $delimiter);
+        
+        if ($header === false) {
+            debug_log("Failed to read header");
+            fclose($handle);
+            $_SESSION['import_message'] = [
+                'success' => false,
+                'message' => "Failed to read CSV header"
+            ];
+            header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+            exit;
+        }
+        
+        // Check if CSV has the correct format (4 columns)
+        $expected_headers = ['Item_Code', 'Item_Name', 'Size', 'Opening_Stock'];
+        
+        // Normalize headers: trim whitespace and remove BOM
+        $header = array_map(function($h) {
+            // Remove UTF-8 BOM if present
+            $h = preg_replace('/^\xEF\xBB\xBF/', '', $h);
+            return trim($h);
+        }, $header);
+        
+        if ($header !== $expected_headers) {
+            debug_log("Header mismatch", ['expected' => $expected_headers, 'found' => $header]);
+            fclose($handle);
+            $_SESSION['import_message'] = [
+                'success' => false,
+                'message' => "CSV format is incorrect. Expected headers: " . implode(', ', $expected_headers) . 
+                            ". Found: " . implode(', ', $header) . 
+                            ". Detected delimiter: " . ($delimiter === "\t" ? "TAB" : $delimiter)
+            ];
+            header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
+            exit;
+        }
+
+        // Read CSV data into array for consistent processing
+        while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+            if (count($data) >= 4) {
+                $code = isset($data[0]) ? trim($data[0]) : '';
+                $name = isset($data[1]) ? trim($data[1]) : '';
+                $size = isset($data[2]) ? trim($data[2]) : '';
+                $balance = isset($data[3]) ? intval(trim($data[3] ?? '0')) : 0;
+                
+                $items_data_array[] = [
+                    'code' => $code,
+                    'name' => $name,
+                    'size' => $size,
+                    'balance' => $balance
+                ];
+            }
+        }
+        
         fclose($handle);
-        $_SESSION['import_message'] = [
-            'success' => false,
-            'message' => "CSV format is incorrect. Expected headers: " . implode(', ', $expected_headers) . 
-                        ". Found: " . implode(', ', $header) . 
-                        ". Detected delimiter: " . ($delimiter === "\t" ? "TAB" : $delimiter)
-        ];
-        header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
-        exit;
     }
 
     $imported_count = 0;
@@ -2493,39 +2601,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
     $conn->begin_transaction();
 
     try {
-        // ====== DEBUG: Log CSV items ======
+        // ====== DEBUG: Log items ======
         debug_log("========== IMPORT DEBUG START ==========");
-        debug_log("CSV File:", ['name' => $_FILES['csv_file']['name'], 'size' => $_FILES['csv_file']['size']]);
+        debug_log("File:", ['name' => $_FILES['csv_file']['name'], 'size' => $_FILES['csv_file']['size'], 'is_excel' => $is_excel]);
         debug_log("Start date for import:", ['start_date' => $start_date]);
+        debug_log("Items data array loaded:", ['count' => count($items_data_array)]);
         
-        // Re-read CSV to log all items (for debugging)
-        $csv_items_debug = [];
-        $csv_handle = fopen($csv_file, "r");
-        if ($csv_handle) {
-            $header_check = fgetcsv($csv_handle, 1000, $delimiter);
-            $csv_row_num = 1;
-            while (($csv_data = fgetcsv($csv_handle, 1000, $delimiter)) !== FALSE) {
-                $csv_row_num++;
-                if (count($csv_data) >= 4) {
-                    // Handle null values for PHP 8.x compatibility
-                    $csv_code = isset($csv_data[0]) ? trim($csv_data[0]) : '';
-                    $csv_name = isset($csv_data[1]) ? trim($csv_data[1]) : '';
-                    $csv_size = isset($csv_data[2]) ? trim($csv_data[2]) : '';
-                    $csv_balance = isset($csv_data[3]) ? intval(trim($csv_data[3] ?? '0')) : 0;
-                    
-                    $csv_items_debug[] = [
-                        'row' => $csv_row_num,
-                        'code' => $csv_code,
-                        'name' => $csv_name,
-                        'size' => $csv_size,
-                        'balance' => $csv_balance
-                    ];
-                }
-            }
-            fclose($csv_handle);
-        }
-        debug_log("Total rows in CSV:", ['count' => count($csv_items_debug)]);
-        debug_log("First 10 CSV items:", array_slice($csv_items_debug, 0, 10));
+        // Show some example items from the imported data
+        $import_items_examples = array_slice($items_data_array, 0, 5);
+        debug_log("Sample imported items:", $import_items_examples);
         
         // ====== DEBUG: Log valid database items ======
         debug_log("========== DATABASE ITEMS ==========");
@@ -2569,16 +2653,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             throw new Exception("Failed to prepare statements: " . $conn->error);
         }
         
+        // Process items from the array (works for both CSV and Excel)
+        // For Excel, data was already parsed into $items_data_array (lines 2419-2434)
+        // For CSV, data was also parsed into $items_data_array (lines 2513-2527)
         $row_count = 0;
-        while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
-            $row_count++;
-            if (count($data) >= 4) {
-                // Handle null values for PHP 8.x compatibility
-                $code = isset($data[0]) ? trim($data[0]) : '';
-                $name = isset($data[1]) ? trim($data[1]) : '';
-                $size_desc = isset($data[2]) ? trim($data[2]) : '';
-                $balance_raw = isset($data[3]) ? $data[3] : '0';
-                $balance = intval(trim($balance_raw ?? '0'));
+        
+        if ($is_excel) {
+            // For Excel files, use the already parsed data from $items_data_array
+            foreach ($items_data_array as $row_data) {
+                $row_count++;
+                $code = $row_data['code'];
+                $name = $row_data['name'];
+                $size_desc = $row_data['size'];
+                $balance = $row_data['balance'];
+                
+                // Clean and normalize data for matching
+                $code_original = $code;
+                $code = strtoupper(trim($code));
+                $name = trim(preg_replace('/\s+/', ' ', $name)); // Normalize spaces
+                $name_upper = strtoupper($name);
+                $size_desc = trim($size_desc);
+                
+                // Try multiple matching strategies in order of specificity
+                $item_found = false;
+                $item_data = null;
+                $match_method = '';
+                
+                // Strategy 1: Try exact match with code + name + size description
+                $full_key = $code . '|' . $name . '|' . $size_desc;
+                if (isset($valid_items[$full_key])) {
+                    $item_found = true;
+                    $item_data = $valid_items[$full_key];
+                    $match_method = 'exact code+name+size';
+                }
+                // Strategy 2: Try match with code + name only
+                elseif (isset($valid_items[$code . '|' . $name])) {
+                    $item_found = true;
+                    $item_data = $valid_items[$code . '|' . $name];
+                    $match_method = 'code+name';
+                }
+                // Strategy 3: Try uppercase version
+                elseif (isset($valid_items[$code . '|' . $name_upper])) {
+                    $item_found = true;
+                    $item_data = $valid_items[$code . '|' . $name_upper];
+                    $match_method = 'uppercase code+name';
+                }
+                // Strategy 4: Try matching just by code
+                elseif (isset($valid_items[$code])) {
+                    $item_found = true;
+                    $item_data = $valid_items[$code];
+                    $match_method = 'code only';
+                }
+                // Strategy 5: Try uppercase code
+                elseif (isset($valid_items[strtoupper($code)])) {
+                    $item_found = true;
+                    $item_data = $valid_items[strtoupper($code)];
+                    $match_method = 'uppercase code';
+                }
+                // Strategy 6: Try matching by name only
+                elseif (isset($valid_items[$name])) {
+                    $item_found = true;
+                    $item_data = $valid_items[$name];
+                    $match_method = 'name only';
+                    $error_messages[] = "Matched item '$name' by name only (code mismatch). CSV code: '$code_original', DB code: '{$item_data['code']}'";
+                }
+                // Strategy 7: Try fuzzy matching - search through all keys
+                else {
+                    foreach ($valid_items as $key => $valid_item) {
+                        // Check if code appears in the key
+                        if (strpos($key, $code) !== false && strlen($code) > 5) {
+                            $item_found = true;
+                            $item_data = $valid_item;
+                            $match_method = 'fuzzy code';
+                            $error_messages[] = "Fuzzy matched item by code '$code' to '{$valid_item['code']}'";
+                            break;
+                        }
+                        // Check if name appears in the key (with some similarity)
+                        elseif (strpos($key, substr($name, 0, 15)) !== false) {
+                            $item_found = true;
+                            $item_data = $valid_item;
+                            $match_method = 'fuzzy name';
+                            $error_messages[] = "Fuzzy matched item by name '$name' to '{$valid_item['code']}'";
+                            break;
+                        }
+                    }
+                }
+                
+                if ($item_found && $item_data) {
+                    $item_code_to_use = $item_data['code'];
+                    
+                    // Add to tblitem_stock update list (ALL items, even zero stock)
+                    $items_to_update[] = ['code' => $item_code_to_use, 'balance' => $balance];
+                    
+                    // IMPORTANT: Only add to daily stock if balance > 0
+                    if ($balance > 0) {
+                        $items_for_daily_stock[$item_code_to_use] = $balance;
+                    }
+                    
+                    $imported_count++;
+                    
+                    // Process in batches
+                    if (count($items_to_update) >= $batch_size) {
+                        // Process batch
+                        foreach ($items_to_update as $item) {
+                            $check_stmt->bind_param("s", $item['code']);
+                            $check_stmt->execute();
+                            $check_stmt->store_result();
+                            $exists = $check_stmt->num_rows > 0;
+                            $check_stmt->free_result();
+                            
+                            if ($exists) {
+                                $update_stmt->bind_param("is", $item['balance'], $item['code']);
+                                $update_stmt->execute();
+                            } else {
+                                $insert_stmt->bind_param("sis", $item['code'], $fin_year_id, $item['balance']);
+                                $insert_stmt->execute();
+                            }
+                        }
+                        
+                        $items_to_update = [];
+                        $current_batch++;
+                    }
+                } else {
+                    $skipped_count++;
+                    $skipped_items[] = [
+                        'code' => $code_original,
+                        'name' => $name,
+                        'size' => $size_desc,
+                        'reason' => 'Item not found in database or not allowed for your license type'
+                    ];
+                    
+                    // Store in error messages (limit to first 100 to avoid huge messages)
+                    if ($skipped_count <= 100) {
+                        $error_messages[] = "Skipped item: '$code_original' - '$name' - '$size_desc' (not found in database or not allowed for your license type)";
+                    }
+                }
+            }
+            debug_log("Excel import processed", ['rows' => $row_count, 'imported' => $imported_count, 'skipped' => $skipped_count]);
+        } else {
+            // For CSV files, use the already parsed data from $items_data_array
+            foreach ($items_data_array as $row_data) {
+                $row_count++;
+                $code = $row_data['code'];
+                $name = $row_data['name'];
+                $size_desc = $row_data['size'];
+                $balance = $row_data['balance'];
                 
                 // Clean and normalize data for matching
                 $code_original = $code;
@@ -2710,9 +2929,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
                     }
                 }
             }
+            
+            debug_log("CSV import processed", ['rows' => $row_count, 'imported' => $imported_count, 'skipped' => $skipped_count]);
         }
-        
-        debug_log("Import processed", ['rows' => $row_count, 'imported' => $imported_count, 'skipped' => $skipped_count]);
         
         // ====== DEBUG: Log items that were imported ======
         debug_log("========== IMPORTED ITEMS ==========");
@@ -2751,18 +2970,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         $check_stmt->close();
         $update_stmt->close();
         $insert_stmt->close();
-        
-        // Close file handle - properly check if it's a valid resource
-        if (isset($handle) && $handle !== false) {
-            if (is_resource($handle)) {
-                fclose($handle);
-                debug_log("File handle closed successfully");
-            } else {
-                debug_log("File handle was not a valid resource, skipping fclose");
-            }
-        } else {
-            debug_log("File handle not set or already closed");
-        }
         
         // ==================== PERFORMANCE OPTIMIZATION #5: Bulk Daily Stock Update ====================
         // Only update daily stock for items with balance > 0
@@ -2837,7 +3044,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         
         // ====== DEBUG: Final Summary ======
         debug_log("========== IMPORT COMPLETE - FINAL SUMMARY ==========");
-        debug_log("Total CSV rows processed:", ['count' => $row_count]);
+        debug_log("Total rows processed:", ['count' => $row_count]);
         debug_log("Total items imported to tblitem_stock:", ['count' => $imported_count]);
         debug_log("Total items skipped:", ['count' => $skipped_count]);
         debug_log("Total items sent to daily stock update:", ['count' => count($items_for_daily_stock)]);
@@ -2853,6 +3060,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         debug_log("========== DEBUG COMPLETE ==========");
 
         // Prepare success message
+        $file_format_msg = $is_excel ? "Excel file (.xls/.xlsx)" : ($delimiter === "\t" ? "Tab-Separated (TSV)" : ($delimiter === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)"));
         $message = "Successfully imported $imported_count opening balances (only items allowed for your license type were processed). ";
         if ($skipped_count > 0) {
             $message .= "$skipped_count items were skipped because they were not found in the database or were not allowed for your license type. ";
@@ -2860,7 +3068,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
         if (!empty($error_messages)) {
             $message .= "Note: " . count($error_messages) . " warnings were generated during import.";
         }
-        $message .= " Detected file format: " . ($delimiter === "\t" ? "Tab-Separated (TSV)" : ($delimiter === ";" ? "Semicolon-Separated" : "Comma-Separated (CSV)"));
+        $message .= " Detected file format: " . $file_format_msg;
 
         $_SESSION['import_message'] = [
             'success' => true,
@@ -2869,7 +3077,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file']) && $_FIL
             'imported_count' => $imported_count,
             'skipped_count' => $skipped_count,
             'skipped_items' => $skipped_items,
-            'delimiter' => $delimiter
+            'delimiter' => $is_excel ? 'excel' : $delimiter
         ];
 
         header("Location: opening_balance.php?mode=" . $mode . "&view=" . $view_type . "&search=" . urlencode($search));
@@ -3413,9 +3621,16 @@ debug_log("Script completed, rendering page");
           <strong>System automatically detects:</strong> CSV (,), TSV (tab), or Semicolon (;) files
         </p>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end" id="importForm">
+          <div class="col-md-3">
+            <label for="import_type" class="form-label">Import Type</label>
+            <select class="form-select" id="import_type" name="import_type">
+              <option value="csv">CSV File</option>
+              <option value="excel">Excel File</option>
+            </select>
+          </div>
           <div class="col-md-4">
-            <label for="csv_file" class="form-label">CSV/TSV File</label>
-            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv,.txt,.tsv" required>
+            <label for="csv_file" class="form-label">Select File</label>
+            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv,.txt,.tsv,.xls,.xlsx" required>
           </div>
           <div class="col-md-3">
             <label for="start_date_import" class="form-label">Start Date</label>

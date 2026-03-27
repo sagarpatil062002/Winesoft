@@ -675,7 +675,7 @@ function getSortLink($column, $label) {
 
       <?php if ($import_success): ?>
         <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-          <i class="fa-solid fa-file-csv me-2"></i> Purchase data imported successfully from CSV!
+          <i class="fa-solid fa-file-csv me-2"></i> Purchase data imported successfully from CSV/Excel!
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       <?php endif; ?>
@@ -970,14 +970,15 @@ function getSortLink($column, $label) {
             <form method="POST" action="import_purchase.php" enctype="multipart/form-data" id="importForm">
                 <div class="modal-body">
                     <div class="import-template-info">
-                        <strong><i class="fas fa-info-circle me-2"></i>CSV File Format Requirements:</strong>
+                        <strong><i class="fas fa-info-circle me-2"></i>CSV/Excel File Format Requirements:</strong>
                         <ul class="mt-2">
-                            <li>File format: .csv (Comma Separated Values)</li>
+                            <li>File format: .csv, .xls, or .xlsx (Comma Separated Values or Excel files)</li>
                             <li>Required columns: Date, TP No., Supplier, Item Code, Item Name, Size, Cases, Bottles, Free Cases, Free Bottles, Case Rate, MRP</li>
                             <li>Date format: YYYY-MM-DD (e.g., 2025-12-07)</li>
                             <li>Make sure item codes match your database (with or without SCM prefix)</li>
                             <li>First row should contain column headers</li>
-                            <li>Save your Excel file as CSV: File → Save As → CSV (Comma delimited)</li>
+                            <li>For Excel files: Save as .xlsx or .xls format</li>
+                            <li>For CSV: File → Save As → CSV (Comma delimited)</li>
                         </ul>
                         <p class="mt-2 mb-0">
                             <a href="generate_template.php" class="btn btn-sm btn-outline-primary">
@@ -993,7 +994,7 @@ function getSortLink($column, $label) {
                                 <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-2"></i>
                                 <p class="mb-1">Drag & drop CSV files here</p>
                                 <p class="text-muted small mb-2">or</p>
-                                <input type="file" name="excel_files[]" id="excelFile" class="form-control" accept=".csv" multiple required>
+                                <input type="file" name="excel_files[]" id="excelFile" class="form-control" accept=".csv,.xls,.xlsx" multiple required>
                                 <label for="excelFile" class="btn btn-outline-primary btn-sm mt-2">Browse Files</label>
                             </div>
                         </div>
@@ -1945,7 +1946,7 @@ $(document).ready(function() {
             // Use DataTransfer to set files to the input
             const dataTransfer = new DataTransfer();
             for (let i = 0; i < files.length; i++) {
-                if (files[i].name.toLowerCase().endsWith('.csv')) {
+                if (files[i].name.toLowerCase().match(/\.(csv|xls|xlsx)$/)) {
                     dataTransfer.items.add(files[i]);
                 }
             }
@@ -1993,10 +1994,10 @@ $(document).ready(function() {
                     continue;
                 }
                 
-                // Check file extension - ONLY CSV
+                // Check file extension - CSV, XLS, or XLSX
                 const fileName = file.name.toLowerCase();
-                if (!fileName.match(/\.csv$/)) {
-                    alert('Please select only CSV files (.csv). File "' + file.name + '" is not a CSV.');
+                if (!fileName.match(/\.(csv|xls|xlsx)$/)) {
+                    alert('Please select only CSV or Excel files (.csv, .xls, .xlsx). File "' + file.name + '" is not a valid file.');
                     validFiles = false;
                     continue;
                 }

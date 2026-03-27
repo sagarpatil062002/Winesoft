@@ -55,60 +55,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    // Handle CSV import
-    if (isset($_POST['import_csv'])) {
-        if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
+    // Handle CSV/Excel import
+    if (isset($_POST['import_prices'])) {
+        if (isset($_FILES['import_file']) && $_FILES['import_file']['error'] === UPLOAD_ERR_OK) {
             $imported = 0;
             $errors = [];
             
-            $csvFile = $_FILES['csv_file']['tmp_name'];
-            $handle = fopen($csvFile, 'r');
+            $importType = isset($_POST['import_type']) ? $_POST['import_type'] : 'csv';
+            $fileName = $_FILES['import_file']['name'];
+            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $filePath = $_FILES['import_file']['tmp_name'];
             
-            // Skip header row
-            fgetcsv($handle);
-            
-            while (($data = fgetcsv($handle)) !== FALSE) {
-                if (count($data) >= 5) {
-                    $code = $conn->real_escape_string(trim($data[0]));
-                    $bprice = floatval(trim($data[1]));
-                    $pprice = floatval(trim($data[2]));
-                    $rprice = floatval(trim($data[3]));
-                    $mprice = floatval(trim($data[4]));
-                    
-                    // Check if item exists
-                    $checkQuery = "SELECT CODE FROM tblitemmaster WHERE CODE = ?";
-                    $checkStmt = $conn->prepare($checkQuery);
-                    $checkStmt->bind_param("s", $code);
-                    $checkStmt->execute();
-                    $checkResult = $checkStmt->get_result();
-                    
-                    if ($checkResult->num_rows > 0) {
-                        // Update existing item
-                        $updateQuery = "UPDATE tblitemmaster SET BPRICE = ?, PPRICE = ?, RPRICE = ?, MPRICE = ? WHERE CODE = ?";
-                        $updateStmt = $conn->prepare($updateQuery);
-                        $updateStmt->bind_param("dddds", $bprice, $pprice, $rprice, $mprice, $code);
-                        if ($updateStmt->execute()) {
-                            $imported++;
+            if ($importType === 'csv' && $fileExt === 'csv') {
+                // Process CSV file
+                $handle = fopen($filePath, 'r');
+                
+                // Skip header row
+                fgetcsv($handle);
+                
+                while (($data = fgetcsv($handle)) !== FALSE) {
+                    if (count($data) >= 5) {
+                        $code = $conn->real_escape_string(trim($data[0]));
+                        $bprice = floatval(trim($data[1]));
+                        $pprice = floatval(trim($data[2]));
+                        $rprice = floatval(trim($data[3]));
+                        $mprice = floatval(trim($data[4]));
+                        
+                        // Check if item exists
+                        $checkQuery = "SELECT CODE FROM tblitemmaster WHERE CODE = ?";
+                        $checkStmt = $conn->prepare($checkQuery);
+                        $checkStmt->bind_param("s", $code);
+                        $checkStmt->execute();
+                        $checkResult = $checkStmt->get_result();
+                        
+                        if ($checkResult->num_rows > 0) {
+                            // Update existing item
+                            $updateQuery = "UPDATE tblitemmaster SET BPRICE = ?, PPRICE = ?, RPRICE = ?, MPRICE = ? WHERE CODE = ?";
+                            $updateStmt = $conn->prepare($updateQuery);
+                            $updateStmt->bind_param("dddds", $bprice, $pprice, $rprice, $mprice, $code);
+                            if ($updateStmt->execute()) {
+                                $imported++;
+                            } else {
+                                $errors[] = "Failed to update item: $code";
+                            }
+                            $updateStmt->close();
                         } else {
-                            $errors[] = "Failed to update item: $code";
+                            $errors[] = "Item not found: $code";
                         }
-                        $updateStmt->close();
-                    } else {
-                        $errors[] = "Item not found: $code";
+                        $checkStmt->close();
                     }
-                    $checkStmt->close();
                 }
+                fclose($handle);
+            } elseif ($importType === 'excel' && in_array($fileExt, ['xls', 'xlsx'])) {
+                // Process Excel file
+                try {
+                    // Check if PhpSpreadsheet is available
+                    if (!class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+                        throw new Exception("Excel import is not available. Please install PhpSpreadsheet.");
+                    }
+                    
+                    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+                    $sheet = $spreadsheet->getActiveSheet();
+                    $rows = $sheet->toArray();
+                    
+                    // Skip header row
+                    array_shift($rows);
+                    
+                    foreach ($rows as $row) {
+                        if (count($row) >= 5 && !empty($row[0])) {
+                            $code = $conn->real_escape_string(trim($row[0]));
+                            $bprice = floatval(trim($row[1]));
+                            $pprice = floatval(trim($row[2]));
+                            $rprice = floatval(trim($row[3]));
+                            $mprice = floatval(trim($row[4]));
+                            
+                            // Check if item exists
+                            $checkQuery = "SELECT CODE FROM tblitemmaster WHERE CODE = ?";
+                            $checkStmt = $conn->prepare($checkQuery);
+                            $checkStmt->bind_param("s", $code);
+                            $checkStmt->execute();
+                            $checkResult = $checkStmt->get_result();
+                            
+                            if ($checkResult->num_rows > 0) {
+                                // Update existing item
+                                $updateQuery = "UPDATE tblitemmaster SET BPRICE = ?, PPRICE = ?, RPRICE = ?, MPRICE = ? WHERE CODE = ?";
+                                $updateStmt = $conn->prepare($updateQuery);
+                                $updateStmt->bind_param("dddds", $bprice, $pprice, $rprice, $mprice, $code);
+                                if ($updateStmt->execute()) {
+                                    $imported++;
+                                } else {
+                                    $errors[] = "Failed to update item: $code";
+                                }
+                                $updateStmt->close();
+                            } else {
+                                $errors[] = "Item not found: $code";
+                            }
+                            $checkStmt->close();
+                        }
+                    }
+                } catch (Exception $e) {
+                    $errors[] = "Error parsing Excel file: " . $e->getMessage();
+                }
+            } else {
+                $errors[] = "Invalid file type. Please upload CSV or Excel files.";
             }
-            fclose($handle);
             
             if ($imported > 0) {
-                $_SESSION['price_update_message'] = "CSV import completed! $imported items updated successfully.";
+                $_SESSION['price_update_message'] = "Import completed! $imported items updated successfully.";
             }
             if (!empty($errors)) {
                 $_SESSION['import_errors'] = $errors;
             }
         } else {
-            $_SESSION['price_update_message'] = "Error uploading CSV file.";
+            $_SESSION['price_update_message'] = "Error uploading file.";
         }
         header("Location: ".$_SERVER['PHP_SELF']."?mode=".$_GET['mode']);
         exit;
@@ -256,24 +315,31 @@ $stmt->close();
         </div>
       </div>
 
-      <!-- CSV Import Section -->
+      <!-- CSV/Excel Import Section -->
       <div class="import-section mb-4">
-        <h5><i class="fas fa-file-import"></i> Import Prices from CSV</h5>
+        <h5><i class="fas fa-file-import"></i> Import Prices from CSV/Excel</h5>
         <form method="POST" enctype="multipart/form-data" class="row g-3 align-items-end">
-          <div class="col-md-6">
-            <label for="csv_file" class="form-label">Select CSV File</label>
-            <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+          <div class="col-md-3">
+            <label for="importType" class="form-label">File Type</label>
+            <select class="form-select" id="importType" name="import_type">
+              <option value="csv">CSV File (.csv)</option>
+              <option value="excel">Excel File (.xls, .xlsx)</option>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label for="importFile" class="form-label">Select File</label>
+            <input type="file" class="form-control" id="importFile" name="import_file" accept=".csv,.xls,.xlsx" required>
           </div>
           <div class="col-md-4">
-            <button type="submit" name="import_csv" class="btn btn-info">
-              <i class="fas fa-upload"></i> Import CSV
+            <button type="submit" name="import_prices" class="btn btn-info">
+              <i class="fas fa-upload"></i> Import
             </button>
             <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#csvFormatModal">
               <i class="fas fa-question-circle"></i> Format Help
             </button>
           </div>
         </form>
-        <small class="text-muted">CSV format: CODE,BPRICE,PPRICE,RPRICE,MPRICE (Download sample: <a href="#" id="downloadSample">sample.csv</a>)</small>
+        <small class="text-muted">Format: CODE, BPRICE, PPRICE, RPRICE, MPRICE (Download sample: <a href="#" id="downloadSample">sample.csv</a>)</small>
       </div>
 
       <!-- User/System Defined Radio Buttons -->
@@ -437,6 +503,16 @@ $stmt->close();
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// Update file input accept attribute based on import type
+document.getElementById('importType').addEventListener('change', function() {
+    const fileInput = document.getElementById('importFile');
+    if (this.value === 'csv') {
+        fileInput.accept = '.csv';
+    } else if (this.value === 'excel') {
+        fileInput.accept = '.xls,.xlsx';
+    }
+});
+
 // Generate and download sample CSV
 document.getElementById('downloadSample').addEventListener('click', function(e) {
     e.preventDefault();

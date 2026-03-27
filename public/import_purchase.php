@@ -1607,7 +1607,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_files'])) {
         exit;
     }
     
-    $allowedExtensions = ['csv'];
+    $allowedExtensions = ['csv', 'xls', 'xlsx'];
     $totalSuccessCount = 0;
     $totalErrorCount = 0;
     $allErrors = [];
@@ -1641,15 +1641,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_files'])) {
         // Check file extension
         $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         if (!in_array($fileExt, $allowedExtensions)) {
-            $allErrors[] = "File '$fileName': Invalid file type. Please upload .csv files only.";
+            $allErrors[] = "File '$fileName': Invalid file type. Please upload .csv, .xls, or .xlsx files.";
             $totalErrorCount++;
             continue;
         }
         
         debugLog("Processing file " . ($i + 1) . ": $fileName");
         
-        // Process this CSV file
-        $result = processSingleCSVFile($fileTmp, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName);
+        // Process file based on type
+        if ($fileExt === 'csv') {
+            // Process CSV file
+            $result = processSingleCSVFile($fileTmp, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName);
+        } else {
+            // Process Excel file
+            $result = processSingleExcelFile($fileTmp, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName);
+        }
         
         $totalSuccessCount += $result['successCount'];
         $totalErrorCount += $result['errorCount'];
@@ -1864,6 +1870,195 @@ function processSingleCSVFile($filePath, $companyId, $conn, $importMode, $defaul
     
     // Process TP groups
     return processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $importMode);
+}
+
+// Function to process a single Excel file
+function processSingleExcelFile($filePath, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $fileName = '') {
+    debugLog("Processing Excel file: " . $fileName, $filePath);
+    
+    try {
+        // Check if PhpSpreadsheet is available
+        if (!class_exists('\PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+            throw new Exception("Excel import is not available. Please install PhpSpreadsheet.");
+        }
+        
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray();
+        
+        if (empty($rows)) {
+            throw new Exception("Excel file is empty");
+        }
+        
+        debugLog("Excel file loaded, rows count: " . count($rows));
+        
+        $rowNum = 0;
+        $headersFound = false;
+        $headers = [];
+        $tpGroups = [];
+        
+        // Process each row
+        foreach ($rows as $rowIndex => $row) {
+            $rowNum++;
+            
+            // Skip empty rows
+            if (empty($row) || (count($row) == 1 && empty(trim($row[0])))) {
+                continue;
+            }
+            
+            // Skip the first two metadata rows
+            if ($rowNum <= 2) {
+                debugLog("Skipping metadata row $rowNum", $row[0] ?? '');
+                continue;
+            }
+            
+            // Row 3 should contain headers
+            if ($rowNum == 3) {
+                // Clean headers: remove special chars, trim, lowercase
+                $headers = array_map(function($h) {
+                    $h = is_null($h) ? '' : trim($h);
+                    $h = strtolower($h);
+                    $h = preg_replace('/[^a-z0-9\s]/', '', $h); // Remove special characters
+                    $h = str_replace(' ', '_', $h); // Replace spaces with underscores
+                    return $h;
+                }, $row);
+                
+                debugLog("Excel Headers found", $headers);
+                $headersFound = true;
+                continue;
+            }
+            
+            // Process data rows (row 4 onwards)
+            if ($headersFound) {
+                // Map data to headers
+                $rowData = [];
+                foreach ($headers as $index => $header) {
+                    $rowData[$header] = isset($row[$index]) ? trim($row[$index]) : '';
+                }
+                
+                // Skip rows without essential data
+                if (empty($rowData['scm_item_code']) && empty($rowData['item_name'])) {
+                    debugLog("Skipping empty row $rowNum");
+                    continue;
+                }
+                
+                // Get values from Excel
+                $receivedDate = $rowData['received_date'] ?? '';
+                $autoTpNo = $rowData['auto_tp_no'] ?? '';
+                $manualTpNo = $rowData['manual_tp_no'] ?? '';
+                $tpDate = $rowData['tp_date'] ?? '';
+                $district = $rowData['district'] ?? '';
+                $scmPartyCode = $rowData['scm_party_code'] ?? '';
+                $partyName = $rowData['party_name'] ?? '';
+                $srNo = $rowData['srno'] ?? '';
+                $scmItemCode = $rowData['scm_item_code'] ?? '';
+                $itemName = $rowData['item_name'] ?? '';
+                $size = $rowData['size'] ?? '';
+                $cases = floatval($rowData['qty_cases'] ?? 0);
+                $bottles = intval($rowData['qty_bottles'] ?? 0);
+                $batchNo = $rowData['batch_no'] ?? '';
+                $mfgMonth = $rowData['mfg_month'] ?? '';
+                $mrp = floatval($rowData['mrp'] ?? 0);
+                $bl = floatval($rowData['bl'] ?? 0);
+                $vv = floatval($rowData['vv'] ?? 0);
+                $totalBottQty = intval($rowData['total_bot_qty'] ?? 0);
+                
+                // Default values for missing fields
+                $freeCases = 0;
+                $freeBottles = 0;
+                
+                // Format dates
+                $purchaseDate = '';
+                if (!empty($receivedDate)) {
+                    $purchaseDate = date('Y-m-d', strtotime($receivedDate));
+                    if ($purchaseDate == '1970-01-01') {
+                        $purchaseDate = date('Y-m-d');
+                    }
+                } else {
+                    $purchaseDate = date('Y-m-d');
+                }
+                
+                // Format TP date
+                $formattedTpDate = '';
+                if (!empty($tpDate)) {
+                    $formattedTpDate = date('Y-m-d', strtotime($tpDate));
+                    if ($formattedTpDate == '1970-01-01') {
+                        $formattedTpDate = '0000-00-00';
+                    }
+                } else {
+                    $formattedTpDate = '0000-00-00';
+                }
+                
+                // Use manual TP number if available, otherwise auto TP number
+                $tpNo = !empty($manualTpNo) ? $manualTpNo : $autoTpNo;
+                
+                // Group by TP No. (manual or auto)
+                if (!empty($tpNo)) {
+                    if (!isset($tpGroups[$tpNo])) {
+                        $tpGroups[$tpNo] = [
+                            'date' => $purchaseDate,
+                            'supplier' => $partyName,
+                            'auto_tp_no' => $autoTpNo,
+                            'manual_tp_no' => $manualTpNo,
+                            'tp_date' => $formattedTpDate,
+                            'district' => $district,
+                            'scm_party_code' => $scmPartyCode,
+                            'items' => []
+                        ];
+                        
+                        debugLog("Created new TP group from Excel", [
+                            'tp_no' => $tpNo,
+                            'date' => $purchaseDate,
+                            'supplier' => $partyName
+                        ]);
+                    }
+                    
+                    $tpGroups[$tpNo]['items'][] = [
+                        'scm_item_code' => $scmItemCode,
+                        'item_name' => $itemName,
+                        'size' => $size,
+                        'cases' => $cases,
+                        'bottles' => $bottles,
+                        'free_cases' => $freeCases,
+                        'free_bottles' => $freeBottles,
+                        'batch_no' => $batchNo,
+                        'mfg_month' => $mfgMonth,
+                        'mrp' => $mrp,
+                        'bl' => $bl,
+                        'vv' => $vv,
+                        'total_bott_qty' => $totalBottQty
+                    ];
+                } else {
+                    debugLog("Skipping row - no TP number", $rowNum);
+                }
+            }
+        }
+        
+        debugLog("Found TP groups in Excel file $fileName", [
+            'count' => count($tpGroups),
+            'tps' => array_keys($tpGroups)
+        ]);
+        
+        // If no TP groups were found, show error
+        if (count($tpGroups) == 0) {
+            return [
+                'successCount' => 0,
+                'errorCount' => 1,
+                'errors' => ["No valid TP data found in Excel. Please check that your Excel has the correct format."]
+            ];
+        }
+        
+        // Process TP groups
+        return processTPGroups($tpGroups, $companyId, $conn, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes, $importMode);
+        
+    } catch (Exception $e) {
+        debugLog("Error processing Excel file: " . $e->getMessage());
+        return [
+            'successCount' => 0,
+            'errorCount' => 1,
+            'errors' => ["Error processing Excel file: " . $e->getMessage()]
+        ];
+    }
 }
 
 function processCSVFile($filePath, $companyId, $conn, $importMode, $defaultStatus, $updateMRP, $updateStockFlag, $allowed_classes) {
