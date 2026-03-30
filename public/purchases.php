@@ -1580,7 +1580,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
-<?php FinancialYearModule::autoApplyConstraints(); ?>
 <style>
 .table-container {
     overflow-x: auto;

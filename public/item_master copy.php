@@ -32,22 +32,24 @@ function getFinancialYearFromDate($date) {
     $year = date('Y', strtotime($date));
     $month = date('m', strtotime($date));
     
+    // If month is April (04) or later, financial year starts in current year
     if ($month >= 4) {
         return $year . '-' . ($year + 1);
     } else {
+        // If month is January-March, financial year started in previous year
         return ($year - 1) . '-' . $year;
     }
 }
 
-// Get company's license type and available categories
+// Get company's license type and available classes
 $company_id = $_SESSION['CompID'];
 $license_type = getCompanyLicenseType($company_id, $conn);
-$allowed_categories = getAllowedCategoriesByLicenseType($license_type, $conn);
+$available_classes = getClassesByLicenseType($license_type, $conn);
 
-// Extract category codes for filtering
-$allowed_category_codes = [];
-foreach ($allowed_categories as $category) {
-    $allowed_category_codes[] = $category['CATEGORY_CODE'];
+// Extract class SGROUP values for filtering
+$allowed_classes = [];
+foreach ($available_classes as $class) {
+    $allowed_classes[] = $class['SGROUP'];
 }
 
 // Cache arrays for faster lookups
@@ -55,17 +57,15 @@ $category_cache = [];
 $class_cache = [];
 $subclass_cache = [];
 $size_cache = [];
-$category_name_to_code_map = [];
 
 // Preload all classification data for faster lookups
 function preloadClassificationData($conn) {
-    global $category_cache, $class_cache, $subclass_cache, $size_cache, $category_name_to_code_map;
+    global $category_cache, $class_cache, $subclass_cache, $size_cache;
     
     // Preload all categories
     $cat_result = $conn->query("SELECT CATEGORY_CODE, UPPER(CATEGORY_NAME) as CAT_NAME FROM tblcategory");
     while ($row = $cat_result->fetch_assoc()) {
         $category_cache[$row['CAT_NAME']] = $row['CATEGORY_CODE'];
-        $category_name_to_code_map[$row['CAT_NAME']] = $row['CATEGORY_CODE'];
     }
     
     // Preload all classes
@@ -89,60 +89,6 @@ function preloadClassificationData($conn) {
 
 // Preload classification data
 preloadClassificationData($conn);
-
-// Function to map item name to category code based on keywords
-function mapItemToCategoryCode($itemName, $liqFlag = 'F', $conn) {
-    global $category_name_to_code_map;
-    $itemNameUpper = strtoupper($itemName);
-    
-    // Check if it's country liquor first
-    if ($liqFlag === 'C') {
-        return isset($category_name_to_code_map['COUNTRY LIQUOR']) ? $category_name_to_code_map['COUNTRY LIQUOR'] : 'CAT005';
-    }
-    
-    // Map based on keywords to categories
-    // Spirit Category (CAT001)
-    if (strpos($itemNameUpper, 'WHISKY') !== false || strpos($itemNameUpper, 'WHISKEY') !== false || 
-        strpos($itemNameUpper, 'SCOTCH') !== false || strpos($itemNameUpper, 'BRANDY') !== false ||
-        strpos($itemNameUpper, 'COGNAC') !== false || strpos($itemNameUpper, 'VODKA') !== false ||
-        strpos($itemNameUpper, 'GIN') !== false || strpos($itemNameUpper, 'RUM') !== false ||
-        strpos($itemNameUpper, 'TEQUILA') !== false || strpos($itemNameUpper, 'LIQUEUR') !== false) {
-        return isset($category_name_to_code_map['SPIRIT']) ? $category_name_to_code_map['SPIRIT'] : 'CAT001';
-    }
-    
-    // Wine Category (CAT002)
-    if (strpos($itemNameUpper, 'WINE') !== false || strpos($itemNameUpper, 'SULA') !== false || 
-        strpos($itemNameUpper, 'CABERNET') !== false || strpos($itemNameUpper, 'SHIRAZ') !== false ||
-        strpos($itemNameUpper, 'CHARDONNAY') !== false || strpos($itemNameUpper, 'MERLOT') !== false ||
-        strpos($itemNameUpper, 'PINOT') !== false || strpos($itemNameUpper, 'ZINFANDEL') !== false ||
-        strpos($itemNameUpper, 'SAUVIGNON') !== false || strpos($itemNameUpper, 'CHENIN') !== false) {
-        return isset($category_name_to_code_map['WINE']) ? $category_name_to_code_map['WINE'] : 'CAT002';
-    }
-    
-    // Fermented Beer Category (CAT003)
-    if ((strpos($itemNameUpper, 'BEER') !== false || strpos($itemNameUpper, 'LAGER') !== false) && 
-        (strpos($itemNameUpper, 'STRONG') !== false || strpos($itemNameUpper, 'SUPER') !== false)) {
-        return isset($category_name_to_code_map['FERMENTED BEER']) ? $category_name_to_code_map['FERMENTED BEER'] : 'CAT003';
-    }
-    
-    // Mild Beer Category (CAT004)
-    if ((strpos($itemNameUpper, 'BEER') !== false || strpos($itemNameUpper, 'LAGER') !== false)) {
-        return isset($category_name_to_code_map['MILD BEER']) ? $category_name_to_code_map['MILD BEER'] : 'CAT004';
-    }
-    
-    // Default to Spirit category for foreign liquor
-    if ($liqFlag === 'F') {
-        return isset($category_name_to_code_map['SPIRIT']) ? $category_name_to_code_map['SPIRIT'] : 'CAT001';
-    }
-    
-    // Default to Country Liquor for country liquor
-    if ($liqFlag === 'C') {
-        return isset($category_name_to_code_map['COUNTRY LIQUOR']) ? $category_name_to_code_map['COUNTRY LIQUOR'] : 'CAT005';
-    }
-    
-    // Default fallback
-    return '';
-}
 
 // Function to get category code from category name
 function getCategoryCodeByName($category_name, $conn) {
@@ -236,75 +182,204 @@ function getSizeDescription($size_code, $conn) {
     return $size_code;
 }
 
+// Function to detect class from item name (returns single character class code)
+function detectClassFromItemName($itemName, $liqFlag = 'F') {
+    $itemName = strtoupper($itemName);
+    
+    if ($liqFlag === 'C') {
+        return 'L';
+    }
+    
+    if (strpos($itemName, 'WHISKY') !== false || strpos($itemName, 'WHISKEY') !== false || strpos($itemName, 'SCOTCH') !== false) {
+        return 'W';
+    }
+    
+    if (strpos($itemName, 'WINE') !== false || strpos($itemName, 'SULA') !== false) {
+        return 'V';
+    }
+    
+    if (strpos($itemName, 'BRANDY') !== false || strpos($itemName, 'COGNAC') !== false) {
+        return 'D';
+    }
+    
+    if (strpos($itemName, 'VODKA') !== false) {
+        return 'K';
+    }
+    
+    if (strpos($itemName, 'GIN') !== false) {
+        return 'G';
+    }
+    
+    if (strpos($itemName, 'RUM') !== false) {
+        return 'R';
+    }
+    
+    if (strpos($itemName, 'BEER') !== false || strpos($itemName, 'LAGER') !== false) {
+        if (strpos($itemName, 'STRONG') !== false) {
+            return 'F';
+        } else {
+            return 'M';
+        }
+    }
+    
+    return 'O';
+}
+
+// ====================================================================
+// FUNCTIONS FOR DAILY STOCK UPDATE
+// ====================================================================
 // ====================================================================
 // FUNCTIONS FOR DAILY STOCK UPDATE
 // ====================================================================
 
-// Function to ensure main daily stock table exists
+// Function to ensure main daily stock table exists (with backward compatibility)
 function ensureDailyStockTable($conn, $comp_id) {
     $table_name = "tbldailystock_$comp_id";
     $check_table = $conn->query("SHOW TABLES LIKE '$table_name'");
     if ($check_table->num_rows == 0) {
+        // Create new table with STK_DATE support
         $create_sql = "CREATE TABLE IF NOT EXISTS $table_name (
             DailyStockID INT AUTO_INCREMENT PRIMARY KEY,
             STK_DATE DATE NOT NULL,
             STK_MONTH VARCHAR(7) NOT NULL,
             ITEM_CODE VARCHAR(20) NOT NULL,
             LIQ_FLAG CHAR(1) DEFAULT 'F',
+            CATEGORY_CODE VARCHAR(10),
+            CLASS_CODE_NEW VARCHAR(10),
+            SUBCLASS_CODE_NEW VARCHAR(10),
+            SIZE_CODE VARCHAR(10),
             OPENING_BALANCE INT DEFAULT 0,
             LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_daily_stock (STK_DATE, ITEM_CODE),
-            INDEX idx_item_code (ITEM_CODE),
-            INDEX idx_liq_flag (LIQ_FLAG),
-            INDEX idx_stk_month (STK_MONTH)
+            UNIQUE KEY unique_stock (STK_DATE, ITEM_CODE, LIQ_FLAG),
+            INDEX idx_stk_month (STK_MONTH),
+            INDEX idx_item_code (ITEM_CODE)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
         $conn->query($create_sql);
+    } else {
+        // Check if STK_DATE column exists, if not add it
+        $check_column = $conn->query("SHOW COLUMNS FROM $table_name LIKE 'STK_DATE'");
+        if ($check_column->num_rows == 0) {
+            // Add STK_DATE column and update existing data
+            $conn->query("ALTER TABLE $table_name ADD COLUMN STK_DATE DATE NULL AFTER DailyStockID");
+            $conn->query("ALTER TABLE $table_name ADD COLUMN OPENING_BALANCE INT DEFAULT 0 AFTER SIZE_CODE");
+            
+            // Update existing records with STK_DATE based on STK_MONTH (set to first day of month)
+            $conn->query("UPDATE $table_name SET STK_DATE = CONCAT(STK_MONTH, '-01') WHERE STK_DATE IS NULL");
+            
+            // Make STK_DATE NOT NULL after populating
+            $conn->query("ALTER TABLE $table_name MODIFY STK_DATE DATE NOT NULL");
+            
+            // Add unique constraint if not exists
+            try {
+                $conn->query("ALTER TABLE $table_name ADD UNIQUE KEY unique_stock (STK_DATE, ITEM_CODE, LIQ_FLAG)");
+            } catch (Exception $e) {
+                // Unique key might already exist, ignore error
+            }
+        }
+        
+        // Check if OPENING_BALANCE column exists
+        $check_balance = $conn->query("SHOW COLUMNS FROM $table_name LIKE 'OPENING_BALANCE'");
+        if ($check_balance->num_rows == 0) {
+            $conn->query("ALTER TABLE $table_name ADD COLUMN OPENING_BALANCE INT DEFAULT 0 AFTER SIZE_CODE");
+        }
     }
     return $table_name;
 }
 
-// Function to update daily stock
-function updateDailyStock($conn, $comp_id, $item_code, $liq_flag, $opening_balance, $start_date) {
+// Function to update daily stock - Modified to work with both old and new structure
+function updateDailyStock($conn, $comp_id, $item_code, $liq_flag, $opening_balance, $category_code, $class_code_new, $subclass_code_new, $size_code, $start_date) {
     $table_name = ensureDailyStockTable($conn, $comp_id);
     $stk_month = date('Y-m', strtotime($start_date));
     $stk_date = $start_date;
     
-    $check_sql = "SELECT 1 FROM $table_name WHERE STK_DATE = ? AND ITEM_CODE = ? LIMIT 1";
-    $check_stmt = $conn->prepare($check_sql);
-    $check_stmt->bind_param("ss", $stk_date, $item_code);
-    $check_stmt->execute();
-    $check_stmt->store_result();
-    $exists = $check_stmt->num_rows > 0;
-    $check_stmt->close();
+    // Check if STK_DATE column exists
+    $check_column = $conn->query("SHOW COLUMNS FROM $table_name LIKE 'STK_DATE'");
+    $has_stk_date = $check_column->num_rows > 0;
     
-    if ($exists) {
-        $update_sql = "UPDATE $table_name SET OPENING_BALANCE = ?, STK_MONTH = ? WHERE STK_DATE = ? AND ITEM_CODE = ?";
-        $update_stmt = $conn->prepare($update_sql);
-        $update_stmt->bind_param("isss", $opening_balance, $stk_month, $stk_date, $item_code);
-        $update_stmt->execute();
-        $update_stmt->close();
+    if ($has_stk_date) {
+        // New structure with STK_DATE
+        $check_sql = "SELECT 1 FROM $table_name WHERE STK_DATE = ? AND ITEM_CODE = ? AND LIQ_FLAG = ? LIMIT 1";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("sss", $stk_date, $item_code, $liq_flag);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+        $exists = $check_stmt->num_rows > 0;
+        $check_stmt->close();
+        
+        if ($exists) {
+            $update_sql = "UPDATE $table_name SET CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ?, OPENING_BALANCE = ? WHERE STK_DATE = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+            $update_stmt = $conn->prepare($update_sql);
+            $update_stmt->bind_param("ssssisss", $category_code, $class_code_new, $subclass_code_new, $size_code, $opening_balance, $stk_date, $item_code, $liq_flag);
+            $update_stmt->execute();
+            $update_stmt->close();
+        } else {
+            $insert_sql = "INSERT INTO $table_name (STK_DATE, STK_MONTH, ITEM_CODE, LIQ_FLAG, CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, OPENING_BALANCE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $insert_stmt = $conn->prepare($insert_sql);
+            $insert_stmt->bind_param("ssssssssi", $stk_date, $stk_month, $item_code, $liq_flag, $category_code, $class_code_new, $subclass_code_new, $size_code, $opening_balance);
+            $insert_stmt->execute();
+            $insert_stmt->close();
+        }
     } else {
-        $insert_sql = "INSERT INTO $table_name (STK_DATE, STK_MONTH, ITEM_CODE, LIQ_FLAG, OPENING_BALANCE) VALUES (?, ?, ?, ?, ?)";
-        $insert_stmt = $conn->prepare($insert_sql);
-        $insert_stmt->bind_param("ssssi", $stk_date, $stk_month, $item_code, $liq_flag, $opening_balance);
-        $insert_stmt->execute();
-        $insert_stmt->close();
+        // Old structure without STK_DATE - use STK_MONTH only
+        $check_sql = "SELECT 1 FROM $table_name WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ? LIMIT 1";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("sss", $stk_month, $item_code, $liq_flag);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+        $exists = $check_stmt->num_rows > 0;
+        $check_stmt->close();
+        
+        // Check if OPENING_BALANCE column exists
+        $check_balance = $conn->query("SHOW COLUMNS FROM $table_name LIKE 'OPENING_BALANCE'");
+        $has_balance = $check_balance->num_rows > 0;
+        
+        if ($exists) {
+            if ($has_balance) {
+                $update_sql = "UPDATE $table_name SET CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ?, OPENING_BALANCE = ? WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("ssssisss", $category_code, $class_code_new, $subclass_code_new, $size_code, $opening_balance, $stk_month, $item_code, $liq_flag);
+                $update_stmt->execute();
+                $update_stmt->close();
+            } else {
+                $update_sql = "UPDATE $table_name SET CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ? WHERE STK_MONTH = ? AND ITEM_CODE = ? AND LIQ_FLAG = ?";
+                $update_stmt = $conn->prepare($update_sql);
+                $update_stmt->bind_param("sssssss", $category_code, $class_code_new, $subclass_code_new, $size_code, $stk_month, $item_code, $liq_flag);
+                $update_stmt->execute();
+                $update_stmt->close();
+            }
+        } else {
+            if ($has_balance) {
+                $insert_sql = "INSERT INTO $table_name (STK_MONTH, ITEM_CODE, LIQ_FLAG, CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE, OPENING_BALANCE) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                $insert_stmt = $conn->prepare($insert_sql);
+                $insert_stmt->bind_param("sssssssi", $stk_month, $item_code, $liq_flag, $category_code, $class_code_new, $subclass_code_new, $size_code, $opening_balance);
+                $insert_stmt->execute();
+                $insert_stmt->close();
+            } else {
+                $insert_sql = "INSERT INTO $table_name (STK_MONTH, ITEM_CODE, LIQ_FLAG, CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $insert_stmt = $conn->prepare($insert_sql);
+                $insert_stmt->bind_param("sssssss", $stk_month, $item_code, $liq_flag, $category_code, $class_code_new, $subclass_code_new, $size_code);
+                $insert_stmt->execute();
+                $insert_stmt->close();
+            }
+        }
     }
 }
-
 // ====================================================================
 // MAIN BULK INSERT FUNCTION
 // ====================================================================
 
 function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
+    // Initialize counters
     $imported = 0;
     $updated = 0;
     $errors = [];
     
     if (empty($items)) return ['imported' => $imported, 'updated' => $updated, 'errors' => $errors];
     
+    // Get financial year from start date for stock table
     $stock_fin_year = getFinancialYearFromDate($start_date);
     
+    // Ensure stock table has required columns
     $check_col_sql = "SHOW COLUMNS FROM tblitem_stock LIKE 'OPENING_STOCK$comp_id'";
     $col_result = $conn->query($check_col_sql);
     if ($col_result->num_rows == 0) {
@@ -312,6 +387,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
         $conn->query($add_col_sql);
     }
     
+    // Prepare statements for reuse
     $check_item_stmt = $conn->prepare("SELECT CODE FROM tblitemmaster WHERE CODE = ? AND LIQ_FLAG = ? LIMIT 1");
     $update_item_stmt = $conn->prepare("UPDATE tblitemmaster SET Print_Name = ?, DETAILS = ?, DETAILS2 = ?, CLASS = ?, ITEM_GROUP = ?, PPRICE = ?, BPRICE = ?, MPRICE = ?, RPRICE = ?, BARCODE = ?, CATEGORY_CODE = ?, CLASS_CODE_NEW = ?, SUBCLASS_CODE_NEW = ?, SIZE_CODE = ? WHERE CODE = ? AND LIQ_FLAG = ?");
     $insert_item_stmt = $conn->prepare("INSERT INTO tblitemmaster (CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE, CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -326,6 +402,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
         $opening_balance = $item['opening_balance'];
         $barcode = $item['barcode'] ?? '';
         
+        // Check if item exists
         $check_item_stmt->bind_param("ss", $code, $liq_flag);
         $check_item_stmt->execute();
         $check_item_stmt->store_result();
@@ -333,6 +410,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
         $check_item_stmt->free_result();
         
         if ($exists) {
+            // Update existing item
             $update_item_stmt->bind_param(
                 "sssssddddsssssss",
                 $item['print_name'], $item['item_name'], $item['size'], $item['class'],
@@ -347,6 +425,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
                 $errors[] = "Failed to update $code: " . $update_item_stmt->error;
             }
         } else {
+            // Insert new item
             $insert_item_stmt->bind_param(
                 "sssssddddsssssss",
                 $code, $item['print_name'], $item['item_name'], $item['size'], 
@@ -362,6 +441,7 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
             }
         }
         
+        // Update stock table with the correct financial year based on start date
         $check_stock_stmt->bind_param("ss", $code, $stock_fin_year);
         $check_stock_stmt->execute();
         $check_stock_stmt->store_result();
@@ -385,9 +465,13 @@ function bulkInsertItems($conn, $items, $comp_id, $fin_year, $start_date) {
             $insert_stock_stmt->execute();
         }
         
-        updateDailyStock($conn, $comp_id, $code, $liq_flag, $opening_balance, $start_date);
+        // Update daily stock table for the specific start date
+        updateDailyStock($conn, $comp_id, $code, $liq_flag, $opening_balance, 
+                        $item['category_code'], $item['class_code_new'], 
+                        $item['subclass_code_new'], $item['size_code'], $start_date);
     }
     
+    // Close statements
     $check_item_stmt->close();
     $update_item_stmt->close();
     $insert_item_stmt->close();
@@ -403,6 +487,7 @@ function downloadExcelTemplate() {
     $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     
+    // Set headers
     $headers = ['Code', 'ItemName', 'PrintName', 'Size', 'PPrice', 'BPrice', 'MPrice', 'RPrice', 
                 'LIQFLAG', 'OpeningBalance', 'Category', 'Class', 'Subclass', 'Barcode'];
     
@@ -413,6 +498,7 @@ function downloadExcelTemplate() {
         $col++;
     }
     
+    // Add example data
     $exampleRows = [
         ['SCMBR0009735', 'Budweiser Premium King of Beer', '', '330 ML', 80, 70, 100, 120, 'F', 0, 'Mild Beer', 'Mild Beer', 'Mild Beer', '8901234567890'],
         ['SCMBR0009846', 'Kingfisher Strong Premium Beer', '', '650 ML', 120, 100, 130, 150, 'F', 0, 'Fermented Beer', 'Fermented Beer', 'Fermented Beer', '8901234567891'],
@@ -431,6 +517,7 @@ function downloadExcelTemplate() {
         $row++;
     }
     
+    // Add instructions sheet
     $instructionSheet = $spreadsheet->createSheet();
     $instructionSheet->setTitle('Instructions');
     $instructionSheet->setCellValue('A1', 'Import Instructions');
@@ -445,18 +532,20 @@ function downloadExcelTemplate() {
     $instructionSheet->setCellValue('A9', '8. RPrice: Retail price');
     $instructionSheet->setCellValue('A10', '9. LIQFLAG: F=Foreign, C=Country, O=Others');
     $instructionSheet->setCellValue('A11', '10. OpeningBalance: Initial stock quantity');
-    $instructionSheet->setCellValue('A12', '11. Category: Spirit, Wine, Fermented Beer, Mild Beer, Country Liquor');
+    $instructionSheet->setCellValue('A12', '11. Category: Spirit, Wine, Fermented Beer, Mild Beer, etc.');
     $instructionSheet->setCellValue('A13', '12. Class: IMFL, Imported, MML, Indian, etc.');
     $instructionSheet->setCellValue('A14', '13. Subclass: Whisky, Vodka, Rum, Brandy, Gin, etc.');
     $instructionSheet->setCellValue('A15', '14. Barcode: Product barcode (optional, max 15 chars)');
     $instructionSheet->setCellValue('A17', 'Note: Opening Balance Start Date can be any date in the past or future');
     $instructionSheet->getStyle('A1:A17')->getFont()->setSize(10);
     
+    // Auto-size columns
     foreach (range('A', 'N') as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
     }
     $instructionSheet->getColumnDimension('A')->setWidth(50);
     
+    // Set headers for download
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="item_import_template.xlsx"');
     header('Cache-Control: max-age=0');
@@ -529,15 +618,15 @@ ensureDailyStockTable($conn, $comp_id);
 if (isset($_GET['export'])) {
     $exportType = $_GET['export'];
     
-    if (!empty($allowed_category_codes)) {
-        $category_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
+    if (!empty($allowed_classes)) {
+        $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
         $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
                          PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE,
                          CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE
                   FROM tblitemmaster
-                  WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($category_placeholders)";
+                  WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
         
-        $params = array_merge([$mode], $allowed_category_codes);
+        $params = array_merge([$mode], $allowed_classes);
         $types = str_repeat('s', count($params));
     } else {
         $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -620,65 +709,12 @@ if (isset($_GET['export'])) {
     }
 }
 
-// Logging function
-function writeImportLog($log_file, $message, $type = 'INFO') {
-    $timestamp = date('Y-m-d H:i:s');
-    $log_entry = "[$timestamp] [$type] $message" . PHP_EOL;
-    file_put_contents($log_file, $log_entry, FILE_APPEND);
-}
-
-function logSkippedItem($log_file, $row_number, $code, $item_name, $reason, $additional_info = '') {
-    $timestamp = date('Y-m-d H:i:s');
-    $log_entry = sprintf(
-        "[%s] [SKIPPED] Row: %d | Code: %s | Item: %s | Reason: %s%s%s" . PHP_EOL,
-        $timestamp,
-        $row_number,
-        $code,
-        $item_name,
-        $reason,
-        $additional_info ? ' | Details: ' : '',
-        $additional_info
-    );
-    file_put_contents($log_file, $log_entry, FILE_APPEND);
-}
-
-function createImportLogFile($import_type, $start_date) {
-    $log_dir = '../logs/imports/';
-    if (!file_exists($log_dir)) {
-        mkdir($log_dir, 0777, true);
-    }
-    
-    $timestamp = date('Y-m-d_H-i-s');
-    $log_file = $log_dir . "import_{$import_type}_{$timestamp}.log";
-    
-    $allowed_categories_list = implode(', ', array_map(function($cat) {
-        return $cat['CATEGORY_NAME'] . ' (' . $cat['CATEGORY_CODE'] . ')';
-    }, $GLOBALS['allowed_categories']));
-    
-    $header = "=" . str_repeat("=", 80) . "\n";
-    $header .= "IMPORT LOG - " . strtoupper($import_type) . " IMPORT\n";
-    $header .= "Date: " . date('Y-m-d H:i:s') . "\n";
-    $header .= "Start Date: $start_date\n";
-    $header .= "License Type: " . $GLOBALS['license_type'] . "\n";
-    $header .= "Allowed Categories: $allowed_categories_list\n";
-    $header .= "=" . str_repeat("=", 80) . "\n\n";
-    file_put_contents($log_file, $header);
-    
-    return $log_file;
-}
-
 // Handle import if form submitted
 $importMessage = '';
-$log_file_display = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && isset($_POST['import_type'])) {
     $importType = $_POST['import_type'];
     $file = $_FILES['import_file'];
     $start_date = isset($_POST['start_date']) ? $_POST['start_date'] : date('Y-m-d');
-    
-    $log_file = createImportLogFile($importType, $start_date);
-    $log_file_display = str_replace('../', '', $log_file);
-    
-    writeImportLog($log_file, "Import started - File: {$file['name']}, Type: $importType, Start Date: $start_date", "START");
     
     set_time_limit(0);
     ini_set('max_execution_time', 0);
@@ -689,14 +725,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
         $fileName = $file['name'];
         $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         
+        // Validate file type matches selected import type
         if ($importType == 'csv' && !in_array($fileExt, ['csv'])) {
-            $error_msg = "Error: You selected CSV import but uploaded a " . strtoupper($fileExt) . " file.";
-            $importMessage = $error_msg;
-            writeImportLog($log_file, $error_msg, "ERROR");
+            $importMessage = "Error: You selected CSV import but uploaded a " . strtoupper($fileExt) . " file. Please select the correct file type or upload a CSV file.";
         } elseif ($importType == 'excel' && !in_array($fileExt, ['xls', 'xlsx'])) {
-            $error_msg = "Error: You selected Excel import but uploaded a " . strtoupper($fileExt) . " file.";
-            $importMessage = $error_msg;
-            writeImportLog($log_file, $error_msg, "ERROR");
+            $importMessage = "Error: You selected Excel import but uploaded a " . strtoupper($fileExt) . " file. Please select the correct file type or upload an Excel file.";
         } else {
             try {
                 $conn->begin_transaction();
@@ -706,15 +739,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                 $conn->query("SET UNIQUE_CHECKS = 0");
                 $conn->query("SET AUTOCOMMIT = 0");
                 
+                $items_to_process = [];
                 $errors = [];
+                $errorDetails = [];
+                $errorCount = 0;
                 $rowCount = 0;
                 $imported = 0;
                 $updated = 0;
-                $skippedCount = 0;
                 
                 if ($importType === 'csv') {
                     $handle = fopen($filePath, 'r');
                     if ($handle !== FALSE) {
+                        // Read header
                         $header = fgetcsv($handle);
                         
                         if (!$header) {
@@ -727,14 +763,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             return $col;
                         }, $header);
                         
-                        writeImportLog($log_file, "CSV Headers found: " . implode(', ', $header), "INFO");
-                        
                         $header_map = [];
                         foreach ($header as $idx => $col_name) {
                             $clean_name = strtolower(str_replace([' ', '-', '_'], '', $col_name));
                             $header_map[$clean_name] = $idx;
                         }
                         
+                        // Define column mappings
                         $col_mappings = [
                             'code' => ['code'],
                             'itemname' => ['itemname', 'item', 'details'],
@@ -775,14 +810,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                         
                         while (($data = fgetcsv($handle)) !== FALSE) {
                             $rowCount++;
-                            $current_row_num = $rowCount + 1;
-                            
                             if (count($data) < 2 || empty(trim($data[$col_indices['code']]))) {
-                                logSkippedItem($log_file, $current_row_num, 
-                                    isset($data[$col_indices['code']]) ? trim($data[$col_indices['code']]) : 'EMPTY', 
-                                    isset($data[$col_indices['itemname']]) ? trim($data[$col_indices['itemname']]) : 'EMPTY',
-                                    'Empty or invalid data row');
-                                $skippedCount++;
                                 continue;
                             }
                             
@@ -833,22 +861,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 }
                             }
                             
-                            // Map item to category code based on item name
-                            $detectedCategoryCode = mapItemToCategoryCode($itemName, $liqFlag, $conn);
+                            // Detect class from item name
+                            $detectedClass = detectClassFromItemName($itemName, $liqFlag);
                             
-                            // If category name provided in file, use that instead
-                            if (!empty($categoryName)) {
-                                $detectedCategoryCode = getCategoryCodeByName($categoryName, $conn);
-                            }
-                            
-                            // Validate against license - check if category is allowed
-                            if (!in_array($detectedCategoryCode, $allowed_category_codes)) {
-                                $allowed_names = implode(', ', array_map(function($cat) {
-                                    return $cat['CATEGORY_NAME'];
-                                }, $allowed_categories));
-                                $reason = "Category not allowed for license '$license_type'";
-                                logSkippedItem($log_file, $current_row_num, $code, $itemName, $reason, "Detected category: $detectedCategoryCode | Allowed categories: $allowed_names");
-                                $skippedCount++;
+                            // Validate against license
+                            if (!in_array($detectedClass, $allowed_classes)) {
+                                $errorCount++;
+                                $errorDetails[] = "Row $rowCount: Item $code: Class '$detectedClass' not allowed for license '$license_type'. Skipped.";
                                 continue;
                             }
                             
@@ -873,7 +892,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             }
                             
                             // Convert names to codes
-                            $categoryCode = $detectedCategoryCode;
+                            $categoryCode = !empty($categoryName) ? getCategoryCodeByName($categoryName, $conn) : '';
                             $classCodeNew = !empty($className) ? getClassCodeByName($className, $conn) : '';
                             $subclassCodeNew = !empty($subclassName) ? getSubclassCodeByName($subclassName, $conn) : '';
                             $sizeCode = !empty($size) ? getSizeCodeByDescription($size, $conn) : '';
@@ -883,7 +902,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                                 'print_name' => $printName,
                                 'item_name' => $itemName,
                                 'size' => $size,
-                                'class' => $detectedCategoryCode, // Store category code in CLASS field for compatibility
+                                'class' => $detectedClass,
                                 'item_group' => $itemGroup,
                                 'pprice' => $pprice,
                                 'bprice' => $bprice,
@@ -943,8 +962,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                         return $col;
                     }, $header);
                     
-                    writeImportLog($log_file, "Excel Headers found: " . implode(', ', $header), "INFO");
-                    
                     $header_map = [];
                     foreach ($header as $idx => $col_name) {
                         $clean_name = strtolower(str_replace([' ', '-', '_'], '', $col_name));
@@ -991,15 +1008,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     
                     for ($i = 1; $i < count($rows); $i++) {
                         $rowCount++;
-                        $current_row_num = $i + 1;
                         $data = $rows[$i];
-                        
                         if (count($data) < 2 || empty(trim($data[$col_indices['code']]))) {
-                            logSkippedItem($log_file, $current_row_num, 
-                                isset($data[$col_indices['code']]) ? trim($data[$col_indices['code']]) : 'EMPTY', 
-                                isset($data[$col_indices['itemname']]) ? trim($data[$col_indices['itemname']]) : 'EMPTY',
-                                'Empty or invalid data row');
-                            $skippedCount++;
                             continue;
                         }
                         
@@ -1050,22 +1060,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             }
                         }
                         
-                        // Map item to category code based on item name
-                        $detectedCategoryCode = mapItemToCategoryCode($itemName, $liqFlag, $conn);
+                        $detectedClass = detectClassFromItemName($itemName, $liqFlag);
                         
-                        // If category name provided in file, use that instead
-                        if (!empty($categoryName)) {
-                            $detectedCategoryCode = getCategoryCodeByName($categoryName, $conn);
-                        }
-                        
-                        // Validate against license - check if category is allowed
-                        if (!in_array($detectedCategoryCode, $allowed_category_codes)) {
-                            $allowed_names = implode(', ', array_map(function($cat) {
-                                return $cat['CATEGORY_NAME'];
-                            }, $allowed_categories));
-                            $reason = "Category not allowed for license '$license_type'";
-                            logSkippedItem($log_file, $current_row_num, $code, $itemName, $reason, "Detected category: $detectedCategoryCode | Allowed categories: $allowed_names");
-                            $skippedCount++;
+                        if (!in_array($detectedClass, $allowed_classes)) {
+                            $errorCount++;
+                            $errorDetails[] = "Row $rowCount: Item $code: Class '$detectedClass' not allowed for license '$license_type'. Skipped.";
                             continue;
                         }
                         
@@ -1088,7 +1087,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             }
                         }
                         
-                        $categoryCode = $detectedCategoryCode;
+                        $categoryCode = !empty($categoryName) ? getCategoryCodeByName($categoryName, $conn) : '';
                         $classCodeNew = !empty($className) ? getClassCodeByName($className, $conn) : '';
                         $subclassCodeNew = !empty($subclassName) ? getSubclassCodeByName($subclassName, $conn) : '';
                         $sizeCode = !empty($size) ? getSizeCodeByDescription($size, $conn) : '';
@@ -1098,7 +1097,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                             'print_name' => $printName,
                             'item_name' => $itemName,
                             'size' => $size,
-                            'class' => $detectedCategoryCode,
+                            'class' => $detectedClass,
                             'item_group' => $itemGroup,
                             'pprice' => $pprice,
                             'bprice' => $bprice,
@@ -1136,18 +1135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                 $conn->query("SET AUTOCOMMIT = 1");
                 $conn->commit();
                 
-                $summary = "\n" . str_repeat("=", 80) . "\n";
-                $summary .= "IMPORT SUMMARY\n";
-                $summary .= "Total rows processed: $rowCount\n";
-                $summary .= "New items imported: $imported\n";
-                $summary .= "Items updated: $updated\n";
-                $summary .= "Rows skipped: $skippedCount\n";
-                $summary .= str_repeat("=", 80) . "\n";
-                writeImportLog($log_file, $summary, "SUMMARY");
-                
-                $importMessage = "Import completed: $imported new items imported, $updated items updated, $skippedCount rows skipped. Total rows processed: $rowCount. Opening balance date: $start_date";
-                $importMessage .= "<br><br><strong>Log file created:</strong> <a href='../$log_file_display' target='_blank'>$log_file_display</a>";
-                
+                $importMessage = "Import completed: $imported new items imported, $updated items updated, $errorCount rows skipped. Total rows processed: $rowCount. Opening balance date: $start_date";
+                if (!empty($errorDetails)) {
+                    $importMessage .= "<br>First few errors: " . implode("; ", array_slice($errorDetails, 0, 10));
+                }
                 if (!empty($errors)) {
                     $importMessage .= "<br>Database errors: " . implode("; ", array_slice($errors, 0, 5));
                 }
@@ -1159,29 +1150,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['import_file']) && is
                     $conn->query("SET UNIQUE_CHECKS = 1");
                     $conn->query("SET AUTOCOMMIT = 1");
                 }
-                $error_msg = "Error during import: " . $e->getMessage();
-                $importMessage = $error_msg;
-                writeImportLog($log_file, $error_msg, "FATAL");
-                $importMessage .= "<br><br><strong>Log file created:</strong> <a href='../$log_file_display' target='_blank'>$log_file_display</a>";
+                $importMessage = "Error during import: " . $e->getMessage();
             }
         }
     } else {
-        $error_msg = "Error uploading file: " . $file['error'];
-        $importMessage = $error_msg;
-        if (isset($log_file)) {
-            writeImportLog($log_file, $error_msg, "ERROR");
-        }
+        $importMessage = "Error uploading file: " . $file['error'];
     }
 }
 
 // Get total count for pagination
-if (!empty($allowed_category_codes)) {
-    $category_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $count_query = "SELECT COUNT(*) as total 
                    FROM tblitemmaster
-                   WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($category_placeholders)";
+                   WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
     
-    $count_params = array_merge([$mode], $allowed_category_codes);
+    $count_params = array_merge([$mode], $allowed_classes);
     $count_types = str_repeat('s', count($count_params));
 } else {
     $count_query = "SELECT COUNT(*) as total 
@@ -1211,15 +1195,15 @@ $count_stmt->close();
 $total_pages = ceil($total_items / $limit);
 
 // Fetch items for display
-if (!empty($allowed_category_codes)) {
-    $category_placeholders = implode(',', array_fill(0, count($allowed_category_codes), '?'));
+if (!empty($allowed_classes)) {
+    $class_placeholders = implode(',', array_fill(0, count($allowed_classes), '?'));
     $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
                      PPRICE, BPRICE, MPRICE, RPRICE, LIQ_FLAG, BARCODE,
                      CATEGORY_CODE, CLASS_CODE_NEW, SUBCLASS_CODE_NEW, SIZE_CODE
               FROM tblitemmaster
-              WHERE LIQ_FLAG = ? AND CATEGORY_CODE IN ($category_placeholders)";
+              WHERE LIQ_FLAG = ? AND CLASS IN ($class_placeholders)";
     
-    $params = array_merge([$mode], $allowed_category_codes);
+    $params = array_merge([$mode], $allowed_classes);
     $types = str_repeat('s', count($params));
 } else {
     $query = "SELECT CODE, Print_Name, DETAILS, DETAILS2, CLASS, ITEM_GROUP, 
@@ -1327,16 +1311,16 @@ function goToPage(page) {
 
       <div class="alert alert-info mb-3">
           <strong>License Type: <?= htmlspecialchars($license_type) ?></strong>
-          <p class="mb-0">Showing items for categories: 
+          <p class="mb-0">Showing items for classes: 
               <?php 
-              if (!empty($allowed_categories)) {
-                  $category_names = [];
-                  foreach ($allowed_categories as $cat) {
-                      $category_names[] = $cat['CATEGORY_NAME'];
+              if (!empty($available_classes)) {
+                  $class_names = [];
+                  foreach ($available_classes as $class) {
+                      $class_names[] = $class['DESC'] . ' (' . $class['SGROUP'] . ')';
                   }
-                  echo implode(', ', $category_names);
+                  echo implode(', ', $class_names);
               } else {
-                  echo 'No categories available for your license type';
+                  echo 'No classes available for your license type';
               }
               ?>
           </p>
@@ -1365,7 +1349,7 @@ function goToPage(page) {
       <div class="import-template">
           <p><strong>4-Layer Classification System Import Features:</strong></p>
           <ul>
-              <li><strong>Category:</strong> Spirit, Wine, Fermented Beer, Mild Beer, Country Liquor</li>
+              <li><strong>Category:</strong> Spirit, Wine, Fermented Beer, Mild Beer, etc.</li>
               <li><strong>Class:</strong> IMFL, Imported, MML, Indian, etc.</li>
               <li><strong>Subclass:</strong> Whisky, Vodka, Rum, Brandy, Gin, etc.</li>
               <li><strong>Size:</strong> 750 ML, 180 ML, 650 ML, etc.</li>
@@ -1407,7 +1391,7 @@ function goToPage(page) {
 
       <?php if (!empty($importMessage)): ?>
       <div class="alert alert-info alert-dismissible fade show" role="alert">
-        <?= $importMessage ?>
+        <?= htmlspecialchars($importMessage) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       <?php endif; ?>
@@ -1422,7 +1406,7 @@ function goToPage(page) {
       <div class="table-container">
         <table class="styled-table table-striped">
           <thead>
-                  眉
+                 <tr>
               <th class="col-code">Code</th>
               <th class="col-item-name">Item Name</th>
               <th class="col-print-name">Print Name</th>
@@ -1437,7 +1421,7 @@ function goToPage(page) {
               <th class="col-stock">Open Stock</th>
               <th class="col-barcode">Barcode</th>
               <th class="col-actions">Actions</th>
-                   </tr>
+                </tr>
           </thead>
           <tbody>
           <?php if (!empty($items)): ?>
@@ -1465,15 +1449,15 @@ function goToPage(page) {
               $rprice_int = intval($item['RPRICE']);
               ?>
               <tr class="compact-text">
-                              <td class="col-code"><?= htmlspecialchars($item['CODE']); ?> </td>
-                <td class="col-item-name"><?= htmlspecialchars($item['DETAILS']); ?> </td>
-                <td class="col-print-name"><?= htmlspecialchars($item['Print_Name']); ?> </td>
-                <td class="col-category classification-data"><?= htmlspecialchars($category_name); ?> </td>
-                <td class="col-class classification-data"><?= htmlspecialchars($class_name); ?> </td>
-                <td class="col-subclass classification-data"><?= htmlspecialchars($subclass_name); ?> </td>
-                <td class="col-size classification-data"><?= htmlspecialchars($size_desc ?: $item['DETAILS2']); ?> </td>
-                <td class="col-price"><?= number_format($pprice_int, 0); ?> </td>
-                <td class="col-price"><?= number_format($bprice_int, 0); ?> </td>
+                <td class="col-code"><?= htmlspecialchars($item['CODE']); ?></td>
+                <td class="col-item-name"><?= htmlspecialchars($item['DETAILS']); ?></td>
+                <td class="col-print-name"><?= htmlspecialchars($item['Print_Name']); ?></td>
+                <td class="col-category classification-data"><?= htmlspecialchars($category_name); ?></td>
+                <td class="col-class classification-data"><?= htmlspecialchars($class_name); ?></td>
+                <td class="col-subclass classification-data"><?= htmlspecialchars($subclass_name); ?></td>
+                <td class="col-size classification-data"><?= htmlspecialchars($size_desc ?: $item['DETAILS2']); ?></td>
+                <td class="col-price"><?= number_format($pprice_int, 0); ?></td>
+                                <td class="col-price"><?= number_format($bprice_int, 0); ?> </td>
                 <td class="col-price"><?= number_format($mprice_int, 0); ?> </td>
                 <td class="col-price"><?= number_format($rprice_int, 0); ?> </td>
                 <td class="col-stock"><?= $opening_balance; ?> </td>
@@ -1487,13 +1471,11 @@ function goToPage(page) {
                       <button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></button>
                     </form>
                   </div>
-                </td>
-              </tr>
+                 </td>
+                </tr>
             <?php endforeach; ?>
           <?php else: ?>
-              <tr>
-                <td colspan="14" class="text-center text-muted">No items found.</td>
-              </tr>
+              <tr><td colspan="14" class="text-center text-muted">No items found.</td></tr>
           <?php endif; ?>
           </tbody>
         </table>
@@ -1503,26 +1485,16 @@ function goToPage(page) {
       <div class="pagination-container">
         <nav aria-label="Page navigation">
           <ul class="pagination">
-            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=1">&laquo;&laquo;</a>
-            </li>
-            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= max(1, $page - 1) ?>">&laquo;</a>
-            </li>
+            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=1">&laquo;&laquo;</a></li>
+            <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= max(1, $page - 1) ?>">&laquo;</a></li>
             <?php 
             $start_page = max(1, $page - 2);
             $end_page = min($total_pages, $page + 2);
             for ($i = $start_page; $i <= $end_page; $i++): ?>
-              <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $i ?>"><?= $i ?></a>
-              </li>
+              <li class="page-item <?= $i == $page ? 'active' : '' ?>"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $i ?>"><?= $i ?></a></li>
             <?php endfor; ?>
-            <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= min($total_pages, $page + 1) ?>">&raquo;</a>
-            </li>
-            <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-              <a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $total_pages ?>">&raquo;&raquo;</a>
-            </li>
+            <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= min($total_pages, $page + 1) ?>">&raquo;</a></li>
+            <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>"><a class="page-link" href="?mode=<?= $mode ?>&search=<?= urlencode($search) ?>&page=<?= $total_pages ?>">&raquo;&raquo;</a></li>
           </ul>
         </nav>
       </div>
@@ -1580,7 +1552,7 @@ function goToPage(page) {
           <div class="alert alert-warning">
             <strong><i class="fas fa-layer-group"></i> 4-Layer Classification System</strong>
             <ul class="mb-0 mt-2">
-              <li><strong>Category:</strong> Spirit, Wine, Fermented Beer, Mild Beer, Country Liquor</li>
+              <li><strong>Category:</strong> Spirit, Wine, Fermented Beer, Mild Beer, etc.</li>
               <li><strong>Class:</strong> IMFL, Imported, Indian, MML, etc.</li>
               <li><strong>Subclass:</strong> Whisky, Vodka, Rum, Brandy, Gin, etc.</li>
               <li><strong>Size:</strong> 750 ML, 180 ML, 650 ML, etc.</li>
@@ -1636,6 +1608,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return; 
             }
             
+            // Validate file type matches selection
             const fileName = fileInput.files[0].name;
             const fileExt = fileName.split('.').pop().toLowerCase();
             
@@ -1650,6 +1623,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
+            // Validate date format
             const selectedDate = new Date(startDate.value);
             if (isNaN(selectedDate.getTime())) {
                 e.preventDefault();
@@ -1687,12 +1661,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const startDateInput = document.getElementById('start_date');
     if (startDateInput) { 
+        // No restrictions - any date can be selected
         if (!startDateInput.value) {
             startDateInput.value = new Date().toISOString().split('T')[0];
         }
         
+        // Add helper text showing which financial year will be used
         startDateInput.addEventListener('change', function() {
             if (this.value) {
+                // Calculate financial year from selected date
                 const selectedDate = new Date(this.value);
                 const year = selectedDate.getFullYear();
                 const month = selectedDate.getMonth() + 1;
@@ -1702,6 +1679,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     finYear = (year - 1) + '-' + year;
                 }
+                
+                // Show financial year info (optional)
                 console.log('Selected date: ' + this.value + ' falls in financial year: ' + finYear);
             }
         });
@@ -1714,10 +1693,24 @@ setTimeout(() => {
         try {
             new bootstrap.Alert(alert).close(); 
         } catch(e) {
+            // Bootstrap alert might not be available, just hide it
             alert.style.display = 'none';
         }
     }); 
 }, 5000);
+
+// Function to validate date range (optional - remove if you want no restrictions)
+function validateDateRange(date) {b
+    // You can add custom validation here if needed
+    // For example, prevent future dates:
+    // const today = new Date();
+    // today.setHours(0, 0, 0, 0);
+    // if (new Date(date) > today) {
+    //     alert('Opening balance date cannot be in the future!');
+    //     return false;
+    // }
+    return true;
+}
 </script>
 </body>
 </html>

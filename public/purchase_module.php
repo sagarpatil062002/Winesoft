@@ -708,7 +708,7 @@ function getSortLink($column, $label) {
             <i class="fas fa-chart-bar me-2"></i> Purchase Summary
           </button>
           <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
-            <i class="fas fa-file-import me-2"></i> Import from Excel/CSV
+            <i class="fas fa-file-import me-2"></i> Import from Excel
           </button>
           <button type="button" class="btn btn-danger" id="bulkDeleteBtn" disabled>
             <i class="fa-solid fa-trash me-2"></i> Delete Selected
@@ -851,7 +851,7 @@ function getSortLink($column, $label) {
           <i class="fas fa-chart-bar me-2"></i> Purchase Summary
         </button>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPurchaseModal">
-          <i class="fas fa-file-import me-2"></i> Import from CSV
+          <i class="fas fa-file-import me-2"></i> Import from Excel
         </button>
         <button type="button" class="btn btn-danger" id="bulkDeleteBottomBtn" disabled>
           <i class="fa-solid fa-trash me-2"></i> Delete Selected
@@ -964,41 +964,41 @@ function getSortLink($column, $label) {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="importPurchaseModalLabel">Import Purchases from CSV</h5>
+                <h5 class="modal-title" id="importPurchaseModalLabel">Import Purchases from Excel</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="import_purchase.php" enctype="multipart/form-data" id="importForm">
                 <div class="modal-body">
                     <div class="import-template-info">
-                        <strong><i class="fas fa-info-circle me-2"></i>CSV/Excel File Format Requirements:</strong>
+                        <strong><i class="fas fa-info-circle me-2"></i>Excel File Format Requirements:</strong>
                         <ul class="mt-2">
-                            <li>File format: .csv, .xls, or .xlsx (Comma Separated Values or Excel files)</li>
+                            <li>File format: .xlsx or .xls (Excel files - recommended)</li>
                             <li>Required columns: Date, TP No., Supplier, Item Code, Item Name, Size, Cases, Bottles, Free Cases, Free Bottles, Case Rate, MRP</li>
                             <li>Date format: YYYY-MM-DD (e.g., 2025-12-07)</li>
                             <li>Make sure item codes match your database (with or without SCM prefix)</li>
                             <li>First row should contain column headers</li>
-                            <li>For Excel files: Save as .xlsx or .xls format</li>
-                            <li>For CSV: File → Save As → CSV (Comma delimited)</li>
+                            <li>Check the template for column names</li>
+                            <li>For Excel: Use the template below for correct format</li>
                         </ul>
                         <p class="mt-2 mb-0">
                             <a href="generate_template.php" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-download me-1"></i> Download CSV Template
+                                <i class="fas fa-file-excel me-1"></i> Download Excel Template
                             </a>
                         </p>
                     </div>
 
                     <div class="mb-3">
-                        <label for="excelFile" class="form-label">Select CSV Files (Multiple)</label>
+                        <label for="excelFile" class="form-label">Select Excel Files (Multiple)</label>
                         <div class="file-drop-zone" id="fileDropZone">
                             <div class="drop-zone-content">
                                 <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-2"></i>
-                                <p class="mb-1">Drag & drop CSV files here</p>
+                                <p class="mb-1">Drag & drop Excel files here</p>
                                 <p class="text-muted small mb-2">or</p>
                                 <input type="file" name="excel_files[]" id="excelFile" class="form-control" accept=".csv,.xls,.xlsx" multiple required>
                                 <label for="excelFile" class="btn btn-outline-primary btn-sm mt-2">Browse Files</label>
                             </div>
                         </div>
-                        <div class="form-text">Allowed file type: .csv (Max 10MB each). Hold Ctrl/Cmd to select multiple files. Max 50 files at a time.</div>
+                        <div class="form-text">Allowed file type: .xlsx, .xls (Max 10MB each). Hold Ctrl/Cmd to select multiple files. Max 50 files at a time.</div>
                         <div id="selectedFiles" class="mt-2"></div>
                     </div>
                     
@@ -1039,7 +1039,7 @@ function getSortLink($column, $label) {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="importSubmit">
-                        <i class="fas fa-upload me-2"></i> Import CSV Data
+                        <i class="fas fa-upload me-2"></i> Import Excel Data
                     </button>
                 </div>
             </form>
@@ -1047,7 +1047,7 @@ function getSortLink($column, $label) {
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Delete Confirmation Modal - Enhanced -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -1056,6 +1056,13 @@ function getSortLink($column, $label) {
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
+        <div class="alert alert-info mb-3">
+          <i class="fas fa-receipt me-2"></i>
+          <strong>Purchase Details:</strong><br>
+          TP Number: <span id="deleteTpNo">-</span><br>
+          Date: <span id="deleteStartDate">-</span>
+        </div>
+        
         <p>Are you sure you want to delete this purchase? This action will:</p>
         <ul>
           <li>Delete the purchase record from tblpurchases</li>
@@ -1066,7 +1073,7 @@ function getSortLink($column, $label) {
         <p class="text-danger"><strong>Warning:</strong> This action cannot be undone and will affect stock calculations.</p>
         <div class="alert alert-warning">
           <i class="fas fa-exclamation-triangle"></i> 
-          <strong>Note:</strong> Daily stock records will be recalculated from <span id="deleteStartDate"></span> to today using the formula:<br>
+          <strong>Note:</strong> Daily stock records will be recalculated from the purchase date using the formula:<br>
           <small>day_x_closing = day_x_open + day_x_purchase - day_x_sales</small>
         </div>
       </div>
@@ -1182,9 +1189,167 @@ const categories = [
     }
 ];
 
-// Bulk deletion functionality
+// ============================================================================
+// ENHANCED BULK DELETE WITH PROGRESS BAR
+// ============================================================================
+
 let selectedPurchases = new Set();
 let currentPurchaseId = null;
+let progressInterval = null;
+let currentSessionKey = null;
+
+// Function to show progress modal
+function showProgressModal(totalCount) {
+    // Create progress modal if it doesn't exist
+    if ($('#progressModal').length === 0) {
+        const progressModalHtml = `
+            <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-spinner fa-spin me-2"></i>
+                                Deleting Purchases
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancelDeletion()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <div class="progress" style="height: 30px;">
+                                    <div id="deleteProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%;">
+                                        0%
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Status:</strong> 
+                                <span id="progressStatus">Initializing...</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Current Item:</strong> 
+                                <span id="progressCurrentItem">-</span>
+                            </div>
+                            <div class="mb-2">
+                                <strong>Progress:</strong> 
+                                <span id="progressCount">0</span> of <span id="progressTotal">0</span> purchases
+                            </div>
+                            <div class="alert alert-info small mt-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Please do not close this window. The deletion process may take several minutes for large batches.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="cancelDeletion()">
+                                <i class="fas fa-times me-2"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('body').append(progressModalHtml);
+    }
+    
+    $('#progressTotal').text(totalCount);
+    $('#deleteProgressBar').css('width', '0%').text('0%');
+    $('#progressCount').text('0');
+    $('#progressStatus').text('Starting deletion...');
+    $('#progressCurrentItem').text('-');
+    $('#progressModal').modal('show');
+}
+
+// Function to update progress
+function updateProgress(progressData) {
+    if (!progressData) return;
+    
+    const percentage = progressData.percentage || 0;
+    $('#deleteProgressBar').css('width', percentage + '%').text(percentage + '%');
+    $('#progressCount').text(progressData.processed || 0);
+    $('#progressStatus').text(progressData.current_phase || 'Processing...');
+    $('#progressCurrentItem').text(progressData.current_item || '-');
+    
+    // Update progress bar style based on status
+    if (progressData.status === 'completed') {
+        $('#deleteProgressBar')
+            .removeClass('progress-bar-striped progress-bar-animated')
+            .addClass('bg-success');
+        $('#progressStatus').html('<i class="fas fa-check-circle me-2"></i> ' + progressData.current_phase);
+    } else if (progressData.status === 'failed') {
+        $('#deleteProgressBar')
+            .removeClass('progress-bar-striped progress-bar-animated')
+            .addClass('bg-danger');
+        $('#progressStatus').html('<i class="fas fa-exclamation-circle me-2"></i> Failed: ' + (progressData.result?.error || 'Unknown error'));
+    }
+}
+
+// Function to poll progress
+function pollProgress(sessionKey) {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    
+    progressInterval = setInterval(function() {
+        $.ajax({
+            url: 'purchase_delete.php',
+            type: 'POST',
+            data: {
+                check_progress: true,
+                session_key: sessionKey
+            },
+            success: function(response) {
+                if (response.status === 'completed') {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    
+                    updateProgress(response);
+                    
+                    // Show success message
+                    setTimeout(function() {
+                        $('#progressModal').modal('hide');
+                        showAlert('success', response.result?.message || 'Deletion completed successfully!');
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    }, 1000);
+                    
+                } else if (response.status === 'failed') {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    
+                    updateProgress(response);
+                    
+                    setTimeout(function() {
+                        $('#progressModal').modal('hide');
+                        showAlert('danger', response.result?.error || 'Deletion failed. Check logs for details.');
+                    }, 2000);
+                    
+                } else if (response.status === 'processing') {
+                    updateProgress(response);
+                } else if (response.status === 'not_found') {
+                    // Still initializing, keep polling
+                    console.log('Waiting for deletion to start...');
+                }
+            },
+            error: function() {
+                // Keep polling on error
+                console.log('Error polling progress, retrying...');
+            }
+        });
+    }, 1000); // Poll every second
+}
+
+// Function to cancel deletion
+function cancelDeletion() {
+    if (confirm('Are you sure you want to cancel the deletion? This may leave some records partially deleted.')) {
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+        $('#progressModal').modal('hide');
+        showAlert('warning', 'Deletion cancelled. Please check stock records for consistency.');
+    }
+}
 
 // Function to update selected count
 function updateSelectedPurchaseCount() {
@@ -1235,25 +1400,17 @@ $(document).on('change', '.purchase-checkbox', function() {
     updateSelectedPurchaseCount();
 });
 
-// Bulk delete button click
+// Enhanced bulk delete button click handler
 $('#bulkDeleteBtn, #bulkDeleteBottomBtn').on('click', function() {
     if (selectedPurchases.size === 0) return;
     
-    // Show confirmation modal
+    // Show confirmation modal with count
     $('#deletePurchaseCount').text(selectedPurchases.size);
     $('#bulkDeleteModal').modal('show');
 });
 
-// Single delete button click
-$(document).on('click', '.delete-single-btn', function() {
-    currentPurchaseId = $(this).data('id');
-    const purchaseDate = $(this).data('date');
-    $('#deleteStartDate').text(purchaseDate);
-    $('#deleteModal').modal('show');
-});
-
-// Confirm bulk delete
-$('#confirmBulkDelete').on('click', function() {
+// Enhanced confirm bulk delete - simplified for reliability
+$('#confirmBulkDelete').off('click').on('click', function() {
     if (selectedPurchases.size === 0) return;
     
     const purchaseIds = Array.from(selectedPurchases);
@@ -1278,13 +1435,11 @@ $('#confirmBulkDelete').on('click', function() {
                 showAlert('success', response.message);
                 selectedPurchases.clear();
                 updateSelectedPurchaseCount();
-                
-                // Reload page after delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
             } else {
-                showAlert('danger', response.message);
+                showAlert('danger', response.message || 'Deletion failed');
             }
         },
         error: function(xhr, status, error) {
@@ -1294,14 +1449,30 @@ $('#confirmBulkDelete').on('click', function() {
     });
 });
 
-// Confirm single delete
-$('#deleteConfirmBtn').on('click', function() {
+// Enhanced single delete button click handler (adds progress for single delete too)
+$(document).off('click', '.delete-single-btn').on('click', '.delete-single-btn', function() {
+    currentPurchaseId = $(this).data('id');
+    const purchaseDate = $(this).data('date');
+    const tpNo = $(this).data('tpno');
+    
+    $('#deleteStartDate').text(purchaseDate);
+    if (tpNo) {
+        $('#deleteTpNo').text(tpNo);
+    }
+    $('#deleteModal').modal('show');
+});
+
+// Enhanced single delete confirmation
+$('#deleteConfirmBtn').off('click').on('click', function() {
     if (!currentPurchaseId) return;
     
     const mode = '<?= $mode ?>';
     
     $('#deleteModal').modal('hide');
-    $('#loadingModal').modal('show');
+    
+    // Show progress modal for single delete too
+    showProgressModal(1);
+    $('#progressStatus').text('Deleting single purchase...');
     
     $.ajax({
         url: 'purchase_delete.php',
@@ -1311,7 +1482,7 @@ $('#deleteConfirmBtn').on('click', function() {
             mode: mode
         },
         success: function(response) {
-            $('#loadingModal').modal('hide');
+            $('#progressModal').modal('hide');
             
             if (response.success) {
                 showAlert('success', response.message);
@@ -1323,13 +1494,22 @@ $('#deleteConfirmBtn').on('click', function() {
             }
         },
         error: function(xhr, status, error) {
-            $('#loadingModal').modal('hide');
+            $('#progressModal').modal('hide');
             showAlert('danger', 'Error deleting purchase: ' + error);
         }
     });
 });
 
-// Reset currentPurchaseId when modal is closed
+// Clean up progress interval when modal is closed
+$('#progressModal').on('hidden.bs.modal', function() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+    currentSessionKey = null;
+});
+
+// Reset current purchase ID when modal is closed
 $('#deleteModal').on('hidden.bs.modal', function() {
     currentPurchaseId = null;
 });
@@ -2016,7 +2196,7 @@ $(document).ready(function() {
                 selectedFilesDiv.html(fileListHtml + '<small class="text-success"><i class="fas fa-check-circle me-1"></i>' + files.length + ' file(s) selected ready for import</small>');
             } else {
                 $(this).val(''); // Clear file input if invalid
-                selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select valid CSV files</small>');
+                selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select valid Excel files</small>');
             }
         }
     });
@@ -2026,7 +2206,7 @@ $(document).ready(function() {
         const files = fileInput[0].files;
         if (!files || files.length === 0) {
             e.preventDefault();
-            alert('Please select at least one CSV file to upload');
+            alert('Please select at least one Excel file to upload');
             fileInput.focus();
             return;
         }
@@ -2048,7 +2228,7 @@ $(document).ready(function() {
     
     // Reset button state when modal is hidden
     $('#importPurchaseModal').on('hidden.bs.modal', function() {
-        importSubmit.html('<i class="fas fa-upload me-2"></i> Import CSV Data').prop('disabled', false);
+        importSubmit.html('<i class="fas fa-upload me-2"></i> Import Excel Data').prop('disabled', false);
         // Clear file input
         fileInput.val('');
         selectedFilesDiv.empty();

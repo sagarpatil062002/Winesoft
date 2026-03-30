@@ -1,0 +1,19 @@
+=================================================================================
+IMPORT LOG - EXCEL IMPORT
+Date: 2026-03-28 11:54:31
+Start Date: 2026-03-28
+License Type: FL-III
+Allowed Categories: Fermented Beer (CAT003), Mild Beer (CAT004), Spirit (CAT001), Wine (CAT002)
+=================================================================================
+
+[2026-03-28 11:54:31] [START] Import started - File: BRAND TYPES Final_transformed_with_barcode.xlsx, Type: excel, Start Date: 2026-03-28
+[2026-03-28 11:54:44] [INFO] Excel Headers found: Code, ItemName, PrintName, Size, PPrice, BPrice, MPrice, RPrice, LIQFLAG, OpeningBalance, Category, Class, SubClass, barcode
+[2026-03-28 11:55:35] [SUMMARY] 
+================================================================================
+IMPORT SUMMARY
+Total rows processed: 4693
+New items imported: 4693
+Items updated: 0
+Rows skipped: 0
+================================================================================
+
